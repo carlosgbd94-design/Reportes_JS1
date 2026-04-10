@@ -15,10 +15,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Variables Globales (Asegúrate de que NO estén repetidas abajo)
-var USER = null;
-var TOKEN = null;
-var UNIT_BATCHES = [];
 
 // --- LÓGICA DE LOGIN FIREBASE ---
 document.addEventListener("DOMContentLoaded", () => {
