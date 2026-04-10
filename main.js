@@ -20,7 +20,7 @@ const auth = getAuth(app);
 const $ = (id) => document.getElementById(id);
 const overlay = $("overlay");
 const overlayMsg = $("overlayMsg");
-// ... todo lo demás sigue igual ...
+ ... todo lo demás sigue igual ...
 
   const $ = (id) => document.getElementById(id);
   const overlay = $("overlay");
@@ -1389,7 +1389,7 @@ const overlayMsg = $("overlayMsg");
 
     btn.appendChild(icon);
 
-    // Si el ID incluye "TopNotif", NO agregamos texto, solo usamos el "title" como tooltip
+     Si el ID incluye "TopNotif", NO agregamos texto, solo usamos el "title" como tooltip
     if (buttonId.includes("TopNotif")) {
       btn.title = labelText;
     } else {
@@ -1498,11 +1498,11 @@ const overlayMsg = $("overlayMsg");
     const btnNotifRefresh = $("btnNotifRefresh");
     const btnTopNotifRefresh = $("btnTopNotifRefresh");
 
-    // Side panel toolbar creation (stays dynamic)
+     Side panel toolbar creation (stays dynamic)
     ensureNotifActionButton(btnNotifOnlyUnread, "btnNotifMarkVisibleRead", "Marcar visibles");
     ensureNotifSearchBox(btnNotifRefresh, "notifSearchBox", "notifSearchInput", "btnNotifClearSearch");
 
-    // Top panel - Solo vinculamos búsqueda, no botones (ya están en Index.html)
+     Top panel - Solo vinculamos búsqueda, no botones (ya están en Index.html)
     ensureNotifSearchBox(btnTopNotifRefresh, "topNotifSearchBox", "topNotifSearchInput", "btnTopNotifClearSearch");
 
     const notifSearchInput = $("notifSearchInput");
@@ -1554,7 +1554,7 @@ const overlayMsg = $("overlayMsg");
 
     btnTopNotifClose?.addEventListener("click", closeTopNotifDropdown);
 
-    // Legacy/Main interactions
+     Legacy/Main interactions
     $("btnSendNotification")?.addEventListener("click", sendNotificationFlow);
 
     const toggleTopDropdown = (ev) => {
@@ -1576,21 +1576,21 @@ const overlayMsg = $("overlayMsg");
     syncNotifSearchInputs();
     refreshNotifSearchUi();
 
-    // Global listeners
+     Global listeners
     document.addEventListener("click", (ev) => {
-      // Ripple
+       Ripple
       const btn = ev.target.closest(".md-btn, .btn, .ghostBtn, .miniBtn");
       if (btn) createRipple(ev);
 
-      // Group Toggle
+       Group Toggle
       const groupBtn = ev.target.closest("[data-notif-group-toggle]");
       if (groupBtn) {
         const key = groupBtn.getAttribute("data-notif-group-toggle");
         if (key) toggleNotifGroup(key);
-        return; // IMPORTANTE: No seguir al cierre por "clic fuera" ya que el DOM cambió
+        return;  IMPORTANTE: No seguir al cierre por "clic fuera" ya que el DOM cambió
       }
 
-      // Close dropdown on outside click
+       Close dropdown on outside click
       const refs = getTopNotifDropdownRefs();
       if (refs.box && refs.box.style.display === "block") {
         if (!refs.box.contains(ev.target) && !refs.btn.contains(ev.target) && !$("bNotif")?.contains(ev.target)) {
@@ -1857,7 +1857,7 @@ const overlayMsg = $("overlayMsg");
     if (scope === "USUARIO") {
       users = getNotifUsersByFilters({ municipio, clues });
 
-      // Priorizar usuarios MUNICIPAL si el remitente es JURISDICCIONAL
+       Priorizar usuarios MUNICIPAL si el remitente es JURISDICCIONAL
       if (USER?.rol === "JURISDICCIONAL") {
         users.sort((a, b) => {
           const isMunicipalA = (a.rol === "MUNICIPAL") ? 0 : 1;
@@ -1870,7 +1870,7 @@ const overlayMsg = $("overlayMsg");
     } else if (scope === "MUNICIPIO") {
       users = getNotifUsersByFilters({ municipio });
 
-      // Si es Jurisdiccional y alcance Municipio, solo mostrar usuarios MUNICIPAL
+       Si es Jurisdiccional y alcance Municipio, solo mostrar usuarios MUNICIPAL
       if (USER?.rol === "JURISDICCIONAL") {
         users = users.filter(x => x.rol === "MUNICIPAL");
       }
@@ -1914,17 +1914,17 @@ const overlayMsg = $("overlayMsg");
     const cluesSel = $("notifTargetClues");
     const scopeSel = $("notifTargetScope");
 
-    // Restricciones perfil JURISDICCIONAL
+     Restricciones perfil JURISDICCIONAL
     if (USER?.rol === "JURISDICCIONAL" && scopeSel) {
-      // 1. Ocultar CLUES (unidades individuales)
+       1. Ocultar CLUES (unidades individuales)
       const optClues = scopeSel.querySelector('option[value="CLUES"]');
       if (optClues) optClues.style.display = "none";
 
-      // 2. Ocultar ALL_MY_UNITS (envío masivo a todas las unidades)
+       2. Ocultar ALL_MY_UNITS (envío masivo a todas las unidades)
       const optAll = scopeSel.querySelector('option[value="ALL_MY_UNITS"]');
       if (optAll) optAll.style.display = "none";
 
-      // Redirigir si está en una opción no permitida
+       Redirigir si está en una opción no permitida
       if (scope === "CLUES" || scope === "ALL_MY_UNITS") {
         scopeSel.value = "MUNICIPIO";
         return refreshNotifScopeUi();
@@ -2576,10 +2576,10 @@ const overlayMsg = $("overlayMsg");
       return;
     }
 
-    // Primero cerramos el modal para que no estorbe la pantalla de carga global
+     Primero cerramos el modal para que no estorbe la pantalla de carga global
     closeForgotModal();
 
-    // Mostramos la pantalla de carga global del sistema
+     Mostramos la pantalla de carga global del sistema
     showOverlay("Estamos enviando el enlace de recuperación…", "Recuperando acceso");
 
     try {
@@ -2622,22 +2622,22 @@ const overlayMsg = $("overlayMsg");
     });
   }
 
-  // NUEVO GESTOR DE ESTADO
+   NUEVO GESTOR DE ESTADO
   const StateManager = {
     _state: { notifications: [], pinol: [], history: [] },
     setNotifications: function (arr) {
       this._state.notifications = Array.isArray(arr) ? [...arr] : [];
-      // Opción para Despachar Eventos de DOM si otras partes escuchan.
+       Opción para Despachar Eventos de DOM si otras partes escuchan.
     },
     getNotifications: function () { return [...this._state.notifications]; }
   };
 
-  // NUEVO WRAPPER UI (Ejecutor Asíncrono Centralizado)
+   NUEVO WRAPPER UI (Ejecutor Asíncrono Centralizado)
   async function executeAction(actionName, payload, loadingMsg, successMsg = null) {
     try {
       if (loadingMsg) showOverlay(loadingMsg);
 
-      // Invocamos el puente asíncrono hacia GAS
+       Invocamos el puente asíncrono hacia GAS
       const res = await apiCall(actionName, payload);
 
       if (!res || !res.ok) {
@@ -2686,11 +2686,11 @@ const overlayMsg = $("overlayMsg");
   const CLIENT_CACHE_PREFIX = "JS1_CACHE::";
 
   const CACHE_TTL = {
-    TODAY_REPORTS: 1000 * 60 * 1,        // 1 min
-    CAPTURE_OVERVIEW: 1000 * 60 * 2,     // 2 min
-    HISTORY_METRICS: 1000 * 60 * 3,      // 3 min
-    UNIT_CATALOG: 1000 * 60 * 30,        // 30 min
-    PINOL_LIST: 1000 * 30                // 30 seg
+    TODAY_REPORTS: 1000 * 60 * 1,         1 min
+    CAPTURE_OVERVIEW: 1000 * 60 * 2,      2 min
+    HISTORY_METRICS: 1000 * 60 * 3,       3 min
+    UNIT_CATALOG: 1000 * 60 * 30,         30 min
+    PINOL_LIST: 1000 * 30                 30 seg
   };
 
   function buildCacheKey(scope, extra = "") {
@@ -3046,8 +3046,8 @@ const overlayMsg = $("overlayMsg");
     const assetA = String(`<?= LOGO_A ?>` || "").trim();
     const assetB = String(`<?= LOGO_B ?>` || "").trim();
 
-    const fallbackA = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/Seseq_vertical_2025.png";
-    const fallbackB = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/logo_Q.png";
+    const fallbackA = "https:raw.githubusercontent.com/carlosgbd94-design/Logos/main/Seseq_vertical_2025.png";
+    const fallbackB = "https:raw.githubusercontent.com/carlosgbd94-design/Logos/main/logo_Q.png";
 
     const safeA = assetA.startsWith("data:image/") ? assetA : fallbackA;
     const safeB = assetB.startsWith("data:image/") ? assetB : fallbackB;
@@ -5841,39 +5841,47 @@ const overlayMsg = $("overlayMsg");
     });
   }
 
-// 2. EL ÚNICO VIGILANTE DEL FORMULARIO QUE NECESITAS
-$("loginForm").addEventListener("submit", async (ev) => {
-    ev.preventDefault(); 
-    
-    const email = $("usuario").value.trim();
-    const password = $("password").value.trim();
+// 1. Importar el comando de Firebase para entrar
+import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
-    if (!email || !password) {
-        showToast("Por favor, ingresa usuario y contraseña", false, "warn");
-        return;
-    }
+// 2. Conectar el formulario de Login de forma 100% segura usando JS puro
+const formLogin = document.getElementById("loginForm");
 
-    showOverlay("Validando en Firebase…", "Iniciando sesión");
-
-    try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-
-        console.log("¡Acceso correcto!", user.email);
-        showToast("Sesión iniciada correctamente");
-
-        showRightColumn(true); 
-
-    } catch (error) {
-        console.error("Error de Firebase:", error.code);
-        let mensaje = "Usuario o contraseña incorrectos";
-        if(error.code === "auth/invalid-email") mensaje = "El formato del correo no es válido";
+if (formLogin) {
+    formLogin.addEventListener("submit", async (ev) => {
+        ev.preventDefault(); // Evita que la página se recargue
         
-        showToast(mensaje, false, "bad");
-    } finally {
-        hideOverlay();
-    }
-});
+        const email = document.getElementById("usuario").value.trim();
+        const password = document.getElementById("password").value.trim();
+
+        if (!email || !password) {
+            showToast("Por favor, ingresa usuario y contraseña", false, "warn");
+            return;
+        }
+
+        showOverlay("Validando en Firebase…", "Iniciando sesión");
+
+        try {
+            // Intentar entrar con Firebase
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            console.log("¡Acceso correcto!", userCredential.user.email);
+            
+            showToast("Sesión iniciada correctamente");
+            showRightColumn(true); 
+
+        } catch (error) {
+            console.error("Error de Firebase:", error.code);
+            let mensaje = "Usuario o contraseña incorrectos";
+            if(error.code === "auth/invalid-email") mensaje = "El formato del correo no es válido";
+            
+            showToast(mensaje, false, "bad");
+        } finally {
+            hideOverlay();
+        }
+    });
+} else {
+    console.error("No se encontró el ID loginForm en el HTML");
+}
 
     if (hasInvalid) {
       showToast("Corrige las filas marcadas en rojo (biológico, lote y cantidad son obligatorios)", false, "warn");
