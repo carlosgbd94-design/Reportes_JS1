@@ -1,4 +1,3 @@
-<script>
   const $ = (id) => document.getElementById(id);
   const overlay = $("overlay");
   const overlayMsg = $("overlayMsg");
@@ -8298,5 +8297,3 @@
 
     reader.readAsDataURL(file);
   }
-
-</script>
