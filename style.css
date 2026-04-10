@@ -1,4 +1,4 @@
-<style> :root {
+:root {
   /* 🏛️ PALETA OFICIAL QUERÉTARO 2021-2027 "JUNTOS ADELANTE" - SOBRIO */
   --md-sys-color-primary: #041E42;
   /* Azul Grafito Institucional */
@@ -7374,5 +7374,3 @@ body.bioConfirmOpen {
   color: var(--md-sys-color-primary);
   text-decoration: underline;
 }
-
-</style>
