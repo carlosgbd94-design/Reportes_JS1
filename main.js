@@ -3479,21 +3479,24 @@ async function loadBatchesForSession(user) {
     if (!user) return;
     try {
         const lotesRef = collection(db, "lotes_catalogo");
-        // Filtramos: Lotes de su municipio O lotes globales (*)
-        const q = query(lotesRef); // Por simplicidad inicial, traemos todos y filtramos en JS
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await getDocs(lotesRef);
         
         const allLotes = [];
         querySnapshot.forEach((doc) => {
             allLotes.push(doc.data());
         });
 
-        // Filtro de seguridad por municipio
-        UNIT_BATCHES = allLotes.filter(l => 
-            l.municipio === "*" || l.municipio === user.municipio
-        );
+        // Convertimos el municipio del usuario a MAYÚSCULAS y sin espacios a los lados
+        const userMuni = String(user.municipio || "").trim().toUpperCase();
+
+        // Filtro a prueba de balas
+        UNIT_BATCHES = allLotes.filter(l => {
+            const loteMuni = String(l.municipio || "").trim().toUpperCase();
+            // Pasa si es asterisco, si coincide exacto, o si le pusieron "TODOS"
+            return loteMuni === "*" || loteMuni === userMuni || loteMuni === "TODOS";
+        });
         
-        console.log("Lotes cargados para la sesión:", UNIT_BATCHES.length);
+        console.log(`Lotes en Base de Datos: ${allLotes.length} | Lotes para la unidad (${userMuni}): ${UNIT_BATCHES.length}`);
     } catch (e) {
         console.error("Error cargando lotes para sesión:", e);
     }
@@ -3859,9 +3862,11 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
     }
   }
 
-  function handleSRBioChange(selectEl, preselectLote = null) {
+function handleSRBioChange(selectEl, preselectLote = null) {
     const tr = selectEl.closest("tr");
-    const bio = selectEl.value;
+    // Limpiamos lo que el usuario seleccionó
+    const bio = String(selectEl.value || "").trim().toUpperCase();
+    
     const loteSelect = tr.querySelector(".sr-lote-select");
     const cadCell = tr.querySelector(".sr-cad-cell");
     
@@ -3871,24 +3876,28 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
 
     if (!bio) return;
 
-    const filtered = UNIT_BATCHES.filter(l => l.biologico === bio);
+    // Filtramos comparando en mayúsculas puras
+    const filtered = UNIT_BATCHES.filter(l => 
+        String(l.biologico || "").trim().toUpperCase() === bio
+    );
+    
     if (!filtered.length) {
-      loteSelect.innerHTML = '<option value="">SIN LOTES</option>';
-      return;
+        loteSelect.innerHTML = '<option value="">SIN LOTES</option>';
+        return;
     }
 
     filtered.forEach(l => {
-      const opt = document.createElement("option");
-      opt.value = l.lote;
-      opt.textContent = l.lote;
-      opt.dataset.cad = l.caducidad;
-      opt.dataset.rec = l.fecha_recepcion || "";
-      if (preselectLote === l.lote) opt.selected = true;
-      loteSelect.appendChild(opt);
+        const opt = document.createElement("option");
+        opt.value = l.lote;
+        opt.textContent = l.lote;
+        opt.dataset.cad = l.caducidad;
+        opt.dataset.rec = l.fecha_recepcion || "";
+        if (preselectLote === l.lote) opt.selected = true;
+        loteSelect.appendChild(opt);
     });
 
     if (preselectLote) handleSRLoteChange(loteSelect);
-  }
+}
 
   function handleSRLoteChange(selectEl) {
     const tr = selectEl.closest("tr");
