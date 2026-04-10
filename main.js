@@ -32,24 +32,34 @@ document.addEventListener("DOMContentLoaded", () => {
             showOverlay("Validando en Firebase…", "Iniciando sesión");
             
             try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                const perfilUsuario = await whoami();
+                // 1. Autenticación
+                await signInWithEmailAndPassword(auth, email, password);
                 
-                if (perfilUsuario) {
-                    // ASIGNACIÓN CRÍTICA a las variables globales de arriba
-                    USER = perfilUsuario; 
+                // 2. Obtener el perfil
+                const perfilDoc = await whoami();
+                
+                if (perfilDoc) {
+                    // ASIGNACIÓN GLOBAL (Sin 'var' ni 'let' para forzar que sea global si no se declaró antes)
+                    USER = perfilDoc; 
                     TOKEN = true;
 
-                    // Cargamos los lotes ANTES de mostrar la interfaz
-                    await loadBatchesForSession(USER); 
+                    // 3. Intentar cargar lotes (con seguro por si la función falla)
+                    try {
+                        await loadBatchesForSession(USER);
+                    } catch (batchErr) {
+                        console.warn("Error no fatal en lotes:", batchErr);
+                    }
                     
+                    // 4. Estatus y UI
                     const estadoApp = await unitStatus(); 
                     await hydrateSessionUi(USER, estadoApp, { showSuccessToast: true });
+                    
                 } else {
-                    showToast("No se encontró perfil", false, "bad");
+                    showToast("No se encontró el perfil en Firestore", false, "bad");
                 }
+
             } catch (error) {
-                console.error("Error Firebase:", error);
+                console.error("Error Login:", error);
                 showToast("Usuario o contraseña incorrectos", false, "bad");
             } finally {
                 hideOverlay();
