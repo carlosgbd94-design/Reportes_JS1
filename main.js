@@ -1409,7 +1409,7 @@ let TOAST_TIMER = null;
 
     btn.appendChild(icon);
 
-     Si el ID incluye "TopNotif", NO agregamos texto, solo usamos el "title" como tooltip
+     // Si el ID incluye "TopNotif", NO agregamos texto, solo usamos el "title" como tooltip
     if (buttonId.includes("TopNotif")) {
       btn.title = labelText;
     } else {
