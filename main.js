@@ -2,10 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/fireba
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
-// --- VARIABLES GLOBALES DE ESTADO ---
-let UNIT_BATCHES = []; 
-let BATCH_CATALOG = [];
-
 const firebaseConfig = {
   apiKey: "AIzaSyBzhNWRQZpDHoIBJrcuXy2a4EnHzEZuzVc",
   authDomain: "js1-reportes.firebaseapp.com",
