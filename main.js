@@ -5874,50 +5874,45 @@ document.getElementById('loginForm').addEventListener('submit', login);
     });
   }
 
-  $("loginForm").addEventListener("submit", async (ev) => {
-    ev.preventDefault();
-    showOverlay("Validando tus credenciales…", "Iniciando sesión");
+// 1. Importar el comando de Firebase para entrar
+import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+
+// 2. El nuevo vigilante del formulario
+$("loginForm").addEventListener("submit", async (ev) => {
+    ev.preventDefault(); // Evita que la página se recargue
+    
+    const email = $("usuario").value.trim();
+    const password = $("password").value.trim(); // Nota: En tu HTML es "password", no "pass"
+
+    if (!email || !password) {
+        showToast("Por favor, ingresa usuario y contraseña", false, "warn");
+        return;
+    }
+
+    showOverlay("Validando en Firebase…", "Iniciando sesión");
 
     try {
-      const usuario = $("usuario").value.trim();
-      const password = $("password").value.trim();
+        // Intentar entrar con Firebase
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
-      if (!usuario || !password) {
-        showToast("Por favor, ingresa usuario y contraseña", false, "warn");
-        hideOverlay();
-        return;
-      }
+        console.log("¡Acceso correcto!", user.email);
+        showToast("Sesión iniciada correctamente");
 
-      const r = await apiCall({ action: "login", usuario, password });
+        // Esta es la función que YA TIENES en tu código para mostrar la app
+        // La llamamos para que el cambio de pantalla sea igual al de antes
+        showRightColumn(true); 
 
-      if (!r || !r.ok) {
-        showToast((r && r.error) ? r.error : "No se pudo iniciar sesión", false);
-        return;
-      }
-
-      TOKEN = r.data.token;
-      saveUxValue(UX_KEYS.lastUser, usuario);
-      localStorage.setItem("JS1_TOKEN", TOKEN);
-
-      try {
-        const st = await unitStatus();
-        await hydrateSessionUi(r.data.user, st, {
-          showSuccessToast: true,
-          mustChangePassword: !!r.data.mustChange
-        });
-
-      } catch (postLoginError) {
-        console.error("Post-login error:", postLoginError);
-        showToast("Sesión iniciada, pero hubo un error al cargar algunos paneles", true, "warn");
-      }
-
-    } catch (e) {
-      console.error("Login flow error:", e);
-      showToast("Error al iniciar sesión o cargar datos iniciales", false);
+    } catch (error) {
+        console.error("Error de Firebase:", error.code);
+        let mensaje = "Usuario o contraseña incorrectos";
+        if(error.code === "auth/invalid-email") mensaje = "El formato del correo no es válido";
+        
+        showToast(mensaje, false, "bad");
     } finally {
-      hideOverlay();
+        hideOverlay();
     }
-  });
+});
 
   $("btnSaveSR").onclick = async () => {
     if (isBtnBusy("btnSaveSR")) return;
