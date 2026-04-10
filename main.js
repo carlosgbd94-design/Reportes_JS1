@@ -2,6 +2,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/fireba
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
+// === ESTADO GLOBAL DE LA APP ===
+var UNIT_BATCHES = []; 
+var BATCH_CATALOG = [];
+var USER = null;
+var TOKEN = null;
+// ===============================
+
 const firebaseConfig = {
   apiKey: "AIzaSyBzhNWRQZpDHoIBJrcuXy2a4EnHzEZuzVc",
   authDomain: "js1-reportes.firebaseapp.com",
@@ -31,24 +38,35 @@ document.addEventListener("DOMContentLoaded", () => {
             
             showOverlay("Validando en Firebase…", "Iniciando sesión");
             
-try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                const perfilUsuario = await whoami();
+            try {
+                // 1. Autenticación
+                await signInWithEmailAndPassword(auth, email, password);
                 
-                if (perfilUsuario) {
-                    // ESTO ES CLAVE: Carga los lotes en cuanto entras
-                    await loadBatchesForSession(perfilUsuario); 
+                // 2. Obtener el perfil real de Firestore
+                const perfilDoc = await whoami();
+                
+                if (perfilDoc) {
+                    // ASIGNACIÓN CRÍTICA: Guardamos en las variables globales que declaramos arriba
+                    USER = perfilDoc; 
+                    TOKEN = true; // Para que getTodayReports pase el seguro
+
+                    // 3. Cargar los lotes específicos de esta unidad/municipio a UNIT_BATCHES
+                    await loadBatchesForSession(USER); 
                     
+                    // 4. Obtener estatus de la unidad
                     const estadoApp = await unitStatus(); 
-                    await hydrateSessionUi(perfilUsuario, estadoApp, { showSuccessToast: true });
+                    
+                    // 5. Hidratar la interfaz con el objeto global USER
+                    await hydrateSessionUi(USER, estadoApp, { showSuccessToast: true });
+                    
                 } else {
-                    showToast("No se encontró perfil", false, "bad");
+                    showToast("No se encontró el perfil del usuario en Firestore", false, "bad");
                 }
+
             } catch (error) {
                 console.error("Error Firebase:", error);
                 showToast("Usuario o contraseña incorrectos", false, "bad");
             } finally {
-                // Ocultamos la pantalla de "Procesando..."
                 hideOverlay();
             }
         });
