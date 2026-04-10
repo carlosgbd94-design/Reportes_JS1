@@ -16,11 +16,6 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// A PARTIR DE AQUÍ COMIENZA TU CÓDIGO ORIGINAL INTACTO
-const $ = (id) => document.getElementById(id);
-const overlay = $("overlay");
-const overlayMsg = $("overlayMsg");
-
   const $ = (id) => document.getElementById(id);
   const overlay = $("overlay");
   const overlayMsg = $("overlayMsg");
