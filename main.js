@@ -5835,8 +5835,7 @@ const auth = getAuth(app);
     });
   }
 
-// === ÚNICO BLOQUE DE LOGIN SEGURO ===
-const formLogin = document.getElementById("loginForm");
+var formLogin = document.getElementById("loginForm");
 if (formLogin) {
     formLogin.addEventListener("submit", async (ev) => {
         ev.preventDefault();
@@ -5859,7 +5858,6 @@ if (formLogin) {
         }
     });
 }
-// =====================================
 
   $("btnSaveSR").onclick = async () => {
     if (isBtnBusy("btnSaveSR")) return;
