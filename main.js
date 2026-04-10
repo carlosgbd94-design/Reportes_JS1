@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -4397,40 +4397,53 @@ async function whoami() {
     return r.data;
   }
 
-  async function getTodayReports(fecha = "", force = false) {
-    if (!TOKEN) return null;
+async function getTodayReports(fecha = "", force = false) {
+  // SEGURO ANTI-COLAPSOS: Si el usuario aún no carga, no intenta buscar
+  if (!TOKEN || !USER) return null; 
 
-    const safeFecha = String(fecha || todayYmdLocal()).trim();
-    const cacheKey = buildCacheKey("TODAY_REPORTS", safeFecha);
+  const safeFecha = String(fecha || todayYmdLocal()).trim();
+  const cacheKey = buildCacheKey("TODAY_REPORTS", safeFecha);
 
-    const fetchToday = async () => {
-      const r = await apiCall({
-        action: "getTodayReports",
-        token: TOKEN,
-        fecha: safeFecha
-      });
+  const fetchToday = async () => {
+    try {
+      let srData = null;
+      let consData = null;
 
-      if (!r || !r.ok) return null;
-      return r.data || null;
-    };
+      // 1. Leemos Existencia de Biológicos (SR) de Firestore
+      const srRef = doc(db, "capturas_sr", `${safeFecha}_${USER.clues}`);
+      const srSnap = await getDoc(srRef);
+      if (srSnap.exists()) {
+        srData = srSnap.data();
+      }
 
-    const data = force
-      ? await fetchToday()
-      : await getCachedOrFetch({
+      // 2. Leemos Consumibles (CONS) de Firestore
+      const consRef = doc(db, "capturas_cons", `${safeFecha}_${USER.clues}`);
+      const consSnap = await getDoc(consRef);
+      if (consSnap.exists()) {
+        consData = consSnap.data();
+      }
+
+      return { sr: srData, cons: consData };
+    } catch (e) {
+      console.error("Error al leer Firebase:", e);
+      return null;
+    }
+  };
+
+  const data = force
+    ? await fetchToday()
+    : await getCachedOrFetch({
         key: cacheKey,
         ttl: CACHE_TTL.TODAY_REPORTS,
         fetcher: fetchToday,
         shouldCache: (data) => data != null
       });
 
-    APP_STATE.todayCache = data || null;
+  APP_STATE.todayCache = data || null;
+  if (typeof TODAY_CACHE !== "undefined") TODAY_CACHE = data || null;
 
-    if (typeof TODAY_CACHE !== "undefined") {
-      TODAY_CACHE = data || null;
-    }
-
-    return data || null;
-  }
+  return data || null;
+}
 
   window.getCaptureOverview = async function (fecha, tipo, force = false) {
     if (!TOKEN) return null;
@@ -6121,123 +6134,95 @@ async function whoami() {
     }
   });
 
-  $("btnSaveSR").onclick = async () => {
-    if (isBtnBusy("btnSaveSR")) return;
-    
-    const nombre = $("nombreSR") ? $("nombreSR").value.trim() : "";
-    if (!nombre) {
-      showToast("Por favor, ingresa el nombre del responsable", false, "warn");
+$("btnSaveSR").onclick = async () => {
+  if (isBtnBusy("btnSaveSR")) return;
+
+  const nombre = $("nombreSR") ? $("nombreSR").value.trim() : "";
+  if (!nombre) {
+    showToast("Por favor, ingresa el nombre del responsable", false, "warn");
+    return;
+  }
+
+  const items = [];
+  let hasInvalid = false;
+  document.querySelectorAll("#srCaptureTbody tr").forEach(tr => {
+    const bio = tr.querySelector(".sr-bio-select").value;
+    const lote = tr.querySelector(".sr-lote-select").value;
+    const cantidad = tr.querySelector(".sr-cantidad-input").value;
+    const recepcion = tr.querySelector(".sr-recepcion-input").value;
+
+    if (!bio && !lote && !cantidad) return; // Fila vacía, ignorar
+
+    if (!bio || !lote || cantidad === "" || Number(cantidad) < 0) {
+      hasInvalid = true;
+      tr.style.background = "rgba(239, 68, 68, 0.1)";
+    } else {
+      tr.style.background = "";
+      items.push({
+        biologico: bio,
+        lote: lote,
+        cantidad: Number(cantidad),
+        fecha_recepcion: recepcion
+      });
+    }
+  });
+
+  if (hasInvalid) {
+    showToast("Corrige las filas en rojo (biológico, lote y cantidad)", false, "warn");
+    return;
+  }
+
+  if (items.length === 0) {
+    showToast("Captura al menos un biológico con lote y cantidad", false, "warn");
+    return;
+  }
+
+  setBtnBusy("btnSaveSR", true, EDIT_SR ? "Actualizando…" : "Guardando…");
+  showOverlay(
+    EDIT_SR ? "Actualizando existencia en Firebase…" : "Guardando existencia en Firebase…",
+    EDIT_SR ? "Actualizando" : "Guardando"
+  );
+
+  try {
+    saveUxValue(UX_KEYS.existenciaName, nombre);
+
+    if (HAS_TODAY_SR && !EDIT_SR) {
+      showToast("Ya existe una captura de hoy. Usa el botón Editar.", false, "warn");
       return;
     }
 
-    // Colectar items de la tabla dinámica
-    const items = [];
-    let hasInvalid = false;
-    document.querySelectorAll("#srCaptureTbody tr").forEach(tr => {
-      const bio = tr.querySelector(".sr-bio-select").value;
-      const lote = tr.querySelector(".sr-lote-select").value;
-      const cantidad = tr.querySelector(".sr-cantidad-input").value;
-      const recepcion = tr.querySelector(".sr-recepcion-input").value;
+    // === GUARDADO EN FIRESTORE ===
+    const docId = `${todayYmdLocal()}_${USER.clues}`;
+    const docRef = doc(db, "capturas_sr", docId);
 
-      if (!bio && !lote && !cantidad) return; // Fila vacía, ignorar
-
-      if (!bio || !lote || cantidad === "" || Number(cantidad) < 0) {
-        hasInvalid = true;
-        tr.style.background = "rgba(239, 68, 68, 0.1)";
-      } else {
-        tr.style.background = "";
-        items.push({
-          biologico: bio,
-          lote: lote,
-          cantidad: Number(cantidad),
-          fecha_recepcion: recepcion
-        });
-      }
+    await setDoc(docRef, {
+      clues: USER.clues,
+      unidad: USER.unidad,
+      municipio: USER.municipio,
+      fecha: todayYmdLocal(),
+      capturado_por: nombre,
+      items: items,
+      editado: EDIT_SR ? "SI" : "NO",
+      timestamp: serverTimestamp()
     });
 
-    if (hasInvalid) {
-      showToast("Corrige las filas marcadas en rojo (biológico, lote y cantidad son obligatorios)", false, "warn");
-      return;
-    }
+    muteRealtimeFor(12000);
+    showToast(EDIT_SR ? "Existencia actualizada en Firebase" : "Existencia guardada en Firebase", true, "good");
+    pushLiveEvent("Existencia de biológicos", EDIT_SR ? "Actualizada correctamente." : "Guardada correctamente.", "good");
 
-    if (items.length === 0) {
-      showToast("Captura al menos un biológico con lote y cantidad", false, "warn");
-      return;
-    }
+    flashElement("formSR");
+    setSavedStamp();
 
-    setBtnBusy("btnSaveSR", true, EDIT_SR ? "Actualizando…" : "Guardando…");
-    showOverlay(
-      EDIT_SR ? "Estamos actualizando la existencia de biológicos…" : "Estamos guardando la existencia de biológicos…",
-      EDIT_SR ? "Actualizando existencia" : "Guardando existencia"
-    );
+    await refreshAfterMutation({ touchToday: true, touchCaptureSummary: true, touchHistory: true });
 
-    try {
-      saveUxValue(UX_KEYS.existenciaName, nombre);
-
-      if (HAS_TODAY_SR && !EDIT_SR) {
-        showToast("Ya existe una captura de hoy. Usa el botón Editar existencia de hoy.", false, "warn");
-        return;
-      }
-
-      const action = EDIT_SR ? "updateSR" : "saveSR";
-
-      const r = await apiCall({
-        action,
-        token: TOKEN,
-        nombre,
-        items: items
-      });
-
-      if (!r || !r.ok) {
-        const msg = (r && r.error) ? r.error : "No se pudo guardar";
-
-        if (msg.toLowerCase().includes("ya existe una captura") || msg.toLowerCase().includes("editar")) {
-          invalidateTodayCache();
-          const today = await getTodayReports(todayYmdLocal(), true);
-          hydrateTodayForms(today);
-          showToast(msg, false, "warn");
-          return;
-        }
-
-        showToast(msg, false);
-        return;
-      }
-
-      muteRealtimeFor(12000);
-
-      showToast(
-        EDIT_SR
-          ? "Existencia de biológicos actualizada correctamente"
-          : "Existencia de biológicos guardada correctamente",
-        true,
-        "good"
-      );
-
-      pushLiveEvent(
-        "Existencia de biológicos",
-        EDIT_SR
-          ? "La existencia de biológicos fue actualizada correctamente."
-          : "La existencia de biológicos fue guardada correctamente.",
-        "good"
-      );
-
-      flashElement("formSR");
-      setSavedStamp();
-
-      await refreshAfterMutation({
-        touchToday: true,
-        touchCaptureSummary: true,
-        touchHistory: true
-      });
-
-    } catch (e) {
-      console.error("btnSaveSR error:", e);
-      showToast("Error al guardar", false);
-    } finally {
-      setBtnBusy("btnSaveSR", false);
-      hideOverlay();
-    }
-  };
+  } catch (e) {
+    console.error("btnSaveSR error:", e);
+    showToast("Error de conexión al guardar", false);
+  } finally {
+    setBtnBusy("btnSaveSR", false);
+    hideOverlay();
+  }
+};
 
   $("btnExportSelectAll").onclick = () => {
     document.querySelectorAll(".exportMunicipioChk").forEach(chk => chk.checked = true);
