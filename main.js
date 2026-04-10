@@ -1,55 +1,11 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyBzhNWRQZpDHoIBJrcuXy2a4EnHzEZuzVc",
-    authDomain: "js1-reportes.firebaseapp.com",
-    projectId: "js1-reportes",
-    storageBucket: "js1-reportes.firebasestorage.app",
-    messagingSenderId: "398603830899",
-    appId: "1:398603830899:web:92e916daec0cead2324c06"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-// --- LÓGICA DE LOGIN FIREBASE ---
-document.addEventListener("DOMContentLoaded", () => {
-    const formLogin = document.getElementById("loginForm");
-    if (formLogin) {
-        formLogin.addEventListener("submit", async (ev) => {
-            ev.preventDefault();
-            const email = document.getElementById("usuario").value.trim();
-            const password = document.getElementById("password").value.trim();
-
-            if (!email || !password) {
-                showToast("Por favor, ingresa usuario y contraseña", false, "warn");
-                return;
-            }
-            showOverlay("Validando en Firebase…", "Iniciando sesión");
-            try {
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                showToast("Sesión iniciada correctamente");
-                showRightColumn(true); 
-            } catch (error) {
-                showToast("Usuario o contraseña incorrectos", false, "bad");
-            } finally {
-                hideOverlay();
-            }
-        });
-    }
-});
-// --------------------------------
-
 const $ = (id) => document.getElementById(id);
-const overlay = $("overlay");
-const overlayMsg = $("overlayMsg");
-const toast = $("toast");
-const toastMsg = $("toastMsg");
-const overlayTitle = $("overlayTitle");
-let TOAST_TIMER = null;
+  const overlay = $("overlay");
+  const overlayMsg = $("overlayMsg");
+  const toast = $("toast");
+  const toastMsg = $("toastMsg");
+
+  const overlayTitle = $("overlayTitle");
+  let TOAST_TIMER = null;
 
   function showOverlay(msg = "Cargando…", title = "Procesando") {
     if (overlayTitle) overlayTitle.textContent = title;
@@ -1409,7 +1365,7 @@ let TOAST_TIMER = null;
 
     btn.appendChild(icon);
 
-     // Si el ID incluye "TopNotif", NO agregamos texto, solo usamos el "title" como tooltip
+    // Si el ID incluye "TopNotif", NO agregamos texto, solo usamos el "title" como tooltip
     if (buttonId.includes("TopNotif")) {
       btn.title = labelText;
     } else {
@@ -1518,11 +1474,11 @@ let TOAST_TIMER = null;
     const btnNotifRefresh = $("btnNotifRefresh");
     const btnTopNotifRefresh = $("btnTopNotifRefresh");
 
-     Side panel toolbar creation (stays dynamic)
+    // Side panel toolbar creation (stays dynamic)
     ensureNotifActionButton(btnNotifOnlyUnread, "btnNotifMarkVisibleRead", "Marcar visibles");
     ensureNotifSearchBox(btnNotifRefresh, "notifSearchBox", "notifSearchInput", "btnNotifClearSearch");
 
-     Top panel - Solo vinculamos búsqueda, no botones (ya están en Index.html)
+    // Top panel - Solo vinculamos búsqueda, no botones (ya están en Index.html)
     ensureNotifSearchBox(btnTopNotifRefresh, "topNotifSearchBox", "topNotifSearchInput", "btnTopNotifClearSearch");
 
     const notifSearchInput = $("notifSearchInput");
@@ -1574,7 +1530,7 @@ let TOAST_TIMER = null;
 
     btnTopNotifClose?.addEventListener("click", closeTopNotifDropdown);
 
-     Legacy/Main interactions
+    // Legacy/Main interactions
     $("btnSendNotification")?.addEventListener("click", sendNotificationFlow);
 
     const toggleTopDropdown = (ev) => {
@@ -1596,21 +1552,21 @@ let TOAST_TIMER = null;
     syncNotifSearchInputs();
     refreshNotifSearchUi();
 
-     Global listeners
+    // Global listeners
     document.addEventListener("click", (ev) => {
-       Ripple
+      // Ripple
       const btn = ev.target.closest(".md-btn, .btn, .ghostBtn, .miniBtn");
       if (btn) createRipple(ev);
 
-       Group Toggle
+      // Group Toggle
       const groupBtn = ev.target.closest("[data-notif-group-toggle]");
       if (groupBtn) {
         const key = groupBtn.getAttribute("data-notif-group-toggle");
         if (key) toggleNotifGroup(key);
-        return;  IMPORTANTE: No seguir al cierre por "clic fuera" ya que el DOM cambió
+        return; // IMPORTANTE: No seguir al cierre por "clic fuera" ya que el DOM cambió
       }
 
-       Close dropdown on outside click
+      // Close dropdown on outside click
       const refs = getTopNotifDropdownRefs();
       if (refs.box && refs.box.style.display === "block") {
         if (!refs.box.contains(ev.target) && !refs.btn.contains(ev.target) && !$("bNotif")?.contains(ev.target)) {
@@ -1877,7 +1833,7 @@ let TOAST_TIMER = null;
     if (scope === "USUARIO") {
       users = getNotifUsersByFilters({ municipio, clues });
 
-       Priorizar usuarios MUNICIPAL si el remitente es JURISDICCIONAL
+      // Priorizar usuarios MUNICIPAL si el remitente es JURISDICCIONAL
       if (USER?.rol === "JURISDICCIONAL") {
         users.sort((a, b) => {
           const isMunicipalA = (a.rol === "MUNICIPAL") ? 0 : 1;
@@ -1890,7 +1846,7 @@ let TOAST_TIMER = null;
     } else if (scope === "MUNICIPIO") {
       users = getNotifUsersByFilters({ municipio });
 
-       Si es Jurisdiccional y alcance Municipio, solo mostrar usuarios MUNICIPAL
+      // Si es Jurisdiccional y alcance Municipio, solo mostrar usuarios MUNICIPAL
       if (USER?.rol === "JURISDICCIONAL") {
         users = users.filter(x => x.rol === "MUNICIPAL");
       }
@@ -1934,17 +1890,17 @@ let TOAST_TIMER = null;
     const cluesSel = $("notifTargetClues");
     const scopeSel = $("notifTargetScope");
 
-     Restricciones perfil JURISDICCIONAL
+    // Restricciones perfil JURISDICCIONAL
     if (USER?.rol === "JURISDICCIONAL" && scopeSel) {
-       1. Ocultar CLUES (unidades individuales)
+      // 1. Ocultar CLUES (unidades individuales)
       const optClues = scopeSel.querySelector('option[value="CLUES"]');
       if (optClues) optClues.style.display = "none";
 
-       2. Ocultar ALL_MY_UNITS (envío masivo a todas las unidades)
+      // 2. Ocultar ALL_MY_UNITS (envío masivo a todas las unidades)
       const optAll = scopeSel.querySelector('option[value="ALL_MY_UNITS"]');
       if (optAll) optAll.style.display = "none";
 
-       Redirigir si está en una opción no permitida
+      // Redirigir si está en una opción no permitida
       if (scope === "CLUES" || scope === "ALL_MY_UNITS") {
         scopeSel.value = "MUNICIPIO";
         return refreshNotifScopeUi();
@@ -2596,10 +2552,10 @@ let TOAST_TIMER = null;
       return;
     }
 
-     Primero cerramos el modal para que no estorbe la pantalla de carga global
+    // Primero cerramos el modal para que no estorbe la pantalla de carga global
     closeForgotModal();
 
-     Mostramos la pantalla de carga global del sistema
+    // Mostramos la pantalla de carga global del sistema
     showOverlay("Estamos enviando el enlace de recuperación…", "Recuperando acceso");
 
     try {
@@ -2642,22 +2598,22 @@ let TOAST_TIMER = null;
     });
   }
 
-   NUEVO GESTOR DE ESTADO
+  // NUEVO GESTOR DE ESTADO
   const StateManager = {
     _state: { notifications: [], pinol: [], history: [] },
     setNotifications: function (arr) {
       this._state.notifications = Array.isArray(arr) ? [...arr] : [];
-       Opción para Despachar Eventos de DOM si otras partes escuchan.
+      // Opción para Despachar Eventos de DOM si otras partes escuchan.
     },
     getNotifications: function () { return [...this._state.notifications]; }
   };
 
-   NUEVO WRAPPER UI (Ejecutor Asíncrono Centralizado)
+  // NUEVO WRAPPER UI (Ejecutor Asíncrono Centralizado)
   async function executeAction(actionName, payload, loadingMsg, successMsg = null) {
     try {
       if (loadingMsg) showOverlay(loadingMsg);
 
-       Invocamos el puente asíncrono hacia GAS
+      // Invocamos el puente asíncrono hacia GAS
       const res = await apiCall(actionName, payload);
 
       if (!res || !res.ok) {
@@ -2706,11 +2662,11 @@ let TOAST_TIMER = null;
   const CLIENT_CACHE_PREFIX = "JS1_CACHE::";
 
   const CACHE_TTL = {
-    TODAY_REPORTS: 1000 * 60 * 1,         1 min
-    CAPTURE_OVERVIEW: 1000 * 60 * 2,      2 min
-    HISTORY_METRICS: 1000 * 60 * 3,       3 min
-    UNIT_CATALOG: 1000 * 60 * 30,         30 min
-    PINOL_LIST: 1000 * 30                 30 seg
+    TODAY_REPORTS: 1000 * 60 * 1,        // 1 min
+    CAPTURE_OVERVIEW: 1000 * 60 * 2,     // 2 min
+    HISTORY_METRICS: 1000 * 60 * 3,      // 3 min
+    UNIT_CATALOG: 1000 * 60 * 30,        // 30 min
+    PINOL_LIST: 1000 * 30                // 30 seg
   };
 
   function buildCacheKey(scope, extra = "") {
@@ -3066,8 +3022,8 @@ let TOAST_TIMER = null;
     const assetA = String(`<?= LOGO_A ?>` || "").trim();
     const assetB = String(`<?= LOGO_B ?>` || "").trim();
 
-    const fallbackA = "https:raw.githubusercontent.com/carlosgbd94-design/Logos/main/Seseq_vertical_2025.png";
-    const fallbackB = "https:raw.githubusercontent.com/carlosgbd94-design/Logos/main/logo_Q.png";
+    const fallbackA = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/Seseq_vertical_2025.png";
+    const fallbackB = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/logo_Q.png";
 
     const safeA = assetA.startsWith("data:image/") ? assetA : fallbackA;
     const safeB = assetB.startsWith("data:image/") ? assetB : fallbackB;
@@ -3469,6 +3425,76 @@ let TOAST_TIMER = null;
   // ADMINISTRACIÓN DE LOTES
   // ==========================================
 
+  function parseInputToMmmAa(str) {
+    if (!str) return "";
+    const s = str.trim().toUpperCase();
+    
+    // Si ya tiene el formato correcto ENE-25
+    if (/^[A-Z]{3}-\d{2}$/.test(s)) return s;
+
+    // Intentar detectar formatos comunes: 28/06/26, 28-06-26, 2026-06-28
+    let d = null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+      d = new Date(s + "T00:00:00");
+    } else {
+      const parts = s.split(/[\/\-]/);
+      if (parts.length === 3) {
+        // Asumimos DD, MM, AA o AAAA
+        let day, month, year;
+        if (parts[0].length === 4) { // YYYY/MM/DD
+           year = parseInt(parts[0]);
+           month = parseInt(parts[1]) - 1;
+           day = parseInt(parts[2]);
+        } else { // DD/MM/YY o DD/MM/YYYY
+           day = parseInt(parts[0]);
+           month = parseInt(parts[1]) - 1;
+           year = parseInt(parts[2]);
+           if (year < 100) year += 2000;
+        }
+        d = new Date(year, month, day);
+      }
+    }
+
+    if (d && !isNaN(d.getTime())) {
+      const months = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+      const m = months[d.getMonth()];
+      const y = String(d.getFullYear()).slice(-2);
+      return `${m}-${y}`;
+    }
+
+    // Soporte para entradas cortas como 03/27 o 3-27
+    const partsShort = s.split(/[\/\-]/);
+    if (partsShort.length === 2) {
+      const mIdx = parseInt(partsShort[0]) - 1;
+      let yStr = partsShort[1];
+      if (yStr.length === 4) yStr = yStr.slice(-2);
+      const months = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+      if (mIdx >= 0 && mIdx < 12) {
+        return `${months[mIdx]}-${yStr}`;
+      }
+    }
+
+    return s; // Devolver original si no se pudo parsear
+  }
+
+  // Auto-uppercase para Lote y Caducidad
+  document.addEventListener("input", (e) => {
+    if (e.target.id === "loteTxt" || e.target.id === "loteCad") {
+      e.target.value = e.target.value.toUpperCase();
+    }
+  });
+
+  // Auto-format para Caducidad
+  document.addEventListener("blur", (e) => {
+    if (e.target.id === "loteCad") {
+      const val = e.target.value;
+      if (val) {
+        e.target.value = parseInputToMmmAa(val);
+      }
+    }
+  }, true);
+
+
   async function activateLotesAdmin() {
     showOverlay("Cargando catálogo de lotes…", "Lotes");
     try {
@@ -3522,21 +3548,35 @@ let TOAST_TIMER = null;
     `).join("");
   }
 
+  // ELIMINADO: El listener de btnAddSRRow se movió a la sección de inicialización para evitar duplicados.
+
   $("btnAddLoteRow")?.addEventListener("click", () => {
     const biologico = $("loteBio").value;
-    const lote = $("loteTxt").value.trim().toUpperCase();
-    const caducidad = $("loteCad").value.trim().toUpperCase();
+    const rawLote = $("loteTxt").value.trim().toUpperCase();
+    const rawCad = $("loteCad").value.trim().toUpperCase();
+    
+    // Forzar formateo final por si no se disparó el blur
+    const lote = rawLote;
+    const caducidad = parseInputToMmmAa(rawCad);
+    
     const fecha_recepcion = $("loteRec").value;
-    const municipio = $("loteMuni").value.trim().toUpperCase() || "*";
+    const municipio = $("loteMuni").value; // Ahora es un SELECT
 
     if (!lote || !caducidad) {
       showToast("Lote y caducidad son obligatorios", false, "warn");
       return;
     }
 
-    // Validar formato caducidad MMM-AA
+    // Validar formato caducidad MMM-AA despues del parseo
     if (!/^[A-Z]{3}-\d{2}$/.test(caducidad)) {
       showToast("Formato de caducidad inválido. Usa ENE-25, JUL-27, etc.", false, "warn");
+      return;
+    }
+
+    // VALIDACIÓN DE DUPLICADOS
+    const exists = BATCH_CATALOG.find(x => x.biologico === biologico && x.lote === lote);
+    if (exists) {
+      showToast(`El lote ${lote} ya existe para ${biologico}`, false, "warn");
       return;
     }
 
@@ -3547,6 +3587,7 @@ let TOAST_TIMER = null;
     $("loteTxt").value = "";
     $("loteCad").value = "";
     $("loteRec").value = "";
+    $("loteTxt").focus();
   });
 
   function deleteLoteRowAdmin(idx) {
@@ -3700,8 +3741,31 @@ let TOAST_TIMER = null;
 
     const cad = opt.dataset.cad;
     const rec = opt.dataset.rec || "";
-    cadCell.textContent = cad;
-    cadCell.className = "sr-cad-cell " + getShelfLifeClass(cad);
+    
+    // Limpiar contenido previo por completo
+    cadCell.innerHTML = "";
+    cadCell.textContent = "";
+
+    // Blindaje: si por alguna razón llega un formato de fecha largo, intentar formatear
+    let displayCad = cad || "—";
+    if (cad && cad.includes(" ") && cad.length > 15) {
+      const d = new Date(cad);
+      if (!isNaN(d.getTime())) {
+        const months = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+        displayCad = `${months[d.getMonth()]}-${String(d.getFullYear()).slice(-2)}`;
+      }
+    }
+
+    if (!cad) {
+      cadCell.textContent = "—";
+      cadCell.className = "sr-cad-cell";
+    } else {
+      const span = document.createElement("span");
+      span.className = getShelfLifeClass(displayCad);
+      span.textContent = displayCad;
+      cadCell.appendChild(span);
+      cadCell.className = "sr-cad-cell"; // El TD mantiene su clase, el SPAN lleva el color
+    }
 
     const recInput = tr.querySelector(".sr-recepcion-input");
     if (recInput && !recInput.value) {
@@ -5861,29 +5925,50 @@ let TOAST_TIMER = null;
     });
   }
 
-var formLogin = document.getElementById("loginForm");
-if (formLogin) {
-    formLogin.addEventListener("submit", async (ev) => {
-        ev.preventDefault();
-        const email = document.getElementById("usuario").value.trim();
-        const password = document.getElementById("password").value.trim();
+  $("loginForm").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    showOverlay("Validando tus credenciales…", "Iniciando sesión");
 
-        if (!email || !password) {
-            showToast("Por favor, ingresa usuario y contraseña", false, "warn");
-            return;
-        }
-        showOverlay("Validando en Firebase…", "Iniciando sesión");
-        try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            showToast("Sesión iniciada correctamente");
-            showRightColumn(true); 
-        } catch (error) {
-            showToast("Usuario o contraseña incorrectos", false, "bad");
-        } finally {
-            hideOverlay();
-        }
-    });
-}
+    try {
+      const usuario = $("usuario").value.trim();
+      const password = $("password").value.trim();
+
+      if (!usuario || !password) {
+        showToast("Por favor, ingresa usuario y contraseña", false, "warn");
+        hideOverlay();
+        return;
+      }
+
+      const r = await apiCall({ action: "login", usuario, password });
+
+      if (!r || !r.ok) {
+        showToast((r && r.error) ? r.error : "No se pudo iniciar sesión", false);
+        return;
+      }
+
+      TOKEN = r.data.token;
+      saveUxValue(UX_KEYS.lastUser, usuario);
+      localStorage.setItem("JS1_TOKEN", TOKEN);
+
+      try {
+        const st = await unitStatus();
+        await hydrateSessionUi(r.data.user, st, {
+          showSuccessToast: true,
+          mustChangePassword: !!r.data.mustChange
+        });
+
+      } catch (postLoginError) {
+        console.error("Post-login error:", postLoginError);
+        showToast("Sesión iniciada, pero hubo un error al cargar algunos paneles", true, "warn");
+      }
+
+    } catch (e) {
+      console.error("Login flow error:", e);
+      showToast("Error al iniciar sesión o cargar datos iniciales", false);
+    } finally {
+      hideOverlay();
+    }
+  });
 
   $("btnSaveSR").onclick = async () => {
     if (isBtnBusy("btnSaveSR")) return;
