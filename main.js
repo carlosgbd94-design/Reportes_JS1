@@ -1,7 +1,9 @@
+// 1. Importaciones (Consolidadas en una sola línea por módulo)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
+// 2. Configuración
 const firebaseConfig = {
     apiKey: "AIzaSyBzhNWRQZpDHoIBJrcuXy2a4EnHzEZuzVc",
     authDomain: "js1-reportes.firebaseapp.com",
@@ -11,15 +13,19 @@ const firebaseConfig = {
     appId: "1:398603830899:web:92e916daec0cead2324c06"
 };
 
+// 3. Inicialización
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// Esta función es la que llama tu botón "Entrar" en el HTML
-async function login() {
-    // Obtenemos los valores de los IDs que ya tienes en tu HTML
+// 4. Función de Login (Adaptada a tu index.html)
+async function login(e) {
+    // Si lo llamas desde un formulario, evitamos que la página se recargue
+    if (e) e.preventDefault();
+
+    // IDs corregidos según tu index.html
     const email = document.getElementById('usuario').value; 
-    const password = document.getElementById('pass').value;
+    const password = document.getElementById('password').value; // Antes decía 'pass'
 
     if (!email || !password) {
         alert("Por favor, llena ambos campos");
@@ -30,10 +36,11 @@ async function login() {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         console.log("Acceso concedido:", userCredential.user.email);
         
-        // Aquí llamamos a la función que ya tienes para mostrar el panel
-        // (Asegúrate de que 'showPanel' o como se llame en tu código esté disponible)
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('main-panel').style.display = 'block'; 
+        // Cambio de pantalla corregido según los IDs de tu HTML
+        // Ocultamos el cuadro de login
+        document.querySelector('.loginWrap').style.display = 'none';
+        // Mostramos el panel de la aplicación
+        document.getElementById('rightColumn').style.display = 'block'; 
         
     } catch (error) {
         console.error("Error de login:", error.code);
@@ -41,8 +48,12 @@ async function login() {
     }
 }
 
-// IMPORTANTE: Para que el botón onclick="login()" del HTML funcione con módulos
+// 5. Exponer la función al HTML
 window.login = login;
+
+// 6. Listener para el formulario (Opcional pero recomendado)
+// Esto hace que el botón "Entrar" funcione automáticamente al dar Enter
+document.getElementById('loginForm').addEventListener('submit', login);
 
   const $ = (id) => document.getElementById(id);
   const overlay = $("overlay");
