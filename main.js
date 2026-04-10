@@ -3,16 +3,22 @@ import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBzhNWRQZpDHoIBJrcuXy2a4EnHzEZuzVc",
-  authDomain: "js1-reportes.firebaseapp.com",
-  projectId: "js1-reportes",
-  storageBucket: "js1-reportes.firebasestorage.app",
-  messagingSenderId: "398603830899",
-  appId: "1:398603830899:web:92e916daec0cead2324c06"
+    apiKey: "AIzaSyBzhNWRQZpDHoIBJrcuXy2a4EnHzEZuzVc",
+    authDomain: "js1-reportes.firebaseapp.com",
+    projectId: "js1-reportes",
+    storageBucket: "js1-reportes.firebasestorage.app",
+    messagingSenderId: "398603830899",
+    appId: "1:398603830899:web:92e916daec0cead2324c06"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+
+// Variables Globales (Asegúrate de que NO estén repetidas abajo)
+var USER = null;
+var TOKEN = null;
+var UNIT_BATCHES = [];
 
 // --- LÓGICA DE LOGIN FIREBASE ---
 document.addEventListener("DOMContentLoaded", () => {
@@ -20,46 +26,30 @@ document.addEventListener("DOMContentLoaded", () => {
     if (formLogin) {
         formLogin.addEventListener("submit", async (ev) => {
             ev.preventDefault();
-            
             const email = document.getElementById("usuario").value.trim();
             const password = document.getElementById("password").value.trim();
 
             if (!email || !password) {
-                showToast("Por favor, ingresa usuario y contraseña", false, "warn");
+                showToast("Ingresa credenciales", false, "warn");
                 return;
             }
-            
-            showOverlay("Validando en Firebase…", "Iniciando sesión");
-            
+
+            showOverlay("Iniciando sesión...", "Firebase");
+
             try {
-                // 1. Autenticación
                 await signInWithEmailAndPassword(auth, email, password);
-                
-                // 2. Obtener el perfil
-                const perfilDoc = await whoami();
-                
-                if (perfilDoc) {
-                    // ASIGNACIÓN GLOBAL (Sin 'var' ni 'let' para forzar que sea global si no se declaró antes)
-                    USER = perfilDoc; 
+                const perfil = await whoami();
+                if (perfil) {
+                    USER = perfil;
                     TOKEN = true;
-
-                    // 3. Intentar cargar lotes (con seguro por si la función falla)
-                    try {
-                        await loadBatchesForSession(USER);
-                    } catch (batchErr) {
-                        console.warn("Error no fatal en lotes:", batchErr);
-                    }
+                    // Intentamos cargar lotes pero si falla no bloqueamos el login
+                    try { await loadBatchesForSession(USER); } catch(e){ console.error(e); }
                     
-                    // 4. Estatus y UI
-                    const estadoApp = await unitStatus(); 
-                    await hydrateSessionUi(USER, estadoApp, { showSuccessToast: true });
-                    
-                } else {
-                    showToast("No se encontró el perfil en Firestore", false, "bad");
+                    const estado = await unitStatus();
+                    await hydrateSessionUi(USER, estado, { showSuccessToast: true });
                 }
-
             } catch (error) {
-                console.error("Error Login:", error);
+                console.error("Error en login:", error);
                 showToast("Usuario o contraseña incorrectos", false, "bad");
             } finally {
                 hideOverlay();
