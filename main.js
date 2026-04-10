@@ -40,7 +40,7 @@ try {
                 const perfilUsuario = await whoami();
                 
                 if (perfilUsuario) {
-                    // ESTO RELLENA LA VARIABLE UNIT_BATCHES
+                    // ESTO ES CLAVE: Carga los lotes en cuanto entras
                     await loadBatchesForSession(perfilUsuario); 
                     
                     const estadoApp = await unitStatus(); 
