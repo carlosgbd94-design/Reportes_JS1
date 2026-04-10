@@ -1,4 +1,3 @@
-// 1. CONEXIÓN A FIREBASE (ÚNICAMENTE IMPORTS Y CONFIGURACIÓN)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
@@ -16,14 +15,41 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-  const $ = (id) => document.getElementById(id);
-  const overlay = $("overlay");
-  const overlayMsg = $("overlayMsg");
-  const toast = $("toast");
-  const toastMsg = $("toastMsg");
+// --- LÓGICA DE LOGIN FIREBASE ---
+document.addEventListener("DOMContentLoaded", () => {
+    const formLogin = document.getElementById("loginForm");
+    if (formLogin) {
+        formLogin.addEventListener("submit", async (ev) => {
+            ev.preventDefault();
+            const email = document.getElementById("usuario").value.trim();
+            const password = document.getElementById("password").value.trim();
 
-  const overlayTitle = $("overlayTitle");
-  let TOAST_TIMER = null;
+            if (!email || !password) {
+                showToast("Por favor, ingresa usuario y contraseña", false, "warn");
+                return;
+            }
+            showOverlay("Validando en Firebase…", "Iniciando sesión");
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                showToast("Sesión iniciada correctamente");
+                showRightColumn(true); 
+            } catch (error) {
+                showToast("Usuario o contraseña incorrectos", false, "bad");
+            } finally {
+                hideOverlay();
+            }
+        });
+    }
+});
+// --------------------------------
+
+const $ = (id) => document.getElementById(id);
+const overlay = $("overlay");
+const overlayMsg = $("overlayMsg");
+const toast = $("toast");
+const toastMsg = $("toastMsg");
+const overlayTitle = $("overlayTitle");
+let TOAST_TIMER = null;
 
   function showOverlay(msg = "Cargando…", title = "Procesando") {
     if (overlayTitle) overlayTitle.textContent = title;
