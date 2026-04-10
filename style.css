@@ -1690,19 +1690,19 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
 
 .summaryTable {
   width: 100%;
-  min-width: 700px;
+  min-width: 0; /* Eliminado 800px para quitar scrollbar */
   border-collapse: collapse;
-  /* flat dashboard look */
+  table-layout: fixed; /* Forzar que las columnas respeten el % */
 }
 
 .summaryTable thead th {
   position: sticky;
   top: 0;
   z-index: 4;
-  padding: 10px 12px;
+  padding: 12px 14px;
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: .05em;
+  letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--muted);
   background: var(--card-2);
@@ -1711,13 +1711,28 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   text-align: left;
 }
 
+/* Alineación específica para columnas de datos en captura */
+#srCaptureTable th:nth-child(1) { width: 25%; } /* Biológico */
+#srCaptureTable th:nth-child(2) { width: 25%; } /* Lote */
+#srCaptureTable th:nth-child(3) { width: 15%; text-align: center; } /* Caducidad */
+#srCaptureTable th:nth-child(4) { width: 15%; text-align: center; } /* Recepción */
+#srCaptureTable th:nth-child(5) { width: 15%; text-align: center; } /* Cantidad */
+#srCaptureTable th:nth-child(6) { width: 5%; }  /* Acciones */
+
+#srCaptureTable td:nth-child(3),
+#srCaptureTable td:nth-child(4),
+#srCaptureTable td:nth-child(5) {
+  text-align: center;
+}
+
 .summaryTable tbody td {
-  padding: 10px 12px;
-  font-size: 13px;
+  padding: 12px 14px;
+  font-size: 14px;
   color: var(--text);
   border-bottom: 1px solid var(--line);
   background: transparent;
   white-space: nowrap;
+  vertical-align: middle; /* Asegurar centrado vertical de inputs y badges */
 }
 
 .summaryTable tbody tr:hover td {
@@ -1737,8 +1752,12 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   color: #065f46 !important;
   font-weight: 700;
   border-radius: 6px;
-  padding: 2px 6px;
-  display: inline-block;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
 .shelf-life-warn {
@@ -1746,8 +1765,12 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   color: #92400e !important;
   font-weight: 700;
   border-radius: 6px;
-  padding: 2px 6px;
-  display: inline-block;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
 .shelf-life-danger {
@@ -1755,8 +1778,12 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   color: #991b1b !important;
   font-weight: 700;
   border-radius: 6px;
-  padding: 2px 6px;
-  display: inline-block;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  line-height: 1;
+  text-transform: uppercase; /* Forzar mayúsculas siempre */
   animation: pulse-danger 2s infinite;
 }
 
@@ -1765,6 +1792,41 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   50% { opacity: 0.7; }
   100% { opacity: 1; }
 }
+
+/* ===== LOGISTICS STATUS PILLS & CARDS ===== */
+.status-pill {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.status-pill.ok { background: rgba(34, 197, 94, 0.1); color: #16a34a; border: 1px solid rgba(34, 197, 94, 0.3); }
+.status-pill.warn { background: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3); }
+.status-pill.bad { background: rgba(239, 68, 68, 0.1); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+.logistics-summary {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.logistics-card {
+  flex: 1;
+  min-width: 140px;
+  background: var(--md-surface-container-low);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  box-shadow: var(--md-shadow-1);
+}
+.logistics-card .val { font-size: 20px; font-weight: 800; color: var(--md-sys-color-primary); display: block; }
+.logistics-card .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700; }
 
 .sr-row-deleted {
   text-decoration: line-through;
