@@ -19,10 +19,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const formLogin = document.getElementById("loginForm");
     if (formLogin) {
         formLogin.addEventListener("submit", async (ev) => {
-            // Esto evita que la página parpadee o se recargue al dar clic
             ev.preventDefault();
             
-            // Tomamos los valores de los inputs
             const email = document.getElementById("usuario").value.trim();
             const password = document.getElementById("password").value.trim();
 
@@ -34,18 +32,28 @@ document.addEventListener("DOMContentLoaded", () => {
             showOverlay("Validando en Firebase…", "Iniciando sesión");
             
             try {
-                // Se conecta con Firebase Auth
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                // 1. Firebase valida el correo y la contraseña
+                await signInWithEmailAndPassword(auth, email, password);
                 
-                // Si es exitoso, lanza tu función nativa
-                showToast("Sesión iniciada correctamente");
-                showRightColumn(true); 
+                // 2. Descargamos tu perfil (Rol, CLUES, Unidad) de la colección "usuarios" de Firestore
+                const perfilUsuario = await whoami();
                 
+                if (perfilUsuario) {
+                    // 3. Traemos el estatus operativo (Aún usa tu Google Script original, ¡no se rompe nada!)
+                    const estadoApp = await unitStatus(); 
+                    
+                    // 4. ¡LA MAGIA! Le pasamos los datos a tu función intacta para que arme la UI
+                    await hydrateSessionUi(perfilUsuario, estadoApp, { showSuccessToast: true });
+                } else {
+                    showToast("El usuario no tiene perfil en la base de datos", false, "bad");
+                    showRightColumn(false); // Regresa al login
+                }
+
             } catch (error) {
-                // Si falla, lanza tu alerta nativa
-                showToast("Usuario o contraseña incorrectos", false, "bad");
                 console.error("Error Firebase:", error);
+                showToast("Usuario o contraseña incorrectos", false, "bad");
             } finally {
+                // Ocultamos la pantalla de "Procesando..."
                 hideOverlay();
             }
         });
