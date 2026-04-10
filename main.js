@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs, writeBatch, deleteDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -31,24 +31,19 @@ document.addEventListener("DOMContentLoaded", () => {
             
             showOverlay("Validando en Firebase…", "Iniciando sesión");
             
-            try {
-                // 1. Firebase valida el correo y la contraseña
-                await signInWithEmailAndPassword(auth, email, password);
-                
-                // 2. Descargamos tu perfil (Rol, CLUES, Unidad) de la colección "usuarios" de Firestore
+try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
                 const perfilUsuario = await whoami();
                 
                 if (perfilUsuario) {
-                    // 3. Traemos el estatus operativo (Aún usa tu Google Script original, ¡no se rompe nada!)
-                    const estadoApp = await unitStatus(); 
+                    // ESTO ES CLAVE: Carga los lotes en cuanto entras
+                    await loadBatchesForSession(perfilUsuario); 
                     
-                    // 4. ¡LA MAGIA! Le pasamos los datos a tu función intacta para que arme la UI
+                    const estadoApp = await unitStatus(); 
                     await hydrateSessionUi(perfilUsuario, estadoApp, { showSuccessToast: true });
                 } else {
-                    showToast("El usuario no tiene perfil en la base de datos", false, "bad");
-                    showRightColumn(false); // Regresa al login
+                    showToast("No se encontró perfil", false, "bad");
                 }
-
             } catch (error) {
                 console.error("Error Firebase:", error);
                 showToast("Usuario o contraseña incorrectos", false, "bad");
