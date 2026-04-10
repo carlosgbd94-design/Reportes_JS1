@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -4359,12 +4359,28 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 120);
   }
 
-  async function whoami() {
-    if (!TOKEN) return null;
-    const r = await apiCall({ action: "whoami", token: TOKEN });
-    if (!r || !r.ok) return null;
-    return r.data;
-  }
+async function whoami() {
+    // 1. Revisamos si Firebase Auth dice que hay alguien conectado
+    const currentUser = auth.currentUser;
+    if (!currentUser) return null;
+
+    try {
+        // 2. Buscamos en la colección "usuarios" el documento que se llame igual que su correo
+        const userRef = doc(db, "usuarios", currentUser.email);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+            // 3. Si existe, devolvemos sus datos (Rol, CLUES, Unidad, etc.)
+            return userSnap.data();
+        } else {
+            console.warn("El usuario está autenticado pero no tiene perfil en Firestore");
+            return null;
+        }
+    } catch (e) {
+        console.error("Error al obtener el perfil de usuario:", e);
+        return null;
+    }
+}
 
   async function unitStatus() {
     if (!TOKEN) return null;
