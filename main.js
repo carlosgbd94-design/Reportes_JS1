@@ -1,4 +1,59 @@
-const $ = (id) => document.getElementById(id);
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBzhNWRQZpDHoIBJrcuXy2a4EnHzEZuzVc",
+  authDomain: "js1-reportes.firebaseapp.com",
+  projectId: "js1-reportes",
+  storageBucket: "js1-reportes.firebasestorage.app",
+  messagingSenderId: "398603830899",
+  appId: "1:398603830899:web:92e916daec0cead2324c06"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// --- LÓGICA DE LOGIN FIREBASE ---
+document.addEventListener("DOMContentLoaded", () => {
+    const formLogin = document.getElementById("loginForm");
+    if (formLogin) {
+        formLogin.addEventListener("submit", async (ev) => {
+            // Esto evita que la página parpadee o se recargue al dar clic
+            ev.preventDefault();
+            
+            // Tomamos los valores de los inputs
+            const email = document.getElementById("usuario").value.trim();
+            const password = document.getElementById("password").value.trim();
+
+            if (!email || !password) {
+                showToast("Por favor, ingresa usuario y contraseña", false, "warn");
+                return;
+            }
+            
+            showOverlay("Validando en Firebase…", "Iniciando sesión");
+            
+            try {
+                // Se conecta con Firebase Auth
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                
+                // Si es exitoso, lanza tu función nativa
+                showToast("Sesión iniciada correctamente");
+                showRightColumn(true); 
+                
+            } catch (error) {
+                // Si falla, lanza tu alerta nativa
+                showToast("Usuario o contraseña incorrectos", false, "bad");
+                console.error("Error Firebase:", error);
+            } finally {
+                hideOverlay();
+            }
+        });
+    }
+});
+// --------------------------------
+
+  const $ = (id) => document.getElementById(id);
   const overlay = $("overlay");
   const overlayMsg = $("overlayMsg");
   const toast = $("toast");
