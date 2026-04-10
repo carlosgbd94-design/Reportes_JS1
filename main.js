@@ -2,6 +2,10 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/fireba
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
+// --- VARIABLES GLOBALES DE ESTADO ---
+let UNIT_BATCHES = []; 
+let BATCH_CATALOG = [];
+
 const firebaseConfig = {
   apiKey: "AIzaSyBzhNWRQZpDHoIBJrcuXy2a4EnHzEZuzVc",
   authDomain: "js1-reportes.firebaseapp.com",
@@ -36,7 +40,7 @@ try {
                 const perfilUsuario = await whoami();
                 
                 if (perfilUsuario) {
-                    // ESTO ES CLAVE: Carga los lotes en cuanto entras
+                    // ESTO RELLENA LA VARIABLE UNIT_BATCHES
                     await loadBatchesForSession(perfilUsuario); 
                     
                     const estadoApp = await unitStatus(); 
