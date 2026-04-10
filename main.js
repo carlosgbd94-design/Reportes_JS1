@@ -52,7 +52,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 // --------------------------------
-
   const $ = (id) => document.getElementById(id);
   const overlay = $("overlay");
   const overlayMsg = $("overlayMsg");
@@ -3582,25 +3581,97 @@ document.addEventListener("DOMContentLoaded", () => {
     const tbody = $("lotesAdminTbody");
     if (!tbody) return;
 
+    // MEJORA LOGÍSTICA SENIOR: Dashboard de Resumen
+    updateLogisticsSummary();
+
     if (!BATCH_CATALOG.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="muted">Sin lotes cargados.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="muted">Sin lotes cargados.</td></tr>`;
       return;
     }
 
-    tbody.innerHTML = BATCH_CATALOG.map((item, idx) => `
-      <tr>
-        <td>${escapeHtml(item.biologico)}</td>
-        <td>${escapeHtml(item.lote)}</td>
-        <td>${escapeHtml(item.caducidad)}</td>
-        <td>${escapeHtml(item.fecha_recepcion || "—")}</td>
-        <td>${escapeHtml(item.municipio)}</td>
-        <td>
-          <button type="button" class="miniBtn bad" onclick="deleteLoteRowAdmin(${idx})">
-            <span class="material-symbols-rounded">delete</span>
-          </button>
-        </td>
-      </tr>
-    `).join("");
+    const now = new Date();
+    
+    tbody.innerHTML = BATCH_CATALOG.map((item, idx) => {
+      // Cálculo de logística
+      const expiryInfo = getExpiryLogistics(item.caducidad);
+      
+      return `
+        <tr>
+          <td>${escapeHtml(item.biologico)}</td>
+          <td>${escapeHtml(item.lote)}</td>
+          <td>${escapeHtml(item.caducidad)}</td>
+          <td>
+            <div class="status-pill ${expiryInfo.class}">
+              <span class="material-symbols-rounded" style="font-size:14px">${expiryInfo.icon}</span>
+              ${expiryInfo.label}
+            </div>
+          </td>
+          <td>${escapeHtml(item.fecha_recepcion || "—")}</td>
+          <td>${escapeHtml(item.municipio)}</td>
+          <td>
+            <button type="button" class="miniBtn bad" onclick="deleteLoteRowAdmin(${idx})">
+              <span class="material-symbols-rounded">delete</span>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  function getExpiryLogistics(cadStr) {
+    if (!cadStr || cadStr === "—") return { label: "N/A", class: "ok", icon: "check_circle", days: 999 };
+    
+    const months = { "ENE":0,"FEB":1,"MAR":2,"ABR":3,"MAY":4,"JUN":5,"JUL":6,"AGO":7,"SEP":8,"OCT":9,"NOV":10,"DIC":11 };
+    const parts = cadStr.split("-");
+    if (parts.length !== 2) return { label: "ERROR", class: "bad", icon: "error", days: 0 };
+    
+    const m = months[parts[0]];
+    const y = 2000 + parseInt(parts[1]);
+    const expiryDate = new Date(y, m + 1, 0); // Último día del mes
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    const diffTime = expiryDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) return { label: "CADUCADO", class: "bad", icon: "dangerous", days: diffDays };
+    if (diffDays <= 90) return { label: `CRÍTICO (${diffDays}d)`, class: "bad", icon: "emergency", days: diffDays };
+    if (diffDays <= 180) return { label: `ALERTA (${diffDays}d)`, class: "warn", icon: "warning", days: diffDays };
+    
+    return { label: "VIGENTE", class: "ok", icon: "shield_with_heart", days: diffDays };
+  }
+
+  function updateLogisticsSummary() {
+    let summaryDiv = $("logisticsSummaryContainer");
+    if (!summaryDiv) {
+      const parent = $("formLOTES");
+      if (!parent) return;
+      summaryDiv = document.createElement("div");
+      summaryDiv.id = "logisticsSummaryContainer";
+      summaryDiv.className = "logistics-summary";
+      // Insertar antes de la tabla (después de btnAddLoteRow container)
+      const hr = parent.querySelector(".hr");
+      if (hr) parent.insertBefore(summaryDiv, hr);
+    }
+
+    const total = BATCH_CATALOG.length;
+    const critical = BATCH_CATALOG.filter(x => getExpiryLogistics(x.caducidad).class === "bad").length;
+    const alert = BATCH_CATALOG.filter(x => getExpiryLogistics(x.caducidad).class === "warn").length;
+
+    summaryDiv.innerHTML = `
+      <div class="logistics-card">
+        <span class="val">${total}</span>
+        <span class="lbl">TOTAL LOTES</span>
+      </div>
+      <div class="logistics-card">
+        <span class="val" style="color:#dc2626">${critical}</span>
+        <span class="lbl">CRÍTICO / CADUCADO</span>
+      </div>
+      <div class="logistics-card">
+        <span class="val" style="color:#d97706">${alert}</span>
+        <span class="lbl">PRÓXIMO A VENCER</span>
+      </div>
+    `;
   }
 
   // ELIMINADO: El listener de btnAddSRRow se movió a la sección de inicialización para evitar duplicados.
@@ -5870,7 +5941,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    if (tab === "LOTES" && !sameTab) {
+    if (tab === "LOTES") {
+      // MEJORA: Siempre refrescar o asegurar que hay datos al entrar
       activateLotesAdmin();
     }
   }
