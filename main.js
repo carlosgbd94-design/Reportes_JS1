@@ -1,22 +1,48 @@
-// 1. Importar los módulos de Firebase que necesitamos
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
-// 2. Tu configuración de Firebase (PEGA AQUÍ LO QUE TE DIO FIREBASE)
-  const firebaseConfig = {
+const firebaseConfig = {
     apiKey: "AIzaSyBzhNWRQZpDHoIBJrcuXy2a4EnHzEZuzVc",
     authDomain: "js1-reportes.firebaseapp.com",
     projectId: "js1-reportes",
     storageBucket: "js1-reportes.firebasestorage.app",
     messagingSenderId: "398603830899",
     appId: "1:398603830899:web:92e916daec0cead2324c06"
-  };
+};
 
-// 3. Inicializar Firebase
 const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);   // Esta es tu nueva base de datos (reemplaza a Sheets)
-const auth = getAuth(app);      // Este es tu nuevo sistema de usuarios
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// Esta función es la que llama tu botón "Entrar" en el HTML
+async function login() {
+    // Obtenemos los valores de los IDs que ya tienes en tu HTML
+    const email = document.getElementById('usuario').value; 
+    const password = document.getElementById('pass').value;
+
+    if (!email || !password) {
+        alert("Por favor, llena ambos campos");
+        return;
+    }
+
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        console.log("Acceso concedido:", userCredential.user.email);
+        
+        // Aquí llamamos a la función que ya tienes para mostrar el panel
+        // (Asegúrate de que 'showPanel' o como se llame en tu código esté disponible)
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-panel').style.display = 'block'; 
+        
+    } catch (error) {
+        console.error("Error de login:", error.code);
+        alert("Usuario o contraseña incorrectos");
+    }
+}
+
+// IMPORTANTE: Para que el botón onclick="login()" del HTML funcione con módulos
+window.login = login;
 
   const $ = (id) => document.getElementById(id);
   const overlay = $("overlay");
@@ -8317,6 +8343,3 @@ const auth = getAuth(app);      // Este es tu nuevo sistema de usuarios
 
     reader.readAsDataURL(file);
   }
-
-// Al final de tu archivo main.js, añade esto:
-window.iniciarSesion = iniciarSesion;
