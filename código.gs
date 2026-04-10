@@ -195,6 +195,8 @@ function api(req) {
     case "unitCatalog": return api_unitCatalog(req);
     case "notificationUserCatalog": return api_notificationUserCatalog(req);
     case "uploadFile": return api_uploadFile(req);
+    case "getLotesByMunicipio": return api_getLotesByMunicipio(req);
+    case "saveLotes": return api_saveLotes(req);
 
 
     default:
@@ -4771,19 +4773,21 @@ function api_getLotesByMunicipio(payload) {
     const last = sh.getLastRow();
     if (last < 2) return { ok: true, data: [] };
 
-    const data = sh.getRange(2, 1, last - 1, 5).getValues();
+    const data = sh.getRange(2, 1, last - 1, 5).getDisplayValues();
     const out = [];
 
     for (let i = 0; i < data.length; i++) {
       const r = data[i];
       const biologico = normalize_(r[0]);
       const lote = normalize_(r[1]);
-      const caducidad = normalize_(r[2]);
+      const caducidad = normalize_(r[2]); // Aquí ya vendrá MAR-27 literal si se usó displayValues
       const fecha_recepcion = normalize_(r[3]);
       const municipioLote = normalizeTextKey_(r[4]);
 
       // Filtrar por municipio: o es global ("*") o coincide con el municipio del usuario
-      if (municipioLote !== "*" && municipioLote !== normalizeTextKey_(u.municipio)) {
+      // MEJORA LOGÍSTICA SENIOR: Admin y Jurisdiccional ven TODO para supervisión global.
+      const isPrivileged = u.rol === "ADMIN" || u.rol === "JURISDICCIONAL";
+      if (!isPrivileged && municipioLote !== "*" && municipioLote !== normalizeTextKey_(u.municipio)) {
         continue;
       }
 
@@ -4809,7 +4813,7 @@ function api_saveLotes(payload) {
       throw new Error("No autorizado para gestionar lotes.");
     }
 
-    const items = payload?.items || [];
+    const items = payload?.lotes || [];
     if (!Array.isArray(items)) throw new Error("Datos de lotes inválidos.");
 
     const sh = ensureLotesCadSheet_();
@@ -4819,7 +4823,7 @@ function api_saveLotes(payload) {
     const rows = items.map(x => [
       normalize_(x.biologico),
       normalize_(x.lote).toUpperCase(),
-      normalize_(x.caducidad).toUpperCase(), // JUL-27
+      "'" + normalize_(x.caducidad).toUpperCase(), // Forzar texto plano para evitar auto-date de Sheets
       normalize_(x.fecha_recepcion),
       normalize_(x.municipio) || "*"
     ]);
@@ -6044,7 +6048,7 @@ function api_getTodayReports(payload) {
       const shDet = ensureExistenciaDetalleSheet_();
       const lastDet = shDet.getLastRow();
       if (lastDet >= 2) {
-        const detData = shDet.getRange(2, 1, lastDet - 1, 9).getValues();
+        const detData = shDet.getRange(2, 1, lastDet - 1, 10).getValues();
         const fKey = normalizeDateKey_(fecha);
         const cKey = normalizeClues_(u.clues);
         srData.items = detData
@@ -6053,7 +6057,8 @@ function api_getTodayReports(payload) {
             biologico: normalize_(row[4]),
             lote: normalize_(row[5]),
             caducidad: normalize_(row[6]),
-            cantidad: Number(row[7] || 0)
+            fecha_recepcion: normalize_(row[7]),
+            cantidad: Number(row[8] || 0)
           }));
       }
     }
