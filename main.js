@@ -3478,6 +3478,7 @@ document.addEventListener("DOMContentLoaded", () => {
 async function loadBatchesForSession(user) {
     if (!user) return;
     try {
+        console.log("🟢 1. Intentando conectar a la colección 'lotes_catalogo'...");
         const lotesRef = collection(db, "lotes_catalogo");
         const querySnapshot = await getDocs(lotesRef);
         
@@ -3486,19 +3487,18 @@ async function loadBatchesForSession(user) {
             allLotes.push(doc.data());
         });
 
-        // Convertimos el municipio del usuario a MAYÚSCULAS y sin espacios a los lados
+        console.log(`🟢 2. Firebase devolvió ${allLotes.length} lotes en total.`);
+
         const userMuni = String(user.municipio || "").trim().toUpperCase();
 
-        // Filtro a prueba de balas
         UNIT_BATCHES = allLotes.filter(l => {
             const loteMuni = String(l.municipio || "").trim().toUpperCase();
-            // Pasa si es asterisco, si coincide exacto, o si le pusieron "TODOS"
             return loteMuni === "*" || loteMuni === userMuni || loteMuni === "TODOS";
         });
         
-        console.log(`Lotes en Base de Datos: ${allLotes.length} | Lotes para la unidad (${userMuni}): ${UNIT_BATCHES.length}`);
+        console.log(`🟢 3. Lotes filtrados para la unidad (${userMuni}): ${UNIT_BATCHES.length}`);
     } catch (e) {
-        console.error("Error cargando lotes para sesión:", e);
+        console.error("🔴 ERROR CRÍTICO al cargar lotes:", e);
     }
 }
 
@@ -3864,7 +3864,6 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
 
 function handleSRBioChange(selectEl, preselectLote = null) {
     const tr = selectEl.closest("tr");
-    // Limpiamos lo que el usuario seleccionó
     const bio = String(selectEl.value || "").trim().toUpperCase();
     
     const loteSelect = tr.querySelector(".sr-lote-select");
@@ -3876,12 +3875,15 @@ function handleSRBioChange(selectEl, preselectLote = null) {
 
     if (!bio) return;
 
-    // Filtramos comparando en mayúsculas puras
+    console.log(`🔎 Buscando biológico: [${bio}]`);
+    console.log(`📦 Lotes en memoria actual:`, UNIT_BATCHES);
+
     const filtered = UNIT_BATCHES.filter(l => 
         String(l.biologico || "").trim().toUpperCase() === bio
     );
     
     if (!filtered.length) {
+        console.warn(`⚠️ No se encontraron lotes para [${bio}]`);
         loteSelect.innerHTML = '<option value="">SIN LOTES</option>';
         return;
     }
