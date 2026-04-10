@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -4403,16 +4403,33 @@ async function whoami() {
     const safeFecha = String(fecha || todayYmdLocal()).trim();
     const cacheKey = buildCacheKey("TODAY_REPORTS", safeFecha);
 
-    const fetchToday = async () => {
-      const r = await apiCall({
-        action: "getTodayReports",
-        token: TOKEN,
-        fecha: safeFecha
-      });
+const fetchToday = async () => {
+      try {
+          let srData = null;
+          let consData = null;
 
-      if (!r || !r.ok) return null;
-      return r.data || null;
-    };
+          // 1. Leemos la Existencia de Biológicos (SR) de Firestore
+          const srRef = doc(db, "capturas_sr", `${safeFecha}_${USER.clues}`);
+          const srSnap = await getDoc(srRef);
+          if (srSnap.exists()) {
+              srData = srSnap.data();
+          }
+
+          // 2. Leemos Consumibles (CONS) de Firestore
+          const consRef = doc(db, "capturas_cons", `${safeFecha}_${USER.clues}`);
+          const consSnap = await getDoc(consRef);
+          if (consSnap.exists()) {
+              consData = consSnap.data();
+          }
+
+          // Devolvemos la info en el formato exacto que tu diseño necesita
+          return { sr: srData, cons: consData };
+          
+      } catch (e) {
+          console.error("Error al leer de Firebase:", e);
+          return null;
+      }
+  };
 
     const data = force
       ? await fetchToday()
@@ -6171,7 +6188,7 @@ async function whoami() {
       EDIT_SR ? "Actualizando existencia" : "Guardando existencia"
     );
 
-    try {
+try {
       saveUxValue(UX_KEYS.existenciaName, nombre);
 
       if (HAS_TODAY_SR && !EDIT_SR) {
@@ -6179,57 +6196,49 @@ async function whoami() {
         return;
       }
 
-      const action = EDIT_SR ? "updateSR" : "saveSR";
+      // === MAGIA FIRESTORE: GUARDAR BIOLÓGICOS ===
+      // Generamos un ID único: Ej. "2026-04-10_QTSSA000000"
+      const docId = `${todayYmdLocal()}_${USER.clues}`;
+      const docRef = doc(db, "capturas_sr", docId);
 
-      const r = await apiCall({
-        action,
-        token: TOKEN,
-        nombre,
-        items: items
+      await setDoc(docRef, {
+        clues: USER.clues,
+        unidad: USER.unidad,
+        municipio: USER.municipio,
+        fecha: todayYmdLocal(),
+        capturado_por: nombre,
+        items: items, // Aquí va toda tu tabla de biológicos, lotes y cantidades
+        editado: EDIT_SR ? "SI" : "NO",
+        timestamp: serverTimestamp()
       });
-
-      if (!r || !r.ok) {
-        const msg = (r && r.error) ? r.error : "No se pudo guardar";
-
-        if (msg.toLowerCase().includes("ya existe una captura") || msg.toLowerCase().includes("editar")) {
-          invalidateTodayCache();
-          const today = await getTodayReports(todayYmdLocal(), true);
-          hydrateTodayForms(today);
-          showToast(msg, false, "warn");
-          return;
-        }
-
-        showToast(msg, false);
-        return;
-      }
+      // ===========================================
 
       muteRealtimeFor(12000);
 
       showToast(
-        EDIT_SR
-          ? "Existencia de biológicos actualizada correctamente"
-          : "Existencia de biológicos guardada correctamente",
+        EDIT_SR ? "Existencia actualizada en Firebase" : "Existencia guardada en Firebase",
         true,
         "good"
       );
 
-      pushLiveEvent(
-        "Existencia de biológicos",
-        EDIT_SR
-          ? "La existencia de biológicos fue actualizada correctamente."
-          : "La existencia de biológicos fue guardada correctamente.",
-        "good"
-      );
+      pushLiveEvent("Existencia de biológicos", EDIT_SR ? "La existencia fue actualizada." : "La existencia fue guardada.", "good");
 
       flashElement("formSR");
       setSavedStamp();
 
+      // Recargamos la interfaz para que lea lo que acabamos de guardar
       await refreshAfterMutation({
         touchToday: true,
         touchCaptureSummary: true,
         touchHistory: true
       });
 
+    } catch (e) {
+      console.error("Error al guardar en Firebase:", e);
+      showToast("Error de conexión al guardar", false);
+    } finally {
+      setBtnBusy("btnSaveSR", false);
+      hideOverlay();
     } catch (e) {
       console.error("btnSaveSR error:", e);
       showToast("Error al guardar", false);
