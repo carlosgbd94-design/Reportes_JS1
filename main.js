@@ -6239,13 +6239,6 @@ try {
     } finally {
       setBtnBusy("btnSaveSR", false);
       hideOverlay();
-    } catch (e) {
-      console.error("btnSaveSR error:", e);
-      showToast("Error al guardar", false);
-    } finally {
-      setBtnBusy("btnSaveSR", false);
-      hideOverlay();
-    }
   };
 
   $("btnExportSelectAll").onclick = () => {
