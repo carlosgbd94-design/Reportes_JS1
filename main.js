@@ -1,9 +1,8 @@
-// 1. Importaciones (Consolidadas en una sola línea por módulo)
+// --- BLOQUE 1: CONEXIÓN A FIREBASE (Pégalo al inicio de main.js) ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
-// 2. Configuración
 const firebaseConfig = {
     apiKey: "AIzaSyBzhNWRQZpDHoIBJrcuXy2a4EnHzEZuzVc",
     authDomain: "js1-reportes.firebaseapp.com",
@@ -13,47 +12,30 @@ const firebaseConfig = {
     appId: "1:398603830899:web:92e916daec0cead2324c06"
 };
 
-// 3. Inicialización
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// 4. Función de Login (Adaptada a tu index.html)
-async function login(e) {
-    // Si lo llamas desde un formulario, evitamos que la página se recargue
-    if (e) e.preventDefault();
+// --- BLOQUE 2: TU LÓGICA DE LOGIN ---
+async function login(ev) {
+    if (ev) ev.preventDefault();
+    
+    const email = document.getElementById('usuario').value;
+    const password = document.getElementById('password').value; // ID correcto según tu index.html
 
-    // IDs corregidos según tu index.html
-    const email = document.getElementById('usuario').value; 
-    const password = document.getElementById('password').value; // Antes decía 'pass'
-
-    if (!email || !password) {
-        alert("Por favor, llena ambos campos");
-        return;
-    }
+    showOverlay("Validando en Firebase...", "Iniciando sesión");
 
     try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        console.log("Acceso concedido:", userCredential.user.email);
-        
-        // Cambio de pantalla corregido según los IDs de tu HTML
-        // Ocultamos el cuadro de login
-        document.querySelector('.loginWrap').style.display = 'none';
-        // Mostramos el panel de la aplicación
-        document.getElementById('rightColumn').style.display = 'block'; 
-        
+        showToast("¡Bienvenido!", true);
+        showRightColumn(true); // Esto muestra tu panel principal
     } catch (error) {
-        console.error("Error de login:", error.code);
-        alert("Usuario o contraseña incorrectos");
+        showToast("Error: Usuario o contraseña incorrectos", false, "bad");
+    } finally {
+        hideOverlay();
     }
 }
-
-// 5. Exponer la función al HTML
-window.login = login;
-
-// 6. Listener para el formulario (Opcional pero recomendado)
-// Esto hace que el botón "Entrar" funcione automáticamente al dar Enter
-document.getElementById('loginForm').addEventListener('submit', login);
+window.login = login; // Hace la función visible para el botón
 
   const $ = (id) => document.getElementById(id);
   const overlay = $("overlay");
