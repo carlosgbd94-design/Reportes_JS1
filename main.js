@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, query, where, getDocs, writeBatch, deleteDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -3475,13 +3475,29 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
-  async function loadBatchesForSession(user) {
+async function loadBatchesForSession(user) {
     if (!user) return;
-    const res = await apiCall({ action: "getLotesByMunicipio", token: TOKEN });
-    if (res && res.ok) {
-      UNIT_BATCHES = res.data || [];
+    try {
+        const lotesRef = collection(db, "lotes_catalogo");
+        // Filtramos: Lotes de su municipio O lotes globales (*)
+        const q = query(lotesRef); // Por simplicidad inicial, traemos todos y filtramos en JS
+        const querySnapshot = await getDocs(q);
+        
+        const allLotes = [];
+        querySnapshot.forEach((doc) => {
+            allLotes.push(doc.data());
+        });
+
+        // Filtro de seguridad por municipio
+        UNIT_BATCHES = allLotes.filter(l => 
+            l.municipio === "*" || l.municipio === user.municipio
+        );
+        
+        console.log("Lotes cargados para la sesión:", UNIT_BATCHES.length);
+    } catch (e) {
+        console.error("Error cargando lotes para sesión:", e);
     }
-  }
+}
 
   // ==========================================
   // ADMINISTRACIÓN DE LOTES
@@ -3729,29 +3745,41 @@ document.addEventListener("DOMContentLoaded", () => {
     renderLotesAdmin();
   }
 
-  $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
+$("btnSaveLotesAdmin")?.addEventListener("click", async () => {
     setBtnBusy("btnSaveLotesAdmin", true, "Guardando…");
-    showOverlay("Guardando catálogo de lotes…", "Administración");
+    showOverlay("Actualizando catálogo de lotes en Firebase…", "Administración");
+    
     try {
-      const res = await apiCall({
-        action: "saveLotes",
-        token: TOKEN,
-        lotes: BATCH_CATALOG
-      });
+        const batch = writeBatch(db);
+        
+        // En un entorno profesional, aquí compararíamos qué cambió.
+        // Para tu app, guardaremos los lotes actuales.
+        for (const item of BATCH_CATALOG) {
+            // ID único basado en Biológico + Lote para evitar duplicados
+            const customId = `${item.biologico}_${item.lote}`.replace(/\s+/g, '_');
+            const docRef = doc(db, "lotes_catalogo", customId);
+            
+            batch.set(docRef, {
+                biologico: item.biologico,
+                lote: item.lote,
+                caducidad: item.caducidad,
+                fecha_recepcion: item.fecha_recepcion || "",
+                municipio: item.municipio || "*",
+                updatedAt: serverTimestamp()
+            });
+        }
 
-      if (res && res.ok) {
-        showToast("Catálogo de lotes guardado correctamente", true, "good");
-        await loadBatchesForSession(USER); // Recargar para la unidad si aplica
-      } else {
-        showToast(res?.error || "Error al guardar lotes", false);
-      }
+        await batch.commit();
+        showToast("Catálogo de lotes actualizado correctamente", true, "good");
+        await loadBatchesForSession(USER); 
     } catch (e) {
-      showToast("Error de conexión", false);
+        console.error("Error al guardar lotes:", e);
+        showToast("Error al guardar en la base de datos", false);
     } finally {
-      setBtnBusy("btnSaveLotesAdmin", false);
-      hideOverlay();
+        setBtnBusy("btnSaveLotesAdmin", false);
+        hideOverlay();
     }
-  });
+});
 
   // ==========================================
   // CAPTURA DINÁMICA DE BIOLÓGICOS (SR)
