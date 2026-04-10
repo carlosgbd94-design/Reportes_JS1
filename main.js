@@ -1,3 +1,23 @@
+// 1. Importar los módulos de Firebase que necesitamos
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+
+// 2. Tu configuración de Firebase (PEGA AQUÍ LO QUE TE DIO FIREBASE)
+  const firebaseConfig = {
+    apiKey: "AIzaSyBzhNWRQZpDHoIBJrcuXy2a4EnHzEZuzVc",
+    authDomain: "js1-reportes.firebaseapp.com",
+    projectId: "js1-reportes",
+    storageBucket: "js1-reportes.firebasestorage.app",
+    messagingSenderId: "398603830899",
+    appId: "1:398603830899:web:92e916daec0cead2324c06"
+  };
+
+// 3. Inicializar Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);   // Esta es tu nueva base de datos (reemplaza a Sheets)
+const auth = getAuth(app);      // Este es tu nuevo sistema de usuarios
+
   const $ = (id) => document.getElementById(id);
   const overlay = $("overlay");
   const overlayMsg = $("overlayMsg");
