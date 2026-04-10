@@ -8317,3 +8317,6 @@ const auth = getAuth(app);      // Este es tu nuevo sistema de usuarios
 
     reader.readAsDataURL(file);
   }
+
+// Al final de tu archivo main.js, añade esto:
+window.iniciarSesion = iniciarSesion;
