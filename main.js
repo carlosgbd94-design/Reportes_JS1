@@ -20,7 +20,6 @@ const auth = getAuth(app);
 const $ = (id) => document.getElementById(id);
 const overlay = $("overlay");
 const overlayMsg = $("overlayMsg");
- ... todo lo demás sigue igual ...
 
   const $ = (id) => document.getElementById(id);
   const overlay = $("overlay");
