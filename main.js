@@ -5835,16 +5835,11 @@ const auth = getAuth(app);
     });
   }
 
-// 1. Importar el comando de Firebase para entrar
-import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-
-// 2. Conectar el formulario de Login de forma 100% segura usando JS puro
+// === ÚNICO BLOQUE DE LOGIN SEGURO ===
 const formLogin = document.getElementById("loginForm");
-
 if (formLogin) {
     formLogin.addEventListener("submit", async (ev) => {
-        ev.preventDefault(); // Evita que la página se recargue
-        
+        ev.preventDefault();
         const email = document.getElementById("usuario").value.trim();
         const password = document.getElementById("password").value.trim();
 
@@ -5852,30 +5847,53 @@ if (formLogin) {
             showToast("Por favor, ingresa usuario y contraseña", false, "warn");
             return;
         }
-
         showOverlay("Validando en Firebase…", "Iniciando sesión");
-
         try {
-            // Intentar entrar con Firebase
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            console.log("¡Acceso correcto!", userCredential.user.email);
-            
             showToast("Sesión iniciada correctamente");
             showRightColumn(true); 
-
         } catch (error) {
-            console.error("Error de Firebase:", error.code);
-            let mensaje = "Usuario o contraseña incorrectos";
-            if(error.code === "auth/invalid-email") mensaje = "El formato del correo no es válido";
-            
-            showToast(mensaje, false, "bad");
+            showToast("Usuario o contraseña incorrectos", false, "bad");
         } finally {
             hideOverlay();
         }
     });
-} else {
-    console.error("No se encontró el ID loginForm en el HTML");
 }
+// =====================================
+
+  $("btnSaveSR").onclick = async () => {
+    if (isBtnBusy("btnSaveSR")) return;
+    
+    const nombre = $("nombreSR") ? $("nombreSR").value.trim() : "";
+    if (!nombre) {
+      showToast("Por favor, ingresa el nombre del responsable", false, "warn");
+      return;
+    }
+
+    // Colectar items de la tabla dinámica
+    const items = [];
+    let hasInvalid = false;
+    document.querySelectorAll("#srCaptureTbody tr").forEach(tr => {
+      const bio = tr.querySelector(".sr-bio-select").value;
+      const lote = tr.querySelector(".sr-lote-select").value;
+      const cantidad = tr.querySelector(".sr-cantidad-input").value;
+      const recepcion = tr.querySelector(".sr-recepcion-input").value;
+
+      if (!bio && !lote && !cantidad) return; // Fila vacía, ignorar
+
+      if (!bio || !lote || cantidad === "" || Number(cantidad) < 0) {
+        hasInvalid = true;
+        tr.style.background = "rgba(239, 68, 68, 0.1)";
+      } else {
+        tr.style.background = "";
+        items.push({
+          biologico: bio,
+          lote: lote,
+          cantidad: Number(cantidad),
+          fecha_recepcion: recepcion
+        });
+      }
+    });
 
     if (hasInvalid) {
       showToast("Corrige las filas marcadas en rojo (biológico, lote y cantidad son obligatorios)", false, "warn");
