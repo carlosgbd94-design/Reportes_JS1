@@ -1,4 +1,4 @@
-// --- BLOQUE 1: CONEXIÓN A FIREBASE (Pégalo al inicio de main.js) ---
+// 1. CONEXIÓN A FIREBASE (ÚNICAMENTE IMPORTS Y CONFIGURACIÓN)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
@@ -16,26 +16,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// --- BLOQUE 2: TU LÓGICA DE LOGIN ---
-async function login(ev) {
-    if (ev) ev.preventDefault();
-    
-    const email = document.getElementById('usuario').value;
-    const password = document.getElementById('password').value; // ID correcto según tu index.html
-
-    showOverlay("Validando en Firebase...", "Iniciando sesión");
-
-    try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        showToast("¡Bienvenido!", true);
-        showRightColumn(true); // Esto muestra tu panel principal
-    } catch (error) {
-        showToast("Error: Usuario o contraseña incorrectos", false, "bad");
-    } finally {
-        hideOverlay();
-    }
-}
-window.login = login; // Hace la función visible para el botón
+// A PARTIR DE AQUÍ COMIENZA TU CÓDIGO ORIGINAL INTACTO
+const $ = (id) => document.getElementById(id);
+const overlay = $("overlay");
+const overlayMsg = $("overlayMsg");
+// ... todo lo demás sigue igual ...
 
   const $ = (id) => document.getElementById(id);
   const overlay = $("overlay");
@@ -5856,15 +5841,12 @@ window.login = login; // Hace la función visible para el botón
     });
   }
 
-// 1. Importar el comando de Firebase para entrar
-import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-
-// 2. El nuevo vigilante del formulario
+// 2. EL ÚNICO VIGILANTE DEL FORMULARIO QUE NECESITAS
 $("loginForm").addEventListener("submit", async (ev) => {
-    ev.preventDefault(); // Evita que la página se recargue
+    ev.preventDefault(); 
     
     const email = $("usuario").value.trim();
-    const password = $("password").value.trim(); // Nota: En tu HTML es "password", no "pass"
+    const password = $("password").value.trim();
 
     if (!email || !password) {
         showToast("Por favor, ingresa usuario y contraseña", false, "warn");
@@ -5874,15 +5856,12 @@ $("loginForm").addEventListener("submit", async (ev) => {
     showOverlay("Validando en Firebase…", "Iniciando sesión");
 
     try {
-        // Intentar entrar con Firebase
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
         console.log("¡Acceso correcto!", user.email);
         showToast("Sesión iniciada correctamente");
 
-        // Esta es la función que YA TIENES en tu código para mostrar la app
-        // La llamamos para que el cambio de pantalla sea igual al de antes
         showRightColumn(true); 
 
     } catch (error) {
@@ -5895,40 +5874,6 @@ $("loginForm").addEventListener("submit", async (ev) => {
         hideOverlay();
     }
 });
-
-  $("btnSaveSR").onclick = async () => {
-    if (isBtnBusy("btnSaveSR")) return;
-    
-    const nombre = $("nombreSR") ? $("nombreSR").value.trim() : "";
-    if (!nombre) {
-      showToast("Por favor, ingresa el nombre del responsable", false, "warn");
-      return;
-    }
-
-    // Colectar items de la tabla dinámica
-    const items = [];
-    let hasInvalid = false;
-    document.querySelectorAll("#srCaptureTbody tr").forEach(tr => {
-      const bio = tr.querySelector(".sr-bio-select").value;
-      const lote = tr.querySelector(".sr-lote-select").value;
-      const cantidad = tr.querySelector(".sr-cantidad-input").value;
-      const recepcion = tr.querySelector(".sr-recepcion-input").value;
-
-      if (!bio && !lote && !cantidad) return; // Fila vacía, ignorar
-
-      if (!bio || !lote || cantidad === "" || Number(cantidad) < 0) {
-        hasInvalid = true;
-        tr.style.background = "rgba(239, 68, 68, 0.1)";
-      } else {
-        tr.style.background = "";
-        items.push({
-          biologico: bio,
-          lote: lote,
-          cantidad: Number(cantidad),
-          fecha_recepcion: recepcion
-        });
-      }
-    });
 
     if (hasInvalid) {
       showToast("Corrige las filas marcadas en rojo (biológico, lote y cantidad son obligatorios)", false, "warn");
