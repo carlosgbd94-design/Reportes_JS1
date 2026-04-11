@@ -78,8 +78,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* MQ3 Ripple Effect */
-  function createRipple(event) {
-    const button = event.currentTarget;
+  function createRipple(event, targetElement = null) {
+    const button = targetElement || event.currentTarget;
+    if (!button || typeof button.getBoundingClientRect !== "function") return;
+    
     const circle = document.createElement("span");
     const diameter = Math.max(button.clientWidth, button.clientHeight);
     const radius = diameter / 2;
@@ -1616,7 +1618,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener("click", (ev) => {
       // Ripple
       const btn = ev.target.closest(".md-btn, .btn, .ghostBtn, .miniBtn");
-      if (btn) createRipple(ev);
+      if (btn) createRipple(ev, btn);
 
       // Group Toggle
       const groupBtn = ev.target.closest("[data-notif-group-toggle]");
@@ -2772,7 +2774,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (action === "listMyNotifications") {
         const q = query(
           collection(db, "notificaciones"),
-          where("to_clues", "in", [USER.clues, "*"])
+          where("to_clues", "in", [USER.clues || "NONE", "*"])
         );
         const snaps = await getDocs(q);
         const results = [];
@@ -3880,6 +3882,9 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       if (user.rol === "ADMIN" || user.rol === "JURISDICCIONAL") {
         toggleEl("tabLOTES", true, "flex");
+      } else {
+        toggleEl("tabLOTES", false);
+        toggleEl("panelLOTES", false);
       }
 
       await loadBatchesForSession(user);
@@ -4199,7 +4204,7 @@ async function loadBatchesForSession(user) {
     $("loteTxt").focus();
   });
 
-  function deleteLoteRowAdmin(idx) {
+  window.deleteLoteRowAdmin = function(idx) {
     BATCH_CATALOG.splice(idx, 1);
     renderLotesAdmin();
   }
@@ -4211,8 +4216,10 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
     try {
         const batch = writeBatch(db);
         
-        // En un entorno profesional, aquí compararíamos qué cambió.
-        // Para tu app, guardaremos los lotes actuales.
+        // Primero eliminamos el catálogo activo para purgar lotes borrados en UI
+        const oldSnaps = await getDocs(collection(db, "lotes_catalogo"));
+        oldSnaps.forEach(d => batch.delete(d.ref));
+
         for (const item of BATCH_CATALOG) {
             // ID único basado en Biológico + Lote para evitar duplicados
             const customId = `${item.biologico}_${item.lote}`.replace(/\s+/g, '_');
