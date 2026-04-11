@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, serverTimestamp, collection, getDocs, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { getAuth, signInWithEmailAndPassword, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-storage.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBzhNWRQZpDHoIBJrcuXy2a4EnHzEZuzVc",
@@ -14,9 +15,41 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
+const storage = getStorage(app);
 
+// Estado de sesión y UI
+let BIO_IS_ENABLED = false;
+let CON_IS_ENABLED = false;
+let USER = null;
+let TOKEN = null;
+let UNIT_BATCHES = [];
+let BATCH_CATALOG = [];
+let CONFIG_BIOLOGICOS_CATALOG = [];
 
-// --- LÓGICA DE LOGIN FIREBASE ---
+// Estado reactivo de la UI — debe declararse aquí para que showToast funcione pre-login
+const LIVE_STATE = {
+  pinolPendientes: null,
+  summaryCapturadas: null,
+  summaryFaltantes: null,
+  todayExistenciaCaptured: null,
+  todayConsCaptured: null,
+  lastHistoryRows: null,
+  summaryKey: null,
+  notifCount: 0,
+  notifWarnCount: 0,
+  notifGoodCount: 0,
+  lastToastKey: "",
+  lastEventKey: "",
+  mutedUntil: 0,
+  lastEventTs: 0,
+  eventCooldownMs: 2200,
+  eventHistory: {},
+  pinolWatching: false,
+  summaryWatching: false,
+  unidadWatching: false,
+  historyWatching: false,
+  toastMeta: { key: "", ts: 0 }
+};
 document.addEventListener("DOMContentLoaded", () => {
     const formLogin = document.getElementById("loginForm");
     if (formLogin) {
@@ -38,19 +71,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (perfil) {
                     USER = perfil;
                     TOKEN = true;
-                    // Intentamos cargar lotes pero si falla no bloqueamos el login
-                    try { await loadBatchesForSession(USER); } catch(e){ console.error(e); }
                     
-                    if (["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(USER.rol)) {
-                        apiCall({action: "silentAdminReminders"}).catch(()=>{}); // Fire and forget
+                    // Intentamos cargar datos secundarios, si fallan no bloqueamos el acceso
+                    try { 
+                      await Promise.all([
+                        loadBatchesForSession(USER),
+                        unitStatus().then(estado => hydrateSessionUi(USER, estado, { showSuccessToast: true }))
+                      ]);
+                    } catch(e) { 
+                      console.warn("Error no crítico en hidratación post-login:", e);
+                      // Si falló unitStatus pero tenemos USER, intentamos mostrar la UI básica
+                      await hydrateSessionUi(USER, null, { showSuccessToast: true });
                     }
-
-                    const estado = await unitStatus();
-                    await hydrateSessionUi(USER, estado, { showSuccessToast: true });
+                    
+                    if (USER && USER.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(USER.rol)) {
+                        apiCall({action: "silentAdminReminders"}).catch(()=>{});
+                    }
+                } else {
+                    throw new Error("No se encontró perfil para este usuario.");
                 }
             } catch (error) {
                 console.error("Error en login:", error);
-                showToast("Usuario o contraseña incorrectos", false, "bad");
+                const msg = error.code === 'auth/invalid-credential' 
+                    ? "Usuario o contraseña incorrectos" 
+                    : "Error al iniciar sesión o cargar datos iniciales: " + error.message;
+                showToast(msg, false, "bad");
             } finally {
                 hideOverlay();
             }
@@ -2754,10 +2799,16 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         
         if (action === "unitCatalog") {
-          const uniques = [...new Set(users.map(u => `${u.clues}|${u.unidad}`))].map(str => {
-            const [clues, unidad] = str.split("|");
-            return { clues, unidad };
-          });
+          // Retornamos clues + unidad + municipio (necesario para autocomplete de admin)
+          const seen = new Set();
+          const uniques = [];
+          for (const u of users) {
+            const key = `${u.clues}|${u.unidad}`;
+            if (!seen.has(key) && u.clues && u.unidad && u.rol === "UNIDAD") {
+              seen.add(key);
+              uniques.push({ clues: u.clues, unidad: u.unidad, municipio: u.municipio || "" });
+            }
+          }
           return { ok: true, data: uniques };
         }
         
@@ -2811,12 +2862,75 @@ document.addEventListener("DOMContentLoaded", () => {
         return { ok: true, data: true };
       }
 
-      // --- PINOL Y FRASCOS ---
-      if (action === "listPinol") {
-        const snaps = await getDocs(collection(db, "pinol"));
-        const pinols = [];
-        snaps.forEach(d => pinols.push({ id: d.id, ...d.data() }));
-        return { ok: true, data: pinols };
+
+      // --- CAPTURA DE REPORTES ---
+      if (action === "saveSR") {
+        const fecha = finalPayload.fecha || todayYmdLocal();
+        const docId = `${fecha}_${USER.clues}`;
+        const ref = doc(db, "capturas_sr", docId);
+        await setDoc(ref, {
+          ...finalPayload,
+          clues: USER.clues,
+          municipio: USER.municipio,
+          unidad: USER.unidad,
+          timestamp: serverTimestamp()
+        });
+        return { ok: true, message: "Reporte de existencia guardado." };
+      }
+
+      if (action === "saveCons") {
+        const fecha = finalPayload.fecha || todayYmdLocal();
+        const docId = `${fecha}_${USER.clues}`;
+        const ref = doc(db, "capturas_cons", docId);
+        await setDoc(ref, {
+          ...finalPayload,
+          clues: USER.clues,
+          municipio: USER.municipio,
+          unidad: USER.unidad,
+          timestamp: serverTimestamp()
+        });
+        return { ok: true, message: "Reporte de consumibles guardado." };
+      }
+
+      if (action === "savePinol") {
+        const ref = doc(collection(db, "pinol"));
+        await setDoc(ref, {
+          ...finalPayload,
+          clues: USER.clues,
+          municipio: USER.municipio,
+          unidad: USER.unidad,
+          estatus: "PENDIENTE",
+          timestamp: serverTimestamp()
+        });
+        return { ok: true, message: "Solicitud de pinol enviada." };
+      }
+
+      // --- CARGA DE ARCHIVOS (FIREBASE STORAGE) ---
+      if (action === "uploadFile") {
+        const file = finalPayload.file; // File object nativo del navegador
+        if (!file) return { ok: false, error: "Archivo no especificado." };
+
+        const category = String(finalPayload.category || "Otros").replace(/[^a-zA-Z0-9_\-à-ü ]/g, "").trim();
+        const targetClues = finalPayload.targetClues || USER.clues;
+        const path = `uploads/${targetClues}/${category}/${Date.now()}_${file.name}`;
+        const fileRef = storageRef(storage, path);
+        const snap = await uploadBytes(fileRef, file);
+        const url = await getDownloadURL(snap.ref);
+
+        // Guardar registro de la carga en Firestore para trazabilidad
+        const logRef = doc(collection(db, "archivos_subidos"));
+        await setDoc(logRef, {
+          url,
+          path,
+          filename: file.name,
+          category,
+          clues: USER.clues,
+          targetClues,
+          subido_por: USER.usuario,
+          timestamp: serverTimestamp()
+        });
+
+        return { ok: true, data: { url } };
       }
 
       if (action === "confirmPinolReceipt") {
@@ -2936,11 +3050,44 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // --- CONFIGURACIÓN DE CUENTA ---
-      if (action === "changeMyPassword" || action === "adminResetPassword") {
-        // En Firebase Auth, el cambio de contraseña se maneja idealmente por el SDK de Auth
-        // o mediante un flujo de 'Send Password Reset Email'. 
-        // Por ahora, simulamos éxito o recomendamos usar el flujo nativo de Firebase.
-        return { ok: true, message: "Instrucciones de cambio enviadas al correo institucional." };
+      if (action === "changeMyPassword") {
+        const currentUser = auth.currentUser;
+        if (!currentUser || !currentUser.email) {
+          return { ok: false, error: "No hay sesión activa en Firebase Auth." };
+        }
+
+        // Re-autenticar con la contraseña actual antes de cambiar
+        const credential = EmailAuthProvider.credential(currentUser.email, finalPayload.currentPassword);
+        try {
+          await reauthenticateWithCredential(currentUser, credential);
+        } catch(reAuthErr) {
+          return { ok: false, error: "La contraseña actual es incorrecta." };
+        }
+
+        // Cambiar la contraseña en Firebase Auth
+        await updatePassword(currentUser, finalPayload.newPassword);
+
+        // Actualizar campo en Firestore para tener trazabilidad
+        const userDocRef = doc(db, "usuarios", USER.usuario);
+        await setDoc(userDocRef, { password_changed_at: serverTimestamp() }, { merge: true });
+
+        return { ok: true, message: "Contraseña actualizada correctamente en Firebase Auth." };
+      }
+
+      if (action === "adminResetPassword") {
+        // El ADMIN no puede cambiar la contraseña de otro usuario directamente desde el cliente.
+        // La alternativa segura es enviar un email de restablecimiento vía Firebase Auth.
+        // Esto requiere que el usuario tenga un correo electrónico registrado.
+        const { sendPasswordResetEmail } = await import("https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js");
+        const targetDoc = doc(db, "usuarios", finalPayload.usuario);
+        const targetSnap = await getDoc(targetDoc);
+        if (!targetSnap.exists()) return { ok: false, error: "Usuario no encontrado en base de datos." };
+        const email = targetSnap.data().email || targetSnap.data().usuario;
+        if (!email || !email.includes("@")) {
+          return { ok: false, error: "El usuario no tiene correo electrónico registrado para hacer reset." };
+        }
+        await sendPasswordResetEmail(auth, email);
+        return { ok: true, message: `Email de restablecimiento enviado a ${email}.` };
       }
 
       if (action === "saveMyEmail") {
@@ -2954,10 +3101,21 @@ document.addEventListener("DOMContentLoaded", () => {
         const newUserRef = doc(db, "usuarios", finalPayload.usuario);
         await setDoc(newUserRef, {
           ...finalPayload,
-          activo: "SI",
           timestamp: serverTimestamp()
         });
-        return { ok: true, message: "Usuario creado en base de datos. Recuerda darlo de alta en Auth." };
+        return { ok: true, message: "Usuario creado en base de datos. Recuerda añadirlo a Authentication." };
+      }
+
+      if (action === "adminToggleUser") {
+        const userRef = doc(db, "usuarios", finalPayload.usuario);
+        await setDoc(userRef, { activo: finalPayload.activo }, { merge: true });
+        return { ok: true, message: "Estado de usuario actualizado." };
+      }
+
+      if (action === "adminDeleteUser") {
+        const userRef = doc(db, "usuarios", finalPayload.usuario);
+        await deleteDoc(userRef);
+        return { ok: true, message: "Usuario eliminado de la base de datos." };
       }
 
       if (action === "adminGetConsumiblesOverride" || action === "adminSetConsumiblesOverride") {
@@ -3035,10 +3193,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return { ok: true, data: true };
       }
 
-      // --- CARGA DE ARCHIVOS ---
-      if (action === "uploadFile") {
-        return { ok: false, error: "Carga de archivos a Drive no disponible en este entorno. Usa Firebase Storage." };
-      }
+      // (uploadFile ya está manejado arriba con Firebase Storage)
 
       // --- HELPER DE VENTANA DE CAPTURA (Interno) ---
       async function getBioCaptureWindow() {
@@ -3505,35 +3660,14 @@ document.addEventListener("DOMContentLoaded", () => {
     await Promise.allSettled(jobs);
   }
 
-  let TOKEN = localStorage.getItem("JS1_TOKEN") || "";
-  let USER = null;
+  TOKEN = localStorage.getItem("JS1_TOKEN") || "";
+  USER = null;
   let STATUS = null;
   let UNIT_CATALOG = [];
   let LIVE_TIMERS_STARTED = false;
   let LIVE_TIMERS = [];
 
-  const LIVE_STATE = {
-    pinolPendientes: null,
-    summaryCapturadas: null,
-    summaryFaltantes: null,
-    todayExistenciaCaptured: null,
-    todayConsCaptured: null,
-    lastHistoryRows: null,
-    summaryKey: null,
-    notifCount: 0,
-    notifWarnCount: 0,
-    notifGoodCount: 0,
-    lastToastKey: "",
-    lastEventKey: "",
-    mutedUntil: 0,
-    lastEventTs: 0,
-    eventCooldownMs: 2200,
-    eventHistory: {},
-    pinolWatching: false,
-    summaryWatching: false,
-    unidadWatching: false,
-    historyWatching: false
-  };
+  // LIVE_STATE está declarado globalmente para que esté disponible antes del login.
 
   function initStaticAssets() {
     const a = $("logoA");
@@ -3856,8 +3990,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  let BATCH_CATALOG = []; // Catálogo completo (ADMIN)
-  let UNIT_BATCHES = [];  // Catálogo filtrado por municipio (UNIDAD)
+  BATCH_CATALOG = []; // Catálogo completo (ADMIN)
+  UNIT_BATCHES = [];  // Catálogo filtrado por municipio (UNIDAD)
 
   async function hydrateSessionUi(user, status, opts = {}) {
 
@@ -3949,6 +4083,13 @@ async function loadBatchesForSession(user) {
         });
 
         console.log(`🟢 2. Firebase devolvió ${allLotes.length} lotes en total.`);
+
+        // --- CARGA DE PARÁMETROS DE BIOLÓGICOS (Config) ---
+        const configRef = collection(db, "config_biologicos");
+        const configSnap = await getDocs(configRef);
+        CONFIG_BIOLOGICOS_CATALOG = [];
+        configSnap.forEach(d => CONFIG_BIOLOGICOS_CATALOG.push(d.data()));
+        console.log(`🟢 2.5. Firebase devolvió ${CONFIG_BIOLOGICOS_CATALOG.length} registros de configuración.`);
 
         const userMuni = String(user.municipio || "").trim().toUpperCase();
 
@@ -4280,8 +4421,9 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
     return "shelf-life-ok";
   }
 
-  function addSRRow(data = null) {
-    const tbody = $("srCaptureTbody");
+  window.addSRRow = function(data = null) {
+    const tbody = document.getElementById("srCaptureTbody");
+    if (!tbody) return;
     const tr = document.createElement("tr");
     
     const biotics = [
@@ -4304,7 +4446,7 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
           <option value="">—</option>
         </select>
       </td>
-      <td class="sr-cad-cell">—</td>
+      <td class="sr-cad-cell muted">—</td>
       <td>
         <input type="date" class="sr-recepcion-input" value="${data?.fecha_recepcion || ""}">
       </td>
@@ -4312,7 +4454,7 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
         <input type="number" class="sr-cantidad-input" min="0" step="1" value="${data?.cantidad || ""}" placeholder="0">
       </td>
       <td>
-        <button type="button" class="miniBtn bad" onclick="this.closest('tr').remove(); updateCaptureStateBanner();">
+        <button type="button" class="miniBtn bad" onclick="this.closest('tr').remove();">
           <span class="material-symbols-rounded">delete</span>
         </button>
       </td>
@@ -4321,11 +4463,11 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
     tbody.appendChild(tr);
     
     if (data) {
-      handleSRBioChange(tr.querySelector(".sr-bio-select"), data.lote);
+      window.handleSRBioChange(tr.querySelector(".sr-bio-select"), data.lote);
     }
   }
 
-function handleSRBioChange(selectEl, preselectLote = null) {
+window.handleSRBioChange = function(selectEl, preselectLote = null) {
     const tr = selectEl.closest("tr");
     const bio = String(selectEl.value || "").trim().toUpperCase();
     
@@ -4338,15 +4480,11 @@ function handleSRBioChange(selectEl, preselectLote = null) {
 
     if (!bio) return;
 
-    console.log(`🔎 Buscando biológico: [${bio}]`);
-    console.log(`📦 Lotes en memoria actual:`, UNIT_BATCHES);
-
     const filtered = UNIT_BATCHES.filter(l => 
         String(l.biologico || "").trim().toUpperCase() === bio
     );
     
     if (!filtered.length) {
-        console.warn(`⚠️ No se encontraron lotes para [${bio}]`);
         loteSelect.innerHTML = '<option value="">SIN LOTES</option>';
         return;
     }
@@ -4361,13 +4499,55 @@ function handleSRBioChange(selectEl, preselectLote = null) {
         loteSelect.appendChild(opt);
     });
 
-    if (preselectLote) handleSRLoteChange(loteSelect);
+    if (preselectLote || filtered.length === 1) {
+        if (filtered.length === 1 && !preselectLote) loteSelect.selectedIndex = 1;
+        window.handleSRLoteChange(loteSelect);
+    }
+    
+    // Inyectar validación dinámica
+    refreshSRValidation(tr);
 }
 
-  function handleSRLoteChange(selectEl) {
+function refreshSRValidation(tr) {
+    const bioSelect = tr.querySelector(".sr-bio-select");
+    const cantidadInput = tr.querySelector(".sr-cantidad-input");
+    const bio = String(bioSelect.value || "").trim().toUpperCase();
+    const cantidad = Number(cantidadInput.value || 0);
+    
+    if (bio && cantidadInput.getAttribute("listener-bound") !== "1") {
+        cantidadInput.addEventListener("input", () => refreshSRValidation(tr));
+        cantidadInput.setAttribute("listener-bound", "1");
+    }
+
+    const config = CONFIG_BIOLOGICOS_CATALOG.find(c => 
+      String(c.biologico).trim().toUpperCase() === bio
+    );
+
+    cantidadInput.classList.remove("input-warn", "input-bad", "input-good");
+    tr.classList.remove("row-warn", "row-bad");
+
+    if (!bio || isNaN(cantidad)) return;
+
+    if (config) {
+      const { promedio_frascos } = config;
+      if (promedio_frascos > 0 && cantidad < (promedio_frascos * 0.5)) {
+          cantidadInput.classList.add("input-warn");
+          tr.title = `Existencia baja. Promedio: ${promedio_frascos}.`;
+      } else if (promedio_frascos > 0 && cantidad > (promedio_frascos * 2)) {
+          cantidadInput.classList.add("input-bad");
+          tr.title = `Existencia alta. Promedio: ${promedio_frascos}.`;
+      } else {
+          cantidadInput.classList.add("input-good");
+      }
+    }
+}
+
+
+window.handleSRLoteChange = function(selectEl) {
     const tr = selectEl.closest("tr");
     const opt = selectEl.selectedOptions[0];
     const cadCell = tr.querySelector(".sr-cad-cell");
+    const recInput = tr.querySelector(".sr-recepcion-input");
     
     if (!opt || !opt.dataset.cad) {
       cadCell.textContent = "—";
@@ -4378,36 +4558,13 @@ function handleSRBioChange(selectEl, preselectLote = null) {
     const cad = opt.dataset.cad;
     const rec = opt.dataset.rec || "";
     
-    // Limpiar contenido previo por completo
-    cadCell.innerHTML = "";
-    cadCell.textContent = "";
+    cadCell.textContent = cad || "—";
+    cadCell.className = "sr-cad-cell " + getShelfLifeClass(cad);
 
-    // Blindaje: si por alguna razón llega un formato de fecha largo, intentar formatear
-    let displayCad = cad || "—";
-    if (cad && cad.includes(" ") && cad.length > 15) {
-      const d = new Date(cad);
-      if (!isNaN(d.getTime())) {
-        const months = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
-        displayCad = `${months[d.getMonth()]}-${String(d.getFullYear()).slice(-2)}`;
-      }
-    }
-
-    if (!cad) {
-      cadCell.textContent = "—";
-      cadCell.className = "sr-cad-cell";
-    } else {
-      const span = document.createElement("span");
-      span.className = getShelfLifeClass(displayCad);
-      span.textContent = displayCad;
-      cadCell.appendChild(span);
-      cadCell.className = "sr-cad-cell"; // El TD mantiene su clase, el SPAN lleva el color
-    }
-
-    const recInput = tr.querySelector(".sr-recepcion-input");
     if (recInput && !recInput.value) {
       recInput.value = rec;
     }
-  }
+}
 
   $("btnAddSRRow")?.addEventListener("click", () => addSRRow());
 
@@ -6694,19 +6851,15 @@ $("btnSaveSR").onclick = async () => {
     }
 
     // === GUARDADO EN FIRESTORE ===
-    const docId = `${todayYmdLocal()}_${USER.clues}`;
-    const docRef = doc(db, "capturas_sr", docId);
-
-    await setDoc(docRef, {
-      clues: USER.clues,
-      unidad: USER.unidad,
-      municipio: USER.municipio,
+    const res = await apiCall({
+      action: "saveSR",
       fecha: todayYmdLocal(),
-      capturado_por: nombre,
+      nombre: nombre,
       items: items,
-      editado: EDIT_SR ? "SI" : "NO",
-      timestamp: serverTimestamp()
+      editado: EDIT_SR ? "SI" : "NO"
     });
+
+    if (!res.ok) throw new Error(res.error || "Error en apiCall");
 
     muteRealtimeFor(12000);
     showToast(EDIT_SR ? "Existencia actualizada en Firebase" : "Existencia guardada en Firebase", true, "good");
@@ -7074,6 +7227,7 @@ $("btnSaveSR").onclick = async () => {
   if ($("btnExport")) $("btnExport").onclick = () => {
     $("exportOverlay")?.classList.add("show");
     updateExportFechaHint();
+    loadExportOptions().catch(console.error);
   };
 
   if ($("btnCancelExport")) $("btnCancelExport").onclick = () => {
@@ -7352,10 +7506,13 @@ $("btnSaveSR").onclick = async () => {
         <td>
           <div class="miniRow">
             <button class="miniBtn" data-action="reset" data-user="${escapeAttr(u.usuario)}" title="Reset password">
-              <span class="material-symbols-rounded">lock_reset</span> Reset
+              <span class="material-symbols-rounded">lock_reset</span>
             </button>
             <button class="miniBtn" data-action="toggle" data-user="${escapeAttr(u.usuario)}" data-active="${escapeAttr(u.activo)}" title="Activar/Inactivar">
-              <span class="material-symbols-rounded">toggle_on</span> Activo
+              <span class="material-symbols-rounded">${u.activo === 'SI' ? 'toggle_on' : 'toggle_off'}</span>
+            </button>
+            <button class="miniBtn bad" data-action="delete" data-user="${escapeAttr(u.usuario)}" title="Eliminar">
+              <span class="material-symbols-rounded">delete</span>
             </button>
           </div>
         </td>
@@ -7373,96 +7530,59 @@ $("btnSaveSR").onclick = async () => {
               ${String(u.activo || "").toUpperCase() === "SI" ? "Activo" : "Inactivo"}
             </div>
           </div>
-
           <div class="mobileInfoFields">
-            <div class="mobileInfoField">
-              <div class="mobileInfoLabel">Municipio</div>
-              <div class="mobileInfoValue">${escapeHtml(u.municipio || "—")}</div>
-            </div>
-
-            <div class="mobileInfoField">
-              <div class="mobileInfoLabel">CLUES</div>
-              <div class="mobileInfoValue">${escapeHtml(u.clues || "—")}</div>
-            </div>
-
-            <div class="mobileInfoField">
-              <div class="mobileInfoLabel">Unidad</div>
-              <div class="mobileInfoValue">${escapeHtml(u.unidad || "—")}</div>
-            </div>
-
-            <div class="mobileInfoField">
-              <div class="mobileInfoLabel">Rol</div>
-              <div class="mobileInfoValue">${escapeHtml(u.rol || "—")}</div>
-            </div>
+            <div class="mobileInfoField"><div class="mobileInfoLabel">Municipio</div><div class="mobileInfoValue">${escapeHtml(u.municipio || "—")}</div></div>
+            <div class="mobileInfoField"><div class="mobileInfoLabel">CLUES</div><div class="mobileInfoValue">${escapeHtml(u.clues || "—")}</div></div>
+            <div class="mobileInfoField"><div class="mobileInfoLabel">Rol</div><div class="mobileInfoValue">${escapeHtml(u.rol || "—")}</div></div>
           </div>
-
           <div class="mobileActionRow">
-            <button class="miniBtn" data-action="reset" data-user="${escapeAttr(u.usuario)}">
-              <span class="material-symbols-rounded">lock_reset</span> Reset
-            </button>
-            <button class="miniBtn" data-action="toggle" data-user="${escapeAttr(u.usuario)}" data-active="${escapeAttr(u.activo)}">
-              <span class="material-symbols-rounded">toggle_on</span> Activo
-            </button>
+            <button class="miniBtn" data-action="reset" data-user="${escapeAttr(u.usuario)}"><span class="material-symbols-rounded">lock_reset</span></button>
+            <button class="miniBtn" data-action="toggle" data-user="${escapeAttr(u.usuario)}" data-active="${escapeAttr(u.activo)}"><span class="material-symbols-rounded">${u.activo === 'SI' ? 'toggle_on' : 'toggle_off'}</span></button>
+            <button class="miniBtn bad" data-action="delete" data-user="${escapeAttr(u.usuario)}"><span class="material-symbols-rounded">delete</span></button>
           </div>
         </div>
       `).join("");
       }
 
-      document.querySelectorAll("button[data-action]").forEach(btn => {
+      // VINCULAR EVENTOS
+      document.querySelectorAll("#usersTbody .miniBtn, #usersCards .miniBtn").forEach(btn => {
         btn.onclick = async () => {
-          const act = btn.getAttribute("data-action");
-          const user = btn.getAttribute("data-user");
+          const action = btn.dataset.action;
+          const targetUser = btn.dataset.user;
+          const currentActive = btn.dataset.active;
 
-          if (act === "reset") {
-            const np = prompt("Nueva contraseña para: " + user);
-            if (!np) return;
-            await adminReset(user, np);
-          }
+          if (action === "delete" && !confirm(`¿Estás seguro de eliminar a ${targetUser}?`)) return;
 
-          if (act === "toggle") {
-            const current = btn.getAttribute("data-active") || "SI";
-            const next = (current === "SI") ? "NO" : "SI";
-            const ok = confirm(`Cambiar activo de ${user}: ${current} → ${next}?`);
-            if (!ok) return;
-            await adminSetActive(user, next);
+          try {
+            showOverlay("Procesando...", "Admin");
+            let r;
+            if (action === "toggle") {
+              const newActive = String(currentActive || "SI").toUpperCase() === "SI" ? "NO" : "SI";
+              r = await apiCall({ action: "adminToggleUser", usuario: targetUser, activo: newActive });
+            } else if (action === "reset") {
+              r = await apiCall({ action: "adminResetPassword", usuario: targetUser });
+            } else if (action === "delete") {
+              r = await apiCall({ action: "adminDeleteUser", usuario: targetUser });
+            }
+
+            if (r && r.ok) {
+              showToast(r.message || "Operación exitosa", true);
+              await refreshUsers();
+            } else {
+              showToast(r.error || "Error en la operación", false);
+            }
+          } catch (e) {
+            showToast("Error de conexión", false);
+          } finally {
+            hideOverlay();
           }
         };
       });
-
     } catch (e) {
       console.error("refreshUsers error:", e);
-      showToast("Error al cargar usuarios", false);
     }
   }
 
-
-  async function adminReset(usuario, newPassword) {
-    showOverlay("Actualizando contraseña…");
-    try {
-      const r = await apiCall({ action: "adminResetPassword", token: TOKEN, usuario, newPassword });
-      if (!r || !r.ok) { showToast((r && r.error) ? r.error : "No se pudo", false); return; }
-      showToast("Contraseña actualizada");
-      refreshUsers();
-    } catch (e) {
-      showToast("Error en reset", false);
-    } finally {
-      hideOverlay();
-    }
-  }
-
-  async function adminSetActive(usuario, activo) {
-    showOverlay("Actualizando estatus…");
-    try {
-      const r = await apiCall({ action: "adminSetActive", token: TOKEN, usuario, activo });
-      if (!r || !r.ok) { showToast((r && r.error) ? r.error : "No se pudo", false); return; }
-      showToast("Estatus actualizado");
-      refreshUsers();
-    } catch (e) {
-      showToast("Error en estatus", false);
-    } finally {
-      hideOverlay();
-    }
-  }
 
   async function listPinol(force = false) {
     if (!TOKEN) throw new Error("Sin token de sesión");
@@ -8985,9 +9105,13 @@ $("btnSaveSR").onclick = async () => {
       return;
     }
 
-    // Role specific targets
-    let targetClues = "";
-    let targetUnidad = "";
+    if (file.size > 15 * 1024 * 1024) {
+      showToast("El archivo es demasiado grande (máx 15MB)", false);
+      return;
+    }
+
+    let targetClues = USER.clues;
+    let targetUnidad = USER.unidad;
 
     if (USER.rol === "MUNICIPAL") {
       const unitSelect = $("uploadUnitSelect");
@@ -9000,46 +9124,29 @@ $("btnSaveSR").onclick = async () => {
       targetUnidad = option.getAttribute("data-name") || "";
     }
 
-    // Límite de 15MB
-    if (file.size > 15 * 1024 * 1024) {
-      showToast("El archivo es demasiado grande (máx 15MB)", false);
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const base64 = e.target.result.split(",")[1];
-      const payload = {
+    try {
+      showOverlay("Subiendo archivo a Firebase Storage...", "Storage");
+      setBtnBusy("btnDoUpload", true, "Subiendo…");
+      
+      const res = await apiCall({
         action: "uploadFile",
-        token: TOKEN,
-        filename: file.name,
-        mimeType: file.type,
-        base64: base64,
+        file: file,
         category: category,
         targetClues: targetClues,
         targetUnidad: targetUnidad
-      };
+      });
 
-      try {
+      if (res && res.ok) {
+        showToast("¡Archivo subido exitosamente!", true);
         closeUploadFilesModal();
-        showOverlay("Subiendo archivo a Drive...", "Drive");
-        setBtnBusy("btnDoUpload", true, "Subiendo…");
-        const res = await apiCall(payload);
-        if (res && res.ok) {
-          showToast("¡Archivo subido exitosamente a Drive!", true);
-        } else {
-          showToast("Error al subir: " + (res?.error || "Desconocido"), false);
-        }
-      } catch (err) {
-        showToast("Error de conexión: " + err.message, false);
-      } finally {
-        setBtnBusy("btnDoUpload", false);
+      } else {
+        showToast("Error al subir: " + (res?.error || "Desconocido"), false);
       }
-    };
-
-    reader.onerror = () => {
-      showToast("Error al leer el archivo local", false);
-    };
-
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Upload Error:", err);
+      showToast("Error de conexión al subir el archivo", false);
+    } finally {
+      setBtnBusy("btnDoUpload", false);
+      hideOverlay();
+    }
   }
