@@ -6512,7 +6512,7 @@ async function getTodayReports(fecha = "", force = false) {
       if ($("munTxt")) $("munTxt").textContent = `Municipio: ${user.municipio || "—"}`;
     }
     if (STATUS) {
-      $("dayTxt").textContent = formatDayBadgeMx(STATUS.today);
+      if ($("dayTxt")) $("dayTxt").textContent = formatDayBadgeMx(STATUS.today);
 
       const hora = new Date().getHours();
 
@@ -6526,7 +6526,7 @@ async function getTodayReports(fecha = "", force = false) {
         saludo = "Buenas noches 🌙 Seguimos trabajando";
       }
 
-      $("capStatus").innerHTML = `<h2 class="greetingTitle">${saludo}</h2>`;
+      if ($("capStatus")) $("capStatus").innerHTML = `<h2 class="greetingTitle">${saludo}</h2>`;
       paintStatusChips(STATUS);
     }
 
@@ -6766,15 +6766,15 @@ async function getTodayReports(fecha = "", force = false) {
       clearTabAttention("tabPINOL");
     }
 
-    $("tabSR").classList.toggle("active", tab === "SR");
-    $("tabCONS").classList.toggle("active", tab === "CONS");
-    $("tabBIO").classList.toggle("active", tab === "BIO");
-    $("tabPINOL").classList.toggle("active", tab === "PINOL");
+    if ($("tabSR")) $("tabSR").classList.toggle("active", tab === "SR");
+    if ($("tabCONS")) $("tabCONS").classList.toggle("active", tab === "CONS");
+    if ($("tabBIO")) $("tabBIO").classList.toggle("active", tab === "BIO");
+    if ($("tabPINOL")) $("tabPINOL").classList.toggle("active", tab === "PINOL");
 
-    $("formSR").style.display = "none";
-    $("formCONS").style.display = "none";
-    $("formBIO").style.display = "none";
-    $("formPINOL").style.display = "none";
+    if ($("formSR")) $("formSR").style.display = "none";
+    if ($("formCONS")) $("formCONS").style.display = "none";
+    if ($("formBIO")) $("formBIO").style.display = "none";
+    if ($("formPINOL")) $("formPINOL").style.display = "none";
 
     let targetId = "formSR";
 
