@@ -24,14 +24,15 @@
   --md-sys-color-success: #006b54; /* Un esmeralda más serio */
   --md-sys-color-info: #00639b;
   
-  /* Elevación & Blur */
-  --shadow-1: 0 1px 3px 1px rgba(0,0,0,0.08), 0 1px 2px 0 rgba(0,0,0,0.04);
-  --shadow-2: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.05);
-  --glass-bg: rgba(255, 255, 255, 0.85);
-  --glass-blur: blur(25px);
+  /* Stratified Shadows MD3 */
+  --shadow-1: 0 1px 2px 0 rgba(0,0,0,0.05), 0 1px 3px 1px rgba(0,0,0,0.02);
+  --shadow-2: 0 4px 6px -1px rgba(0,0,0,0.12), 0 2px 4px -2px rgba(0,0,0,0.08);
+  --shadow-3: 0 12px 24px -4px rgba(0,0,0,0.12), 0 8px 16px -4px rgba(0,0,0,0.08);
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-blur: blur(30px);
 
   /* Spacing */
-  --header-height: 72px;
+  --header-height: 80px;
   --bottom-nav-height: 80px;
 }
 
@@ -46,18 +47,53 @@ body {
   min-height: 100vh;
 }
 
-/* 🔐 LOGIN GUARD (CSS REDUNDANCY) */
-body.not-logged-in #rightColumn,
-body.not-logged-in .sectionTitle,
-body.not-logged-in .tabs,
-body.not-logged-in .dashboardKpis,
-body.not-logged-in .sideActionWrap {
+/* 🔐 SENIOR LAYER GUARD - STRICT HYDRATION POLICY */
+#rightColumn, 
+#mobileBottomNav,
+.sectionTitle, 
+.tabs, 
+.dashboardKpis, 
+.sideActionWrap, 
+.sideFactWrap,
+.statusbar,
+#welcome,
+#who {
   display: none !important;
+}
+
+/* Base states */
+body.not-logged-in .loginWrap { display: flex !important; }
+body.not-logged-in #rightColumn { display: none !important; }
+
+/* Verified activation state ONLY */
+body.logged-in #rightColumn,
+body.logged-in #mobileBottomNav,
+body.logged-in .sectionTitle,
+body.logged-in .tabs,
+body.logged-in .dashboardKpis,
+body.logged-in .sideActionWrap,
+body.logged-in .sideFactWrap,
+body.logged-in .statusbar,
+body.logged-in #welcome,
+body.logged-in #who {
+  display: block !important;
+  animation: dashboardEntry 0.6s cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+@keyframes dashboardEntry {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 body.logged-in .loginWrap {
   display: none !important;
 }
+
+/* Layout overrides for flex components when logged in */
+body.logged-in .tabs { display: flex !important; }
+body.logged-in .statusbar { display: flex !important; }
+body.logged-in #rightColumn { display: block !important; }
+
 
 /* 🌀 COMPACT HEADER - FIXED & STABLE */
 .top {
@@ -70,11 +106,11 @@ body.logged-in .loginWrap {
   background: var(--glass-bg) !important;
   backdrop-filter: var(--glass-blur);
   border-bottom: 1px solid var(--md-sys-color-outline-variant);
-  padding: 0 24px !important;
+  padding: 0 32px !important;
   display: flex !important;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
 }
 
 .topInner {
@@ -88,36 +124,39 @@ body.logged-in .loginWrap {
 .brandMain {
   display: flex !important;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
 }
 
 .logoBadge {
   background: white;
-  padding: 6px 12px;
-  border-radius: 100px;
+  padding: 8px 16px;
+  border-radius: 16px;
   border: 1px solid var(--md-sys-color-outline-variant);
   display: flex;
-  gap: 12px;
+  gap: 16px;
+  box-shadow: var(--shadow-2);
 }
 
 .logoBadge img {
-  height: 32px !important;
+  height: 42px !important;
   width: auto;
 }
 
 .brandText h1 {
-  font-size: 20px !important;
+  font-size: 24px !important;
   font-weight: 800 !important;
   color: var(--md-sys-color-primary) !important;
   margin: 0;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.04em !important;
 }
 
 .brandText p { 
   font-size: 11px; 
   color: var(--md-sys-color-on-surface-variant); 
   margin: 0; 
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 /* 🔐 LOGIN CENTRADO */
@@ -150,27 +189,32 @@ body.logged-in .loginWrap {
 /* 📦 DASHBOARD LAYOUT */
 #rightColumn {
   margin-top: var(--header-height);
-  padding: 24px !important;
+  padding: 40px 24px !important;
   max-width: 1400px;
   margin-left: auto;
   margin-right: auto;
 }
 
 .card {
-  background: white !important;
-  border-radius: 24px !important;
-  padding: 24px !important;
+  background: #ffffff !important;
+  border-radius: 28px !important;
+  padding: 32px !important;
   border: 1px solid var(--md-sys-color-outline-variant) !important;
   box-shadow: var(--shadow-1) !important;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-2) !important;
 }
 
 .sideGreeting { 
-  font-size: 32px !important;
+  font-size: 38px !important;
   font-weight: 800 !important;
   color: var(--md-sys-color-primary) !important;
-  margin-bottom: 4px !important;
-  letter-spacing: -1px;
+  margin-bottom: 8px !important;
+  letter-spacing: -0.04em;
 }
 
 /* 🔔 NOTIF DROPDOWN - FIXED POSITIONING */
@@ -193,9 +237,9 @@ body.logged-in .loginWrap {
 
 /* 🛡️ DATO CURIOSO - PREMIUM REDESIGN */
 .sideFactWrap {
-  background: linear-gradient(135deg, var(--md-sys-color-secondary-container), #ffffff) !important;
-  border-radius: 24px !important;
-  padding: 24px !important;
+  background: linear-gradient(145deg, var(--md-sys-color-secondary-container), #ffffff) !important;
+  border-radius: 28px !important;
+  padding: 32px !important;
   border: 1px solid var(--md-sys-color-outline-variant) !important;
   position: relative;
   overflow: hidden;
@@ -204,10 +248,10 @@ body.logged-in .loginWrap {
 .sideFactWrap::after {
   content: "💡";
   position: absolute;
-  top: -10px;
-  right: -10px;
-  font-size: 60px;
-  opacity: 0.05;
+  top: -15px;
+  right: -15px;
+  font-size: 70px;
+  opacity: 0.08;
   transform: rotate(15deg);
 }
 
@@ -374,20 +418,493 @@ body.logged-in .loginWrap {
 
 /* 🕹️ CONTROLES POLISH */
 #welcome {
-  font-size: 36px !important;
+  font-size: 42px !important;
   color: var(--md-sys-color-primary);
-  letter-spacing: -1.5px;
+  letter-spacing: -0.05em;
+  font-weight: 900;
 }
 
 .who {
-  opacity: 0.7;
-  font-weight: 600;
-  margin-top: -4px;
+  font-size: 16px !important;
+  opacity: 0.6;
+  font-weight: 700;
+  margin-top: -6px;
+}
+
+/* 🛡️ DATO CURIOSO - TAG STYLE FIX */
+#factTag {
+  background: var(--md-sys-color-primary) !important;
+  color: white !important;
+  padding: 6px 14px !important;
+  border-radius: 12px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  box-shadow: var(--shadow-1);
 }
 
 @media (max-width: 768px) {
-  .tabs { width: 100%; overflow-x: auto; padding-bottom: 8px; border-radius: 16px; }
-  .tab { white-space: nowrap; }
+  #rightColumn { padding: 24px 16px !important; }
+  .tabs { width: 100%; overflow-x: auto; padding: 4px; }
+  .tab { padding: 10px 20px !important; font-size: 13px !important; }
+  .logoBadge { padding: 6px 12px; }
+  .logoBadge img { height: 32px !important; }
+}
+
+
+/* 🏛️ SISTEMA DE DISEÑO PREMIUM (MATERIAL DESIGN 3 - INSTITUCIONAL) */
+:root {
+  /* Dynamic Color Palette - Deep Institutional Blue & Graphite */
+  --md-sys-color-primary: #003366;
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #d6e3ff;
+  --md-sys-color-on-primary-container: #001b3d;
+  
+  --md-sys-color-secondary: #535f70;
+  --md-sys-color-on-secondary: #ffffff;
+  --md-sys-color-secondary-container: #d7e3f7;
+  --md-sys-color-on-secondary-container: #101c2b;
+  
+  --md-sys-color-surface: #fdfcff;
+  --md-sys-color-on-surface: #1a1c20;
+  --md-sys-color-surface-variant: #f0f4f8;
+  --md-sys-color-on-surface-variant: #43474e;
+  
+  --md-sys-color-outline: #73777f;
+  --md-sys-color-outline-variant: #c3c7cf;
+
+  /* States (Institutional Accent) */
+  --md-sys-color-error: #ba1a1a;
+  --md-sys-color-success: #006b54; /* Un esmeralda más serio */
+  --md-sys-color-info: #00639b;
+  
+  /* Stratified Shadows MD3 */
+  --shadow-1: 0 1px 2px 0 rgba(0,0,0,0.05), 0 1px 3px 1px rgba(0,0,0,0.02);
+  --shadow-2: 0 4px 6px -1px rgba(0,0,0,0.12), 0 2px 4px -2px rgba(0,0,0,0.08);
+  --shadow-3: 0 12px 24px -4px rgba(0,0,0,0.12), 0 8px 16px -4px rgba(0,0,0,0.08);
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-blur: blur(30px);
+
+  /* Spacing */
+  --header-height: 80px;
+  --bottom-nav-height: 80px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background-color: var(--md-sys-color-surface) !important;
+  color: var(--md-sys-color-on-surface) !important;
+  font-family: 'Inter', sans-serif !important;
+  margin: 0;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* 🔐 SENIOR LAYER GUARD - STRICT HYDRATION POLICY */
+#rightColumn, 
+#mobileBottomNav,
+.sectionTitle, 
+.tabs, 
+.dashboardKpis, 
+.sideActionWrap, 
+.sideFactWrap,
+.statusbar,
+#welcome,
+#who {
+  display: none !important;
+}
+
+/* Base states */
+body.not-logged-in .loginWrap { display: flex !important; }
+body.not-logged-in #rightColumn { display: none !important; }
+
+/* Verified activation state ONLY */
+body.logged-in #rightColumn,
+body.logged-in #mobileBottomNav,
+body.logged-in .sectionTitle,
+body.logged-in .tabs,
+body.logged-in .dashboardKpis,
+body.logged-in .sideActionWrap,
+body.logged-in .sideFactWrap,
+body.logged-in .statusbar,
+body.logged-in #welcome,
+body.logged-in #who {
+  display: block !important;
+  animation: dashboardEntry 0.6s cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+@keyframes dashboardEntry {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+body.logged-in .loginWrap {
+  display: none !important;
+}
+
+/* Layout overrides for flex components when logged in */
+body.logged-in .tabs { display: flex !important; }
+body.logged-in .statusbar { display: flex !important; }
+body.logged-in #rightColumn { display: block !important; }
+
+
+/* 🌀 COMPACT HEADER - FIXED & STABLE */
+.top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-height);
+  z-index: 1000;
+  background: var(--glass-bg) !important;
+  backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  padding: 0 32px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
+
+.topInner {
+  width: 100%;
+  max-width: 1400px;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brandMain {
+  display: flex !important;
+  align-items: center;
+  gap: 20px;
+}
+
+.logoBadge {
+  background: white;
+  padding: 8px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  display: flex;
+  gap: 16px;
+  box-shadow: var(--shadow-2);
+}
+
+.logoBadge img {
+  height: 42px !important;
+  width: auto;
+}
+
+.brandText h1 {
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  color: var(--md-sys-color-primary) !important;
+  margin: 0;
+  letter-spacing: -0.04em !important;
+}
+
+.brandText p { 
+  font-size: 11px; 
+  color: var(--md-sys-color-on-surface-variant); 
+  margin: 0; 
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* 🔐 LOGIN CENTRADO */
+.loginWrap {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--header-height));
+  margin-top: var(--header-height);
+  padding: 40px 20px;
+  background: radial-gradient(circle at center, var(--md-sys-color-primary-container), transparent 70%);
+}
+
+#cardLogin {
+  background: white !important;
+  border-radius: 32px !important;
+  max-width: 400px !important;
+  width: 100% !important;
+  padding: 48px !important;
+  box-shadow: 0 24px 48px rgba(0,51,102,0.1) !important;
+  border: 1px solid var(--md-sys-color-outline-variant) !important;
+  animation: md3Entry 0.8s cubic-bezier(0.05, 0.7, 0.1, 1);
+}
+
+@keyframes md3Entry { 
+  from { transform: scale(0.95); opacity: 0; } 
+  to { transform: scale(1); opacity: 1; } 
+}
+
+/* 📦 DASHBOARD LAYOUT */
+#rightColumn {
+  margin-top: var(--header-height);
+  padding: 40px 24px !important;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.card {
+  background: #ffffff !important;
+  border-radius: 28px !important;
+  padding: 32px !important;
+  border: 1px solid var(--md-sys-color-outline-variant) !important;
+  box-shadow: var(--shadow-1) !important;
+  margin-bottom: 32px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-2) !important;
+}
+
+.sideGreeting { 
+  font-size: 38px !important;
+  font-weight: 800 !important;
+  color: var(--md-sys-color-primary) !important;
+  margin-bottom: 8px !important;
+  letter-spacing: -0.04em;
+}
+
+/* 🔔 NOTIF DROPDOWN - FIXED POSITIONING */
+.topNotifDropdown {
+  position: fixed !important;
+  top: calc(var(--header-height) + 12px);
+  right: 24px;
+  z-index: 2000;
+  width: 400px;
+  max-width: calc(100vw - 48px);
+}
+
+.topNotifCard {
+  background: white !important;
+  border-radius: 28px !important;
+  border: 1px solid var(--md-sys-color-outline-variant) !important;
+  box-shadow: 0 32px 64px rgba(0,0,0,0.15) !important;
+  overflow: hidden;
+}
+
+/* 🛡️ DATO CURIOSO - PREMIUM REDESIGN */
+.sideFactWrap {
+  background: linear-gradient(145deg, var(--md-sys-color-secondary-container), #ffffff) !important;
+  border-radius: 28px !important;
+  padding: 32px !important;
+  border: 1px solid var(--md-sys-color-outline-variant) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.sideFactWrap::after {
+  content: "💡";
+  position: absolute;
+  top: -15px;
+  right: -15px;
+  font-size: 70px;
+  opacity: 0.08;
+  transform: rotate(15deg);
+}
+
+.sideTitle h3 {
+  font-size: 14px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--md-sys-color-primary);
+  margin-bottom: 12px;
+}
+
+.factTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  color: var(--md-sys-color-primary);
+  margin-bottom: 8px;
+}
+
+.factBody {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--md-sys-color-on-surface-variant);
+  margin: 0;
+}
+
+.pill {
+  background: var(--md-sys-color-primary);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* 🕹️ ASIDE ACTIONS (MD3 FAB-LIKE) */
+.iconbtn {
+  background: var(--md-sys-color-surface-variant) !important;
+  color: var(--md-sys-color-on-surface) !important;
+  border-radius: 16px !important;
+  height: 48px !important;
+  padding: 0 16px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  border: none !important;
+  transition: all 0.2s;
+}
+
+.iconbtn.active, .iconbtn:hover {
+  background: var(--md-sys-color-primary) !important;
+  color: white !important;
+}
+
+.iconbtn.logout-btn {
+    background: #ffeeee !important;
+    color: #cc0000 !important;
+}
+
+/* 🏷️ TABS MD3 - HIGH CONTRAST REFINEMENT */
+.tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+  padding: 4px;
+  background: var(--md-sys-color-surface-variant);
+  border-radius: 100px;
+  width: fit-content;
+}
+
+.tab {
+  background: transparent !important;
+  color: var(--md-sys-color-on-surface-variant) !important;
+  border-radius: 100px !important;
+  padding: 10px 24px !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+  border: none !important;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tab:hover {
+  background: rgba(0, 51, 102, 0.05) !important;
+  color: var(--md-sys-color-primary) !important;
+}
+
+.tab.active {
+  background: var(--md-sys-color-primary) !important;
+  color: white !important;
+  box-shadow: 0 8px 16px rgba(0, 51, 102, 0.2) !important;
+}
+
+.tab.active .material-symbols-rounded {
+  color: white !important;
+}
+
+/* 🌀 COMPACT HEADER - REFINED BADGES */
+.logoBadge {
+  background: white;
+  padding: 8px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  display: flex;
+  gap: 16px;
+  box-shadow: var(--shadow-1);
+}
+
+.logoBadge img {
+  height: 42px !important; /* Larger logos */
+  width: auto;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+}
+
+.statusbarPublic {
+  gap: 8px !important;
+}
+
+.badge {
+  background: transparent !important;
+  border: 1px solid var(--md-sys-color-outline-variant) !important;
+  color: var(--md-sys-color-on-surface-variant) !important;
+  border-radius: 100px !important;
+  padding: 6px 14px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  box-shadow: none !important;
+}
+
+.badge:hover {
+  background: var(--md-sys-color-surface-variant) !important;
+  border-color: var(--md-sys-color-primary) !important;
+}
+
+.badge.secondary { border-color: var(--md-sys-color-primary-container) !important; color: var(--md-sys-color-primary) !important; }
+.badge.info { border-color: var(--md-sys-color-secondary-container) !important; color: var(--md-sys-color-on-secondary-container) !important; }
+.badge.weather-badge { border-color: #ffdcb1 !important; color: #855021 !important; }
+
+/* 🛡️ DATO CURIOSO - TAG STYLE FIX */
+.sideTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#factTag {
+  background: var(--md-sys-color-secondary-container) !important;
+  color: var(--md-sys-color-on-secondary-container) !important;
+  padding: 4px 12px !important;
+  border-radius: 8px !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: none !important;
+}
+
+/* 🕹️ CONTROLES POLISH */
+#welcome {
+  font-size: 42px !important;
+  color: var(--md-sys-color-primary);
+  letter-spacing: -0.05em;
+  font-weight: 900;
+}
+
+.who {
+  font-size: 16px !important;
+  opacity: 0.6;
+  font-weight: 700;
+  margin-top: -6px;
+}
+
+/* 🛡️ DATO CURIOSO - TAG STYLE FIX */
+#factTag {
+  background: var(--md-sys-color-primary) !important;
+  color: white !important;
+  padding: 6px 14px !important;
+  border-radius: 12px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  box-shadow: var(--shadow-1);
+}
+
+@media (max-width: 768px) {
+  #rightColumn { padding: 24px 16px !important; }
+  .tabs { width: 100%; overflow-x: auto; padding: 4px; }
+  .tab { padding: 10px 20px !important; font-size: 13px !important; }
+  .logoBadge { padding: 6px 12px; }
+  .logoBadge img { height: 32px !important; }
 }
 
 
