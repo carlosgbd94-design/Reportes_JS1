@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, serverTimestamp, collection, getDocs, query, where, writeBatch, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-storage.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBzhNWRQZpDHoIBJrcuXy2a4EnHzEZuzVc",
@@ -15,7 +14,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-const storage = getStorage(app);
 
 // URL de producción de Google Apps Script (Bridge)
 const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby3en_qswj1PmE6o80nypsDM6Gw4kueRUimNSgMKJxzDojRFCsXBjFZngR9UpnkYL0n/exec";
@@ -52,7 +50,8 @@ const LIVE_STATE = {
   summaryWatching: false,
   unidadWatching: false,
   historyWatching: false,
-  toastMeta: { key: "", ts: 0 }
+  toastMeta: { key: "", ts: 0 },
+  sessionInitialized: false
 };
 document.addEventListener("DOMContentLoaded", () => {
     
@@ -62,6 +61,10 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("[Auth] Sesión activa detectada para:", firebaseUser.email);
             const perfil = await whoami();
             if (perfil) {
+                if (LIVE_STATE.sessionInitialized) {
+                    console.log("[Auth] Sesión ya hidratada, omitiendo redundancia.");
+                    return;
+                }
                 await handleAuthSuccess(perfil);
             } else {
                 showToast("No se encontró perfil para este usuario", false, "bad");
@@ -127,6 +130,7 @@ async function handleAuthSuccess(perfil) {
       // Fallback: Mostrar UI básica si falla lo secundario
       await hydrateSessionUi(USER, null, { showSuccessToast: true });
     } finally {
+      LIVE_STATE.sessionInitialized = true;
       hideOverlay();
     }
 }
@@ -143,31 +147,9 @@ async function handleAuthSuccess(perfil) {
       .toUpperCase();
   }
 
-  // FUNCIONES DE UTILIDAD (RESTAURADAS)
-  function hideEl(id) {
-    const el = document.getElementById(id);
-    if (el) el.style.display = "none";
-  }
-
-  function showEl(id, display = "block") {
-    const el = document.getElementById(id);
-    if (el) el.style.display = display;
-  }
-
-  function toggleEl(id, visible, display = "block") {
-    const el = document.getElementById(id);
-    if (el) el.style.display = visible ? display : "none";
-  }
-
-  function hideNode(node) {
-    if (node) node.style.display = "none";
-  }
-
-  function showNode(node, display = "block") {
-    if (node) node.style.display = display;
-  }
 
   const overlay = $("overlay");
+
   const overlayMsg = $("overlayMsg");
   const toast = $("toast");
   const toastMsg = $("toastMsg");
@@ -282,12 +264,7 @@ async function handleAuthSuccess(perfil) {
     }, 3600);
   }  /** ===== UTILS PORTED FROM BACKEND ===== **/
   function normalizeTextKey_(v) {
-    return String(v ?? "")
-      .trim()
-      .toUpperCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/\s+/g, " ");
+    return normalizeStr(v).replace(/\s+/g, " ");
   }
 
   function fixUtf8Text_(v) {
@@ -2838,7 +2815,15 @@ async function handleAuthSuccess(perfil) {
 
     try {
       if (action === "getLotesByMunicipio") {
-        const snapshot = await getDocs(collection(db, "lotes_catalogo"));
+        const muni = String(finalPayload.municipio || "").trim().toUpperCase();
+        let q;
+        if (muni && muni !== "*" && muni !== "TODOS") {
+          q = query(collection(db, "lotes_catalogo"), where("municipio", "==", muni));
+        } else {
+          q = collection(db, "lotes_catalogo");
+        }
+        
+        const snapshot = await getDocs(q);
         const lotes = [];
         snapshot.forEach(docSnap => lotes.push(docSnap.data()));
         return { ok: true, data: lotes };
@@ -5072,11 +5057,7 @@ window.handleSRLoteChange = function(selectEl) {
   }
 
   function todayYmdLocal() {
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
+    return parseDateYmd(new Date());
   }
 
   function isMexicanHoliday(date) {
@@ -5353,7 +5334,7 @@ async function getTodayReports(fecha = "", force = false) {
   return data || null;
 }
 
-  window.getCaptureOverview = async function (fecha, tipo, force = false) {
+  async function getCaptureOverview(fecha, tipo, force = false) {
     if (!TOKEN) return null;
 
     const safeFecha = String(fecha || todayYmdLocal()).trim();
@@ -5389,9 +5370,10 @@ async function getTodayReports(fecha = "", force = false) {
       });
 
     return data || null;
-  };
+  }
+  window.getCaptureOverview = getCaptureOverview;
 
-  window.getHistoryMetrics = async function (fechaInicio, fechaFin, force = false) {
+  async function getHistoryMetrics(fechaInicio, fechaFin, force = false) {
     if (!TOKEN) return null;
 
     const inicio = String(fechaInicio || todayYmdLocal()).trim();
@@ -5427,7 +5409,8 @@ async function getTodayReports(fecha = "", force = false) {
       });
 
     return data || null;
-  };
+  }
+  window.getHistoryMetrics = getHistoryMetrics;
 
 
   function showRightColumn(show) {
@@ -8364,44 +8347,7 @@ $("btnSaveSR").onclick = async () => {
     }
   }
 
-  async function getHistoryMetrics(fechaInicio, fechaFin, force = false) {
-    if (!TOKEN) return null;
 
-    const inicio = fechaInicio || todayYmdLocal();
-    const fin = fechaFin || todayYmdLocal();
-    const cacheKey = buildCacheKey("HISTORY_METRICS", `${inicio}::${fin}`);
-
-    const data = force
-      ? await (async () => {
-        const r = await apiCall({
-          action: "historyMetrics",
-          token: TOKEN,
-          fechaInicio: inicio,
-          fechaFin: fin
-        });
-
-        if (!r || !r.ok) return null;
-        return r.data || null;
-      })()
-      : await getCachedOrFetch({
-        key: cacheKey,
-        ttl: CACHE_TTL.HISTORY_METRICS,
-        fetcher: async () => {
-          const r = await apiCall({
-            action: "historyMetrics",
-            token: TOKEN,
-            fechaInicio: inicio,
-            fechaFin: fin
-          });
-
-          if (!r || !r.ok) return null;
-          return r.data || null;
-        },
-        shouldCache: (data) => data != null
-      });
-
-    return data || null;
-  }
 
   function renderHistoryMetrics(data) {
     const rows = data?.rows || [];
