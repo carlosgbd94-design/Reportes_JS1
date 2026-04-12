@@ -6477,22 +6477,24 @@ async function getTodayReports(fecha = "", force = false) {
     });
 
     // --- PHASE 4 REDESIGN SYNC ---
-    if ($("userNameHdr")) $("userNameHdr").textContent = user.nombre || user.usuario;
-    if ($("userRoleHdr")) $("userRoleHdr").textContent = user.rol;
+    // --- PHASE 4 REDESIGN SYNC (Safe update) ---
+    if ($("userNameHdr")) $("userNameHdr").textContent = user.nombre || user.usuario || "Usuario";
+    if ($("userRoleHdr")) $("userRoleHdr").textContent = user.rol || "Perfil";
     if ($("sideUnitName")) $("sideUnitName").textContent = user.unidad || "Administración";
     if ($("sideClues")) $("sideClues").textContent = user.clues || "JS1 CENTRAL";
 
-    // Ocultar login y mostrar App
+    // Ocultar login y mostrar App (Safe)
     hideEl("loginLayout");
     showEl("topNav", "flex");
     showEl("mainSidebar", "flex");
     showEl("mainApp");
     // ------------------------------
 
-    // Legacy sync
-    $("who").textContent = `${user.clues || "—"} — ${user.unidad || "—"}`;
-    $("welcome").textContent = `Hola, ${user.usuario}`;
-    $("rolTxt").textContent = `Perfil: ${user.rol || "UNIDAD"}`;
+    // Legacy sync (Protección contra null)
+    if ($("who")) $("who").textContent = `${user.clues || "—"} — ${user.unidad || "—"}`;
+    if ($("welcome")) $("welcome").textContent = `Hola, ${user.usuario}`;
+    if ($("rolTxt")) $("rolTxt").textContent = `Perfil: ${user.rol || "UNIDAD"}`;
+    
     if ($("tabCAPText")) {
       $("tabCAPText").textContent = (user.rol === "UNIDAD") ? "Captura" : "Panel";
     }
@@ -6503,11 +6505,11 @@ async function getTodayReports(fecha = "", force = false) {
     }
 
     if (user.rol === "ADMIN" || user.rol === "JURISDICCIONAL") {
-      $("munTxt").textContent = "Municipio(s): Todos";
+      if ($("munTxt")) $("munTxt").textContent = "Municipio(s): Todos";
     } else if (user.rol === "MUNICIPAL") {
-      $("munTxt").textContent = `Municipio(s): ${user.municipio || "—"}`;
+      if ($("munTxt")) $("munTxt").textContent = `Municipio(s): ${user.municipio || "—"}`;
     } else {
-      $("munTxt").textContent = `Municipio: ${user.municipio || "—"}`;
+      if ($("munTxt")) $("munTxt").textContent = `Municipio: ${user.municipio || "—"}`;
     }
     if (STATUS) {
       $("dayTxt").textContent = formatDayBadgeMx(STATUS.today);
