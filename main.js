@@ -4196,24 +4196,27 @@ async function handleAuthSuccess(perfil) {
     setLoggedInUI(user, status);
 
     /** Global panel switcher (PHASE 2) */
+    /** Global panel switcher (PHASE 4 Redesign) */
     window.showTab = (panel, btn) => {
-      const panels = ["panelSR", "panelCONS", "panelBIO", "panelPINOL", "panelADMIN", "panelLOTES", "panelHISTORICO"];
+      const panels = ["panelSR", "panelCONS", "panelBIO", "panelPINOL", "panelADMIN", "panelLOTES", "panelHISTORICO", "panelADMIN_USERS"];
       panels.forEach(p => toggleEl(p, false));
       
-      const target = "panel" + panel.toUpperCase();
+      // Mapeo de paneles
+      const target = (panel === "ADMIN_USERS") ? "panelCaptureSummary" : "panel" + panel.toUpperCase();
       toggleEl(target, true);
 
-      // Update Nav Items
-      document.querySelectorAll(".navItem").forEach(n => n.classList.remove("active"));
-      if (btn) btn.classList.add("active");
-      else {
-        const navBtn = $("nav" + panel.toUpperCase());
-        if (navBtn) navBtn.classList.add("active");
+      // Sincronizar Sidebar (navItem)
+      document.querySelectorAll(".navItem").forEach(n => {
+        n.classList.remove("border-primary", "bg-white", "text-primary", "shadow-sm");
+        n.classList.add("text-slate-600", "border-transparent");
+      });
+
+      if (btn && btn.classList.contains("navItem")) {
+        btn.classList.add("border-primary", "bg-white", "text-primary", "shadow-sm");
+        btn.classList.remove("text-slate-600", "border-transparent");
       }
-      
-      // Close side dropdown if open
-      hideEl("topNotifDropdown");
     };
+
 
     if (user.rol === "ADMIN") {
       showEl("navADMIN");
@@ -6340,21 +6343,32 @@ async function getTodayReports(fecha = "", force = false) {
   }
 
   function renderCaptureSummary(data) {
-    $("sumFecha").textContent = data?.fecha || "—";
-    $("sumTotal").textContent = data?.total_unidades ?? 0;
-    $("sumCapturadas").textContent = data?.total_capturadas ?? 0;
-    $("sumFaltantes").textContent = data?.total_faltantes ?? 0;
+    if (!data) return;
+    const { capturadas = [], faltantes = [], total_unidades = 0, total_capturadas = 0, total_faltantes = 0 } = data;
 
-    const capturadas = data?.capturadas || [];
-    const faltantes = data?.faltantes || [];
+    // Poblar tarjetas del nuevo DASHBOARD (PHASE 4)
+    if ($("dashTotal")) $("dashTotal").textContent = total_unidades;
+    if ($("dashCapturadas")) $("dashCapturadas").textContent = total_capturadas;
+    if ($("dashFaltantes")) $("dashFaltantes").textContent = total_faltantes;
+    
+    // Cálculos
+    const percent = total_unidades > 0 ? Math.round((total_capturadas / total_unidades) * 100) : 0;
+    if ($("dashCapturadasPercent")) $("dashCapturadasPercent").textContent = percent + "%";
+    if ($("dashFaltantesDiff")) $("dashFaltantesDiff").textContent = (total_faltantes > 0 ? "-" : "") + total_faltantes;
 
-    $("capturadasCount").textContent = `${capturadas.length}`;
-    $("faltantesCount").textContent = `${faltantes.length}`;
+    // Legacy logic
+    if ($("sumFecha")) $("sumFecha").textContent = data?.fecha || "—";
+    if ($("sumTotal")) $("sumTotal").textContent = total_unidades;
+    if ($("sumCapturadas")) $("sumCapturadas").textContent = total_capturadas;
+    if ($("sumFaltantes")) $("sumFaltantes").textContent = total_faltantes;
+    if ($("capturadasCount")) $("capturadasCount").textContent = `${capturadas.length}`;
+    if ($("faltantesCount")) $("faltantesCount").textContent = `${faltantes.length}`;
 
     // Semáforo automático
     if ($("kpiCardFaltantes")) {
       $("kpiCardFaltantes").className = "kpiCard " + (faltantes.length > 0 ? "warn" : "ok");
     }
+
 
 
     const tipoTxt = (data?.tipo === "CONS") ? "Consumibles" : "Existencia de biológicos";
@@ -6464,8 +6478,20 @@ async function getTodayReports(fecha = "", force = false) {
       mainPanel: "CAP"
     });
 
-    showRightColumn(true);
+    // --- PHASE 4 REDESIGN SYNC ---
+    if ($("userNameHdr")) $("userNameHdr").textContent = user.nombre || user.usuario;
+    if ($("userRoleHdr")) $("userRoleHdr").textContent = user.rol;
+    if ($("sideUnitName")) $("sideUnitName").textContent = user.unidad || "Administración";
+    if ($("sideClues")) $("sideClues").textContent = user.clues || "JS1 CENTRAL";
 
+    // Ocultar login y mostrar App
+    hideEl("loginLayout");
+    showEl("topNav", "flex");
+    showEl("mainSidebar", "flex");
+    showEl("mainApp");
+    // ------------------------------
+
+    // Legacy sync
     $("who").textContent = `${user.clues || "—"} — ${user.unidad || "—"}`;
     $("welcome").textContent = `Hola, ${user.usuario}`;
     $("rolTxt").textContent = `Perfil: ${user.rol || "UNIDAD"}`;
