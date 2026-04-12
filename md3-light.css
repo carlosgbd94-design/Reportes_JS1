@@ -1,0 +1,137 @@
+/* 🏛️ PALETA MATERIAL YOU LIGHT (JS1 REPORTES) */
+:root {
+  --primary: #006b54; 
+  --primary-container: #d2e8d1;
+  --on-primary-container: #002116;
+  --bg: #fdfdfd; 
+  --surface: #ffffff;
+  --surface-variant: #f3f6f9;
+  --text: #191c1b;
+  --outline: #707974;
+  --bottom-nav-height: 70px;
+}
+
+body {
+  background-color: var(--bg) !important;
+  color: var(--text) !important;
+  margin: 0;
+}
+
+/* Layout Responsivo Moderno */
+@media (max-width: 768px) {
+  .wrap {
+    padding-bottom: var(--bottom-nav-height);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .grid {
+    display: block !important;
+    margin-bottom: 20px;
+  }
+
+  #cardSide {
+    display: none !important;
+  }
+
+  .card {
+    background: var(--surface) !important;
+    border-radius: 28px !important;
+    margin: 16px !important;
+    width: auto !important;
+    border: 1px solid #e1e3e1 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+    padding: 24px !important;
+  }
+
+  .card h2, .card h3 {
+    color: var(--primary);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  input, select, textarea {
+    background: #fdfdfd !important;
+    border: 1px solid var(--outline) !important;
+    color: var(--text) !important;
+    border-radius: 12px !important;
+    padding: 14px !important;
+    font-size: 16px !important;
+  }
+
+  label {
+    color: var(--primary) !important;
+    font-weight: 600 !important;
+    margin-bottom: 8px !important;
+    display: block !important;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Mobile Sticky Header */
+  .top {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: rgba(253, 253, 253, 0.9) !important;
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid #e1e3e1;
+  }
+
+  .brandText h1 {
+    color: var(--primary) !important;
+  }
+
+  /* Bottom Navigation Bar Light */
+  #mobileBottomNav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--bottom-nav-height);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid #e1e3e1;
+    z-index: 2000;
+    justify-content: space-around;
+    align-items: center;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .navItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #44474e;
+    text-decoration: none;
+    font-size: 11px;
+    gap: 6px;
+    background: none;
+    border: none;
+    padding: 10px;
+    border-radius: 20px;
+    transition: background 0.2s;
+  }
+
+  .navItem .material-symbols-rounded {
+    font-size: 24px;
+    padding: 4px 20px;
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .navItem.active {
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  .navItem.active .material-symbols-rounded {
+    background: var(--primary-container);
+    color: var(--on-primary-container);
+    font-variation-settings: 'FILL' 1;
+  }
+}
+
+#mobileBottomNav { display: none; }
