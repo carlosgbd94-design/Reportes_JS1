@@ -65,6 +65,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     console.log("[Auth] Sesión ya hidratada, omitiendo redundancia.");
                     return;
                 }
+                document.body.classList.remove("not-logged-in");
+                document.body.classList.add("logged-in");
                 await handleAuthSuccess(perfil);
             } else {
                 showToast("No se encontró perfil para este usuario", false, "bad");
@@ -74,8 +76,11 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("[Auth] No hay sesión activa. Mostrando login.");
             TOKEN = null;
             USER = null;
+            document.body.classList.remove("logged-in");
+            document.body.classList.add("not-logged-in");
             hideEl("rightColumn");
             showEl("cardLogin");
+            if ($("loginWrap")) $("loginWrap").style.display = "flex";
         }
     });
 
@@ -6616,6 +6621,10 @@ async function getTodayReports(fecha = "", force = false) {
     STATUS = null;
     TOKEN = "";
     TODAY_CACHE = null;
+    LIVE_STATE.sessionInitialized = false;
+
+    document.body.classList.remove("logged-in");
+    document.body.classList.add("not-logged-in");
 
     stopRealtimeUX();
 
