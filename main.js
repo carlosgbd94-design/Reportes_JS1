@@ -2970,32 +2970,11 @@ async function handleAuthSuccess(perfil) {
         return { ok: true, data: true };
       }
 
-      // --- CARGA DE ARCHIVOS (FIREBASE STORAGE) ---
+      // --- CARGA DE ARCHIVOS (GESTIONADA POR GAS EN DRIVE) ---
       if (action === "uploadFile") {
-        const file = finalPayload.file; // File object nativo del navegador
-        if (!file) return { ok: false, error: "Archivo no especificado." };
-
-        const category = String(finalPayload.category || "Otros").replace(/[^a-zA-Z0-9_\-à-ü ]/g, "").trim();
-        const targetClues = finalPayload.targetClues || USER.clues;
-        const path = `uploads/${targetClues}/${category}/${Date.now()}_${file.name}`;
-        const fileRef = storageRef(storage, path);
-        const snap = await uploadBytes(fileRef, file);
-        const url = await getDownloadURL(snap.ref);
-
-        // Guardar registro de la carga en Firestore para trazabilidad
-        const logRef = doc(collection(db, "archivos_subidos"));
-        await setDoc(logRef, {
-          url,
-          path,
-          filename: file.name,
-          category,
-          clues: USER.clues,
-          targetClues,
-          subido_por: USER.usuario,
-          timestamp: serverTimestamp()
-        });
-
-        return { ok: true, data: { url } };
+        // Esta acción ahora fluye directamente hacia Google Apps Script
+        // Solo verificamos sesión de forma preventiva
+        if (!USER) return { ok: false, error: "Debes iniciar sesión." };
       }
 
       if (action === "confirmPinolReceipt") {
@@ -9290,19 +9269,47 @@ $("btnSaveSR").onclick = async () => {
     }
 
     try {
-      showOverlay("Subiendo archivo a Firebase Storage...", "Storage");
+      showOverlay("Codificando archivo...", "Drive");
       setBtnBusy("btnDoUpload", true, "Subiendo…");
       
+      // Convertir a Base64 para envío a GAS
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      showOverlay("Subiendo a Google Drive...", "Drive");
       const res = await apiCall({
         action: "uploadFile",
-        file: file,
+        base64: base64,
+        filename: file.name,
+        mimeType: file.type,
         category: category,
         targetClues: targetClues,
         targetUnidad: targetUnidad
       });
 
       if (res && res.ok) {
-        showToast("¡Archivo subido exitosamente!", true);
+        showToast("¡Archivo guardado en Google Drive!", true);
+        
+        // Registro opcional en Firestore para auditoría (aunque el archivo esté en Drive)
+        try {
+          const logRef = doc(collection(db, "archivos_subidos"));
+          await setDoc(logRef, {
+            url: res.data.url,
+            driveId: res.data.id,
+            filename: file.name,
+            category,
+            clues: USER.clues,
+            targetClues,
+            subido_por: USER.usuario,
+            storage: "GOOGLE_DRIVE",
+            timestamp: serverTimestamp()
+          });
+        } catch(e) { console.warn("Log de auditoría falló:", e); }
+
         closeUploadFilesModal();
       } else {
         showToast("Error al subir: " + (res?.error || "Desconocido"), false);
