@@ -16,6 +16,14 @@
 </head>
 
 <body>
+  <div id="splashScreen" class="splash-screen">
+    <div class="splash-content">
+      <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/Seseq_vertical_2025.png" alt="SESEQ Logo" class="splash-logo">
+      <div class="splash-loader"></div>
+      <p>JS1 Reportes</p>
+    </div>
+  </div>
+
   <div class="wrap">
 
     <div class="top">
@@ -1696,11 +1704,31 @@
       </div>
 
       <div class="appFooter">
-        &copy;
-        <?= new Date().getFullYear() ?> JS1 Reportes | Desarrollado por <a href="mailto:carlosgbd94@gmail.com"
+        &copy; <span id="footerYear">2026</span> JS1 Reportes | Desarrollado por <a href="mailto:carlosgbd94@gmail.com"
           style="color:inherit;text-decoration:underline;">carlosgbd94@gmail.com</a>
       </div>
 
-      <script type="module" src="main.js"></script>
+    </div><!-- end wrap -->
+
+    <!-- 📱 BOTTOM NAVIGATION (MOBILE ONLY) -->
+    <nav class="bottom-nav" id="mobileNav" style="display:none">
+      <button class="nav-item active" data-tab="tabCAP">
+        <span class="material-symbols-rounded">assignment</span>
+        <span>Captura</span>
+      </button>
+      <button class="nav-item" data-tab="tabNOTIFS" id="navNotifs" style="display:none">
+        <div class="badge-wrapper">
+          <span class="material-symbols-rounded">notifications</span>
+          <span id="notifBadgeNav" class="liveBadge">0</span>
+        </div>
+        <span>Avisos</span>
+      </button>
+      <button class="nav-item" data-tab="tabADMIN" id="navAdmin" style="display:none">
+        <span class="material-symbols-rounded">admin_panel_settings</span>
+        <span>Admin</span>
+      </button>
+    </nav>
+
+    <script type="module" src="main.js"></script>
 
 </html>
