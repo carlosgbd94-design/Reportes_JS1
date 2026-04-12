@@ -181,22 +181,33 @@
         </div>
       </section>
 
-      <section class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div class="lg:col-span-12 bg-white p-1 rounded-3xl shadow-sm border border-slate-100">
-           <div class="p-6 md:p-8">
-              <div class="flex items-center justify-between mb-8">
-                <h3 class="text-lg font-bold text-on-surface">Métricas Operativas por Unidad</h3>
-                <div class="flex gap-2">
-                  <button class="p-2 text-primary hover:bg-primary/5 rounded-full transition-colors"><span class="material-symbols-outlined">filter_list</span></button>
-                  <button class="p-2 text-primary hover:bg-primary/5 rounded-full transition-colors"><span class="material-symbols-outlined">download</span></button>
-                </div>
-              </div>
-              <div class="overflow-x-auto no-scrollbar">
-                <div id="adminSummaryTable">
-                  <div class="text-center py-10 text-slate-400 italic font-medium">Cargando métricas operativas...</div>
-                </div>
-              </div>
-           </div>
+      <section class="split-dashboard">
+        <!-- 🔹 COLUMNA IZQUIERDA: MÉTRICAS OPERATIVAS -->
+        <div class="card-panel">
+          <div class="panel-header">
+            <h3 class="panel-title">Métricas Operativas por Unidad</h3>
+            <div class="nav-actions" style="border:none; padding:0;">
+              <button class="icon-btn"><span class="material-symbols-outlined">filter_list</span></button>
+              <button class="icon-btn"><span class="material-symbols-outlined">download</span></button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <div id="adminSummaryTable">
+              <div style="text-align:center; padding:40px; color:var(--text-muted); font-style:italic; font-weight:500;">Cargando métricas operativas...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🔹 COLUMNA DERECHA: PANELES COMPLEMENTARIOS (Unidades Destacadas / Opciones) -->
+        <div class="side-panels" style="display:flex; flex-direction:column; gap:24px;">
+          <div class="card-panel">
+            <div class="panel-header" style="margin-bottom:16px;">
+              <h3 class="panel-title" style="font-size:1rem;">Opciones Rápidas</h3>
+            </div>
+            <button id="btnOpenExportFromAdmin" class="btn" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
+              <span class="material-symbols-outlined text-white">download</span> Exportar
+            </button>
+          </div>
         </div>
       </section>
     </div>
