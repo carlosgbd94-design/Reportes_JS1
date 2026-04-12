@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, serverTimestamp, collection, getDocs, query, where, writeBatch, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-storage.js";
 
 const firebaseConfig = {
@@ -51,12 +51,33 @@ const LIVE_STATE = {
   toastMeta: { key: "", ts: 0 }
 };
 document.addEventListener("DOMContentLoaded", () => {
+    
+    /** Observer de estado de sesión persistente */
+    onAuthStateChanged(auth, async (firebaseUser) => {
+        if (firebaseUser) {
+            console.log("[Auth] Sesión activa detectada para:", firebaseUser.email);
+            const perfil = await whoami();
+            if (perfil) {
+                await handleAuthSuccess(perfil);
+            } else {
+                showToast("No se encontró perfil para este usuario", false, "bad");
+                await signOut(auth);
+            }
+        } else {
+            console.log("[Auth] No hay sesión activa. Mostrando login.");
+            TOKEN = null;
+            USER = null;
+            hideEl("rightColumn");
+            showEl("cardLogin");
+        }
+    });
+
     const formLogin = document.getElementById("loginForm");
     if (formLogin) {
         formLogin.addEventListener("submit", async (ev) => {
             ev.preventDefault();
-            const email = document.getElementById("usuario").value.trim();
-            const password = document.getElementById("password").value.trim();
+            const email = $("usuario").value.trim();
+            const password = $("password").value.trim();
 
             if (!email || !password) {
                 showToast("Ingresa credenciales", false, "warn");
@@ -64,46 +85,59 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             showOverlay("Iniciando sesión...", "Firebase");
-
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                const perfil = await whoami();
-                if (perfil) {
-                    USER = perfil;
-                    TOKEN = true;
-                    
-                    // Intentamos cargar datos secundarios, si fallan no bloqueamos el acceso
-                    try { 
-                      await Promise.all([
-                        loadBatchesForSession(USER),
-                        unitStatus().then(estado => hydrateSessionUi(USER, estado, { showSuccessToast: true }))
-                      ]);
-                    } catch(e) { 
-                      console.warn("Error no crítico en hidratación post-login:", e);
-                      // Si falló unitStatus pero tenemos USER, intentamos mostrar la UI básica
-                      await hydrateSessionUi(USER, null, { showSuccessToast: true });
-                    }
-                    
-                    if (USER && USER.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(USER.rol)) {
-                        apiCall({action: "silentAdminReminders"}).catch(()=>{});
-                    }
-                } else {
-                    throw new Error("No se encontró perfil para este usuario.");
-                }
+                // El observer onAuthStateChanged se encargará del resto
             } catch (error) {
                 console.error("Error en login:", error);
                 const msg = error.code === 'auth/invalid-credential' 
                     ? "Usuario o contraseña incorrectos" 
-                    : "Error al iniciar sesión o cargar datos iniciales: " + error.message;
+                    : "Error al iniciar sesión: " + error.message;
                 showToast(msg, false, "bad");
-            } finally {
                 hideOverlay();
             }
         });
     }
 });
+
+async function handleAuthSuccess(perfil) {
+    USER = perfil;
+    TOKEN = true;
+    
+    showOverlay("Cargando datos de unidad...", "Sincronizando");
+    try { 
+      // 1. Cargar catálogos críticos primero
+      await loadBatchesForSession(USER);
+      
+      // 2. Obtener estatus operativo (si ya capturó hoy, etc)
+      const estado = await unitStatus();
+      
+      // 3. Hidratar la UI con los datos
+      await hydrateSessionUi(USER, estado, { showSuccessToast: true });
+      
+      if (USER && USER.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(USER.rol)) {
+          apiCall({action: "silentAdminReminders"}).catch(()=>{});
+      }
+    } catch(e) { 
+      console.warn("Error en hidratación de sesión:", e);
+      // Fallback: Mostrar UI básica si falla lo secundario
+      await hydrateSessionUi(USER, null, { showSuccessToast: true });
+    } finally {
+      hideOverlay();
+    }
+}
 // --------------------------------
   const $ = (id) => document.getElementById(id);
+
+  /** Normalizador para comparaciones robustas (quita acentos, espacios y mayúsculas) */
+  function normalizeStr(s) {
+    if (!s) return "";
+    return String(s)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toUpperCase();
+  }
   const overlay = $("overlay");
   const overlayMsg = $("overlayMsg");
   const toast = $("toast");
@@ -2765,28 +2799,33 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (action === "unitStatus") {
-        const docId = `${todayYmdLocal()}_${USER.clues}`;
-        const srRef = doc(db, "capturas_sr", docId);
-        const srSnap = await getDoc(srRef);
-        
-        const consStatus = await getConsumiblesStatus(todayYmdLocal(), USER.clues);
-        let consExists = false;
-        if (consStatus.canCaptureConsumibles) {
-           const cDoc = `${consStatus.consumiblesCaptureDate}_${USER.clues}`;
-           const consRef = doc(db, "capturas_cons", cDoc);
-           const cSnap = await getDoc(consRef);
-           consExists = cSnap.exists();
-        }
-
-        return { 
-          ok: true, 
-          data: { 
-            sr: srSnap.exists(), 
-            cons: consExists, 
-            hasNotes: false,
-            consStatus: consStatus
+        try {
+          const docId = `${todayYmdLocal()}_${USER.clues}`;
+          const srRef = doc(db, "capturas_sr", docId);
+          const srSnap = await getDoc(srRef);
+          
+          const consStatus = await getConsumiblesStatus(todayYmdLocal(), USER.clues);
+          let consExists = false;
+          if (consStatus.canCaptureConsumibles) {
+            const cDoc = `${consStatus.consumiblesCaptureDate}_${USER.clues}`;
+            const consRef = doc(db, "capturas_cons", cDoc);
+            const cSnap = await getDoc(consRef);
+            consExists = cSnap.exists();
           }
-        };
+
+          return { 
+            ok: true, 
+            data: { 
+              sr: srSnap.exists(), 
+              cons: consExists, 
+              canCaptureConsumibles: consStatus.canCaptureConsumibles,
+              consumiblesReason: consStatus.consumiblesReason
+            } 
+          };
+        } catch (e) {
+          console.error("Error en unitStatus:", e);
+          return { ok: true, data: { sr: false, cons: false } };
+        }
       }
 
       // --- CATÁLOGOS ADMINISTRATIVOS Y USUARIOS ---
@@ -4156,6 +4195,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
     setLoggedInUI(user, status);
 
+    /** Global panel switcher (PHASE 2) */
+    window.showTab = (panel, btn) => {
+      const panels = ["panelSR", "panelCONS", "panelBIO", "panelPINOL", "panelADMIN", "panelLOTES", "panelHISTORICO"];
+      panels.forEach(p => toggleEl(p, false));
+      
+      const target = "panel" + panel.toUpperCase();
+      toggleEl(target, true);
+
+      // Update Nav Items
+      document.querySelectorAll(".navItem").forEach(n => n.classList.remove("active"));
+      if (btn) btn.classList.add("active");
+      else {
+        const navBtn = $("nav" + panel.toUpperCase());
+        if (navBtn) navBtn.classList.add("active");
+      }
+      
+      // Close side dropdown if open
+      hideEl("topNotifDropdown");
+    };
+
+    if (user.rol === "ADMIN") {
+      showEl("navADMIN");
+    }
+
     window.MUST_CHANGE_PASSWORD = !!mustChangePassword;
 
     if (window.MUST_CHANGE_PASSWORD && typeof openPasswordModal === "function") {
@@ -4224,7 +4287,6 @@ document.addEventListener("DOMContentLoaded", () => {
 async function loadBatchesForSession(user) {
     if (!user) return;
     try {
-        console.log("🟢 1. Intentando conectar a la colección 'lotes_catalogo'...");
         const lotesRef = collection(db, "lotes_catalogo");
         const querySnapshot = await getDocs(lotesRef);
         
@@ -4233,25 +4295,24 @@ async function loadBatchesForSession(user) {
             allLotes.push(doc.data());
         });
 
-        console.log(`🟢 2. Firebase devolvió ${allLotes.length} lotes en total.`);
-
-        // --- CARGA DE PARÁMETROS DE BIOLÓGICOS (Config) ---
         const configRef = collection(db, "config_biologicos");
         const configSnap = await getDocs(configRef);
         CONFIG_BIOLOGICOS_CATALOG = [];
         configSnap.forEach(d => CONFIG_BIOLOGICOS_CATALOG.push(d.data()));
-        console.log(`🟢 2.5. Firebase devolvió ${CONFIG_BIOLOGICOS_CATALOG.length} registros de configuración.`);
 
-        const userMuni = String(user.municipio || "").trim().toUpperCase();
+        const userMuniRaw = user.municipio || "";
+        const userMuniNorm = normalizeStr(userMuniRaw);
 
         UNIT_BATCHES = allLotes.filter(l => {
-            const loteMuni = String(l.municipio || "").trim().toUpperCase();
-            return loteMuni === "*" || loteMuni === userMuni || loteMuni === "TODOS";
+            const loteMuni = normalizeStr(l.municipio);
+            return loteMuni === "*" || loteMuni === "TODOS" || loteMuni === userMuniNorm;
         });
         
-        console.log(`🟢 3. Lotes filtrados para la unidad (${userMuni}): ${UNIT_BATCHES.length}`);
+        console.log(`[Stability] Lotes cargados: ${allLotes.length}, Filtrados para ${userMuniRaw}: ${UNIT_BATCHES.length}`);
+        console.log(`[Stability] Config biológicos cargada: ${CONFIG_BIOLOGICOS_CATALOG.length} registros.`);
     } catch (e) {
-        console.error("🔴 ERROR CRÍTICO al cargar lotes:", e);
+        console.error("🔴 ERROR CRÍTICO al cargar lotes/config:", e);
+        showToast("Error al cargar parámetros del sistema. Algunos paneles podrían estar incompletos.", false, "bad");
     }
 }
 
