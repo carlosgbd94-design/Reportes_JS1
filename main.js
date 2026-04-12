@@ -374,22 +374,7 @@ async function handleAuthSuccess(perfil) {
     };
   }
 
-  function toggleEl(id, show, displayWhenShown = "") {
-    const el = $(id);
-    if (!el) return;
 
-    if (show) {
-      if (displayWhenShown) {
-        el.style.display = displayWhenShown;
-      } else {
-        el.style.removeProperty("display");
-      }
-      el.hidden = false;
-    } else {
-      el.style.display = "none";
-      el.hidden = true;
-    }
-  }
 
   function exposeAppFns() {
     window.getTodayReports = getTodayReports;
