@@ -4671,27 +4671,27 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
     const bioOptions = biotics.map(b => `<option value="${b}" ${data?.biologico === b ? 'selected' : ''}>${b}</option>`).join("");
     
     tr.innerHTML = `
-      <td>
-        <select class="sr-bio-select" onchange="handleSRBioChange(this)">
+      <td class="p-4 align-middle">
+        <select class="sr-bio-select w-[140px] md:w-full bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-[#004f71] rounded-xl py-2 px-3 text-sm text-slate-800 outline-none transition-colors" onchange="handleSRBioChange(this)">
           <option value="">Selecciona…</option>
           ${bioOptions}
         </select>
       </td>
-      <td>
-        <select class="sr-lote-select" onchange="handleSRLoteChange(this)">
+      <td class="p-4 align-middle">
+        <select class="sr-lote-select w-[140px] md:w-full bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-[#004f71] rounded-xl py-2 px-3 text-sm text-slate-800 outline-none transition-colors" onchange="handleSRLoteChange(this)">
           <option value="">—</option>
         </select>
       </td>
-      <td class="sr-cad-cell muted">—</td>
-      <td>
-        <input type="date" class="sr-recepcion-input" value="${data?.fecha_recepcion || ""}">
+      <td class="sr-cad-cell font-bold text-slate-600 p-4 align-middle">—</td>
+      <td class="p-4 align-middle">
+        <input type="date" class="sr-recepcion-input w-full bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-[#004f71] rounded-xl py-2 px-3 text-sm text-slate-800 outline-none transition-colors" value="${data?.fecha_recepcion || ""}">
       </td>
-      <td>
-        <input type="number" class="sr-cantidad-input" min="0" step="1" value="${data?.cantidad || ""}" placeholder="0">
+      <td class="p-4 align-middle">
+        <input type="number" class="sr-cantidad-input w-full bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-[#004f71] rounded-xl py-2 px-3 text-sm text-slate-800 outline-none transition-colors text-center font-bold" min="0" step="1" value="${data?.cantidad || ""}" placeholder="0">
       </td>
-      <td>
-        <button type="button" class="miniBtn bad" onclick="this.closest('tr').remove();">
-          <span class="material-symbols-rounded">delete</span>
+      <td class="p-4 align-middle text-right">
+        <button type="button" class="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors" onclick="this.closest('tr').remove();" title="Eliminar fila">
+          <span class="material-symbols-rounded text-lg">delete</span>
         </button>
       </td>
     `;
@@ -5600,12 +5600,12 @@ async function getTodayReports(fecha = "", force = false) {
 
     tbody.innerHTML = rows.map((r, i) => `
     <tr>
-      <td class="bioNameCell">
-        <div class="bioName">💉 ${escapeHtml(r.biologico || "")}</div>
+      <td class="bioNameCell p-4 align-middle">
+        <div class="bioName text-sm font-bold text-slate-700 tracking-tight flex items-center gap-2"><span class="text-lg">💉</span> ${escapeHtml(r.biologico || "")}</div>
       </td>
-      <td class="bioInputCell bioExistenciaCell">
+      <td class="bioInputCell bioExistenciaCell p-4 align-middle">
         <input
-          class="bioInput"
+          class="bioInput w-[100px] md:w-full bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-[#004f71] rounded-xl py-3 px-3 text-lg font-bold text-[#004f71] text-center outline-none transition-colors"
           type="number"
           min="0"
           step="1"
@@ -5616,9 +5616,9 @@ async function getTodayReports(fecha = "", force = false) {
           placeholder="0"
         >
       </td>
-      <td class="bioInputCell bioPedidoCell">
+      <td class="bioInputCell bioPedidoCell p-4 align-middle">
         <input
-          class="bioInput"
+          class="bioInput w-[100px] md:w-full bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-[#004f71] rounded-xl py-3 px-3 text-lg font-bold text-[#004f71] text-center outline-none transition-colors"
           type="number"
           min="0"
           step="1"
@@ -5629,12 +5629,12 @@ async function getTodayReports(fecha = "", force = false) {
           placeholder="0"
         >
       </td>
-      <td class="bioValidationCell">
+      <td class="bioValidationCell p-4 align-middle text-xs">
         <div id="bioAlert_${i}" class="bioAlertWrap"></div>
       </td>
-      <td class="bioMetricCell bioPromedioCell"><div class="bioMetric bioPromedioValue">${r.promedio_frascos ?? ""}</div></td>
-      <td class="bioMetricCell"><div class="bioMetric">${r.max_dosis ?? ""}</div></td>
-      <td class="bioMetricCell"><div class="bioMetric">${r.min_dosis ?? ""}</div></td>
+      <td class="bioMetricCell bioPromedioCell p-4 align-middle text-center"><div class="bioMetric bioPromedioValue font-bold text-slate-600">${r.promedio_frascos ?? ""}</div></td>
+      <td class="bioMetricCell p-4 align-middle text-center"><div class="bioMetric text-slate-500">${r.max_dosis ?? ""}</div></td>
+      <td class="bioMetricCell p-4 align-middle text-center"><div class="bioMetric text-slate-500">${r.min_dosis ?? ""}</div></td>
     </tr>
   `).join("");
 
