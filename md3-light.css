@@ -181,51 +181,80 @@ label {
 
 .btn:active { transform: scale(0.96); box-shadow: none; }
 
-/* 🕹️ DASHBOARD PANEL (FULL WIDTH) */
-@media (min-width: 769px) {
-  :root { --sidebar-width: 0px; }
-  
-  .grid { display: block !important; max-width: 1440px; margin: 0 auto !important; padding: 20px !important; }
-  
-  #cardSide {
-    background: var(--md-sys-color-surface) !important;
-    border-radius: 28px !important;
-    padding: 24px !important;
-    margin-bottom: 24px !important;
-    display: block !important;
-    border: 1px solid var(--md-sys-color-outline-variant) !important;
-    box-shadow: var(--shadow-1) !important;
-  }
-  
-  .sideGreeting { display: block !important; margin-bottom: 12px; }
-  .sideUnitInfo { display: block !important; margin-bottom: 24px; opacity: 0.7; font-size: 14px; font-weight: 600; }
-  
-  .sideActions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    align-items: center;
-  }
-
-  .iconbtn {
-    min-width: 48px !important;
-    height: 48px !important;
-    padding: 0 16px !important;
-    border-radius: 12px !important;
-    display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
-    background: var(--md-sys-color-surface-variant) !important;
-    color: var(--md-sys-color-primary) !important;
-    gap: 8px;
-    transition: all 0.2s;
-    font-weight: 700;
-  }
-
-  .iconbtn:hover { background: var(--md-sys-color-primary-container) !important; transform: translateY(-2px); }
-  .iconbtn .material-symbols-rounded { font-size: 20px; }
-  .sideDivider { width: 1px; height: 32px; background: var(--md-sys-color-outline-variant); margin: 0 12px; }
+/* 🕹️ APP LAYOUT RESET (SINGLE COLUMN FOCUS) */
+.grid { 
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+  padding: 24px !important;
+  gap: 24px !important;
 }
+
+.gridRight {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+}
+
+#cardSide {
+  background: var(--md-sys-color-surface) !important;
+  border-radius: 28px !important;
+  padding: 32px !important;
+  width: 100% !important;
+  border: 1px solid var(--md-sys-color-outline-variant) !important;
+  box-shadow: var(--shadow-1) !important;
+}
+
+.sideGreeting { 
+  font-size: 28px !important;
+  font-weight: 800 !important;
+  color: var(--md-sys-color-primary) !important;
+  margin-bottom: 8px !important;
+}
+
+.sideUnitInfo { 
+  font-size: 16px !important;
+  opacity: 0.8;
+  margin-bottom: 32px !important;
+  font-weight: 600;
+}
+
+.sideActions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 16px !important;
+}
+
+.iconbtn {
+  min-width: 160px !important;
+  height: 56px !important;
+  padding: 0 24px !important;
+  border-radius: 100px !important;
+  display: flex !important;
+  align-items: center;
+  gap: 12px !important;
+  background: var(--md-sys-color-primary-container) !important;
+  color: var(--md-sys-color-on-primary-container) !important;
+  border: none !important;
+  font-weight: 700 !important;
+  font-size: 15px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: none !important;
+}
+
+.iconbtn:hover {
+  background: var(--md-sys-color-primary) !important;
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2) !important;
+}
+
+.iconbtn .material-symbols-rounded { font-size: 24px; }
+.sideDivider { display: none; }
+
 
 
 /* 🗺️ RESPONSIVE (MOBILE) */
