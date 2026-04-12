@@ -267,33 +267,127 @@ body.logged-in .loginWrap {
     color: #cc0000 !important;
 }
 
-/* 🏷️ TABS MD3 */
+/* 🏷️ TABS MD3 - HIGH CONTRAST REFINEMENT */
 .tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 28px;
+  padding: 4px;
+  background: var(--md-sys-color-surface-variant);
+  border-radius: 100px;
+  width: fit-content;
 }
 
 .tab {
   background: transparent !important;
-  color: var(--md-sys-color-outline) !important;
+  color: var(--md-sys-color-on-surface-variant) !important;
   border-radius: 100px !important;
-  padding: 8px 20px !important;
+  padding: 10px 24px !important;
   font-weight: 700 !important;
-  transition: all 0.2s;
+  font-size: 14px !important;
+  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+  border: none !important;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.tab.active {
-  background: var(--md-sys-color-primary-container) !important;
+.tab:hover {
+  background: rgba(0, 51, 102, 0.05) !important;
   color: var(--md-sys-color-primary) !important;
 }
 
+.tab.active {
+  background: var(--md-sys-color-primary) !important;
+  color: white !important;
+  box-shadow: 0 8px 16px rgba(0, 51, 102, 0.2) !important;
+}
+
+.tab.active .material-symbols-rounded {
+  color: white !important;
+}
+
+/* 🌀 COMPACT HEADER - REFINED BADGES */
+.logoBadge {
+  background: white;
+  padding: 8px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  display: flex;
+  gap: 16px;
+  box-shadow: var(--shadow-1);
+}
+
+.logoBadge img {
+  height: 42px !important; /* Larger logos */
+  width: auto;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
+}
+
+.statusbarPublic {
+  gap: 8px !important;
+}
+
+.badge {
+  background: transparent !important;
+  border: 1px solid var(--md-sys-color-outline-variant) !important;
+  color: var(--md-sys-color-on-surface-variant) !important;
+  border-radius: 100px !important;
+  padding: 6px 14px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  box-shadow: none !important;
+}
+
+.badge:hover {
+  background: var(--md-sys-color-surface-variant) !important;
+  border-color: var(--md-sys-color-primary) !important;
+}
+
+.badge.secondary { border-color: var(--md-sys-color-primary-container) !important; color: var(--md-sys-color-primary) !important; }
+.badge.info { border-color: var(--md-sys-color-secondary-container) !important; color: var(--md-sys-color-on-secondary-container) !important; }
+.badge.weather-badge { border-color: #ffdcb1 !important; color: #855021 !important; }
+
+/* 🛡️ DATO CURIOSO - TAG STYLE FIX */
+.sideTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#factTag {
+  background: var(--md-sys-color-secondary-container) !important;
+  color: var(--md-sys-color-on-secondary-container) !important;
+  padding: 4px 12px !important;
+  border-radius: 8px !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: none !important;
+}
+
+/* 🕹️ CONTROLES POLISH */
+#welcome {
+  font-size: 36px !important;
+  color: var(--md-sys-color-primary);
+  letter-spacing: -1.5px;
+}
+
+.who {
+  opacity: 0.7;
+  font-weight: 600;
+  margin-top: -4px;
+}
+
 @media (max-width: 768px) {
-  .top {
-    padding: 0 12px !important;
-  }
-  .brandText h1 { font-size: 16px !important; }
-  #rightColumn { padding: 16px !important; }
+  .tabs { width: 100%; overflow-x: auto; padding-bottom: 8px; border-radius: 16px; }
+  .tab { white-space: nowrap; }
 }
 
 
