@@ -51,10 +51,7 @@ const LIVE_STATE = {
   toastMeta: { key: "", ts: 0 }
 };
 
-function hideSplashScreen() {
-  const splash = document.getElementById("splashScreen");
-  if (splash) splash.classList.add("hidden");
-}
+
 
 document.addEventListener("DOMContentLoaded", () => {
     // 🛡️ OBSERVER DE AUTENTICACIÓN (Sesión persistente)
@@ -74,12 +71,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             } catch (e) {
                 console.error("Error al recuperar sesión:", e);
-            } finally {
-                hideSplashScreen();
             }
         } else {
             console.log("No hay sesión activa.");
-            hideSplashScreen();
         }
     });
 
