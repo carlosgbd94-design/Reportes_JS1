@@ -2,324 +2,522 @@
 <html lang="es">
 
 <head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@0..1" rel="stylesheet">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Reportes y existencias Jurisdicción Sanitaria 1</title>
 
-  <link rel="stylesheet" href="md3-light.css">
-</head>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-background": "#191c1d",
+            "surface-bright": "#f8f9fa",
+            "surface-tint": "#1e6489",
+            "on-primary": "#ffffff",
+            "tertiary-fixed": "#ffdcbd",
+            "on-primary-fixed-variant": "#004c6c",
+            "primary-fixed-dim": "#90cef7",
+            "on-surface-variant": "#40484e",
+            "tertiary-container": "#754504",
+            "on-secondary-fixed": "#061e2b",
+            "surface-container-low": "#f3f4f5",
+            "inverse-on-surface": "#f0f1f2",
+            "on-primary-container": "#8dcaf4",
+            "surface-variant": "#e1e3e4",
+            "on-error": "#ffffff",
+            "outline": "#71787f",
+            "secondary-fixed": "#cee6f8",
+            "surface-container-lowest": "#ffffff",
+            "surface-container": "#edeeef",
+            "background": "#f8f9fa",
+            "error": "#ba1a1a",
+            "primary-fixed": "#c7e7ff",
+            "error-container": "#ffdad6",
+            "tertiary": "#563100",
+            "on-primary-fixed": "#001e2e",
+            "on-tertiary-container": "#f9b56e",
+            "surface-container-high": "#e7e8e9",
+            "surface-container-highest": "#e1e3e4",
+            "on-tertiary-fixed-variant": "#693c00",
+            "on-secondary-fixed-variant": "#344958",
+            "on-tertiary-fixed": "#2c1600",
+            "on-tertiary": "#ffffff",
+            "secondary-fixed-dim": "#b3c9dc",
+            "secondary": "#4b6171",
+            "inverse-surface": "#2e3132",
+            "secondary-container": "#cee6f8",
+            "outline-variant": "#c0c7cf",
+            "tertiary-fixed-dim": "#fdb971",
+            "surface-dim": "#d9dadb",
+            "primary-container": "#00567a",
+            "primary": "#003e59",
+            "on-secondary-container": "#516777",
+            "surface": "#f8f9fa",
+            "inverse-primary": "#90cef7",
+            "on-secondary": "#ffffff",
+            "on-surface": "#191c1d",
+            "on-error-container": "#93000a"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "fontFamily": {
+            "headline": ["Manrope"],
+            "body": ["Manrope"],
+            "label": ["Manrope"]
+          }
+        },
+      },
+    }
+  </script>
+  <style>
+    body { font-family: 'Manrope', sans-serif; background-color: #f8f9fa; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .tonal-layering { background-color: #f3f4f5; }
+    .editorial-shadow { box-shadow: 0 4px 32px -12px rgba(0, 62, 89, 0.06); }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+  </style>
+ <style style="display:none">
+    /* Internal styles removed to use md3-light.css */
+
+   /* Layout Responsivo Moderno */
+   @media (max-width: 768px) {
+     .wrap {
+       padding-bottom: var(--bottom-nav-height);
+       display: flex;
+       flex-direction: column;
+     }
+
+     .grid {
+       display: block !important;
+       margin-bottom: 20px;
+     }
+
+     #cardSide {
+       display: none !important; /* Move side buttons to bottom nav or hamburger */
+     }
+
+     .card {
+       border-radius: 16px !important;
+       margin: 10px !important;
+       width: auto !important;
+       box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
+       background: var(--card-bg) !important;
+       border: 1px solid rgba(255,255,255,0.05) !important;
+     }
+
+     .card h2, .card h3 {
+       color: var(--primary);
+       font-weight: 800;
+     }
+
+     input, select, textarea {
+       background: rgba(255,255,255,0.05) !important;
+       border: 1px solid rgba(255,255,255,0.1) !important;
+       color: white !important;
+       border-radius: 12px !important;
+       padding: 12px !important;
+     }
+
+     label {
+       color: #9ca3af !important;
+       font-weight: 600 !important;
+       margin-bottom: 6px !important;
+       display: block !important;
+     }
+
+
+     /* Mobile Sticky Header */
+     .top {
+       position: sticky;
+       top: 0;
+       z-index: 1000;
+       backdrop-filter: blur(10px);
+       background: var(--glass);
+       border-bottom: 1px solid rgba(255,255,255,0.1);
+     }
+
+     .brandMain {
+       scale: 0.9;
+     }
+
+     /* Bottom Navigation Bar */
+     #mobileBottomNav {
+       display: flex !important;
+       position: fixed;
+       bottom: 0;
+       left: 0;
+       right: 0;
+       height: var(--bottom-nav-height);
+       background: #111827;
+       backdrop-filter: blur(15px);
+       border-top: 1px solid rgba(255,255,255,0.1);
+       z-index: 2000;
+       justify-content: space-around;
+       align-items: center;
+       padding-bottom: env(safe-area-inset-bottom);
+     }
+
+     .navItem {
+       display: flex;
+       flex-direction: column;
+       align-items: center;
+       color: #9ca3af;
+       text-decoration: none;
+       font-size: 10px;
+       gap: 4px;
+       transition: color 0.3s;
+       background: none;
+       border: none;
+       cursor: pointer;
+       padding: 8px;
+     }
+
+     .navItem .material-symbols-rounded {
+       font-size: 24px;
+       transition: transform 0.2s;
+     }
+
+     .navItem.active {
+       color: var(--primary);
+     }
+
+     .navItem.active .material-symbols-rounded {
+       font-variation-settings: 'FILL' 1;
+       transform: translateY(-2px);
+     }
+   }
+
+   #mobileBottomNav { display: none; }
+ </style>
  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
 </head>
 
-<body class="text-on-surface">
-  <!-- 🧭 BARRA SUPERIOR (TOP NAV) -->
-  <nav id="topNav" class="app-top-nav" style="display:none">
-    <div class="nav-left">
-      <span class="app-title">JS1 Salud Central</span>
-      <!-- Legacy ID Support -->
-      <div id="welcome" style="display:none"></div>
-    </div>
-    
-    <div class="nav-right">
-      <div class="nav-actions">
-        <button id="btnTopNotifications" class="icon-btn relative">
-          <span class="material-symbols-outlined">notifications</span>
-          <span id="topNotifBadge" class="badge-dot" style="display:none">0</span>
+<body class="text-on-surface bg-surface font-manrope">
+
+<!-- NAVBAR (Top) -->
+<nav class="fixed top-0 w-full z-50 bg-slate-50/80 backdrop-blur-md flex justify-between items-center px-4 md:px-6 py-3 shadow-sm shadow-sky-900/5 antialiased">
+    <div class="flex items-center gap-4 md:gap-8">
+        <button id="btnMobileMenu" class="md:hidden p-2 hover:bg-slate-200/50 rounded-full text-sky-900">
+            <span class="material-symbols-outlined">menu</span>
         </button>
-        <button id="btnTopNotifRefresh" class="hidden"></button>
-        <button id="btnTopNotifOnlyUnread" class="hidden"></button>
-        <button id="btnTopNotifMarkVisibleRead" class="hidden"></button>
-        <button id="btnTopNotifClose" class="hidden"></button>
+        <span class="text-base md:text-lg font-bold tracking-tight text-sky-900 hidden md:block">JS1 Salud Central</span>
+    </div>
+
+    <div class="hidden lg:flex items-center gap-2 mx-4 text-xs font-medium text-slate-500">
+        <span id="hdrFecha">Fecha: —</span> |
+        <span id="hdrHora">Hora: —</span> |
+        <span id="hdrClima">—</span>
+        <span id="hdrGuardado" class="text-green-600 font-bold" style="display:none">Guardado</span>
+    </div>
+
+    <div class="flex items-center gap-2 md:gap-4">
+        <!-- Top Actions -->
+        <div class="flex items-center gap-1 md:gap-2 border-r border-slate-200 pr-2 md:pr-4">
+            <button class="p-2 hover:bg-slate-200/50 rounded-full transition-colors relative" id="btnTopNotifications" style="display:none;">
+                <span class="material-symbols-outlined text-slate-500">notifications</span>
+                <span id="topNotifBadge" class="absolute top-0 right-0 bg-error text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold" style="display:none">0</span>
+            </button>
+            <button class="p-2 hover:bg-slate-200/50 rounded-full transition-colors hidden md:block" id="btnExport" style="display:none;">
+                <span class="material-symbols-outlined text-primary">download</span>
+            </button>
+            <button class="p-2 hover:bg-slate-200/50 rounded-full transition-colors" id="btnOpenUpload" style="display:none;">
+                <span class="material-symbols-outlined text-primary">cloud_upload</span>
+            </button>
+        </div>
         
-        <button id="btnOpenUpload" class="icon-btn"><span class="material-symbols-outlined">cloud_upload</span></button>
-      </div>
-      
-      <div class="user-profile">
-        <div class="user-info">
-          <p id="userNameHdr" class="profile-name">Usuario</p>
-          <p id="userRoleHdr" class="profile-role">Rol</p>
+        <div class="flex items-center gap-2 md:gap-3 bg-slate-200/50 px-3 py-1.5 rounded-full">
+            <span class="font-medium text-sky-900 truncate max-w-[120px]" id="navUserTxt">Sesión</span>
         </div>
-        <div class="avatar">JS</div>
-      </div>
     </div>
-  </nav>
+</nav>
 
-  <!-- 🗄️ BARRA LATERAL (SIDEBAR) -->
-  <aside id="mainSidebar" class="app-sidebar" style="display:none">
-    <div class="sidebar-header">
-      <div class="sidebar-brand">
-        <div class="brand-icon">
-          <span class="material-symbols-outlined">health_metrics</span>
+<!-- SIDEBAR (Left) -->
+<div id="mobileSidebarOverlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+<aside id="mainSidebar" class="fixed left-0 top-0 h-full w-64 z-40 bg-slate-100 flex flex-col pt-20 pb-8 transition-transform duration-300 -translate-x-full md:translate-x-0 font-manrope text-sm font-medium shadow-xl md:shadow-none">
+    <div class="px-6 mb-8 mt-2">
+        <div class="flex flex-col gap-1">
+            <h2 class="text-lg font-extrabold text-sky-900 leading-none">Menú Principal</h2>
+            <p class="text-xs text-slate-500 mt-1 truncate" id="sidebarRolTxt">Rol: —</p>
+            <p class="text-xs text-slate-500 truncate" id="sidebarMunTxt">Mun: —</p>
+            <span class="mt-2 text-[10px] font-bold px-2 py-1 bg-green-100 text-green-800 rounded-full self-start" id="capStatus">—</span>
         </div>
-        <div class="brand-text">
-          <h2 id="sideUnitName" class="unit-name">Unidad Médica</h2>
-          <p id="sideClues" class="unit-clues">CLUES</p>
-        </div>
-      </div>
     </div>
 
-    <nav class="sidebar-nav">
-      <button id="tabADMIN" onclick="showTab('ADMIN', this)" class="nav-item">
-        <span class="material-symbols-outlined">dashboard</span>
-        <span>Dashboard</span>
-      </button>
+    <!-- TABS will be moved here via JS or HTML wrapper -->
+    <nav class="flex-1 px-4 space-y-2 mt-4 overflow-y-auto no-scrollbar" id="sidebarTabsContainer">
+        
+        <button class="flex w-full items-center gap-3 px-4 py-3 text-slate-600 hover:bg-sky-50 hover:text-sky-900 transition-all rounded-xl" id="tabCAP">
+            <span class="material-symbols-outlined">dashboard</span>
+            <span id="tabCAPText" class="font-bold">Dashboard Principal</span>
+        </button>
 
-      <button id="tabSR" onclick="showTab('SR', this)" class="nav-item">
-        <span class="material-symbols-outlined">vaccines</span>
-        <span>Existencia Biológicos</span>
-      </button>
+        <button class="flex w-full items-center gap-3 px-4 py-3 text-slate-600 hover:bg-sky-50 hover:text-sky-900 transition-all rounded-xl" id="tabSR">
+            <span class="material-symbols-outlined">vaccines</span>
+            <span class="font-bold">Existencia Biológicos</span>
+        </button>
+        
+        <button class="flex w-full items-center gap-3 px-4 py-3 text-slate-600 hover:bg-sky-50 hover:text-sky-900 transition-all rounded-xl" id="tabCONS">
+            <span class="material-symbols-outlined">health_and_safety</span>
+            <span class="font-bold">Consumibles (Jueves)</span>
+        </button>
 
-      <button id="tabCONS" onclick="showTab('CONS', this)" class="nav-item">
-        <span class="material-symbols-outlined">inventory_2</span>
-        <span>Insumos Med. (Pinol)</span>
-      </button>
+        <button class="flex w-full items-center gap-3 px-4 py-3 text-slate-600 hover:bg-sky-50 hover:text-sky-900 transition-all rounded-xl" id="tabBIO" style="display:none;">
+            <span class="material-symbols-outlined">science</span>
+            <span class="font-bold">Pedido Semanal (BIO)</span>
+        </button>
+        
+        <button class="flex w-full items-center justify-between px-4 py-3 text-slate-600 hover:bg-sky-50 hover:text-sky-900 transition-all rounded-xl" id="tabPINOL" style="display:none;">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined">inventory_2</span>
+                <span class="font-bold">Solicitar Pinol</span>
+            </div>
+            <span id="pinolBadgeMain" class="bg-primary text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold" style="display:none">0</span>
+        </button>
 
-      <button id="tabBIO" onclick="showTab('BIO', this)" class="nav-item">
-        <span class="material-symbols-outlined">description</span>
-        <span>Captura Mensual</span>
-      </button>
+        <button class="flex w-full items-center justify-between px-4 py-3 text-slate-600 hover:bg-sky-50 hover:text-sky-900 transition-all rounded-xl" id="tabNOTIFS" style="display:none;">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined">notifications</span>
+                <span class="font-bold">Panel Notificaciones</span>
+            </div>
+            <span id="notifBadgeMain" class="bg-error text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold" style="display:none">0</span>
+        </button>
 
+        <button class="flex w-full items-center gap-3 px-4 py-3 text-primary bg-primary-fixed hover:bg-primary-container hover:text-white transition-all rounded-xl mt-4" id="tabADMIN" style="display:none;">
+            <span class="material-symbols-outlined">admin_panel_settings</span>
+            <span class="font-bold">Administración</span>
+        </button>
 
-      <button id="navADMIN_SIDE" onclick="showTab('ADMIN_USERS', this)" class="nav-item" style="display:none">
-        <span class="material-symbols-outlined">manage_accounts</span>
-        <span>Gestión Usuarios</span>
-      </button>
     </nav>
 
-    <div class="sidebar-footer">
-      <button onclick="signOut(auth)" class="logout-btn">
-        <span class="material-symbols-outlined">logout</span>
-        <span>Cerrar Sesión</span>
-      </button>
+    <div class="px-4 border-t border-slate-200 pt-6 space-y-1">
+        <button id="btnClearLiveFeed" class="w-full flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-sky-700 transition-colors" style="display:none;">
+            <span class="material-symbols-outlined">notifications_paused</span>
+            <span>Limpiar actividad</span>
+        </button>
+        <button id="btnLogout" class="w-full flex items-center gap-3 px-4 py-2 text-slate-500 hover:text-error transition-colors">
+            <span class="material-symbols-outlined">logout</span>
+            <span>Cerrar Sesión</span>
+        </button>
     </div>
-  </aside>
+</aside>
 
-  <!-- 🚀 CONTENIDO PRINCIPAL -->
-  <main id="mainApp" class="app-main" style="display:none">
-    <div class="app-content-area">
+<!-- MAIN CONTENT -->
+<main class="pl-0 md:pl-64 pt-20 pb-12 min-h-screen bg-surface">
 
-
-    <!-- ✅ LOGIN (PHASE 4 CSS) -->
-    <div id="loginLayout" class="auth-wrapper">
-      <div class="auth-card">
-        <div class="auth-header">
-          <div class="auth-icon-wrap">
-            <span class="material-symbols-outlined">login</span>
-          </div>
-          <h2 class="auth-title">Bienvenido</h2>
-          <p class="auth-subtitle">Ingresa tus credenciales institucionales</p>
-          <span id="loginStatus" class="hidden status-pill">Sincronizando...</span>
+    <!-- ✅ LOGIN -->
+    <div class="px-4 py-8 mb-12 max-w-sm mx-auto" id="loginWrapper">
+      <div class="bg-surface-container-lowest p-8 rounded-2xl editorial-shadow border-t-4 border-primary" id="cardLogin">
+        <div class="mb-6 flex justify-between items-center">
+          <h2 class="text-2xl font-extrabold text-on-surface mb-2">Iniciar sesión</h2>
+          <span class="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded" id="loginStatus">—</span>
         </div>
 
-        <form id="loginForm" autocomplete="on" class="auth-form">
-          <div class="form-group">
-            <label class="form-label">Usuario / CLUES</label>
-            <input id="usuario" name="username" autocomplete="username" class="form-input" placeholder="EJ. FAM_QRO_01">
+        <form id="loginForm" autocomplete="on" class="space-y-4">
+          <div>
+              <label class="label-md font-bold text-on-surface-variant block mb-1">Usuario</label>
+              <input id="usuario" name="username" autocomplete="username" placeholder="CLUES_NOMBRE_UNIDAD" class="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg py-3 px-4">
+          </div>
+          <div>
+              <label class="label-md font-bold text-on-surface-variant block mb-1">Contraseña</label>
+              <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••" class="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg py-3 px-4">
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Contraseña</label>
-            <input id="password" name="password" type="password" autocomplete="current-password" class="form-input" placeholder="••••••••">
-          </div>
-
-          <button id="btnLogin" type="submit" class="btn-primary-large">
-            Entrar al sistema
-          </button>
+          <button class="w-full bg-primary-container text-on-primary-container font-bold rounded-lg py-3 hover:bg-primary transition-colors hover:text-white" id="btnLogin" type="submit">Entrar</button>
           
-          <button id="btnForgotPassword" type="button" class="btn-ghost">
-            ¿Olvidaste tu contraseña? Contacta a soporte
+          <button class="w-full text-slate-500 text-sm font-medium hover:text-primary transition-colors flex items-center justify-center gap-1 mt-2" id="btnForgotPassword" type="button">
+            <span class="material-symbols-outlined text-sm">mail</span> Olvidé mi contraseña
           </button>
         </form>
       </div>
     </div>
 
+    <!-- RIGHT (APP) -->
+    <div class="px-4 md:px-8 py-4 max-w-7xl mx-auto space-y-6" id="rightColumn" style="display:none">
 
-    <div id="panelADMIN" class="page-container" style="display:none">
-      <section class="admin-header">
-        <div class="header-main">
-          <div class="header-titles">
-            <h1 class="page-title">Panel de Administración</h1>
-            
-            <!-- ✅ BARRA DE ESTADO OPERATIVA (Heredada) -->
-            <div class="app-status-bar">
-              <span id="who" class="status-token primary">Cargando unidad...</span>
-              <span id="munTxt" class="status-token secondary">Municipio: —</span>
-              <span id="rolTxt" class="status-token tertiary">Rol: —</span>
-              <span id="dayTxt" class="status-token accent">Fecha: —</span>
-              <span id="bCumplimiento" class="status-badge">Cumplimiento</span>
+          <!-- NOTIFICATION OVERLAY -->
+          <div id="topNotifDropdown" class="fixed right-4 top-16 w-80 md:w-[400px] bg-surface-container-lowest rounded-2xl editorial-shadow z-[100] border border-slate-100 hidden" style="display:none">
+            <div class="p-4 border-b border-surface-container flex flex-col gap-2">
+              <div class="flex justify-between items-center">
+                <div>
+                  <div class="font-bold text-sky-900 text-lg">Notificaciones</div>
+                  <div class="text-xs text-slate-500" id="topNotifSub">Bandeja de entrada</div>
+                </div>
+                <div class="flex gap-2">
+                    <span id="topNotifRoleKpi" class="hidden"></span>
+                    <button class="text-slate-400 hover:text-primary transition-colors p-1" id="btnTopNotifRefresh" title="Actualizar"><span class="material-symbols-outlined text-sm">refresh</span></button>
+                    <button class="text-slate-400 hover:text-primary transition-colors p-1" id="btnTopNotifOnlyUnread" title="Solo no leídas"><span class="material-symbols-outlined text-sm">filter_alt</span></button>
+                    <button class="text-slate-400 hover:text-primary transition-colors p-1" id="btnTopNotifMarkVisibleRead" title="Marcar como leídas"><span class="material-symbols-outlined text-sm">done_all</span></button>
+                    <button class="text-slate-400 hover:text-error transition-colors p-1" id="btnTopNotifClose" title="Cerrar panel"><span class="material-symbols-outlined text-sm">close</span></button>
+                </div>
+              </div>
+              <div class="flex gap-4 text-xs font-bold text-slate-500">
+                <div title="No leídas" class="flex gap-1 items-center px-2 py-1 bg-surface-container rounded-full"><span class="material-symbols-outlined text-[14px]">mail</span> <span id="topNotifUnreadKpi">0</span></div>
+                <div title="Total" class="flex gap-1 items-center px-2 py-1 bg-surface-container rounded-full"><span class="material-symbols-outlined text-[14px]">list</span> <span id="topNotifTotalKpi">0</span></div>
+              </div>
             </div>
-          </div>
-          
-          <div class="header-actions">
-            <button class="chip active">HOY</button>
-            <button class="chip">ESTADÍSTICAS</button>
-          </div>
-        </div>
 
-        <div class="stat-grid">
-          <div class="stat-card primary">
-            <p class="stat-label">Total Reportes</p>
-            <div class="stat-main">
-              <h2 id="dashTotal" class="stat-value">—</h2>
-              <span class="stat-tag">GLOBAL</span>
+            <div class="max-h-[300px] overflow-y-auto p-2" id="topNotifListWrap">
+              <div class="text-center p-4 text-slate-400 text-xs italic">Aún no hay notificaciones.</div>
             </div>
           </div>
-          <div id="dashCapturadasCard" class="stat-card secondary">
-            <p class="stat-label">Capturadas (SR)</p>
-            <div class="stat-main">
-              <h2 id="dashCapturadas" class="stat-value">—</h2>
-              <span id="dashCapturadasPercent" class="stat-percent">—%</span>
-            </div>
-          </div>
-          <div id="dashFaltantesCard" class="stat-card error">
-            <p class="stat-label">Faltantes</p>
-            <div class="stat-main">
-              <h2 id="dashFaltantes" class="stat-value">—</h2>
-              <span id="dashFaltantesDiff" class="stat-diff">—</span>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <section class="split-dashboard">
-        <!-- 🔹 COLUMNA IZQUIERDA: MÉTRICAS OPERATIVAS -->
-        <div class="card-panel">
-          <div class="panel-header">
-            <h3 class="panel-title">Métricas Operativas por Unidad</h3>
-            <div class="nav-actions" style="border:none; padding:0;">
-              <button class="icon-btn"><span class="material-symbols-outlined">filter_list</span></button>
-              <button class="icon-btn"><span class="material-symbols-outlined">download</span></button>
-            </div>
-          </div>
-          <div class="table-responsive">
-            <div id="adminSummaryTable">
-              <div style="text-align:center; padding:40px; color:var(--text-muted); font-style:italic; font-weight:500;">Cargando métricas operativas...</div>
-            </div>
-          </div>
-        </div>
+          <div class="w-full">
+            <!-- ✅ MAIN -->
+            <div class="w-full space-y-6">
 
-        <!-- 🔹 COLUMNA DERECHA: PANELES COMPLEMENTARIOS (Unidades Destacadas / Opciones) -->
-        <div class="side-panels" style="display:flex; flex-direction:column; gap:24px;">
-          <div class="card-panel">
-            <div class="panel-header" style="margin-bottom:16px;">
-              <h3 class="panel-title" style="font-size:1rem;">Opciones Rápidas</h3>
-            </div>
-            <button id="btnOpenExportFromAdmin" class="btn" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px;">
-              <span class="material-symbols-outlined text-white">download</span> Exportar
-            </button>
-          </div>
-        </div>
-      </section>
-    </div>
+              <div class="bg-surface-container-lowest p-8 rounded-2xl editorial-shadow mb-8" id="cardApp">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <h2 id="welcome" class="text-3xl font-extrabold text-on-surface mb-1">Hola</h2>
+                    <div class="who text-on-surface-variant font-medium" id="who"></div>
+                  </div>
 
-    <!-- ✅ PANELES DE CAPTURA (Contenedor de Transición) -->
-    <div id="rightColumn" class="space-y-6" style="display:none">
-      <!-- Los paneles SR, CONS, BIO se mantienen con sus IDs pero heredarán Tailwind gradualmente -->
+                  <div class="flex flex-wrap gap-2 items-center text-xs">
+                    <span class="px-3 py-1.5 rounded-full bg-primary-fixed text-primary font-bold flex items-center gap-1" id="rolTxt">Rol: —</span>
+                    <span class="px-3 py-1.5 rounded-full bg-secondary-fixed text-secondary-fixed-dim font-bold flex items-center gap-1" id="munTxt">Municipio(s): —</span>
+                    <span class="px-3 py-1.5 rounded-full bg-error-container text-on-error-container font-bold flex items-center gap-1" id="bCumplimiento">
+                        <span id="dayTxt">—</span>
+                    </span>
+                    <span class="px-3 py-1.5 rounded-full bg-surface-variant text-on-surface-variant font-bold flex items-center gap-1" id="bNotif" style="display:none">
+                        <span id="notifTxt">Actividad: 0</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
 
+              <div id="sectionCapturaUnidad" style="display:none" class="mb-6">
+                <!-- CAPTURA HEADER OMITTED (Tabs moved to sidebar) -->
+                <div class="flex items-center justify-between border-b-2 border-primary pb-2 mb-6">
+                  <h3 class="text-xl font-extrabold text-primary">Captura de Reportes</h3>
+                  <div class="text-sm font-bold text-slate-500" id="captureStateBox">—</div>
+                </div>
+              </div>
 
               <!-- SR (EXISTENCIA DE BIOLÓGICOS) -->
-              <div id="formSR">
-                <label>Nombre del responsable</label>
-                <input id="nombreSR" placeholder="Nombre completo">
+              <div id="formSR" class="bg-surface-container-lowest p-8 rounded-2xl editorial-shadow">
+                <label class="label-md font-bold text-on-surface-variant block mb-2">Nombre del responsable</label>
+                <input id="nombreSR" placeholder="Nombre completo" class="w-full md:w-1/2 bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg py-3 px-4 mb-4">
 
-                <div class="tableWrap" style="margin-top:16px;">
-                  <table class="summaryTable" id="srCaptureTable">
+                <div class="tableWrap overflow-x-auto w-full mt-4 rounded-xl border border-surface-variant">
+                  <table class="w-full text-left" id="srCaptureTable">
                     <thead>
-                      <tr>
-                        <th>Biológico</th>
-                        <th>Lote</th>
-                        <th>Caducidad</th>
-                        <th>Recepción</th>
-                        <th>Cantidad (frascos)</th>
-                        <th></th>
+                      <tr class="bg-surface-container text-on-surface-variant text-xs uppercase tracking-wider">
+                        <th class="p-3">Biológico</th>
+                        <th class="p-3">Lote</th>
+                        <th class="p-3">Caducidad</th>
+                        <th class="p-3">Recepción</th>
+                        <th class="p-3">Cantidad (frascos)</th>
+                        <th class="p-3"></th>
                       </tr>
                     </thead>
-                    <tbody id="srCaptureTbody">
+                    <tbody id="srCaptureTbody" class="divide-y divide-surface-container text-sm">
                       <!-- Dynamic rows here -->
                     </tbody>
                   </table>
                 </div>
 
-                <button class="ghostBtn" id="btnAddSRRow" style="margin-top:10px; width:100%;">
+                <button class="w-full md:w-auto mt-6 bg-secondary-container text-on-secondary-container font-bold rounded-full py-2 px-6 flex justify-center items-center gap-2 hover:bg-opacity-80 transition-opacity" id="btnAddSRRow">
                   <span class="material-symbols-rounded">add_circle</span> Agregar otro lote/biológico
                 </button>
 
-                <div class="hr" style="margin:20px 0;"></div>
+                <div class="h-px bg-surface-variant my-8 w-full"></div>
 
-                <button class="btn" id="btnSaveSR">Guardar existencia</button>
+                <button class="w-full bg-primary text-white font-extrabold rounded-full py-4 text-lg editorial-shadow hover:bg-primary-container transition-colors mb-4" id="btnSaveSR">Guardar existencia</button>
 
-                <div class="subActions">
-                  <button class="ghostBtn" id="btnEditSR" style="display:none" title="Editar la existencia de hoy">
+                <div class="flex flex-col md:flex-row gap-4 mt-2">
+                  <button class="flex-1 bg-surface-variant text-on-surface-variant font-bold rounded-lg py-3 flex justify-center items-center gap-2 hover:bg-opacity-80 transition-opacity" id="btnEditSR" style="display:none" title="Editar la existencia de hoy">
                     <span class="material-symbols-rounded">edit_square</span> Editar existencia de hoy
                   </button>
-                  <button class="ghostBtn" id="btnCancelEditSR" style="display:none" title="Cancelar edición">
+                  <button class="flex-1 bg-error-container text-on-error-container font-bold rounded-lg py-3 flex justify-center items-center gap-2 hover:bg-opacity-80 transition-opacity" id="btnCancelEditSR" style="display:none" title="Cancelar edición">
                     <span class="material-symbols-rounded">close</span> Cancelar edición
                   </button>
                 </div>
 
-                <div class="hint">Se permite 1 captura por día por unidad. Si hay error, usa “Editar”.</div>
+                <div class="text-xs text-slate-400 mt-4 italic">Se permite 1 captura por día por unidad. Si hay error, usa “Editar”.</div>
               </div>
 
               <!-- CONSUMIBLES -->
-              <div id="formCONS" style="display:none">
-                <label>Nombre de quien captura</label>
-                <input id="nombreCONS" placeholder="Nombre completo">
+              <div id="formCONS" style="display:none" class="bg-surface-container-lowest p-8 rounded-2xl editorial-shadow">
+                <label class="label-md font-bold text-on-surface-variant block mb-2">Nombre de quien captura</label>
+                <input id="nombreCONS" placeholder="Nombre completo" class="w-full md:w-1/2 bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg py-3 px-4 mb-6">
 
-                <div class="row">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
-                    <label>Existencia SRP (dosis)</label>
-                    <input id="srp_dosis" type="number" min="0" placeholder="0">
+                    <label class="label-md font-bold text-on-surface-variant block mb-2">Existencia SRP (dosis)</label>
+                    <input id="srp_dosis" type="number" min="0" placeholder="0" class="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg py-3 px-4 text-center text-lg font-bold text-primary">
                   </div>
                   <div>
-                    <label>Existencia SR (dosis)</label>
-                    <input id="sr_dosis" type="number" min="0" placeholder="0">
+                    <label class="label-md font-bold text-on-surface-variant block mb-2">Existencia SR (dosis)</label>
+                    <input id="sr_dosis" type="number" min="0" placeholder="0" class="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg py-3 px-4 text-center text-lg font-bold text-primary">
                   </div>
                 </div>
 
-                <label>Jeringa aplic 0.5 ml (060.550.2657)</label>
-                <input id="jeringa_aplic_05ml_0605502657" type="number" min="0" placeholder="0">
+                <div class="space-y-4 mb-8">
+                  <div>
+                    <label class="label-md font-bold text-on-surface-variant block mb-2">Jeringa aplic. 0.5 ml (060.550.2657)</label>
+                    <input id="jeringa_aplic_05ml_0605502657" type="number" min="0" placeholder="0" class="w-full md:w-1/3 bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg py-2 px-4">
+                  </div>
 
-                <label>Jeringa reconst 5 ml (060.550.0438)</label>
-                <input id="jeringa_reconst_5ml_0605500438" type="number" min="0" placeholder="0">
+                  <div>
+                    <label class="label-md font-bold text-on-surface-variant block mb-2">Jeringa reconst. 5 ml (060.550.0438)</label>
+                    <input id="jeringa_reconst_5ml_0605500438" type="number" min="0" placeholder="0" class="w-full md:w-1/3 bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg py-2 px-4">
+                  </div>
 
-                <label>Aguja (060.040.3711)</label>
-                <input id="aguja_0600403711" type="number" min="0" placeholder="(Automático)" disabled>
+                  <div>
+                    <label class="label-md font-bold text-on-surface-variant block mb-2">Aguja (060.040.3711)</label>
+                    <input id="aguja_0600403711" type="number" min="0" placeholder="(Automático)" disabled class="w-full md:w-1/3 bg-slate-100 border-none rounded-lg py-2 px-4 text-slate-400 font-bold cursor-not-allowed">
+                  </div>
+                </div>
 
-                <button class="btn" id="btnSaveCONS">Guardar consumibles</button>
+                <button class="w-full bg-primary text-white font-extrabold rounded-full py-4 text-lg editorial-shadow hover:bg-primary-container transition-colors mb-4" id="btnSaveCONS">Guardar consumibles</button>
 
-                <div class="subActions">
-                  <button class="ghostBtn" id="btnEditCONS" style="display:none" title="Editar el reporte de hoy">
+                <div class="flex flex-col md:flex-row gap-4 mt-2">
+                  <button class="flex-1 bg-surface-variant text-on-surface-variant font-bold rounded-lg py-3 flex justify-center items-center gap-2 hover:bg-opacity-80 transition-opacity" id="btnEditCONS" style="display:none" title="Editar el reporte de hoy">
                     <span class="material-symbols-rounded">edit</span> Editar reporte de hoy
                   </button>
-                  <button class="ghostBtn" id="btnCancelEditCONS" style="display:none" title="Cancelar edición">
+                  <button class="flex-1 bg-error-container text-on-error-container font-bold rounded-lg py-3 flex justify-center items-center gap-2 hover:bg-opacity-80 transition-opacity" id="btnCancelEditCONS" style="display:none" title="Cancelar edición">
                     <span class="material-symbols-rounded">close</span> Cancelar edición
                   </button>
                 </div>
 
-                <div class="hint">Este reporte se captura solo en jueves. Aguja se calcula automáticamente.</div>
+                <div class="text-xs text-slate-400 mt-4 italic">Este reporte se captura solo en jueves. Aguja se calcula automáticamente.</div>
               </div>
 
               <!-- PEDIDO DE BIOLÓGICO -->
-              <div id="formBIO" style="display:none">
-                <div class="row">
+              <!-- PEDIDO DE BIOLÓGICO -->
+              <div id="formBIO" style="display:none" class="bg-surface-container-lowest p-8 rounded-2xl editorial-shadow">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                   <div>
-                    <label>Nombre de quien captura</label>
-                    <input id="nombreBIO" placeholder="Nombre completo">
+                    <label class="label-md font-bold text-on-surface-variant block mb-2">Nombre de quien captura</label>
+                    <input id="nombreBIO" placeholder="Nombre completo" class="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg py-3 px-4">
                   </div>
                   <div>
-                    <div class="bioProgramBox">
-                      <div class="bioProgramLabel">Fecha objetivo de pedido</div>
-                      <div class="bioProgramDate" id="fechaPedidoBIOBox">—</div>
-                      <div class="bioProgramSub" id="bioHint">—</div>
+                    <div class="bioProgramBox bg-primary-fixed/20 p-4 rounded-xl border border-primary-fixed-dim">
+                      <div class="bioProgramLabel text-xs font-bold text-primary mb-1 uppercase tracking-wider">Fecha objetivo de pedido</div>
+                      <div class="bioProgramDate text-lg font-black text-on-surface" id="fechaPedidoBIOBox">—</div>
+                      <div class="bioProgramSub text-xs text-on-surface-variant mt-1" id="bioHint">—</div>
                     </div>
                     <input id="fechaPedidoBIO" disabled style="display:none">
                   </div>
                 </div>
 
-                <div class="bioDayAlert" id="bioDayAlert">—</div>
+                <div class="bioDayAlert bg-error-container text-on-error-container p-4 rounded-xl font-bold mb-6 text-sm" id="bioDayAlert" style="display:none">—</div>
 
-                <div class="tableWrap bioTableWrap" style="margin-top:10px; max-height:560px; width:100%;">
-                  <table class="summaryTable bioSummaryTable">
+                <div class="tableWrap bioTableWrap overflow-x-auto w-full mt-4 rounded-xl border border-surface-variant md:max-h-[560px]">
+                  <table class="w-full text-left summaryTable bioSummaryTable">
                     <colgroup>
                       <col style="width:18%">
                       <col style="width:10%">
@@ -330,38 +528,35 @@
                       <col style="width:8%">
                     </colgroup>
                     <thead>
-                      <tr>
-                        <th>Biológico</th>
-                        <th>Existencia<br><span class="thMini">frascos</span></th>
-                        <th>Pedido<br><span class="thMini">frascos</span></th>
-                        <th>Validación</th>
-                        <th>Promedio<br><span class="thMini">frascos</span></th>
-                        <th>Máx<br><span class="thMini">dosis</span></th>
-                        <th>Mín<br><span class="thMini">dosis</span></th>
+                      <tr class="bg-surface-container text-on-surface-variant text-xs uppercase tracking-wider">
+                        <th class="p-3">Biológico</th>
+                        <th class="p-3 text-center">Existencia<br><span class="text-[10px] lowercase text-slate-400">frascos</span></th>
+                        <th class="p-3 text-center">Pedido<br><span class="text-[10px] lowercase text-slate-400">frascos</span></th>
+                        <th class="p-3">Validación</th>
+                        <th class="p-3 text-center">Promedio<br><span class="text-[10px] lowercase text-slate-400">frascos</span></th>
+                        <th class="p-3 text-center">Máx<br><span class="text-[10px] lowercase text-slate-400">dosis</span></th>
+                        <th class="p-3 text-center">Mín<br><span class="text-[10px] lowercase text-slate-400">dosis</span></th>
                       </tr>
                     </thead>
-                    <tbody id="bioTbody">
+                    <tbody id="bioTbody" class="divide-y divide-surface-container text-sm">
                       <tr>
-                        <td colspan="7" class="muted">Cargando…</td>
+                        <td colspan="7" class="p-4 text-center text-slate-400 italic">Cargando…</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
-                <div class="hint"
-                  style="margin-top:12px; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06);">
-                  <b>Referencia de captura:</b> Máx/Mín se muestran en dosis. Promedio, existencia actual y pedido se
-                  muestran en frascos.
+                <div class="hint bg-surface-container-high text-on-surface-variant text-xs p-4 rounded-xl my-6">
+                  <b>Referencia de captura:</b> Máx/Mín se muestran en dosis. Promedio, existencia actual y pedido se muestran en frascos.
                 </div>
 
-                <button class="btn" id="btnSaveBIO">Guardar pedido de biológico</button>
+                <button class="w-full bg-primary text-white font-extrabold rounded-full py-4 text-lg editorial-shadow hover:bg-primary-container transition-colors mb-4" id="btnSaveBIO">Guardar pedido de biológico</button>
 
-                <div class="subActions">
-                  <button class="ghostBtn" id="btnEditBIO" style="display:none"
-                    title="Editar el pedido de biológico actual">
+                <div class="flex flex-col md:flex-row gap-4 mt-2">
+                  <button class="flex-1 bg-surface-variant text-on-surface-variant font-bold rounded-lg py-3 flex justify-center items-center gap-2 hover:bg-opacity-80 transition-opacity" id="btnEditBIO" style="display:none" title="Editar el pedido de biológico actual">
                     <span class="material-symbols-rounded">edit_square</span> Editar pedido actual
                   </button>
-                  <button class="ghostBtn" id="btnCancelEditBIO" style="display:none" title="Cancelar edición">
+                  <button class="flex-1 bg-error-container text-on-error-container font-bold rounded-lg py-3 flex justify-center items-center gap-2 hover:bg-opacity-80 transition-opacity" id="btnCancelEditBIO" style="display:none" title="Cancelar edición">
                     <span class="material-symbols-rounded">close</span> Cancelar edición
                   </button>
                 </div>
@@ -405,30 +600,33 @@
               </div>
 
               <!-- PINOL -->
-              <div id="formPINOL" style="display:none">
-                <div class="hint" style="margin-bottom:10px;">
-                  🧴 <b>Multilimpiador desinfectante Pinol®</b> CONT. NET. 828 mL.<br>
-                  El insumo es para uso exclusivo de los refrigeradores de vacunas y farmacia.
-                </div>
-
-                <label>Nombre de quien realiza la solicitud</label>
-                <input id="nombrePINOL" placeholder="Nombre completo">
-
-                <div class="row">
+              <div id="formPINOL" style="display:none" class="bg-surface-container-lowest p-8 rounded-2xl editorial-shadow">
+                <div class="bg-primary-fixed/20 text-on-surface-variant text-sm p-4 rounded-xl mb-6 flex gap-3 items-start border border-primary-fixed-dim">
+                  <span class="text-2xl mt-1">🧴</span>
                   <div>
-                    <label>Existencia actual de pinol (botellas)</label>
-                    <input id="pinol_existencia" type="number" min="0" step="1" placeholder="0">
-                  </div>
-                  <div>
-                    <label>Solicitud de botellas de pinol</label>
-                    <input id="pinol_solicitud" type="number" min="0" step="1" placeholder="0">
+                    <strong class="text-primary block mb-1">Multilimpiador desinfectante Pinol® CONT. NET. 828 mL.</strong>
+                    El insumo es para uso exclusivo de los refrigeradores de vacunas y farmacia.
                   </div>
                 </div>
 
-                <label>Observaciones</label>
-                <textarea id="pinol_observaciones" placeholder="Opcional" rows="2"></textarea>
+                <label class="label-md font-bold text-on-surface-variant block mb-2 mt-4">Nombre de quien realiza la solicitud</label>
+                <input id="nombrePINOL" placeholder="Nombre completo" class="w-full md:w-1/2 bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg py-3 px-4 mb-6">
 
-                <button class="btn" id="btnSavePINOL">Guardar solicitud de pinol</button>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <label class="label-md font-bold text-on-surface-variant block mb-2">Existencia actual de pinol (botellas)</label>
+                    <input id="pinol_existencia" type="number" min="0" step="1" placeholder="0" class="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg py-3 px-4 text-center text-lg font-bold text-primary">
+                  </div>
+                  <div>
+                    <label class="label-md font-bold text-on-surface-variant block mb-2">Solicitud de botellas de pinol</label>
+                    <input id="pinol_solicitud" type="number" min="0" step="1" placeholder="0" class="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg py-3 px-4 text-center text-lg font-bold text-primary">
+                  </div>
+                </div>
+
+                <label class="label-md font-bold text-on-surface-variant block mb-2">Observaciones</label>
+                <textarea id="pinol_observaciones" placeholder="Opcional" rows="2" class="w-full bg-surface-container-low border-none focus:ring-2 focus:ring-primary rounded-lg py-3 px-4 mb-6 resize-none"></textarea>
+
+                <button class="w-full bg-primary text-white font-extrabold rounded-full py-4 text-lg editorial-shadow hover:bg-primary-container transition-colors" id="btnSavePINOL">Guardar solicitud de pinol</button>
               </div>
               <div class="card" id="panelAdminOpsTabs" style="display:none">
                 <div class="tabs">
@@ -1630,11 +1828,15 @@
           </div>
         </div>
       </div>
+    <!-- Cierre de Right Column y Main Wrappers -->
+    </div>
+  </div>
+  </div>
+</main>
 
-    </div><!-- .app-content-area -->
-  </main><!-- #mainApp -->
+  <!-- Elimina o deja oculto el mobile nav si se usa el sidebar móvil. -->
+  <nav id="mobileBottomNav" style="display:none;"></nav>
 
   <script type="module" src="main.js"></script>
 </body>
 </html>
-
