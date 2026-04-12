@@ -65,6 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     console.log("[Auth] Sesión ya hidratada, omitiendo redundancia.");
                     return;
                 }
+                // ACTIVACIÓN SENIOR: Solo mostramos si tenemos perfil real
                 document.body.classList.remove("not-logged-in");
                 document.body.classList.add("logged-in");
                 await handleAuthSuccess(perfil);
@@ -73,11 +74,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 await signOut(auth);
             }
         } else {
-            console.log("[Auth] No hay sesión activa. Mostrando login.");
+            console.log("[Auth] No hay sesión activa. Protegiendo capas.");
             TOKEN = null;
             USER = null;
+            
+            // PROTECCIÓN SENIOR: Forzar ocultación inmediata
             document.body.classList.remove("logged-in");
             document.body.classList.add("not-logged-in");
+            
             hideEl("rightColumn");
             showEl("cardLogin");
             if ($("loginWrap")) $("loginWrap").style.display = "flex";
