@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, serverTimestamp, collection, getDocs, query, where, writeBatch, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, updatePassword, EmailAuthProvider, reauthenticateWithCredential, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-storage.js";
 
 const firebaseConfig = {
@@ -50,7 +50,39 @@ const LIVE_STATE = {
   historyWatching: false,
   toastMeta: { key: "", ts: 0 }
 };
+
+function hideSplashScreen() {
+  const splash = document.getElementById("splashScreen");
+  if (splash) splash.classList.add("hidden");
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+    // 🛡️ OBSERVER DE AUTENTICACIÓN (Sesión persistente)
+    onAuthStateChanged(auth, async (userFirebase) => {
+        if (userFirebase) {
+            console.log("Sesión recuperada para:", userFirebase.email);
+            try {
+                const perfil = await whoami();
+                if (perfil) {
+                    USER = perfil;
+                    TOKEN = true;
+                    // Hidratar la sesión automáticamente
+                    await hydrateSessionUi(USER, null, { showSuccessToast: false });
+                } else {
+                    console.warn("Sesión activa en Auth, pero no se encontró perfil en Firestore.");
+                    showToast("No se encontró perfil de usuario", false, "bad");
+                }
+            } catch (e) {
+                console.error("Error al recuperar sesión:", e);
+            } finally {
+                hideSplashScreen();
+            }
+        } else {
+            console.log("No hay sesión activa.");
+            hideSplashScreen();
+        }
+    });
+
     const formLogin = document.getElementById("loginForm");
     if (formLogin) {
         formLogin.addEventListener("submit", async (ev) => {
@@ -101,6 +133,23 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
+
+    // 🗓️ ACTUALIZAR AÑO EN FOOTER
+    const footerYear = document.getElementById("footerYear");
+    if (footerYear) footerYear.textContent = new Date().getFullYear();
+
+    // 📱 LISTENERS DE NAVEGACIÓN MÓVIL (BOTTOM NAV)
+    document.querySelectorAll(".nav-item[data-tab]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const tab = btn.getAttribute("data-tab");
+        const panel = tab.replace("tab", ""); // tabCAP -> CAP
+        activateMain(panel);
+      });
+    });
+
+    $("navLogout")?.addEventListener("click", () => {
+      $("btnLogout")?.click();
+    });
 });
 // --------------------------------
   const $ = (id) => document.getElementById(id);
@@ -3902,11 +3951,19 @@ document.addEventListener("DOMContentLoaded", () => {
     $("tabPINOL")?.addEventListener("click", () => activateCapture("PINOL"));
 
     $("btnLogout")?.addEventListener("click", () => {
-      stopNotificationsAutoRefresh();
-      clearSessionCaches();
-      resetOpsPrewarmFlags();
-      setLoggedOutUI();
-      showToast("Sesión cerrada");
+      showOverlay("Cerrando sesión...", "Firebase");
+      auth.signOut().then(() => {
+        stopNotificationsAutoRefresh();
+        clearSessionCaches();
+        resetOpsPrewarmFlags();
+        USER = null;
+        TOKEN = null;
+        if ($("mobileNav")) $("mobileNav").style.display = "none";
+        setLoggedOutUI();
+        showToast("Sesión cerrada");
+      }).catch(e => {
+        showToast("Error al cerrar sesión: " + e.message, false);
+      }).finally(() => hideOverlay());
     });
   }
   function bindSummaryUiEvents() {
@@ -6424,6 +6481,16 @@ async function getTodayReports(fecha = "", force = false) {
     } else {
       $("munTxt").textContent = `Municipio: ${user.municipio || "—"}`;
     }
+
+    // --- BOTTOM NAV PERMISSIONS ---
+    const isMobile = window.innerWidth <= 768;
+    const mobileNav = $("mobileNav");
+    if (mobileNav) {
+      mobileNav.style.display = isMobile ? "flex" : "none";
+      if ($("navNotifs")) $("navNotifs").style.display = (user.rol !== "UNIDAD") ? "flex" : "none";
+      if ($("navAdmin")) $("navAdmin").style.display = (user.rol === "ADMIN") ? "flex" : "none";
+    }
+
     if (STATUS) {
       $("dayTxt").textContent = formatDayBadgeMx(STATUS.today);
 
@@ -6603,6 +6670,12 @@ async function getTodayReports(fecha = "", force = false) {
     $("tabCAP")?.classList.toggle("active", panel === "CAP");
     $("tabNOTIFS")?.classList.toggle("active", panel === "NOTIFS");
     $("tabADMIN")?.classList.toggle("active", panel === "ADMIN");
+
+    // Sincronizar Bottom Nav
+    document.querySelectorAll(".nav-item").forEach(el => {
+      const target = el.getAttribute("data-tab");
+      el.classList.toggle("active", target === `tab${panel}`);
+    });
 
     if ($("panelCAP")) $("panelCAP").style.display = (panel === "CAP" && isUnidad) ? "block" : "none";
     if ($("panelAdminOpsTabs")) $("panelAdminOpsTabs").style.display = (panel === "CAP" && isOps) ? "block" : "none";
