@@ -44,7 +44,7 @@ body {
   overflow-x: hidden;
 }
 
-/* 🌀 GLASSMORPHISM HEADER */
+/* 🌀 COMPACT HEADER */
 .top {
   position: sticky;
   top: 0;
@@ -52,48 +52,43 @@ body {
   background: var(--glass-bg) !important;
   backdrop-filter: var(--glass-blur);
   border-bottom: 1px solid var(--md-sys-color-outline-variant);
-  padding: 12px 24px !important;
-}
-
-.topInner {
-  max-width: 1440px;
-  margin: 0 auto;
+  padding: 8px 16px !important;
 }
 
 .brandMain {
-  display: flex;
+  display: flex !important;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .logoBadge img {
-  height: 48px;
+  height: 38px !important;
   width: auto;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
 }
 
 .brandText h1 {
-  font-size: 24px !important;
+  font-size: 18px !important;
   font-weight: 800 !important;
   color: var(--md-sys-color-primary) !important;
   margin: 0;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
 }
 
-.brandText p { font-size: 13px; color: var(--md-sys-color-on-surface-variant); margin: 2px 0 0 0; }
+.brandText p { font-size: 11px; color: var(--md-sys-color-on-surface-variant); margin: 0; opacity: 0.8; }
 
-/* 🏷️ BADGES PREMIUM */
-.statusbar { border: none !important; gap: 12px !important; padding: 12px 0 0 0 !important; }
+/* 🏷️ COMPACT BADGES */
+.statusbar { border: none !important; gap: 8px !important; padding: 4px 0 0 0 !important; margin-top: 4px !important; }
 .badge {
-  border-radius: 12px !important;
-  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  padding: 4px 10px !important;
   font-weight: 600 !important;
-  font-size: 14px !important;
+  font-size: 12px !important;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   border: none !important;
 }
+
 .badge.secondary { background: var(--md-sys-color-primary-container) !important; color: var(--md-sys-color-on-primary-container) !important; }
 .badge.info { background: #e0f2fe !important; color: var(--md-sys-color-info) !important; }
 .badge.weather-badge { background: #fff7ed !important; color: #ea580c !important; }
@@ -186,31 +181,66 @@ label {
 
 .btn:active { transform: scale(0.96); box-shadow: none; }
 
-/* 🗺️ RESPONSIVE (SIDEBAR vs BOTTOM NAV) */
+/* 🕹️ COMPACT SIDEBAR RAIL (DESKTOP) */
 @media (min-width: 769px) {
+  :root { --sidebar-width: 80px; }
+  
   .grid { display: grid; grid-template-columns: var(--sidebar-width) 1fr !important; gap: 0 !important; }
   
   #cardSide {
     position: sticky;
-    top: 80px;
-    height: calc(100vh - 80px);
+    top: 60px;
+    height: calc(100vh - 60px);
     background: var(--md-sys-color-surface-variant) !important;
-    border-radius: 0 !important;
     border: none !important;
     border-right: 1px solid var(--md-sys-color-outline-variant) !important;
-    padding: 24px !important;
+    padding: 16px 8px !important;
     margin: 0 !important;
     display: flex !important;
     flex-direction: column;
-    gap: 12px;
+    align-items: center;
+    gap: 20px;
+    z-index: 900;
   }
   
-  .sideTitle { display: none !important; }
-  .gridRight { padding: 40px !important; }
+  .sideGreeting, .sideUnitInfo { display: none !important; } /* Hide text info in rail */
+  
+  .sideActions {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+    width: 100%;
+  }
+
+  .iconbtn {
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 16px !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: transparent !important;
+    color: var(--md-sys-color-on-surface-variant) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .iconbtn:hover {
+    background: var(--md-sys-color-primary-container) !important;
+    color: var(--md-sys-color-on-primary-container) !important;
+    transform: scale(1.05);
+  }
+
+  .iconbtn .material-symbols-rounded { font-size: 24px; }
+  .sideDivider { width: 40px; border-color: var(--md-sys-color-outline-variant) !important; }
 }
 
+/* 🗺️ RESPONSIVE (MOBILE) */
 @media (max-width: 768px) {
   .wrap { padding-bottom: var(--bottom-nav-height); }
+  
+  #cardSide { display: none !important; } /* Hide sidebar on mobile */
+
   #mobileBottomNav {
     display: flex !important;
     position: fixed;
@@ -236,3 +266,13 @@ label {
   color: var(--md-sys-color-on-primary-container);
   font-variation-settings: 'FILL' 1;
 }
+
+/* GREETING DASHBOARD (WHEN INSIDE CONTENT) */
+.greetingTitle {
+    color: var(--md-sys-color-primary);
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin: 0 0 16px 0;
+}
+
