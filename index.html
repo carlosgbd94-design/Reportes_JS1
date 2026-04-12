@@ -4,70 +4,7 @@
 <head>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <script id="tailwind-config">
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            "on-background": "#191c1d",
-            "surface-bright": "#f8f9fa",
-            "surface-tint": "#1e6489",
-            "on-primary": "#ffffff",
-            "tertiary-fixed": "#ffdcbd",
-            "on-primary-fixed-variant": "#004c6c",
-            "primary-fixed-dim": "#90cef7",
-            "on-surface-variant": "#40484e",
-            "tertiary-container": "#754504",
-            "on-secondary-fixed": "#061e2b",
-            "surface-container-low": "#f3f4f5",
-            "inverse-on-surface": "#f0f1f2",
-            "on-primary-container": "#8dcaf4",
-            "surface-variant": "#e1e3e4",
-            "on-error": "#ffffff",
-            "outline": "#71787f",
-            "secondary-fixed": "#cee6f8",
-            "surface-container-lowest": "#ffffff",
-            "surface-container": "#edeeef",
-            "background": "#f8f9fa",
-            "error": "#ba1a1a",
-            "primary-fixed": "#c7e7ff",
-            "error-container": "#ffdad6",
-            "tertiary": "#563100",
-            "on-primary-fixed": "#001e2e",
-            "on-tertiary-container": "#f9b56e",
-            "surface-container-high": "#e7e8e9",
-            "surface-container-highest": "#e1e3e4",
-            "on-tertiary-fixed-variant": "#693c00",
-            "on-secondary-fixed-variant": "#344958",
-            "on-tertiary-fixed": "#2c1600",
-            "on-tertiary": "#ffffff",
-            "secondary-fixed-dim": "#b3c9dc",
-            "secondary": "#4b6171",
-            "inverse-surface": "#2e3132",
-            "secondary-container": "#cee6f8",
-            "outline-variant": "#c0c7cf",
-            "tertiary-fixed-dim": "#fdb971",
-            "surface-dim": "#d9dadb",
-            "primary-container": "#00567a",
-            "primary": "#003e59",
-            "on-secondary-container": "#516777",
-            "surface": "#f8f9fa",
-            "inverse-primary": "#90cef7",
-            "on-secondary": "#ffffff",
-            "on-surface": "#191c1d",
-            "on-error-container": "#93000a"
-          },
-          fontFamily: {
-            headline: ["Manrope"],
-            body: ["Manrope"],
-            label: ["Manrope"]
-          }
-        }
-      }
-    }
-  </script>
+
   <link rel="stylesheet" href="md3-light.css">
 </head>
  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
@@ -76,82 +13,81 @@
 
 <body class="text-on-surface">
   <!-- 🧭 BARRA SUPERIOR (TOP NAV) -->
-  <nav id="topNav" class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md flex justify-between items-center px-4 md:px-6 py-3 shadow-sm shadow-sky-900/5 font-headline text-sm" style="display:none">
-    <div class="flex items-center gap-4 md:gap-8">
-      <span class="text-lg font-bold tracking-tight text-primary">JS1 Salud Central</span>
-      <div class="relative hidden lg:flex items-center">
-        <span class="material-symbols-outlined absolute left-3 text-slate-400">search</span>
-        <input class="bg-surface-container border-none rounded-full py-2 pl-10 pr-4 w-64 focus:ring-2 focus:ring-primary/20 text-sm" placeholder="Buscar reportes o unidades..." type="text"/>
-      </div>
+  <nav id="topNav" class="app-top-nav" style="display:none">
+    <div class="nav-left">
+      <span class="app-title">JS1 Salud Central</span>
+      <!-- Legacy ID Support -->
+      <div id="welcome" style="display:none"></div>
     </div>
     
-    <div class="flex items-center gap-3 md:gap-4">
-      <div class="hidden sm:flex items-center gap-2 mr-2 border-r border-slate-200 pr-4">
-        <button id="btnTopNotifications" class="p-2 hover:bg-slate-200/50 rounded-full transition-colors relative">
-          <span class="material-symbols-outlined text-slate-500">notifications</span>
-          <span id="topNotifBadge" class="absolute top-1 right-1 w-4 h-4 bg-error text-white text-[10px] flex items-center justify-center rounded-full" style="display:none">0</span>
+    <div class="nav-right">
+      <div class="nav-actions">
+        <button id="btnTopNotifications" class="icon-btn relative">
+          <span class="material-symbols-outlined">notifications</span>
+          <span id="topNotifBadge" class="badge-dot" style="display:none">0</span>
         </button>
         <button id="btnTopNotifRefresh" class="hidden"></button>
         <button id="btnTopNotifOnlyUnread" class="hidden"></button>
         <button id="btnTopNotifMarkVisibleRead" class="hidden"></button>
         <button id="btnTopNotifClose" class="hidden"></button>
-        <button class="p-2 hover:bg-slate-200/50 rounded-full transition-colors"><span class="material-symbols-outlined text-slate-500">schedule</span></button>
-        <button id="btnOpenUpload" class="p-2 hover:bg-slate-200/50 rounded-full transition-colors"><span class="material-symbols-outlined text-slate-500">cloud_upload</span></button>
+        
+        <button id="btnOpenUpload" class="icon-btn"><span class="material-symbols-outlined">cloud_upload</span></button>
       </div>
       
-      <div class="flex items-center gap-3 bg-slate-200/50 px-3 py-1.5 rounded-full hover:bg-slate-200 transition-colors cursor-pointer">
-        <div class="text-right hidden xs:block">
-          <p id="userNameHdr" class="font-medium text-primary leading-none text-xs">Usuario</p>
-          <p id="userRoleHdr" class="text-[9px] text-slate-500 uppercase tracking-wider mt-0.5">Rol</p>
+      <div class="user-profile">
+        <div class="user-info">
+          <p id="userNameHdr" class="profile-name">Usuario</p>
+          <p id="userRoleHdr" class="profile-role">Rol</p>
         </div>
-        <div class="w-8 h-8 rounded-full bg-primary-fixed-dim flex items-center justify-center text-primary font-bold text-xs">JS</div>
+        <div class="avatar">JS</div>
       </div>
     </div>
   </nav>
 
   <!-- 🗄️ BARRA LATERAL (SIDEBAR) -->
-  <aside id="mainSidebar" class="fixed left-0 h-full w-64 z-40 bg-slate-50 border-r border-slate-200 flex flex-col pt-20 pb-8 transition-transform -translate-x-full md:translate-x-0 font-headline" style="display:none">
-    <div class="px-6 mb-8">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white">
+  <aside id="mainSidebar" class="app-sidebar" style="display:none">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="brand-icon">
           <span class="material-symbols-outlined">health_metrics</span>
         </div>
-        <div>
-          <h2 id="sideUnitName" class="text-sm font-bold text-primary leading-tight">Unidad Médica</h2>
-          <p id="sideClues" class="text-[10px] text-slate-500">CLUES</p>
+        <div class="brand-text">
+          <h2 id="sideUnitName" class="unit-name">Unidad Médica</h2>
+          <p id="sideClues" class="unit-clues">CLUES</p>
         </div>
       </div>
     </div>
 
-    <nav class="flex-1 px-4 space-y-1 overflow-y-auto no-scrollbar">
-      <button onclick="showTab('ADMIN', this)" class="navItem w-full flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white hover:shadow-sm transition-all rounded-xl text-sm font-medium border-l-4 border-transparent active:border-primary active:bg-white active:text-primary">
+    <nav class="sidebar-nav">
+      <button id="tabADMIN" onclick="showTab('ADMIN', this)" class="nav-item">
         <span class="material-symbols-outlined">dashboard</span>
         <span>Dashboard</span>
       </button>
 
-      <button onclick="showTab('SR', this)" class="navItem w-full flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white hover:shadow-sm transition-all rounded-xl text-sm font-medium border-l-4 border-transparent active:border-primary active:bg-white active:text-primary">
+      <button id="tabSR" onclick="showTab('SR', this)" class="nav-item">
         <span class="material-symbols-outlined">vaccines</span>
         <span>Existencia Biológicos</span>
       </button>
 
-      <button onclick="showTab('CONS', this)" class="navItem w-full flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white hover:shadow-sm transition-all rounded-xl text-sm font-medium border-l-4 border-transparent active:border-primary active:bg-white active:text-primary">
+      <button id="tabCONS" onclick="showTab('CONS', this)" class="nav-item">
         <span class="material-symbols-outlined">inventory_2</span>
         <span>Insumos Med. (Pinol)</span>
       </button>
 
-      <button onclick="showTab('BIO', this)" class="navItem w-full flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white hover:shadow-sm transition-all rounded-xl text-sm font-medium border-l-4 border-transparent active:border-primary active:bg-white active:text-primary">
+      <button id="tabBIO" onclick="showTab('BIO', this)" class="nav-item">
         <span class="material-symbols-outlined">description</span>
         <span>Captura Mensual</span>
       </button>
 
-      <button id="navADMIN_SIDE" onclick="showTab('ADMIN_USERS', this)" class="navItem w-full flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white hover:shadow-sm transition-all rounded-xl text-sm font-medium border-l-4 border-transparent active:border-primary active:bg-white active:text-primary" style="display:none">
+
+      <button id="navADMIN_SIDE" onclick="showTab('ADMIN_USERS', this)" class="nav-item" style="display:none">
         <span class="material-symbols-outlined">manage_accounts</span>
         <span>Gestión Usuarios</span>
       </button>
     </nav>
 
-    <div class="px-4 mt-auto border-t border-slate-200 pt-6 space-y-1">
-      <button onclick="signOut(auth)" class="w-full flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-error transition-colors text-sm font-medium">
+    <div class="sidebar-footer">
+      <button onclick="signOut(auth)" class="logout-btn">
         <span class="material-symbols-outlined">logout</span>
         <span>Cerrar Sesión</span>
       </button>
@@ -159,38 +95,38 @@
   </aside>
 
   <!-- 🚀 CONTENIDO PRINCIPAL -->
-  <main id="mainApp" class="md:pl-64 pt-20 pb-12 min-h-screen bg-background font-body" style="display:none">
-    <div class="px-4 md:px-8 py-8 max-w-7xl mx-auto">
+  <main id="mainApp" class="app-main" style="display:none">
+    <div class="app-content-area">
 
 
-    <!-- ✅ LOGIN (PHASE 4 Tailwind) -->
-    <div id="loginLayout" class="flex items-center justify-center min-h-[70vh]">
-      <div class="bg-white p-8 md:p-12 rounded-[32px] shadow-xl shadow-sky-900/5 w-full max-w-md border border-slate-100">
-        <div class="mb-10 text-center">
-          <div class="inline-flex items-center justify-center w-16 h-16 bg-primary/10 text-primary rounded-2xl mb-6">
-            <span class="material-symbols-outlined text-3xl">login</span>
+    <!-- ✅ LOGIN (PHASE 4 CSS) -->
+    <div id="loginLayout" class="auth-wrapper">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-icon-wrap">
+            <span class="material-symbols-outlined">login</span>
           </div>
-          <h2 class="text-2xl font-bold text-primary tracking-tight">Bienvenido</h2>
-          <p class="text-slate-500 text-sm mt-2">Ingresa tus credenciales institucionales</p>
-          <span id="loginStatus" class="hidden text-[10px] text-primary uppercase font-bold tracking-widest mt-1">Sincronizando...</span>
+          <h2 class="auth-title">Bienvenido</h2>
+          <p class="auth-subtitle">Ingresa tus credenciales institucionales</p>
+          <span id="loginStatus" class="hidden status-pill">Sincronizando...</span>
         </div>
 
-        <form id="loginForm" autocomplete="on" class="space-y-6">
-          <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Usuario / CLUES</label>
-            <input id="usuario" name="username" autocomplete="username" class="w-full bg-slate-50 border-none border-b-2 border-primary focus:ring-0 rounded-t-xl py-4 px-5 text-sm" placeholder="EJ. FAM_QRO_01">
+        <form id="loginForm" autocomplete="on" class="auth-form">
+          <div class="form-group">
+            <label class="form-label">Usuario / CLUES</label>
+            <input id="usuario" name="username" autocomplete="username" class="form-input" placeholder="EJ. FAM_QRO_01">
           </div>
 
-          <div>
-            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 ml-1">Contraseña</label>
-            <input id="password" name="password" type="password" autocomplete="current-password" class="w-full bg-slate-50 border-none border-b-2 border-primary focus:ring-0 rounded-t-xl py-4 px-5 text-sm" placeholder="••••••••">
+          <div class="form-group">
+            <label class="form-label">Contraseña</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" class="form-input" placeholder="••••••••">
           </div>
 
-          <button id="btnLogin" type="submit" class="w-full bg-primary text-white rounded-full py-4 font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-all active:scale-95">
+          <button id="btnLogin" type="submit" class="btn-primary-large">
             Entrar al sistema
           </button>
           
-          <button id="btnForgotPassword" type="button" class="w-full text-slate-400 hover:text-primary transition-colors text-xs font-medium py-2">
+          <button id="btnForgotPassword" type="button" class="btn-ghost">
             ¿Olvidaste tu contraseña? Contacta a soporte
           </button>
         </form>
@@ -198,39 +134,48 @@
     </div>
 
 
-    <div id="panelADMIN" class="space-y-10" style="display:none">
-      <section>
-        <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
-          <div>
-            <h1 class="text-3xl md:text-4xl font-extrabold text-on-surface tracking-tight leading-none mb-2">Panel de Administración</h1>
-            <p class="text-on-surface-variant text-sm md:text-base font-medium">Resumen ejecutivo y gestión de operaciones de salud.</p>
+    <div id="panelADMIN" class="page-container" style="display:none">
+      <section class="admin-header">
+        <div class="header-main">
+          <div class="header-titles">
+            <h1 class="page-title">Panel de Administración</h1>
+            
+            <!-- ✅ BARRA DE ESTADO OPERATIVA (Heredada) -->
+            <div class="app-status-bar">
+              <span id="who" class="status-token primary">Cargando unidad...</span>
+              <span id="munTxt" class="status-token secondary">Municipio: —</span>
+              <span id="rolTxt" class="status-token tertiary">Rol: —</span>
+              <span id="dayTxt" class="status-token accent">Fecha: —</span>
+              <span id="bCumplimiento" class="status-badge">Cumplimiento</span>
+            </div>
           </div>
-          <div class="flex gap-2 bg-slate-200/50 p-1 rounded-full self-start">
-            <button class="px-4 py-1.5 rounded-full text-xs font-bold bg-white shadow-sm text-primary">HOY</button>
-            <button class="px-4 py-1.5 rounded-full text-xs font-bold text-slate-500 hover:bg-white/50 transition-colors">ESTADÍSTICAS</button>
+          
+          <div class="header-actions">
+            <button class="chip active">HOY</button>
+            <button class="chip">ESTADÍSTICAS</button>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border-b-4 border-primary editorial-shadow">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-4">Total Reportes</p>
-            <div class="flex items-center justify-between">
-              <h2 id="dashTotal" class="text-4xl md:text-5xl font-extrabold text-primary">—</h2>
-              <span class="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded-full text-center">GLOBAL</span>
+        <div class="stat-grid">
+          <div class="stat-card primary">
+            <p class="stat-label">Total Reportes</p>
+            <div class="stat-main">
+              <h2 id="dashTotal" class="stat-value">—</h2>
+              <span class="stat-tag">GLOBAL</span>
             </div>
           </div>
-          <div id="dashCapturadasCard" class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border-b-4 border-secondary editorial-shadow">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-4">Capturadas (SR)</p>
-            <div class="flex items-center justify-between">
-              <h2 id="dashCapturadas" class="text-4xl md:text-5xl font-extrabold text-secondary">—</h2>
-              <span id="dashCapturadasPercent" class="text-secondary bg-secondary/10 text-[10px] font-bold px-2 py-1 rounded-full text-center">—%</span>
+          <div id="dashCapturadasCard" class="stat-card secondary">
+            <p class="stat-label">Capturadas (SR)</p>
+            <div class="stat-main">
+              <h2 id="dashCapturadas" class="stat-value">—</h2>
+              <span id="dashCapturadasPercent" class="stat-percent">—%</span>
             </div>
           </div>
-          <div id="dashFaltantesCard" class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border-b-4 border-error editorial-shadow">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-4">Faltantes</p>
-            <div class="flex items-center justify-between">
-              <h2 id="dashFaltantes" class="text-4xl md:text-5xl font-extrabold text-error">—</h2>
-              <span id="dashFaltantesDiff" class="bg-error/10 text-error text-[10px] font-bold px-2 py-1 rounded-full text-center">—</span>
+          <div id="dashFaltantesCard" class="stat-card error">
+            <p class="stat-label">Faltantes</p>
+            <div class="stat-main">
+              <h2 id="dashFaltantes" class="stat-value">—</h2>
+              <span id="dashFaltantesDiff" class="stat-diff">—</span>
             </div>
           </div>
         </div>
@@ -1675,7 +1620,9 @@
         </div>
       </div>
 
-    <!-- ✅ MOBILE BOTTOM NAVIGATION (PHASE 2) -->
+    </div><!-- .app-content-area -->
+  </main><!-- #mainApp -->
+
   <script type="module" src="main.js"></script>
 </body>
 </html>
