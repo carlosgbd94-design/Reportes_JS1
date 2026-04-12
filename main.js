@@ -2950,10 +2950,135 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // --- MÉTRICAS Y REPORTES ---
-      if (action === "adminCaptureOverview" || action === "historyMetrics") {
-        // En un backend Serverless completo se usan Functions para agregar esto. 
-        // Por ahora disparamos en vacío para evitar crashes visuales.
-        return { ok: true, data: { items: [], metrics: {} }};
+      if (action === "adminCaptureOverview") {
+        const { fecha, tipo } = finalPayload;
+        const colName = (tipo === "CONS") ? "capturas_cons" : "capturas_sr";
+
+        // 1. Obtener todas las unidades (catalog)
+        const qUsers = query(collection(db, "usuarios"), where("rol", "==", "UNIDAD"), where("activo", "==", true));
+        const snapUsers = await getDocs(qUsers);
+        const allUnits = [];
+        snapUsers.forEach(d => allUnits.push(d.data()));
+
+        // 2. Obtener capturas de ese día
+        const qCaps = query(collection(db, colName), where("fecha", "==", fecha));
+        const snapCaps = await getDocs(qCaps);
+        const capturedMap = {};
+        snapCaps.forEach(d => {
+          const data = d.data();
+          capturedMap[data.clues] = data;
+        });
+
+        // 3. Cruzar datos
+        const capturadas = [];
+        const faltantes = [];
+
+        allUnits.forEach(u => {
+          const cap = capturedMap[u.clues];
+          if (cap) {
+            capturadas.push({
+              municipio: u.municipio,
+              clues: u.clues,
+              unidad: u.unidad,
+              capturado_por: cap.capturado_por || cap.responsable || "—",
+              editado: "NO" // En Firestore manejamos historial aparte
+            });
+          } else {
+            faltantes.push({
+              municipio: u.municipio,
+              clues: u.clues,
+              unidad: u.unidad
+            });
+          }
+        });
+
+        return {
+          ok: true,
+          data: {
+            fecha,
+            tipo,
+            total_unidades: allUnits.length,
+            total_capturadas: capturadas.length,
+            total_faltantes: faltantes.length,
+            capturadas,
+            faltantes
+          }
+        };
+      }
+
+      if (action === "historyMetrics") {
+        const { fechaInicio, fechaFin } = finalPayload;
+
+        // 1. Obtener unidades
+        const qUsers = query(collection(db, "usuarios"), where("rol", "==", "UNIDAD"), where("activo", "==", true));
+        const snapUsers = await getDocs(qUsers);
+        const units = [];
+        snapUsers.forEach(d => units.push(d.data()));
+
+        // 2. Obtener TODAS las capturas en el rango (SR y CONS)
+        const qSR = query(collection(db, "capturas_sr"), where("fecha", ">=", fechaInicio), where("fecha", "<=", fechaFin));
+        const qCONS = query(collection(db, "capturas_cons"), where("fecha", ">=", fechaInicio), where("fecha", "<=", fechaFin));
+
+        const [snapSR, snapCONS] = await Promise.all([getDocs(qSR), getDocs(qCONS)]);
+
+        const bioMap = {}; // clues -> [fechas]
+        snapSR.forEach(d => {
+          const data = d.data();
+          if (!bioMap[data.clues]) bioMap[data.clues] = new Set();
+          bioMap[data.clues].add(data.fecha);
+        });
+
+        const consMap = {}; // clues -> [fechas]
+        const lastConsMap = {};
+        snapCONS.forEach(d => {
+          const data = d.data();
+          if (!consMap[data.clues]) consMap[data.clues] = new Set();
+          consMap[data.clues].add(data.fecha);
+          if (!lastConsMap[data.clues] || data.fecha > lastConsMap[data.clues]) {
+            lastConsMap[data.clues] = data.fecha;
+          }
+        });
+
+        // 3. Calcular métricas por unidad
+        // Nota: El cumplimiento se basa en el número de días del periodo.
+        // Esto es una simplificación; idealmente cruzaría con el calendario de días hábiles.
+        const startDate = new Date(fechaInicio + "T00:00:00");
+        const endDate = new Date(fechaFin + "T00:00:00");
+        const diffTime = Math.abs(endDate - startDate);
+        const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+        // Calcular cuántos jueves hay en el periodo (para consumibles)
+        let totalThursdays = 0;
+        let tempDate = new Date(startDate);
+        while (tempDate <= endDate) {
+          if (tempDate.getDay() === 4) totalThursdays++;
+          tempDate.setDate(tempDate.getDate() + 1);
+        }
+        if (totalThursdays === 0) totalThursdays = 1; // Evitar división por cero
+
+        const rows = units.map(u => {
+          const srCapturas = bioMap[u.clues] ? bioMap[u.clues].size : 0;
+          const consCapturas = consMap[u.clues] ? consMap[u.clues].size : 0;
+
+          const srPct = Math.min(100, Math.round((srCapturas / totalDays) * 100));
+          const consPct = Math.min(100, Math.round((consCapturas / totalThursdays) * 100));
+
+          return {
+            municipio: u.municipio,
+            clues: u.clues,
+            unidad: u.unidad,
+            bio_cumplimiento: srPct,
+            bio_capturas: srCapturas,
+            bio_faltas: Math.max(0, totalDays - srCapturas),
+            cons_cumplimiento: consPct,
+            cons_capturas: consCapturas,
+            cons_faltas: Math.max(0, totalThursdays - consCapturas),
+            cumplimiento_operativo: Math.round((srPct + consPct) / 2),
+            ultima_cons: lastConsMap[u.clues] || "—"
+          };
+        });
+
+        return { ok: true, data: { rows } };
       }
 
       // --- PEDIDOS BIOLÓGICOS (FORMULARIO Y CONFIG) ---
@@ -5027,27 +5152,39 @@ window.handleSRLoteChange = function(selectEl) {
   }
 
 async function whoami() {
-    // 1. Revisamos si Firebase Auth dice que hay alguien conectado
     const currentUser = auth.currentUser;
     if (!currentUser) return null;
 
     try {
-        // 2. Buscamos en la colección "usuarios" el documento que se llame igual que su correo
-        const userRef = doc(db, "usuarios", currentUser.email);
-        const userSnap = await getDoc(userRef);
-
-        if (userSnap.exists()) {
-            // 3. Si existe, devolvemos sus datos (Rol, CLUES, Unidad, etc.)
-            return userSnap.data();
-        } else {
-            console.warn("El usuario está autenticado pero no tiene perfil en Firestore");
-            return null;
+        // Intento 1: Documento con ID = email (formato canónico recomendado)
+        const byEmail = doc(db, "usuarios", currentUser.email);
+        const snapEmail = await getDoc(byEmail);
+        if (snapEmail.exists()) {
+            return { ...snapEmail.data(), _docId: currentUser.email };
         }
+
+        // Intento 2: Búsqueda por campo "usuario" = email
+        const q1 = query(collection(db, "usuarios"), where("usuario", "==", currentUser.email));
+        const s1 = await getDocs(q1);
+        if (!s1.empty) {
+            return { ...s1.docs[0].data(), _docId: s1.docs[0].id };
+        }
+
+        // Intento 3: Búsqueda por campo "email" = email del Auth
+        const q2 = query(collection(db, "usuarios"), where("email", "==", currentUser.email));
+        const s2 = await getDocs(q2);
+        if (!s2.empty) {
+            return { ...s2.docs[0].data(), _docId: s2.docs[0].id };
+        }
+
+        console.warn(`whoami: usuario autenticado (${currentUser.email}) no tiene perfil en Firestore. Crea su documento en la colección 'usuarios' con ID = su email.`);
+        return null;
     } catch (e) {
-        console.error("Error al obtener el perfil de usuario:", e);
+        console.error("Error al obtener perfil de usuario:", e);
         return null;
     }
 }
+
 
   async function unitStatus() {
     if (!TOKEN) return null;
@@ -6027,30 +6164,14 @@ async function getTodayReports(fecha = "", force = false) {
       loadExistenciaIntoForm(TODAY_CACHE.sr);
     } else {
       if ($("nombreSR")) $("nombreSR").value = "";
-
-      [
-        "bcg",
-        "hepatitis_b",
-        "hexavalente",
-        "dpt",
-        "rotavirus",
-        "neumococica_13",
-        "neumococica_20",
-        "srp",
-        "sr",
-        "vph",
-        "varicela",
-        "hepatitis_a",
-        "td",
-        "tdpa",
-        "covid_19",
-        "influenza",
-        "vsr"
-      ].forEach(id => {
-        if ($(id)) $(id).value = "";
-      });
-
       ORIGINAL_SR = null;
+
+      // Limpiar tabla dinámica y agregar fila inicial vacía
+      const srTbody = $("srCaptureTbody");
+      if (srTbody) {
+        srTbody.innerHTML = "";
+        if (typeof addSRRow === "function") addSRRow();
+      }
     }
 
     if (HAS_TODAY_CONS) {
@@ -6747,51 +6868,8 @@ async function getTodayReports(fecha = "", force = false) {
       }
     });
   }
+  // (El listener de loginForm ya está registrado al inicio del archivo con Firebase Auth)
 
-  $("loginForm").addEventListener("submit", async (ev) => {
-    ev.preventDefault();
-    showOverlay("Validando tus credenciales…", "Iniciando sesión");
-
-    try {
-      const usuario = $("usuario").value.trim();
-      const password = $("password").value.trim();
-
-      if (!usuario || !password) {
-        showToast("Por favor, ingresa usuario y contraseña", false, "warn");
-        hideOverlay();
-        return;
-      }
-
-      const r = await apiCall({ action: "login", usuario, password });
-
-      if (!r || !r.ok) {
-        showToast((r && r.error) ? r.error : "No se pudo iniciar sesión", false);
-        return;
-      }
-
-      TOKEN = r.data.token;
-      saveUxValue(UX_KEYS.lastUser, usuario);
-      localStorage.setItem("JS1_TOKEN", TOKEN);
-
-      try {
-        const st = await unitStatus();
-        await hydrateSessionUi(r.data.user, st, {
-          showSuccessToast: true,
-          mustChangePassword: !!r.data.mustChange
-        });
-
-      } catch (postLoginError) {
-        console.error("Post-login error:", postLoginError);
-        showToast("Sesión iniciada, pero hubo un error al cargar algunos paneles", true, "warn");
-      }
-
-    } catch (e) {
-      console.error("Login flow error:", e);
-      showToast("Error al iniciar sesión o cargar datos iniciales", false);
-    } finally {
-      hideOverlay();
-    }
-  });
 
 $("btnSaveSR").onclick = async () => {
   if (isBtnBusy("btnSaveSR")) return;
