@@ -17,6 +17,10 @@ const db = getFirestore(app);
 const auth = getAuth(app);
 const storage = getStorage(app);
 
+// URL de producción de Google Apps Script (Bridge)
+const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby3en_qswj1PmE6o80nypsDM6Gw4kueRUimNSgMKJxzDojRFCsXBjFZngR9UpnkYL0n/exec";
+
+
 // Estado de sesión y UI
 let BIO_IS_ENABLED = false;
 let CON_IS_ENABLED = false;
@@ -2790,6 +2794,23 @@ async function handleAuthSuccess(perfil) {
 
     const action = finalPayload.action;
 
+    // Función interna para llamar a GAS (Bridge)
+    const gasCall_ = async (req) => {
+      try {
+        const response = await fetch(GAS_WEB_APP_URL, {
+          method: "POST",
+          mode: "cors", // Importante para redirecciones de Google
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(req)
+        });
+        if (!response.ok) throw new Error("Error en la respuesta de GAS.");
+        return await response.json();
+      } catch (e) {
+        console.error("Critical Bridge Error:", e);
+        return { ok: false, error: "Servidor Drive/GAS fuera de línea: " + e.message };
+      }
+    };
+
     try {
       if (action === "getLotesByMunicipio") {
         const snapshot = await getDocs(collection(db, "lotes_catalogo"));
@@ -2972,9 +2993,9 @@ async function handleAuthSuccess(perfil) {
 
       // --- CARGA DE ARCHIVOS (GESTIONADA POR GAS EN DRIVE) ---
       if (action === "uploadFile") {
-        // Esta acción ahora fluye directamente hacia Google Apps Script
-        // Solo verificamos sesión de forma preventiva
         if (!USER) return { ok: false, error: "Debes iniciar sesión." };
+        // Delegamos directamente a GAS y retornamos su respuesta
+        return await gasCall_(finalPayload);
       }
 
       if (action === "confirmPinolReceipt") {
@@ -3391,9 +3412,9 @@ async function handleAuthSuccess(perfil) {
       }
 
 
-      // Fallback genérico
-      console.warn(`[Firebase Migración] Acción no implementada todavía: ${action}`);
-      return { ok: true, data: null };
+      // Fallback genérico: Si no está en Firebase, intentar en GAS
+      console.log(`[Bridge] Delegando acción no-local a GAS: ${action}`);
+      return await gasCall_(finalPayload);
 
     } catch (err) {
       console.error(`Error en apiCall (${action}):`, err);
