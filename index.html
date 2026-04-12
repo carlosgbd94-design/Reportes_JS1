@@ -191,12 +191,9 @@
       </div>
     </div>
 
-    <div class="grid">
+    <!-- 📲 CONTENIDO PRINCIPAL (VIEWPORT ÚNICO) -->
+    <div id="rightColumn" class="app-viewport" style="display:none">
 
-      <!-- RIGHT (APP) -->
-      <div class="gridRight" id="rightColumn" style="display:none">
-
-        <div class="rightLayout">
 
           <div class="sideCard" id="cardSide">
             <div id="capStatus" class="sideGreeting"></div>
@@ -1800,8 +1797,10 @@
           </div>
         </div>
       </div>
+    </div> <!-- 🏁 END RIGHT COLUMN / APP-VIEWPORT -->
 
     <!-- ✅ MOBILE BOTTOM NAVIGATION (PHASE 2) -->
+
     <nav id="mobileBottomNav" style="display:none">
       <button class="navItem active" onclick="showTab('SR', this)" id="navSR">
         <span class="material-symbols-rounded">vaccines</span>
