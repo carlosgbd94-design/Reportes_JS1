@@ -198,33 +198,34 @@
 
         <div class="rightLayout">
 
-          <!-- ✅ SIDEBAR -->
           <div class="sideCard" id="cardSide">
+            <div id="capStatus" class="sideGreeting"></div>
+            <div id="munTxt" class="sideUnitInfo"></div>
+            
             <div class="sideActions">
-
-
               <button class="iconbtn" id="btnExport" title="Exportar reporte seleccionado" style="display:none">
                 <span class="material-symbols-rounded">download</span>
-                <span>Exportar Reportes</span>
               </button>
+
               <button class="iconbtn" id="btnOpenUpload" title="Subir evidencias a Drive" style="display:none">
                 <span class="material-symbols-rounded">cloud_upload</span>
-                <span>Subir a Cloud</span>
               </button>
+
               <button class="iconbtn" id="btnTopNotifications" type="button" style="display:none">
                 <div class="badge-wrapper">
                   <span class="material-symbols-rounded">notifications</span>
-                  <span id="topNotifBadge" class="liveBadge" style="display:none">0</span>
+                  <span id="topNotifBadge" class="liveBadge" style="display:none">00</span>
                 </div>
-                <span>Notificaciones</span>
               </button>
+
               <div class="hr sideDivider"></div>
+
               <button class="iconbtn logout-btn" id="btnLogout" title="Cerrar sesión">
                 <span class="material-symbols-rounded">logout</span>
-                <span>Cerrar Sesión</span>
               </button>
             </div>
           </div>
+
 
 
             <div id="topNotifDropdown" class="topNotifDropdown" style="display:none">
