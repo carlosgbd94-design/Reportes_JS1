@@ -2834,14 +2834,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- ENVÍO AL BACKEND GAS ---
     try {
+      // Usamos el modo más simple de fetch para evitar problemas de preflight en GAS
       const res = await fetch(GAS_API_URL, {
         method: "POST",
-        mode: "cors", // Forzar modo CORS
-        redirect: "follow", // OBLIGATORIO para GAS ya que redirecciona a servidores temporales
-        body: JSON.stringify(body),
-        headers: { 
-          "Content-Type": "text/plain;charset=utf-8" 
-        }
+        body: JSON.stringify(body)
       });
 
       if (!res.ok) {
