@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, serverTimestamp, collection, getDocs, query, where, writeBatch, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-storage.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBzhNWRQZpDHoIBJrcuXy2a4EnHzEZuzVc",
@@ -14,10 +15,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-
-// URL de producción de Google Apps Script (Bridge)
-const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycby3en_qswj1PmE6o80nypsDM6Gw4kueRUimNSgMKJxzDojRFCsXBjFZngR9UpnkYL0n/exec";
-
+const storage = getStorage(app);
 
 // Estado de sesión y UI
 let BIO_IS_ENABLED = false;
@@ -50,50 +48,15 @@ const LIVE_STATE = {
   summaryWatching: false,
   unidadWatching: false,
   historyWatching: false,
-  toastMeta: { key: "", ts: 0 },
-  sessionInitialized: false
+  toastMeta: { key: "", ts: 0 }
 };
 document.addEventListener("DOMContentLoaded", () => {
-    
-    /** Observer de estado de sesión persistente */
-    onAuthStateChanged(auth, async (firebaseUser) => {
-        if (firebaseUser) {
-            console.log("[Auth] Sesión activa detectada para:", firebaseUser.email);
-            const perfil = await whoami();
-            if (perfil) {
-                if (LIVE_STATE.sessionInitialized) {
-                    console.log("[Auth] Sesión ya hidratada, omitiendo redundancia.");
-                    return;
-                }
-                // ACTIVACIÓN SENIOR: Solo mostramos si tenemos perfil real
-                document.body.classList.remove("not-logged-in");
-                document.body.classList.add("logged-in");
-                await handleAuthSuccess(perfil);
-            } else {
-                showToast("No se encontró perfil para este usuario", false, "bad");
-                await signOut(auth);
-            }
-        } else {
-            console.log("[Auth] No hay sesión activa. Protegiendo capas.");
-            TOKEN = null;
-            USER = null;
-            
-            // PROTECCIÓN SENIOR: Forzar ocultación inmediata
-            document.body.classList.remove("logged-in");
-            document.body.classList.add("not-logged-in");
-            
-            hideEl("rightColumn");
-            showEl("cardLogin");
-            if ($("loginWrap")) $("loginWrap").style.display = "flex";
-        }
-    });
-
     const formLogin = document.getElementById("loginForm");
     if (formLogin) {
         formLogin.addEventListener("submit", async (ev) => {
             ev.preventDefault();
-            const email = $("usuario").value.trim();
-            const password = $("password").value.trim();
+            const email = document.getElementById("usuario").value.trim();
+            const password = document.getElementById("password").value.trim();
 
             if (!email || !password) {
                 showToast("Ingresa credenciales", false, "warn");
@@ -101,64 +64,47 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             showOverlay("Iniciando sesión...", "Firebase");
+
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                // El observer onAuthStateChanged se encargará del resto
+                const perfil = await whoami();
+                if (perfil) {
+                    USER = perfil;
+                    TOKEN = true;
+                    
+                    // Intentamos cargar datos secundarios, si fallan no bloqueamos el acceso
+                    try { 
+                      await Promise.all([
+                        loadBatchesForSession(USER),
+                        unitStatus().then(estado => hydrateSessionUi(USER, estado, { showSuccessToast: true }))
+                      ]);
+                    } catch(e) { 
+                      console.warn("Error no crítico en hidratación post-login:", e);
+                      // Si falló unitStatus pero tenemos USER, intentamos mostrar la UI básica
+                      await hydrateSessionUi(USER, null, { showSuccessToast: true });
+                    }
+                    
+                    if (USER && USER.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(USER.rol)) {
+                        apiCall({action: "silentAdminReminders"}).catch(()=>{});
+                    }
+                } else {
+                    throw new Error("No se encontró perfil para este usuario.");
+                }
             } catch (error) {
                 console.error("Error en login:", error);
                 const msg = error.code === 'auth/invalid-credential' 
                     ? "Usuario o contraseña incorrectos" 
-                    : "Error al iniciar sesión: " + error.message;
+                    : "Error al iniciar sesión o cargar datos iniciales: " + error.message;
                 showToast(msg, false, "bad");
+            } finally {
                 hideOverlay();
             }
         });
     }
 });
-
-async function handleAuthSuccess(perfil) {
-    USER = perfil;
-    TOKEN = true;
-    
-    showOverlay("Cargando datos de unidad...", "Sincronizando");
-    try { 
-      // 1. Cargar catálogos críticos primero
-      await loadBatchesForSession(USER);
-      
-      // 2. Obtener estatus operativo (si ya capturó hoy, etc)
-      const estado = await unitStatus();
-      
-      // 3. Hidratar la UI con los datos
-      await hydrateSessionUi(USER, estado, { showSuccessToast: true });
-      
-      if (USER && USER.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(USER.rol)) {
-          apiCall({action: "silentAdminReminders"}).catch(()=>{});
-      }
-    } catch(e) { 
-      console.warn("Error en hidratación de sesión:", e);
-      // Fallback: Mostrar UI básica si falla lo secundario
-      await hydrateSessionUi(USER, null, { showSuccessToast: true });
-    } finally {
-      LIVE_STATE.sessionInitialized = true;
-      hideOverlay();
-    }
-}
 // --------------------------------
   const $ = (id) => document.getElementById(id);
-
-  /** Normalizador para comparaciones robustas (quita acentos, espacios y mayúsculas) */
-  function normalizeStr(s) {
-    if (!s) return "";
-    return String(s)
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .trim()
-      .toUpperCase();
-  }
-
-
   const overlay = $("overlay");
-
   const overlayMsg = $("overlayMsg");
   const toast = $("toast");
   const toastMsg = $("toastMsg");
@@ -273,7 +219,12 @@ async function handleAuthSuccess(perfil) {
     }, 3600);
   }  /** ===== UTILS PORTED FROM BACKEND ===== **/
   function normalizeTextKey_(v) {
-    return normalizeStr(v).replace(/\s+/g, " ");
+    return String(v ?? "")
+      .trim()
+      .toUpperCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, " ");
   }
 
   function fixUtf8Text_(v) {
@@ -385,9 +336,6 @@ async function handleAuthSuccess(perfil) {
       el.hidden = true;
     }
   }
-
-  function showEl(id, display = "") { toggleEl(id, true, display); }
-  function hideEl(id) { toggleEl(id, false); }
 
   function exposeAppFns() {
     window.getTodayReports = getTodayReports;
@@ -2808,67 +2756,37 @@ async function handleAuthSuccess(perfil) {
 
     const action = finalPayload.action;
 
-    // Función interna para llamar a GAS (Bridge)
-    const gasCall_ = async (req) => {
-      try {
-        const response = await fetch(GAS_WEB_APP_URL, {
-          method: "POST",
-          mode: "cors", // Importante para redirecciones de Google
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(req)
-        });
-        if (!response.ok) throw new Error("Error en la respuesta de GAS.");
-        return await response.json();
-      } catch (e) {
-        console.error("Critical Bridge Error:", e);
-        return { ok: false, error: "Servidor Drive/GAS fuera de línea: " + e.message };
-      }
-    };
-
     try {
       if (action === "getLotesByMunicipio") {
-        const muni = String(finalPayload.municipio || "").trim().toUpperCase();
-        let q;
-        if (muni && muni !== "*" && muni !== "TODOS") {
-          q = query(collection(db, "lotes_catalogo"), where("municipio", "==", muni));
-        } else {
-          q = collection(db, "lotes_catalogo");
-        }
-        
-        const snapshot = await getDocs(q);
+        const snapshot = await getDocs(collection(db, "lotes_catalogo"));
         const lotes = [];
         snapshot.forEach(docSnap => lotes.push(docSnap.data()));
         return { ok: true, data: lotes };
       }
 
       if (action === "unitStatus") {
-        try {
-          const docId = `${todayYmdLocal()}_${USER.clues}`;
-          const srRef = doc(db, "capturas_sr", docId);
-          const srSnap = await getDoc(srRef);
-          
-          const consStatus = await getConsumiblesStatus(todayYmdLocal(), USER.clues);
-          let consExists = false;
-          if (consStatus.canCaptureConsumibles) {
-            const cDoc = `${consStatus.consumiblesCaptureDate}_${USER.clues}`;
-            const consRef = doc(db, "capturas_cons", cDoc);
-            const cSnap = await getDoc(consRef);
-            consExists = cSnap.exists();
-          }
-
-          return { 
-            ok: true, 
-            data: { 
-              sr: srSnap.exists(), 
-              cons: consExists, 
-              canCaptureConsumibles: consStatus.canCaptureConsumibles,
-              consumiblesReason: consStatus.consumiblesReason
-            } 
-          };
-        } catch (e) {
-          console.error("Error en unitStatus:", e);
-          return { ok: true, data: { sr: false, cons: false } };
+        const docId = `${todayYmdLocal()}_${USER.clues}`;
+        const srRef = doc(db, "capturas_sr", docId);
+        const srSnap = await getDoc(srRef);
+        
+        const consStatus = await getConsumiblesStatus(todayYmdLocal(), USER.clues);
+        let consExists = false;
+        if (consStatus.canCaptureConsumibles) {
+           const cDoc = `${consStatus.consumiblesCaptureDate}_${USER.clues}`;
+           const consRef = doc(db, "capturas_cons", cDoc);
+           const cSnap = await getDoc(consRef);
+           consExists = cSnap.exists();
         }
+
+        return { 
+          ok: true, 
+          data: { 
+            sr: srSnap.exists(), 
+            cons: consExists, 
+            hasNotes: false,
+            consStatus: consStatus
+          }
+        };
       }
 
       // --- CATÁLOGOS ADMINISTRATIVOS Y USUARIOS ---
@@ -3013,11 +2931,32 @@ async function handleAuthSuccess(perfil) {
         return { ok: true, data: true };
       }
 
-      // --- CARGA DE ARCHIVOS (GESTIONADA POR GAS EN DRIVE) ---
+      // --- CARGA DE ARCHIVOS (FIREBASE STORAGE) ---
       if (action === "uploadFile") {
-        if (!USER) return { ok: false, error: "Debes iniciar sesión." };
-        // Delegamos directamente a GAS y retornamos su respuesta
-        return await gasCall_(finalPayload);
+        const file = finalPayload.file; // File object nativo del navegador
+        if (!file) return { ok: false, error: "Archivo no especificado." };
+
+        const category = String(finalPayload.category || "Otros").replace(/[^a-zA-Z0-9_\-à-ü ]/g, "").trim();
+        const targetClues = finalPayload.targetClues || USER.clues;
+        const path = `uploads/${targetClues}/${category}/${Date.now()}_${file.name}`;
+        const fileRef = storageRef(storage, path);
+        const snap = await uploadBytes(fileRef, file);
+        const url = await getDownloadURL(snap.ref);
+
+        // Guardar registro de la carga en Firestore para trazabilidad
+        const logRef = doc(collection(db, "archivos_subidos"));
+        await setDoc(logRef, {
+          url,
+          path,
+          filename: file.name,
+          category,
+          clues: USER.clues,
+          targetClues,
+          subido_por: USER.usuario,
+          timestamp: serverTimestamp()
+        });
+
+        return { ok: true, data: { url } };
       }
 
       if (action === "confirmPinolReceipt") {
@@ -3434,9 +3373,9 @@ async function handleAuthSuccess(perfil) {
       }
 
 
-      // Fallback genérico: Si no está en Firebase, intentar en GAS
-      console.log(`[Bridge] Delegando acción no-local a GAS: ${action}`);
-      return await gasCall_(finalPayload);
+      // Fallback genérico
+      console.warn(`[Firebase Migración] Acción no implementada todavía: ${action}`);
+      return { ok: true, data: null };
 
     } catch (err) {
       console.error(`Error en apiCall (${action}):`, err);
@@ -4217,30 +4156,6 @@ async function handleAuthSuccess(perfil) {
 
     setLoggedInUI(user, status);
 
-    /** Global panel switcher (PHASE 2) */
-    window.showTab = (panel, btn) => {
-      const panels = ["panelSR", "panelCONS", "panelBIO", "panelPINOL", "panelADMIN", "panelLOTES", "panelHISTORICO"];
-      panels.forEach(p => toggleEl(p, false));
-      
-      const target = "panel" + panel.toUpperCase();
-      toggleEl(target, true);
-
-      // Update Nav Items
-      document.querySelectorAll(".navItem").forEach(n => n.classList.remove("active"));
-      if (btn) btn.classList.add("active");
-      else {
-        const navBtn = $("nav" + panel.toUpperCase());
-        if (navBtn) navBtn.classList.add("active");
-      }
-      
-      // Close side dropdown if open
-      hideEl("topNotifDropdown");
-    };
-
-    if (user.rol === "ADMIN") {
-      showEl("navADMIN");
-    }
-
     window.MUST_CHANGE_PASSWORD = !!mustChangePassword;
 
     if (window.MUST_CHANGE_PASSWORD && typeof openPasswordModal === "function") {
@@ -4309,6 +4224,7 @@ async function handleAuthSuccess(perfil) {
 async function loadBatchesForSession(user) {
     if (!user) return;
     try {
+        console.log("🟢 1. Intentando conectar a la colección 'lotes_catalogo'...");
         const lotesRef = collection(db, "lotes_catalogo");
         const querySnapshot = await getDocs(lotesRef);
         
@@ -4317,24 +4233,25 @@ async function loadBatchesForSession(user) {
             allLotes.push(doc.data());
         });
 
+        console.log(`🟢 2. Firebase devolvió ${allLotes.length} lotes en total.`);
+
+        // --- CARGA DE PARÁMETROS DE BIOLÓGICOS (Config) ---
         const configRef = collection(db, "config_biologicos");
         const configSnap = await getDocs(configRef);
         CONFIG_BIOLOGICOS_CATALOG = [];
         configSnap.forEach(d => CONFIG_BIOLOGICOS_CATALOG.push(d.data()));
+        console.log(`🟢 2.5. Firebase devolvió ${CONFIG_BIOLOGICOS_CATALOG.length} registros de configuración.`);
 
-        const userMuniRaw = user.municipio || "";
-        const userMuniNorm = normalizeStr(userMuniRaw);
+        const userMuni = String(user.municipio || "").trim().toUpperCase();
 
         UNIT_BATCHES = allLotes.filter(l => {
-            const loteMuni = normalizeStr(l.municipio);
-            return loteMuni === "*" || loteMuni === "TODOS" || loteMuni === userMuniNorm;
+            const loteMuni = String(l.municipio || "").trim().toUpperCase();
+            return loteMuni === "*" || loteMuni === userMuni || loteMuni === "TODOS";
         });
         
-        console.log(`[Stability] Lotes cargados: ${allLotes.length}, Filtrados para ${userMuniRaw}: ${UNIT_BATCHES.length}`);
-        console.log(`[Stability] Config biológicos cargada: ${CONFIG_BIOLOGICOS_CATALOG.length} registros.`);
+        console.log(`🟢 3. Lotes filtrados para la unidad (${userMuni}): ${UNIT_BATCHES.length}`);
     } catch (e) {
-        console.error("🔴 ERROR CRÍTICO al cargar lotes/config:", e);
-        showToast("Error al cargar parámetros del sistema. Algunos paneles podrían estar incompletos.", false, "bad");
+        console.error("🔴 ERROR CRÍTICO al cargar lotes:", e);
     }
 }
 
@@ -5069,7 +4986,11 @@ window.handleSRLoteChange = function(selectEl) {
   }
 
   function todayYmdLocal() {
-    return parseDateYmd(new Date());
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
   }
 
   function isMexicanHoliday(date) {
@@ -5346,7 +5267,7 @@ async function getTodayReports(fecha = "", force = false) {
   return data || null;
 }
 
-  async function getCaptureOverview(fecha, tipo, force = false) {
+  window.getCaptureOverview = async function (fecha, tipo, force = false) {
     if (!TOKEN) return null;
 
     const safeFecha = String(fecha || todayYmdLocal()).trim();
@@ -5382,10 +5303,9 @@ async function getTodayReports(fecha = "", force = false) {
       });
 
     return data || null;
-  }
-  window.getCaptureOverview = getCaptureOverview;
+  };
 
-  async function getHistoryMetrics(fechaInicio, fechaFin, force = false) {
+  window.getHistoryMetrics = async function (fechaInicio, fechaFin, force = false) {
     if (!TOKEN) return null;
 
     const inicio = String(fechaInicio || todayYmdLocal()).trim();
@@ -5421,8 +5341,7 @@ async function getTodayReports(fecha = "", force = false) {
       });
 
     return data || null;
-  }
-  window.getHistoryMetrics = getHistoryMetrics;
+  };
 
 
   function showRightColumn(show) {
@@ -6520,11 +6439,7 @@ async function getTodayReports(fecha = "", force = false) {
         saludo = "Buenas noches 🌙 Seguimos trabajando";
       }
 
-      const greetingContainer = $("capStatus") || $("munTxt")?.parentElement;
-      if (greetingContainer) {
-          greetingContainer.innerHTML = `<h2 class="greetingTitle">${saludo}</h2>`;
-      }
-
+      $("capStatus").innerHTML = `<h2 class="greetingTitle">${saludo}</h2>`;
       paintStatusChips(STATUS);
     }
 
@@ -6625,10 +6540,6 @@ async function getTodayReports(fecha = "", force = false) {
     STATUS = null;
     TOKEN = "";
     TODAY_CACHE = null;
-    LIVE_STATE.sessionInitialized = false;
-
-    document.body.classList.remove("logged-in");
-    document.body.classList.add("not-logged-in");
 
     stopRealtimeUX();
 
@@ -8363,7 +8274,44 @@ $("btnSaveSR").onclick = async () => {
     }
   }
 
+  async function getHistoryMetrics(fechaInicio, fechaFin, force = false) {
+    if (!TOKEN) return null;
 
+    const inicio = fechaInicio || todayYmdLocal();
+    const fin = fechaFin || todayYmdLocal();
+    const cacheKey = buildCacheKey("HISTORY_METRICS", `${inicio}::${fin}`);
+
+    const data = force
+      ? await (async () => {
+        const r = await apiCall({
+          action: "historyMetrics",
+          token: TOKEN,
+          fechaInicio: inicio,
+          fechaFin: fin
+        });
+
+        if (!r || !r.ok) return null;
+        return r.data || null;
+      })()
+      : await getCachedOrFetch({
+        key: cacheKey,
+        ttl: CACHE_TTL.HISTORY_METRICS,
+        fetcher: async () => {
+          const r = await apiCall({
+            action: "historyMetrics",
+            token: TOKEN,
+            fechaInicio: inicio,
+            fechaFin: fin
+          });
+
+          if (!r || !r.ok) return null;
+          return r.data || null;
+        },
+        shouldCache: (data) => data != null
+      });
+
+    return data || null;
+  }
 
   function renderHistoryMetrics(data) {
     const rows = data?.rows || [];
@@ -9281,47 +9229,19 @@ $("btnSaveSR").onclick = async () => {
     }
 
     try {
-      showOverlay("Codificando archivo...", "Drive");
+      showOverlay("Subiendo archivo a Firebase Storage...", "Storage");
       setBtnBusy("btnDoUpload", true, "Subiendo…");
       
-      // Convertir a Base64 para envío a GAS
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-      showOverlay("Subiendo a Google Drive...", "Drive");
       const res = await apiCall({
         action: "uploadFile",
-        base64: base64,
-        filename: file.name,
-        mimeType: file.type,
+        file: file,
         category: category,
         targetClues: targetClues,
         targetUnidad: targetUnidad
       });
 
       if (res && res.ok) {
-        showToast("¡Archivo guardado en Google Drive!", true);
-        
-        // Registro opcional en Firestore para auditoría (aunque el archivo esté en Drive)
-        try {
-          const logRef = doc(collection(db, "archivos_subidos"));
-          await setDoc(logRef, {
-            url: res.data.url,
-            driveId: res.data.id,
-            filename: file.name,
-            category,
-            clues: USER.clues,
-            targetClues,
-            subido_por: USER.usuario,
-            storage: "GOOGLE_DRIVE",
-            timestamp: serverTimestamp()
-          });
-        } catch(e) { console.warn("Log de auditoría falló:", e); }
-
+        showToast("¡Archivo subido exitosamente!", true);
         closeUploadFilesModal();
       } else {
         showToast("Error al subir: " + (res?.error || "Desconocido"), false);
