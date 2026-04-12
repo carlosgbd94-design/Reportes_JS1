@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, deleteDoc, serverTimestamp, collection, getDocs, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, serverTimestamp, collection, getDocs, query, where, writeBatch, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-storage.js";
 
@@ -2903,6 +2903,32 @@ document.addEventListener("DOMContentLoaded", () => {
           timestamp: serverTimestamp()
         });
         return { ok: true, message: "Solicitud de pinol enviada." };
+      }
+
+      if (action === "listPinol") {
+        let q;
+        if (USER.rol === "ADMIN" || USER.rol === "JURISDICCIONAL") {
+          q = query(collection(db, "pinol"), orderBy("timestamp", "desc"), limit(200));
+        } else {
+          q = query(collection(db, "pinol"), where("clues", "==", USER.clues), orderBy("timestamp", "desc"), limit(50));
+        }
+
+        const snap = await getDocs(q);
+        const results = [];
+        snap.forEach(d => results.push({ id: d.id, ...d.data() }));
+        return { ok: true, data: results };
+      }
+
+      if (action === "markPinolDelivered") {
+        if (!finalPayload.id) return { ok: false, error: "ID de solicitud faltante." };
+        const ref = doc(db, "pinol", finalPayload.id);
+        await setDoc(ref, {
+          estatus: "ENTREGADO",
+          comentario_entrega: finalPayload.comentario_notificacion || "",
+          fecha_entrega: todayYmdLocal(),
+          timestamp_entrega: serverTimestamp()
+        }, { merge: true });
+        return { ok: true, data: true };
       }
 
       // --- CARGA DE ARCHIVOS (FIREBASE STORAGE) ---
