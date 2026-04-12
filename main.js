@@ -133,6 +133,22 @@ async function handleAuthSuccess(perfil) {
 // --------------------------------
   const $ = (id) => document.getElementById(id);
 
+  /** Funciones utilitarias de visibilidad */
+  function showEl(id, display = "block") {
+    const el = $(id);
+    if (el) el.style.display = display;
+  }
+
+  function hideEl(id) {
+    const el = $(id);
+    if (el) el.style.display = "none";
+  }
+
+  function toggleEl(id, show, display = "block") {
+    const el = $(id);
+    if (el) el.style.display = show ? display : "none";
+  }
+
   /** Normalizador para comparaciones robustas (quita acentos, espacios y mayúsculas) */
   function normalizeStr(s) {
     if (!s) return "";
@@ -5409,13 +5425,10 @@ async function getTodayReports(fecha = "", force = false) {
 
 
   function showRightColumn(show) {
-    const loginWrap = document.querySelector(".loginWrap");
-    toggleEl("rightColumn", show, "block");
-    toggleEl("cardLogin", !show, "block");
-
-    if (loginWrap) {
-      loginWrap.style.display = show ? "none" : "flex";
-    }
+    toggleEl("mainApp", show, "block");
+    toggleEl("topNav", show, "flex");
+    toggleEl("mainSidebar", show, "flex");
+    toggleEl("loginLayout", !show, "flex");
   }
 
   function paintStatusChips(status) {
@@ -6640,7 +6653,7 @@ async function getTodayReports(fecha = "", force = false) {
       opsTab: "SUMMARY"
     });
     localStorage.removeItem("JS1_TOKEN");
-    $("loginStatus").textContent = "—";
+    if ($("loginStatus")) $("loginStatus").textContent = "—";
     showRightColumn(false);
 
     if ($("bGuardado")) $("bGuardado").style.display = "none";
