@@ -280,6 +280,22 @@ function api_uploadFile(payload) {
     const blob = Utilities.newBlob(Utilities.base64Decode(base64), mimeType, newName);
     const file = catFolder.createFile(blob);
 
+    // 5. Registrar en LOG_ARCHIVOS para índice rápido
+    try {
+      const logSh = ensureLogArchivosSheet_();
+      logSh.appendRow([
+        file.getId(),
+        file.getName(),
+        finalClues,
+        category,
+        file.getUrl(),
+        u.usuario,
+        Utilities.formatDate(now, tz_(), "yyyy-MM-dd HH:mm:ss")
+      ]);
+    } catch(logErr) {
+      Logger.log("Error registrando en LOG_ARCHIVOS: " + logErr.message);
+    }
+
     return {
       ok: true,
       data: {
@@ -611,6 +627,90 @@ function normalizeClues_(v) {
     .trim()
     .toUpperCase()
     .replace(/\s+/g, "");
+}
+
+/** ===== LOG_ARCHIVOS: Índice de archivos en Drive ===== **/
+function ensureLogArchivosSheet_() {
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName("LOG_ARCHIVOS");
+  if (!sh) {
+    sh = ss.insertSheet("LOG_ARCHIVOS");
+  }
+  ensureHeader_(sh, ["FileID", "Filename", "CLUES", "Category", "URL", "UploadedBy", "Timestamp"]);
+  return sh;
+}
+
+/** ===== _META_: Contadores y punteros optimizados ===== **/
+function ensureMetaSheet_() {
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName("_META_");
+  if (!sh) {
+    sh = ss.insertSheet("_META_");
+    sh.hideSheet(); // Ocultar para que no distraiga
+    ensureHeader_(sh, ["key", "value", "updated_ts"]);
+  }
+  return sh;
+}
+
+function getMetaValue_(key) {
+  const sh = ensureMetaSheet_();
+  const last = sh.getLastRow();
+  if (last < 2) return null;
+  const data = sh.getRange(2, 1, last - 1, 3).getValues();
+  for (const row of data) {
+    if (String(row[0]).trim() === key) return row[1];
+  }
+  return null;
+}
+
+function setMetaValue_(key, value) {
+  const sh = ensureMetaSheet_();
+  const last = sh.getLastRow();
+  const now = Utilities.formatDate(new Date(), tz_(), "yyyy-MM-dd HH:mm:ss");
+  
+  if (last >= 2) {
+    const data = sh.getRange(2, 1, last - 1, 3).getValues();
+    for (let i = 0; i < data.length; i++) {
+      if (String(data[i][0]).trim() === key) {
+        sh.getRange(i + 2, 2).setValue(value);
+        sh.getRange(i + 2, 3).setValue(now);
+        return;
+      }
+    }
+  }
+  sh.appendRow([key, value, now]);
+}
+
+/** ===== CacheService WRAPPER para lecturas de Sheets ===== **/
+function getCachedSheetData_(sheetName, ttl) {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = "SHEET_DATA_" + sheetName;
+  
+  try {
+    const cached = cache.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+  } catch(e) {}
+
+  const sh = getSheet_(sheetName);
+  const data = sh.getDataRange().getValues();
+  
+  // CacheService tiene límite de 100KB por key. Si excede, no cacheamos.
+  try {
+    const json = JSON.stringify(data);
+    if (json.length < 95000) { // Dejamos margen de seguridad
+      cache.put(cacheKey, json, ttl || CACHE_TTL_USERS);
+    }
+  } catch(e) {
+    Logger.log("Cache put failed for " + sheetName + ": " + e.message);
+  }
+  
+  return data;
+}
+
+function invalidateSheetCache_(sheetName) {
+  try {
+    CacheService.getScriptCache().remove("SHEET_DATA_" + sheetName);
+  } catch(e) {}
 }
 
 function ensureHeader_(sh, headers) {
