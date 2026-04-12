@@ -56,6 +56,30 @@ const LIVE_STATE = {
 };
 document.addEventListener("DOMContentLoaded", () => {
     
+    // Tailwind UI: Mobile Sidebar Toggle Logic
+    const btnMobileMenu = document.getElementById("btnMobileMenu");
+    const mainSidebar = document.getElementById("mainSidebar");
+    const mobileSidebarOverlay = document.getElementById("mobileSidebarOverlay");
+    
+    const toggleSidebar = () => {
+        if (!mainSidebar) return;
+        mainSidebar.classList.toggle("-translate-x-full");
+        mobileSidebarOverlay.classList.toggle("hidden");
+    };
+
+    if (btnMobileMenu) btnMobileMenu.addEventListener("click", toggleSidebar);
+    if (mobileSidebarOverlay) mobileSidebarOverlay.addEventListener("click", toggleSidebar);
+
+    // Close mobile sidebar upon clicking a navigation tab
+    const sidebarTabs = document.getElementById('sidebarTabsContainer');
+    if (sidebarTabs) {
+        sidebarTabs.addEventListener('click', (e) => {
+            if (e.target.closest('button') && window.innerWidth < 768) {
+                toggleSidebar();
+            }
+        });
+    }
+
     /** Observer de estado de sesión persistente */
     onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
@@ -132,22 +156,6 @@ async function handleAuthSuccess(perfil) {
 }
 // --------------------------------
   const $ = (id) => document.getElementById(id);
-
-  /** Funciones utilitarias de visibilidad */
-  function showEl(id, display = "block") {
-    const el = $(id);
-    if (el) el.style.display = display;
-  }
-
-  function hideEl(id) {
-    const el = $(id);
-    if (el) el.style.display = "none";
-  }
-
-  function toggleEl(id, show, display = "block") {
-    const el = $(id);
-    if (el) el.style.display = show ? display : "none";
-  }
 
   /** Normalizador para comparaciones robustas (quita acentos, espacios y mayúsculas) */
   function normalizeStr(s) {
@@ -374,7 +382,22 @@ async function handleAuthSuccess(perfil) {
     };
   }
 
+  function toggleEl(id, show, displayWhenShown = "") {
+    const el = $(id);
+    if (!el) return;
 
+    if (show) {
+      if (displayWhenShown) {
+        el.style.display = displayWhenShown;
+      } else {
+        el.style.removeProperty("display");
+      }
+      el.hidden = false;
+    } else {
+      el.style.display = "none";
+      el.hidden = true;
+    }
+  }
 
   function exposeAppFns() {
     window.getTodayReports = getTodayReports;
@@ -4197,27 +4220,24 @@ async function handleAuthSuccess(perfil) {
     setLoggedInUI(user, status);
 
     /** Global panel switcher (PHASE 2) */
-    /** Global panel switcher (PHASE 4 Redesign) */
     window.showTab = (panel, btn) => {
-      const panels = ["panelSR", "panelCONS", "panelBIO", "panelPINOL", "panelADMIN", "panelLOTES", "panelHISTORICO", "panelADMIN_USERS"];
+      const panels = ["panelSR", "panelCONS", "panelBIO", "panelPINOL", "panelADMIN", "panelLOTES", "panelHISTORICO"];
       panels.forEach(p => toggleEl(p, false));
       
-      // Mapeo de paneles
-      const target = (panel === "ADMIN_USERS") ? "panelCaptureSummary" : "panel" + panel.toUpperCase();
+      const target = "panel" + panel.toUpperCase();
       toggleEl(target, true);
 
-      // Sincronizar Sidebar (navItem)
-      document.querySelectorAll(".navItem").forEach(n => {
-        n.classList.remove("border-primary", "bg-white", "text-primary", "shadow-sm");
-        n.classList.add("text-slate-600", "border-transparent");
-      });
-
-      if (btn && btn.classList.contains("navItem")) {
-        btn.classList.add("border-primary", "bg-white", "text-primary", "shadow-sm");
-        btn.classList.remove("text-slate-600", "border-transparent");
+      // Update Nav Items
+      document.querySelectorAll(".navItem").forEach(n => n.classList.remove("active"));
+      if (btn) btn.classList.add("active");
+      else {
+        const navBtn = $("nav" + panel.toUpperCase());
+        if (navBtn) navBtn.classList.add("active");
       }
+      
+      // Close side dropdown if open
+      hideEl("topNotifDropdown");
     };
-
 
     if (user.rol === "ADMIN") {
       showEl("navADMIN");
@@ -5410,10 +5430,13 @@ async function getTodayReports(fecha = "", force = false) {
 
 
   function showRightColumn(show) {
-    toggleEl("mainApp", show, "block");
-    toggleEl("topNav", show, "flex");
-    toggleEl("mainSidebar", show, "flex");
-    toggleEl("loginLayout", !show, "flex");
+    const loginWrap = document.querySelector(".loginWrap");
+    toggleEl("rightColumn", show, "block");
+    toggleEl("cardLogin", !show, "block");
+
+    if (loginWrap) {
+      loginWrap.style.display = show ? "none" : "flex";
+    }
   }
 
   function paintStatusChips(status) {
@@ -6341,32 +6364,21 @@ async function getTodayReports(fecha = "", force = false) {
   }
 
   function renderCaptureSummary(data) {
-    if (!data) return;
-    const { capturadas = [], faltantes = [], total_unidades = 0, total_capturadas = 0, total_faltantes = 0 } = data;
+    $("sumFecha").textContent = data?.fecha || "—";
+    $("sumTotal").textContent = data?.total_unidades ?? 0;
+    $("sumCapturadas").textContent = data?.total_capturadas ?? 0;
+    $("sumFaltantes").textContent = data?.total_faltantes ?? 0;
 
-    // Poblar tarjetas del nuevo DASHBOARD (PHASE 4)
-    if ($("dashTotal")) $("dashTotal").textContent = total_unidades;
-    if ($("dashCapturadas")) $("dashCapturadas").textContent = total_capturadas;
-    if ($("dashFaltantes")) $("dashFaltantes").textContent = total_faltantes;
-    
-    // Cálculos
-    const percent = total_unidades > 0 ? Math.round((total_capturadas / total_unidades) * 100) : 0;
-    if ($("dashCapturadasPercent")) $("dashCapturadasPercent").textContent = percent + "%";
-    if ($("dashFaltantesDiff")) $("dashFaltantesDiff").textContent = (total_faltantes > 0 ? "-" : "") + total_faltantes;
+    const capturadas = data?.capturadas || [];
+    const faltantes = data?.faltantes || [];
 
-    // Legacy logic
-    if ($("sumFecha")) $("sumFecha").textContent = data?.fecha || "—";
-    if ($("sumTotal")) $("sumTotal").textContent = total_unidades;
-    if ($("sumCapturadas")) $("sumCapturadas").textContent = total_capturadas;
-    if ($("sumFaltantes")) $("sumFaltantes").textContent = total_faltantes;
-    if ($("capturadasCount")) $("capturadasCount").textContent = `${capturadas.length}`;
-    if ($("faltantesCount")) $("faltantesCount").textContent = `${faltantes.length}`;
+    $("capturadasCount").textContent = `${capturadas.length}`;
+    $("faltantesCount").textContent = `${faltantes.length}`;
 
     // Semáforo automático
     if ($("kpiCardFaltantes")) {
       $("kpiCardFaltantes").className = "kpiCard " + (faltantes.length > 0 ? "warn" : "ok");
     }
-
 
 
     const tipoTxt = (data?.tipo === "CONS") ? "Consumibles" : "Existencia de biológicos";
@@ -6476,25 +6488,11 @@ async function getTodayReports(fecha = "", force = false) {
       mainPanel: "CAP"
     });
 
-    // --- PHASE 4 REDESIGN SYNC ---
-    // --- PHASE 4 REDESIGN SYNC (Safe update) ---
-    if ($("userNameHdr")) $("userNameHdr").textContent = user.nombre || user.usuario || "Usuario";
-    if ($("userRoleHdr")) $("userRoleHdr").textContent = user.rol || "Perfil";
-    if ($("sideUnitName")) $("sideUnitName").textContent = user.unidad || "Administración";
-    if ($("sideClues")) $("sideClues").textContent = user.clues || "JS1 CENTRAL";
+    showRightColumn(true);
 
-    // Ocultar login y mostrar App (Safe)
-    hideEl("loginLayout");
-    showEl("topNav", "flex");
-    showEl("mainSidebar", "flex");
-    showEl("mainApp");
-    // ------------------------------
-
-    // Legacy sync (Protección contra null)
-    if ($("who")) $("who").textContent = `${user.clues || "—"} — ${user.unidad || "—"}`;
-    if ($("welcome")) $("welcome").textContent = `Hola, ${user.usuario}`;
-    if ($("rolTxt")) $("rolTxt").textContent = `Perfil: ${user.rol || "UNIDAD"}`;
-    
+    $("who").textContent = `${user.clues || "—"} — ${user.unidad || "—"}`;
+    $("welcome").textContent = `Hola, ${user.usuario}`;
+    $("rolTxt").textContent = `Perfil: ${user.rol || "UNIDAD"}`;
     if ($("tabCAPText")) {
       $("tabCAPText").textContent = (user.rol === "UNIDAD") ? "Captura" : "Panel";
     }
@@ -6505,14 +6503,14 @@ async function getTodayReports(fecha = "", force = false) {
     }
 
     if (user.rol === "ADMIN" || user.rol === "JURISDICCIONAL") {
-      if ($("munTxt")) $("munTxt").textContent = "Municipio(s): Todos";
+      $("munTxt").textContent = "Municipio(s): Todos";
     } else if (user.rol === "MUNICIPAL") {
-      if ($("munTxt")) $("munTxt").textContent = `Municipio(s): ${user.municipio || "—"}`;
+      $("munTxt").textContent = `Municipio(s): ${user.municipio || "—"}`;
     } else {
-      if ($("munTxt")) $("munTxt").textContent = `Municipio: ${user.municipio || "—"}`;
+      $("munTxt").textContent = `Municipio: ${user.municipio || "—"}`;
     }
     if (STATUS) {
-      if ($("dayTxt")) $("dayTxt").textContent = formatDayBadgeMx(STATUS.today);
+      $("dayTxt").textContent = formatDayBadgeMx(STATUS.today);
 
       const hora = new Date().getHours();
 
@@ -6526,7 +6524,7 @@ async function getTodayReports(fecha = "", force = false) {
         saludo = "Buenas noches 🌙 Seguimos trabajando";
       }
 
-      if ($("capStatus")) $("capStatus").innerHTML = `<h2 class="greetingTitle">${saludo}</h2>`;
+      $("capStatus").innerHTML = `<h2 class="greetingTitle">${saludo}</h2>`;
       paintStatusChips(STATUS);
     }
 
@@ -6640,7 +6638,7 @@ async function getTodayReports(fecha = "", force = false) {
       opsTab: "SUMMARY"
     });
     localStorage.removeItem("JS1_TOKEN");
-    if ($("loginStatus")) $("loginStatus").textContent = "—";
+    $("loginStatus").textContent = "—";
     showRightColumn(false);
 
     if ($("bGuardado")) $("bGuardado").style.display = "none";
@@ -6766,15 +6764,15 @@ async function getTodayReports(fecha = "", force = false) {
       clearTabAttention("tabPINOL");
     }
 
-    if ($("tabSR")) $("tabSR").classList.toggle("active", tab === "SR");
-    if ($("tabCONS")) $("tabCONS").classList.toggle("active", tab === "CONS");
-    if ($("tabBIO")) $("tabBIO").classList.toggle("active", tab === "BIO");
-    if ($("tabPINOL")) $("tabPINOL").classList.toggle("active", tab === "PINOL");
+    $("tabSR").classList.toggle("active", tab === "SR");
+    $("tabCONS").classList.toggle("active", tab === "CONS");
+    $("tabBIO").classList.toggle("active", tab === "BIO");
+    $("tabPINOL").classList.toggle("active", tab === "PINOL");
 
-    if ($("formSR")) $("formSR").style.display = "none";
-    if ($("formCONS")) $("formCONS").style.display = "none";
-    if ($("formBIO")) $("formBIO").style.display = "none";
-    if ($("formPINOL")) $("formPINOL").style.display = "none";
+    $("formSR").style.display = "none";
+    $("formCONS").style.display = "none";
+    $("formBIO").style.display = "none";
+    $("formPINOL").style.display = "none";
 
     let targetId = "formSR";
 
