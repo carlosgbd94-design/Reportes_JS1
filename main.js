@@ -377,6 +377,9 @@ async function handleAuthSuccess(perfil) {
     }
   }
 
+  function showEl(id, display = "") { toggleEl(id, true, display); }
+  function hideEl(id) { toggleEl(id, false); }
+
   function exposeAppFns() {
     window.getTodayReports = getTodayReports;
     window.getCaptureOverview = getCaptureOverview;
