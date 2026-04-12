@@ -1,21 +1,10 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, deleteDoc, serverTimestamp, collection, getDocs, query, where, writeBatch, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
-import { getAuth, signInWithEmailAndPassword, updatePassword, EmailAuthProvider, reauthenticateWithCredential, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-storage.js";
+// ============================================
+// JS1 REPORTES — BACKEND: GOOGLE APPS SCRIPT
+// ============================================
+// Toda la lógica de datos pasa por doPost() de GAS.
+// Firebase ha sido completamente eliminado.
 
-const firebaseConfig = {
-    apiKey: "AIzaSyBzhNWRQZpDHoIBJrcuXy2a4EnHzEZuzVc",
-    authDomain: "js1-reportes.firebaseapp.com",
-    projectId: "js1-reportes",
-    storageBucket: "js1-reportes.firebasestorage.app",
-    messagingSenderId: "398603830899",
-    appId: "1:398603830899:web:92e916daec0cead2324c06"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const storage = getStorage(app);
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycby3en_qswj1PmE6o80nypsDM6Gw4kueRUimNSgMKJxzDojRFCsXBjFZngR9UpnkYL0n/exec";
 
 // Estado de sesión y UI
 let BIO_IS_ENABLED = false;
@@ -51,31 +40,55 @@ const LIVE_STATE = {
   toastMeta: { key: "", ts: 0 }
 };
 
+// --- PERSISTENCIA DE SESIÓN (localStorage) ---
+function saveSession(token, user) {
+  try {
+    localStorage.setItem("JS1_TOKEN", token);
+    localStorage.setItem("JS1_USER", JSON.stringify(user));
+  } catch(e) { console.warn("No se pudo guardar sesión:", e); }
+}
 
+function loadSession() {
+  try {
+    const t = localStorage.getItem("JS1_TOKEN");
+    const u = localStorage.getItem("JS1_USER");
+    if (t && u) return { token: t, user: JSON.parse(u) };
+  } catch(e) {}
+  return null;
+}
+
+function clearSession() {
+  try {
+    localStorage.removeItem("JS1_TOKEN");
+    localStorage.removeItem("JS1_USER");
+  } catch(e) {}
+}
 
 document.addEventListener("DOMContentLoaded", () => {
-    // 🛡️ OBSERVER DE AUTENTICACIÓN (Sesión persistente)
-    onAuthStateChanged(auth, async (userFirebase) => {
-        if (userFirebase) {
-            console.log("Sesión recuperada para:", userFirebase.email);
-            try {
-                const perfil = await whoami();
-                if (perfil) {
-                    USER = perfil;
-                    TOKEN = true;
-                    // Hidratar la sesión automáticamente
-                    await hydrateSessionUi(USER, null, { showSuccessToast: false });
-                } else {
-                    console.warn("Sesión activa en Auth, pero no se encontró perfil en Firestore.");
-                    showToast("No se encontró perfil de usuario", false, "bad");
-                }
-            } catch (e) {
-                console.error("Error al recuperar sesión:", e);
-            }
+    // 🛡️ RECUPERACIÓN DE SESIÓN DESDE localStorage
+    const saved = loadSession();
+    if (saved && saved.token && saved.user) {
+      TOKEN = saved.token;
+      USER = saved.user;
+      // Validar que el token siga activo con el backend
+      apiCall("whoami").then(r => {
+        if (r && r.ok && r.data) {
+          USER = r.data;
+          TOKEN = saved.token;
+          saveSession(TOKEN, USER);
+          hydrateSessionUi(USER, null, { showSuccessToast: false });
         } else {
-            console.log("No hay sesión activa.");
+          // Token expirado o inválido
+          TOKEN = null;
+          USER = null;
+          clearSession();
         }
-    });
+      }).catch(() => {
+        TOKEN = null;
+        USER = null;
+        clearSession();
+      });
+    }
 
     const formLogin = document.getElementById("loginForm");
     if (formLogin) {
@@ -89,39 +102,36 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            showOverlay("Iniciando sesión...", "Firebase");
+            showOverlay("Iniciando sesión...", "Conectando");
 
             try {
-                await signInWithEmailAndPassword(auth, email, password);
-                const perfil = await whoami();
-                if (perfil) {
-                    USER = perfil;
-                    TOKEN = true;
+                const loginResult = await apiCall("login", { usuario: email, password: password });
+                
+                if (!loginResult || !loginResult.ok) {
+                    throw new Error((loginResult && loginResult.error) || "Credenciales incorrectas.");
+                }
+
+                TOKEN = loginResult.data.token;
+                USER = loginResult.data.user;
+                saveSession(TOKEN, USER);
                     
-                    // Intentamos cargar datos secundarios, si fallan no bloqueamos el acceso
-                    try { 
-                      await Promise.all([
-                        loadBatchesForSession(USER),
-                        unitStatus().then(estado => hydrateSessionUi(USER, estado, { showSuccessToast: true }))
-                      ]);
-                    } catch(e) { 
-                      console.warn("Error no crítico en hidratación post-login:", e);
-                      // Si falló unitStatus pero tenemos USER, intentamos mostrar la UI básica
-                      await hydrateSessionUi(USER, null, { showSuccessToast: true });
-                    }
+                // Intentamos cargar datos secundarios
+                try { 
+                  await Promise.all([
+                    loadBatchesForSession(USER),
+                    unitStatus().then(estado => hydrateSessionUi(USER, estado, { showSuccessToast: true }))
+                  ]);
+                } catch(e) { 
+                  console.warn("Error no crítico en hidratación post-login:", e);
+                  await hydrateSessionUi(USER, null, { showSuccessToast: true });
+                }
                     
-                    if (USER && USER.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(USER.rol)) {
-                        apiCall({action: "silentAdminReminders"}).catch(()=>{});
-                    }
-                } else {
-                    throw new Error("No se encontró perfil para este usuario.");
+                if (USER && USER.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(USER.rol)) {
+                    apiCall("silentAdminReminders").catch(()=>{});
                 }
             } catch (error) {
                 console.error("Error en login:", error);
-                const msg = error.code === 'auth/invalid-credential' 
-                    ? "Usuario o contraseña incorrectos" 
-                    : "Error al iniciar sesión o cargar datos iniciales: " + error.message;
-                showToast(msg, false, "bad");
+                showToast(error.message || "Error al iniciar sesión", false, "bad");
             } finally {
                 hideOverlay();
             }
@@ -136,7 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(".nav-item[data-tab]").forEach(btn => {
       btn.addEventListener("click", () => {
         const tab = btn.getAttribute("data-tab");
-        const panel = tab.replace("tab", ""); // tabCAP -> CAP
+        const panel = tab.replace("tab", "");
         activateMain(panel);
       });
     });
@@ -2779,657 +2789,84 @@ document.addEventListener("DOMContentLoaded", () => {
       if (loadingMsg) hideOverlay();
     }
   }
+  // ==========================================
+  // API CALL — PROXY A GOOGLE APPS SCRIPT
+  // ==========================================
+  // Toda la lógica de datos pasa por doPost() de GAS.
+  // El frontend NUNCA accede a la base de datos directamente.
 
   async function apiCall(actionOrPayload, payload = {}) {
-    let finalPayload = {};
+    let body = {};
 
     if (typeof actionOrPayload === "string") {
-      finalPayload = Object.assign({}, payload, {
+      body = Object.assign({}, payload, {
         action: actionOrPayload,
         token: payload.token || TOKEN
       });
     } else if (actionOrPayload && typeof actionOrPayload === "object") {
-      finalPayload = Object.assign({}, actionOrPayload);
-      if (!finalPayload.token) {
-        finalPayload.token = TOKEN;
-      }
+      body = Object.assign({}, actionOrPayload);
+      if (!body.token) body.token = TOKEN;
     } else {
       return { ok: false, error: "Parámetros inválidos para apiCall" };
     }
 
-    const action = finalPayload.action;
+    const action = body.action;
 
+    // --- CACHÉ DIFERIDA (localStorage) para catálogos ---
+    const CACHEABLE_ACTIONS = {
+      "getLotesByMunicipio": 3600000,    // 1 hora
+      "unitCatalog": 3600000,            // 1 hora
+      "notificationUserCatalog": 3600000 // 1 hora
+    };
+
+    if (CACHEABLE_ACTIONS[action]) {
+      try {
+        const cacheKey = `GAS_CACHE_${action}`;
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          const { data, ts } = JSON.parse(cached);
+          if (Date.now() - ts < CACHEABLE_ACTIONS[action]) {
+            return { ok: true, data };
+          }
+        }
+      } catch(e) {}
+    }
+
+    // --- ENVÍO AL BACKEND GAS ---
     try {
-      if (action === "getLotesByMunicipio") {
-        const snapshot = await getDocs(collection(db, "lotes_catalogo"));
-        const lotes = [];
-        snapshot.forEach(docSnap => lotes.push(docSnap.data()));
-        return { ok: true, data: lotes };
+      const res = await fetch(GAS_API_URL, {
+        method: "POST",
+        body: JSON.stringify(body),
+        headers: { "Content-Type": "text/plain" } // GAS requiere text/plain para CORS
+      });
+
+      if (!res.ok) {
+        return { ok: false, error: `Error de red: ${res.status} ${res.statusText}` };
       }
 
-      if (action === "unitStatus") {
-        const docId = `${todayYmdLocal()}_${USER.clues}`;
-        const srRef = doc(db, "capturas_sr", docId);
-        const srSnap = await getDoc(srRef);
-        
-        const consStatus = await getConsumiblesStatus(todayYmdLocal(), USER.clues);
-        let consExists = false;
-        if (consStatus.canCaptureConsumibles) {
-           const cDoc = `${consStatus.consumiblesCaptureDate}_${USER.clues}`;
-           const consRef = doc(db, "capturas_cons", cDoc);
-           const cSnap = await getDoc(consRef);
-           consExists = cSnap.exists();
-        }
+      const json = await res.json();
 
-        return { 
-          ok: true, 
-          data: { 
-            sr: srSnap.exists(), 
-            cons: consExists, 
-            hasNotes: false,
-            consStatus: consStatus
-          }
-        };
-      }
-
-      // --- CATÁLOGOS ADMINISTRATIVOS Y USUARIOS ---
-      if (action === "adminListUsers" || action === "unitCatalog" || action === "notificationUserCatalog") {
-        const snapshot = await getDocs(collection(db, "usuarios"));
-        const users = [];
-        snapshot.forEach(d => {
-          const u = d.data();
-          users.push(u);
-        });
-        
-        if (action === "unitCatalog") {
-          // Retornamos clues + unidad + municipio (necesario para autocomplete de admin)
-          const seen = new Set();
-          const uniques = [];
-          for (const u of users) {
-            const key = `${u.clues}|${u.unidad}`;
-            if (!seen.has(key) && u.clues && u.unidad && u.rol === "UNIDAD") {
-              seen.add(key);
-              uniques.push({ clues: u.clues, unidad: u.unidad, municipio: u.municipio || "" });
-            }
-          }
-          return { ok: true, data: uniques };
-        }
-        
-        return { ok: true, data: users };
-      }
-
-      if (action === "adminSetActive") {
-        const userRef = doc(db, "usuarios", finalPayload.usuario); // asumiendo que finalPayload.usuario es el email
-        await setDoc(userRef, { activo: finalPayload.activo }, { merge: true });
-        return { ok: true, data: true };
-      }
-      
-      // --- NOTIFICACIONES ---
-      if (action === "listMyNotifications") {
-        const q = query(
-          collection(db, "notificaciones"),
-          where("to_clues", "in", [USER.clues || "NONE", "*"])
-        );
-        const snaps = await getDocs(q);
-        const results = [];
-        snaps.forEach(d => results.push({ id: d.id, ...d.data() }));
-        return { ok: true, data: results };
-      }
-
-      if (action === "markNotificationRead") {
-        if (!finalPayload.id) return { ok: false, error: "ID faltante" };
-        const ref = doc(db, "notificaciones", finalPayload.id);
-        await setDoc(ref, { status: "READ" }, { merge: true });
-        return { ok: true, data: true };
-      }
-
-      if (action === "deleteNotification") {
-        if (!finalPayload.id) return { ok: false, error: "ID faltante" };
-        const ref = doc(db, "notificaciones", finalPayload.id);
-        await setDoc(ref, { isDeleted: true }, { merge: true }); // Soft delete
-        return { ok: true, data: true };
-      }
-
-      if (action === "sendNotification") {
-        const newRef = doc(collection(db, "notificaciones"));
-        await setDoc(newRef, {
-          title: finalPayload.title || "Aviso",
-          message: finalPayload.message || "",
-          type: finalPayload.type || "INFO",
-          status: "UNREAD",
-          to_clues: finalPayload.targetScope || USER.clues,
-          from_usuario: USER.usuario,
-          created_ts: new Date().toISOString(),
-          meta_json: finalPayload.meta_json || "{}"
-        });
-        return { ok: true, data: true };
-      }
-
-
-      // --- CAPTURA DE REPORTES ---
-      if (action === "saveSR") {
-        const fecha = finalPayload.fecha || todayYmdLocal();
-        const docId = `${fecha}_${USER.clues}`;
-        const ref = doc(db, "capturas_sr", docId);
-        await setDoc(ref, {
-          ...finalPayload,
-          clues: USER.clues,
-          municipio: USER.municipio,
-          unidad: USER.unidad,
-          timestamp: serverTimestamp()
-        });
-        return { ok: true, message: "Reporte de existencia guardado." };
-      }
-
-      if (action === "saveCons") {
-        const fecha = finalPayload.fecha || todayYmdLocal();
-        const docId = `${fecha}_${USER.clues}`;
-        const ref = doc(db, "capturas_cons", docId);
-        await setDoc(ref, {
-          ...finalPayload,
-          clues: USER.clues,
-          municipio: USER.municipio,
-          unidad: USER.unidad,
-          timestamp: serverTimestamp()
-        });
-        return { ok: true, message: "Reporte de consumibles guardado." };
-      }
-
-      if (action === "savePinol") {
-        const ref = doc(collection(db, "pinol"));
-        await setDoc(ref, {
-          ...finalPayload,
-          clues: USER.clues,
-          municipio: USER.municipio,
-          unidad: USER.unidad,
-          estatus: "PENDIENTE",
-          timestamp: serverTimestamp()
-        });
-        return { ok: true, message: "Solicitud de pinol enviada." };
-      }
-
-      if (action === "listPinol") {
-        let q;
-        if (USER.rol === "ADMIN" || USER.rol === "JURISDICCIONAL") {
-          q = query(collection(db, "pinol"), orderBy("timestamp", "desc"), limit(200));
-        } else {
-          q = query(collection(db, "pinol"), where("clues", "==", USER.clues), orderBy("timestamp", "desc"), limit(50));
-        }
-
-        const snap = await getDocs(q);
-        const results = [];
-        snap.forEach(d => results.push({ id: d.id, ...d.data() }));
-        return { ok: true, data: results };
-      }
-
-      if (action === "markPinolDelivered") {
-        if (!finalPayload.id) return { ok: false, error: "ID de solicitud faltante." };
-        const ref = doc(db, "pinol", finalPayload.id);
-        await setDoc(ref, {
-          estatus: "ENTREGADO",
-          comentario_entrega: finalPayload.comentario_notificacion || "",
-          fecha_entrega: todayYmdLocal(),
-          timestamp_entrega: serverTimestamp()
-        }, { merge: true });
-        return { ok: true, data: true };
-      }
-
-      // --- CARGA DE ARCHIVOS (FIREBASE STORAGE) ---
-      if (action === "uploadFile") {
-        const file = finalPayload.file; // File object nativo del navegador
-        if (!file) return { ok: false, error: "Archivo no especificado." };
-
-        const category = String(finalPayload.category || "Otros").replace(/[^a-zA-Z0-9_\-à-ü ]/g, "").trim();
-        const targetClues = finalPayload.targetClues || USER.clues;
-        const path = `uploads/${targetClues}/${category}/${Date.now()}_${file.name}`;
-        const fileRef = storageRef(storage, path);
-        const snap = await uploadBytes(fileRef, file);
-        const url = await getDownloadURL(snap.ref);
-
-        // Guardar registro de la carga en Firestore para trazabilidad
-        const logRef = doc(collection(db, "archivos_subidos"));
-        await setDoc(logRef, {
-          url,
-          path,
-          filename: file.name,
-          category,
-          clues: USER.clues,
-          targetClues,
-          subido_por: USER.usuario,
-          timestamp: serverTimestamp()
-        });
-
-        return { ok: true, data: { url } };
-      }
-
-      if (action === "confirmPinolReceipt") {
-        const notifRef = doc(db, "notificaciones", finalPayload.id);
-        const notifSnap = await getDoc(notifRef);
-        if (notifSnap.exists()) {
-          const data = notifSnap.data();
-          let meta = {};
-          try { meta = JSON.parse(data.meta_json || "{}"); } catch(e){}
-          meta.confirmed_by_unit = "SI";
-          await setDoc(notifRef, { 
-            meta_json: JSON.stringify(meta), 
-            status: "READ" 
-          }, { merge: true });
-        }
-        return { ok: true, data: true };
-      }
-
-      // --- MÉTRICAS Y REPORTES ---
-      if (action === "adminCaptureOverview") {
-        const { fecha, tipo } = finalPayload;
-        const colName = (tipo === "CONS") ? "capturas_cons" : "capturas_sr";
-
-        // 1. Obtener todas las unidades (catalog)
-        const qUsers = query(collection(db, "usuarios"), where("rol", "==", "UNIDAD"), where("activo", "==", true));
-        const snapUsers = await getDocs(qUsers);
-        const allUnits = [];
-        snapUsers.forEach(d => allUnits.push(d.data()));
-
-        // 2. Obtener capturas de ese día
-        const qCaps = query(collection(db, colName), where("fecha", "==", fecha));
-        const snapCaps = await getDocs(qCaps);
-        const capturedMap = {};
-        snapCaps.forEach(d => {
-          const data = d.data();
-          capturedMap[data.clues] = data;
-        });
-
-        // 3. Cruzar datos
-        const capturadas = [];
-        const faltantes = [];
-
-        allUnits.forEach(u => {
-          const cap = capturedMap[u.clues];
-          if (cap) {
-            capturadas.push({
-              municipio: u.municipio,
-              clues: u.clues,
-              unidad: u.unidad,
-              capturado_por: cap.capturado_por || cap.responsable || "—",
-              editado: "NO" // En Firestore manejamos historial aparte
-            });
-          } else {
-            faltantes.push({
-              municipio: u.municipio,
-              clues: u.clues,
-              unidad: u.unidad
-            });
-          }
-        });
-
-        return {
-          ok: true,
-          data: {
-            fecha,
-            tipo,
-            total_unidades: allUnits.length,
-            total_capturadas: capturadas.length,
-            total_faltantes: faltantes.length,
-            capturadas,
-            faltantes
-          }
-        };
-      }
-
-      if (action === "historyMetrics") {
-        const { fechaInicio, fechaFin } = finalPayload;
-
-        // 1. Obtener unidades
-        const qUsers = query(collection(db, "usuarios"), where("rol", "==", "UNIDAD"), where("activo", "==", true));
-        const snapUsers = await getDocs(qUsers);
-        const units = [];
-        snapUsers.forEach(d => units.push(d.data()));
-
-        // 2. Obtener TODAS las capturas en el rango (SR y CONS)
-        const qSR = query(collection(db, "capturas_sr"), where("fecha", ">=", fechaInicio), where("fecha", "<=", fechaFin));
-        const qCONS = query(collection(db, "capturas_cons"), where("fecha", ">=", fechaInicio), where("fecha", "<=", fechaFin));
-
-        const [snapSR, snapCONS] = await Promise.all([getDocs(qSR), getDocs(qCONS)]);
-
-        const bioMap = {}; // clues -> [fechas]
-        snapSR.forEach(d => {
-          const data = d.data();
-          if (!bioMap[data.clues]) bioMap[data.clues] = new Set();
-          bioMap[data.clues].add(data.fecha);
-        });
-
-        const consMap = {}; // clues -> [fechas]
-        const lastConsMap = {};
-        snapCONS.forEach(d => {
-          const data = d.data();
-          if (!consMap[data.clues]) consMap[data.clues] = new Set();
-          consMap[data.clues].add(data.fecha);
-          if (!lastConsMap[data.clues] || data.fecha > lastConsMap[data.clues]) {
-            lastConsMap[data.clues] = data.fecha;
-          }
-        });
-
-        // 3. Calcular métricas por unidad
-        // Nota: El cumplimiento se basa en el número de días del periodo.
-        // Esto es una simplificación; idealmente cruzaría con el calendario de días hábiles.
-        const startDate = new Date(fechaInicio + "T00:00:00");
-        const endDate = new Date(fechaFin + "T00:00:00");
-        const diffTime = Math.abs(endDate - startDate);
-        const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
-        // Calcular cuántos jueves hay en el periodo (para consumibles)
-        let totalThursdays = 0;
-        let tempDate = new Date(startDate);
-        while (tempDate <= endDate) {
-          if (tempDate.getDay() === 4) totalThursdays++;
-          tempDate.setDate(tempDate.getDate() + 1);
-        }
-        if (totalThursdays === 0) totalThursdays = 1; // Evitar división por cero
-
-        const rows = units.map(u => {
-          const srCapturas = bioMap[u.clues] ? bioMap[u.clues].size : 0;
-          const consCapturas = consMap[u.clues] ? consMap[u.clues].size : 0;
-
-          const srPct = Math.min(100, Math.round((srCapturas / totalDays) * 100));
-          const consPct = Math.min(100, Math.round((consCapturas / totalThursdays) * 100));
-
-          return {
-            municipio: u.municipio,
-            clues: u.clues,
-            unidad: u.unidad,
-            bio_cumplimiento: srPct,
-            bio_capturas: srCapturas,
-            bio_faltas: Math.max(0, totalDays - srCapturas),
-            cons_cumplimiento: consPct,
-            cons_capturas: consCapturas,
-            cons_faltas: Math.max(0, totalThursdays - consCapturas),
-            cumplimiento_operativo: Math.round((srPct + consPct) / 2),
-            ultima_cons: lastConsMap[u.clues] || "—"
-          };
-        });
-
-        return { ok: true, data: { rows } };
-      }
-
-      // --- PEDIDOS BIOLÓGICOS (FORMULARIO Y CONFIG) ---
-      if (action === "bioGetForm") {
-        const window = await getBioCaptureWindow();
-        const configSnap = await getDocs(query(collection(db, "config_biologicos"), where("clues", "==", USER.clues)));
-        const configRows = [];
-        configSnap.forEach(d => configRows.push(d.data()));
-
-        const savedSnap = await getDocs(query(
-          collection(db, "pedidos_biologicos"), 
-          where("clues", "==", USER.clues),
-          where("fecha_pedido_programada", "==", window.fechaPedidoProgramada)
-        ));
-        const savedMap = {};
-        savedSnap.forEach(d => {
-          const data = d.data();
-          savedMap[data.biologico.toUpperCase()] = data;
-        });
-
-        const rows = configRows.map(r => {
-          const s = savedMap[r.biologico.toUpperCase()] || {};
-          return {
-            biologico: r.biologico,
-            max_dosis: r.max_dosis,
-            min_dosis: r.min_dosis,
-            promedio_frascos: r.promedio_frascos,
-            multiplo_pedido: r.multiplo_pedido,
-            existencia_actual_frascos: s.existencia_actual_frascos ?? "",
-            pedido_frascos: s.pedido_frascos ?? ""
-          };
-        });
-
-        const todayYmd = todayYmdLocal();
-        const canCapture = todayYmd >= window.habilitarDesde && todayYmd <= window.habilitarHasta;
-
-        return {
-          ok: true,
-          data: {
-            today: todayYmd,
-            fechaPedidoProgramada: window.fechaPedidoProgramada,
-            captureWindowStart: window.habilitarDesde,
-            captureWindowEnd: window.habilitarHasta,
-            canCapture: canCapture,
-            hasSavedBio: Object.keys(savedMap).length > 0,
-            rows: rows
-          }
-        };
-      }
-
-      if (action === "saveBio") {
-        const window = await getBioCaptureWindow();
-        const items = finalPayload.items || [];
-        const batch = writeBatch(db);
-        
-        for (const item of items) {
-          const docId = `${window.fechaPedidoProgramada}_${USER.clues}_${item.biologico}`;
-          const ref = doc(db, "pedidos_biologicos", docId);
-          batch.set(ref, {
-            ...item,
-            clues: USER.clues,
-            unidad: USER.unidad,
-            municipio: USER.municipio,
-            fecha_captura: todayYmdLocal(),
-            fecha_pedido_programada: window.fechaPedidoProgramada,
-            capturado_por: finalPayload.nombre,
-            timestamp: serverTimestamp()
-          });
-        }
-        await batch.commit();
-        return { ok: true, message: "Pedido biológico guardado correctamente." };
-      }
-
-      if (action === "bioGetDatesForMonth") {
-        const month = finalPayload.month; // "04"
-        const year = finalPayload.year;   // "2026"
-        const prefix = `${year}-${month}`;
-        
-        // Buscamos fechas únicas en capturas_sr y pedidos_biologicos
-        const qSR = query(collection(db, "capturas_sr"), where("fecha", ">=", prefix), where("fecha", "<=", prefix + "\uf8ff"));
-        const qBio = query(collection(db, "pedidos_biologicos"), where("fecha_pedido_programada", ">=", prefix), where("fecha_pedido_programada", "<=", prefix + "\uf8ff"));
-        
-        const [snapSR, snapBio] = await Promise.all([getDocs(qSR), getDocs(qBio)]);
-        const dates = new Set();
-        snapSR.forEach(d => dates.add(d.data().fecha));
-        snapBio.forEach(d => dates.add(d.data().fecha_pedido_programada));
-        
-        return { ok: true, data: Array.from(dates).sort().reverse() };
-      }
-
-      if (action === "bioGetExportOptions") {
-        // Retornar municipios permitidos
-        return { ok: true, data: { municipios: USER.municipiosAllowed || ["*"] } };
-      }
-
-      // --- CONFIGURACIÓN DE CUENTA ---
-      if (action === "changeMyPassword") {
-        const currentUser = auth.currentUser;
-        if (!currentUser || !currentUser.email) {
-          return { ok: false, error: "No hay sesión activa en Firebase Auth." };
-        }
-
-        // Re-autenticar con la contraseña actual antes de cambiar
-        const credential = EmailAuthProvider.credential(currentUser.email, finalPayload.currentPassword);
+      // Actualizar caché si aplica
+      if (json.ok && CACHEABLE_ACTIONS[action]) {
         try {
-          await reauthenticateWithCredential(currentUser, credential);
-        } catch(reAuthErr) {
-          return { ok: false, error: "La contraseña actual es incorrecta." };
-        }
-
-        // Cambiar la contraseña en Firebase Auth
-        await updatePassword(currentUser, finalPayload.newPassword);
-
-        // Actualizar campo en Firestore para tener trazabilidad
-        const userDocRef = doc(db, "usuarios", USER.usuario);
-        await setDoc(userDocRef, { password_changed_at: serverTimestamp() }, { merge: true });
-
-        return { ok: true, message: "Contraseña actualizada correctamente en Firebase Auth." };
+          localStorage.setItem(`GAS_CACHE_${action}`, JSON.stringify({ data: json.data, ts: Date.now() }));
+        } catch(e) {}
       }
 
-      if (action === "adminResetPassword") {
-        // El ADMIN no puede cambiar la contraseña de otro usuario directamente desde el cliente.
-        // La alternativa segura es enviar un email de restablecimiento vía Firebase Auth.
-        // Esto requiere que el usuario tenga un correo electrónico registrado.
-        const { sendPasswordResetEmail } = await import("https://www.gstatic.com/firebasejs/10.10.0/firebase-auth.js");
-        const targetDoc = doc(db, "usuarios", finalPayload.usuario);
-        const targetSnap = await getDoc(targetDoc);
-        if (!targetSnap.exists()) return { ok: false, error: "Usuario no encontrado en base de datos." };
-        const email = targetSnap.data().email || targetSnap.data().usuario;
-        if (!email || !email.includes("@")) {
-          return { ok: false, error: "El usuario no tiene correo electrónico registrado para hacer reset." };
-        }
-        await sendPasswordResetEmail(auth, email);
-        return { ok: true, message: `Email de restablecimiento enviado a ${email}.` };
-      }
-
-      if (action === "saveMyEmail") {
-        const userRef = doc(db, "usuarios", USER.usuario);
-        await setDoc(userRef, { email: finalPayload.email }, { merge: true });
-        return { ok: true, message: "Correo actualizado correctamente." };
-      }
-
-      // --- ADMINISTRACIÓN AVANZADA ---
-      if (action === "adminCreateUser") {
-        const newUserRef = doc(db, "usuarios", finalPayload.usuario);
-        await setDoc(newUserRef, {
-          ...finalPayload,
-          timestamp: serverTimestamp()
-        });
-        return { ok: true, message: "Usuario creado en base de datos. Recuerda añadirlo a Authentication." };
-      }
-
-      if (action === "adminToggleUser") {
-        const userRef = doc(db, "usuarios", finalPayload.usuario);
-        await setDoc(userRef, { activo: finalPayload.activo }, { merge: true });
-        return { ok: true, message: "Estado de usuario actualizado." };
-      }
-
-      if (action === "adminDeleteUser") {
-        const userRef = doc(db, "usuarios", finalPayload.usuario);
-        await deleteDoc(userRef);
-        return { ok: true, message: "Usuario eliminado de la base de datos." };
-      }
-
-      if (action === "adminGetConsumiblesOverride" || action === "adminSetConsumiblesOverride") {
-        const ref = doc(db, "config_params", "consumibles_override");
-        if (action === "adminGetConsumiblesOverride") {
-          const snap = await getDoc(ref);
-          return { ok: true, data: snap.exists() ? snap.data() : {} };
-        } else {
-          await setDoc(ref, finalPayload, { merge: true });
-          return { ok: true, message: "Configuración actualizada." };
-        }
-      }
-
-      // --- LOGS Y AUDITORÍA ---
-      if (action === "getEditLog") {
-        const q = query(collection(db, "logs_edicion"), where("municipio", "==", USER.municipio)); 
-        const snaps = await getDocs(q);
-        const logs = [];
-        snaps.forEach(d => logs.push(d.data()));
-        return { ok: true, data: logs };
-      }
-
-      // --- EXPORTACIÓN (EXCEL EN CLIENTE CON SHEETJS) ---
-      if (action === "bioExportMatrix" || action === "export") {
-        const isBio = action === "bioExportMatrix" || finalPayload.tipo === "BIO";
-        const tipo = isBio ? "BIO" : finalPayload.tipo; // "SR" o "CONS"
-        const fname = isBio ? `Pedidos_Biologicos_${finalPayload.fechaPedido}.xlsx` : `Capturas_${tipo}_${finalPayload.fechaInicio}.xlsx`;
-
-        // 1. Obtener todas las capturas del rango
-        let q;
-        if (isBio) {
-           q = query(collection(db, "pedidos_biologicos"), where("fecha_pedido_programada", "==", finalPayload.fechaPedido));
-        } else if (tipo === "CONS") {
-           q = query(collection(db, "capturas_cons"), where("fecha", ">=", finalPayload.fechaInicio), where("fecha", "<=", finalPayload.fechaFin || finalPayload.fechaInicio));
-        } else {
-           q = query(collection(db, "capturas_sr"), where("fecha", ">=", finalPayload.fechaInicio), where("fecha", "<=", finalPayload.fechaFin || finalPayload.fechaInicio));
-        }
-        
-        const snaps = await getDocs(q);
-        const dataRows = [];
-        snaps.forEach(d => dataRows.push(d.data()));
-
-        if (dataRows.length === 0) {
-          return { ok: false, error: "No hay datos en el rango seleccionado para exportar." };
-        }
-
-        // 2. Crear Excel con SheetJS localmente (el navegador genera el archivo en RAM)
-        try {
-          const ws = XLSX.utils.json_to_sheet(dataRows);
-          const wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, ws, "BaseDatos");
-          const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
-          return {
-            ok: true,
-            data: {
-              filename: fname,
-              b64: wbout,
-              mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-              fecha: finalPayload.fechaInicio
-            }
-          };
-        } catch(e) {
-          console.error("SheetJS Error:", e);
-          return { ok: false, error: "Hubo un error al generar el archivo Excel en tu navegador: " + e.message };
-        }
-      }
-
-      // --- RECORDATORIOS SILENCIOSOS ---
-      if (action === "silentAdminReminders") {
-        // Esta función corre discretamente en segundo plano. 
-        // Compara quién debió capturar vs quién capturó.
-        // Como JS no puede enviar emails directamente sin backend, 
-        // solo logueamos la validación en consola por ahora para mantener el estado seguro.
-        console.log(`[Reminders] Rutina silenciosa completada. Ningún email físico enviado por limitaciones del navegador web.`);
-        return { ok: true, data: true };
-      }
-
-      // (uploadFile ya está manejado arriba con Firebase Storage)
-
-      // --- HELPER DE VENTANA DE CAPTURA (Interno) ---
-      async function getBioCaptureWindow() {
-        const today = new Date();
-        const ym = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
-        const calRef = doc(db, "config_calendario", ym);
-        const calSnap = await getDoc(calRef);
-        if (calSnap.exists()) {
-          return calSnap.data();
-        }
-        
-        const base22 = new Date(today.getFullYear(), today.getMonth(), 22);
-        let fechaProgramada = parseDateYmd(base22);
-        if (isWeekendMx(fechaProgramada) || isHolidayMx(fechaProgramada)) {
-          fechaProgramada = moveToBusinessDayMx(fechaProgramada, -1);
-        }
-        const habilitarDesde = addBusinessDaysMx(fechaProgramada, -1);
-        const habilitarHasta = addBusinessDaysMx(fechaProgramada, 2);
-        
-        return {
-          fechaPedidoProgramada: fechaProgramada,
-          habilitarDesde,
-          habilitarHasta,
-          source: "AUTO"
-        };
-      }
-
-
-      // Fallback genérico
-      console.warn(`[Firebase Migración] Acción no implementada todavía: ${action}`);
-      return { ok: true, data: null };
+      return json;
 
     } catch (err) {
       console.error(`Error en apiCall (${action}):`, err);
-      return { ok: false, error: err.message };
+      return { ok: false, error: "Error de conexión con el servidor: " + err.message };
     }
   }
+
 
   // ==========================================
   // REGLAS DE NEGOCIO Y CALENDARIO (FASE 4)
   // ==========================================
-  
+
+
   function parseDateYmd(d) {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }
@@ -3945,19 +3382,17 @@ document.addEventListener("DOMContentLoaded", () => {
     $("tabPINOL")?.addEventListener("click", () => activateCapture("PINOL"));
 
     $("btnLogout")?.addEventListener("click", () => {
-      showOverlay("Cerrando sesión...", "Firebase");
-      auth.signOut().then(() => {
-        stopNotificationsAutoRefresh();
-        clearSessionCaches();
-        resetOpsPrewarmFlags();
-        USER = null;
-        TOKEN = null;
-        if ($("mobileNav")) $("mobileNav").style.display = "none";
-        setLoggedOutUI();
-        showToast("Sesión cerrada");
-      }).catch(e => {
-        showToast("Error al cerrar sesión: " + e.message, false);
-      }).finally(() => hideOverlay());
+      showOverlay("Cerrando sesión...", "Desconectando");
+      stopNotificationsAutoRefresh();
+      clearSessionCaches();
+      resetOpsPrewarmFlags();
+      USER = null;
+      TOKEN = null;
+      clearSession();
+      if ($("mobileNav")) $("mobileNav").style.display = "none";
+      setLoggedOutUI();
+      hideOverlay();
+      showToast("Sesión cerrada");
     });
   }
   function bindSummaryUiEvents() {
@@ -4275,23 +3710,17 @@ document.addEventListener("DOMContentLoaded", () => {
 async function loadBatchesForSession(user) {
     if (!user) return;
     try {
-        console.log("🟢 1. Intentando conectar a la colección 'lotes_catalogo'...");
-        const lotesRef = collection(db, "lotes_catalogo");
-        const querySnapshot = await getDocs(lotesRef);
+        console.log("🟢 1. Cargando lotes desde el backend GAS...");
+        const lotesResult = await apiCall("getLotesByMunicipio");
         
-        const allLotes = [];
-        querySnapshot.forEach((doc) => {
-            allLotes.push(doc.data());
-        });
-
-        console.log(`🟢 2. Firebase devolvió ${allLotes.length} lotes en total.`);
+        const allLotes = (lotesResult && lotesResult.ok && lotesResult.data) ? lotesResult.data : [];
+        console.log(`🟢 2. Backend devolvió ${allLotes.length} lotes en total.`);
 
         // --- CARGA DE PARÁMETROS DE BIOLÓGICOS (Config) ---
-        const configRef = collection(db, "config_biologicos");
-        const configSnap = await getDocs(configRef);
+        // Los config_biologicos se cargan como parte del flujo normal del backend
+        // Si tu backend tiene una acción para esto, úsala. Si no, usamos datos embebidos.
         CONFIG_BIOLOGICOS_CATALOG = [];
-        configSnap.forEach(d => CONFIG_BIOLOGICOS_CATALOG.push(d.data()));
-        console.log(`🟢 2.5. Firebase devolvió ${CONFIG_BIOLOGICOS_CATALOG.length} registros de configuración.`);
+        console.log(`🟢 2.5. Config biológicos: ${CONFIG_BIOLOGICOS_CATALOG.length} registros.`);
 
         const userMuni = String(user.municipio || "").trim().toUpperCase();
 
@@ -4554,36 +3983,22 @@ async function loadBatchesForSession(user) {
 
 $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
     setBtnBusy("btnSaveLotesAdmin", true, "Guardando…");
-    showOverlay("Actualizando catálogo de lotes en Firebase…", "Administración");
+    showOverlay("Actualizando catálogo de lotes…", "Administración");
     
     try {
-        const batch = writeBatch(db);
+        const r = await apiCall("saveLotes", { lotes: BATCH_CATALOG });
         
-        // Primero eliminamos el catálogo activo para purgar lotes borrados en UI
-        const oldSnaps = await getDocs(collection(db, "lotes_catalogo"));
-        oldSnaps.forEach(d => batch.delete(d.ref));
-
-        for (const item of BATCH_CATALOG) {
-            // ID único basado en Biológico + Lote para evitar duplicados
-            const customId = `${item.biologico}_${item.lote}`.replace(/\s+/g, '_');
-            const docRef = doc(db, "lotes_catalogo", customId);
-            
-            batch.set(docRef, {
-                biologico: item.biologico,
-                lote: item.lote,
-                caducidad: item.caducidad,
-                fecha_recepcion: item.fecha_recepcion || "",
-                municipio: item.municipio || "*",
-                updatedAt: serverTimestamp()
-            });
+        if (!r || !r.ok) {
+            throw new Error((r && r.error) || "Error al guardar lotes.");
         }
 
-        await batch.commit();
         showToast("Catálogo de lotes actualizado correctamente", true, "good");
+        // Invalidar caché de lotes
+        try { localStorage.removeItem("GAS_CACHE_getLotesByMunicipio"); } catch(e){}
         await loadBatchesForSession(USER); 
     } catch (e) {
         console.error("Error al guardar lotes:", e);
-        showToast("Error al guardar en la base de datos", false);
+        showToast("Error al guardar en la base de datos: " + e.message, false);
     } finally {
         setBtnBusy("btnSaveLotesAdmin", false);
         hideOverlay();
@@ -5229,32 +4644,12 @@ window.handleSRLoteChange = function(selectEl) {
   }
 
 async function whoami() {
-    const currentUser = auth.currentUser;
-    if (!currentUser) return null;
-
+    if (!TOKEN) return null;
     try {
-        // Intento 1: Documento con ID = email (formato canónico recomendado)
-        const byEmail = doc(db, "usuarios", currentUser.email);
-        const snapEmail = await getDoc(byEmail);
-        if (snapEmail.exists()) {
-            return { ...snapEmail.data(), _docId: currentUser.email };
+        const r = await apiCall("whoami");
+        if (r && r.ok && r.data) {
+            return r.data;
         }
-
-        // Intento 2: Búsqueda por campo "usuario" = email
-        const q1 = query(collection(db, "usuarios"), where("usuario", "==", currentUser.email));
-        const s1 = await getDocs(q1);
-        if (!s1.empty) {
-            return { ...s1.docs[0].data(), _docId: s1.docs[0].id };
-        }
-
-        // Intento 3: Búsqueda por campo "email" = email del Auth
-        const q2 = query(collection(db, "usuarios"), where("email", "==", currentUser.email));
-        const s2 = await getDocs(q2);
-        if (!s2.empty) {
-            return { ...s2.docs[0].data(), _docId: s2.docs[0].id };
-        }
-
-        console.warn(`whoami: usuario autenticado (${currentUser.email}) no tiene perfil en Firestore. Crea su documento en la colección 'usuarios' con ID = su email.`);
         return null;
     } catch (e) {
         console.error("Error al obtener perfil de usuario:", e);
@@ -5279,26 +4674,13 @@ async function getTodayReports(fecha = "", force = false) {
 
   const fetchToday = async () => {
     try {
-      let srData = null;
-      let consData = null;
-
-      // 1. Leemos Existencia de Biológicos (SR) de Firestore
-      const srRef = doc(db, "capturas_sr", `${safeFecha}_${USER.clues}`);
-      const srSnap = await getDoc(srRef);
-      if (srSnap.exists()) {
-        srData = srSnap.data();
+      const r = await apiCall("getTodayReports", { fecha: safeFecha });
+      if (r && r.ok && r.data) {
+        return { sr: r.data.sr || null, cons: r.data.cons || null };
       }
-
-      // 2. Leemos Consumibles (CONS) de Firestore
-      const consRef = doc(db, "capturas_cons", `${safeFecha}_${USER.clues}`);
-      const consSnap = await getDoc(consRef);
-      if (consSnap.exists()) {
-        consData = consSnap.data();
-      }
-
-      return { sr: srData, cons: consData };
+      return null;
     } catch (e) {
-      console.error("Error al leer Firebase:", e);
+      console.error("Error al leer reportes:", e);
       return null;
     }
   };
@@ -6961,7 +6343,7 @@ async function getTodayReports(fecha = "", force = false) {
       }
     });
   }
-  // (El listener de loginForm ya está registrado al inicio del archivo con Firebase Auth)
+  // (El listener de loginForm ya está registrado al inicio del archivo)
 
 
 $("btnSaveSR").onclick = async () => {
@@ -7009,7 +6391,7 @@ $("btnSaveSR").onclick = async () => {
 
   setBtnBusy("btnSaveSR", true, EDIT_SR ? "Actualizando…" : "Guardando…");
   showOverlay(
-    EDIT_SR ? "Actualizando existencia en Firebase…" : "Guardando existencia en Firebase…",
+    EDIT_SR ? "Actualizando existencia…" : "Guardando existencia…",
     EDIT_SR ? "Actualizando" : "Guardando"
   );
 
@@ -7033,7 +6415,7 @@ $("btnSaveSR").onclick = async () => {
     if (!res.ok) throw new Error(res.error || "Error en apiCall");
 
     muteRealtimeFor(12000);
-    showToast(EDIT_SR ? "Existencia actualizada en Firebase" : "Existencia guardada en Firebase", true, "good");
+    showToast(EDIT_SR ? "Existencia actualizada" : "Existencia guardada", true, "good");
     pushLiveEvent("Existencia de biológicos", EDIT_SR ? "Actualizada correctamente." : "Guardada correctamente.", "good");
 
     flashElement("formSR");
@@ -9296,7 +8678,7 @@ $("btnSaveSR").onclick = async () => {
     }
 
     try {
-      showOverlay("Subiendo archivo a Firebase Storage...", "Storage");
+      showOverlay("Subiendo archivo…", "Cargando");
       setBtnBusy("btnDoUpload", true, "Subiendo…");
       
       const res = await apiCall({
