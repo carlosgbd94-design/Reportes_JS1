@@ -142,6 +142,31 @@ async function handleAuthSuccess(perfil) {
       .trim()
       .toUpperCase();
   }
+
+  // FUNCIONES DE UTILIDAD (RESTAURADAS)
+  function hideEl(id) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = "none";
+  }
+
+  function showEl(id, display = "block") {
+    const el = document.getElementById(id);
+    if (el) el.style.display = display;
+  }
+
+  function toggleEl(id, visible, display = "block") {
+    const el = document.getElementById(id);
+    if (el) el.style.display = visible ? display : "none";
+  }
+
+  function hideNode(node) {
+    if (node) node.style.display = "none";
+  }
+
+  function showNode(node, display = "block") {
+    if (node) node.style.display = display;
+  }
+
   const overlay = $("overlay");
   const overlayMsg = $("overlayMsg");
   const toast = $("toast");
@@ -6500,7 +6525,11 @@ async function getTodayReports(fecha = "", force = false) {
         saludo = "Buenas noches 🌙 Seguimos trabajando";
       }
 
-      $("capStatus").innerHTML = `<h2 class="greetingTitle">${saludo}</h2>`;
+      const greetingContainer = $("capStatus") || $("munTxt")?.parentElement;
+      if (greetingContainer) {
+          greetingContainer.innerHTML = `<h2 class="greetingTitle">${saludo}</h2>`;
+      }
+
       paintStatusChips(STATUS);
     }
 
