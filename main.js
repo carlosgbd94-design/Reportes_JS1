@@ -6,6 +6,16 @@
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycby3en_qswj1PmE6o80nypsDM6Gw4kueRUimNSgMKJxzDojRFCsXBjFZngR9UpnkYL0n/exec";
 
+// --- UTILITIES ---
+const $ = (id) => document.getElementById(id);
+
+// Elementos globales (se recuperan una sola vez)
+const overlay = $("overlay");
+const overlayMsg = $("overlayMsg");
+const toast = $("toast");
+const toastMsg = $("toastMsg");
+const overlayTitle = $("overlayTitle");
+
 // Estado de sesión y UI
 let BIO_IS_ENABLED = false;
 let CON_IS_ENABLED = false;
@@ -156,13 +166,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 // --------------------------------
-  const $ = (id) => document.getElementById(id);
-  const overlay = $("overlay");
-  const overlayMsg = $("overlayMsg");
-  const toast = $("toast");
-  const toastMsg = $("toastMsg");
-
-  const overlayTitle = $("overlayTitle");
   let TOAST_TIMER = null;
 
   function showOverlay(msg = "Cargando…", title = "Procesando") {
