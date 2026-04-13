@@ -1778,7 +1778,9 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   border-bottom: 1px solid var(--line);
   background: transparent;
   white-space: nowrap;
-  vertical-align: middle; /* Asegurar centrado vertical de inputs y badges */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
 }
 
 .summaryTable tbody tr:hover td {
