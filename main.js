@@ -6,16 +6,6 @@
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycby3en_qswj1PmE6o80nypsDM6Gw4kueRUimNSgMKJxzDojRFCsXBjFZngR9UpnkYL0n/exec";
 
-// --- UTILITIES ---
-const $ = (id) => document.getElementById(id);
-
-// Elementos globales (se recuperan una sola vez)
-const overlay = $("overlay");
-const overlayMsg = $("overlayMsg");
-const toast = $("toast");
-const toastMsg = $("toastMsg");
-const overlayTitle = $("overlayTitle");
-
 // Estado de sesión y UI
 let BIO_IS_ENABLED = false;
 let CON_IS_ENABLED = false;
@@ -166,6 +156,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 // --------------------------------
+  const $ = (id) => document.getElementById(id);
+  const overlay = $("overlay");
+  const overlayMsg = $("overlayMsg");
+  const toast = $("toast");
+  const toastMsg = $("toastMsg");
+
+  const overlayTitle = $("overlayTitle");
   let TOAST_TIMER = null;
 
   function showOverlay(msg = "Cargando…", title = "Procesando") {
@@ -3726,9 +3723,6 @@ async function loadBatchesForSession(user) {
         const allLotes = (lotesResult && lotesResult.ok && lotesResult.data) ? lotesResult.data : [];
         console.log(`🟢 2. Backend devolvió ${allLotes.length} lotes en total.`);
 
-        // --- CARGA DE PARÁMETROS DE BIOLÓGICOS (Config) ---
-        // Los config_biologicos se cargan como parte del flujo normal del backend
-        // Si tu backend tiene una acción para esto, úsala. Si no, usamos datos embebidos.
         CONFIG_BIOLOGICOS_CATALOG = [];
         console.log(`🟢 2.5. Config biológicos: ${CONFIG_BIOLOGICOS_CATALOG.length} registros.`);
 
@@ -4076,6 +4070,9 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
       <td class="sr-cad-cell muted">—</td>
       <td>
         <input type="date" class="sr-recepcion-input" value="${data?.fecha_recepcion || ""}">
+        <div class="sr-permanencia-hint" style="font-size: 10px; color: var(--warn); font-weight: 700; margin-top: 4px; display: none;">
+          ⚠️ Biológico ha superado límite de permanencia normada
+        </div>
       </td>
       <td>
         <input type="number" class="sr-cantidad-input" min="0" step="1" value="${data?.cantidad || ""}" placeholder="0">
@@ -4175,10 +4172,12 @@ window.handleSRLoteChange = function(selectEl) {
     const opt = selectEl.selectedOptions[0];
     const cadCell = tr.querySelector(".sr-cad-cell");
     const recInput = tr.querySelector(".sr-recepcion-input");
+    const hint = tr.querySelector(".sr-permanencia-hint");
     
     if (!opt || !opt.dataset.cad) {
       cadCell.textContent = "—";
       cadCell.className = "sr-cad-cell";
+      if (hint) hint.style.display = "none";
       return;
     }
 
@@ -4188,8 +4187,22 @@ window.handleSRLoteChange = function(selectEl) {
     cadCell.textContent = cad || "—";
     cadCell.className = "sr-cad-cell " + getShelfLifeClass(cad);
 
-    if (recInput && !recInput.value) {
+    if (recInput && !recInput.value && rec) {
       recInput.value = rec;
+    }
+
+    // ✅ Validación de Permanencia Normada (> 3 meses/90 días)
+    if (recInput && recInput.value && hint) {
+        const dRec = new Date(recInput.value);
+        const now = new Date();
+        const diffDays = Math.floor((now - dRec) / (1000 * 60 * 60 * 24));
+        if (diffDays > 90) {
+            hint.style.display = "block";
+        } else {
+            hint.style.display = "none";
+        }
+    } else if (hint) {
+        hint.style.display = "none";
     }
 }
 
@@ -5760,11 +5773,13 @@ async function getTodayReports(fecha = "", force = false) {
         <td>${escapeHtml(r.clues || "")}</td>
         <td>${escapeHtml(r.unidad || "")}</td>
         <td>${escapeHtml(r.capturado_por || "")}</td>
-        <td><span class="statusOk">${r.editado === "SI" ? "Capturado / editado" : "Capturado"}</span></td>
-        <td style="text-align:center;">
-          <button type="button" class="iconbtn" onclick="openLiveView('${escapeHtml(r.clues)}', '${escapeHtml(data.fecha)}', '${escapeHtml(r.unidad)}')">
-            <span class="material-symbols-rounded">visibility</span>
-          </button>
+        <td>
+          <div style="display:flex; align-items:center; gap:8px">
+            <span class="statusOk">${r.editado === "SI" ? "Capturado / editado" : "Capturado"}</span>
+            <button class="miniBtn ghostBtn" onclick="openLiveView('${r.clues}','${escapeHtml(r.unidad)}','${escapeHtml(r.municipio)}')" title="Ver inventario en vivo">
+               <span class="material-symbols-rounded" style="font-size:18px">visibility</span>
+            </button>
+          </div>
         </td>
       </tr>
     `).join("");
@@ -5810,7 +5825,6 @@ async function getTodayReports(fecha = "", force = false) {
         <td>${escapeHtml(r.clues || "")}</td>
         <td>${escapeHtml(r.unidad || "")}</td>
         <td><span class="statusPending">Pendiente</span></td>
-        <td></td>
       </tr>
     `).join("");
 
@@ -8719,202 +8733,150 @@ $("btnSaveSR").onclick = async () => {
       hideOverlay();
     }
   }
+  // ✅ VISTA EN VIVO LOGIC
+  let CHART_SEM = null;
+  let CHART_CAD = null;
 
-  // ===============================================
-  // VISTA EN VIVO MD3 & GRÁFICAS DE SEMAFORIZACIÓN
-  // ===============================================
-
-  window.caducidadChart = null;
-  window.semaforoChart = null;
-
-  window.openLiveView = async function(clues, fecha, unidadName) {
-    if (!$("liveViewOverlay")) return;
-
-    $("liveViewOverlay").style.display = "flex";
-    $("liveViewSubtitle").textContent = "Cargando existencia de " + unidadName + " para la fecha " + fecha + "...";
-    $("liveViewTbody").innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center;">Consultando base de datos...</td></tr>`;
-    
-    // Reset charts
-    if(window.caducidadChart) window.caducidadChart.destroy();
-    if(window.semaforoChart) window.semaforoChart.destroy();
-
+  async function openLiveView(clues, unidad, municipio) {
     try {
-      const res = await apiCall("getLiveViewData", { clues, fecha });
-      if (!res || !res.ok) {
-        throw new Error(res?.error || "Error al obtener datos");
+      showOverlay("Obteniendo inventario", "Cargando datos detallados de " + unidad);
+      
+      const tipo = $("summaryTipo").value || "SR";
+      const fecha = $("summaryFecha").value;
+
+      const res = await apiCall("adminGetUnitDetail", { clues, tipo, fecha });
+      hideOverlay();
+
+      if (!res.ok) throw new Error(res.error);
+
+      $("liveViewSubtitle").textContent = `${municipio} | ${clues} | ${unidad}`;
+      const tbody = $("liveViewTbody");
+      
+      if (!res.data || !res.data.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="muted" style="padding:40px; text-align:center;">No hay registros detallados para esta captura.</td></tr>';
+      } else {
+        // Ordenar por cercanía a caducidad
+        const items = res.data;
+        
+        let semStats = { pronto: 0, normal: 0, lejana: 0 };
+        let cadStats = { m3: 0, m6: 0, m12: 0, more: 0 };
+
+        tbody.innerHTML = items.map(r => {
+           const status = getSemaforoStatus(r.caducidad);
+           semStats[status.key]++;
+           
+           // Stats para caducidad bars
+           const diffMonths = getMonthsTo(r.caducidad);
+           if (diffMonths <= 3) cadStats.m3++;
+           else if (diffMonths <= 6) cadStats.m6++;
+           else if (diffMonths <= 12) cadStats.m12++;
+           else cadStats.more++;
+
+           return `
+             <tr>
+               <td style="padding:16px 24px; font-weight:700; color:var(--md-sys-color-on-surface);">${escapeHtml(r.biologico)}</td>
+               <td style="font-family:monospace; font-weight:600;">${escapeHtml(r.lote)}</td>
+               <td style="font-weight:700;">${escapeHtml(r.caducidad)}</td>
+               <td><span class="statusPill statusPill-${status.key}">${status.label}</span></td>
+               <td>${escapeHtml(r.fecha_recepcion || "—")}</td>
+             </tr>
+           `;
+        }).join("");
+
+        renderLiveCharts(semStats, cadStats);
       }
 
-      const lotes = res.data || [];
-      if (lotes.length === 0) {
-        $("liveViewTbody").innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center;">No se encontraron registros de lotes para esta fecha.</td></tr>`;
-        return;
-      }
-      
-      $("liveViewSubtitle").textContent = "Vista de " + unidadName;
-      renderLiveViewTableAndCharts(lotes);
+      $("liveViewOverlay").style.display = "flex";
+      $("liveViewOverlay").ariaHidden = "false";
 
     } catch (e) {
-      console.error(e);
-      $("liveViewSubtitle").textContent = "Error al cargar datos.";
-      $("liveViewTbody").innerHTML = `<tr><td colspan="5" class="statusBad" style="text-align:center;">Hubo un error de conexión al cargar la vista en vivo.</td></tr>`;
+      hideOverlay();
+      toast("Error al cargar detalle: " + e.message, "bad");
     }
-  };
+  }
 
-  function parseMmmAaToDate(mmm_aa) {
-    if (!mmm_aa) return null;
-    const parts = String(mmm_aa).trim().split("-");
-    if(parts.length !== 2) return null;
-    const months = {"ENE":0,"FEB":1,"MAR":2,"ABR":3,"MAY":4,"JUN":5,"JUL":6,"AGO":7,"SEP":8,"OCT":9,"NOV":10,"DIC":11};
-    if(!(parts[0] in months)) return null;
-    const m = months[parts[0]];
+  function getMonthsTo(mmmAa) {
+    if (!mmmAa || !mmmAa.includes("-")) return 99;
+    const parts = mmmAa.split("-");
+    const mStr = parts[0].toUpperCase();
     const yStr = parts[1];
-    const y = yStr.length === 2 ? 2000 + parseInt(yStr) : parseInt(yStr);
-    return new Date(y, m, 1);
-  }
-
-  function getMonthsPassed(dateRef, dateNow) {
-    let months = (dateNow.getFullYear() - dateRef.getFullYear()) * 12;
-    months -= dateRef.getMonth();
-    months += dateNow.getMonth();
-    return months <= 0 ? 0 : months;
-  }
-
-  function renderLiveViewTableAndCharts(lotes) {
-    let totalActivos = 0;
-    let totalPocas = 0;
-    let totalCaducados = 0;
-
-    let v3 = 0, v6 = 0, v12 = 0, vMas = 0;
+    const months = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+    const mIdx = months.indexOf(mStr);
+    if (mIdx === -1) return 99;
+    
+    const year = 2000 + parseInt(yStr);
+    const cadDate = new Date(year, mIdx, 1);
     const now = new Date();
+    
+    return (cadDate.getFullYear() - now.getFullYear()) * 12 + (cadDate.getMonth() - now.getMonth());
+  }
 
-    const tbody = $("liveViewTbody");
-    let rows = "";
+  function getSemaforoStatus(mmmAa) {
+    const diff = getMonthsTo(mmmAa);
+    if (diff <= 3) return { key: "pronto", label: "Caducidad Próxima", color: "#f87171" };
+    if (diff <= 6) return { key: "normal", label: "Permanencia Media", color: "#fbbf24" };
+    return { key: "lejana", label: "Vigente", color: "#4ade80" };
+  }
 
-    lotes.forEach(l => {
-      const mmm = String(l.caducidad || "").trim();
-      let dCad = parseMmmAaToDate(mmm);
-      let estadoPill = "disponible";
-      let estadoText = "Disponible";
+  function renderLiveCharts(sem, cad) {
+    const ctxSem = $("chartSemaforo").getContext("2d");
+    const ctxCad = $("chartCaducidad").getContext("2d");
 
-      let diffMonths = 999;
-      if (dCad) {
-        diffMonths = ((dCad.getFullYear() - now.getFullYear()) * 12) + (dCad.getMonth() - now.getMonth());
+    if (CHART_SEM) CHART_SEM.destroy();
+    if (CHART_CAD) CHART_CAD.destroy();
+
+    CHART_SEM = new Chart(ctxSem, {
+      type: 'doughnut',
+      data: {
+        labels: ['Próxima', 'Media', 'Vigente'],
+        datasets: [{
+          data: [sem.pronto, sem.normal, sem.lejana],
+          backgroundColor: ['#f87171', '#fbbf24', '#4ade80'],
+          borderWidth: 0,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }
       }
-      
-      if (diffMonths < 0) {
-        estadoPill = "caducado";
-        estadoText = "Caducado";
-        totalCaducados++;
-      } else if (diffMonths <= 3) {
-        estadoPill = "pocas";
-        estadoText = "Próximo a Vencer";
-        totalPocas++;
-      } else {
-        totalActivos++;
-      }
-
-      // Check remaining lifetime
-      if(diffMonths >= 0) {
-        if(diffMonths <= 3) v3++;
-        else if(diffMonths <= 6) v6++;
-        else if(diffMonths <= 12) v12++;
-        else vMas++;
-      }
-
-      // Check permanency
-      let hintPermanencia = "";
-      if (l.fecha_recepcion) {
-        let recepcionParts = l.fecha_recepcion.split("-");
-        if(recepcionParts.length === 3) {
-            let recepcion = new Date(recepcionParts[0], parseInt(recepcionParts[1])-1, recepcionParts[2]);
-            if (!isNaN(recepcion)) {
-               let monthsPassed = getMonthsPassed(recepcion, now);
-               if (monthsPassed >= 3) {
-                 hintPermanencia = `<div class="notif-hint"><span class="material-symbols-rounded" style="vertical-align:bottom; font-size:14px;">warning</span> Biológico ha superado límite de permanencia normada (+3m).</div>`;
-               }
-            }
-        }
-      }
-
-      rows += `
-        <tr>
-          <td><strong style="color:var(--md-sys-color-primary);">${escapeHtml(l.biologico || "—")}</strong></td>
-          <td><span style="font-family:monospace; background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:4px;">${escapeHtml(l.lote || "—")}</span></td>
-          <td>${escapeHtml(mmm)}</td>
-          <td>
-            <span class="status-pill ${estadoPill}">${estadoText}</span>
-            <br>${hintPermanencia}
-          </td>
-          <td class="muted">${escapeHtml(l.fecha_recepcion || "—")}</td>
-        </tr>
-      `;
     });
 
-    tbody.innerHTML = rows;
-
-    if (typeof Chart !== "undefined") {
-      const ctxCad = document.getElementById('chartCaducidad');
-      const ctxSem = document.getElementById('chartSemaforo');
-
-      if (ctxCad) {
-        window.caducidadChart = new Chart(ctxCad, {
-          type: 'bar',
-          data: {
-            labels: ['≤ 3 Meses', '3 - 6 Meses', '6 - 12 Meses', '> 12 Meses'],
-            datasets: [{
-              label: 'Lotes por Vencer',
-              data: [v3, v6, v12, vMas],
-              backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#22c55e'],
-              borderWidth: 0,
-              borderRadius: 6
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-          }
-        });
+    CHART_CAD = new Chart(ctxCad, {
+      type: 'bar',
+      data: {
+        labels: ['< 3m', '3-6m', '6-12m', '> 12m'],
+        datasets: [{
+          label: 'Lotes',
+          data: [cad.m3, cad.m6, cad.m12, cad.more],
+          backgroundColor: '#3b82f6',
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+        plugins: { legend: { display: false } }
       }
-
-      if (ctxSem) {
-        window.semaforoChart = new Chart(ctxSem, {
-          type: 'doughnut',
-          data: {
-            labels: ['Óptimo', 'Próx. a Vencer', 'Caducado'],
-            datasets: [{
-              data: [totalActivos, totalPocas, totalCaducados],
-              backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
-              borderWidth: 0,
-              hoverOffset: 4
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '65%',
-            plugins: {
-              legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true } }
-            }
-          }
-        });
-      }
-    }
+    });
   }
 
-  $("btnLiveViewClose")?.addEventListener("click", () => {
-    $("liveViewOverlay").style.display = "none";
+  if ($("btnLiveViewClose")) {
+    $("btnLiveViewClose").onclick = () => {
+      $("liveViewOverlay").style.display = "none";
+      $("liveViewOverlay").ariaHidden = "true";
+    };
+  }
+
+  window.openLiveView = openLiveView;
+
+  // ✅ AUTO-UPPERCASE FOR LOTES
+  document.addEventListener("input", e => {
+      if (e.target && (e.target.id === "loteTxt" || e.target.classList.contains("sr-lote-select") || e.target.classList.contains("rowLoteInput"))) {
+          if (typeof e.target.value === "string") {
+              e.target.value = e.target.value.toUpperCase();
+          }
+      }
   });
-
-  // Auto uppercase para Lotes
-  document.addEventListener('input', function(e) {
-    if (e.target.tagName === "INPUT" && (e.target.id === "loteInput" || e.target.classList.contains("lote-input") || e.target.closest("table")?.id === "lotesAdminTbody")) {
-      let start = e.target.selectionStart;
-      let end = e.target.selectionEnd;
-      e.target.value = e.target.value.toUpperCase();
-      e.target.setSelectionRange(start, end);
-    }
-  });
-
-
