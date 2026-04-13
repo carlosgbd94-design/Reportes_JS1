@@ -17,7 +17,9 @@
   <title>Reportes y existencias Jurisdicción Sanitaria 1</title>
 
  <link rel="stylesheet" href="style.css">
+ <link rel="stylesheet" href="md3-light.css">
  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 </head>
 
@@ -703,6 +705,7 @@
                             <th>Unidad</th>
                             <th>Capturó</th>
                             <th>Estatus</th>
+                            <th></th>
                           </tr>
                         </thead>
                         <tbody id="capturadasTbody">
@@ -734,6 +737,7 @@
                             <th>CLUES</th>
                             <th>Unidad</th>
                             <th>Estatus</th>
+                            <th></th>
                           </tr>
                         </thead>
                         <tbody id="faltantesTbody">
@@ -1697,6 +1701,59 @@
             <button class="btn" id="btnDoExport" type="button" style="margin-top:0;">
               <span class="material-symbols-rounded">download</span> Generar Reporte
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ✅ VISTA EN VIVO MD3 -->
+      <div id="liveViewOverlay" class="overlay" aria-hidden="true" style="z-index: 10000; align-items:flex-end; justify-content:center; padding: 20px 0 0 0;">
+        <div class="modalGlass" style="max-width:900px; width:100%; height: 90vh; border-bottom-left-radius: 0; border-bottom-right-radius: 0; display:flex; flex-direction:column; overflow:hidden;">
+          <div class="modalHead" style="background:var(--md-surface-container-highest); padding: 24px; border-bottom: 1px solid var(--md-outline-variant); flex-shrink: 0; display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <div class="modalTitle" style="font-size: 24px; font-weight: 800; display:flex; align-items:center; gap: 12px;">
+                Inventario Biológicos Moderno MD3
+                <span class="badge good pulse" style="font-size: 11px;"><span class="dot"></span>Live</span>
+              </div>
+              <div class="modalSub" id="liveViewSubtitle" style="margin-top: 4px;">cargando detalles...</div>
+            </div>
+            <button class="ghostBtn" id="btnLiveViewClose" style="min-width: 40px; width: 40px; height: 40px; padding: 0; border-radius: 50%; opacity: 0.7;">
+              <span class="material-symbols-rounded">close</span>
+            </button>
+          </div>
+
+          <div class="modalBody" style="padding: 0; overflow-y:auto; flex-grow: 1; background: var(--md-surface);">
+            
+            <div style="display:flex; gap: 20px; flex-wrap:wrap; padding: 20px; align-items: stretch;">
+              <div style="flex:1; min-width:250px; background:var(--md-surface-container); padding: 16px; border-radius: 12px; border: 1px solid var(--md-outline-variant);">
+                <h4 style="margin:0 0 10px 0; font-size:14px; color:var(--md-sys-color-primary);">Estado de Inventario</h4>
+                <div style="position:relative; height:180px; width:100%; display:flex; justify-content:center;">
+                   <canvas id="chartSemaforo"></canvas>
+                </div>
+              </div>
+              <div style="flex:2; min-width:300px; background:var(--md-surface-container); padding: 16px; border-radius: 12px; border: 1px solid var(--md-outline-variant);">
+                <h4 style="margin:0 0 10px 0; font-size:14px; color:var(--md-sys-color-primary);">Próximos Vencimientos (3, 6, 12 meses)</h4>
+                <div style="position:relative; height:180px; width:100%;">
+                   <canvas id="chartCaducidad"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="tableWrap" style="margin: 0; border: none; max-height: none;">
+              <table class="summaryTable liveViewTable" style="margin: 0;">
+                <thead style="position: sticky; top: 0; z-index: 2; background: var(--md-surface-container);">
+                  <tr>
+                    <th style="padding: 16px 24px;">Nombre</th>
+                    <th>Lote</th>
+                    <th>Caducidad</th>
+                    <th>Estado</th>
+                    <th>Fecha de Recepción</th>
+                  </tr>
+                </thead>
+                <tbody id="liveViewTbody">
+                  <!-- Filled by JS -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

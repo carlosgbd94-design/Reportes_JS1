@@ -197,6 +197,7 @@ function api(req) {
     case "uploadFile": return api_uploadFile(req);
     case "getLotesByMunicipio": return api_getLotesByMunicipio(req);
     case "saveLotes": return api_saveLotes(req);
+    case "getLiveViewData": return api_getLiveViewData(req);
 
 
     default:
@@ -558,6 +559,40 @@ function formatSheetDate_(value, tz) {
     return Utilities.formatDate(d, tz || Session.getScriptTimeZone() || "America/Mexico_City", "yyyy-MM-dd");
   }
 
+  return s;
+}
+
+function enforceMmmAaFormat_(str) {
+  if (!str) return "";
+  const s = String(str).trim().toUpperCase();
+  if (/^[A-Z]{3}-\d{2}$/.test(s)) return s;
+
+  let d = null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    d = new Date(s + "T00:00:00");
+  } else {
+    const parts = s.split(/[\/\-]/);
+    if (parts.length === 3) {
+      let day = parseInt(parts[0]), month = parseInt(parts[1]) - 1, year = parseInt(parts[2]);
+      if (parts[0].length === 4) { year = parseInt(parts[0]); month = parseInt(parts[1]) - 1; day = parseInt(parts[2]); }
+      else if (year < 100) { year += 2000; }
+      d = new Date(year, month, day);
+    }
+  }
+
+  if (d && !isNaN(d.getTime())) {
+    const months = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+    return `${months[d.getMonth()]}-${String(d.getFullYear()).slice(-2)}`;
+  }
+  
+  const shortParts = s.split(/[\/\-]/);
+  if (shortParts.length === 2 && !isNaN(parseInt(shortParts[0]))) {
+    const mIdx = parseInt(shortParts[0]) - 1;
+    let yStr = shortParts[1];
+    if (yStr.length === 4) yStr = yStr.slice(-2);
+    const months = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+    if (mIdx >= 0 && mIdx < 12) return `${months[mIdx]}-${yStr}`;
+  }
   return s;
 }
 
@@ -4880,14 +4915,14 @@ function api_getLotesByMunicipio(payload) {
       const r = data[i];
       const biologico = normalize_(r[0]);
       const lote = normalize_(r[1]);
-      const caducidad = normalize_(r[2]); // Aquí ya vendrá MAR-27 literal si se usó displayValues
+      const caducidad = enforceMmmAaFormat_(normalize_(r[2])); // Garantizar MAY-28
       const fecha_recepcion = normalize_(r[3]);
       const municipioLote = normalizeTextKey_(r[4]);
 
       // Filtrar por municipio: o es global ("*") o coincide con el municipio del usuario
       // MEJORA LOGÍSTICA SENIOR: Admin y Jurisdiccional ven TODO para supervisión global.
       const isPrivileged = u.rol === "ADMIN" || u.rol === "JURISDICCIONAL";
-      if (!isPrivileged && municipioLote !== "*" && municipioLote !== normalizeTextKey_(u.municipio)) {
+      if (!isPrivileged && municipioLote !== "*" && municipioLote !== "TODOS" && municipioLote !== normalizeTextKey_(u.municipio)) {
         continue;
       }
 
@@ -4923,7 +4958,7 @@ function api_saveLotes(payload) {
     const rows = items.map(x => [
       normalize_(x.biologico),
       normalize_(x.lote).toUpperCase(),
-      "'" + normalize_(x.caducidad).toUpperCase(), // Forzar texto plano para evitar auto-date de Sheets
+      "'" + enforceMmmAaFormat_(normalize_(x.caducidad)),
       normalize_(x.fecha_recepcion),
       normalize_(x.municipio) || "*"
     ]);
@@ -6385,6 +6420,44 @@ function api_notificationUserCatalog(payload) {
 }
 
 // CÓDIGO.gs
+
+function api_getLiveViewData(payload) {
+  try {
+    const u = authOrThrow_(payload?.token);
+    const clues = normalizeClues_(payload?.clues);
+    const fecha = normalizeDateKey_(payload?.fecha);
+    
+    if (!clues || !fecha) throw new Error("Faltan parámetros clues o fecha.");
+
+    const isPrivileged = ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(u.rol);
+    if (!isPrivileged && normalizeClues_(u.clues) !== clues) {
+      throw new Error("No tienes permiso para ver esta vista.");
+    }
+
+    const sh = getSheet_(SHEET_EXISTENCIA_DETALLE);
+    const last = sh.getLastRow();
+    if (last < 2) return { ok: true, data: [] };
+
+    const data = sh.getRange(2, 1, last - 1, 10).getValues();
+    const result = [];
+
+    for (let r of data) {
+      if (normalizeDateKey_(r[0]) === fecha && normalizeClues_(r[1]) === clues) {
+        result.push({
+          biologico: r[4],
+          lote: r[5],
+          caducidad: r[6],
+          fecha_recepcion: r[7],
+          cantidad: r[8]
+        });
+      }
+    }
+
+    return { ok: true, data: result };
+  } catch (e) {
+    return { ok: false, error: String(e.message || e) };
+  }
+}
 
 function doPost(e) {
   // 1. Recibir los datos enviados desde Vercel

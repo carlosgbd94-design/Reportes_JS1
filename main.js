@@ -3729,10 +3729,10 @@ async function loadBatchesForSession(user) {
         CONFIG_BIOLOGICOS_CATALOG = [];
         console.log(`🟢 2.5. Config biológicos: ${CONFIG_BIOLOGICOS_CATALOG.length} registros.`);
 
-        const userMuni = String(user.municipio || "").trim().toUpperCase();
+        const userMuni = normalizeTextKey_(user.municipio);
 
         UNIT_BATCHES = allLotes.filter(l => {
-            const loteMuni = String(l.municipio || "").trim().toUpperCase();
+            const loteMuni = normalizeTextKey_(l.municipio);
             return loteMuni === "*" || loteMuni === userMuni || loteMuni === "TODOS";
         });
         
@@ -5758,6 +5758,11 @@ async function getTodayReports(fecha = "", force = false) {
         <td>${escapeHtml(r.unidad || "")}</td>
         <td>${escapeHtml(r.capturado_por || "")}</td>
         <td><span class="statusOk">${r.editado === "SI" ? "Capturado / editado" : "Capturado"}</span></td>
+        <td style="text-align:center;">
+          <button type="button" class="iconbtn" onclick="openLiveView('${escapeHtml(r.clues)}', '${escapeHtml(data.fecha)}', '${escapeHtml(r.unidad)}')">
+            <span class="material-symbols-rounded">visibility</span>
+          </button>
+        </td>
       </tr>
     `).join("");
 
@@ -5802,6 +5807,7 @@ async function getTodayReports(fecha = "", force = false) {
         <td>${escapeHtml(r.clues || "")}</td>
         <td>${escapeHtml(r.unidad || "")}</td>
         <td><span class="statusPending">Pendiente</span></td>
+        <td></td>
       </tr>
     `).join("");
 
@@ -8710,3 +8716,202 @@ $("btnSaveSR").onclick = async () => {
       hideOverlay();
     }
   }
+
+  // ===============================================
+  // VISTA EN VIVO MD3 & GRÁFICAS DE SEMAFORIZACIÓN
+  // ===============================================
+
+  window.caducidadChart = null;
+  window.semaforoChart = null;
+
+  window.openLiveView = async function(clues, fecha, unidadName) {
+    if (!$("liveViewOverlay")) return;
+
+    $("liveViewOverlay").style.display = "flex";
+    $("liveViewSubtitle").textContent = "Cargando existencia de " + unidadName + " para la fecha " + fecha + "...";
+    $("liveViewTbody").innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center;">Consultando base de datos...</td></tr>`;
+    
+    // Reset charts
+    if(window.caducidadChart) window.caducidadChart.destroy();
+    if(window.semaforoChart) window.semaforoChart.destroy();
+
+    try {
+      const res = await apiCall("getLiveViewData", { clues, fecha });
+      if (!res || !res.ok) {
+        throw new Error(res?.error || "Error al obtener datos");
+      }
+
+      const lotes = res.data || [];
+      if (lotes.length === 0) {
+        $("liveViewTbody").innerHTML = `<tr><td colspan="5" class="muted" style="text-align:center;">No se encontraron registros de lotes para esta fecha.</td></tr>`;
+        return;
+      }
+      
+      $("liveViewSubtitle").textContent = "Vista de " + unidadName;
+      renderLiveViewTableAndCharts(lotes);
+
+    } catch (e) {
+      console.error(e);
+      $("liveViewSubtitle").textContent = "Error al cargar datos.";
+      $("liveViewTbody").innerHTML = `<tr><td colspan="5" class="statusBad" style="text-align:center;">Hubo un error de conexión al cargar la vista en vivo.</td></tr>`;
+    }
+  };
+
+  function parseMmmAaToDate(mmm_aa) {
+    if (!mmm_aa) return null;
+    const parts = String(mmm_aa).trim().split("-");
+    if(parts.length !== 2) return null;
+    const months = {"ENE":0,"FEB":1,"MAR":2,"ABR":3,"MAY":4,"JUN":5,"JUL":6,"AGO":7,"SEP":8,"OCT":9,"NOV":10,"DIC":11};
+    if(!(parts[0] in months)) return null;
+    const m = months[parts[0]];
+    const yStr = parts[1];
+    const y = yStr.length === 2 ? 2000 + parseInt(yStr) : parseInt(yStr);
+    return new Date(y, m, 1);
+  }
+
+  function getMonthsPassed(dateRef, dateNow) {
+    let months = (dateNow.getFullYear() - dateRef.getFullYear()) * 12;
+    months -= dateRef.getMonth();
+    months += dateNow.getMonth();
+    return months <= 0 ? 0 : months;
+  }
+
+  function renderLiveViewTableAndCharts(lotes) {
+    let totalActivos = 0;
+    let totalPocas = 0;
+    let totalCaducados = 0;
+
+    let v3 = 0, v6 = 0, v12 = 0, vMas = 0;
+    const now = new Date();
+
+    const tbody = $("liveViewTbody");
+    let rows = "";
+
+    lotes.forEach(l => {
+      const mmm = String(l.caducidad || "").trim();
+      let dCad = parseMmmAaToDate(mmm);
+      let estadoPill = "disponible";
+      let estadoText = "Disponible";
+
+      let diffMonths = 999;
+      if (dCad) {
+        diffMonths = ((dCad.getFullYear() - now.getFullYear()) * 12) + (dCad.getMonth() - now.getMonth());
+      }
+      
+      if (diffMonths < 0) {
+        estadoPill = "caducado";
+        estadoText = "Caducado";
+        totalCaducados++;
+      } else if (diffMonths <= 3) {
+        estadoPill = "pocas";
+        estadoText = "Próximo a Vencer";
+        totalPocas++;
+      } else {
+        totalActivos++;
+      }
+
+      // Check remaining lifetime
+      if(diffMonths >= 0) {
+        if(diffMonths <= 3) v3++;
+        else if(diffMonths <= 6) v6++;
+        else if(diffMonths <= 12) v12++;
+        else vMas++;
+      }
+
+      // Check permanency
+      let hintPermanencia = "";
+      if (l.fecha_recepcion) {
+        let recepcionParts = l.fecha_recepcion.split("-");
+        if(recepcionParts.length === 3) {
+            let recepcion = new Date(recepcionParts[0], parseInt(recepcionParts[1])-1, recepcionParts[2]);
+            if (!isNaN(recepcion)) {
+               let monthsPassed = getMonthsPassed(recepcion, now);
+               if (monthsPassed >= 3) {
+                 hintPermanencia = `<div class="notif-hint"><span class="material-symbols-rounded" style="vertical-align:bottom; font-size:14px;">warning</span> Biológico ha superado límite de permanencia normada (+3m).</div>`;
+               }
+            }
+        }
+      }
+
+      rows += `
+        <tr>
+          <td><strong style="color:var(--md-sys-color-primary);">${escapeHtml(l.biologico || "—")}</strong></td>
+          <td><span style="font-family:monospace; background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:4px;">${escapeHtml(l.lote || "—")}</span></td>
+          <td>${escapeHtml(mmm)}</td>
+          <td>
+            <span class="status-pill ${estadoPill}">${estadoText}</span>
+            <br>${hintPermanencia}
+          </td>
+          <td class="muted">${escapeHtml(l.fecha_recepcion || "—")}</td>
+        </tr>
+      `;
+    });
+
+    tbody.innerHTML = rows;
+
+    if (typeof Chart !== "undefined") {
+      const ctxCad = document.getElementById('chartCaducidad');
+      const ctxSem = document.getElementById('chartSemaforo');
+
+      if (ctxCad) {
+        window.caducidadChart = new Chart(ctxCad, {
+          type: 'bar',
+          data: {
+            labels: ['≤ 3 Meses', '3 - 6 Meses', '6 - 12 Meses', '> 12 Meses'],
+            datasets: [{
+              label: 'Lotes por Vencer',
+              data: [v3, v6, v12, vMas],
+              backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#22c55e'],
+              borderWidth: 0,
+              borderRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+          }
+        });
+      }
+
+      if (ctxSem) {
+        window.semaforoChart = new Chart(ctxSem, {
+          type: 'doughnut',
+          data: {
+            labels: ['Óptimo', 'Próx. a Vencer', 'Caducado'],
+            datasets: [{
+              data: [totalActivos, totalPocas, totalCaducados],
+              backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
+              borderWidth: 0,
+              hoverOffset: 4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+              legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true } }
+            }
+          }
+        });
+      }
+    }
+  }
+
+  $("btnLiveViewClose")?.addEventListener("click", () => {
+    $("liveViewOverlay").style.display = "none";
+  });
+
+  // Auto uppercase para Lotes
+  document.addEventListener('input', function(e) {
+    if (e.target.tagName === "INPUT" && (e.target.id === "loteInput" || e.target.classList.contains("lote-input") || e.target.closest("table")?.id === "lotesAdminTbody")) {
+      let start = e.target.selectionStart;
+      let end = e.target.selectionEnd;
+      e.target.value = e.target.value.toUpperCase();
+      e.target.setSelectionRange(start, end);
+    }
+  });
+
+
