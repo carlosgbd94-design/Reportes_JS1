@@ -2834,10 +2834,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- ENVÍO AL BACKEND GAS ---
     try {
-      // Usamos el modo más simple de fetch para evitar problemas de preflight en GAS
+      // Usamos el formato más simple posible para evitar interferencia de sesiones de Google
       const res = await fetch(GAS_API_URL, {
         method: "POST",
-        body: JSON.stringify(body)
+        mode: "cors",
+        body: JSON.stringify(body),
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        }
       });
 
       if (!res.ok) {
