@@ -354,7 +354,6 @@
       $("overlay").classList.add("show");
 
       try {
-        /*
         const r = await new Promise((resolve, reject) => {
           google.script.run
             .withSuccessHandler(resolve)
@@ -366,10 +365,6 @@
               confirmPassword: p2
             });
         });
-        */
-        
-        // Simulación temporal para evitar crash
-        const r = { ok: false, error: "Migración a Firebase en proceso. El restablecimiento temporal no está disponible aquí." };
 
         if (r && r.ok) {
           $("btnResetPassword").style.display = "none";
