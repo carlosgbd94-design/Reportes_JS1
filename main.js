@@ -2834,21 +2834,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- ENVÍO AL BACKEND GAS ---
     try {
-      // Usamos el formato más simple posible para evitar interferencia de sesiones de Google
       const res = await fetch(GAS_API_URL, {
         method: "POST",
         mode: "cors",
+        redirect: "follow", // Crítico para Google Apps Script
         body: JSON.stringify(body),
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8"
-        }
+        headers: { "Content-Type": "text/plain;charset=utf-8" }
       });
 
-      if (!res.ok) {
-        return { ok: false, error: `Error de red: ${res.status} ${res.statusText}` };
+      // Si Google responde pero el navegador bloquea el JSON, leemos como texto
+      const text = await res.text();
+      let json;
+      try {
+        json = JSON.parse(text);
+      } catch (e) {
+        console.error("Respuesta del servidor no es JSON:", text);
+        return { ok: false, error: "Error en formato de respuesta del servidor." };
       }
-
-      const json = await res.json();
 
       // Actualizar caché si aplica
       if (json.ok && CACHEABLE_ACTIONS[action]) {
