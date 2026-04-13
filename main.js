@@ -2834,15 +2834,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // --- ENVÍO AL BACKEND GAS ---
     try {
+      // Usamos URLSearchParams para forzar una "Simple Request" (vía form-urlencoded)
+      // Este método es el más compatible con los redireccionamientos de Google.
+      const params = new URLSearchParams();
+      params.append("payload", JSON.stringify(body));
+
       const res = await fetch(GAS_API_URL, {
         method: "POST",
-        mode: "cors",
-        redirect: "follow", // Crítico para Google Apps Script
-        body: JSON.stringify(body),
-        headers: { "Content-Type": "text/plain;charset=utf-8" }
+        body: params,
+        // Al usar URLSearchParams, el navegador pone automáticamente 
+        // Content-Type: application/x-www-form-urlencoded y lo trata como Simple Request
       });
 
-      // Si Google responde pero el navegador bloquea el JSON, leemos como texto
+      // Leemos como texto primero (técnica anti-CORS de Google)
       const text = await res.text();
       let json;
       try {
