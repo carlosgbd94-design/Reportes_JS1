@@ -1754,7 +1754,8 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
 
 .shelf-life-ok,
 .shelf-life-warn,
-.shelf-life-danger {
+.shelf-life-danger,
+.shelf-life-expired {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1764,9 +1765,15 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  line-height: 1;
+  line-height: 1.2;
   vertical-align: middle;
-  min-width: 70px;
+  min-width: 80px;
+}
+
+.shelf-life-expired {
+  background-color: var(--md-sys-color-error-container) !important;
+  color: var(--md-sys-color-on-error-container) !important;
+  border: 1px solid var(--bad);
 }
 
 .shelf-life-ok {
