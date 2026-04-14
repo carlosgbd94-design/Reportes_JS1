@@ -1706,6 +1706,61 @@
           style="color:inherit;text-decoration:underline;">carlosgbd94@gmail.com</a>
       </div>
 
+    <!-- ✅ VISTA EN VIVO MD3 -->
+    <div id="liveViewOverlay" class="overlay" aria-hidden="true"
+      style="z-index: 10000; align-items:flex-end; justify-content:center; padding: 20px 0 0 0;">
+      <div class="modal modalGlass" style="width: 100%; max-width: 900px; height: 90vh; display: flex; flex-direction: column;">
+        
+        <div class="modalHeader" style="background: transparent; border-bottom: 1px solid rgba(0,0,0,0.05); padding: 24px 32px;">
+          <div style="flex: 1;">
+            <div id="liveViewUnidad" style="font-size: 20px; font-weight: 800; color: var(--primary);">Unidad: —</div>
+            <div id="liveViewMunicipio" style="font-size: 13px; font-weight: 600; color: var(--muted); margin-top: 4px;">—</div>
+          </div>
+          <button class="iconbtn btn-close-modal" id="btnLiveViewClose" style="background: rgba(0,0,0,0.05); border-radius: 50%;">
+            <span class="material-symbols-rounded">close</span>
+          </button>
+        </div>
+
+        <div class="modalBody" style="flex: 1; overflow-y: auto; padding: 32px; background: rgba(255,255,255,0.4);">
+          
+          <!-- KPIs Entregables -->
+          <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 32px;">
+            <div class="card" style="padding: 20px; border-radius: 24px; background: #fff; box-shadow: var(--md-shadow-1);">
+              <div style="font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase;">Estado Semafórico</div>
+              <div style="height: 180px; margin-top: 16px;">
+                <canvas id="chartSemaforo"></canvas>
+              </div>
+            </div>
+            <div class="card" style="padding: 20px; border-radius: 24px; background: #fff; box-shadow: var(--md-shadow-1);">
+              <div style="font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase;">Vencimientos Próximos</div>
+              <div style="height: 180px; margin-top: 16px;">
+                <canvas id="chartCaducidad"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabla Detalle Lotes -->
+          <div class="card" style="padding: 0; border-radius: 24px; overflow: hidden; background: #fff; box-shadow: var(--md-shadow-1);">
+            <table class="summaryTable" id="liveViewTable" style="margin:0;">
+              <thead style="background: var(--md-surface-container); border-bottom: 2px solid var(--line);">
+                <tr>
+                  <th style="padding: 16px; border-radius: 0;">Biológico</th>
+                  <th>Lote</th>
+                  <th style="text-align:center;">Caducidad</th>
+                  <th>Semaforización</th>
+                  <th>Última Rec.</th>
+                </tr>
+              </thead>
+              <tbody id="liveViewTbody">
+                <tr><td colspan="5" style="padding: 40px; text-align:center; color: var(--muted);">Selecciona una unidad para ver detalles</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
     </div><!-- end wrap -->
 
     <!-- 📱 BOTTOM NAVIGATION (MOBILE ONLY) -->
