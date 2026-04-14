@@ -1412,10 +1412,15 @@ function getUserByToken_(token) {
   return u;
 }
 
-function authOrThrow_(token, roleOpt) {
+function authOrThrow_(token, ...allowedRoles) {
   const u = getUserByToken_(token);
   if (!u) throw new Error("Sesión inválida. Inicia sesión de nuevo.");
-  if (roleOpt && u.rol !== roleOpt) throw new Error("No autorizado (rol).");
+  
+  if (allowedRoles.length > 0) {
+    const userRole = String(u.rol || "").trim().toUpperCase();
+    const isAllowed = allowedRoles.some(r => String(r).trim().toUpperCase() === userRole);
+    if (!isAllowed) throw new Error("No autorizado (rol).");
+  }
   return u;
 }
 
@@ -6415,32 +6420,33 @@ function doPost(e) {
 function api_adminGetUnitDetail(payload) {
   try {
     const u = authOrThrow_(payload?.token, "MUNICIPAL", "ADMIN", "JURISDICCIONAL", "UNIDAD");
-    let targetClues = payload?.clues;
+    let targetClues = normalize_(payload?.clues);
     const tipo = payload?.tipo || "SR";
-    const fecha = payload?.fecha || todayStr_();
+    const fecha = normalize_(payload?.fecha || todayStr_());
     
-    // Si es UNIDAD, forzar a su propio CLUES para evitar espionaje entre unidades
+    // Si es UNIDAD, forzar a su propio CLUES
     if (u.rol === "UNIDAD") {
-      targetClues = u.clues;
+      targetClues = normalize_(u.clues);
     }
     
     if (!targetClues) throw new Error("Falta CLUES destino.");
     
     if (tipo !== "SR") {
-       return { ok: true, data: [] }; // Por ahora solo SR tiene detalle de lotes
+       return { ok: true, data: [] }; 
     }
 
     const sh = ensureExistenciaDetalleSheet_();
     const last = sh.getLastRow();
     if (last < 2) return { ok: true, data: [] };
 
+    // Optimizamos lectura
     const data = sh.getRange(2, 1, last - 1, 10).getValues();
     const out = [];
 
     for (let i = 0; i < data.length; i++) {
         const r = data[i];
-        // Col 1: fecha, Col 2: clues, Col 3: unidad, Col 4: municipio, Col 5: bio, Col 6: lote, Col 7: cad, Col 8: rec, Col 9: cant, Col 10: name
-        const rowFecha = normalize_(r[0]);
+        // Col 1: Fecha (Date u objeto), Col 2: CLUES
+        const rowFecha = formatSheetDate_(r[0]);
         const rowClues = normalize_(r[1]);
 
         if (rowFecha === fecha && rowClues === targetClues) {
