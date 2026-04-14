@@ -144,6 +144,7 @@ function api(req) {
   const action = String(req?.action || "").trim();
 
   switch (action) {
+    case "adminGetUnitDetail": return api_adminGetUnitDetail(req);
     case "login": return api_login(req);
     case "whoami": return api_whoami(req);
     case "unitStatus": return api_unitStatus(req);
@@ -156,7 +157,6 @@ function api(req) {
     case "updateConsumibles": return api_updateConsumibles(req);
 
     case "adminCaptureOverview": return api_adminCaptureOverview(req);
-    case "adminGetUnitDetail": return api_adminGetUnitDetail(req);
 
     case "adminGetConsumiblesOverride": return api_adminGetConsumiblesOverride(req);
     case "adminSetConsumiblesOverride": return api_adminSetConsumiblesOverride(req);
@@ -6414,10 +6414,15 @@ function doPost(e) {
 }
 function api_adminGetUnitDetail(payload) {
   try {
-    const u = authOrThrow_(payload?.token, "MUNICIPAL", "ADMIN");
-    const targetClues = payload?.clues;
+    const u = authOrThrow_(payload?.token, "MUNICIPAL", "ADMIN", "JURISDICCIONAL", "UNIDAD");
+    let targetClues = payload?.clues;
     const tipo = payload?.tipo || "SR";
     const fecha = payload?.fecha || todayStr_();
+    
+    // Si es UNIDAD, forzar a su propio CLUES para evitar espionaje entre unidades
+    if (u.rol === "UNIDAD") {
+      targetClues = u.clues;
+    }
     
     if (!targetClues) throw new Error("Falta CLUES destino.");
     
