@@ -1,71 +1,23 @@
 :root {
-  /* 🏛️ PALETA OFICIAL QUERÉTARO 2021-2027 "JUNTOS ADELANTE" - SOBRIO */
-  --md-sys-color-primary: #041E42;
-  /* Azul Grafito Institucional */
-  --md-sys-color-on-primary: #ffffff;
-  --md-sys-color-primary-container: #e0e2ec;
-  --md-sys-color-on-primary-container: #001a41;
-
-  --md-sys-color-secondary: #006a6a;
-  /* Teal Institucional (SESEQ) */
-  --md-sys-color-on-secondary: #ffffff;
-  --md-sys-color-secondary-container: #cce8e7;
-  --md-sys-color-on-secondary-container: #051f1f;
-
-  --primary: var(--md-sys-color-primary);
-  --secondary: var(--md-sys-color-secondary);
-  --accent: var(--md-sys-color-primary);
-  /* Acento sobrio Azul Grafito */
-
-  /* Neutros Institucionales */
+  /* 🏛️ PALETA OFICIAL QUERÉTARO 2021-2027 */
+  --primary: #041E42;   /* Azul Grafito Institucional */
+  --secondary: #006a6a; /* Teal Institucional (SESEQ) */
+  --accent: #041E42;
+  
+  /* Neutros */
   --bg: #f8fafc;
   --card: #ffffff;
-  --card-2: #fcfcfd;
   --card-border: #e2e8f0;
   --text: #1a1c1e;
-  /* Carbon */
   --muted: #475569;
   --line: rgba(0, 0, 0, .08);
 
-  --accent-2: #059669;
-  --accent-soft: rgba(238, 68, 140, 0.1);
-
+  /* Semántica */
   --good: #10b981;
-  --modal-accent: #006a6a;
-  /* Teal SESEQ Institucional */
   --warn: #d97706;
   --bad: #dc2626;
 
-  --soft: rgba(0, 0, 0, 0.03);
-
-  --hdrL: #ffffff;
-  --hdrM: #f8fafc;
-  --hdrR: #ffffff;
-
-  --logoBadge: rgba(0, 0, 0, 0.05);
-  --logoStroke: #1a1c1e;
-
-  /* Surfaces: Institutional Light Tonal (MQ3 Standard) */
-  --md-surface: #ffffff;
-  --md-surface-container-low: #f3f6f9;
-  --md-surface-container: #edf1f5;
-  --md-surface-container-high: #e2e8f0;
-
-  /* Semantic Text: Carbon/Slate (M3 High Contrast) */
-  --md-sys-color-on-surface: #1a1c1e;
-  --md-sys-color-on-surface-variant: #44474e;
-
-  --md-outline: #74777f;
-  --md-outline-variant: #c4c6cf;
-
-  /* 🎨 MD3 ELEVATION SYSTEM (Standard M3 Shadows) */
-  --md-shadow-1: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
-  --md-shadow-2: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
-  --md-shadow-3: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 4px 8px 3px rgba(0, 0, 0, 0.15);
-  --md-shadow-4: 0 2px 3px 0 rgba(0, 0, 0, 0.3), 0 6px 10px 4px rgba(0, 0, 0, 0.15);
-  --md-shadow-5: 0 4px 4px 0 rgba(0, 0, 0, 0.3), 0 8px 12px 6px rgba(0, 0, 0, 0.15);
-
-  /* 🎨 MD3 TONAL PALETTES FOR ALERTS (M3 Standard) */
+  /* MD3 Tokens necesarios para nuevas funciones (Status Pills/Charts) */
   --md-sys-color-success-container: #d1e9d2;
   --md-sys-color-on-success-container: #002108;
   --md-sys-color-warning-container: #ffdec2;
@@ -75,75 +27,15 @@
   --md-sys-color-info-container: #d6e3ff;
   --md-sys-color-on-info-container: #001b3e;
 
-  /* Tonal Palette Extensions for Material You */
-  --md-sys-color-secondary-tonal: #e0f2f1;
-  --md-sys-color-on-secondary-tonal: #002020;
-}
-
-/* 📱 BOTTOM NAVIGATION (M3 STANDARD) */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 80px;
-  background: var(--md-surface-container);
-  border-top: 1px solid var(--md-outline-variant);
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  padding: 0 8px calc(env(safe-area-inset-bottom) * 0.5);
-  z-index: 900;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-}
-
-.nav-item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  background: transparent;
-  border: none;
-  color: var(--md-sys-color-on-surface-variant);
-  cursor: pointer;
-  padding: 12px 0;
-  min-height: auto;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-}
-
-.nav-item .material-symbols-rounded {
-  font-size: 24px;
-  padding: 4px 20px;
-  border-radius: 16px;
-  transition: background-color 0.2s, color 0.2s;
-}
-
-.nav-item span:not(.material-symbols-rounded) {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.01rem;
-}
-
-.nav-item.active {
-  color: var(--md-sys-color-primary);
-}
-
-.nav-item.active .material-symbols-rounded {
-  background-color: var(--md-sys-color-secondary-container);
-  color: var(--md-sys-color-on-secondary-container);
-  font-variation-settings: 'FILL' 1;
-}
-
-.nav-item:active {
-  transform: scale(0.95);
+  /* Surfaces */
+  --md-surface: #ffffff;
+  --md-surface-container: #edf1f5;
+  --md-outline-variant: #c4c6cf;
 }
 
 @media (max-width: 520px) {
   .wrap {
-    padding-bottom: 90px; /* Space for bottom nav */
+    padding-bottom: 20px;
   }
 }
 
