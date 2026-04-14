@@ -8791,10 +8791,10 @@ $("btnSaveSR").onclick = async () => {
       $("liveViewOverlay").ariaHidden = "false";
 
     } catch (e) {
-      hideOverlay();
-      toast("Error al cargar detalle: " + e.message, "bad");
+      if (typeof hideOverlay === "function") hideOverlay();
+      showToast("Error al cargar detalle: " + e.message, false);
     }
-  }
+}
 
   function getMonthsTo(mmmAa) {
     if (!mmmAa || !mmmAa.includes("-")) return 99;
