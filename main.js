@@ -8734,6 +8734,7 @@ $("btnSaveSR").onclick = async () => {
       hideOverlay();
     }
   }
+
   // ✅ VISTA EN VIVO LOGIC
   let CHART_SEM = null;
   let CHART_CAD = null;
@@ -8742,31 +8743,32 @@ $("btnSaveSR").onclick = async () => {
     try {
       showOverlay("Obteniendo inventario", "Cargando datos detallados de " + unidad);
       
-      const tipo = $("summaryTipo").value || "SR";
-      const fecha = $("summaryFecha").value;
+      const tipo = ($("summaryTipo")?.value) || "SR";
+      const fecha = ($("summaryFecha")?.value) || todayStr_();
 
       const res = await apiCall("adminGetUnitDetail", { clues, tipo, fecha });
       hideOverlay();
 
       if (!res.ok) throw new Error(res.error);
 
-      $("liveViewSubtitle").textContent = `${municipio} | ${clues} | ${unidad}`;
-      const tbody = $("liveViewTbody");
+      // ✅ Usar los IDs correctos que están en index.html
+      if ($("liveViewUnidad")) $("liveViewUnidad").textContent = "Unidad: " + unidad;
+      if ($("liveViewMunicipio")) $("liveViewMunicipio").textContent = municipio + " | " + clues;
       
+      const tbody = $("liveViewTbody");
+      if (!tbody) return;
+
       if (!res.data || !res.data.length) {
         tbody.innerHTML = '<tr><td colspan="5" class="muted" style="padding:40px; text-align:center;">No hay registros detallados para esta captura.</td></tr>';
+        renderLiveCharts({pronto:0,normal:0,lejana:0}, {m3:0,m6:0,m12:0,more:0});
       } else {
-        // Ordenar por cercanía a caducidad
         const items = res.data;
-        
         let semStats = { pronto: 0, normal: 0, lejana: 0 };
         let cadStats = { m3: 0, m6: 0, m12: 0, more: 0 };
 
         tbody.innerHTML = items.map(r => {
            const status = getSemaforoStatus(r.caducidad);
            semStats[status.key]++;
-           
-           // Stats para caducidad bars
            const diffMonths = getMonthsTo(r.caducidad);
            if (diffMonths <= 3) cadStats.m3++;
            else if (diffMonths <= 6) cadStats.m6++;
@@ -8787,8 +8789,10 @@ $("btnSaveSR").onclick = async () => {
         renderLiveCharts(semStats, cadStats);
       }
 
-      $("liveViewOverlay").style.display = "flex";
-      $("liveViewOverlay").ariaHidden = "false";
+      if ($("liveViewOverlay")) {
+        $("liveViewOverlay").style.display = "flex";
+        $("liveViewOverlay").ariaHidden = "false";
+      }
 
     } catch (e) {
       if (typeof hideOverlay === "function") hideOverlay();
