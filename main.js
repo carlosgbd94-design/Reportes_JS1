@@ -4181,11 +4181,12 @@ window.handleSRLoteChange = function(selectEl) {
       return;
     }
 
-    const cad = opt.dataset.cad;
+    const cad = opt.dataset.cad || "—";
     const rec = opt.dataset.rec || "";
     
-    cadCell.textContent = cad || "—";
-    cadCell.className = "sr-cad-cell " + getShelfLifeClass(cad);
+    // ✅ Envolver en span para que se vea como pill centrado
+    cadCell.innerHTML = `<span class="${getShelfLifeClass(cad)}">${cad}</span>`;
+    cadCell.className = "sr-cad-cell"; // Limpiar clases en el td
 
     if (recInput && !recInput.value && rec) {
       recInput.value = rec;
