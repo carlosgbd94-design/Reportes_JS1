@@ -27,6 +27,20 @@
   --md-sys-color-info-container: #d6e3ff;
   --md-sys-color-on-info-container: #001b3e;
 
+  /* Aliases para compatibilidad con código existente */
+  --md-sys-color-primary: var(--primary);
+  --md-sys-color-on-surface-variant: var(--muted);
+  --md-outline-variant: var(--card-border);
+  --md-surface: var(--card);
+  --md-surface-container: #f1f5f9;
+  --md-shadow-1: 0 1px 2px rgba(0,0,0,0.08);
+  --md-shadow-3: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+
+  /* Headers */
+  --hdrL: #ffffff;
+  --hdrM: #f8fafc;
+  --hdrR: #ffffff;
+
   /* Surfaces */
   --md-surface: #ffffff;
   --md-surface-container: #edf1f5;
