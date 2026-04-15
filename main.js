@@ -1,53 +1,60 @@
-﻿let IS_INITIALIZED = false;
-import { apiCall } from './api.js';
-import { store } from './store.js';
-import { $, normalizeTextKey, fixUtf8Text, canSeeMunicipio, debounce } from './utils.js';
+// ============================================
+// JS1 REPORTES — BACKEND: GOOGLE APPS SCRIPT
+// ============================================
+// Toda la lógica de datos pasa por doPost() de GAS.
+// Firebase ha sido completamente eliminado.
 
-// Declaraciones de Módulo con Sincronización Global (Legacy Bridge)
-// Esto asegura que tanto el módulo como scripts externos vean el mismo estado.
-let _TOKEN = localStorage.getItem("JS1_TOKEN") || null;
-let _USER = null;
-let _BIO_ENABLED = false;
-let _CON_ENABLED = false;
-let _UNIT_BATCHES = [];
-let _BATCH_CATALOG = [];
-let _CONFIG_BIO = [];
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycby3en_qswj1PmE6o80nypsDM6Gw4kueRUimNSgMKJxzDojRFCsXBjFZngR9UpnkYL0n/exec";
 
-Object.defineProperty(window, 'TOKEN', { get: () => _TOKEN, set: (v) => _TOKEN = v, configurable: true });
-Object.defineProperty(window, 'USER', { get: () => _USER, set: (v) => _USER = v, configurable: true });
-Object.defineProperty(window, 'BIO_IS_ENABLED', { get: () => _BIO_ENABLED, set: (v) => _BIO_ENABLED = v, configurable: true });
-Object.defineProperty(window, 'CON_IS_ENABLED', { get: () => _CON_ENABLED, set: (v) => _CON_ENABLED = v, configurable: true });
-Object.defineProperty(window, 'UNIT_BATCHES', { get: () => _UNIT_BATCHES, set: (v) => _UNIT_BATCHES = v, configurable: true });
-Object.defineProperty(window, 'BATCH_CATALOG', { get: () => _BATCH_CATALOG, set: (v) => _BATCH_CATALOG = v, configurable: true });
-Object.defineProperty(window, 'CONFIG_BIOLOGICOS_CATALOG', { get: () => _CONFIG_BIO, set: (v) => _CONFIG_BIO = v, configurable: true });
+// Estado de sesión y UI
+let BIO_IS_ENABLED = false;
+let CON_IS_ENABLED = false;
+let USER = null;
+let TOKEN = null;
+let UNIT_BATCHES = [];
+let BATCH_CATALOG = [];
+let CONFIG_BIOLOGICOS_CATALOG = [];
 
-// Exponer utilidades al módulo y a window
-window.apiCall = apiCall;
-window.store = store;
-window.$ = $;
-window.normalizeTextKey_ = normalizeTextKey;
-window.fixUtf8Text_ = fixUtf8Text;
-window.canSeeMunicipio_ = canSeeMunicipio;
-window.debounce = debounce;
-window.LIVE_STATE = store.state.liveState;
+// Estado reactivo de la UI — debe declararse aquí para que showToast funcione pre-login
+const LIVE_STATE = {
+  pinolPendientes: null,
+  summaryCapturadas: null,
+  summaryFaltantes: null,
+  todayExistenciaCaptured: null,
+  todayConsCaptured: null,
+  lastHistoryRows: null,
+  summaryKey: null,
+  notifCount: 0,
+  notifWarnCount: 0,
+  notifGoodCount: 0,
+  lastToastKey: "",
+  lastEventKey: "",
+  mutedUntil: 0,
+  lastEventTs: 0,
+  eventCooldownMs: 2200,
+  eventHistory: {},
+  pinolWatching: false,
+  summaryWatching: false,
+  unidadWatching: false,
+  historyWatching: false,
+  toastMeta: { key: "", ts: 0 }
+};
 
-const UX_KEYS = {
-    lastUser: "JS1_LAST_USER",
-    existenciaName: "JS1_LAST_EXISTENCIA_NAME",
-    consName: "JS1_LAST_CONS_NAME",
-    bioName: "JS1_LAST_BIO_NAME",
-    pinolName: "JS1_LAST_PINOL_NAME"
-  };
+// --- OPTIMIZACIÓN DE API (BATCHING) ---
+let API_BATCH_QUEUE = [];
+let API_BATCH_TIMER = null;
+const CACHEABLE_ACTIONS = {
+  "getLotesByMunicipio": 3600000,    // 1 hora
+  "unitCatalog": 3600000,            // 1 hora
+  "notificationUserCatalog": 3600000 // 1 hora
+};
 
-
-
-
-// --- PERSISTENCIA DE SESIÃ“N (localStorage) ---
+// --- PERSISTENCIA DE SESIÓN (localStorage) ---
 function saveSession(token, user) {
   try {
     localStorage.setItem("JS1_TOKEN", token);
     localStorage.setItem("JS1_USER", JSON.stringify(user));
-  } catch(e) { console.warn("No se pudo guardar sesiÃ³n:", e); }
+  } catch(e) { console.warn("No se pudo guardar sesión:", e); }
 }
 
 function loadSession() {
@@ -66,13 +73,29 @@ function clearSession() {
   } catch(e) {}
 }
 
-// Redundancia eliminada
-
+document.addEventListener("DOMContentLoaded", () => {
+    // 🛡️ RECUPERACIÓN DE SESIÓN DESDE localStorage
+    const saved = loadSession();
+    if (saved && saved.token && saved.user) {
+      TOKEN = saved.token;
+      USER = saved.user;
+      // Validar que el token siga activo con el backend
+      apiCall("whoami").then(r => {
+        if (r && r.ok && r.data) {
+          USER = r.data;
+          TOKEN = saved.token;
+          saveSession(TOKEN, USER);
+          hydrateSessionUi(USER, null, { showSuccessToast: false });
         } else {
-          TOKEN = null; USER = null; clearSession();
+          // Token expirado o inválido
+          TOKEN = null;
+          USER = null;
+          clearSession();
         }
       }).catch(() => {
-        TOKEN = null; USER = null; clearSession();
+        TOKEN = null;
+        USER = null;
+        clearSession();
       });
     }
 
@@ -82,30 +105,45 @@ function clearSession() {
             ev.preventDefault();
             const email = document.getElementById("usuario").value.trim();
             const password = document.getElementById("password").value.trim();
-            if (!email || !password) { showToast("Ingresa credenciales", false, "warn"); return; }
+
+            if (!email || !password) {
+                showToast("Ingresa credenciales", false, "warn");
+                return;
+            }
+
             showOverlay("Iniciando sesión...", "Conectando");
+
             try {
-                const loginResult = await apiCall("login", { usuario: email, password: password });
-                if (!loginResult || !loginResult.ok) { throw new Error((loginResult && loginResult.error) || "Credenciales incorrectas."); }
+                const loginResult = await apiCall("login", { usuario: email, password: password }, { immediate: true });
+                
+                if (!loginResult || !loginResult.ok) {
+                    throw new Error((loginResult && loginResult.error) || "Credenciales incorrectas.");
+                }
+
                 TOKEN = loginResult.data.token;
                 USER = loginResult.data.user;
                 saveSession(TOKEN, USER);
-                try { 
-                  await Promise.all([
-                    loadBatchesForSession(USER),
-                    unitStatus().then(estado => hydrateSessionUi(USER, estado, { showSuccessToast: true }))
-                  ]);
-                } catch(e) { await hydrateSessionUi(USER, null, { showSuccessToast: true }); }
-                if (USER && USER.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(USER.rol)) {
+                    
+                // ✅ ARRANQUE ÚNICO: Todas las peticiones iniciales se agrupan automáticamente
+                await hydrateSessionUi(USER, null, { showSuccessToast: true });
+                    
+                if (USER?.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(USER.rol)) {
                     apiCall("silentAdminReminders").catch(()=>{});
                 }
-            } catch (error) { showToast(error.message || "Error al iniciar sesión", false, "bad"); } finally { hideOverlay(); }
+            } catch (error) {
+                console.error("Error en login:", error);
+                showToast(error.message || "Error al iniciar sesión", false, "bad");
+            } finally {
+                hideOverlay();
+            }
         });
     }
 
+    // 🗓️ ACTUALIZAR AÑO EN FOOTER
     const footerYear = document.getElementById("footerYear");
     if (footerYear) footerYear.textContent = new Date().getFullYear();
 
+    // 📱 LISTENERS DE NAVEGACIÓN MÓVIL (BOTTOM NAV)
     document.querySelectorAll(".nav-item[data-tab]").forEach(btn => {
       btn.addEventListener("click", () => {
         const tab = btn.getAttribute("data-tab");
@@ -114,19 +152,21 @@ function clearSession() {
       });
     });
 
-    navLogout?.addEventListener("click", () => {
-      btnLogout?.click();
+    $("navLogout")?.addEventListener("click", () => {
+      $("btnLogout")?.click();
     });
 });
+// --------------------------------
+  const $ = (id) => document.getElementById(id);
+  const overlay = $("overlay");
+  const overlayMsg = $("overlayMsg");
+  const toast = $("toast");
+  const toastMsg = $("toastMsg");
 
-const overlay = $("overlay");
-const overlayMsg = $("overlayMsg");
-const toast = $("toast");
-const toastMsg = $("toastMsg");
-const overlayTitle = $("overlayTitle");
+  const overlayTitle = $("overlayTitle");
   let TOAST_TIMER = null;
 
-  function showOverlay(msg = "Cargandoâ€¦", title = "Procesando") {
+  function showOverlay(msg = "Cargando…", title = "Procesando") {
     if (overlayTitle) overlayTitle.textContent = title;
     if (overlayMsg) overlayMsg.textContent = msg;
     overlay.classList.add("show");
@@ -159,7 +199,7 @@ const overlayTitle = $("overlayTitle");
   function smartLoader(taskFn, options = {}) {
     const {
       delay = 180,
-      message = "Cargandoâ€¦",
+      message = "Cargando…",
       title = "Procesando"
     } = options;
 
@@ -232,7 +272,44 @@ const overlayTitle = $("overlayTitle");
       }
     }, 3600);
   }  /** ===== UTILS PORTED FROM BACKEND ===== **/
-  // Redundante: normalizeTextKey_, fixUtf8Text_, canSeeMunicipio_ ya importados
+  function normalizeTextKey_(v) {
+    return String(v ?? "")
+      .trim()
+      .toUpperCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, " ");
+  }
+
+  function fixUtf8Text_(v) {
+    let s = String(v ?? "");
+    if (!s) return s;
+    s = s.trim();
+    const fixes = {
+      "QUERÃ‰TARO": "QUERÉTARO", "QUERETARO": "QUERÉTARO",
+      "EL MARQUÃ‰S": "EL MARQUÉS", "EL MARQUES": "EL MARQUÉS",
+      "BIOLÃ“GICO": "BIOLÓGICO", "BIOLÃ“GICOS": "BIOLÓGICOS"
+    };
+    if (fixes[s]) return fixes[s];
+    return s
+      .replace(/Ã /g, "Á").replace(/Ã‰/g, "É").replace(/Ã /g, "Í")
+      .replace(/Ã“/g, "Ó").replace(/Ãš/g, "Ú").replace(/Ã‘/g, "Ñ")
+      .replace(/Ã¡/g, "á").replace(/Ã©/g, "é").replace(/Ã­/g, "í")
+      .replace(/Ã³/g, "ó").replace(/Ãº/g, "ú").replace(/Ã±/g, "ñ")
+      .replace(/Â/g, "");
+  }
+
+  function canSeeMunicipio_(user, municipio) {
+    if (!user) return false;
+    if (user.rol === "ADMIN" || user.rol === "JURISDICCIONAL") return true;
+    const allowed = Array.isArray(user.municipiosAllowed)
+      ? user.municipiosAllowed.map(x => normalizeTextKey_(x)).filter(Boolean)
+      : [];
+    if (allowed.includes("*")) return true;
+    const m = normalizeTextKey_(fixUtf8Text_(municipio));
+    if (!m) return false;
+    return allowed.includes(m);
+  }
 
 
   function hideToastNow() {
@@ -261,7 +338,7 @@ const overlayTitle = $("overlayTitle");
     showToast(msg, true, "warn", options);
   }
 
-  function setBtnBusy(id, busy, busyText = "Procesandoâ€¦") {
+  function setBtnBusy(id, busy, busyText = "Procesando…") {
     const btn = $(id);
     if (!btn) return;
 
@@ -286,7 +363,16 @@ const overlayTitle = $("overlayTitle");
     return !!(btn && btn.dataset.busy === "1");
   }
 
-  // Redundante: debounce ya importado
+  function debounce(fn, wait = 220) {
+    let timer = null;
+
+    return function (...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        fn.apply(this, args);
+      }, wait);
+    };
+  }
 
   function toggleEl(id, show, displayWhenShown = "") {
     const el = $(id);
@@ -325,7 +411,7 @@ const overlayTitle = $("overlayTitle");
     const missing = required.filter(name => typeof window[name] !== "function");
 
     if (missing.length) {
-      console.error("Funciones crÃ­ticas faltantes:", missing);
+      console.error("Funciones críticas faltantes:", missing);
     }
   }
 
@@ -341,7 +427,7 @@ const overlayTitle = $("overlayTitle");
 
     const shouldShow = n > 0;
     const nextText = warn > 0
-      ? `Actividad: ${n} Â· Alertas: ${warn}`
+      ? `Actividad: ${n} · Alertas: ${warn}`
       : `Actividad: ${n}`;
 
     if (shouldShow) {
@@ -488,10 +574,10 @@ const overlayTitle = $("overlayTitle");
   function notifTypeLabel(type) {
     const t = String(type || "INFO").toUpperCase();
     const map = {
-      INFO: "InformaciÃ³n",
-      SUCCESS: "Ã‰xito",
+      INFO: "Información",
+      SUCCESS: "Éxito",
       WARN: "Alerta",
-      ERROR: "CrÃ­tica"
+      ERROR: "Crítica"
     };
     return map[t] || t;
   }
@@ -670,13 +756,13 @@ const overlayTitle = $("overlayTitle");
       CAPTURA_PENDIENTE: {
         type: "WARN",
         title: "Recordatorio de captura pendiente",
-        message: `Se solicita realizar la captura correspondiente en JS1 Reportes a la brevedad.\n\nEste aviso forma parte del seguimiento operativo de la JurisdicciÃ³n Sanitaria 1.`,
+        message: `Se solicita realizar la captura correspondiente en JS1 Reportes a la brevedad.\n\nEste aviso forma parte del seguimiento operativo de la Jurisdicción Sanitaria 1.`,
         suggestScope: role === "MUNICIPAL" ? "ALL_MY_UNITS" : "MUNICIPIO"
       },
       OBS_ADMIN: {
         type: "WARN",
-        title: "ObservaciÃ³n administrativa",
-        message: `Se emite la presente observaciÃ³n para seguimiento operativo.\n\nFavor de revisar el detalle y atender la indicaciÃ³n correspondiente.`,
+        title: "Observación administrativa",
+        message: `Se emite la presente observación para seguimiento operativo.\n\nFavor de revisar el detalle y atender la indicación correspondiente.`,
         suggestScope: "USUARIO"
       },
       AVISO_GENERAL: {
@@ -773,14 +859,14 @@ const overlayTitle = $("overlayTitle");
         <div class="notifCardHead">
           <div style="min-width:0; flex:1;">
             <div class="notifCardTitle">
-              ${escapeHtml(item.title || "NotificaciÃ³n")}
+              ${escapeHtml(item.title || "Notificación")}
               ${pinolTag}
               ${frascosTag}
               ${unreadDot}
             </div>
             <div class="notifMeta">
               ${escapeHtml(item.created_ts || "")}
-              ${item.from_usuario ? ` Â· ${escapeHtml(item.from_usuario)}` : ""}
+              ${item.from_usuario ? ` · ${escapeHtml(item.from_usuario)}` : ""}
             </div>
           </div>
 
@@ -813,7 +899,7 @@ const overlayTitle = $("overlayTitle");
                 <button
                   type="button"
                   class="md-btn-icon"
-                  title="Marcar como leÃ­da"
+                  title="Marcar como leída"
                   onclick="markNotificationReadFlow('${escapeAttr(item.id || "")}')"
                   style="color: var(--md-sys-color-primary);"
                 >
@@ -823,7 +909,7 @@ const overlayTitle = $("overlayTitle");
           : ``
         }
 
-          ${createDeleteButtonHtml(`deleteNotificationFlow('${escapeAttr(item.id || "")}')`, "Borrar notificaciÃ³n")}
+          ${createDeleteButtonHtml(`deleteNotificationFlow('${escapeAttr(item.id || "")}')`, "Borrar notificación")}
         </div>
       </div>
     `;
@@ -849,7 +935,7 @@ const overlayTitle = $("overlayTitle");
       <div class="notifEmpty">
         <span class="material-symbols-rounded">notifications_none</span>
         <div>${String(NOTIF_SEARCH_QUERY || "").trim()
-          ? "No hay coincidencias para tu bÃºsqueda."
+          ? "No hay coincidencias para tu búsqueda."
           : "No hay notificaciones para mostrar."
         }</div>
       </div>
@@ -1014,7 +1100,7 @@ const overlayTitle = $("overlayTitle");
     }
 
     if (!silent) {
-      showOverlay("Cargando bandeja de notificacionesâ€¦", "Notificaciones");
+      showOverlay("Cargando bandeja de notificaciones…", "Notificaciones");
     }
 
     NOTIF_LOAD_PROMISE = (async () => {
@@ -1036,7 +1122,7 @@ const overlayTitle = $("overlayTitle");
         LAST_NOTIF_UNREAD = unread;
 
         if (delta > 0) {
-          showWarnToast(`Tienes ${delta} notificaciÃ³n(es) nueva(s)`, {
+          showWarnToast(`Tienes ${delta} notificación(es) nueva(s)`, {
             force: true,
             cooldownMs: 900
           });
@@ -1219,7 +1305,7 @@ const overlayTitle = $("overlayTitle");
       if (id.includes("TopNotif")) {
         const badgeHtml = count > 0 ? `<span class="notifBadgeCounter pulse">${count}</span>` : "";
         btn.innerHTML = `<span class="material-symbols-rounded">done_all</span>${badgeHtml}`;
-        btn.title = count > 0 ? `Marcar ${count} visibles como leÃ­das` : "Marcar visibles";
+        btn.title = count > 0 ? `Marcar ${count} visibles como leídas` : "Marcar visibles";
       } else {
         btn.innerHTML = label;
       }
@@ -1240,14 +1326,14 @@ const overlayTitle = $("overlayTitle");
     }
 
     try {
-      showOverlay(`Marcando ${ids.length} notificaciÃ³n(es)â€¦`, "Notificaciones");
+      showOverlay(`Marcando ${ids.length} notificación(es)…`, "Notificaciones");
 
       for (const id of ids) {
         await apiCall("markNotificationRead", { id });
         applyLocalNotificationRead(id);
       }
 
-      showToast(`${ids.length} notificaciÃ³n(es) marcada(s) como leÃ­das`);
+      showToast(`${ids.length} notificación(es) marcada(s) como leídas`);
       refreshNotifBulkButtons();
 
       const unreadNow = Number($("notifUnreadKpi")?.textContent || 0);
@@ -1264,12 +1350,12 @@ const overlayTitle = $("overlayTitle");
 
   async function markNotificationReadFlow(id) {
     try {
-      showOverlay("Marcando notificaciÃ³n como leÃ­daâ€¦", "Notificaciones");
+      showOverlay("Marcando notificación como leída…", "Notificaciones");
 
       await apiCall("markNotificationRead", { id });
 
       applyLocalNotificationRead(id);
-      showToast("NotificaciÃ³n marcada como leÃ­da");
+      showToast("Notificación marcada como leída");
 
       const unreadNow = Number($("notifUnreadKpi")?.textContent || 0);
       if (unreadNow <= 0) {
@@ -1277,7 +1363,7 @@ const overlayTitle = $("overlayTitle");
       }
     } catch (e) {
       console.error("markNotificationReadFlow error:", e);
-      showToast(e.message || "No se pudo marcar como leÃ­da", false);
+      showToast(e.message || "No se pudo marcar como leída", false);
     } finally {
       hideOverlay();
     }
@@ -1285,23 +1371,23 @@ const overlayTitle = $("overlayTitle");
 
   async function confirmPinolReceiptFlow(notificationId) {
     try {
-      showOverlay("Confirmando recepciÃ³n del pinolâ€¦", "Pinol");
+      showOverlay("Confirmando recepción del pinol…", "Pinol");
 
       const r = await apiCall("confirmPinolReceipt", {
         notification_id: notificationId
       });
 
       if (!r || !r.ok) {
-        showToast((r && r.error) ? r.error : "No se pudo confirmar la recepciÃ³n", false);
+        showToast((r && r.error) ? r.error : "No se pudo confirmar la recepción", false);
         return;
       }
 
       applyLocalPinolReceiptConfirm(notificationId);
 
-      showToast("RecepciÃ³n confirmada correctamente");
+      showToast("Recepción confirmada correctamente");
     } catch (e) {
       console.error("confirmPinolReceiptFlow error:", e);
-      showToast(e.message || "No se pudo confirmar la recepciÃ³n", false);
+      showToast(e.message || "No se pudo confirmar la recepción", false);
     } finally {
       hideOverlay();
     }
@@ -1310,27 +1396,27 @@ const overlayTitle = $("overlayTitle");
   async function deleteNotificationFlow(id) {
     try {
       if (!id) {
-        showToast("No se recibiÃ³ el identificador de la notificaciÃ³n", false);
+        showToast("No se recibió el identificador de la notificación", false);
         return;
       }
 
-      const ok = window.confirm("Â¿Deseas eliminar esta notificaciÃ³n?");
+      const ok = window.confirm("¿Deseas eliminar esta notificación?");
       if (!ok) return;
 
-      showOverlay("Eliminando notificaciÃ³nâ€¦", "Notificaciones");
+      showOverlay("Eliminando notificación…", "Notificaciones");
 
       const r = await apiCall("deleteNotification", { id });
 
       if (!r || !r.ok) {
-        showToast((r && r.error) ? r.error : "No se pudo eliminar la notificaciÃ³n", false);
+        showToast((r && r.error) ? r.error : "No se pudo eliminar la notificación", false);
         return;
       }
 
       applyLocalNotificationDelete(id);
-      showToast("NotificaciÃ³n eliminada correctamente");
+      showToast("Notificación eliminada correctamente");
     } catch (e) {
       console.error("deleteNotificationFlow error:", e);
-      showToast(e.message || "No se pudo eliminar la notificaciÃ³n", false);
+      showToast(e.message || "No se pudo eliminar la notificación", false);
     } finally {
       hideOverlay();
     }
@@ -1368,17 +1454,17 @@ const overlayTitle = $("overlayTitle");
       }
 
       if (!String(payload.title).trim()) {
-        showWarnToast("Escribe un tÃ­tulo para la notificaciÃ³n");
+        showWarnToast("Escribe un título para la notificación");
         return;
       }
 
       if (!String(payload.message).trim()) {
-        showWarnToast("Escribe el mensaje de la notificaciÃ³n");
+        showWarnToast("Escribe el mensaje de la notificación");
         return;
       }
 
-      setBtnBusy("btnSendNotification", true, "Enviandoâ€¦");
-      showOverlay("Enviando notificaciÃ³n internaâ€¦", "Notificaciones");
+      setBtnBusy("btnSendNotification", true, "Enviando…");
+      showOverlay("Enviando notificación interna…", "Notificaciones");
 
       await apiCall("sendNotification", payload);
 
@@ -1386,7 +1472,7 @@ const overlayTitle = $("overlayTitle");
       $("notifMessage").value = "";
       if ($("notifTemplate")) $("notifTemplate").value = "";
 
-      showToast("NotificaciÃ³n enviada correctamente");
+      showToast("Notificación enviada correctamente");
 
       loadNotifications({ silent: true }).catch(err => {
         console.error("sendNotificationFlow loadNotifications error:", err);
@@ -1394,7 +1480,7 @@ const overlayTitle = $("overlayTitle");
 
     } catch (e) {
       console.error("sendNotificationFlow error:", e);
-      showToast(e.message || "No se pudo enviar la notificaciÃ³n", false);
+      showToast(e.message || "No se pudo enviar la notificación", false);
     } finally {
       setBtnBusy("btnSendNotification", false);
       hideOverlay();
@@ -1466,7 +1552,7 @@ const overlayTitle = $("overlayTitle");
     input.type = "text";
     input.id = inputId;
     input.className = "input notifSearchInput";
-    input.placeholder = "Buscar notificaciÃ³nâ€¦";
+    input.placeholder = "Buscar notificación…";
     input.autocomplete = "off";
 
     const clearBtn = document.createElement("button");
@@ -1553,7 +1639,7 @@ const overlayTitle = $("overlayTitle");
     ensureNotifActionButton(btnNotifOnlyUnread, "btnNotifMarkVisibleRead", "Marcar visibles");
     ensureNotifSearchBox(btnNotifRefresh, "notifSearchBox", "notifSearchInput", "btnNotifClearSearch");
 
-    // Top panel - Solo vinculamos bÃºsqueda, no botones (ya estÃ¡n en Index.html)
+    // Top panel - Solo vinculamos búsqueda, no botones (ya están en Index.html)
     ensureNotifSearchBox(btnTopNotifRefresh, "topNotifSearchBox", "topNotifSearchInput", "btnTopNotifClearSearch");
 
     const notifSearchInput = $("notifSearchInput");
@@ -1638,7 +1724,7 @@ const overlayTitle = $("overlayTitle");
       if (groupBtn) {
         const key = groupBtn.getAttribute("data-notif-group-toggle");
         if (key) toggleNotifGroup(key);
-        return; // IMPORTANTE: No seguir al cierre por "clic fuera" ya que el DOM cambiÃ³
+        return; // IMPORTANTE: No seguir al cierre por "clic fuera" ya que el DOM cambió
       }
 
       // Close dropdown on outside click
@@ -1779,7 +1865,7 @@ const overlayTitle = $("overlayTitle");
 
     const label = active
       ? `<span class="material-symbols-rounded">filter_alt_off</span> Ver todas`
-      : `<span class="material-symbols-rounded">filter_alt</span> Solo no leÃ­das`;
+      : `<span class="material-symbols-rounded">filter_alt</span> Solo no leídas`;
 
     if (refs.btnNotifOnlyUnread) {
       refs.btnNotifOnlyUnread.innerHTML = label;
@@ -1793,7 +1879,7 @@ const overlayTitle = $("overlayTitle");
         : `<span class="material-symbols-rounded">filter_alt</span>`;
       refs.btnTopNotifOnlyUnread.classList.toggle("isActive", active);
       refs.btnTopNotifOnlyUnread.setAttribute("aria-pressed", active ? "true" : "false");
-      refs.btnTopNotifOnlyUnread.title = active ? "Ver todas" : "Solo no leÃ­das";
+      refs.btnTopNotifOnlyUnread.title = active ? "Ver todas" : "Solo no leídas";
     }
   }
 
@@ -1817,7 +1903,7 @@ const overlayTitle = $("overlayTitle");
 
     if (topNotifRoleKpi) {
       topNotifRoleKpi.textContent =
-        (notifRoleKpi?.textContent || USER?.rol || "â€”");
+        (notifRoleKpi?.textContent || USER?.rol || "—");
     }
   }
 
@@ -1935,12 +2021,12 @@ const overlayTitle = $("overlayTitle");
       "Selecciona usuario",
       x => ({
         value: x.usuario,
-        label: `${x.usuario} â€” ${x.rol}${x.unidad ? ` â€” ${x.unidad}` : ""}`
+        label: `${x.usuario} — ${x.rol}${x.unidad ? ` — ${x.unidad}` : ""}`
       })
     );
   }
 
-  function fillSelect(el, items, placeholder = "Seleccionarâ€¦", mapFn = null) {
+  function fillSelect(el, items, placeholder = "Seleccionar…", mapFn = null) {
     if (!el) return;
 
     const arr = Array.isArray(items) ? items : [];
@@ -1971,11 +2057,11 @@ const overlayTitle = $("overlayTitle");
       const optClues = scopeSel.querySelector('option[value="CLUES"]');
       if (optClues) optClues.style.display = "none";
 
-      // 2. Ocultar ALL_MY_UNITS (envÃ­o masivo a todas las unidades)
+      // 2. Ocultar ALL_MY_UNITS (envío masivo a todas las unidades)
       const optAll = scopeSel.querySelector('option[value="ALL_MY_UNITS"]');
       if (optAll) optAll.style.display = "none";
 
-      // Redirigir si estÃ¡ en una opciÃ³n no permitida
+      // Redirigir si está en una opción no permitida
       if (scope === "CLUES" || scope === "ALL_MY_UNITS") {
         scopeSel.value = "MUNICIPIO";
         return refreshNotifScopeUi();
@@ -2075,7 +2161,7 @@ const overlayTitle = $("overlayTitle");
       "Selecciona unidad / CLUES",
       x => ({
         value: x.clues,
-        label: `${x.clues} â€” ${x.unidad}`
+        label: `${x.clues} — ${x.unidad}`
       })
     );
 
@@ -2136,8 +2222,8 @@ const overlayTitle = $("overlayTitle");
     const map = {
       panelCaptureSummary: "Resumen de captura",
       panelPINOLADMIN: "Pinol",
-      panelHISTORY: "HistÃ³rico",
-      formSR: "Existencia de biolÃ³gicos",
+      panelHISTORY: "Histórico",
+      formSR: "Existencia de biológicos",
       formCONS: "Consumibles"
     };
 
@@ -2287,7 +2373,13 @@ const overlayTitle = $("overlayTitle");
 
   let FORCE_PASSWORD_CHANGE = false;
 
-  
+  const UX_KEYS = {
+    lastUser: "JS1_LAST_USER",
+    existenciaName: "JS1_LAST_EXISTENCIA_NAME",
+    consName: "JS1_LAST_CONS_NAME",
+    bioName: "JS1_LAST_BIO_NAME",
+    pinolName: "JS1_LAST_PINOL_NAME"
+  };
 
   function saveUxValue(key, value) {
     try {
@@ -2539,21 +2631,21 @@ const overlayTitle = $("overlayTitle");
     const email = $("myEmail") ? $("myEmail").value.trim() : "";
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      showToast("Completa todos los campos de contraseÃ±a", false);
+      showToast("Completa todos los campos de contraseña", false);
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      showToast("La nueva contraseÃ±a y la confirmaciÃ³n no coinciden", false);
+      showToast("La nueva contraseña y la confirmación no coinciden", false);
       return;
     }
 
     if (!email) {
-      showToast("Debes capturar un correo electrÃ³nico", false);
+      showToast("Debes capturar un correo electrónico", false);
       return;
     }
 
-    showOverlay("Estamos actualizando tu contraseÃ±a y guardando tu correoâ€¦", "Actualizando seguridad");
+    showOverlay("Estamos actualizando tu contraseña y guardando tu correo…", "Actualizando seguridad");
     closePasswordModal();
 
     try {
@@ -2566,7 +2658,7 @@ const overlayTitle = $("overlayTitle");
       });
 
       if (!r || !r.ok) {
-        showToast((r && r.error) ? r.error : "No se pudo actualizar la contraseÃ±a", false);
+        showToast((r && r.error) ? r.error : "No se pudo actualizar la contraseña", false);
         return;
       }
 
@@ -2577,7 +2669,7 @@ const overlayTitle = $("overlayTitle");
       });
 
       if (!rEmail || !rEmail.ok) {
-        showToast((rEmail && rEmail.error) ? rEmail.error : "La contraseÃ±a cambiÃ³, pero no se pudo guardar el correo", false);
+        showToast((rEmail && rEmail.error) ? rEmail.error : "La contraseña cambió, pero no se pudo guardar el correo", false);
         return;
       }
 
@@ -2588,10 +2680,10 @@ const overlayTitle = $("overlayTitle");
         USER.email = email;
       }
 
-      showToast("ContraseÃ±a y correo guardados correctamente");
+      showToast("Contraseña y correo guardados correctamente");
     } catch (e) {
       console.error(e);
-      showToast("Error al guardar la informaciÃ³n", false);
+      showToast("Error al guardar la información", false);
     } finally {
       hideOverlay();
     }
@@ -2625,7 +2717,7 @@ const overlayTitle = $("overlayTitle");
     closeForgotModal();
 
     // Mostramos la pantalla de carga global del sistema
-    showOverlay("Estamos enviando el enlace de recuperaciÃ³nâ€¦", "Recuperando acceso");
+    showOverlay("Estamos enviando el enlace de recuperación…", "Recuperando acceso");
 
     try {
       const r = await apiCall({
@@ -2638,10 +2730,10 @@ const overlayTitle = $("overlayTitle");
         return;
       }
 
-      showToast("Se enviÃ³ el enlace de recuperaciÃ³n");
+      showToast("Se envió el enlace de recuperación");
     } catch (e) {
       console.error(e);
-      showToast("Error al solicitar recuperaciÃ³n", false);
+      showToast("Error al solicitar recuperación", false);
     } finally {
       hideOverlay();
     }
@@ -2672,17 +2764,17 @@ const overlayTitle = $("overlayTitle");
     _state: { notifications: [], pinol: [], history: [] },
     setNotifications: function (arr) {
       this._state.notifications = Array.isArray(arr) ? [...arr] : [];
-      // OpciÃ³n para Despachar Eventos de DOM si otras partes escuchan.
+      // Opción para Despachar Eventos de DOM si otras partes escuchan.
     },
     getNotifications: function () { return [...this._state.notifications]; }
   };
 
-  // NUEVO WRAPPER UI (Ejecutor AsÃ­ncrono Centralizado)
+  // NUEVO WRAPPER UI (Ejecutor Asíncrono Centralizado)
   async function executeAction(actionName, payload, loadingMsg, successMsg = null) {
     try {
       if (loadingMsg) showOverlay(loadingMsg);
 
-      // Invocamos el puente asÃ­ncrono hacia GAS
+      // Invocamos el puente asíncrono hacia GAS
       const res = await apiCall(actionName, payload);
 
       if (!res || !res.ok) {
@@ -2699,70 +2791,102 @@ const overlayTitle = $("overlayTitle");
     }
   }
   // ==========================================
-  // API CALL â€” PROXY A GOOGLE APPS SCRIPT
+  // API CALL — PROXY A GOOGLE APPS SCRIPT
   // ==========================================
-  // Toda la lÃ³gica de datos pasa por doPost() de GAS.
+  // Toda la lógica de datos pasa por doPost() de GAS.
   // El frontend NUNCA accede a la base de datos directamente.
 
-  async function apiCallLegacy(actionOrPayload, payload = {}) {
+  async function apiCall(actionOrPayload, payload = {}, options = {}) {
+    const { immediate = false, noCache = false } = options;
     let body = {};
+    let action = "";
 
     if (typeof actionOrPayload === "string") {
-      body = Object.assign({}, payload, {
-        action: actionOrPayload,
-        token: payload.token || TOKEN
-      });
-    } else if (actionOrPayload && typeof actionOrPayload === "object") {
-      body = Object.assign({}, actionOrPayload);
-      if (!body.token) body.token = TOKEN;
+      action = actionOrPayload;
+      body = Object.assign({}, payload, { action, token: payload.token || TOKEN });
     } else {
-      return { ok: false, error: "ParÃ¡metros invÃ¡lidos para apiCall" };
+      body = Object.assign({}, actionOrPayload, { token: actionOrPayload.token || TOKEN });
+      action = body.action;
     }
 
-    const action = body.action;
-
-    // --- CACHÃ‰ DIFERIDA (localStorage) para catÃ¡logos ---
-    const CACHEABLE_ACTIONS = {
-      "getLotesByMunicipio": 3600000,    // 1 hora
-      "unitCatalog": 3600000,            // 1 hora
-      "notificationUserCatalog": 3600000 // 1 hora
-    };
-
-    if (CACHEABLE_ACTIONS[action]) {
+    // 1. Verificar Caché (Si no es inmediata o batch)
+    if (!noCache && CACHEABLE_ACTIONS[action]) {
       try {
-        const cacheKey = `GAS_CACHE_${action}`;
-        const cached = localStorage.getItem(cacheKey);
+        const cached = localStorage.getItem(`GAS_CACHE_${action}`);
         if (cached) {
           const { data, ts } = JSON.parse(cached);
-          if (Date.now() - ts < CACHEABLE_ACTIONS[action]) {
-            return { ok: true, data };
-          }
+          if (Date.now() - ts < CACHEABLE_ACTIONS[action]) return { ok: true, data };
         }
       } catch(e) {}
     }
 
-    // --- ENVÃO AL BACKEND GAS ---
+    // 2. Acciones que SIEMPRE son inmediatas (Búsqueda, Stock, Login)
+    const CRITICAL = ["login", "whoami", "saveSR", "saveConsumibles", "saveBio", "savePinol", "unitStatus"];
+    if (immediate || CRITICAL.includes(action)) {
+      return _rawApiCall(body);
+    }
+
+    // 3. Encolar para Batching
+    return new Promise((resolve, reject) => {
+      API_BATCH_QUEUE.push({ body, resolve, reject });
+      if (!API_BATCH_TIMER) {
+        API_BATCH_TIMER = setTimeout(_dispatchBatch, 50);
+      }
+    });
+  }
+
+  async function _dispatchBatch() {
+    const queue = [...API_BATCH_QUEUE];
+    API_BATCH_QUEUE = [];
+    API_BATCH_TIMER = null;
+
+    if (!queue.length) return;
+    
+    // Si solo hay una petición, la enviamos normal
+    if (queue.length === 1) {
+      const { body, resolve, reject } = queue[0];
+      _rawApiCall(body).then(resolve).catch(reject);
+      return;
+    }
+
+    // Petición agrupada
+    const batchBody = {
+      action: "batch",
+      token: TOKEN,
+      requests: queue.map(q => q.body)
+    };
+
     try {
-      // MÃ©todo ultra-robusto: raw JSON disfrazado de text/plain para evitar OPTIONS guard
+      const res = await _rawApiCall(batchBody);
+      if (res.ok && Array.isArray(res.data)) {
+        queue.forEach((q, i) => q.resolve(res.data[i] || { ok: false, error: "Sin respuesta" }));
+      } else {
+        queue.forEach(q => q.resolve(res)); // Error general
+      }
+    } catch (e) {
+      queue.forEach(q => q.reject(e));
+    }
+  }
+
+  async function _rawApiCall(body) {
+    const action = body.action;
+    try {
       const res = await fetch(GAS_API_URL, {
         method: "POST",
         body: JSON.stringify(body),
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8"
-        }
+        headers: { "Content-Type": "text/plain;charset=utf-8" }
       });
 
-      // Leemos como texto primero (tÃ©cnica anti-CORS de Google)
       const text = await res.text();
       let json;
       try {
         json = JSON.parse(text);
       } catch (e) {
-        console.error("Respuesta del servidor no es JSON:", text);
-        return { ok: false, error: "Error en formato de respuesta del servidor." };
+        console.error("Respuesta inválida:", text);
+        return { ok: false, error: "Error en formato de respuesta." };
       }
 
-      // Actualizar cachÃ© si aplica
+      // Guardar en caché si aplica
       if (json.ok && CACHEABLE_ACTIONS[action]) {
         try {
           localStorage.setItem(`GAS_CACHE_${action}`, JSON.stringify({ data: json.data, ts: Date.now() }));
@@ -2770,10 +2894,9 @@ const overlayTitle = $("overlayTitle");
       }
 
       return json;
-
     } catch (err) {
-      console.error(`Error en apiCall (${action}):`, err);
-      return { ok: false, error: "Error de conexiÃ³n con el servidor: " + err.message };
+      console.error(`Error en _rawApiCall (${action}):`, err);
+      return { ok: false, error: "Error de conexión: " + err.message };
     }
   }
 
@@ -2814,15 +2937,15 @@ const overlayTitle = $("overlayTitle");
   function getMexicoHolidayMap(year) {
     const easter = getEasterSundayYmd(year);
     return {
-      [`${year}-01-01`]: "AÃ±o Nuevo",
-      [nthWeekdayOfMonthYmd(year, 2, 1, 1)]: "ConstituciÃ³n",
-      [nthWeekdayOfMonthYmd(year, 3, 1, 3)]: "Natalicio de Benito JuÃ¡rez",
+      [`${year}-01-01`]: "Año Nuevo",
+      [nthWeekdayOfMonthYmd(year, 2, 1, 1)]: "Constitución",
+      [nthWeekdayOfMonthYmd(year, 3, 1, 3)]: "Natalicio de Benito Juárez",
       [addDaysYmd(easter, -3)]: "Jueves Santo",
       [addDaysYmd(easter, -2)]: "Viernes Santo",
-      [`${year}-05-01`]: "DÃ­a del Trabajo",
+      [`${year}-05-01`]: "Día del Trabajo",
       [`${year}-05-05`]: "Batalla de Puebla",
-      [`${year}-09-16`]: "Independencia de MÃ©xico",
-      [nthWeekdayOfMonthYmd(year, 11, 1, 3)]: "RevoluciÃ³n Mexicana",
+      [`${year}-09-16`]: "Independencia de México",
+      [nthWeekdayOfMonthYmd(year, 11, 1, 3)]: "Revolución Mexicana",
       [`${year}-12-25`]: "Navidad"
     };
   }
@@ -2859,22 +2982,22 @@ const overlayTitle = $("overlayTitle");
 
   async function getConsumiblesStatus(todayYmd, clues) {
     const d = new Date(`${todayYmd}T12:00:00`);
-    const dow = d.getDay(); // 0=Dom, 3=MiÃ©, 4=Jue
+    const dow = d.getDay(); // 0=Dom, 3=Mié, 4=Jue
     
     // Si es jueves no festivo
     if (dow === 4 && !isHolidayMx(todayYmd)) {
       return { isThursday: true, canCaptureConsumibles: true, consumiblesCaptureDate: todayYmd, consumiblesReason: "Jueves operativo" };
     }
-    // Si es miÃ©rcoles y eL JUEVES es festivo -> habilitar miÃ©rcoles
+    // Si es miércoles y eL JUEVES es festivo -> habilitar miércoles
     if (dow === 3) {
       const jueves = addDaysYmd(todayYmd, 1);
       if (isHolidayMx(jueves)) {
         return { canCaptureConsumibles: true, consumiblesCaptureDate: todayYmd, consumiblesReason: "Apertura anticipada por festivo jueves" };
       }
     }
-    // Si es jueves y el JUEVES es festivo -> No dejar (ya se pidiÃ³ el miÃ©rcoles)
+    // Si es jueves y el JUEVES es festivo -> No dejar (ya se pidió el miércoles)
     if (dow === 4 && isHolidayMx(todayYmd)) {
-      return { canCaptureConsumibles: false, consumiblesCaptureDate: "", consumiblesReason: "Hoy es inhÃ¡bil" };
+      return { canCaptureConsumibles: false, consumiblesCaptureDate: "", consumiblesReason: "Hoy es inhábil" };
     }
     
     return { canCaptureConsumibles: false, consumiblesCaptureDate: "", consumiblesReason: "Disponible solo jueves" };
@@ -3037,7 +3160,7 @@ const overlayTitle = $("overlayTitle");
         }
       }
 
-      console.log("ðŸ§¹ Cache invalidado por prefijo:", prefixes);
+      console.log("🧹 Cache invalidado por prefijo:", prefixes);
     } catch (e) {
       console.warn("invalidateOpsCacheByPrefix error:", e);
     }
@@ -3179,7 +3302,7 @@ const overlayTitle = $("overlayTitle");
       jobs.push(
         getCaptureOverview(summaryFecha, summaryTipo, false).catch((e) => {
           OPS_PREWARM_DONE.summary = false;
-          console.warn("Prewarm resumen fallÃ³:", e);
+          console.warn("Prewarm resumen falló:", e);
         })
       );
     }
@@ -3189,7 +3312,7 @@ const overlayTitle = $("overlayTitle");
       jobs.push(
         getHistoryMetrics(histInicio, histFin, false).catch((e) => {
           OPS_PREWARM_DONE.history = false;
-          console.warn("Prewarm history fallÃ³:", e);
+          console.warn("Prewarm history falló:", e);
         })
       );
     }
@@ -3199,7 +3322,7 @@ const overlayTitle = $("overlayTitle");
       jobs.push(
         listPinol(false).catch((e) => {
           OPS_PREWARM_DONE.pinol = false;
-          console.warn("Prewarm pinol fallÃ³:", e);
+          console.warn("Prewarm pinol falló:", e);
         })
       );
     }
@@ -3214,7 +3337,7 @@ const overlayTitle = $("overlayTitle");
   let LIVE_TIMERS_STARTED = false;
   let LIVE_TIMERS = [];
 
-  // LIVE_STATE estÃ¡ declarado globalmente para que estÃ© disponible antes del login.
+  // LIVE_STATE está declarado globalmente para que esté disponible antes del login.
 
   function initStaticAssets() {
     const a = $("logoA");
@@ -3298,7 +3421,7 @@ const overlayTitle = $("overlayTitle");
     $("tabPINOL")?.addEventListener("click", () => activateCapture("PINOL"));
 
     $("btnLogout")?.addEventListener("click", () => {
-      showOverlay("Cerrando sesiÃ³n...", "Desconectando");
+      showOverlay("Cerrando sesión...", "Desconectando");
       stopNotificationsAutoRefresh();
       clearSessionCaches();
       resetOpsPrewarmFlags();
@@ -3308,7 +3431,7 @@ const overlayTitle = $("overlayTitle");
       if ($("mobileNav")) $("mobileNav").style.display = "none";
       setLoggedOutUI();
       hideOverlay();
-      showToast("SesiÃ³n cerrada");
+      showToast("Sesión cerrada");
     });
   }
   function bindSummaryUiEvents() {
@@ -3349,10 +3472,10 @@ const overlayTitle = $("overlayTitle");
 
         const data = await reloadHistorySilent(true);
 
-        if (data) showToast("MÃ©tricas actualizadas");
-        else showToast("No se pudo actualizar histÃ³rico", false);
+        if (data) showToast("Métricas actualizadas");
+        else showToast("No se pudo actualizar histórico", false);
       } catch (e) {
-        showToast("Error al actualizar histÃ³rico", false);
+        showToast("Error al actualizar histórico", false);
       }
     });
 
@@ -3543,11 +3666,10 @@ const overlayTitle = $("overlayTitle");
     });
   }
 
-  BATCH_CATALOG = []; // CatÃ¡logo completo (ADMIN)
-  UNIT_BATCHES = [];  // CatÃ¡logo filtrado por municipio (UNIDAD)
+  BATCH_CATALOG = []; // Catálogo completo (ADMIN)
+  UNIT_BATCHES = [];  // Catálogo filtrado por municipio (UNIDAD)
 
   async function hydrateSessionUi(user, status, opts = {}) {
-
     exposeAppFns();
     assertCriticalFns();
 
@@ -3557,65 +3679,54 @@ const overlayTitle = $("overlayTitle");
     } = opts;
 
     setLoggedInUI(user, status);
-
     window.MUST_CHANGE_PASSWORD = !!mustChangePassword;
 
     if (window.MUST_CHANGE_PASSWORD && typeof openPasswordModal === "function") {
-      showToast("Debes cambiar tu contraseÃ±a para continuar", true, "warn");
+      showToast("Debes cambiar tu contraseña para continuar", true, "warn");
       openPasswordModal(true);
     }
 
-    // Inicializar catÃ¡logos de lotes
+    // ✅ OPTIMIZACIÓN: Carga concurrente y agrupada
+    // Al usar apiCall para múltiples cosas aquí, el API_BATCH_TIMER las agrupará en UN solo POST
     try {
-      if (user.rol === "ADMIN" || user.rol === "JURISDICCIONAL") {
-        toggleEl("tabLOTES", true, "flex");
-      } else {
-        toggleEl("tabLOTES", false);
-        toggleEl("panelLOTES", false);
-      }
+      const isOps = user?.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(user.rol);
+      
+      toggleEl("tabLOTES", isOps, "flex");
+      if (!isOps) toggleEl("panelLOTES", false);
 
-      await loadBatchesForSession(user);
+      // Lanzamos peticiones. El batcher las atrapará.
+      const pLotes = loadBatchesForSession(user);
+      const pReports = getTodayReports(todayYmdLocal(), true);
+      const pStatus = status ? Promise.resolve(status) : apiCall("unitStatus");
+
+      const [_, today, finalStatus] = await Promise.all([pLotes, pReports, pStatus]);
+
+      if (finalStatus) setLoggedInUI(user, finalStatus); // Refrescar si no venía
+      if (today) hydrateTodayForms(today);
+
+      if (isOps) {
+        const fechaHoy = todayYmdLocal();
+        if ($("summaryFecha")) $("summaryFecha").value = fechaHoy;
+        if ($("summaryTipo")) $("summaryTipo").value = "SR";
+        
+        // Estas también se agrupan
+        const [summary] = await Promise.all([
+          getCaptureOverview(fechaHoy, "SR"),
+          refreshPinolBadgeOnly()
+        ]);
+        if (summary) renderCaptureSummary(summary);
+      }
     } catch (e) {
-      console.warn("Error cargando lotes:", e);
+      console.warn("Error en hidratación de sesión:", e);
     }
 
-    const today = await smartLoader(
-      () => getTodayReports(todayYmdLocal(), true),
-      {
-        message: "Cargando informaciÃ³n del dÃ­aâ€¦",
-        title: "Inicializando"
-      }
-    );
-
-    console.log("today en hydrateSessionUi:", today);
-    hydrateTodayForms(today);
-
-    const isOps = user && (user.rol === "ADMIN" || user.rol === "MUNICIPAL" || user.rol === "JURISDICCIONAL");
-    if (isOps) {
-      const fechaHoy = todayYmdLocal();
-
-      if ($("summaryFecha")) $("summaryFecha").value = fechaHoy;
-      if ($("summaryTipo")) $("summaryTipo").value = "SR";
-      if ($("histFechaInicio")) $("histFechaInicio").value = fechaHoy;
-      if ($("histFechaFin")) $("histFechaFin").value = fechaHoy;
-
-      const [summary] = await Promise.all([
-        getCaptureOverview(fechaHoy, "SR"),
-        refreshPinolBadgeOnly()
-      ]);
-
-      if (summary) renderCaptureSummary(summary);
-    }
-
-    if (showSuccessToast) {
-      showToast("SesiÃ³n iniciada correctamente");
-    }
+    if (showSuccessToast) showToast("Sesión iniciada correctamente");
 
     deferPostLoginTask(async () => {
       await loadNotifications({ silent: true });
       startNotificationsAutoRefresh();
 
-      if (isOps) {
+      if (user && (user.rol === "ADMIN" || user.rol === "MUNICIPAL" || user.rol === "JURISDICCIONAL")) {
         await loadNotifUnitCatalog();
         refreshNotifScopeUi();
       }
@@ -3626,14 +3737,14 @@ const overlayTitle = $("overlayTitle");
 async function loadBatchesForSession(user) {
     if (!user) return;
     try {
-        console.log("ðŸŸ¢ 1. Cargando lotes desde el backend GAS...");
+        console.log("🟢 1. Cargando lotes desde el backend GAS...");
         const lotesResult = await apiCall("getLotesByMunicipio");
         
         const allLotes = (lotesResult && lotesResult.ok && lotesResult.data) ? lotesResult.data : [];
-        console.log(`ðŸŸ¢ 2. Backend devolviÃ³ ${allLotes.length} lotes en total.`);
+        console.log(`🟢 2. Backend devolvió ${allLotes.length} lotes en total.`);
 
         CONFIG_BIOLOGICOS_CATALOG = [];
-        console.log(`ðŸŸ¢ 2.5. Config biolÃ³gicos: ${CONFIG_BIOLOGICOS_CATALOG.length} registros.`);
+        console.log(`🟢 2.5. Config biológicos: ${CONFIG_BIOLOGICOS_CATALOG.length} registros.`);
 
         const userMuni = normalizeTextKey_(user.municipio);
 
@@ -3642,14 +3753,14 @@ async function loadBatchesForSession(user) {
             return loteMuni === "*" || loteMuni === userMuni || loteMuni === "TODOS";
         });
         
-        console.log(`ðŸŸ¢ 3. Lotes filtrados para la unidad (${userMuni}): ${UNIT_BATCHES.length}`);
+        console.log(`🟢 3. Lotes filtrados para la unidad (${userMuni}): ${UNIT_BATCHES.length}`);
     } catch (e) {
-        console.error("ðŸ”´ ERROR CRÃTICO al cargar lotes:", e);
+        console.error("🔴 ERROR CRÍTICO al cargar lotes:", e);
     }
 }
 
   // ==========================================
-  // ADMINISTRACIÃ“N DE LOTES
+  // ADMINISTRACIÓN DE LOTES
   // ==========================================
 
   function parseInputToMmmAa(str) {
@@ -3723,12 +3834,12 @@ async function loadBatchesForSession(user) {
 
 
   async function activateLotesAdmin() {
-    showOverlay("Cargando catÃ¡logo de lotesâ€¦", "Lotes");
+    showOverlay("Cargando catálogo de lotes…", "Lotes");
     try {
-      // Cargar lista de biolÃ³gicos para el select
+      // Cargar lista de biológicos para el select
       const bios = [
         "BCG","HEPATITIS B","HEXAVALENTE","DPT","ROTAVIRUS",
-        "NEUMOCÃ“CICA 13","NEUMOCÃ“CICA 20","SRP","SR","VPH",
+        "NEUMOCÓCICA 13","NEUMOCÓCICA 20","SRP","SR","VPH",
         "VARICELA","HEPATITIS A","TD","TDPA","COVID-19","INFLUENZA","VSR"
       ];
       const sel = $("loteBio");
@@ -3754,7 +3865,7 @@ async function loadBatchesForSession(user) {
     const tbody = $("lotesAdminTbody");
     if (!tbody) return;
 
-    // MEJORA LOGÃSTICA SENIOR: Dashboard de Resumen
+    // MEJORA LOGÍSTICA SENIOR: Dashboard de Resumen
     updateLogisticsSummary();
 
     if (!BATCH_CATALOG.length) {
@@ -3765,7 +3876,7 @@ async function loadBatchesForSession(user) {
     const now = new Date();
     
     tbody.innerHTML = BATCH_CATALOG.map((item, idx) => {
-      // CÃ¡lculo de logÃ­stica
+      // Cálculo de logística
       const expiryInfo = getExpiryLogistics(item.caducidad);
       
       return `
@@ -3779,7 +3890,7 @@ async function loadBatchesForSession(user) {
               ${expiryInfo.label}
             </div>
           </td>
-          <td>${escapeHtml(item.fecha_recepcion || "â€”")}</td>
+          <td>${escapeHtml(item.fecha_recepcion || "—")}</td>
           <td>${escapeHtml(item.municipio)}</td>
           <td>
             <button type="button" class="miniBtn bad" onclick="deleteLoteRowAdmin(${idx})">
@@ -3792,7 +3903,7 @@ async function loadBatchesForSession(user) {
   }
 
   function getExpiryLogistics(cadStr) {
-    if (!cadStr || cadStr === "â€”") return { label: "N/A", class: "ok", icon: "check_circle", days: 999 };
+    if (!cadStr || cadStr === "—") return { label: "N/A", class: "ok", icon: "check_circle", days: 999 };
     
     const months = { "ENE":0,"FEB":1,"MAR":2,"ABR":3,"MAY":4,"JUN":5,"JUL":6,"AGO":7,"SEP":8,"OCT":9,"NOV":10,"DIC":11 };
     const parts = cadStr.split("-");
@@ -3800,7 +3911,7 @@ async function loadBatchesForSession(user) {
     
     const m = months[parts[0]];
     const y = 2000 + parseInt(parts[1]);
-    const expiryDate = new Date(y, m + 1, 0); // Ãšltimo dÃ­a del mes
+    const expiryDate = new Date(y, m + 1, 0); // Último día del mes
     const today = new Date();
     today.setHours(0,0,0,0);
     
@@ -3808,7 +3919,7 @@ async function loadBatchesForSession(user) {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     if (diffDays < 0) return { label: "CADUCADO", class: "bad", icon: "dangerous", days: diffDays };
-    if (diffDays <= 90) return { label: `CRÃTICO (${diffDays}d)`, class: "bad", icon: "emergency", days: diffDays };
+    if (diffDays <= 90) return { label: `CRÍTICO (${diffDays}d)`, class: "bad", icon: "emergency", days: diffDays };
     if (diffDays <= 180) return { label: `ALERTA (${diffDays}d)`, class: "warn", icon: "warning", days: diffDays };
     
     return { label: "VIGENTE", class: "ok", icon: "shield_with_heart", days: diffDays };
@@ -3822,7 +3933,7 @@ async function loadBatchesForSession(user) {
       summaryDiv = document.createElement("div");
       summaryDiv.id = "logisticsSummaryContainer";
       summaryDiv.className = "logistics-summary";
-      // Insertar antes de la tabla (despuÃ©s de btnAddLoteRow container)
+      // Insertar antes de la tabla (después de btnAddLoteRow container)
       const hr = parent.querySelector(".hr");
       if (hr) parent.insertBefore(summaryDiv, hr);
     }
@@ -3838,23 +3949,23 @@ async function loadBatchesForSession(user) {
       </div>
       <div class="logistics-card">
         <span class="val" style="color:#dc2626">${critical}</span>
-        <span class="lbl">CRÃTICO / CADUCADO</span>
+        <span class="lbl">CRÍTICO / CADUCADO</span>
       </div>
       <div class="logistics-card">
         <span class="val" style="color:#d97706">${alert}</span>
-        <span class="lbl">PRÃ“XIMO A VENCER</span>
+        <span class="lbl">PRÓXIMO A VENCER</span>
       </div>
     `;
   }
 
-  // ELIMINADO: El listener de btnAddSRRow se moviÃ³ a la secciÃ³n de inicializaciÃ³n para evitar duplicados.
+  // ELIMINADO: El listener de btnAddSRRow se movió a la sección de inicialización para evitar duplicados.
 
   $("btnAddLoteRow")?.addEventListener("click", () => {
     const biologico = $("loteBio").value;
     const rawLote = $("loteTxt").value.trim().toUpperCase();
     const rawCad = $("loteCad").value.trim().toUpperCase();
     
-    // Forzar formateo final por si no se disparÃ³ el blur
+    // Forzar formateo final por si no se disparó el blur
     const lote = rawLote;
     const caducidad = parseInputToMmmAa(rawCad);
     
@@ -3868,11 +3979,11 @@ async function loadBatchesForSession(user) {
 
     // Validar formato caducidad MMM-AA despues del parseo
     if (!/^[A-Z]{3}-\d{2}$/.test(caducidad)) {
-      showToast("Formato de caducidad invÃ¡lido. Usa ENE-25, JUL-27, etc.", false, "warn");
+      showToast("Formato de caducidad inválido. Usa ENE-25, JUL-27, etc.", false, "warn");
       return;
     }
 
-    // VALIDACIÃ“N DE DUPLICADOS
+    // VALIDACIÓN DE DUPLICADOS
     const exists = BATCH_CATALOG.find(x => x.biologico === biologico && x.lote === lote);
     if (exists) {
       showToast(`El lote ${lote} ya existe para ${biologico}`, false, "warn");
@@ -3895,8 +4006,8 @@ async function loadBatchesForSession(user) {
   }
 
 $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
-    setBtnBusy("btnSaveLotesAdmin", true, "Guardandoâ€¦");
-    showOverlay("Actualizando catÃ¡logo de lotesâ€¦", "AdministraciÃ³n");
+    setBtnBusy("btnSaveLotesAdmin", true, "Guardando…");
+    showOverlay("Actualizando catálogo de lotes…", "Administración");
     
     try {
         const r = await apiCall("saveLotes", { lotes: BATCH_CATALOG });
@@ -3905,8 +4016,8 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
             throw new Error((r && r.error) || "Error al guardar lotes.");
         }
 
-        showToast("CatÃ¡logo de lotes actualizado correctamente", true, "good");
-        // Invalidar cachÃ© de lotes
+        showToast("Catálogo de lotes actualizado correctamente", true, "good");
+        // Invalidar caché de lotes
         try { localStorage.removeItem("GAS_CACHE_getLotesByMunicipio"); } catch(e){}
         await loadBatchesForSession(USER); 
     } catch (e) {
@@ -3919,7 +4030,7 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
 });
 
   // ==========================================
-  // CAPTURA DINÃMICA DE BIOLÃ“GICOS (SR)
+  // CAPTURA DINÁMICA DE BIOLÓGICOS (SR)
   // ==========================================
 
   function getShelfLifeClass(cadMmmAa) {
@@ -3958,7 +4069,7 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
     
     const biotics = [
       "BCG","HEPATITIS B","HEXAVALENTE","DPT","ROTAVIRUS",
-      "NEUMOCÃ“CICA 13","NEUMOCÃ“CICA 20","SRP","SR","VPH",
+      "NEUMOCÓCICA 13","NEUMOCÓCICA 20","SRP","SR","VPH",
       "VARICELA","HEPATITIS A","TD","TDPA","COVID-19","INFLUENZA","VSR"
     ];
 
@@ -3967,20 +4078,20 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
     tr.innerHTML = `
       <td>
         <select class="sr-bio-select" onchange="handleSRBioChange(this)">
-          <option value="">Seleccionaâ€¦</option>
+          <option value="">Selecciona…</option>
           ${bioOptions}
         </select>
       </td>
       <td>
         <select class="sr-lote-select" onchange="handleSRLoteChange(this)">
-          <option value="">â€”</option>
+          <option value="">—</option>
         </select>
       </td>
-      <td class="sr-cad-cell muted">â€”</td>
+      <td class="sr-cad-cell muted">—</td>
       <td>
         <input type="date" class="sr-recepcion-input" value="${data?.fecha_recepcion || ""}">
         <div class="sr-permanencia-hint" style="font-size: 10px; color: var(--warn); font-weight: 700; margin-top: 4px; display: none;">
-          âš ï¸ BiolÃ³gico ha superado lÃ­mite de permanencia normada
+          ⚠️ Biológico ha superado límite de permanencia normada
         </div>
       </td>
       <td>
@@ -4007,8 +4118,8 @@ window.handleSRBioChange = function(selectEl, preselectLote = null) {
     const loteSelect = tr.querySelector(".sr-lote-select");
     const cadCell = tr.querySelector(".sr-cad-cell");
     
-    loteSelect.innerHTML = '<option value="">Selecciona loteâ€¦</option>';
-    cadCell.textContent = "â€”";
+    loteSelect.innerHTML = '<option value="">Selecciona lote…</option>';
+    cadCell.textContent = "—";
     cadCell.className = "sr-cad-cell";
 
     if (!bio) return;
@@ -4037,7 +4148,7 @@ window.handleSRBioChange = function(selectEl, preselectLote = null) {
         window.handleSRLoteChange(loteSelect);
     }
     
-    // Inyectar validaciÃ³n dinÃ¡mica
+    // Inyectar validación dinámica
     refreshSRValidation(tr);
 }
 
@@ -4084,16 +4195,16 @@ window.handleSRLoteChange = function(selectEl) {
     const hint = tr.querySelector(".sr-permanencia-hint");
     
     if (!opt || !opt.dataset.cad) {
-      cadCell.textContent = "â€”";
+      cadCell.textContent = "—";
       cadCell.className = "sr-cad-cell";
       if (hint) hint.style.display = "none";
       return;
     }
 
-    const cad = opt.dataset.cad || "â€”";
+    const cad = opt.dataset.cad || "—";
     const rec = opt.dataset.rec || "";
     
-    // âœ… Envolver en span para que se vea como pill centrado
+    // ✅ Envolver en span para que se vea como pill centrado
     cadCell.innerHTML = `<span class="${getShelfLifeClass(cad)}">${cad}</span>`;
     cadCell.className = "sr-cad-cell"; // Limpiar clases en el td
 
@@ -4101,7 +4212,7 @@ window.handleSRLoteChange = function(selectEl) {
       recInput.value = rec;
     }
 
-    // âœ… ValidaciÃ³n de Permanencia Normada (> 3 meses/90 dÃ­as)
+    // ✅ Validación de Permanencia Normada (> 3 meses/90 días)
     if (recInput && recInput.value && hint) {
         const dRec = new Date(recInput.value);
         const now = new Date();
@@ -4136,8 +4247,22 @@ window.handleSRLoteChange = function(selectEl) {
     }
   }
 
-  // Redundancia eliminada
+  document.addEventListener("DOMContentLoaded", () => {
+    initAppShell();
+    paintPublicClock();
+    startPublicClockTimer();
 
+    // Scroll-aware sticky headers for tables
+    document.addEventListener("scroll", (e) => {
+      const wrap = e.target;
+      if (wrap && wrap.classList && wrap.classList.contains("tableWrap")) {
+        const isScrolled = wrap.scrollTop > 2;
+        if (wrap.classList.contains("is-scrolled") !== isScrolled) {
+          wrap.classList.toggle("is-scrolled", isScrolled);
+        }
+      }
+    }, true); // Capture phase required for scroll events
+  });
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
@@ -4385,7 +4510,7 @@ window.handleSRLoteChange = function(selectEl) {
     const d = date.getDate();
 
     const fixed = [
-      "01-01", // AÃ±o nuevo
+      "01-01", // Año nuevo
       "05-01", // Trabajo
       "09-16", // Independencia
       "12-25"  // Navidad
@@ -4395,16 +4520,16 @@ window.handleSRLoteChange = function(selectEl) {
 
     if (fixed.includes(mmdd)) return true;
 
-    // ConstituciÃ³n (primer lunes febrero)
+    // Constitución (primer lunes febrero)
     if (m === 2 && date.getDay() === 1 && d <= 7) return true;
 
-    // Benito JuÃ¡rez (tercer lunes marzo)
+    // Benito Juárez (tercer lunes marzo)
     if (m === 3 && date.getDay() === 1 && d >= 15 && d <= 21) return true;
 
-    // RevoluciÃ³n (tercer lunes noviembre)
+    // Revolución (tercer lunes noviembre)
     if (m === 11 && date.getDay() === 1 && d >= 15 && d <= 21) return true;
 
-    // ===== CÃLCULO SEMANA SANTA =====
+    // ===== CÁLCULO SEMANA SANTA =====
 
     const easter = getEasterDate(y);
 
@@ -4466,7 +4591,7 @@ window.handleSRLoteChange = function(selectEl) {
       return todayYmdLocal();
     }
 
-    // miÃ©rcoles revisar jueves
+    // miércoles revisar jueves
     if (hoy.getDay() === 3) {
 
       const jueves = new Date(hoy);
@@ -4585,7 +4710,7 @@ async function whoami() {
   }
 
 async function getTodayReports(fecha = "", force = false) {
-  // SEGURO ANTI-COLAPSOS: Si el usuario aÃºn no carga, no intenta buscar
+  // SEGURO ANTI-COLAPSOS: Si el usuario aún no carga, no intenta buscar
   if (!TOKEN || !USER) return null; 
 
   const safeFecha = String(fecha || todayYmdLocal()).trim();
@@ -4677,7 +4802,7 @@ async function getTodayReports(fecha = "", force = false) {
       }
 
       if (!r.ok) {
-        throw new Error(r.error || "Error al cargar mÃ©tricas histÃ³ricas.");
+        throw new Error(r.error || "Error al cargar métricas históricas.");
       }
 
       return r.data || null;
@@ -4720,11 +4845,11 @@ async function getTodayReports(fecha = "", force = false) {
       if (typeof status.compliance_pct !== "undefined") {
         $("dayTxt").textContent = `Cumplimiento: ${Number(status.compliance_pct || 0)}%`;
       } else {
-        $("dayTxt").textContent = status.isThursday ? "Hoy sÃ­ es jueves" : "Hoy no es operativo";
+        $("dayTxt").textContent = status.isThursday ? "Hoy sí es jueves" : "Hoy no es operativo";
       }
     }
 
-    // Si tu index HTML tiene el wrapper con id="bCumplimiento", lo actualizarÃ¡
+    // Si tu index HTML tiene el wrapper con id="bCumplimiento", lo actualizará
     if ($("bCumplimiento")) {
       $("bCumplimiento").classList.remove("good", "warn", "bad");
 
@@ -4755,14 +4880,14 @@ async function getTodayReports(fecha = "", force = false) {
       if (HAS_TODAY_SR && TODAY_CACHE && TODAY_CACHE.sr) {
         if (EDIT_SR) {
           box.classList.add("show", "warn");
-          box.innerHTML = `<span class="material-symbols-rounded">edit_square</span><b>MODO EDICIÃ“N ACTIVO:</b> estÃ¡s corrigiendo la existencia de biolÃ³gicos de hoy.`;
+          box.innerHTML = `<span class="material-symbols-rounded">edit_square</span><b>MODO EDICIÓN ACTIVO:</b> estás corrigiendo la existencia de biológicos de hoy.`;
         } else {
           box.classList.add("show", "ok");
-          box.innerHTML = `<span class="material-symbols-rounded">task_alt</span><b>YA CAPTURADO HOY:</b> la existencia de biolÃ³gicos ya fue registrada${(TODAY_CACHE.sr && TODAY_CACHE.sr.editado === "SI") ? " y editada" : ""}. Si necesitas corregirla, usa el botÃ³n <b>Editar existencia de hoy</b>.`;
+          box.innerHTML = `<span class="material-symbols-rounded">task_alt</span><b>YA CAPTURADO HOY:</b> la existencia de biológicos ya fue registrada${(TODAY_CACHE.sr && TODAY_CACHE.sr.editado === "SI") ? " y editada" : ""}. Si necesitas corregirla, usa el botón <b>Editar existencia de hoy</b>.`;
         }
       } else {
         box.classList.add("show", "warn");
-        box.innerHTML = `<span class="material-symbols-rounded">schedule</span><b>AÃšN SIN CAPTURA:</b> la existencia de biolÃ³gicos todavÃ­a no se ha registrado hoy.`;
+        box.innerHTML = `<span class="material-symbols-rounded">schedule</span><b>AÚN SIN CAPTURA:</b> la existencia de biológicos todavía no se ha registrado hoy.`;
       }
       return;
     }
@@ -4776,27 +4901,27 @@ async function getTodayReports(fecha = "", force = false) {
 
       if (STATUS.consumiblesHolidayOverride) {
         box.classList.add("show", "warn");
-        box.innerHTML = `<span class="material-symbols-rounded">event_available</span><b>CONSUMIBLES HABILITADO:</b> este reporte se puede capturar el dÃ­a de hoy ya que el jueves es dÃ­a no laborable.`;
+        box.innerHTML = `<span class="material-symbols-rounded">event_available</span><b>CONSUMIBLES HABILITADO:</b> este reporte se puede capturar el día de hoy ya que el jueves es día no laborable.`;
         return;
       }
 
       if (STATUS.consumiblesManualOverride) {
         box.classList.add("show", "ok");
-        box.innerHTML = `<span class="material-symbols-rounded">admin_panel_settings</span><b>CONSUMIBLES HABILITADO:</b> apertura extraordinaria activada por administraciÃ³n.`;
+        box.innerHTML = `<span class="material-symbols-rounded">admin_panel_settings</span><b>CONSUMIBLES HABILITADO:</b> apertura extraordinaria activada por administración.`;
         return;
       }
 
       if (HAS_TODAY_CONS && TODAY_CACHE && TODAY_CACHE.cons) {
         if (EDIT_CONS) {
           box.classList.add("show", "warn");
-          box.innerHTML = `<span class="material-symbols-rounded">edit_square</span><b>MODO EDICIÃ“N ACTIVO:</b> estÃ¡s corrigiendo el reporte de consumibles de hoy.`;
+          box.innerHTML = `<span class="material-symbols-rounded">edit_square</span><b>MODO EDICIÓN ACTIVO:</b> estás corrigiendo el reporte de consumibles de hoy.`;
         } else {
           box.classList.add("show", "ok");
-          box.innerHTML = `<span class="material-symbols-rounded">task_alt</span><b>YA CAPTURADO HOY:</b> consumibles ya fue registrado${(TODAY_CACHE.cons && TODAY_CACHE.cons.editado === "SI") ? " y editado" : ""}. Si necesitas corregirlo, usa el botÃ³n <b>Editar reporte de hoy</b>.`;
+          box.innerHTML = `<span class="material-symbols-rounded">task_alt</span><b>YA CAPTURADO HOY:</b> consumibles ya fue registrado${(TODAY_CACHE.cons && TODAY_CACHE.cons.editado === "SI") ? " y editado" : ""}. Si necesitas corregirlo, usa el botón <b>Editar reporte de hoy</b>.`;
         }
       } else {
         box.classList.add("show", "ok");
-        box.innerHTML = `<span class="material-symbols-rounded">inventory_2</span><b>CONSUMIBLES HABILITADO:</b> el reporte de consumibles estÃ¡ disponible para captura el dÃ­a de hoy.`;
+        box.innerHTML = `<span class="material-symbols-rounded">inventory_2</span><b>CONSUMIBLES HABILITADO:</b> el reporte de consumibles está disponible para captura el día de hoy.`;
       }
       return;
     }
@@ -4804,21 +4929,21 @@ async function getTodayReports(fecha = "", force = false) {
     if (activeTab === "BIO") {
       if (!BIO_IS_ENABLED) {
         box.classList.add("show", "bad");
-        box.innerHTML = `<span class="material-symbols-rounded">event_busy</span><b>PEDIDO DE BIOLÃ“GICO NO DISPONIBLE:</b> hoy no se encuentra habilitado para captura.`;
+        box.innerHTML = `<span class="material-symbols-rounded">event_busy</span><b>PEDIDO DE BIOLÓGICO NO DISPONIBLE:</b> hoy no se encuentra habilitado para captura.`;
         return;
       }
 
       if (HAS_SAVED_BIO) {
         if (EDIT_BIO) {
           box.classList.add("show", "warn");
-          box.innerHTML = `<span class="material-symbols-rounded">edit_square</span><b>MODO EDICIÃ“N ACTIVO:</b> estÃ¡s corrigiendo el pedido de biolÃ³gico guardado.`;
+          box.innerHTML = `<span class="material-symbols-rounded">edit_square</span><b>MODO EDICIÓN ACTIVO:</b> estás corrigiendo el pedido de biológico guardado.`;
         } else {
           box.classList.add("show", "ok");
-          box.innerHTML = `<span class="material-symbols-rounded">task_alt</span><b>PEDIDO YA GUARDADO:</b> ya existe un pedido de biolÃ³gico capturado para la fecha programada. Si necesitas corregirlo, usa el botÃ³n <b>Editar pedido guardado</b>.`;
+          box.innerHTML = `<span class="material-symbols-rounded">task_alt</span><b>PEDIDO YA GUARDADO:</b> ya existe un pedido de biológico capturado para la fecha programada. Si necesitas corregirlo, usa el botón <b>Editar pedido guardado</b>.`;
         }
       } else {
         box.classList.add("show", "warn");
-        box.innerHTML = `<span class="material-symbols-rounded">schedule</span><b>PEDIDO PENDIENTE:</b> aÃºn no se registra el pedido de biolÃ³gico actual.`;
+        box.innerHTML = `<span class="material-symbols-rounded">schedule</span><b>PEDIDO PENDIENTE:</b> aún no se registra el pedido de biológico actual.`;
       }
       return;
     }
@@ -4826,9 +4951,9 @@ async function getTodayReports(fecha = "", force = false) {
     if (activeTab === "PINOL") {
       box.classList.add("show", "ok");
       if (USER && USER.rol === "UNIDAD") {
-        box.innerHTML = `<span class="material-symbols-rounded">inventory_2</span><b>PINOL:</b> desde aquÃ­ puedes hacer tu solicitud de pinol.`;
+        box.innerHTML = `<span class="material-symbols-rounded">inventory_2</span><b>PINOL:</b> desde aquí puedes hacer tu solicitud de pinol.`;
       } else {
-        box.innerHTML = `<span class="material-symbols-rounded">inventory_2</span><b>PINOL:</b> desde aquÃ­ puedes consultar, registrar o confirmar movimientos de pinol.`;
+        box.innerHTML = `<span class="material-symbols-rounded">inventory_2</span><b>PINOL:</b> desde aquí puedes consultar, registrar o confirmar movimientos de pinol.`;
       }
     }
 
@@ -4861,14 +4986,14 @@ async function getTodayReports(fecha = "", force = false) {
     const tbody = $("bioTbody");
 
     if (!rows || !rows.length) {
-      tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay configuraciÃ³n para esta unidad</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay configuración para esta unidad</td></tr>`;
       return;
     }
 
     tbody.innerHTML = rows.map((r, i) => `
     <tr>
       <td class="bioNameCell">
-        <div class="bioName">ðŸ’‰ ${escapeHtml(r.biologico || "")}</div>
+        <div class="bioName">💉 ${escapeHtml(r.biologico || "")}</div>
       </td>
       <td class="bioInputCell bioExistenciaCell">
         <input
@@ -4949,7 +5074,7 @@ async function getTodayReports(fecha = "", force = false) {
     const titleEl = $("exportModalTitle");
 
     if (tipo === "BIO") {
-      if (titleEl) titleEl.textContent = "Exportar Pedido de BiolÃ³gico";
+      if (titleEl) titleEl.textContent = "Exportar Pedido de Biológico";
       $("exportFechaRangeBox").style.display = "none";
       $("exportFechaSingleBox").style.display = "none";
       $("exportFechaMonthBox").style.display = "block";
@@ -4983,7 +5108,7 @@ async function getTodayReports(fecha = "", force = false) {
             exactSelect.appendChild(opt);
           });
           exactBox.style.display = "block";
-          $("exportFechaHint").textContent = "MÃºltiples capturas detectadas. Elige una.";
+          $("exportFechaHint").textContent = "Múltiples capturas detectadas. Elige una.";
         }
       }
 
@@ -5000,7 +5125,7 @@ async function getTodayReports(fecha = "", force = false) {
         if ($("exportFechaFin")) $("exportFechaFin").value = range.fechaFin;
       }
     } else {
-      if (titleEl) titleEl.textContent = "Exportar Existencia de BiolÃ³gicos";
+      if (titleEl) titleEl.textContent = "Exportar Existencia de Biológicos";
       $("exportFechaRangeBox").style.display = "block";
       $("exportFechaSingleBox").style.display = "none";
       $("exportFechaMonthBox").style.display = "none";
@@ -5052,8 +5177,8 @@ async function getTodayReports(fecha = "", force = false) {
       if (pedidoRaw === "" && existenciaRaw === "") {
         td.className = "bioAlertWrap neutral";
         td.innerHTML = `
-    <span class="bioAlertBadge neutral">â³ Pendiente</span>
-    <div class="bioAlertText">VacÃ­o = 0 al guardar.</div>
+    <span class="bioAlertBadge neutral">⏳ Pendiente</span>
+    <div class="bioAlertText">Vacío = 0 al guardar.</div>
   `;
         return;
       }
@@ -5082,16 +5207,16 @@ async function getTodayReports(fecha = "", force = false) {
       if (sinValidacionOperativa) {
         td.className = "bioAlertWrap info";
         td.innerHTML = `
-    <span class="bioAlertBadge info">â„¹ï¸ Sin validaciÃ³n operativa</span>
+    <span class="bioAlertBadge info">ℹ️ Sin validación operativa</span>
     <div class="bioAlertText">
-      Captura referencial o extraordinaria. Sin validaciÃ³n por promedio en este momento.
+      Captura referencial o extraordinaria. Sin validación por promedio en este momento.
     </div>
   `;
         return;
       }
 
       if (requiereMultiplo && multiplo > 1 && pedido > 0 && (pedido % multiplo !== 0)) {
-        msgs.push(`El pedido debe ser mÃºltiplo de ${multiplo}.`);
+        msgs.push(`El pedido debe ser múltiplo de ${multiplo}.`);
         level = "bad";
         hasStrongAlert = true;
         hasBlockingError = true;
@@ -5110,18 +5235,18 @@ async function getTodayReports(fecha = "", force = false) {
       if (!msgs.length) {
         td.className = "bioAlertWrap ok";
         td.innerHTML = `
-    <span class="bioAlertBadge ok">âœ… Correcto</span>
+    <span class="bioAlertBadge ok">✅ Correcto</span>
     <div class="bioAlertText">
-      Captura lista. Total al pedir: ${totalDisponible} frascos${promedio > 0 ? ` Â· promedio: ${promedio}.` : "."}
+      Captura lista. Total al pedir: ${totalDisponible} frascos${promedio > 0 ? ` · promedio: ${promedio}.` : "."}
     </div>
   `;
       } else {
         td.className = `bioAlertWrap ${level}`;
         td.innerHTML = `
     <span class="bioAlertBadge ${level}">
-      ${level === "bad" ? "â›” Error" : "âš ï¸ AtenciÃ³n"}
+      ${level === "bad" ? "⛔ Error" : "⚠️ Atención"}
     </span>
-    <div class="bioAlertText">${msgs.map(escapeHtml).join(" Â· ")}</div>
+    <div class="bioAlertText">${msgs.map(escapeHtml).join(" · ")}</div>
   `;
       }
     });
@@ -5161,18 +5286,18 @@ async function getTodayReports(fecha = "", force = false) {
 
       if (!overlay || !list || !intro) {
         resolve(window.confirm(
-          "La validaciÃ³n detectÃ³ que no estÃ¡s solicitando biolÃ³gico suficiente en algunos renglones:\n\n" +
+          "La validación detectó que no estás solicitando biológico suficiente en algunos renglones:\n\n" +
           warningRows.join("\n") +
-          "\n\nÂ¿Deseas continuar con el guardado de pedido?"
+          "\n\n¿Deseas continuar con el guardado de pedido?"
         ));
         return;
       }
 
       BIO_CONFIRM_RESOLVER = resolve;
 
-      intro.textContent = "La validaciÃ³n detectÃ³ que no estÃ¡s solicitando biolÃ³gico suficiente en algunos renglones:";
+      intro.textContent = "La validación detectó que no estás solicitando biológico suficiente en algunos renglones:";
       list.innerHTML = warningRows
-        .map(row => `<div class="bioConfirmItem">${escapeHtml(row.replace(/^â€¢\s*/, ""))}</div>`)
+        .map(row => `<div class="bioConfirmItem">${escapeHtml(row.replace(/^•\s*/, ""))}</div>`)
         .join("");
 
       overlay.classList.add("show");
@@ -5293,7 +5418,7 @@ async function getTodayReports(fecha = "", force = false) {
     EDIT_BIO = false;
 
     $("fechaPedidoBIO").value = r.data.fechaPedidoProgramada || "";
-    $("fechaPedidoBIOBox").textContent = r.data.fechaPedidoProgramada || "â€”";
+    $("fechaPedidoBIOBox").textContent = r.data.fechaPedidoProgramada || "—";
 
     const bioHint = $("bioHint");
     const bioDayAlert = $("bioDayAlert");
@@ -5301,7 +5426,7 @@ async function getTodayReports(fecha = "", force = false) {
     bioDayAlert.className = "bioDayAlert show";
 
     if (r.data.canCapture && r.data.isCaptureDay) {
-      bioHint.textContent = "Hoy corresponde la captura del pedido biolÃ³gico.";
+      bioHint.textContent = "Hoy corresponde la captura del pedido biológico.";
       bioDayAlert.classList.add("ok");
       bioDayAlert.innerHTML = `<span class="material-symbols-rounded">event_available</span><span>Captura habilitada hoy. Ventana operativa: <b>${escapeHtml(r.data.captureWindowStart || "")}</b> al <b>${escapeHtml(r.data.captureWindowEnd || "")}</b>.</span>`;
     } else if (r.data.canCapture) {
@@ -5309,13 +5434,13 @@ async function getTodayReports(fecha = "", force = false) {
       bioDayAlert.classList.add("ok");
       bioDayAlert.innerHTML = `<span class="material-symbols-rounded">event_available</span><span>Puedes capturar del <b>${escapeHtml(r.data.captureWindowStart || "")}</b> al <b>${escapeHtml(r.data.captureWindowEnd || "")}</b>. Fecha objetivo: <b>${escapeHtml(r.data.fechaPedidoProgramada || "")}</b>.</span>`;
     } else if (r.data.captureWindowStatus === "EARLY") {
-      bioHint.textContent = "AÃºn no inicia la ventana de captura.";
+      bioHint.textContent = "Aún no inicia la ventana de captura.";
       bioDayAlert.classList.add("warn");
       bioDayAlert.innerHTML = `<span class="material-symbols-rounded">schedule</span><span>La captura se habilita del <b>${escapeHtml(r.data.captureWindowStart || "")}</b> al <b>${escapeHtml(r.data.captureWindowEnd || "")}</b>. Fecha objetivo: <b>${escapeHtml(r.data.fechaPedidoProgramada || "")}</b>.</span>`;
     } else {
-      bioHint.textContent = "La ventana de captura ya cerrÃ³.";
+      bioHint.textContent = "La ventana de captura ya cerró.";
       bioDayAlert.classList.add("bad");
-      bioDayAlert.innerHTML = `<span class="material-symbols-rounded">event_busy</span><span>La ventana operativa terminÃ³ el <b>${escapeHtml(r.data.captureWindowEnd || "")}</b>. Fecha objetivo: <b>${escapeHtml(r.data.fechaPedidoProgramada || "")}</b>.</span>`;
+      bioDayAlert.innerHTML = `<span class="material-symbols-rounded">event_busy</span><span>La ventana operativa terminó el <b>${escapeHtml(r.data.captureWindowEnd || "")}</b>. Fecha objetivo: <b>${escapeHtml(r.data.fechaPedidoProgramada || "")}</b>.</span>`;
     }
 
     renderBioRows(r.data.rows || []);
@@ -5349,7 +5474,7 @@ async function getTodayReports(fecha = "", force = false) {
 
     form.querySelectorAll("input, select, textarea").forEach(el => {
       if (!el) return;
-      if (el.id === "aguja_0600403711") return; // ya es automÃ¡tico
+      if (el.id === "aguja_0600403711") return; // ya es automático
       el.disabled = !!locked;
     });
   }
@@ -5391,13 +5516,13 @@ async function getTodayReports(fecha = "", force = false) {
       $("btnCancelEditCONS").style.display = EDIT_CONS ? "inline-flex" : "none";
     }
 
-    // BIOLÃ“GICOS
+    // BIOLÓGICOS
     const bioLocked = HAS_SAVED_BIO && !EDIT_BIO;
     setFormLocked("formBIO", bioLocked);
 
     if ($("btnSaveBIO")) {
       $("btnSaveBIO").disabled = bioLocked || !BIO_STATE.canCapture;
-      $("btnSaveBIO").textContent = EDIT_BIO ? "Actualizar pedido de biolÃ³gico" : "Guardar pedido de biolÃ³gico";
+      $("btnSaveBIO").textContent = EDIT_BIO ? "Actualizar pedido de biológico" : "Guardar pedido de biológico";
     }
 
     if ($("btnEditBIO")) {
@@ -5436,8 +5561,8 @@ async function getTodayReports(fecha = "", force = false) {
       if (srData.items && srData.items.length) {
         srData.items.forEach(item => addSRRow(item));
       } else {
-        // Fallback: Si no hay items pero hay valores legado, podrÃ­amos intentar reconstruir,
-        // pero mejor empezamos limpio o agregamos 1 fila vacÃ­a.
+        // Fallback: Si no hay items pero hay valores legado, podríamos intentar reconstruir,
+        // pero mejor empezamos limpio o agregamos 1 fila vacía.
         addSRRow();
       }
     }
@@ -5544,7 +5669,7 @@ async function getTodayReports(fecha = "", force = false) {
       if ($("nombreSR")) $("nombreSR").value = "";
       ORIGINAL_SR = null;
 
-      // Limpiar tabla dinÃ¡mica y agregar fila inicial vacÃ­a
+      // Limpiar tabla dinámica y agregar fila inicial vacía
       const srTbody = $("srCaptureTbody");
       if (srTbody) {
         srTbody.innerHTML = "";
@@ -5631,7 +5756,7 @@ async function getTodayReports(fecha = "", force = false) {
   }
 
   function renderCaptureSummary(data) {
-    $("sumFecha").textContent = data?.fecha || "â€”";
+    $("sumFecha").textContent = data?.fecha || "—";
     $("sumTotal").textContent = data?.total_unidades ?? 0;
     $("sumCapturadas").textContent = data?.total_capturadas ?? 0;
     $("sumFaltantes").textContent = data?.total_faltantes ?? 0;
@@ -5642,14 +5767,14 @@ async function getTodayReports(fecha = "", force = false) {
     $("capturadasCount").textContent = `${capturadas.length}`;
     $("faltantesCount").textContent = `${faltantes.length}`;
 
-    // SemÃ¡foro automÃ¡tico
+    // Semáforo automático
     if ($("kpiCardFaltantes")) {
       $("kpiCardFaltantes").className = "kpiCard " + (faltantes.length > 0 ? "warn" : "ok");
     }
 
 
-    const tipoTxt = (data?.tipo === "CONS") ? "Consumibles" : "Existencia de biolÃ³gicos";
-    const msg = data?.mensaje || `Consulta cargada: ${tipoTxt} del ${data?.fecha || "â€”"}`;
+    const tipoTxt = (data?.tipo === "CONS") ? "Consumibles" : "Existencia de biológicos";
+    const msg = data?.mensaje || `Consulta cargada: ${tipoTxt} del ${data?.fecha || "—"}`;
     $("summaryMsg").textContent = msg;
 
     const tbodyCap = $("capturadasTbody");
@@ -5700,7 +5825,7 @@ async function getTodayReports(fecha = "", force = false) {
             </div>
 
             <div class="captureMobileField">
-              <div class="captureMobileLabel">CapturÃ³</div>
+              <div class="captureMobileLabel">Capturó</div>
               <div class="captureMobileValue">${escapeHtml(r.capturado_por || "")}</div>
             </div>
           </div>
@@ -5764,7 +5889,7 @@ async function getTodayReports(fecha = "", force = false) {
 
     showRightColumn(true);
 
-    $("who").textContent = `${user.clues || "â€”"} â€” ${user.unidad || "â€”"}`;
+    $("who").textContent = `${user.clues || "—"} — ${user.unidad || "—"}`;
     $("welcome").textContent = `Hola, ${user.usuario}`;
     $("rolTxt").textContent = `Perfil: ${user.rol || "UNIDAD"}`;
     if ($("tabCAPText")) {
@@ -5779,9 +5904,9 @@ async function getTodayReports(fecha = "", force = false) {
     if (user.rol === "ADMIN" || user.rol === "JURISDICCIONAL") {
       $("munTxt").textContent = "Municipio(s): Todos";
     } else if (user.rol === "MUNICIPAL") {
-      $("munTxt").textContent = `Municipio(s): ${user.municipio || "â€”"}`;
+      $("munTxt").textContent = `Municipio(s): ${user.municipio || "—"}`;
     } else {
-      $("munTxt").textContent = `Municipio: ${user.municipio || "â€”"}`;
+      $("munTxt").textContent = `Municipio: ${user.municipio || "—"}`;
     }
 
     // --- BOTTOM NAV PERMISSIONS ---
@@ -5801,11 +5926,11 @@ async function getTodayReports(fecha = "", force = false) {
       let saludo = "";
 
       if (hora < 12) {
-        saludo = "Buenos dÃ­as â˜€ï¸ QuÃ© bueno verte por aquÃ­";
+        saludo = "Buenos días ☀️ Qué bueno verte por aquí";
       } else if (hora < 19) {
-        saludo = "Buenas tardes ðŸŒ¤ï¸ Todo listo para continuar";
+        saludo = "Buenas tardes 🌤️ Todo listo para continuar";
       } else {
-        saludo = "Buenas noches ðŸŒ™ Seguimos trabajando";
+        saludo = "Buenas noches 🌙 Seguimos trabajando";
       }
 
       $("capStatus").innerHTML = `<h2 class="greetingTitle">${saludo}</h2>`;
@@ -5825,7 +5950,7 @@ async function getTodayReports(fecha = "", force = false) {
     if ($("tabNOTIFS")) $("tabNOTIFS").style.display = (isAdmin || isJurisdiccional || isMunicipal) ? "block" : "none";
     if ($("btnTopNotifications")) $("btnTopNotifications").style.display = (isUnidad || isAdmin || isJurisdiccional || isMunicipal) ? "inline-flex" : "none";
 
-    if ($("topNotifRoleKpi")) $("topNotifRoleKpi").textContent = user.rol || "â€”";
+    if ($("topNotifRoleKpi")) $("topNotifRoleKpi").textContent = user.rol || "—";
 
     if ($("tabSR")) $("tabSR").style.display = isUnidad ? "block" : "none";
     if ($("tabCONS")) $("tabCONS").style.display = isUnidad ? "block" : "none";
@@ -5855,7 +5980,7 @@ async function getTodayReports(fecha = "", force = false) {
     }
 
     if ($("notifRoleKpi")) {
-      $("notifRoleKpi").textContent = user.rol || "â€”";
+      $("notifRoleKpi").textContent = user.rol || "—";
     }
 
     if ($("panelNOTIFS")) $("panelNOTIFS").style.display = (isAdmin || isJurisdiccional || isMunicipal) ? "" : "none";
@@ -5922,7 +6047,7 @@ async function getTodayReports(fecha = "", force = false) {
       opsTab: "SUMMARY"
     });
     localStorage.removeItem("JS1_TOKEN");
-    $("loginStatus").textContent = "â€”";
+    $("loginStatus").textContent = "—";
     showRightColumn(false);
 
     if ($("bGuardado")) $("bGuardado").style.display = "none";
@@ -6173,7 +6298,7 @@ async function getTodayReports(fecha = "", force = false) {
       const tbody = $("srCaptureTbody");
       if (tbody) {
         tbody.innerHTML = "";
-        addSRRow(); // Empezar con una fila vacÃ­a
+        addSRRow(); // Empezar con una fila vacía
       }
       ORIGINAL_SR = null;
     }
@@ -6216,7 +6341,7 @@ async function getTodayReports(fecha = "", force = false) {
           () => getCaptureOverview(fecha, tipo, !!force),
           {
             delay: 220,
-            message: "Cargando resumenâ€¦",
+            message: "Cargando resumen…",
             title: "Resumen de captura"
           }
         );
@@ -6252,8 +6377,8 @@ async function getTodayReports(fecha = "", force = false) {
           () => getHistoryMetrics(inicio, fin, !!force),
           {
             delay: 220,
-            message: "Cargando mÃ©tricasâ€¦",
-            title: "HistÃ³rico"
+            message: "Cargando métricas…",
+            title: "Histórico"
           }
         );
 
@@ -6269,7 +6394,7 @@ async function getTodayReports(fecha = "", force = false) {
       }
     });
   }
-  // (El listener de loginForm ya estÃ¡ registrado al inicio del archivo)
+  // (El listener de loginForm ya está registrado al inicio del archivo)
 
 
 $("btnSaveSR").onclick = async () => {
@@ -6289,7 +6414,7 @@ $("btnSaveSR").onclick = async () => {
     const cantidad = tr.querySelector(".sr-cantidad-input").value;
     const recepcion = tr.querySelector(".sr-recepcion-input").value;
 
-    if (!bio && !lote && !cantidad) return; // Fila vacÃ­a, ignorar
+    if (!bio && !lote && !cantidad) return; // Fila vacía, ignorar
 
     if (!bio || !lote || cantidad === "" || Number(cantidad) < 0) {
       hasInvalid = true;
@@ -6306,18 +6431,18 @@ $("btnSaveSR").onclick = async () => {
   });
 
   if (hasInvalid) {
-    showToast("Corrige las filas en rojo (biolÃ³gico, lote y cantidad)", false, "warn");
+    showToast("Corrige las filas en rojo (biológico, lote y cantidad)", false, "warn");
     return;
   }
 
   if (items.length === 0) {
-    showToast("Captura al menos un biolÃ³gico con lote y cantidad", false, "warn");
+    showToast("Captura al menos un biológico con lote y cantidad", false, "warn");
     return;
   }
 
-  setBtnBusy("btnSaveSR", true, EDIT_SR ? "Actualizandoâ€¦" : "Guardandoâ€¦");
+  setBtnBusy("btnSaveSR", true, EDIT_SR ? "Actualizando…" : "Guardando…");
   showOverlay(
-    EDIT_SR ? "Actualizando existenciaâ€¦" : "Guardando existenciaâ€¦",
+    EDIT_SR ? "Actualizando existencia…" : "Guardando existencia…",
     EDIT_SR ? "Actualizando" : "Guardando"
   );
 
@@ -6325,7 +6450,7 @@ $("btnSaveSR").onclick = async () => {
     saveUxValue(UX_KEYS.existenciaName, nombre);
 
     if (HAS_TODAY_SR && !EDIT_SR) {
-      showToast("Ya existe una captura de hoy. Usa el botÃ³n Editar.", false, "warn");
+      showToast("Ya existe una captura de hoy. Usa el botón Editar.", false, "warn");
       return;
     }
 
@@ -6342,7 +6467,7 @@ $("btnSaveSR").onclick = async () => {
 
     muteRealtimeFor(12000);
     showToast(EDIT_SR ? "Existencia actualizada" : "Existencia guardada", true, "good");
-    pushLiveEvent("Existencia de biolÃ³gicos", EDIT_SR ? "Actualizada correctamente." : "Guardada correctamente.", "good");
+    pushLiveEvent("Existencia de biológicos", EDIT_SR ? "Actualizada correctamente." : "Guardada correctamente.", "good");
 
     flashElement("formSR");
     setSavedStamp();
@@ -6351,7 +6476,7 @@ $("btnSaveSR").onclick = async () => {
 
   } catch (e) {
     console.error("btnSaveSR error:", e);
-    showToast("Error de conexiÃ³n al guardar", false);
+    showToast("Error de conexión al guardar", false);
   } finally {
     setBtnBusy("btnSaveSR", false);
     hideOverlay();
@@ -6372,9 +6497,9 @@ $("btnSaveSR").onclick = async () => {
 
   $("btnSaveCONS").onclick = async () => {
     if (isBtnBusy("btnSaveCONS")) return;
-    setBtnBusy("btnSaveCONS", true, EDIT_CONS ? "Actualizandoâ€¦" : "Guardandoâ€¦");
+    setBtnBusy("btnSaveCONS", true, EDIT_CONS ? "Actualizando…" : "Guardando…");
     showOverlay(
-      EDIT_CONS ? "Estamos actualizando el reporte de consumiblesâ€¦" : "Estamos guardando el reporte de consumiblesâ€¦",
+      EDIT_CONS ? "Estamos actualizando el reporte de consumibles…" : "Estamos guardando el reporte de consumibles…",
       EDIT_CONS ? "Actualizando consumibles" : "Guardando consumibles"
     );
 
@@ -6388,24 +6513,24 @@ $("btnSaveSR").onclick = async () => {
         return;
       }
 
-      // Validar numÃ©ricos
+      // Validar numéricos
       const numFields = ["srp_dosis", "sr_dosis", "jeringa_reconst_5ml_0605500438", "jeringa_aplic_05ml_0605502657"];
       for (const f of numFields) {
         const val = $(f)?.value;
         if (val !== "" && (isNaN(val) || Number(val) < 0)) {
-          showToast("Ingresa valores numÃ©ricos vÃ¡lidos (0 o mÃ¡s)", false, "warn");
+          showToast("Ingresa valores numéricos válidos (0 o más)", false, "warn");
           flashElement(f);
           return;
         }
       }
 
       if (HAS_TODAY_CONS && !EDIT_CONS) {
-        showToast("Ya existe un reporte de hoy. Usa el botÃ³n Editar reporte de hoy.", false, "warn");
+        showToast("Ya existe un reporte de hoy. Usa el botón Editar reporte de hoy.", false, "warn");
         return;
       }
 
       if (EDIT_CONS && !hasCONSNumericChanges()) {
-        showToast("No hiciste cambios en los valores numÃ©ricos de consumibles", false, "warn");
+        showToast("No hiciste cambios en los valores numéricos de consumibles", false, "warn");
         return;
       }
 
@@ -6473,7 +6598,7 @@ $("btnSaveSR").onclick = async () => {
 
     if (!BIO_STATE.canCapture) {
       showToast(
-        `La captura de pedido biolÃ³gico estÃ¡ habilitada del ${BIO_STATE.captureWindowStart || "â€”"} al ${BIO_STATE.captureWindowEnd || "â€”"}.`,
+        `La captura de pedido biológico está habilitada del ${BIO_STATE.captureWindowStart || "—"} al ${BIO_STATE.captureWindowEnd || "—"}.`,
         false,
         "warn"
       );
@@ -6481,12 +6606,12 @@ $("btnSaveSR").onclick = async () => {
     }
 
     if (HAS_SAVED_BIO && !EDIT_BIO) {
-      showToast("Este pedido ya fue capturado. Usa el botÃ³n Editar pedido actual.", false, "warn");
+      showToast("Este pedido ya fue capturado. Usa el botón Editar pedido actual.", false, "warn");
       return;
     }
 
     if (bioValidation && bioValidation.hasBlockingError) {
-      showToast("Corrige los biolÃ³gicos con error antes de guardar. La Ãºnica restricciÃ³n bloqueante es el mÃºltiplo configurado.", false, "warn");
+      showToast("Corrige los biológicos con error antes de guardar. La única restricción bloqueante es el múltiplo configurado.", false, "warn");
       return;
     }
 
@@ -6539,7 +6664,7 @@ $("btnSaveSR").onclick = async () => {
 
       if (promedio > 0 && totalDisponible < promedio) {
         warningRows.push(
-          `â€¢ ${r.biologico || item.biologico}: existencia ${existencia} + pedido ${pedido} = ${totalDisponible}; promedio ${promedio}.`
+          `• ${r.biologico || item.biologico}: existencia ${existencia} + pedido ${pedido} = ${totalDisponible}; promedio ${promedio}.`
         );
       }
     });
@@ -6549,9 +6674,9 @@ $("btnSaveSR").onclick = async () => {
       if (!ok) return;
     }
 
-    setBtnBusy("btnSaveBIO", true, EDIT_BIO ? "Actualizandoâ€¦" : "Guardandoâ€¦");
+    setBtnBusy("btnSaveBIO", true, EDIT_BIO ? "Actualizando…" : "Guardando…");
     showOverlay(
-      EDIT_BIO ? "Estamos actualizando el pedido biolÃ³gicoâ€¦" : "Estamos guardando el pedido biolÃ³gicoâ€¦",
+      EDIT_BIO ? "Estamos actualizando el pedido biológico…" : "Estamos guardando el pedido biológico…",
       EDIT_BIO ? "Actualizando pedido" : "Guardando pedido"
     );
 
@@ -6564,7 +6689,7 @@ $("btnSaveSR").onclick = async () => {
       });
 
       if (!r || !r.ok) {
-        showToast((r && r.error) ? r.error : "No se pudo guardar el pedido de biolÃ³gico", false);
+        showToast((r && r.error) ? r.error : "No se pudo guardar el pedido de biológico", false);
         return;
       }
 
@@ -6572,7 +6697,7 @@ $("btnSaveSR").onclick = async () => {
 
       const insertedCount = Number((r && r.insertedCount) || 0);
       const updatedCount = Number((r && r.updatedCount) || 0);
-      const fechaProgramada = (r && r.fecha_pedido_programada) ? r.fecha_pedido_programada : "â€”";
+      const fechaProgramada = (r && r.fecha_pedido_programada) ? r.fecha_pedido_programada : "—";
 
       const msgOk =
         `Pedido ${EDIT_BIO ? "actualizado" : "guardado"}. Fecha programada: ${fechaProgramada}. Insertados: ${insertedCount}. Actualizados: ${updatedCount}.`;
@@ -6580,7 +6705,7 @@ $("btnSaveSR").onclick = async () => {
       showToast(msgOk, true, "good");
 
       pushLiveEvent(
-        "Pedido de biolÃ³gico",
+        "Pedido de biológico",
         msgOk,
         "good"
       );
@@ -6604,7 +6729,7 @@ $("btnSaveSR").onclick = async () => {
       await loadBioForm(true);
     } catch (e) {
       console.error("btnSaveBIO error:", e);
-      showToast("Error al guardar pedido de biolÃ³gico", false);
+      showToast("Error al guardar pedido de biológico", false);
     } finally {
       setBtnBusy("btnSaveBIO", false);
       hideOverlay();
@@ -6634,8 +6759,8 @@ $("btnSaveSR").onclick = async () => {
 
   $("btnSavePINOL").onclick = async () => {
     if (isBtnBusy("btnSavePINOL")) return;
-    setBtnBusy("btnSavePINOL", true, "Guardandoâ€¦");
-    showOverlay("Guardando solicitud de pinolâ€¦");
+    setBtnBusy("btnSavePINOL", true, "Guardando…");
+    showOverlay("Guardando solicitud de pinol…");
     try {
       const nombrePINOL = $("nombrePINOL").value.trim();
       saveUxValue(UX_KEYS.pinolName, nombrePINOL);
@@ -6681,24 +6806,24 @@ $("btnSaveSR").onclick = async () => {
     if (!TODAY_CACHE || !TODAY_CACHE.sr) return;
     loadExistenciaIntoForm(TODAY_CACHE.sr);
     setEditModeSR(true);
-    showToast("Modo ediciÃ³n activado (Existencia de biolÃ³gicos)", true, "warn");
+    showToast("Modo edición activado (Existencia de biológicos)", true, "warn");
   };
   $("btnCancelEditSR").onclick = () => {
     resetExistencia();
-    showToast("EdiciÃ³n cancelada");
+    showToast("Edición cancelada");
   };
   $("btnEditBIO").onclick = () => {
     if (!HAS_SAVED_BIO) return;
     setEditModeBIO(true);
-    showToast("Modo ediciÃ³n activado (Pedido de biolÃ³gico)", true, "warn");
+    showToast("Modo edición activado (Pedido de biológico)", true, "warn");
   };
 
   $("btnCancelEditBIO").onclick = async () => {
     await loadBioForm();
-    showToast("EdiciÃ³n cancelada");
+    showToast("Edición cancelada");
   };
 
-  // EVENTOS DEL MODAL DE EXPORTACIÃ“N
+  // EVENTOS DEL MODAL DE EXPORTACIÓN
   if ($("exportTipo")) $("exportTipo").addEventListener("change", updateExportFechaHint);
   if ($("exportMonth")) $("exportMonth").addEventListener("change", updateExportFechaHint);
   if ($("exportYear")) $("exportYear").addEventListener("change", updateExportFechaHint);
@@ -6762,7 +6887,7 @@ $("btnSaveSR").onclick = async () => {
       link.download = filename || "reporte.xlsx";
       link.click();
 
-      showToast("El archivo se exportÃ³ correctamente");
+      showToast("El archivo se exportó correctamente");
 
     } catch (e) {
       showToast("Error al exportar", false);
@@ -6795,7 +6920,7 @@ $("btnSaveSR").onclick = async () => {
 
       if ($("consOverrideStateTxt")) {
         $("consOverrideStateTxt").textContent = data.enabled
-          ? `Activa: ${data.fecha || "â€”"}`
+          ? `Activa: ${data.fecha || "—"}`
           : "Inactiva";
       }
     } catch (e) {
@@ -6826,8 +6951,8 @@ $("btnSaveSR").onclick = async () => {
   $("btnSaveConsOverride").onclick = async () => {
     if (isBtnBusy("btnSaveConsOverride")) return;
 
-    setBtnBusy("btnSaveConsOverride", true, "Guardandoâ€¦");
-    showOverlay("Guardando apertura extraordinariaâ€¦", "Consumibles");
+    setBtnBusy("btnSaveConsOverride", true, "Guardando…");
+    showOverlay("Guardando apertura extraordinaria…", "Consumibles");
 
     const safeNum = v => Number(v || 0);
 
@@ -6868,8 +6993,8 @@ $("btnSaveSR").onclick = async () => {
   $("btnClearConsOverride").onclick = async () => {
     if (isBtnBusy("btnClearConsOverride")) return;
 
-    setBtnBusy("btnClearConsOverride", true, "Desactivandoâ€¦");
-    showOverlay("Desactivando apertura extraordinariaâ€¦", "Consumibles");
+    setBtnBusy("btnClearConsOverride", true, "Desactivando…");
+    showOverlay("Desactivando apertura extraordinaria…", "Consumibles");
 
     try {
       const r = await apiCall({
@@ -6897,8 +7022,8 @@ $("btnSaveSR").onclick = async () => {
 
   $("btnCreateUser").onclick = async () => {
     if (isBtnBusy("btnCreateUser")) return;
-    setBtnBusy("btnCreateUser", true, "Creandoâ€¦");
-    showOverlay("Creando usuarioâ€¦");
+    setBtnBusy("btnCreateUser", true, "Creando…");
+    showOverlay("Creando usuario…");
     try {
       const payload = {
         action: "adminCreateUser",
@@ -6943,7 +7068,7 @@ $("btnSaveSR").onclick = async () => {
         () => apiCall({ action: "adminListUsers", token: TOKEN }),
         {
           delay: 140,
-          message: "Cargando usuariosâ€¦",
+          message: "Cargando usuarios…",
           title: "Usuarios"
         }
       );
@@ -7010,9 +7135,9 @@ $("btnSaveSR").onclick = async () => {
             </div>
           </div>
           <div class="mobileInfoFields">
-            <div class="mobileInfoField"><div class="mobileInfoLabel">Municipio</div><div class="mobileInfoValue">${escapeHtml(u.municipio || "â€”")}</div></div>
-            <div class="mobileInfoField"><div class="mobileInfoLabel">CLUES</div><div class="mobileInfoValue">${escapeHtml(u.clues || "â€”")}</div></div>
-            <div class="mobileInfoField"><div class="mobileInfoLabel">Rol</div><div class="mobileInfoValue">${escapeHtml(u.rol || "â€”")}</div></div>
+            <div class="mobileInfoField"><div class="mobileInfoLabel">Municipio</div><div class="mobileInfoValue">${escapeHtml(u.municipio || "—")}</div></div>
+            <div class="mobileInfoField"><div class="mobileInfoLabel">CLUES</div><div class="mobileInfoValue">${escapeHtml(u.clues || "—")}</div></div>
+            <div class="mobileInfoField"><div class="mobileInfoLabel">Rol</div><div class="mobileInfoValue">${escapeHtml(u.rol || "—")}</div></div>
           </div>
           <div class="mobileActionRow">
             <button class="miniBtn" data-action="reset" data-user="${escapeAttr(u.usuario)}"><span class="material-symbols-rounded">lock_reset</span></button>
@@ -7030,7 +7155,7 @@ $("btnSaveSR").onclick = async () => {
           const targetUser = btn.dataset.user;
           const currentActive = btn.dataset.active;
 
-          if (action === "delete" && !confirm(`Â¿EstÃ¡s seguro de eliminar a ${targetUser}?`)) return;
+          if (action === "delete" && !confirm(`¿Estás seguro de eliminar a ${targetUser}?`)) return;
 
           try {
             showOverlay("Procesando...", "Admin");
@@ -7045,13 +7170,13 @@ $("btnSaveSR").onclick = async () => {
             }
 
             if (r && r.ok) {
-              showToast(r.message || "OperaciÃ³n exitosa", true);
+              showToast(r.message || "Operación exitosa", true);
               await refreshUsers();
             } else {
-              showToast(r.error || "Error en la operaciÃ³n", false);
+              showToast(r.error || "Error en la operación", false);
             }
           } catch (e) {
-            showToast("Error de conexiÃ³n", false);
+            showToast("Error de conexión", false);
           } finally {
             hideOverlay();
           }
@@ -7064,7 +7189,7 @@ $("btnSaveSR").onclick = async () => {
 
 
   async function listPinol(force = false) {
-    if (!TOKEN) throw new Error("Sin token de sesiÃ³n");
+    if (!TOKEN) throw new Error("Sin token de sesión");
 
     const cacheKey = buildCacheKey("PINOL_LIST", "BASE");
 
@@ -7072,7 +7197,7 @@ $("btnSaveSR").onclick = async () => {
       ? await (async () => {
         const r = await apiCall({ action: "listPinol", token: TOKEN });
 
-        if (!r) throw new Error("Respuesta vacÃ­a del servidor");
+        if (!r) throw new Error("Respuesta vacía del servidor");
         if (!r.ok) throw new Error(r.error || "No se pudo consultar PINOL");
 
         return Array.isArray(r.data) ? r.data : [];
@@ -7083,7 +7208,7 @@ $("btnSaveSR").onclick = async () => {
         fetcher: async () => {
           const r = await apiCall({ action: "listPinol", token: TOKEN });
 
-          if (!r) throw new Error("Respuesta vacÃ­a del servidor");
+          if (!r) throw new Error("Respuesta vacía del servidor");
           if (!r.ok) throw new Error(r.error || "No se pudo consultar PINOL");
 
           return Array.isArray(r.data) ? r.data : [];
@@ -7097,9 +7222,9 @@ $("btnSaveSR").onclick = async () => {
   function openPinolEntregaModal(item) {
     PINOL_ENTREGA_CTX = item || null;
 
-    $("pinolEntregaMetaMunicipio").textContent = item?.municipio || "â€”";
-    $("pinolEntregaMetaClues").textContent = item?.clues || "â€”";
-    $("pinolEntregaMetaUnidad").textContent = item?.unidad || "â€”";
+    $("pinolEntregaMetaMunicipio").textContent = item?.municipio || "—";
+    $("pinolEntregaMetaClues").textContent = item?.clues || "—";
+    $("pinolEntregaMetaUnidad").textContent = item?.unidad || "—";
     $("pinolEntregaComentario").value = "";
 
     $("pinolEntregaModal")?.classList.add("show");
@@ -7118,7 +7243,7 @@ $("btnSaveSR").onclick = async () => {
   async function confirmPinolDeliveredFromModal() {
     const item = PINOL_ENTREGA_CTX;
     if (!item?.id) {
-      showToast("No se encontrÃ³ la solicitud de pinol", false);
+      showToast("No se encontró la solicitud de pinol", false);
       closePinolEntregaModal();
       return;
     }
@@ -7126,7 +7251,7 @@ $("btnSaveSR").onclick = async () => {
     const comentario = String($("pinolEntregaComentario")?.value || "").trim();
 
     closePinolEntregaModal();
-    showOverlay("Marcando solicitud como entregadaâ€¦", "Pinol");
+    showOverlay("Marcando solicitud como entregada…", "Pinol");
 
     await markPinolDelivered(item.id, comentario);
   }
@@ -7148,7 +7273,7 @@ $("btnSaveSR").onclick = async () => {
       showToast("Solicitud marcada como entregada");
       pushLiveEvent(
         "Pinol entregado",
-        "Se notificÃ³ a la unidad que su solicitud fue entregada.",
+        "Se notificó a la unidad que su solicitud fue entregada.",
         "good",
         "panelPINOLADMIN",
         { cooldownMs: 1400 }
@@ -7212,8 +7337,8 @@ $("btnSaveSR").onclick = async () => {
       tabMain.classList.toggle("liveAccent", hasPending);
       tabMain.classList.toggle("notifHot", pendientes >= 5);
       tabMain.title = hasPending
-        ? `Captura / OperaciÃ³n con ${pendientes} pendiente(s) de pinol`
-        : "Captura / OperaciÃ³n";
+        ? `Captura / Operación con ${pendientes} pendiente(s) de pinol`
+        : "Captura / Operación";
     } else if (tabMain) {
       tabMain.classList.remove("liveAccent", "notifHot");
       tabMain.title = "Captura";
@@ -7245,7 +7370,7 @@ $("btnSaveSR").onclick = async () => {
         () => listPinol(true),
         {
           delay: 220,
-          message: "Cargando solicitudes de pinolâ€¦",
+          message: "Cargando solicitudes de pinol…",
           title: "Pinol"
         }
       );
@@ -7280,7 +7405,7 @@ $("btnSaveSR").onclick = async () => {
       if (entregadasEl) entregadasEl.textContent = String(entregadas.length);
       if (recibidasEl) recibidasEl.textContent = String(recibidas.length);
 
-      // SemÃ¡foro automÃ¡tico
+      // Semáforo automático
       if ($("kpiCardPinolPendientes")) {
         $("kpiCardPinolPendientes").className = "kpiCard " + (pendientes.length > 0 ? "warn" : "ok");
       }
@@ -7288,8 +7413,8 @@ $("btnSaveSR").onclick = async () => {
       if (alertMsgEl) {
         alertMsgEl.className = "hint pinolAlertBox " + (pendientes.length > 0 ? "warn" : "ok");
         alertMsgEl.innerHTML = pendientes.length > 0
-          ? `âš ï¸ Hay <b>${pendientes.length}</b> solicitud(es) de pinol pendientes por atender.`
-          : `âœ… No hay solicitudes pendientes de pinol. <span style="opacity:.9">Recibidas por unidad: <b>${recibidas.length}</b></span>`;
+          ? `⚠️ Hay <b>${pendientes.length}</b> solicitud(es) de pinol pendientes por atender.`
+          : `✅ No hay solicitudes pendientes de pinol. <span style="opacity:.9">Recibidas por unidad: <b>${recibidas.length}</b></span>`;
       }
 
       let filtered = safeItems.slice();
@@ -7374,7 +7499,7 @@ $("btnSaveSR").onclick = async () => {
             ? `<button class="miniBtn btnPinolDeliver" data-id="${escapeAttr(x?.id || "")}">
     <span class="material-symbols-rounded">local_shipping</span> Entregar
   </button>`
-            : `<span class="muted">â€”</span>`
+            : `<span class="muted">—</span>`
           }
           </td>
         </tr>
@@ -7436,34 +7561,34 @@ $("btnSaveSR").onclick = async () => {
 
               <div class="mobileInfoField">
                 <div class="mobileInfoLabel">Observaciones</div>
-                <div class="mobileInfoValue">${escapeHtml(x?.observaciones || "â€”")}</div>
+                <div class="mobileInfoValue">${escapeHtml(x?.observaciones || "—")}</div>
               </div>
 
               <div class="mobileInfoField">
-                <div class="mobileInfoLabel">CapturÃ³</div>
+                <div class="mobileInfoLabel">Capturó</div>
                 <div class="mobileInfoValue">${escapeHtml(x?.capturado_por || "")}</div>
               </div>
 
               <div class="mobileInfoField">
                 <div class="mobileInfoLabel">Fecha entrega</div>
-                <div class="mobileInfoValue">${escapeHtml(x?.fecha_entrega || "â€”")}</div>
+                <div class="mobileInfoValue">${escapeHtml(x?.fecha_entrega || "—")}</div>
               </div>
 
               <div class="mobileInfoField">
-                <div class="mobileInfoLabel">EntregÃ³</div>
-                <div class="mobileInfoValue">${escapeHtml(x?.entregado_por || "â€”")}</div>
+                <div class="mobileInfoLabel">Entregó</div>
+                <div class="mobileInfoValue">${escapeHtml(x?.entregado_por || "—")}</div>
               </div>
 
               ${estatus === "RECIBIDO"
               ? `
                     <div class="mobileInfoField">
                       <div class="mobileInfoLabel">Fecha recibido</div>
-                      <div class="mobileInfoValue">${escapeHtml(x?.fecha_recibido || "â€”")}</div>
+                      <div class="mobileInfoValue">${escapeHtml(x?.fecha_recibido || "—")}</div>
                     </div>
 
                     <div class="mobileInfoField">
                       <div class="mobileInfoLabel">Recibido por</div>
-                      <div class="mobileInfoValue">${escapeHtml(x?.recibido_por || "â€”")}</div>
+                      <div class="mobileInfoValue">${escapeHtml(x?.recibido_por || "—")}</div>
                     </div>
                   `
               : ``
@@ -7495,7 +7620,7 @@ $("btnSaveSR").onclick = async () => {
             : null;
 
           if (!item) {
-            showToast("No se encontrÃ³ la solicitud seleccionada", false);
+            showToast("No se encontró la solicitud seleccionada", false);
             return;
           }
 
@@ -7512,31 +7637,31 @@ $("btnSaveSR").onclick = async () => {
   }
 
   const FACTS = [
-    { icon: "ac_unit", tag: "Cadena frÃ­a", title: "TermÃ³metro visible", body: "El termÃ³metro del refrigerador debe colocarse en la zona central para reflejar mejor la temperatura real de almacenamiento." },
-    { icon: "ac_unit", tag: "Cadena frÃ­a", title: "Puerta cerrada", body: "Abrir el refrigerador el menor tiempo posible ayuda a mantener estable la temperatura de los biolÃ³gicos." },
-    { icon: "ac_unit", tag: "Cadena frÃ­a", title: "SeparaciÃ³n adecuada", body: "Los biolÃ³gicos deben almacenarse separados de bebidas, alimentos u otros materiales no relacionados." },
-    { icon: "ac_unit", tag: "Cadena frÃ­a", title: "Espacio entre frascos", body: "Dejar espacio entre las cajas permite que el aire frÃ­o circule correctamente dentro del refrigerador." },
-    { icon: "ac_unit", tag: "Cadena frÃ­a", title: "Control de energÃ­a", body: "Ante cortes elÃ©ctricos prolongados se debe activar el plan de contingencia para proteger los biolÃ³gicos." },
-    { icon: "science", tag: "Frascos", title: "RevisiÃ³n de caducidad", body: "Antes de preparar una vacuna verifica siempre la fecha de caducidad del frasco." },
-    { icon: "science", tag: "Frascos", title: "Lote visible", body: "Registrar el nÃºmero de lote facilita la trazabilidad ante eventos o alertas sanitarias." },
-    { icon: "science", tag: "Frascos", title: "Diluyente correcto", body: "Cada vacuna debe reconstituirse Ãºnicamente con el diluyente especÃ­fico del fabricante." },
-    { icon: "vaccines", tag: "AplicaciÃ³n", title: "Dosis correcta", body: "La correcta tÃ©cnica de carga en jeringa ayuda a evitar desperdicio de biolÃ³gico." },
-    { icon: "vaccines", tag: "AplicaciÃ³n", title: "Sitio de aplicaciÃ³n", body: "El sitio anatÃ³mico recomendado varÃ­a segÃºn la vacuna y la edad del paciente." },
-    { icon: "vaccines", tag: "AplicaciÃ³n", title: "Intervalos adecuados", body: "Respetar los intervalos entre dosis garantiza una respuesta inmunolÃ³gica adecuada." },
-    { icon: "vaccines", tag: "AplicaciÃ³n", title: "ObservaciÃ³n posterior", body: "DespuÃ©s de aplicar una vacuna se recomienda observar al paciente algunos minutos." },
+    { icon: "ac_unit", tag: "Cadena fría", title: "Termómetro visible", body: "El termómetro del refrigerador debe colocarse en la zona central para reflejar mejor la temperatura real de almacenamiento." },
+    { icon: "ac_unit", tag: "Cadena fría", title: "Puerta cerrada", body: "Abrir el refrigerador el menor tiempo posible ayuda a mantener estable la temperatura de los biológicos." },
+    { icon: "ac_unit", tag: "Cadena fría", title: "Separación adecuada", body: "Los biológicos deben almacenarse separados de bebidas, alimentos u otros materiales no relacionados." },
+    { icon: "ac_unit", tag: "Cadena fría", title: "Espacio entre frascos", body: "Dejar espacio entre las cajas permite que el aire frío circule correctamente dentro del refrigerador." },
+    { icon: "ac_unit", tag: "Cadena fría", title: "Control de energía", body: "Ante cortes eléctricos prolongados se debe activar el plan de contingencia para proteger los biológicos." },
+    { icon: "science", tag: "Frascos", title: "Revisión de caducidad", body: "Antes de preparar una vacuna verifica siempre la fecha de caducidad del frasco." },
+    { icon: "science", tag: "Frascos", title: "Lote visible", body: "Registrar el número de lote facilita la trazabilidad ante eventos o alertas sanitarias." },
+    { icon: "science", tag: "Frascos", title: "Diluyente correcto", body: "Cada vacuna debe reconstituirse únicamente con el diluyente específico del fabricante." },
+    { icon: "vaccines", tag: "Aplicación", title: "Dosis correcta", body: "La correcta técnica de carga en jeringa ayuda a evitar desperdicio de biológico." },
+    { icon: "vaccines", tag: "Aplicación", title: "Sitio de aplicación", body: "El sitio anatómico recomendado varía según la vacuna y la edad del paciente." },
+    { icon: "vaccines", tag: "Aplicación", title: "Intervalos adecuados", body: "Respetar los intervalos entre dosis garantiza una respuesta inmunológica adecuada." },
+    { icon: "vaccines", tag: "Aplicación", title: "Observación posterior", body: "Después de aplicar una vacuna se recomienda observar al paciente algunos minutos." },
     { icon: "security", tag: "Seguridad", title: "Caja de punzocortantes", body: "Las agujas usadas deben desecharse inmediatamente en contenedores para punzocortantes." },
-    { icon: "security", tag: "Seguridad", title: "Higiene de manos", body: "La higiene de manos antes y despuÃ©s de cada aplicaciÃ³n reduce el riesgo de infecciones." },
-    { icon: "inventory_2", tag: "Inventario", title: "Control periÃ³dico", body: "Revisar inventarios frecuentemente ayuda a detectar pÃ©rdidas o faltantes a tiempo." },
-    { icon: "inventory_2", tag: "Inventario", title: "Evitar sobrestock", body: "Solicitar biolÃ³gicos segÃºn consumo real ayuda a prevenir caducidades." },
-    { icon: "bar_chart", tag: "PlaneaciÃ³n", title: "PoblaciÃ³n objetivo", body: "Los pedidos deben considerar el tamaÃ±o de la poblaciÃ³n objetivo de la unidad." },
-    { icon: "bar_chart", tag: "PlaneaciÃ³n", title: "Factor de seguridad", body: "Agregar un pequeÃ±o margen de seguridad al pedido ayuda a prevenir desabasto." },
+    { icon: "security", tag: "Seguridad", title: "Higiene de manos", body: "La higiene de manos antes y después de cada aplicación reduce el riesgo de infecciones." },
+    { icon: "inventory_2", tag: "Inventario", title: "Control periódico", body: "Revisar inventarios frecuentemente ayuda a detectar pérdidas o faltantes a tiempo." },
+    { icon: "inventory_2", tag: "Inventario", title: "Evitar sobrestock", body: "Solicitar biológicos según consumo real ayuda a prevenir caducidades." },
+    { icon: "bar_chart", tag: "Planeación", title: "Población objetivo", body: "Los pedidos deben considerar el tamaño de la población objetivo de la unidad." },
+    { icon: "bar_chart", tag: "Planeación", title: "Factor de seguridad", body: "Agregar un pequeño margen de seguridad al pedido ayuda a prevenir desabasto." },
     { icon: "edit_note", tag: "Registro", title: "Datos completos", body: "Un registro completo permite generar indicadores confiables para la toma de decisiones." },
-    { icon: "edit_note", tag: "Registro", title: "Consistencia", body: "Mantener el mismo criterio de captura facilita el anÃ¡lisis histÃ³rico de la informaciÃ³n." },
-    { icon: "query_stats", tag: "Cobertura", title: "Seguimiento de esquemas", body: "El seguimiento oportuno ayuda a completar esquemas de vacunaciÃ³n en la poblaciÃ³n." },
-    { icon: "query_stats", tag: "Cobertura", title: "IdentificaciÃ³n de rezagos", body: "Los reportes periÃ³dicos permiten detectar zonas con menor cobertura de vacunaciÃ³n." },
-    { icon: "settings", tag: "OperaciÃ³n", title: "PreparaciÃ³n diaria", body: "Revisar insumos y biolÃ³gicos antes de iniciar actividades evita interrupciones durante la jornada." },
-    { icon: "settings", tag: "OperaciÃ³n", title: "Orden en refrigerador", body: "Mantener un orden claro facilita localizar rÃ¡pidamente cada biolÃ³gico." },
-    { icon: "settings", tag: "OperaciÃ³n", title: "ComunicaciÃ³n", body: "La coordinaciÃ³n entre unidad y jurisdicciÃ³n mejora la distribuciÃ³n de biolÃ³gicos." }
+    { icon: "edit_note", tag: "Registro", title: "Consistencia", body: "Mantener el mismo criterio de captura facilita el análisis histórico de la información." },
+    { icon: "query_stats", tag: "Cobertura", title: "Seguimiento de esquemas", body: "El seguimiento oportuno ayuda a completar esquemas de vacunación en la población." },
+    { icon: "query_stats", tag: "Cobertura", title: "Identificación de rezagos", body: "Los reportes periódicos permiten detectar zonas con menor cobertura de vacunación." },
+    { icon: "settings", tag: "Operación", title: "Preparación diaria", body: "Revisar insumos y biológicos antes de iniciar actividades evita interrupciones durante la jornada." },
+    { icon: "settings", tag: "Operación", title: "Orden en refrigerador", body: "Mantener un orden claro facilita localizar rápidamente cada biológico." },
+    { icon: "settings", tag: "Operación", title: "Comunicación", body: "La coordinación entre unidad y jurisdicción mejora la distribución de biológicos." }
   ];
   let factIdx = Math.floor(Math.random() * FACTS.length);
   let FACTS_TIMER = null;
@@ -7554,13 +7679,13 @@ $("btnSaveSR").onclick = async () => {
     const f = FACTS[factIdx % FACTS.length];
 
     const tagIconMap = {
-      "Cadena frÃ­a": "ac_unit",
+      "Cadena fría": "ac_unit",
       "Frascos": "science",
       "Inventario": "inventory_2",
-      "PlaneaciÃ³n": "analytics",
+      "Planeación": "analytics",
       "Registro": "edit_note",
       "Cobertura": "query_stats",
-      "OperaciÃ³n": "settings"
+      "Operación": "settings"
     };
 
     const curIcon = tagIconMap[f.tag] || f.icon || "syringe";
@@ -7595,7 +7720,27 @@ $("btnSaveSR").onclick = async () => {
     }
   });
 
-  // Unificado en DOMContentLoaded
+  (async function init() {
+
+    showOverlay("Cargando plataforma…");
+    startFactsRotation();
+    try {
+      const u = await whoami();
+      if (u) {
+        const st = await unitStatus();
+        await hydrateSessionUi(u, st, {
+          showSuccessToast: true,
+          mustChangePassword: !!u.mustChange
+        });
+      } else {
+        setLoggedOutUI();
+      }
+    } catch (e) {
+      setLoggedOutUI();
+    } finally {
+      hideOverlay();
+    }
+  })();
 
   async function getEditLog(fecha, tipo) {
     if (!TOKEN) return [];
@@ -7614,7 +7759,7 @@ $("btnSaveSR").onclick = async () => {
   async function refreshEditLog() {
     if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL" && USER.rol !== "JURISDICCIONAL")) return;
 
-    showOverlay("Cargando historial de edicionesâ€¦");
+    showOverlay("Cargando historial de ediciones…");
     try {
       const fecha = $("editLogFecha") ? $("editLogFecha").value : "";
       const tipo = $("editLogTipo") ? $("editLogTipo").value : "TODOS";
@@ -7680,7 +7825,7 @@ $("btnSaveSR").onclick = async () => {
     $("histPromSR").textContent = `${avgBIO}%`;
     $("histPromCONS").textContent = `${avgCONS}%`;
 
-    // SemÃ¡foro automÃ¡tico
+    // Semáforo automático
     if ($("kpiCardHistSR")) $("kpiCardHistSR").className = "kpiCard " + getComplianceTone(avgBIO);
     if ($("kpiCardHistCONS")) $("kpiCardHistCONS").className = "kpiCard " + getComplianceTone(avgCONS);
 
@@ -7702,7 +7847,7 @@ $("btnSaveSR").onclick = async () => {
       <td>${Number(r.cons_cumplimiento || 0)}%</td>
       <td>${Number(r.cons_capturas || 0)}</td>
       <td>${Number(r.cons_faltas || 0)}</td>
-      <td>${escapeHtml(r.ultima_cons || "â€”")}</td>
+      <td>${escapeHtml(r.ultima_cons || "—")}</td>
     </tr>
   `).join("");
 
@@ -7731,20 +7876,20 @@ $("btnSaveSR").onclick = async () => {
               <div class="mobileInfoValue">${escapeHtml(r.clues || "")}</div>
             </div>
             <div class="mobileInfoField">
-              <div class="mobileInfoLabel">Cumplimiento biolÃ³gico</div>
-              <div class="mobileInfoValue">${Number(r.bio_cumplimiento || 0)}% Â· Capturas: ${Number(r.bio_capturas || 0)} Â· Faltas: ${Number(r.bio_faltas || 0)}</div>
+              <div class="mobileInfoLabel">Cumplimiento biológico</div>
+              <div class="mobileInfoValue">${Number(r.bio_cumplimiento || 0)}% · Capturas: ${Number(r.bio_capturas || 0)} · Faltas: ${Number(r.bio_faltas || 0)}</div>
             </div>
             <div class="mobileInfoField">
               <div class="mobileInfoLabel">Cumplimiento consumibles</div>
-              <div class="mobileInfoValue">${Number(r.cons_cumplimiento || 0)}% Â· Capturas: ${Number(r.cons_capturas || 0)} Â· Faltas: ${Number(r.cons_faltas || 0)}</div>
+              <div class="mobileInfoValue">${Number(r.cons_cumplimiento || 0)}% · Capturas: ${Number(r.cons_capturas || 0)} · Faltas: ${Number(r.cons_faltas || 0)}</div>
             </div>
             <div class="mobileInfoField">
               <div class="mobileInfoLabel">Cumplimiento operativo total</div>
-              <div class="mobileInfoValue">${Number(r.cumplimiento_operativo || 0)}% Â· Capturas: ${Number(r.total_capturado || 0)} Â· Faltas: ${Number(r.total_faltas || 0)}</div>
+              <div class="mobileInfoValue">${Number(r.cumplimiento_operativo || 0)}% · Capturas: ${Number(r.total_capturado || 0)} · Faltas: ${Number(r.total_faltas || 0)}</div>
             </div>
             <div class="mobileInfoField">
-              <div class="mobileInfoLabel">Ãšltima consumibles</div>
-              <div class="mobileInfoValue">${escapeHtml(r.ultima_cons || "â€”")}</div>
+              <div class="mobileInfoLabel">Última consumibles</div>
+              <div class="mobileInfoValue">${escapeHtml(r.ultima_cons || "—")}</div>
             </div>
           </div>
         </div>
@@ -7766,7 +7911,7 @@ $("btnSaveSR").onclick = async () => {
   }
 
   /**
-   * âœ… MICRO-BENCHMARK: Mide la potencia real de cÃ¡lculo (Math/Loop burst)
+   * ✅ MICRO-BENCHMARK: Mide la potencia real de cálculo (Math/Loop burst)
    * Ayuda a detectar equipos lentos sin depender solo de especificaciones.
    */
   function runPerfBenchmark() {
@@ -7797,8 +7942,8 @@ $("btnSaveSR").onclick = async () => {
     );
 
     /**
-     * DetecciÃ³n inteligente: Si el benchmark tarda mÃ¡s de 30ms (un equipo moderno tarda ~4ms),
-     * es un equipo lento. TambiÃ©n consideramos el hardware como fallback.
+     * Detección inteligente: Si el benchmark tarda más de 30ms (un equipo moderno tarda ~4ms),
+     * es un equipo lento. También consideramos el hardware como fallback.
      */
     const isLowPerf = !!(perfTime >= 30 || lowRam || lowCpu);
     const widthBucket = getAdaptiveWidthBucket();
@@ -8041,7 +8186,7 @@ $("btnSaveSR").onclick = async () => {
       <div class="mobileInfoCard">
         <div class="mobileInfoHead">
           <div class="mobileInfoTitle">${escapeHtml(x.unidad || "Unidad")}</div>
-          <div class="mobileInfoBadge warn">${escapeHtml(x.tipo || "EDICIÃ“N")}</div>
+          <div class="mobileInfoBadge warn">${escapeHtml(x.tipo || "EDICIÓN")}</div>
         </div>
 
         <div class="mobileInfoFields">
@@ -8058,11 +8203,11 @@ $("btnSaveSR").onclick = async () => {
             <div class="mobileInfoValue">${escapeHtml(x.clues || "")}</div>
           </div>
           <div class="mobileInfoField">
-            <div class="mobileInfoLabel">EditÃ³</div>
+            <div class="mobileInfoLabel">Editó</div>
             <div class="mobileInfoValue">${escapeHtml(x.editado_por || "")}</div>
           </div>
           <div class="mobileInfoField">
-            <div class="mobileInfoLabel">Fecha ediciÃ³n</div>
+            <div class="mobileInfoLabel">Fecha edición</div>
             <div class="mobileInfoValue">${escapeHtml(x.editado_ts || "")}</div>
           </div>
           <div class="mobileInfoField">
@@ -8117,7 +8262,7 @@ $("btnSaveSR").onclick = async () => {
         if (pendientes > prev) {
           showWarnToast(`Hay ${pendientes} solicitud(es) pendientes de pinol`);
         } else {
-          showToast("CambiÃ³ el estado de solicitudes de pinol");
+          showToast("Cambió el estado de solicitudes de pinol");
         }
       }
     } catch (e) {
@@ -8177,7 +8322,7 @@ $("btnSaveSR").onclick = async () => {
 
         if (capturadas > prevCapturadas) {
           showToast(
-            `Nueva captura detectada en ${tipo === "CONS" ? "Consumibles" : "Existencia de biolÃ³gicos"}`,
+            `Nueva captura detectada en ${tipo === "CONS" ? "Consumibles" : "Existencia de biológicos"}`,
             true,
             "good"
           );
@@ -8238,8 +8383,8 @@ $("btnSaveSR").onclick = async () => {
         pulseValueChange("tabSR", "rise");
 
         if (existenciaNow) {
-          showToast("Tu captura de existencia de biolÃ³gicos ya quedÃ³ reflejada en tiempo real");
-          pushLiveEvent("Existencia de biolÃ³gicos", "El estado de la captura de hoy cambiÃ³ automÃ¡ticamente.", "good", "formSR");
+          showToast("Tu captura de existencia de biológicos ya quedó reflejada en tiempo real");
+          pushLiveEvent("Existencia de biológicos", "El estado de la captura de hoy cambió automáticamente.", "good", "formSR");
         }
       }
 
@@ -8248,8 +8393,8 @@ $("btnSaveSR").onclick = async () => {
         pulseValueChange("tabCONS", "rise");
 
         if (consNow) {
-          showToast("Tu reporte de consumibles ya quedÃ³ reflejado en tiempo real");
-          pushLiveEvent("Consumibles", "El estado del reporte de hoy cambiÃ³ automÃ¡ticamente.", "good", "formCONS");
+          showToast("Tu reporte de consumibles ya quedó reflejado en tiempo real");
+          pushLiveEvent("Consumibles", "El estado del reporte de hoy cambió automáticamente.", "good", "formCONS");
         }
       }
     } catch (e) {
@@ -8296,8 +8441,8 @@ $("btnSaveSR").onclick = async () => {
         });
 
         pushLiveEvent(
-          "MÃ©tricas histÃ³ricas",
-          "Se actualizÃ³ la informaciÃ³n del panel histÃ³rico.",
+          "Métricas históricas",
+          "Se actualizó la información del panel histórico.",
           "good",
           "panelHISTORY"
         );
@@ -8315,7 +8460,7 @@ $("btnSaveSR").onclick = async () => {
     if (LIVE_TIMERS_STARTED) return;
     LIVE_TIMERS_STARTED = true;
 
-    // OptimizaciÃ³n de Cuotas: Se relajan los ciclos (Throttling) para prevenir el lÃ­mite estricto de 20,000 Trigger Quotas diarios de GAS.
+    // Optimización de Cuotas: Se relajan los ciclos (Throttling) para prevenir el límite estricto de 20,000 Trigger Quotas diarios de GAS.
     LIVE_TIMERS.push(setInterval(() => {
       if (!canRunRealtime()) return;
       watchPinolRealtime();
@@ -8345,7 +8490,7 @@ $("btnSaveSR").onclick = async () => {
   }
 
   /**
-   * ðŸŒ¤ï¸ Weather Loader: Obtiene el clima de la API Open-Meteo.
+   * 🌤️ Weather Loader: Obtiene el clima de la API Open-Meteo.
    * Se ejecuta al cargar y se re-lanza cada 15 min.
    */
   async function initWeather() {
@@ -8363,8 +8508,8 @@ $("btnSaveSR").onclick = async () => {
 
       if (data && data.current) {
         const temp = Math.round(data.current.temperature_2m);
-        if (hdr1) hdr1.textContent = `Qro ${temp}Â°C`;
-        if (hdr2) hdr2.textContent = `${temp}Â°C`;
+        if (hdr1) hdr1.textContent = `Qro ${temp}°C`;
+        if (hdr2) hdr2.textContent = `${temp}°C`;
 
         const bcl1 = $("bClima");
         const bcl2 = $("bClima2");
@@ -8379,21 +8524,21 @@ $("btnSaveSR").onclick = async () => {
       }
     } catch (e) {
       console.warn("initWeather failed:", e);
-      if (hdr1) hdr1.textContent = "Qro 24Â°C";
-      if (hdr2) hdr2.textContent = "24Â°C";
+      if (hdr1) hdr1.textContent = "Qro 24°C";
+      if (hdr2) hdr2.textContent = "24°C";
     }
   }
 
-  // Esperar a que el DOM estÃ© listo antes de arrancar
+  // Esperar a que el DOM esté listo antes de arrancar
   document.addEventListener('DOMContentLoaded', () => {
     initWeather();
-    // AÃ±adirlo a LIVE_TIMERS solo si estÃ¡ definido (evitar ReferenceError preventivo)
+    // Añadirlo a LIVE_TIMERS solo si está definido (evitar ReferenceError preventivo)
     if (typeof LIVE_TIMERS !== 'undefined') {
       LIVE_TIMERS.push(setInterval(initWeather, 900000));
     }
   });
 
-  // Fallback por si DOMContentLoaded ya pasÃ³
+  // Fallback por si DOMContentLoaded ya pasó
   if (document.readyState === "complete" || document.readyState === "interactive") {
     initWeather();
   }
@@ -8427,7 +8572,7 @@ $("btnSaveSR").onclick = async () => {
 
     if (role === "MUNICIPAL") {
       // 1. Only Supervision
-      categorySelect.innerHTML = '<option value="SupervisiÃ³n" selected>SupervisiÃ³n</option>';
+      categorySelect.innerHTML = '<option value="Supervisión" selected>Supervisión</option>';
       categorySelect.disabled = true;
 
       // 2. Load Unit Catalog
@@ -8436,7 +8581,7 @@ $("btnSaveSR").onclick = async () => {
       // Role UNIDAD or fallback
       categorySelect.innerHTML = `
         <option value="Evidencia de capacitaciones" selected>Evidencia de capacitaciones</option>
-        <option value="Evidencias de campaÃ±a">Evidencias de campaÃ±a</option>
+        <option value="Evidencias de campaña">Evidencias de campaña</option>
         <option value="Otros reportes">Otros reportes</option>
       `;
       categorySelect.disabled = false;
@@ -8446,7 +8591,7 @@ $("btnSaveSR").onclick = async () => {
   async function loadMunicipalUploadContext() {
     try {
       if (!ALL_UNITS_CATALOG) {
-        showOverlay("Cargando catÃ¡logoâ€¦", "CatÃ¡logo");
+        showOverlay("Cargando catálogo…", "Catálogo");
         const res = await apiCall({ action: "unitCatalog" });
         hideOverlay();
         if (res && res.ok) {
@@ -8518,7 +8663,7 @@ $("btnSaveSR").onclick = async () => {
     const fileInput = $("uploadFileInput");
     if (fileInput) fileInput.value = "";
     const fileNameLabel = $("fileNameLabel");
-    if (fileNameLabel) fileNameLabel.textContent = "NingÃºn archivo seleccionado";
+    if (fileNameLabel) fileNameLabel.textContent = "Ningún archivo seleccionado";
     const btnBrowse = $("btnBrowseFile");
     if (btnBrowse) btnBrowse.classList.remove("hasFile");
     const btnDoUpload = $("btnDoUpload");
@@ -8527,7 +8672,7 @@ $("btnSaveSR").onclick = async () => {
     // Reset selections
     $("uploadUnitSelect").innerHTML = "";
     $("uploadMuniSelect").value = "";
-    $("uploadCluesValue").textContent = "â€”";
+    $("uploadCluesValue").textContent = "—";
   }
 
   $("btnOpenUpload")?.addEventListener("click", openUploadFilesModal);
@@ -8565,7 +8710,7 @@ $("btnSaveSR").onclick = async () => {
     }
 
     if (file.size > 15 * 1024 * 1024) {
-      showToast("El archivo es demasiado grande (mÃ¡x 15MB)", false);
+      showToast("El archivo es demasiado grande (máx 15MB)", false);
       return;
     }
 
@@ -8584,8 +8729,8 @@ $("btnSaveSR").onclick = async () => {
     }
 
     try {
-      showOverlay("Subiendo archivoâ€¦", "Cargando");
-      setBtnBusy("btnDoUpload", true, "Subiendoâ€¦");
+      showOverlay("Subiendo archivo…", "Cargando");
+      setBtnBusy("btnDoUpload", true, "Subiendo…");
       
       const res = await apiCall({
         action: "uploadFile",
@@ -8596,21 +8741,21 @@ $("btnSaveSR").onclick = async () => {
       });
 
       if (res && res.ok) {
-        showToast("Â¡Archivo subido exitosamente!", true);
+        showToast("¡Archivo subido exitosamente!", true);
         closeUploadFilesModal();
       } else {
         showToast("Error al subir: " + (res?.error || "Desconocido"), false);
       }
     } catch (err) {
       console.error("Upload Error:", err);
-      showToast("Error de conexiÃ³n al subir el archivo", false);
+      showToast("Error de conexión al subir el archivo", false);
     } finally {
       setBtnBusy("btnDoUpload", false);
       hideOverlay();
     }
   }
 
-  // âœ… VISTA EN VIVO LOGIC
+  // ✅ VISTA EN VIVO LOGIC
   let CHART_SEM = null;
   let CHART_CAD = null;
 
@@ -8626,7 +8771,7 @@ $("btnSaveSR").onclick = async () => {
 
       if (!res.ok) throw new Error(res.error);
 
-      // âœ… Usar los IDs correctos que estÃ¡n en index.html
+      // ✅ Usar los IDs correctos que están en index.html
       if ($("liveViewUnidad")) $("liveViewUnidad").textContent = "Unidad: " + unidad;
       if ($("liveViewMunicipio")) $("liveViewMunicipio").textContent = municipio + " | " + clues;
       
@@ -8656,7 +8801,7 @@ $("btnSaveSR").onclick = async () => {
                <td style="font-family:monospace; font-weight:600;">${escapeHtml(r.lote)}</td>
                <td style="font-weight:700;">${escapeHtml(r.caducidad)}</td>
                <td><span class="statusPill statusPill-${status.key}">${status.label}</span></td>
-               <td>${escapeHtml(r.fecha_recepcion || "â€”")}</td>
+               <td>${escapeHtml(r.fecha_recepcion || "—")}</td>
              </tr>
            `;
         }).join("");
@@ -8693,7 +8838,7 @@ $("btnSaveSR").onclick = async () => {
 
   function getSemaforoStatus(mmmAa) {
     const diff = getMonthsTo(mmmAa);
-    if (diff <= 3) return { key: "pronto", label: "Caducidad PrÃ³xima", color: "#f87171" };
+    if (diff <= 3) return { key: "pronto", label: "Caducidad Próxima", color: "#f87171" };
     if (diff <= 6) return { key: "normal", label: "Permanencia Media", color: "#fbbf24" };
     return { key: "lejana", label: "Vigente", color: "#4ade80" };
   }
@@ -8708,7 +8853,7 @@ $("btnSaveSR").onclick = async () => {
     CHART_SEM = new Chart(ctxSem, {
       type: 'doughnut',
       data: {
-        labels: ['PrÃ³xima', 'Media', 'Vigente'],
+        labels: ['Próxima', 'Media', 'Vigente'],
         datasets: [{
           data: [sem.pronto, sem.normal, sem.lejana],
           backgroundColor: ['#f87171', '#fbbf24', '#4ade80'],
@@ -8752,7 +8897,7 @@ $("btnSaveSR").onclick = async () => {
 
   window.openLiveView = openLiveView;
 
-  // âœ… AUTO-UPPERCASE FOR LOTES
+  // ✅ AUTO-UPPERCASE FOR LOTES
   document.addEventListener("input", e => {
       if (e.target && (e.target.id === "loteTxt" || e.target.classList.contains("sr-lote-select") || e.target.classList.contains("rowLoteInput"))) {
           if (typeof e.target.value === "string") {
@@ -8760,84 +8905,3 @@ $("btnSaveSR").onclick = async () => {
           }
       }
   });
-
-document.addEventListener("DOMContentLoaded", () => {
-    if (IS_INITIALIZED) return;
-    IS_INITIALIZED = true;
-
-    // --- ARRANQUE INTEGRADO ---
-    if (typeof initStaticAssets === 'function') initStaticAssets();
-    if (typeof runBootUiSetup === 'function') runBootUiSetup();
-    if (typeof paintPublicClock === 'function') paintPublicClock();
-    if (typeof startPublicClockTimer === 'function') startPublicClockTimer();
-    if (typeof initWeather === 'function') {
-        initWeather();
-        if (typeof LIVE_TIMERS !== 'undefined' && Array.isArray(LIVE_TIMERS)) {
-            LIVE_TIMERS.push(setInterval(initWeather, 900000));
-        }
-    }
-
-    const saved = loadSession();
-    if (saved && saved.token && saved.user) {
-      TOKEN = saved.token;
-      USER = saved.user;
-      apiCall("whoami").then(r => {
-        if (r && r.ok && r.data) {
-          USER = r.data;
-          TOKEN = saved.token;
-          saveSession(TOKEN, USER);
-          hydrateSessionUi(USER, null, { showSuccessToast: false });
-        } else {
-          TOKEN = null; USER = null; clearSession();
-        }
-      }).catch(() => {
-        TOKEN = null; USER = null; clearSession();
-      });
-    }
-
-    const formLogin = document.getElementById("loginForm");
-    if (formLogin) {
-        formLogin.addEventListener("submit", async (ev) => {
-            ev.preventDefault();
-            const email = document.getElementById("usuario").value.trim();
-            const password = document.getElementById("password").value.trim();
-            if (!email || !password) { showToast("Ingresa credenciales", false, "warn"); return; }
-            showOverlay("Iniciando sesión...", "Conectando");
-            try {
-                const loginResult = await apiCall("login", { usuario: email, password: password });
-                if (!loginResult || !loginResult.ok) { throw new Error((loginResult && loginResult.error) || "Credenciales incorrectas."); }
-                TOKEN = loginResult.data.token;
-                USER = loginResult.data.user;
-                saveSession(TOKEN, USER);
-                try { 
-                  await Promise.all([
-                    loadBatchesForSession(USER),
-                    unitStatus().then(estado => hydrateSessionUi(USER, estado, { showSuccessToast: true }))
-                  ]);
-                } catch(e) { await hydrateSessionUi(USER, null, { showSuccessToast: true }); }
-                if (USER && USER.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(USER.rol)) {
-                    apiCall("silentAdminReminders").catch(()=>{});
-                }
-            } catch (error) { showToast(error.message || "Error al iniciar sesión", false, "bad"); } finally { hideOverlay(); }
-        });
-    }
-
-    const footerYear = document.getElementById("footerYear");
-    if (footerYear) footerYear.textContent = new Date().getFullYear();
-
-    document.querySelectorAll(".nav-item[data-tab]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const tab = btn.getAttribute("data-tab");
-        const panel = tab.replace("tab", "");
-        activateMain(panel);
-      });
-    });
-
-    const logoutBtn = document.getElementById("btnLogout");
-    const navLogout = document.getElementById("navLogout");
-    if (navLogout) {
-        navLogout.addEventListener("click", () => {
-          if (logoutBtn) logoutBtn.click();
-        });
-    }
-});

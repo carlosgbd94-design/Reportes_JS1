@@ -138,13 +138,22 @@ function withLock_(fn) {
       lock.releaseLock();
     }
   };
-}
-
 function api(req) {
   const action = String(req?.action || "").trim();
 
+  if (action === "batch") {
+    const requests = Array.isArray(req.requests) ? req.requests : [];
+    const results = requests.map(r => {
+      try {
+        return api(r);
+      } catch (e) {
+        return { ok: false, error: String(e.message || e) };
+      }
+    });
+    return { ok: true, data: results };
+  }
+
   switch (action) {
-    case "batch": return api_batch(req);
     case "adminGetUnitDetail": return api_adminGetUnitDetail(req);
     case "login": return api_login(req);
     case "whoami": return api_whoami(req);
@@ -200,10 +209,11 @@ function api(req) {
     case "getLotesByMunicipio": return api_getLotesByMunicipio(req);
     case "saveLotes": return api_saveLotes(req);
 
-
     default:
       return { ok: false, error: "Acción inválida: " + action };
   }
+}
+ }
 }
 
 function api_bioGetExportOptions(payload) {
@@ -6402,33 +6412,6 @@ function api_notificationUserCatalog(payload) {
     return { ok:true, data: out };
   } catch (e) {
     return { ok:false, error:String(e.message || e) };
-  }
-}
-
-
-/**
- * Ejecuta múltiples acciones en un solo ciclo para optimizar latencia.
- * @param {Object} payload { actions: [ { action, ...payload }, ... ] }
- */
-function api_batch(payload) {
-  try {
-    const actions = payload?.actions;
-    if (!Array.isArray(actions)) {
-      throw new Error("El payload de batch debe contener un array 'actions'.");
-    }
-
-    const results = actions.map(req => {
-      try {
-        if (!req.token) req.token = payload.token;
-        return api(req);
-      } catch (e) {
-        return { ok: false, error: String(e.message || e) };
-      }
-    });
-
-    return { ok: true, data: results };
-  } catch (e) {
-    return { ok: false, error: String(e.message || e) };
   }
 }
 
