@@ -213,8 +213,6 @@ function api(req) {
       return { ok: false, error: "Acción inválida: " + action };
   }
 }
- }
-}
 
 function api_bioGetExportOptions(payload) {
   try {
