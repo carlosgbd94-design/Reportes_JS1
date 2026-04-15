@@ -144,6 +144,7 @@ function api(req) {
   const action = String(req?.action || "").trim();
 
   switch (action) {
+    case "batch": return api_batch(req);
     case "adminGetUnitDetail": return api_adminGetUnitDetail(req);
     case "login": return api_login(req);
     case "whoami": return api_whoami(req);
@@ -6401,6 +6402,33 @@ function api_notificationUserCatalog(payload) {
     return { ok:true, data: out };
   } catch (e) {
     return { ok:false, error:String(e.message || e) };
+  }
+}
+
+
+/**
+ * Ejecuta múltiples acciones en un solo ciclo para optimizar latencia.
+ * @param {Object} payload { actions: [ { action, ...payload }, ... ] }
+ */
+function api_batch(payload) {
+  try {
+    const actions = payload?.actions;
+    if (!Array.isArray(actions)) {
+      throw new Error("El payload de batch debe contener un array 'actions'.");
+    }
+
+    const results = actions.map(req => {
+      try {
+        if (!req.token) req.token = payload.token;
+        return api(req);
+      } catch (e) {
+        return { ok: false, error: String(e.message || e) };
+      }
+    });
+
+    return { ok: true, data: results };
+  } catch (e) {
+    return { ok: false, error: String(e.message || e) };
   }
 }
 
