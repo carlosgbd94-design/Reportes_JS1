@@ -31,6 +31,17 @@ window.canSeeMunicipio_ = canSeeMunicipio;
 window.debounce = debounce;
 window.LIVE_STATE = store.state.liveState;
 
+const UX_KEYS = {
+    lastUser: "JS1_LAST_USER",
+    existenciaName: "JS1_LAST_EXISTENCIA_NAME",
+    consName: "JS1_LAST_CONS_NAME",
+    bioName: "JS1_LAST_BIO_NAME",
+    pinolName: "JS1_LAST_PINOL_NAME"
+  };
+
+
+
+
 // --- PERSISTENCIA DE SESIÃ“N (localStorage) ---
 function saveSession(token, user) {
   try {
@@ -56,32 +67,7 @@ function clearSession() {
 }
 
 // Redundancia eliminada
-document.addEventListener("DOMContentLoaded", () => {
-    if (IS_INITIALIZED) return;
-    IS_INITIALIZED = true;
 
-    // --- ARRANQUE INTEGRADO ---
-    if (typeof initStaticAssets === 'function') initStaticAssets();
-    if (typeof runBootUiSetup === 'function') runBootUiSetup();
-    if (typeof paintPublicClock === 'function') paintPublicClock();
-    if (typeof startPublicClockTimer === 'function') startPublicClockTimer();
-    if (typeof initWeather === 'function') {
-        initWeather();
-        if (typeof LIVE_TIMERS !== 'undefined' && Array.isArray(LIVE_TIMERS)) {
-            LIVE_TIMERS.push(setInterval(initWeather, 900000));
-        }
-    }
-
-    const saved = loadSession();
-    if (saved && saved.token && saved.user) {
-      TOKEN = saved.token;
-      USER = saved.user;
-      apiCall("whoami").then(r => {
-        if (r && r.ok && r.data) {
-          USER = r.data;
-          TOKEN = saved.token;
-          saveSession(TOKEN, USER);
-          hydrateSessionUi(USER, null, { showSuccessToast: false });
         } else {
           TOKEN = null; USER = null; clearSession();
         }
@@ -133,11 +119,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-const overlay = overlay;
-const overlayMsg = overlayMsg;
-const toast = toast;
-const toastMsg = toastMsg;
-const overlayTitle = overlayTitle;
+const overlay = $("overlay");
+const overlayMsg = $("overlayMsg");
+const toast = $("toast");
+const toastMsg = $("toastMsg");
+const overlayTitle = $("overlayTitle");
   let TOAST_TIMER = null;
 
   function showOverlay(msg = "Cargandoâ€¦", title = "Procesando") {
@@ -2301,13 +2287,7 @@ const overlayTitle = overlayTitle;
 
   let FORCE_PASSWORD_CHANGE = false;
 
-  const UX_KEYS = {
-    lastUser: "JS1_LAST_USER",
-    existenciaName: "JS1_LAST_EXISTENCIA_NAME",
-    consName: "JS1_LAST_CONS_NAME",
-    bioName: "JS1_LAST_BIO_NAME",
-    pinolName: "JS1_LAST_PINOL_NAME"
-  };
+  
 
   function saveUxValue(key, value) {
     try {
@@ -4157,24 +4137,7 @@ window.handleSRLoteChange = function(selectEl) {
   }
 
   // Redundancia eliminada
-document.addEventListener("DOMContentLoaded", () => {
-    if (IS_INITIALIZED) return;
-    IS_INITIALIZED = true;
-    initAppShell();
-    paintPublicClock();
-    startPublicClockTimer();
 
-    // Scroll-aware sticky headers for tables
-    document.addEventListener("scroll", (e) => {
-      const wrap = e.target;
-      if (wrap && wrap.classList && wrap.classList.contains("tableWrap")) {
-        const isScrolled = wrap.scrollTop > 2;
-        if (wrap.classList.contains("is-scrolled") !== isScrolled) {
-          wrap.classList.toggle("is-scrolled", isScrolled);
-        }
-      }
-    }, true); // Capture phase required for scroll events
-  });
 
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
@@ -8798,9 +8761,83 @@ $("btnSaveSR").onclick = async () => {
       }
   });
 
+document.addEventListener("DOMContentLoaded", () => {
+    if (IS_INITIALIZED) return;
+    IS_INITIALIZED = true;
 
+    // --- ARRANQUE INTEGRADO ---
+    if (typeof initStaticAssets === 'function') initStaticAssets();
+    if (typeof runBootUiSetup === 'function') runBootUiSetup();
+    if (typeof paintPublicClock === 'function') paintPublicClock();
+    if (typeof startPublicClockTimer === 'function') startPublicClockTimer();
+    if (typeof initWeather === 'function') {
+        initWeather();
+        if (typeof LIVE_TIMERS !== 'undefined' && Array.isArray(LIVE_TIMERS)) {
+            LIVE_TIMERS.push(setInterval(initWeather, 900000));
+        }
+    }
 
+    const saved = loadSession();
+    if (saved && saved.token && saved.user) {
+      TOKEN = saved.token;
+      USER = saved.user;
+      apiCall("whoami").then(r => {
+        if (r && r.ok && r.data) {
+          USER = r.data;
+          TOKEN = saved.token;
+          saveSession(TOKEN, USER);
+          hydrateSessionUi(USER, null, { showSuccessToast: false });
+        } else {
+          TOKEN = null; USER = null; clearSession();
+        }
+      }).catch(() => {
+        TOKEN = null; USER = null; clearSession();
+      });
+    }
 
+    const formLogin = document.getElementById("loginForm");
+    if (formLogin) {
+        formLogin.addEventListener("submit", async (ev) => {
+            ev.preventDefault();
+            const email = document.getElementById("usuario").value.trim();
+            const password = document.getElementById("password").value.trim();
+            if (!email || !password) { showToast("Ingresa credenciales", false, "warn"); return; }
+            showOverlay("Iniciando sesión...", "Conectando");
+            try {
+                const loginResult = await apiCall("login", { usuario: email, password: password });
+                if (!loginResult || !loginResult.ok) { throw new Error((loginResult && loginResult.error) || "Credenciales incorrectas."); }
+                TOKEN = loginResult.data.token;
+                USER = loginResult.data.user;
+                saveSession(TOKEN, USER);
+                try { 
+                  await Promise.all([
+                    loadBatchesForSession(USER),
+                    unitStatus().then(estado => hydrateSessionUi(USER, estado, { showSuccessToast: true }))
+                  ]);
+                } catch(e) { await hydrateSessionUi(USER, null, { showSuccessToast: true }); }
+                if (USER && USER.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(USER.rol)) {
+                    apiCall("silentAdminReminders").catch(()=>{});
+                }
+            } catch (error) { showToast(error.message || "Error al iniciar sesión", false, "bad"); } finally { hideOverlay(); }
+        });
+    }
 
+    const footerYear = document.getElementById("footerYear");
+    if (footerYear) footerYear.textContent = new Date().getFullYear();
 
+    document.querySelectorAll(".nav-item[data-tab]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const tab = btn.getAttribute("data-tab");
+        const panel = tab.replace("tab", "");
+        activateMain(panel);
+      });
+    });
 
+    const logoutBtn = document.getElementById("btnLogout");
+    const navLogout = document.getElementById("navLogout");
+    if (navLogout) {
+        navLogout.addEventListener("click", () => {
+          if (logoutBtn) logoutBtn.click();
+        });
+    }
+});
