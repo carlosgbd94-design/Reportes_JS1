@@ -2,6 +2,25 @@
 import { store } from './store.js';
 import { $, normalizeTextKey, fixUtf8Text, canSeeMunicipio, debounce } from './utils.js';
 
+// Declaraciones de Módulo con Sincronización Global (Legacy Bridge)
+// Esto asegura que tanto el módulo como scripts externos vean el mismo estado.
+let _TOKEN = localStorage.getItem("JS1_TOKEN") || null;
+let _USER = null;
+let _BIO_ENABLED = false;
+let _CON_ENABLED = false;
+let _UNIT_BATCHES = [];
+let _BATCH_CATALOG = [];
+let _CONFIG_BIO = [];
+
+Object.defineProperty(window, 'TOKEN', { get: () => _TOKEN, set: (v) => _TOKEN = v, configurable: true });
+Object.defineProperty(window, 'USER', { get: () => _USER, set: (v) => _USER = v, configurable: true });
+Object.defineProperty(window, 'BIO_IS_ENABLED', { get: () => _BIO_ENABLED, set: (v) => _BIO_ENABLED = v, configurable: true });
+Object.defineProperty(window, 'CON_IS_ENABLED', { get: () => _CON_ENABLED, set: (v) => _CON_ENABLED = v, configurable: true });
+Object.defineProperty(window, 'UNIT_BATCHES', { get: () => _UNIT_BATCHES, set: (v) => _UNIT_BATCHES = v, configurable: true });
+Object.defineProperty(window, 'BATCH_CATALOG', { get: () => _BATCH_CATALOG, set: (v) => _BATCH_CATALOG = v, configurable: true });
+Object.defineProperty(window, 'CONFIG_BIOLOGICOS_CATALOG', { get: () => _CONFIG_BIO, set: (v) => _CONFIG_BIO = v, configurable: true });
+
+// Exponer utilidades al módulo y a window
 window.apiCall = apiCall;
 window.store = store;
 window.$ = $;
@@ -10,23 +29,6 @@ window.fixUtf8Text_ = fixUtf8Text;
 window.canSeeMunicipio_ = canSeeMunicipio;
 window.debounce = debounce;
 window.LIVE_STATE = store.state.liveState;
-// ============================================
-// JS1 REPORTES â€” BACKEND: GOOGLE APPS SCRIPT
-// ============================================
-// Toda la lÃ³gica de datos pasa por doPost() de GAS.
-// Firebase ha sido completamente eliminado.
-
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycby3en_qswj1PmE6o80nypsDM6Gw4kueRUimNSgMKJxzDojRFCsXBjFZngR9UpnkYL0n/exec";
-
-// Estado de sesión y UI (Sincronizado con window)
-window.BIO_IS_ENABLED = false;
-window.CON_IS_ENABLED = false;
-window.USER = null;
-window.TOKEN = localStorage.getItem("JS1_TOKEN") || null;
-window.UNIT_BATCHES = [];
-window.BATCH_CATALOG = [];
-window.CONFIG_BIOLOGICOS_CATALOG = [];
-window.LIVE_STATE = window.store.state.liveState;
 
 // --- PERSISTENCIA DE SESIÃ“N (localStorage) ---
 function saveSession(token, user) {
@@ -147,7 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 // --------------------------------
-  const $ = (id) => document.getElementById(id);
+  // $ ya declarado vía import
   const overlay = $("overlay");
   const overlayMsg = $("overlayMsg");
   const toast = $("toast");
@@ -262,44 +264,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }, 3600);
   }  /** ===== UTILS PORTED FROM BACKEND ===== **/
-  function normalizeTextKey_(v) {
-    return String(v ?? "")
-      .trim()
-      .toUpperCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/\s+/g, " ");
-  }
-
-  function fixUtf8Text_(v) {
-    let s = String(v ?? "");
-    if (!s) return s;
-    s = s.trim();
-    const fixes = {
-      "QUERÃƒâ€°TARO": "QUERÃ‰TARO", "QUERETARO": "QUERÃ‰TARO",
-      "EL MARQUÃƒâ€°S": "EL MARQUÃ‰S", "EL MARQUES": "EL MARQUÃ‰S",
-      "BIOLÃƒâ€œGICO": "BIOLÃ“GICO", "BIOLÃƒâ€œGICOS": "BIOLÃ“GICOS"
-    };
-    if (fixes[s]) return fixes[s];
-    return s
-      .replace(/Ãƒ /g, "Ã").replace(/Ãƒâ€°/g, "Ã‰").replace(/Ãƒ /g, "Ã")
-      .replace(/Ãƒâ€œ/g, "Ã“").replace(/ÃƒÅ¡/g, "Ãš").replace(/Ãƒâ€˜/g, "Ã‘")
-      .replace(/ÃƒÂ¡/g, "Ã¡").replace(/ÃƒÂ©/g, "Ã©").replace(/ÃƒÂ­/g, "Ã­")
-      .replace(/ÃƒÂ³/g, "Ã³").replace(/ÃƒÂº/g, "Ãº").replace(/ÃƒÂ±/g, "Ã±")
-      .replace(/Ã‚/g, "");
-  }
-
-  function canSeeMunicipio_(user, municipio) {
-    if (!user) return false;
-    if (user.rol === "ADMIN" || user.rol === "JURISDICCIONAL") return true;
-    const allowed = Array.isArray(user.municipiosAllowed)
-      ? user.municipiosAllowed.map(x => normalizeTextKey_(x)).filter(Boolean)
-      : [];
-    if (allowed.includes("*")) return true;
-    const m = normalizeTextKey_(fixUtf8Text_(municipio));
-    if (!m) return false;
-    return allowed.includes(m);
-  }
+  // Redundante: normalizeTextKey_, fixUtf8Text_, canSeeMunicipio_ ya importados
 
 
   function hideToastNow() {
@@ -353,16 +318,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return !!(btn && btn.dataset.busy === "1");
   }
 
-  function debounce(fn, wait = 220) {
-    let timer = null;
-
-    return function (...args) {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        fn.apply(this, args);
-      }, wait);
-    };
-  }
+  // Redundante: debounce ya importado
 
   function toggleEl(id, show, displayWhenShown = "") {
     const el = $(id);
@@ -8859,6 +8815,8 @@ $("btnSaveSR").onclick = async () => {
           }
       }
   });
+
+
 
 
 
