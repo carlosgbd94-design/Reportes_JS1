@@ -1907,6 +1907,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  async function _dispatchBatch(requests) {
+    const res = await apiCall("batch", { requests });
+    if (res.error && res.error.includes("Acción inválida: batch")) {
+      return Promise.all(requests.map(r => apiCall(r.action, r)));
+    }
+    return res.data;
+  }
+
   async function loadNotifUnitCatalog(forceRefresh = false) {
     const cacheKey = buildCacheKey("UNIT_CATALOG", "NOTIFS");
     const cached = readCache(cacheKey, CACHE_TTL.UNIT_CATALOG);
@@ -2858,10 +2866,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const res = await _rawApiCall(batchBody);
+      
+      // 🛡️ DEGRADACIÓN GRÁCIL: Si el servidor no soporta batching, reintentamos uno por uno
+      if (res && !res.ok && String(res.error || "").includes("Acción inválida: batch")) {
+        console.warn("⚠️ Servidor sin soporte Batch (Versión vieja). Reintentando peticiones individuales...");
+        // Reintentamos cada una de forma directa sin batching
+        queue.forEach(q => {
+          _rawApiCall(q.body).then(q.resolve).catch(q.reject);
+        });
+        return;
+      }
+
       if (res.ok && Array.isArray(res.data)) {
-        queue.forEach((q, i) => q.resolve(res.data[i] || { ok: false, error: "Sin respuesta" }));
+        queue.forEach((q, i) => q.resolve(res.data[i] || { ok: false, error: "Sin respuesta interna" }));
       } else {
-        queue.forEach(q => q.resolve(res)); // Error general
+        queue.forEach(q => q.resolve(res)); // Error de dispatcher
       }
     } catch (e) {
       queue.forEach(q => q.reject(e));

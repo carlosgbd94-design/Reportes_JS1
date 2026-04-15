@@ -141,76 +141,62 @@ function withLock_(fn) {
 }
 
 function api(req) {
-  const action = String(req?.action || "").trim();
+  const action = String(req?.action || "").trim().toLowerCase();
 
   switch (action) {
     case "batch": {
       const requests = Array.isArray(req.requests) ? req.requests : [];
-      return {
-        ok: true,
-        data: requests.map(r => {
-          try { return api(r); }
-          catch (e) { return { ok: false, error: String(e.message || e) }; }
-        })
-      };
+      const results = requests.map(r => {
+        try { return api(r); }
+        catch (e) { return { ok: false, error: String(e.message || e) }; }
+      });
+      return { ok: true, data: results, _ver: "1.1b" };
     }
-    case "adminGetUnitDetail": return api_adminGetUnitDetail(req);
+    case "admingetunitdetail": return api_adminGetUnitDetail(req);
     case "login": return api_login(req);
     case "whoami": return api_whoami(req);
-    case "unitStatus": return api_unitStatus(req);
-
-    case "saveSR": return withLock_(api_saveSR)(req);
-    case "saveConsumibles": return withLock_(api_saveConsumibles)(req);
-
-    case "getTodayReports": return api_getTodayReports(req);
-    case "updateSR": return api_updateSR(req);
-    case "updateConsumibles": return api_updateConsumibles(req);
-
-    case "adminCaptureOverview": return api_adminCaptureOverview(req);
-
-    case "adminGetConsumiblesOverride": return api_adminGetConsumiblesOverride(req);
-    case "adminSetConsumiblesOverride": return api_adminSetConsumiblesOverride(req);
-
-    case "bioGetForm": return api_bioGetForm(req);
-    case "saveBio": return withLock_(api_saveBio)(req);
-    case "bioExportMatrix": return api_bioExportMatrix(req);
-    case "srExportMatrix": return api_srExportMatrix(req);
-    case "bioGetDatesForMonth": return api_bioGetDatesForMonth(req);
-
+    case "unitstatus": return api_unitStatus(req);
+    case "savesr": return withLock_(api_saveSR)(req);
+    case "saveconsumibles": return withLock_(api_saveConsumibles)(req);
+    case "gettodayreports": return api_getTodayReports(req);
+    case "updatesr": return api_updateSR(req);
+    case "updateconsumibles": return api_updateConsumibles(req);
+    case "admincaptureoverview": return api_adminCaptureOverview(req);
+    case "admingetconsumiblesoverride": return api_adminGetConsumiblesOverride(req);
+    case "adminsetconsumiblesoverride": return api_adminSetConsumiblesOverride(req);
+    case "biogetform": return api_bioGetForm(req);
+    case "savebio": return withLock_(api_saveBio)(req);
+    case "bioexportmatrix": return api_bioExportMatrix(req);
+    case "srexportmatrix": return api_srExportMatrix(req);
+    case "biogetdatesformonth": return api_bioGetDatesForMonth(req);
     case "export": return api_export(req);
-
-    case "adminListUsers": return api_adminListUsers(req);
-    case "adminCreateUser": return api_adminCreateUser(req);
-    case "adminResetPassword": return api_adminResetPassword(req);
-    case "adminSetActive": return api_adminSetActive(req);
-
-    case "savePinol": return withLock_(api_savePinol)(req);
-    case "listPinol": return api_listPinol(req);
-    case "markPinolDelivered": return api_markPinolDelivered(req);
-    case "sendNotification": return api_sendNotification(req);
-    case "listMyNotifications": return api_listMyNotifications(req);
-    case "markNotificationRead": return api_markNotificationRead(req);
-    case "deleteNotification": return api_deleteNotification(req);
-    case "confirmPinolReceipt": return api_confirmPinolReceipt(req);
-
-    case "bioGetExportOptions": return api_bioGetExportOptions(req);
-
-    case "changeMyPassword": return api_changeMyPassword(req);
-    case "saveMyEmail": return api_saveMyEmail(req);
-
-    case "requestPasswordReset": return api_requestPasswordReset(req);
-    case "resetPasswordWithToken": return api_resetPasswordWithToken(req);
-
-    case "historyMetrics": return api_historyMetrics(req);
-    case "getEditLog": return api_getEditLog(req);
-    case "unitCatalog": return api_unitCatalog(req);
-    case "notificationUserCatalog": return api_notificationUserCatalog(req);
-    case "uploadFile": return api_uploadFile(req);
-    case "getLotesByMunicipio": return api_getLotesByMunicipio(req);
-    case "saveLotes": return api_saveLotes(req);
+    case "adminlistusers": return api_adminListUsers(req);
+    case "admincreateuser": return api_adminCreateUser(req);
+    case "adminresetpassword": return api_adminResetPassword(req);
+    case "adminsetactive": return api_adminSetActive(req);
+    case "savepinol": return withLock_(api_savePinol)(req);
+    case "listpinol": return api_listPinol(req);
+    case "markpinoldelivered": return api_markPinolDelivered(req);
+    case "sendnotification": return api_sendNotification(req);
+    case "listmynotifications": return api_listMyNotifications(req);
+    case "marknotificationread": return api_markNotificationRead(req);
+    case "deletenotification": return api_deleteNotification(req);
+    case "confirmpinolreceipt": return api_confirmPinolReceipt(req);
+    case "biogetexportoptions": return api_bioGetExportOptions(req);
+    case "changemypassword": return api_changeMyPassword(req);
+    case "savemyemail": return api_saveMyEmail(req);
+    case "requestpasswordreset": return api_requestPasswordReset(req);
+    case "resetpasswordwithtoken": return api_resetPasswordWithToken(req);
+    case "historymetrics": return api_historyMetrics(req);
+    case "geteditlog": return api_getEditLog(req);
+    case "unitcatalog": return api_unitCatalog(req);
+    case "notificationusercatalog": return api_notificationUserCatalog(req);
+    case "uploadfile": return api_uploadFile(req);
+    case "getlotesbymunicipio": return api_getLotesByMunicipio(req);
+    case "savelotes": return api_saveLotes(req);
 
     default:
-      return { ok: false, error: "Acción inválida: " + action };
+      return { ok: false, error: "Acción inválida [" + action + "]" };
   }
 }
 
