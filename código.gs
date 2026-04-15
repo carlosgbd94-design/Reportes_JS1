@@ -138,6 +138,8 @@ function withLock_(fn) {
       lock.releaseLock();
     }
   };
+}
+
 function api(req) {
   const action = String(req?.action || "").trim();
 
