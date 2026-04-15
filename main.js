@@ -74,30 +74,30 @@ function clearSession() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    // 🛡️ RECUPERACIÓN DE SESIÓN DESDE localStorage
-    const saved = loadSession();
-    if (saved && saved.token && saved.user) {
-      TOKEN = saved.token;
-      USER = saved.user;
-      // Validar que el token siga activo con el backend
-      apiCall("whoami").then(r => {
-        if (r && r.ok && r.data) {
-          USER = r.data;
-          TOKEN = saved.token;
-          saveSession(TOKEN, USER);
-          hydrateSessionUi(USER, null, { showSuccessToast: false });
-        } else {
-          // Token expirado o inválido
-          TOKEN = null;
-          USER = null;
-          clearSession();
+    // 🛡️ ARRANQUE ÚNICO (Expert Implementation)
+    (async () => {
+        showOverlay("Cargando JS1 Reportes…", "Inicializando");
+        try {
+            // whoami verifica la sesión y recupera USER/TOKEN automáticamente
+            const u = await whoami();
+            if (u) {
+                // Una sola llamada de hidratación que agrupará todo en el Batcher
+                await hydrateSessionUi(u, null, {
+                    showSuccessToast: false,
+                    mustChangePassword: !!u.mustChange
+                });
+            } else {
+                setLoggedOutUI();
+            }
+        } catch (e) {
+            console.error("Fallo en arranque unificado:", e);
+            setLoggedOutUI();
+        } finally {
+            hideOverlay();
+            startFactsRotation();
+            initWeather();
         }
-      }).catch(() => {
-        TOKEN = null;
-        USER = null;
-        clearSession();
-      });
-    }
+    })();
 
     const formLogin = document.getElementById("loginForm");
     if (formLogin) {
@@ -7720,27 +7720,7 @@ $("btnSaveSR").onclick = async () => {
     }
   });
 
-  (async function init() {
-
-    showOverlay("Cargando plataforma…");
-    startFactsRotation();
-    try {
-      const u = await whoami();
-      if (u) {
-        const st = await unitStatus();
-        await hydrateSessionUi(u, st, {
-          showSuccessToast: true,
-          mustChangePassword: !!u.mustChange
-        });
-      } else {
-        setLoggedOutUI();
-      }
-    } catch (e) {
-      setLoggedOutUI();
-    } finally {
-      hideOverlay();
-    }
-  })();
+  // Arranque unificado activo.
 
   async function getEditLog(fecha, tipo) {
     if (!TOKEN) return [];

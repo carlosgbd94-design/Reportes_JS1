@@ -143,19 +143,17 @@ function withLock_(fn) {
 function api(req) {
   const action = String(req?.action || "").trim();
 
-  if (action === "batch") {
-    const requests = Array.isArray(req.requests) ? req.requests : [];
-    const results = requests.map(r => {
-      try {
-        return api(r);
-      } catch (e) {
-        return { ok: false, error: String(e.message || e) };
-      }
-    });
-    return { ok: true, data: results };
-  }
-
   switch (action) {
+    case "batch": {
+      const requests = Array.isArray(req.requests) ? req.requests : [];
+      return {
+        ok: true,
+        data: requests.map(r => {
+          try { return api(r); }
+          catch (e) { return { ok: false, error: String(e.message || e) }; }
+        })
+      };
+    }
     case "adminGetUnitDetail": return api_adminGetUnitDetail(req);
     case "login": return api_login(req);
     case "whoami": return api_whoami(req);
