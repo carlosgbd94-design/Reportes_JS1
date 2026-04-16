@@ -2868,8 +2868,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const res = await _rawApiCall(batchBody);
       
       // 🛡️ DEGRADACIÓN GRÁCIL: Si el servidor no soporta batching, reintentamos uno por uno
-      if (res && !res.ok && String(res.error || "").includes("Acción inválida: batch")) {
-        console.warn("⚠️ Servidor sin soporte Batch (Versión vieja). Reintentando peticiones individuales...");
+      const err = String(res?.error || "");
+      if (res && !res.ok && (err.includes("Acción inválida: batch") || err.includes("batch] @v2"))) {
+        console.warn("⚠️ Servidor en transición (Modo Batch no activo). Reintentando individualmente…");
         // Reintentamos cada una de forma directa sin batching
         queue.forEach(q => {
           _rawApiCall(q.body).then(q.resolve).catch(q.reject);

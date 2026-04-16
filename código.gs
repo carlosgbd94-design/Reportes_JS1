@@ -140,17 +140,17 @@ function withLock_(fn) {
   };
 }
 
-function api(req) {
+function js1_api_v2_central(req) {
   const action = String(req?.action || "").trim().toLowerCase();
 
   switch (action) {
     case "batch": {
       const requests = Array.isArray(req.requests) ? req.requests : [];
       const results = requests.map(r => {
-        try { return api(r); }
+        try { return js1_api_v2_central(r); }
         catch (e) { return { ok: false, error: String(e.message || e) }; }
       });
-      return { ok: true, data: results, _ver: "1.1b" };
+      return { ok: true, data: results, _ver: "v2-stable" };
     }
     case "admingetunitdetail": return api_adminGetUnitDetail(req);
     case "login": return api_login(req);
@@ -196,7 +196,7 @@ function api(req) {
     case "savelotes": return api_saveLotes(req);
 
     default:
-      return { ok: false, error: "Acción inválida [" + action + "]" };
+      return { ok: false, error: "Acción inválida [" + action + "] @v2" };
   }
 }
 
@@ -6405,8 +6405,8 @@ function doPost(e) {
   // 1. Recibir los datos enviados desde Vercel
   const payloadData = JSON.parse(e.postData.contents);
   
-  // 2. Mandar los datos a tu función api() central
-  const resultado = api(payloadData);
+  // 2. Mandar los datos a tu función api() central blindada
+  const resultado = js1_api_v2_central(payloadData);
   
   // 3. Devolver la respuesta a Vercel en formato JSON
   return ContentService.createTextOutput(JSON.stringify(resultado))
