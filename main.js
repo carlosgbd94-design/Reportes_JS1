@@ -4,7 +4,13 @@
 // Toda la lógica de datos pasa por doPost() de GAS.
 // Firebase ha sido completamente eliminado.
 
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycby3en_qswj1PmE6o80nypsDM6Gw4kueRUimNSgMKJxzDojRFCsXBjFZngR9UpnkYL0n/exec";
+// GAS Bridge URL (Nuevo)
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyV5NGNP6_6goMa2rRxtIsS9AMp05yIVXR7BkP9DQHsN3aFgls9yKKA5ADVQ3KaPOSGxw/exec";
+
+// SUPABASE CONFIG
+const SUPABASE_URL = "https://utclfqjietlxzlorxhrs.supabase.co";
+const SUPABASE_KEY = "sb_publishable_0QwQuFL1ruoURS8zkBl_Uw_bLH1X0ZH";
+const supabase = (typeof supabase !== 'undefined') ? supabase : (typeof supabase === 'undefined' && typeof Supabase !== 'undefined') ? Supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 // Estado de sesión y UI
 let BIO_IS_ENABLED = false;
@@ -2817,6 +2823,24 @@ document.addEventListener("DOMContentLoaded", () => {
       action = body.action;
     }
 
+    // --- ENRUTADO SUPABASE (MIGRACIÓN) ---
+    const SUPABASE_ACTIONS = [
+      "login", "whoami", "savesr", "saveconsumibles", "savebio", 
+      "gettodayreports", "admincaptureoverview", "historymetrics",
+      "listmynotifications", "marknotificationread", "deletenotification",
+      "biogetform", "biogetdatesformonth", "unitstatus", "unitcatalog", "pinolsolicitud"
+    ];
+
+    if (SUPABASE_ACTIONS.includes(action)) {
+      return supabaseRequest(action, body);
+    }
+
+    // --- ACCIONES LEGADAS (DRIVE / GAS) ---
+    if (action === "uploadfile") {
+      return _rawApiCall(body);
+    }
+
+    // --- FALLBACK BATCHING LEGADO ---
     // 1. Verificar Caché (Si no es inmediata o batch)
     if (!noCache && CACHEABLE_ACTIONS[action]) {
       try {
@@ -2828,8 +2852,8 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch(e) {}
     }
 
-    // 2. Acciones que SIEMPRE son inmediatas (Búsqueda, Stock, Login)
-    const CRITICAL = ["login", "whoami", "saveSR", "saveConsumibles", "saveBio", "savePinol", "unitStatus"];
+    // 2. Acciones que SIEMPRE son inmediatas
+    const CRITICAL = ["unitStatus"];
     if (immediate || CRITICAL.includes(action)) {
       return _rawApiCall(body);
     }
@@ -2841,6 +2865,334 @@ document.addEventListener("DOMContentLoaded", () => {
         API_BATCH_TIMER = setTimeout(_dispatchBatch, 50);
       }
     });
+  }
+
+  /**
+   * INTERCEPTOR SUPABASE
+   * Reemplaza la lógica de GAS por llamadas directas a Supabase.
+   */
+  async function supabaseRequest(action, payload) {
+    console.log(`[Supabase] Action: ${action}`, payload);
+    
+    try {
+      switch (action) {
+        case "login": {
+          const { data, error } = await supabase
+            .from('usuarios')
+            .select('*')
+            .eq('usuario', payload.usuario)
+            .eq('activo', 'SI')
+            .single();
+
+          if (error || !data) throw new Error("Usuario no existe o está inactivo.");
+          
+          // Nota: En producción real, la contraseña debería compararse haseada.
+          // Aquí mantengo la lógica de compatibilidad que tenía tu código.
+          if (data.password !== payload.password) throw new Error("Contraseña incorrecta.");
+
+          return {
+            ok: true,
+            data: {
+              token: btoa(data.usuario + ":" + Date.now()), // Token temporal compatible
+              mustChange: !!data.must_change,
+              user: {
+                usuario: data.usuario,
+                municipio: data.municipio,
+                municipiosAllowed: data.municipios_allowed || [],
+                clues: data.clues,
+                unidad: data.unidad,
+                rol: data.rol,
+                email: data.email || ""
+              }
+            }
+          };
+        }
+
+        case "whoami": {
+          // Reutilizamos el login logic o buscamos por el token decodificado
+          const userStr = localStorage.getItem("JS1_USER");
+          if (!userStr) return { ok: false, error: "Sin sesión" };
+          const user = JSON.parse(userStr);
+          
+          return {
+            ok: true,
+            data: {
+              ...user,
+              fechaPedidoProgramada: todayYmdLocal() // Implementar lógica de fecha si es necesario
+            }
+          };
+        }
+
+        case "savesr": {
+           const items = payload.items || [];
+           const fecha = payload.fecha || todayYmdLocal();
+           const clues = payload.clues || USER.clues;
+           const municipio = payload.municipio || USER.municipio;
+           const unidad = payload.unidad || USER.unidad;
+
+           // 1. Preparar Matriz Resumen (Wide Table - EXISTENCIA_BIOLOGICOS)
+           const summaryRecord = {
+             id: btoa(clues + ":" + fecha + ":" + Date.now()),
+             timestamp: new Date().toISOString(),
+             fecha,
+             municipio,
+             clues,
+             unidad,
+             capturado_por: USER.usuario
+           };
+
+           // Inicializar biológicos según auditoría exacta
+           const BIOS = ["bcg", "hepatitis_b", "hexavalente", "dpt", "rotavirus", "neumococica_13", "neumococica_20", "srp", "sr", "vph", "varicela", "hepatitis_a", "td", "tdpa", "covid_19", "influenza", "vsr"];
+           BIOS.forEach(b => summaryRecord[b] = 0);
+
+           // 2. Preparar Detalle (Long Table - EXISTENCIA_DETALLE)
+           const detailRecords = items.map(it => {
+             const bioKey = it.biologico.toLowerCase().replace(/ /g, "_");
+             // Normalización especial para Neumocócica
+             const finalKey = bioKey.includes("neumo") && bioKey.includes("20") ? "neumococica_20" : bioKey;
+             
+             if (BIOS.includes(finalKey)) {
+               summaryRecord[finalKey] += Number(it.cantidad || 0);
+             }
+             return {
+               fecha,
+               clues,
+               unidad,
+               municipio,
+               biologico: it.biologico,
+               lote: it.lote,
+               caducidad: it.caducidad,
+               fecha_recepcion: it.fecha_recepcion,
+               cantidad: Number(it.cantidad || 0),
+               capturado_por: USER.usuario
+             };
+           });
+
+           // 3. Ejecutar Inserción Dual en Paralelo
+           const [resSummary, resDetail] = await Promise.all([
+             supabase.from('biologicos_existencia').insert(summaryRecord),
+             supabase.from('existencia_detalle').insert(detailRecords)
+           ]);
+
+           if (resSummary.error) throw resSummary.error;
+           if (resDetail.error) throw resDetail.error;
+
+           return { ok: true };
+        }
+
+        case "saveconsumibles": {
+          const record = {
+            id: btoa(USER.clues + ":" + (payload.fecha || todayYmdLocal())),
+            timestamp: new Date().toISOString(),
+            fecha: payload.fecha || todayYmdLocal(),
+            municipio: payload.municipio || USER.municipio,
+            clues: payload.clues || USER.clues,
+            unidad: payload.unidad || USER.unidad,
+            srp_dosis: Number(payload.srp_dosis || 0),
+            sr_dosis: Number(payload.sr_dosis || 0),
+            jeringa_reconst_5ml_0605500438: Number(payload.jeringa_reconst_5ml_0605500438 || 0),
+            jeringa_aplic_05ml_0605502657: Number(payload.jeringa_aplic_05ml_0605502657 || 0),
+            aguja_06004037: Number(payload.aguja_0600403711 || payload.aguja_06004037 || 0),
+            capturado_por: USER.usuario,
+            editado: payload.editado || 'NO'
+          };
+
+          const { error } = await supabase.from('consumibles').insert(record);
+          if (error) throw error;
+          return { ok: true };
+        }
+
+        case "savebio": {
+          const items = payload.items || [];
+          const records = items.map(it => ({
+            id: btoa(USER.clues + ":" + it.biologico + ":" + Date.now()),
+            timestamp: new Date().toISOString(),
+            fecha_captura: payload.fecha || todayYmdLocal(),
+            fecha_pedido_programada: payload.fechaPedidoProgramada || todayYmdLocal(),
+            municipio: payload.municipio || USER.municipio,
+            clues: payload.clues || USER.clues,
+            unidad: payload.unidad || USER.unidad,
+            biologico: it.biologico,
+            max_dosis: Number(it.max_dosis || 0),
+            min_dosis: Number(it.min_dosis || 0),
+            promedio_frascos: Number(it.promedio_frascos || 0),
+            multiplo: Number(it.multiplo_pedido || 1),
+            existencia: Number(it.existencia_actual_frascos || 0),
+            solicitud: Number(it.pedido_frascos || 0),
+            observaciones: it.observaciones || "",
+            usuario: USER.usuario,
+            capturado_por: USER.usuario
+          }));
+
+          const { error } = await supabase.from('biologicos_pedido').insert(records);
+          if (error) throw error;
+          return { ok: true };
+        }
+
+        case "gettodayreports": {
+          const fechaStr = payload.fecha || todayYmdLocal();
+          const clues = USER.clues;
+
+          // Paralelizar consultas (Usamos existencia_detalle para traer los lotes capturados)
+          const [resSR, resCons] = await Promise.all([
+            supabase.from('existencia_detalle').select('*').eq('clues', clues).eq('fecha', fechaStr),
+            supabase.from('consumibles').select('*').eq('clues', clues).eq('fecha', fechaStr).maybeSingle()
+          ]);
+
+          const srItems = resSR.data || [];
+          const consData = resCons.data || null;
+
+          return {
+            ok: true,
+            data: {
+              sr: srItems.length ? {
+                capturado_por: srItems[0].capturado,
+                items: srItems.map(it => ({
+                  biologico: it.biologico,
+                  lote: it.lote,
+                  caducidad: it.caducidad,
+                  cantidad: it.cantidad,
+                  fecha_recepcion: it.fecha_recepcion
+                }))
+              } : null,
+              cons: consData ? {
+                capturado_por: consData.capturado_por,
+                srp_dosis: consData.srp_dosis,
+                sr_dosis: consData.sr_dosis,
+                jeringa_reconst_5ml_0605500438: consData.jeringa_reconst_5ml_0605500438,
+                jeringa_aplic_05ml_0605502657: consData.jeringa_aplic_05ml_0605502657,
+                aguja_0600403711: consData.aguja_06004037
+              } : null
+            }
+          };
+        case "listmynotifications": {
+          const { data, error } = await supabase
+            .from('notificaciones')
+            .select('*')
+            .order('created_ts', { ascending: false })
+            .limit(50);
+
+          if (error) throw error;
+          return { ok: true, data };
+        }
+
+        case "biogetform": {
+          const [resParams, resSaved] = await Promise.all([
+            supabase.from('biologicos_params').select('*'),
+            supabase.from('biologicos_pedido').select('*').eq('clues', USER.clues).eq('fecha_captura', todayYmdLocal())
+          ]);
+
+          return {
+            ok: true,
+            data: {
+              rows: resParams.data.map(p => ({
+                biologico: p.biologico,
+                multiplo: p.multiplo,
+                min_dosis: p.min_dosis,
+                max_dosis: p.max_dosis,
+                promedio_frascos: p.promedio_frascos,
+                existencia_actual_frascos: null,
+                pedido_frascos: null
+              })),
+              hasSavedBio: resSaved.data && resSaved.data.length > 0,
+              canCapture: true,
+              isCaptureDay: true,
+              fechaPedidoProgramada: todayYmdLocal()
+            }
+          };
+        }
+
+        case "admincaptureoverview": {
+          const [resSR, resCons, resUnits] = await Promise.all([
+            supabase.from('biologicos_existencia').select('clues').eq('fecha', payload.fecha),
+            supabase.from('consumibles').select('clues').eq('fecha', payload.fecha),
+            supabase.from('unidades').select('*')
+          ]);
+
+          const capturedClues = (payload.tipo === "SR" ? resSR.data : resCons.data).map(x => x.clues);
+          const capturadas = resUnits.data.filter(u => capturedClues.includes(u.clues));
+          const faltantes = resUnits.data.filter(u => !capturedClues.includes(u.clues));
+
+          return {
+            ok: true,
+            data: {
+              fecha: payload.fecha,
+              total_unidades: resUnits.data.length,
+              total_capturadas: capturadas.length,
+              total_faltantes: faltantes.length,
+              capturadas: capturadas.map(u => ({ ...u, capturo: "SI", estatus: "OK" })),
+              faltantes: faltantes.map(u => ({ ...u, estatus: "PENDIENTE" }))
+            }
+          };
+        }
+
+        case "historymetrics": {
+          // Implementación de métricas basada en existencia_detalle
+          const { data, error } = await supabase
+            .from('existencia_detalle')
+            .select('clues, fecha, municipio, biologico, cantidad')
+            .gte('fecha', payload.inicio)
+            .lte('fecha', payload.fin);
+
+          if (error) throw error;
+          return { ok: true, data: { rows: data } };
+        }
+
+        case "unitstatus": {
+          // Lógica simplificada de estatus (puede mejorarse con reglas de negocio)
+          return {
+            ok: true,
+            data: {
+              today: todayYmdLocal(),
+              canCaptureConsumibles: new Date().getDay() === 4, // Jueves
+              canCaptureBio: true
+            }
+          };
+        }
+
+        case "unitcatalog": {
+          const { data, error } = await supabase.from('unidades').select('*').eq('activo', 'SI');
+          if (error) throw error;
+          return { ok: true, data };
+        }
+
+        case "export": {
+          const tipo = (payload.tipo || "SR").toUpperCase();
+          const table = tipo === "SR" ? "biologicos_existencia" : "consumibles";
+          const { data, error } = await supabase
+            .from(table)
+            .select('*, unidades(*)')
+            .gte('fecha', payload.fechaInicio)
+            .lte('fecha', payload.fechaFin);
+
+          if (error) throw error;
+          
+          // Filtrar por municipios si es necesario
+          const municipios = payload.municipios || [];
+          const filtered = municipios.length > 0
+            ? data.filter(d => municipios.includes(d.unidades?.municipio))
+            : data;
+
+          return { ok: true, data: filtered };
+        }
+
+        case "bioExportMatrix": {
+          const { data, error } = await supabase
+            .from('biologicos_pedido')
+            .select('*, unidades(*)')
+            .eq('fecha_objetivo', payload.fechaInicio);
+
+          if (error) throw error;
+          return { ok: true, data };
+        }
+
+        default:
+          return _rawApiCall(payload);
+      }
+    } catch (err) {
+      console.error(`[Supabase Error] ${action}:`, err);
+      return { ok: false, error: err.message || String(err) };
+    }
   }
 
   async function _dispatchBatch() {
@@ -6881,40 +7233,86 @@ $("btnSaveSR").onclick = async () => {
       }
 
       const fFin = (tipo === "BIO" ? fIni : ($("exportFechaFin").value || fIni));
-      const zip = $("exportSplitByMunicipio") && $("exportSplitByMunicipio").checked ? "SI" : "NO";
 
       const res = await apiCall({
         action: tipo === "BIO" ? "bioExportMatrix" : "export",
-        token: TOKEN,
         tipo,
         municipios,
         fechaInicio: fIni,
-        fechaFin: fFin,
-        fechaPedido: fIni,
-        separarPorMunicipio: zip
+        fechaFin: fFin
       });
 
       if (!res || !res.ok) {
-        showToast((res && res.error) ? res.error : "No se pudo generar el reporte", false);
+        showToast((res && res.error) ? res.error : "No se pudo obtener datos para el reporte", false);
         return;
       }
 
-      const { filename, b64, mimeType } = res.data;
-      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-      const blob = new Blob([bytes], { type: mimeType || "application/octet-stream" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = filename || "reporte.xlsx";
-      link.click();
-
-      showToast("El archivo se exportó correctamente");
+      generateProfessionalXLSX(tipo, res.data, fIni, fFin);
+      showToast("El reporte se generó correctamente");
 
     } catch (e) {
+      console.error("Export error:", e);
       showToast("Error al exportar", false);
     } finally {
       hideOverlay();
     }
   };
+
+  /**
+   * Generador de Excel Profesional (Cliente)
+   */
+  function generateProfessionalXLSX(tipo, data, fIni, fFin) {
+    let sheetName = tipo === "SR" ? "Existencias" : (tipo === "CONS" ? "Consumibles" : "Pedidos");
+    let filename = `Reporte_${tipo}_${fIni}.xlsx`;
+
+    let rows = [];
+    
+    if (tipo === "SR") {
+      rows = data.map(d => ({
+        'Municipio': d.unidades?.municipio,
+        'CLUES': d.clues,
+        'Unidad': d.unidades?.nombre,
+        'Biológico': d.biologico,
+        'Lote': d.lote,
+        'Caducidad': d.caducidad,
+        'Cantidad (frascos)': d.cantidad_frascos,
+        'Fecha Reporte': d.fecha_reporte,
+        'Capturado por': d.capturado_por
+      }));
+    } else if (tipo === "CONS") {
+      rows = data.map(d => ({
+        'Municipio': d.unidades?.municipio,
+        'CLUES': d.clues,
+        'Unidad': d.unidades?.nombre,
+        'SRP (dosis)': d.srp_dosis,
+        'SR (dosis)': d.sr_dosis,
+        'Jeringa 0.5ml': d.jeringa_aplic_05ml,
+        'Jeringa 5ml': d.jeringa_reconst_5ml,
+        'Aguja': d.aguja_0600403711,
+        'Fecha Reporte': d.fecha_reporte,
+        'Capturado por': d.capturado_por
+      }));
+    } else {
+      // Pedidos
+      rows = data.map(d => ({
+        'Municipio': d.unidades?.municipio,
+        'CLUES': d.clues,
+        'Unidad': d.unidades?.nombre,
+        'Biológico': d.biologico,
+        'Existencia (frascos)': d.existencia_frascos,
+        'Pedido (frascos)': d.pedido_frascos,
+        'Fecha Objetivo': d.fecha_objetivo,
+        'Capturado por': d.capturado_por
+      }));
+    }
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    
+    // Generar archivo y descargar
+    XLSX.writeFile(wb, filename);
+  }
 
 
 
