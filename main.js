@@ -3065,6 +3065,7 @@ document.addEventListener("DOMContentLoaded", () => {
               } : null
             }
           };
+        }
         case "listmynotifications": {
           const { data, error } = await supabase
             .from('notificaciones')
