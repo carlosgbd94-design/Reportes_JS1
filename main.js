@@ -10,7 +10,7 @@ const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyV5NGNP6_6goMa2rRx
 // SUPABASE CONFIG
 const SUPABASE_URL = "https://utclfqjietlxzlorxhrs.supabase.co";
 const SUPABASE_KEY = "sb_publishable_0QwQuFL1ruoURS8zkBl_Uw_bLH1X0ZH";
-const supabase = (typeof supabase !== 'undefined') ? supabase : (typeof supabase === 'undefined' && typeof Supabase !== 'undefined') ? Supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Estado de sesión y UI
 let BIO_IS_ENABLED = false;
