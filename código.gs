@@ -140,6 +140,10 @@ function withLock_(fn) {
   };
 }
 
+function api(req) {
+  return js1_api_v2_central(req);
+}
+
 function js1_api_v2_central(req) {
   const action = String(req?.action || "").trim().toLowerCase();
 
