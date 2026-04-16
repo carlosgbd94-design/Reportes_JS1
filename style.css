@@ -7441,3 +7441,35 @@ body.bioConfirmOpen {
   color: var(--md-sys-color-primary);
   text-decoration: underline;
 }
+
+/* ✅ MD3 CLOSE BUTTON */
+.btn-modal-close-md3 {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50% !important;
+    background: var(--md-surface-container-highest) !important;
+    color: var(--md-sys-color-on-surface-variant) !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.2, 0, 0, 1);
+    z-index: 100;
+    box-shadow: var(--md-shadow-1);
+    border: none;
+    padding: 0;
+}
+
+.btn-modal-close-md3:hover {
+    background: var(--md-sys-color-error-container) !important;
+    color: var(--md-sys-color-on-error-container) !important;
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: var(--md-shadow-2);
+}
+
+.btn-modal-close-md3 .material-symbols-rounded {
+    font-size: 24px;
+}

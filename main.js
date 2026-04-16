@@ -8759,6 +8759,24 @@ $("btnSaveSR").onclick = async () => {
   let CHART_SEM = null;
   let CHART_CAD = null;
 
+  function formatAppDate(dateStr) {
+    if (!dateStr || dateStr === "—") return "—";
+    try {
+      // Intentar parsear fecha ISO o similar
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      
+      const day = String(d.getDate()).padStart(2, '0');
+      const months = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+      const month = months[d.getMonth()];
+      const year = d.getFullYear();
+      
+      return `${day}-${month}-${year}`;
+    } catch (e) {
+      return dateStr;
+    }
+  }
+
   async function openLiveView(clues, unidad, municipio) {
     try {
       showOverlay("Obteniendo inventario", "Cargando datos detallados de " + unidad);
@@ -8779,7 +8797,7 @@ $("btnSaveSR").onclick = async () => {
       if (!tbody) return;
 
       if (!res.data || !res.data.length) {
-        tbody.innerHTML = '<tr><td colspan="5" class="muted" style="padding:40px; text-align:center;">No hay registros detallados para esta captura.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay registros detallados para esta captura.</td></tr>';
         renderLiveCharts({pronto:0,normal:0,lejana:0}, {m3:0,m6:0,m12:0,more:0});
       } else {
         const items = res.data;
@@ -8798,10 +8816,11 @@ $("btnSaveSR").onclick = async () => {
            return `
              <tr>
                <td style="padding:16px 24px; font-weight:700; color:var(--md-sys-color-on-surface);">${escapeHtml(r.biologico)}</td>
-               <td style="font-family:monospace; font-weight:600;">${escapeHtml(r.lote)}</td>
-               <td style="font-weight:700;">${escapeHtml(r.caducidad)}</td>
-               <td><span class="statusPill statusPill-${status.key}">${status.label}</span></td>
-               <td>${escapeHtml(r.fecha_recepcion || "—")}</td>
+               <td style="font-weight:600;">${escapeHtml(r.lote)}</td>
+               <td style="text-align:center; font-weight:800; color:var(--primary);">${escapeHtml(r.cantidad || 0)}</td>
+               <td style="font-weight:700; text-align:center;">${escapeHtml(r.caducidad)}</td>
+               <td style="text-align:center;"><span class="statusPill statusPill-${status.key}">${status.label}</span></td>
+               <td style="font-weight:600; color:var(--muted);">${formatAppDate(r.fecha_recepcion)}</td>
              </tr>
            `;
         }).join("");
