@@ -5668,12 +5668,6 @@ async function getTodayReports(fecha = "", force = false) {
       
       const tone = getComplianceBadgeTone(pct);
       container.classList.add(tone);
-      
-      // Si no es operativo, forzar semáforo preventivo si no hay capturas
-      if (!status.isThursday && !status.isExtraordinaryReady && pct < 100) {
-          // Mantener el tono calculado pero con texto informativo
-          dayBadge.textContent = `${label} (No operativo hoy)`;
-      }
     }
   }
 
