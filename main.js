@@ -3185,14 +3185,78 @@ document.addEventListener("DOMContentLoaded", () => {
              return { ok: true, data: { rows: [] } };
           }
 
-          const { data, error } = await supabase
-            .from('existencia_detalle')
-            .select('clues, fecha, municipio, biologico, cantidad')
-            .gte('fecha', fechaInicio)
-            .lte('fecha', fechaFin);
+          // 1. Consultas paralelas
+          const [resBio, resCons, resUnits] = await Promise.all([
+            supabase.from('biologicos_existencia').select('clues, fecha').gte('fecha', fechaInicio).lte('fecha', fechaFin),
+            supabase.from('consumibles').select('clues, fecha').gte('fecha', fechaInicio).lte('fecha', fechaFin),
+            supabase.from('unidades').select('*').eq('activo', 'SI')
+          ]);
 
-          if (error) throw error;
-          return { ok: true, data: { rows: data } };
+          const rawBio = resBio.data || [];
+          const rawCons = resCons.data || [];
+          const units = resUnits.data || [];
+
+          // 2. Calcular días esperados
+          const countDows = (start, end, dow) => {
+            let count = 0;
+            let current = new Date(start + "T00:00:00");
+            const stop = new Date(end + "T00:00:00");
+            while (current <= stop) {
+              if (current.getDay() === dow) count++;
+              current.setDate(current.getDate() + 1);
+            }
+            return count;
+          };
+
+          const expectedBio = countDows(fechaInicio, fechaFin, 5); // Viernes
+          const expectedCons = countDows(fechaInicio, fechaFin, 4); // Jueves
+
+          // 3. Agrupar capturas
+          const metricsMap = {};
+          units.forEach(u => {
+            metricsMap[u.clues] = {
+              municipio: u.municipio || u.MUNICIPIO,
+              clues: u.clues || u.CLUES,
+              unidad: u.unidad || u.UNIDAD,
+              bio_capturas: 0,
+              cons_capturas: 0,
+              ultima_cons: "—"
+            };
+          });
+
+          rawBio.forEach(r => {
+            if (metricsMap[r.clues]) metricsMap[r.clues].bio_capturas++;
+          });
+
+          rawCons.forEach(r => {
+            if (metricsMap[r.clues]) {
+               metricsMap[r.clues].cons_capturas++;
+               if (metricsMap[r.clues].ultima_cons === "—" || r.fecha > metricsMap[r.clues].ultima_cons) {
+                 metricsMap[r.clues].ultima_cons = r.fecha;
+               }
+            }
+          });
+
+          // 4. Calcular % final
+          const rows = units.map(u => {
+            const m = metricsMap[u.clues];
+            const bPct = expectedBio > 0 ? Math.round((m.bio_capturas / expectedBio) * 100) : 100;
+            const cPct = expectedCons > 0 ? Math.round((m.cons_capturas / expectedCons) * 100) : 100;
+            const operPct = Math.round((bPct + cPct) / 2);
+
+            return {
+              ...m,
+              bio_cumplimiento: Math.min(bPct, 100),
+              cons_cumplimiento: Math.min(cPct, 100),
+              cumplimiento_operativo: Math.min(operPct, 100),
+              bio_faltas: Math.max(0, expectedBio - m.bio_capturas),
+              cons_faltas: Math.max(0, expectedCons - m.cons_capturas),
+              total_capturado: m.bio_capturas + m.cons_capturas,
+              total_faltas: Math.max(0, (expectedBio + expectedCons) - (m.bio_capturas + m.cons_capturas))
+            };
+          });
+
+          return { ok: true, data: { rows } };
         }
 
         case "unitstatus": {
@@ -3202,7 +3266,7 @@ document.addEventListener("DOMContentLoaded", () => {
             data: {
               today: todayYmdLocal(),
               canCaptureConsumibles: new Date().getDay() === 4, // Jueves
-              canCaptureBio: true
+              canCaptureBio: new Date().getDay() === 5 // Viernes (Actualizado según requerimiento semanal)
             }
           };
         }
