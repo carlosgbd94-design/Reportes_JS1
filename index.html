@@ -71,9 +71,6 @@
     <!-- ✅ LOGIN centrado debajo del header -->
     <div class="loginWrap">
       <div class="card" id="cardLogin">
-        <div class="loginLogo">
-          <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/Seseq_vertical_2025.png" alt="SESEQ Logo">
-        </div>
         <div class="title">
           <h2>Iniciar sesión</h2>
           <span class="pill" id="loginStatus" style="display:none">—</span>
@@ -84,7 +81,10 @@
           <input id="usuario" name="username" autocomplete="username" placeholder="CLUES_NOMBRE_UNIDAD">
 
           <label>Contraseña</label>
-          <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••">
+          <div class="passField">
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••">
+            <span class="material-symbols-rounded" id="togglePassword">visibility_off</span>
+          </div>
 
           <button class="btn" id="btnLogin" type="submit">Entrar</button>
           <button class="ghostBtn" id="btnForgotPassword" type="button" style="margin-top:10px; width:100%;">

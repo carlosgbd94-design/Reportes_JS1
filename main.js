@@ -105,7 +105,20 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     })();
 
+    // ✅ LOGIN: Manejo de autenticación
     const formLogin = document.getElementById("loginForm");
+    
+    // Toggle Password Visibility
+    const togglePass = document.getElementById("togglePassword");
+    const passInput = document.getElementById("password");
+    if (togglePass && passInput) {
+      togglePass.addEventListener("click", () => {
+        const isPass = passInput.type === "password";
+        passInput.type = isPass ? "text" : "password";
+        togglePass.textContent = isPass ? "visibility" : "visibility_off";
+      });
+    }
+
     if (formLogin) {
         formLogin.addEventListener("submit", async (ev) => {
             ev.preventDefault();
