@@ -2869,9 +2869,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // --- SEGURIDAD ---
+  const JS1_PEPPER = "JS1_v2_2024_Sec";
+
   async function hashPassword(text) {
     if (!text) return "";
-    const msgUint8 = new TextEncoder().encode(text);
+    const msgUint8 = new TextEncoder().encode(text + JS1_PEPPER);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
@@ -2888,26 +2891,20 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       switch (actionLower) {
         case "login": {
-          console.log("[Supabase] Intentando login para:", payload.usuario);
           const { data, error } = await supabase
             .from('usuarios')
             .select('*')
             .ilike('usuario', payload.usuario)
             .limit(1);
 
-          if (error) {
-            console.error("[Supabase Error] Fallo en query de usuarios:", error);
-            throw error;
-          }
-
+          if (error) throw error;
           const userRaw = data && data.length > 0 ? data[0] : null;
-          console.log("[Supabase] Datos brutos recibidos del usuario:", userRaw);
 
           if (!userRaw) {
-             throw new Error("Usuario no encontrado en la base de datos.");
+             throw new Error("Usuario no encontrado.");
           }
 
-          // Mapeo flexible para soportar encabezados en MAYÚSCULAS o minúsculas (común en importaciones de Sheets)
+          // Mapeo flexible
           const userObj = {
             usuario: userRaw.usuario || userRaw.USUARIO || "",
             password: userRaw.password || userRaw.PASSWORD || "",
@@ -2920,16 +2917,15 @@ document.addEventListener("DOMContentLoaded", () => {
           };
 
           if (String(userObj.activo).toUpperCase() !== 'SI') {
-             throw new Error("El usuario existe pero no está activo.");
+             throw new Error("El usuario no está activo.");
           }
           
           const dataFromDb = userObj;
-          
-          // Generar hash de la contraseña ingresada para comparar
           const inputHash = await hashPassword(payload.password);
-          console.log("[Supabase] Hash generado localmente:", inputHash);
 
-          if (dataFromDb.password !== inputHash) throw new Error("Contraseña incorrecta.");
+          if (dataFromDb.password !== inputHash) {
+             throw new Error("Contraseña incorrecta.");
+          }
 
           return {
             ok: true,
