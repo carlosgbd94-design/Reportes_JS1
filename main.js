@@ -2870,11 +2870,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // --- SEGURIDAD ---
-  const JS1_PEPPER = "JS1_v2_2024_Sec";
+  const JS1_SALT = "JS1_SALT_2026_MX";
 
   async function hashPassword(text) {
     if (!text) return "";
-    const msgUint8 = new TextEncoder().encode(text + JS1_PEPPER);
+    const msgUint8 = new TextEncoder().encode(text + JS1_SALT);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
