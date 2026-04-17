@@ -3174,7 +3174,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
           };
         }
-
+        case "historymetrics": {
           const fechaInicio = payload.fechaInicio || payload.inicio;
           const fechaFin = payload.fechaFin || payload.fin;
 
