@@ -2880,17 +2880,39 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       switch (actionLower) {
         case "login": {
+          console.log("[Supabase] Intentando login para:", payload.usuario);
           const { data, error } = await supabase
             .from('usuarios')
             .select('*')
-            .eq('usuario', payload.usuario)
+            .ilike('usuario', payload.usuario)
             .limit(1);
 
-          if (error) throw error;
-          const userObj = data && data.length > 0 ? data[0] : null;
+          if (error) {
+            console.error("[Supabase Error] Fallo en query de usuarios:", error);
+            throw error;
+          }
 
-          if (!userObj || String(userObj.activo).toUpperCase() !== 'SI') {
-             throw new Error("Usuario no existe o está inactivo.");
+          const userRaw = data && data.length > 0 ? data[0] : null;
+          console.log("[Supabase] Datos brutos recibidos del usuario:", userRaw);
+
+          if (!userRaw) {
+             throw new Error("Usuario no encontrado en la base de datos.");
+          }
+
+          // Mapeo flexible para soportar encabezados en MAYÚSCULAS o minúsculas (común en importaciones de Sheets)
+          const userObj = {
+            usuario: userRaw.usuario || userRaw.USUARIO || "",
+            password: userRaw.password || userRaw.PASSWORD || "",
+            municipio: userRaw.municipio || userRaw.MUNICIPIO || "",
+            clues: userRaw.clues || userRaw.CLUES || "",
+            unidad: userRaw.unidad || userRaw.UNIDAD || "",
+            rol: userRaw.rol || userRaw.ROL || "",
+            activo: userRaw.activo || userRaw.ACTIVO || userRaw.ESTATUS || "SI",
+            must_change: userRaw.must_change || userRaw.MUST_CHANGE || false
+          };
+
+          if (String(userObj.activo).toUpperCase() !== 'SI') {
+             throw new Error("El usuario existe pero no está activo.");
           }
           
           const dataFromDb = userObj;
