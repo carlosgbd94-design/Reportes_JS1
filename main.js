@@ -3245,6 +3245,127 @@ document.addEventListener("DOMContentLoaded", () => {
           return { ok: true, data: data || [] };
         }
 
+        case "savepinol": {
+          const record = {
+            id: btoa(USER.clues + ":" + Date.now()),
+            timestamp_solicitud: new Date().toISOString(),
+            clues_solicita: USER.clues,
+            unidad_solicita: USER.unidad,
+            municipio_solicita: USER.municipio,
+            cantidad_piezas: Number(payload.cantidad || 0),
+            motivo: payload.motivo || "",
+            estatus: 'PENDIENTE',
+            solicitado_por: USER.usuario
+          };
+          const { error } = await supabase.from('pinol_solicitudes').insert(record);
+          if (error) throw error;
+          return { ok: true };
+        }
+
+        case "confirmpinolreceipt": {
+          const { error } = await supabase
+            .from('pinol_solicitudes')
+            .update({ 
+              estatus: 'RECIBIDO',
+              recibido_ts: new Date().toISOString()
+            })
+            .eq('id', payload.notification_id); // El payload usa notification_id por compatibilidad heredada
+          if (error) throw error;
+          return { ok: true };
+        }
+
+        case "sendnotification": {
+          const record = {
+            id: btoa(USER.usuario + ":" + Date.now()),
+            created_ts: new Date().toISOString(),
+            created_date: todayYmdLocal(),
+            from_usuario: USER.usuario,
+            from_rol: USER.rol,
+            target_scope: payload.scope || "GLOBAL",
+            target_municipio: payload.municipio || null,
+            target_clues: payload.clues || null,
+            target_usuario: payload.usuario_destino || null,
+            title: payload.title || "Notificación",
+            message: payload.message || "",
+            is_read: 'NO'
+          };
+          const { error } = await supabase.from('notificaciones').insert(record);
+          if (error) throw error;
+          return { ok: true };
+        }
+
+        case "marknotificationread": {
+          const { error } = await supabase
+            .from('notificaciones')
+            .update({ is_read: 'SI', read_ts: new Date().toISOString() })
+            .eq('id', payload.id);
+          if (error) throw error;
+          return { ok: true };
+        }
+
+        case "deletenotification": {
+          const { error } = await supabase
+            .from('notificaciones')
+            .delete()
+            .eq('id', payload.id);
+          if (error) throw error;
+          return { ok: true };
+        }
+
+        case "admingetunitdetail": {
+          const { data, error } = await supabase
+            .from('existencia_detalle')
+            .select('*')
+            .eq('clues', payload.clues)
+            .eq('fecha', payload.fecha || todayYmdLocal());
+          if (error) throw error;
+          return { ok: true, data: data || [] };
+        }
+
+        case "adminlistusers": {
+          const { data, error } = await supabase
+            .from('usuarios')
+            .select('*')
+            .order('usuario', { ascending: true });
+          if (error) throw error;
+          return { ok: true, data: data || [] };
+        }
+
+        case "admincreateuser": {
+          const inputHash = await hashPassword(payload.password);
+          const record = {
+            usuario: payload.usuario,
+            password: inputHash,
+            municipio: payload.municipio,
+            clues: payload.clues,
+            unidad: payload.unidad,
+            rol: payload.rol,
+            activo: 'SI'
+          };
+          const { error } = await supabase.from('usuarios').insert(record);
+          if (error) throw error;
+          return { ok: true };
+        }
+
+        case "adminresetpassword": {
+          const inputHash = await hashPassword(payload.newPassword);
+          const { error } = await supabase
+            .from('usuarios')
+            .update({ password: inputHash })
+            .eq('usuario', payload.usuario);
+          if (error) throw error;
+          return { ok: true };
+        }
+
+        case "adminsetactive": {
+          const { error } = await supabase
+            .from('usuarios')
+            .update({ activo: payload.activo ? 'SI' : 'NO' })
+            .eq('usuario', payload.usuario);
+          if (error) throw error;
+          return { ok: true };
+        }
+
         case "markpinoldelivered": {
           const { error: updateError } = await supabase
             .from('pinol_solicitudes')
