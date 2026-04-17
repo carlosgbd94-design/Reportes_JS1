@@ -3053,7 +3053,7 @@ document.addEventListener("DOMContentLoaded", () => {
             max_dosis: Number(it.max_dosis || 0),
             min_dosis: Number(it.min_dosis || 0),
             promedio_frascos: Number(it.promedio_frascos || 0),
-            multiplo: Number(it.multiplo_pedido || 1),
+            multiplo: Number(it.multiplo || 1),
             existencia: Number(it.existencia_actual_frascos || 0),
             solicitud: Number(it.pedido_frascos || 0),
             observaciones: it.observaciones || "",
@@ -3083,7 +3083,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ok: true,
             data: {
               sr: srItems.length ? {
-                capturado_por: srItems[0].capturado,
+                capturado_por: srItems[0].capturado_por || srItems[0].capturado || "",
                 items: srItems.map(it => ({
                   biologico: it.biologico,
                   lote: it.lote,
@@ -3147,9 +3147,9 @@ document.addEventListener("DOMContentLoaded", () => {
             supabase.from('unidades').select('*')
           ]);
 
-          const capturedClues = (payload.tipo === "SR" ? resSR.data : resCons.data).map(x => x.clues);
-          const capturadas = resUnits.data.filter(u => capturedClues.includes(u.clues));
-          const faltantes = resUnits.data.filter(u => !capturedClues.includes(u.clues));
+          const capturedClues = (payload.tipo === "SR" ? resSR.data : resCons.data).map(x => x.clues || x.CLUES);
+          const capturadas = resUnits.data.filter(u => capturedClues.includes(u.clues || u.CLUES));
+          const faltantes = resUnits.data.filter(u => !capturedClues.includes(u.clues || u.CLUES));
 
           return {
             ok: true,
@@ -3158,8 +3158,19 @@ document.addEventListener("DOMContentLoaded", () => {
               total_unidades: resUnits.data.length,
               total_capturadas: capturadas.length,
               total_faltantes: faltantes.length,
-              capturadas: capturadas.map(u => ({ ...u, capturo: "SI", estatus: "OK" })),
-              faltantes: faltantes.map(u => ({ ...u, estatus: "PENDIENTE" }))
+              capturadas: capturadas.map(u => ({ 
+                municipio: u.municipio || u.MUNICIPIO,
+                clues: u.clues || u.CLUES,
+                unidad: u.unidad || u.UNIDAD,
+                capturo: "SI", 
+                estatus: "OK" 
+              })),
+              faltantes: faltantes.map(u => ({ 
+                municipio: u.municipio || u.MUNICIPIO,
+                clues: u.clues || u.CLUES,
+                unidad: u.unidad || u.UNIDAD,
+                estatus: "PENDIENTE" 
+              }))
             }
           };
         }
