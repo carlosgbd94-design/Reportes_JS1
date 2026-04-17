@@ -2898,6 +2898,7 @@ document.addEventListener("DOMContentLoaded", () => {
             .limit(1);
 
           if (error) throw error;
+          console.log(`[Supabase DEBUG] Login user raw:`, data);
           const userRaw = data && data.length > 0 ? data[0] : null;
 
           if (!userRaw) {
@@ -3078,6 +3079,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
           const srItems = resSR.data || [];
           const consData = resCons.data || null;
+          console.log(`[Supabase DEBUG] getTodayReports raw:`, { srItems, consData });
 
           return {
             ok: true,
@@ -3146,6 +3148,7 @@ document.addEventListener("DOMContentLoaded", () => {
             supabase.from('consumibles').select('clues').eq('fecha', payload.fecha),
             supabase.from('unidades').select('*')
           ]);
+          console.log(`[Supabase DEBUG] adminCaptureOverview raw parts:`, { resSR: resSR.data, resCons: resCons.data, resUnits: resUnits.data });
 
           const capturedClues = (payload.tipo === "SR" ? resSR.data : resCons.data).map(x => x.clues || x.CLUES);
           const capturadas = resUnits.data.filter(u => capturedClues.includes(u.clues || u.CLUES));
@@ -3246,6 +3249,7 @@ document.addEventListener("DOMContentLoaded", () => {
             .select('*')
             .order('timestamp_solicitud', { ascending: false });
           if (error) throw error;
+          console.log(`[Supabase DEBUG] listPinol raw:`, data);
           
           // Mapeo para compatibilidad con el frontend legado
           const legacyData = (data || []).map(d => ({
