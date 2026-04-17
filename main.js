@@ -2869,6 +2869,14 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  async function hashPassword(text) {
+    if (!text) return "";
+    const msgUint8 = new TextEncoder().encode(text);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
   /**
    * INTERCEPTOR SUPABASE
    * Reemplaza la lógica de GAS por llamadas directas a Supabase.
@@ -2917,9 +2925,11 @@ document.addEventListener("DOMContentLoaded", () => {
           
           const dataFromDb = userObj;
           
-          // Nota: En producción real, la contraseña debería compararse haseada.
-          // Aquí mantengo la lógica de compatibilidad que tenía tu código.
-          if (dataFromDb.password !== payload.password) throw new Error("Contraseña incorrecta.");
+          // Generar hash de la contraseña ingresada para comparar
+          const inputHash = await hashPassword(payload.password);
+          console.log("[Supabase] Hash generado localmente:", inputHash);
+
+          if (dataFromDb.password !== inputHash) throw new Error("Contraseña incorrecta.");
 
           return {
             ok: true,
