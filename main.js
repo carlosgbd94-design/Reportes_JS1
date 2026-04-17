@@ -3175,13 +3175,18 @@ document.addEventListener("DOMContentLoaded", () => {
           };
         }
 
-        case "historymetrics": {
-          // Implementación de métricas basada en existencia_detalle
+          const fechaInicio = payload.fechaInicio || payload.inicio;
+          const fechaFin = payload.fechaFin || payload.fin;
+
+          if (!fechaInicio || fechaInicio === "undefined" || !fechaFin || fechaFin === "undefined") {
+             return { ok: true, data: { rows: [] } };
+          }
+
           const { data, error } = await supabase
             .from('existencia_detalle')
             .select('clues, fecha, municipio, biologico, cantidad')
-            .gte('fecha', payload.inicio)
-            .lte('fecha', payload.fin);
+            .gte('fecha', fechaInicio)
+            .lte('fecha', fechaFin);
 
           if (error) throw error;
           return { ok: true, data: { rows: data } };
@@ -3242,7 +3247,23 @@ document.addEventListener("DOMContentLoaded", () => {
             .order('timestamp_solicitud', { ascending: false });
           if (error) throw error;
           
-          return { ok: true, data: data || [] };
+          // Mapeo para compatibilidad con el frontend legado
+          const legacyData = (data || []).map(d => ({
+            id: d.id,
+            fecha_solicitud: d.timestamp_solicitud,
+            municipio: d.municipio_solicita,
+            clues: d.clues_solicita,
+            unidad: d.unidad_solicita,
+            existencia_actual_botellas: 0, // No persistido originalmente en el wide table corregido
+            solicitud_botellas: d.cantidad_piezas,
+            observaciones: d.motivo,
+            capturado_por: d.solicitado_por,
+            estatus: d.estatus,
+            fecha_entrega: d.editado_ts,
+            entregado_por: d.editado_por
+          }));
+
+          return { ok: true, data: legacyData };
         }
 
         case "savepinol": {
@@ -3252,8 +3273,8 @@ document.addEventListener("DOMContentLoaded", () => {
             clues_solicita: USER.clues,
             unidad_solicita: USER.unidad,
             municipio_solicita: USER.municipio,
-            cantidad_piezas: Number(payload.cantidad || 0),
-            motivo: payload.motivo || "",
+            cantidad_piezas: Number(payload.solicitud_botellas || payload.cantidad || 0),
+            motivo: payload.observaciones || payload.motivo || "",
             estatus: 'PENDIENTE',
             solicitado_por: USER.usuario
           };
