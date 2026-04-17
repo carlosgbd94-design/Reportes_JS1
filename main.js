@@ -2828,11 +2828,13 @@ document.addEventListener("DOMContentLoaded", () => {
       "login", "whoami", "savesr", "saveconsumibles", "savebio", 
       "gettodayreports", "admincaptureoverview", "historymetrics",
       "listmynotifications", "marknotificationread", "deletenotification",
-      "biogetform", "biogetdatesformonth", "unitstatus", "unitcatalog", "pinolsolicitud"
+      "biogetform", "biogetdatesformonth", "unitstatus", "unitcatalog", 
+      "pinolsolicitud", "listpinol", "markpinoldelivered", "confirmpinolreceipt",
+      "sendnotification"
     ];
 
-    if (SUPABASE_ACTIONS.includes(action)) {
-      return supabaseRequest(action, body);
+    if (SUPABASE_ACTIONS.includes(action.toLowerCase())) {
+      return supabaseRequest(action.toLowerCase(), body);
     }
 
     // --- ACCIONES LEGADAS (DRIVE / GAS) ---
@@ -2872,10 +2874,11 @@ document.addEventListener("DOMContentLoaded", () => {
    * Reemplaza la lógica de GAS por llamadas directas a Supabase.
    */
   async function supabaseRequest(action, payload) {
-    console.log(`[Supabase] Action: ${action}`, payload);
+    const actionLower = action.toLowerCase();
+    console.log(`[Supabase] Action: ${actionLower}`, payload);
     
     try {
-      switch (action) {
+      switch (actionLower) {
         case "login": {
           const { data, error } = await supabase
             .from('usuarios')
@@ -3187,6 +3190,135 @@ document.addEventListener("DOMContentLoaded", () => {
           return { ok: true, data };
         }
 
+        case "listpinol": {
+          const { data, error } = await supabase
+            .from('pinol_solicitudes')
+            .select('*')
+            .order('timestamp_solicitud', { ascending: false });
+          if (error) throw error;
+          
+          return { ok: true, data: data || [] };
+        }
+
+        case "markpinoldelivered": {
+          const { error: updateError } = await supabase
+            .from('pinol_solicitudes')
+            .update({ 
+               estatus: 'ENTREGADO', 
+               editado: 'SI', 
+               editado_por: USER.usuario,
+               editado_ts: new Date().toISOString()
+            })
+            .eq('id', payload.id);
+
+          if (updateError) throw updateError;
+
+          // Crear notificación para la unidad
+          const { data: sol } = await supabase.from('pinol_solicitudes').select('*').eq('id', payload.id).single();
+          if (sol) {
+            await supabase.from('notificaciones').insert({
+              id: 'NOTIF:' + btoa(sol.clues + ":" + Date.now()),
+              created_ts: new Date().toISOString(),
+              created_date: todayYmdLocal(),
+              from_usuario: USER.usuario,
+              from_rol: USER.rol,
+              target_scope: 'CLUES',
+              target_clues: sol.clues,
+              title: 'Pinol entregado',
+              message: payload.comentario_notificacion || 'Tu solicitud de pinol ha sido marcada como entregada.',
+              is_read: 'NO',
+              meta_json: JSON.stringify({ source: 'PINOL', event: 'PINOL_ENTREGADO', pinol_id: sol.id })
+            });
+          }
+          return { ok: true };
+        }
+
+        case "confirmpinolreceipt": {
+          const { data: notif } = await supabase.from('notificaciones').select('*').eq('id', payload.notification_id).single();
+          if (!notif) throw new Error("Notificación no encontrada");
+
+          const meta = JSON.parse(notif.meta_json || "{}");
+          meta.confirmed_by_unit = "SI";
+          meta.confirmation_ts = new Date().toISOString();
+
+          const { error } = await supabase
+            .from('notificaciones')
+            .update({ 
+              meta_json: JSON.stringify(meta),
+              is_read: 'SI',
+              read_ts: new Date().toISOString()
+            })
+            .eq('id', payload.notification_id);
+
+          if (error) throw error;
+          return { ok: true };
+        }
+
+        case "marknotificationread": {
+          const { error } = await supabase
+            .from('notificaciones')
+            .update({ is_read: 'SI', read_ts: new Date().toISOString() })
+            .eq('id', payload.id);
+          if (error) throw error;
+          return { ok: true };
+        }
+
+        case "deletenotification": {
+          const { error } = await supabase
+            .from('notificaciones')
+            .delete()
+            .eq('id', payload.id);
+          if (error) throw error;
+          return { ok: true };
+        }
+
+        case "sendnotification": {
+          const record = {
+            id: 'NOTIF:' + btoa(payload.target_clues + ":" + Date.now()),
+            created_ts: new Date().toISOString(),
+            created_date: todayYmdLocal(),
+            from_usuario: USER.usuario,
+            from_rol: USER.rol,
+            target_scope: payload.target_scope,
+            target_municipio: payload.target_municipio,
+            target_clues: payload.target_clues,
+            title: payload.title,
+            message: payload.message,
+            is_read: 'NO'
+          };
+          const { error } = await supabase.from('notificaciones').insert(record);
+          if (error) throw error;
+          return { ok: true };
+        }
+
+        case "pinolsolicitud": {
+          const record = {
+            id: btoa(USER.clues + ":" + Date.now()),
+            timestamp_solicitud: new Date().toISOString(),
+            fecha_solicitud: todayYmdLocal(),
+            municipio: USER.municipio,
+            clues: USER.clues,
+            unidad: USER.unidad,
+            existencia_actual_botellas: Number(payload.existencia || 0),
+            solicitud_botellas: Number(payload.solicitud || 0),
+            observaciones: payload.observaciones || "",
+            capturado_por: USER.usuario,
+            estatus: 'PENDIENTE'
+          };
+          const { error } = await supabase.from('pinol_solicitudes').insert(record);
+          if (error) throw error;
+          return { ok: true };
+        }
+
+        case "biogetdatesformonth": {
+          const { data, error } = await supabase
+            .from('calendario_pedidos')
+            .select('*')
+            .eq('activo', 'SI');
+          if (error) throw error;
+          return { ok: true, data };
+        }
+
         default:
           return _rawApiCall(payload);
       }
@@ -3223,8 +3355,8 @@ document.addEventListener("DOMContentLoaded", () => {
       // 🛡️ DEGRADACIÓN GRÁCIL: Si el servidor no soporta batching, reintentamos uno por uno
       const err = String(res?.error || "");
       if (res && !res.ok && (err.includes("Acción inválida: batch") || err.includes("batch] @v2"))) {
-        console.warn("⚠️ Servidor en transición (Modo Batch no activo). Reintentando individualmente…");
-        // Reintentamos cada una de forma directa sin batching
+        // En lugar de advertencia ruidosa, si estamos en migración podemos ser más discretos
+        // console.warn("⚠️ Servidor en transición (Modo Batch no activo). Reintentando individualmente…");
         queue.forEach(q => {
           _rawApiCall(q.body).then(q.resolve).catch(q.reject);
         });
