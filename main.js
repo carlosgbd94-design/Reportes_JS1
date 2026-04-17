@@ -2830,7 +2830,7 @@ document.addEventListener("DOMContentLoaded", () => {
       "listmynotifications", "marknotificationread", "deletenotification",
       "biogetform", "biogetdatesformonth", "unitstatus", "unitcatalog", 
       "pinolsolicitud", "listpinol", "markpinoldelivered", "confirmpinolreceipt",
-      "sendnotification"
+      "sendnotification", "getlotesbymunicipio", "savelotes"
     ];
 
     if (SUPABASE_ACTIONS.includes(action.toLowerCase())) {
@@ -3229,6 +3229,32 @@ document.addEventListener("DOMContentLoaded", () => {
               is_read: 'NO',
               meta_json: JSON.stringify({ source: 'PINOL', event: 'PINOL_ENTREGADO', pinol_id: sol.id })
             });
+          }
+          return { ok: true };
+        }
+
+        case "getlotesbymunicipio": {
+          const { data, error } = await supabase.from('lotes').select('*');
+          if (error) throw error;
+          return { ok: true, data: data || [] };
+        }
+
+        case "savelotes": {
+          const items = payload.lotes || [];
+          // 1. Limpiar catálogo actual
+          const { error: delError } = await supabase.from('lotes').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Borrar todo
+          if (delError) throw delError;
+
+          // 2. Insertar nuevos
+          if (items.length) {
+            const { error: insError } = await supabase.from('lotes').insert(items.map(it => ({
+              biologico: it.biologico,
+              lote: it.lote,
+              caducidad: it.caducidad,
+              fecha_recepcion: it.fecha_recepcion || null,
+              municipio: it.municipio || "*"
+            })));
+            if (insError) throw insError;
           }
           return { ok: true };
         }
@@ -4242,7 +4268,7 @@ document.addEventListener("DOMContentLoaded", () => {
 async function loadBatchesForSession(user) {
     if (!user) return;
     try {
-        console.log("🟢 1. Cargando lotes desde el backend GAS...");
+        console.log("🟢 1. Cargando lotes desde Supabase...");
         const lotesResult = await apiCall("getLotesByMunicipio");
         
         const allLotes = (lotesResult && lotesResult.ok && lotesResult.data) ? lotesResult.data : [];

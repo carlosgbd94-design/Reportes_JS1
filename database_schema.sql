@@ -189,3 +189,16 @@ CREATE INDEX idx_exist_fecha ON biologicos_existencia(fecha);
 CREATE INDEX idx_exist_clues ON biologicos_existencia(clues);
 CREATE INDEX idx_det_clues_fecha ON existencia_detalle(clues, fecha);
 CREATE INDEX idx_ped_fecha ON biologicos_pedido(fecha_captura);
+
+-- 13. CATALOGO_LOTES (Maestro)
+CREATE TABLE lotes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    biologico TEXT,
+    lote TEXT,
+    caducidad TEXT,
+    fecha_recepcion DATE,
+    municipio TEXT,
+    created_ts TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_lotes_municipio ON lotes(municipio);
