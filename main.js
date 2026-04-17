@@ -5290,8 +5290,8 @@ window.handleSRLoteChange = function(selectEl) {
 
   function getComplianceBadgeTone(pct = 0) {
     const n = Number(pct || 0);
-    if (n >= 80) return "good";
-    if (n >= 50) return "warn";
+    if (n >= 95) return "good";
+    if (n >= 80) return "warn";
     return "bad";
   }
 
@@ -5641,23 +5641,38 @@ async function getTodayReports(fecha = "", force = false) {
       $("hdrFecha").textContent = `Fecha: ${fechaHumana}`;
     }
 
-    if ($("dayTxt")) {
-      if (typeof status.compliance_pct !== "undefined") {
-        $("dayTxt").textContent = `Cumplimiento: ${Number(status.compliance_pct || 0)}%`;
+    const dayBadge = $("dayTxt");
+    const container = $("bCumplimiento") || (dayBadge ? dayBadge.parentElement : null);
+
+    if (dayBadge && container) {
+      container.classList.remove("good", "ok", "warn", "bad");
+      
+      let pct = 0;
+      let label = "Sin dato";
+
+      // Lógica de métrica por perfil (v5 State of the Art)
+      const role = USER?.rol || "UNIDAD";
+
+      if (role === "UNIDAD") {
+        pct = Number(status.compliance_pct || 0);
+        label = `Mi Cumplimiento: ${pct}%`;
+      } else if (role === "MUNICIPAL") {
+        pct = Number(status.municipal_avg || status.compliance_pct || 0);
+        label = `Promedio Municipal: ${pct}%`;
       } else {
-        $("dayTxt").textContent = status.isThursday ? "Hoy sí es jueves" : "Hoy no es operativo";
+        pct = Number(status.global_avg || status.compliance_pct || 0);
+        label = `Cumplimiento Global: ${pct}%`;
       }
-    }
 
-    // Si tu index HTML tiene el wrapper con id="bCumplimiento", lo actualizará
-    if ($("bCumplimiento")) {
-      $("bCumplimiento").classList.remove("good", "warn", "bad");
-
-      if (typeof status.compliance_pct !== "undefined") {
-        const tone = getComplianceBadgeTone(status.compliance_pct);
-        $("bCumplimiento").classList.add(tone);
-      } else {
-        $("bCumplimiento").classList.add(status.isThursday ? "good" : "warn");
+      dayBadge.textContent = label;
+      
+      const tone = getComplianceBadgeTone(pct);
+      container.classList.add(tone);
+      
+      // Si no es operativo, forzar semáforo preventivo si no hay capturas
+      if (!status.isThursday && !status.isExtraordinaryReady && pct < 100) {
+          // Mantener el tono calculado pero con texto informativo
+          dayBadge.textContent = `${label} (No operativo hoy)`;
       }
     }
   }

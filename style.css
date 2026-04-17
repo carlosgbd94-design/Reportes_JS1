@@ -1,56 +1,44 @@
 :root {
-  /* 🏛️ PALETA FRESH V2 - INDIGO & MINIMALIST */
-  --primary: #4F46E5;   /* Indigo 600 */
+  /* 🏛️ PALETA STATE-OF-THE-ART (v5 INDIGO) */
+  --primary: #4F46E5;
   --on-primary: #FFFFFF;
+  --primary-container: #EEF2FF;
+  --on-primary-container: #3730A3;
   
-  --primary-action: #6366F1; /* Indigo 500 */
-  --on-primary-action: #FFFFFF;
-
-  --secondary-action: #94A3B8; /* Slate 400 */
-  --on-secondary-action: #FFFFFF;
+  --secondary: #6366F1;
+  --on-secondary: #FFFFFF;
   
-  --accent: #F43F5E; /* Rose 500 (Accents) */
-  
-  /* Neutros Modernos */
-  --bg: #F9FAFB;
+  --bg: #F8FAFC;         /* Slate 50 */
   --surface: #FFFFFF;
-  --surface-low: #F3F4F6;
-  --outline: #E5E7EB;
-  --outline-variant: #F3F4F6;
+  --surface-low: #F1F5F9; /* Slate 100 */
+  --surface-hover: #F8FAFC;
   
-  --text: #1E293B; /* Slate 800 */
-  --text-muted: #64748B;
+  --text: #0F172A;       /* Slate 900 */
+  --text-muted: #64748B;  /* Slate 500 */
+  
+  --outline: #E2E8F0;     /* Slate 200 */
+  --outline-thick: #CBD5E1;
+  
+  /* Semaforización Sólida (Traffic Lights) */
+  --good: #10B981;        /* Emerald 500 */
+  --on-good: #FFFFFF;
+  --good-container: #D1FAE5;
+  --on-good-container: #065F46;
+  
+  --warn: #F59E0B;        /* Amber 500 */
+  --on-warn: #FFFFFF;
+  --warn-container: #FEF3C7;
+  --on-warn-container: #78350F;
+  
+  --bad: #EF4444;         /* Red 500 */
+  --on-bad: #FFFFFF;
+  --bad-container: #FEE2E2;
+  --on-bad-container: #7F1D1D;
 
-  /* Semántica v2 */
-  --success: #10B981;
-  --warning: #F59E0B;
-  --error: #EF4444;
-
-  /* Elevation (Soft Layered) */
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-2: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-3: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
-
-  /* MD3 Elevation Shadows */
-  --shadow-1: 0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
-  --shadow-2: 0px 2px 6px 2px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.3);
-  --shadow-3: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px 0px rgba(0, 0, 0, 0.3);
-
-  /* Headers Legacy Aliases */
-  --hdrL: var(--surface);
-  --hdrM: var(--bg);
-  --hdrR: var(--surface);
-
-  /* MD3 Required Variables (Compatibility) */
-  --md-sys-color-primary: var(--primary-action);
-  --md-sys-color-on-primary: var(--on-primary-action);
-  --md-sys-color-success-container: #DCFCE7;
-  --md-sys-color-on-success-container: #14532D;
-  --md-sys-color-warning-container: #FEF3C7;
-  --md-sys-color-on-warning-container: #78350F;
-  --md-sys-color-error-container: #FEE2E2;
-  --md-sys-color-on-error-container: #7F1D1D;
+  /* Elevation (State of the Art Shadows) */
+  --shadow-1: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-2: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-3: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
 @media (max-width: 520px) {
@@ -257,37 +245,43 @@ body.mobile-mode.lowperf {
   gap: 12px;
 }
 
-.statusbarPublic>.badge {
-  flex: 1 1 200px;
-  /* Crece equitativamente, mínimo 200px */
-  justify-content: center;
-}
-
 .badge {
-  min-height: auto;
-  padding: 8px 16px;
-  border-radius: 12px;
-  border: 1px solid var(--md-outline-variant);
-  background: var(--md-surface-container-low);
-  color: var(--md-sys-color-on-surface);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  white-space: nowrap;
+  gap: 12px;
+  padding: 10px 20px;
+  border-radius: 16px;
   font-size: 14px;
   font-weight: 700;
-  box-shadow: none;
-  transition: all 0.2s ease;
+  background: var(--surface-low);
+  color: var(--text);
+  border: 1px solid var(--outline);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.badge.good, .badge.ok {
+  background: var(--good-container) !important;
+  color: var(--on-good-container) !important;
+  border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+.badge.warn {
+  background: var(--warn-container) !important;
+  color: var(--on-warn-container) !important;
+  border-color: rgba(245, 158, 11, 0.2) !important;
+}
+
+.badge.bad {
+  background: var(--bad-container) !important;
+  color: var(--on-bad-container) !important;
+  border-color: rgba(239, 68, 68, 0.2) !important;
 }
 
 .badge:hover {
-  background: var(--md-surface-container-high);
-  border-color: var(--md-sys-color-primary);
-}
-
-.badge .material-symbols-rounded {
-  font-size: 18px;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
 }
 
 .badge::before {
@@ -519,12 +513,26 @@ body.mobile-mode.lowperf {
 }
 
 #cardLogin input {
-  padding: 14px 16px;
-  font-size: 15px;
-  border-radius: 12px;
-  min-height: 48px;
-  line-height: 1.4;
-  font-family: 'Poppins';
+  width: 100%;
+  height: 56px;
+  padding: 0 20px;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 16px;
+  background: var(--surface-low);
+  border: 2px solid transparent;
+  color: var(--text);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}
+
+#cardLogin input:focus {
+  background: var(--surface);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+  outline: none;
 }
 
 #cardLogin .title h2 {
@@ -1071,10 +1079,11 @@ label,
 }
 
 .tab.active {
-  background: var(--primary) !important;
-  color: #FFFFFF !important;
-  border-color: var(--primary) !important;
-  box-shadow: var(--shadow-2);
+  background: var(--primary);
+  color: #FFFFFF;
+  border-color: var(--primary);
+  box-shadow: 0 8px 16px -2px rgba(79, 70, 229, 0.3);
+  transform: translateY(-1px);
 }
 
 .tab .material-symbols-rounded {
