@@ -143,6 +143,8 @@ CREATE TABLE pinol_solicitudes (
     existencia_actual_botellas NUMERIC DEFAULT 0,
     solicitud_botellas NUMERIC DEFAULT 0,
     observaciones TEXT,
+    estatus TEXT DEFAULT 'PENDIENTE', -- Sincronizado con lógica Pinol
+    recibido_ts TIMESTAMPTZ,           -- Sincronizado con lógica Pinol
     capturado_por TEXT,
     editado TEXT,
     editado_por TEXT,
@@ -162,6 +164,7 @@ CREATE TABLE notificaciones (
     target_usuario TEXT,
     title TEXT,
     message TEXT,
+    meta_json TEXT, -- Para data estructurada (ej. source='PINOL')
     is_read TEXT DEFAULT 'NO', -- Mapeado de auditoría
     read_ts TIMESTAMPTZ
 );

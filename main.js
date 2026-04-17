@@ -3106,20 +3106,62 @@ document.addEventListener("DOMContentLoaded", () => {
           };
         }
         case "listmynotifications": {
-          const { data, error } = await supabase
-            .from('notificaciones')
+          const role = String(USER?.rol || "").toUpperCase();
+          const clues = String(USER?.clues || "").trim();
+          const municipio = String(USER?.municipio || "").trim();
+          const usuario = String(USER?.usuario || "").trim();
+
+          let query = supabase.from('notificaciones')
             .select('*')
             .order('created_ts', { ascending: false })
             .limit(50);
 
+          if (role === 'UNIDAD') {
+            const filters = ['target_scope.eq.GLOBAL'];
+            if (municipio) filters.push(`and(target_scope.eq.MUNICIPIO,target_municipio.eq."${municipio}")`);
+            if (clues)     filters.push(`and(target_scope.eq.CLUES,target_clues.eq."${clues}")`);
+            if (usuario)   filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq."${usuario}")`);
+            query = query.or(filters.join(','));
+          } else if (role === 'ADMIN' && municipio && municipio !== '*') {
+             query = query.or(`target_scope.eq.GLOBAL,target_municipio.eq."${municipio}"`);
+          }
+
+          const { data, error } = await query;
           if (error) throw error;
-          return { ok: true, data };
+
+          // Calcular unread localmente del set devuelto o con otra query si es necesario
+          // Por simplicidad y performance, calculamos sobre el set de los últimos 50
+          const unreadCount = (data || []).filter(n => String(n.is_read).toUpperCase() === 'NO').length;
+
+          console.log(`[Supabase DEBUG] listMyNotifications for ${role}:`, { items: data?.length, unread: unreadCount });
+
+          // IMPORTANTE: Mapeo compatible con loadNotifications() en main.js:1118
+          return { 
+            ok: true, 
+            data: { 
+              items: data || [], 
+              unread: unreadCount 
+            } 
+          };
         }
 
         case "biogetform": {
+          const role = String(USER?.rol || "").toUpperCase();
+          const clues = String(USER?.clues || "").trim();
+
+          let paramsQuery = supabase.from('biologicos_params').select('*');
+          
+          if (role === 'UNIDAD') {
+            if (!clues) throw new Error("La sesión no tiene una CLUES válida asignada.");
+            // Usamos ilike para evitar problemas de casing en la DB
+            paramsQuery = paramsQuery.ilike('clues', clues);
+          }
+
+          console.log(`[Supabase DEBUG] biogetform for ${role} (CLUES: ${clues})`);
+
           const [resParams, resSaved] = await Promise.all([
-            supabase.from('biologicos_params').select('*'),
-            supabase.from('biologicos_pedido').select('*').eq('clues', USER.clues).eq('fecha_captura', todayYmdLocal())
+            paramsQuery,
+            supabase.from('biologicos_pedido').select('*').ilike('clues', clues).eq('fecha_captura', todayYmdLocal())
           ]);
 
           return {
@@ -3308,43 +3350,53 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         case "listpinol": {
-          const { data, error } = await supabase
+          let query = supabase
             .from('pinol_solicitudes')
             .select('*')
             .order('timestamp_solicitud', { ascending: false });
+
+          if (USER.rol === 'UNIDAD') {
+            query = query.eq('clues', USER.clues);
+          }
+
+          const { data, error } = await query;
           if (error) throw error;
           console.log(`[Supabase DEBUG] listPinol raw:`, data);
           
-          // Mapeo para compatibilidad con el frontend legado
+          // Mapeo alineado con el esquema SQL (database_schema.sql)
           const legacyData = (data || []).map(d => ({
             id: d.id,
             fecha_solicitud: d.timestamp_solicitud,
-            municipio: d.municipio_solicita,
-            clues: d.clues_solicita,
-            unidad: d.unidad_solicita,
-            existencia_actual_botellas: 0, // No persistido originalmente en el wide table corregido
-            solicitud_botellas: d.cantidad_piezas,
-            observaciones: d.motivo,
-            capturado_por: d.solicitado_por,
+            municipio: d.municipio,
+            clues: d.clues,
+            unidad: d.unidad,
+            existencia_actual_botellas: d.existencia_actual_botellas || 0,
+            solicitud_botellas: d.solicitud_botellas || 0,
+            observaciones: d.observaciones || "",
+            capturado_por: d.capturado_por,
             estatus: d.estatus,
             fecha_entrega: d.editado_ts,
-            entregado_por: d.editado_por
+            entregado_por: d.editado_por,
+            recibido_ts: d.recibido_ts
           }));
 
           return { ok: true, data: legacyData };
         }
 
-        case "savepinol": {
+        case "savepinol":
+        case "pinolsolicitud": {
           const record = {
             id: btoa(USER.clues + ":" + Date.now()),
             timestamp_solicitud: new Date().toISOString(),
-            clues_solicita: USER.clues,
-            unidad_solicita: USER.unidad,
-            municipio_solicita: USER.municipio,
-            cantidad_piezas: Number(payload.solicitud_botellas || payload.cantidad || 0),
-            motivo: payload.observaciones || payload.motivo || "",
+            fecha_solicitud: todayYmdLocal(),
+            clues: USER.clues,
+            unidad: USER.unidad,
+            municipio: USER.municipio,
+            existencia_actual_botellas: Number(payload.existencia_actual_botellas || payload.existencia || 0),
+            solicitud_botellas: Number(payload.solicitud_botellas || payload.cantidad || payload.solicitud || 0),
+            observaciones: payload.observaciones || payload.motivo || "",
             estatus: 'PENDIENTE',
-            solicitado_por: USER.usuario
+            capturado_por: USER.usuario
           };
           const { error } = await supabase.from('pinol_solicitudes').insert(record);
           if (error) throw error;
@@ -3352,14 +3404,40 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         case "confirmpinolreceipt": {
-          const { error } = await supabase
-            .from('pinol_solicitudes')
+          // El payload usa notification_id por compatibilidad heredada
+          const { data: notif } = await supabase.from('notificaciones').select('*').eq('id', payload.notification_id).single();
+          if (!notif) throw new Error("Notificación no encontrada");
+
+          const meta = JSON.parse(notif.meta_json || "{}");
+          const pinolId = meta.pinol_id;
+
+          // 1. Marcar notificación como leída y confirmada
+          meta.confirmed_by_unit = "SI";
+          meta.confirmation_ts = new Date().toISOString();
+
+          const { error: notifError } = await supabase
+            .from('notificaciones')
             .update({ 
-              estatus: 'RECIBIDO',
-              recibido_ts: new Date().toISOString()
+               meta_json: JSON.stringify(meta),
+               is_read: 'SI',
+               read_ts: new Date().toISOString()
             })
-            .eq('id', payload.notification_id); // El payload usa notification_id por compatibilidad heredada
-          if (error) throw error;
+            .eq('id', payload.notification_id);
+          
+          if (notifError) throw notifError;
+
+          // 2. Marcar solicitud de Pinol como RECIBIDA
+          if (pinolId) {
+            const { error: pinolError } = await supabase
+              .from('pinol_solicitudes')
+              .update({ 
+                estatus: 'RECIBIDO',
+                recibido_ts: new Date().toISOString()
+              })
+              .eq('id', pinolId);
+            if (pinolError) throw pinolError;
+          }
+
           return { ok: true };
         }
 
@@ -3511,83 +3589,6 @@ document.addEventListener("DOMContentLoaded", () => {
             })));
             if (insError) throw insError;
           }
-          return { ok: true };
-        }
-
-        case "confirmpinolreceipt": {
-          const { data: notif } = await supabase.from('notificaciones').select('*').eq('id', payload.notification_id).single();
-          if (!notif) throw new Error("Notificación no encontrada");
-
-          const meta = JSON.parse(notif.meta_json || "{}");
-          meta.confirmed_by_unit = "SI";
-          meta.confirmation_ts = new Date().toISOString();
-
-          const { error } = await supabase
-            .from('notificaciones')
-            .update({ 
-              meta_json: JSON.stringify(meta),
-              is_read: 'SI',
-              read_ts: new Date().toISOString()
-            })
-            .eq('id', payload.notification_id);
-
-          if (error) throw error;
-          return { ok: true };
-        }
-
-        case "marknotificationread": {
-          const { error } = await supabase
-            .from('notificaciones')
-            .update({ is_read: 'SI', read_ts: new Date().toISOString() })
-            .eq('id', payload.id);
-          if (error) throw error;
-          return { ok: true };
-        }
-
-        case "deletenotification": {
-          const { error } = await supabase
-            .from('notificaciones')
-            .delete()
-            .eq('id', payload.id);
-          if (error) throw error;
-          return { ok: true };
-        }
-
-        case "sendnotification": {
-          const record = {
-            id: 'NOTIF:' + btoa(payload.target_clues + ":" + Date.now()),
-            created_ts: new Date().toISOString(),
-            created_date: todayYmdLocal(),
-            from_usuario: USER.usuario,
-            from_rol: USER.rol,
-            target_scope: payload.target_scope,
-            target_municipio: payload.target_municipio,
-            target_clues: payload.target_clues,
-            title: payload.title,
-            message: payload.message,
-            is_read: 'NO'
-          };
-          const { error } = await supabase.from('notificaciones').insert(record);
-          if (error) throw error;
-          return { ok: true };
-        }
-
-        case "pinolsolicitud": {
-          const record = {
-            id: btoa(USER.clues + ":" + Date.now()),
-            timestamp_solicitud: new Date().toISOString(),
-            fecha_solicitud: todayYmdLocal(),
-            municipio: USER.municipio,
-            clues: USER.clues,
-            unidad: USER.unidad,
-            existencia_actual_botellas: Number(payload.existencia || 0),
-            solicitud_botellas: Number(payload.solicitud || 0),
-            observaciones: payload.observaciones || "",
-            capturado_por: USER.usuario,
-            estatus: 'PENDIENTE'
-          };
-          const { error } = await supabase.from('pinol_solicitudes').insert(record);
-          if (error) throw error;
           return { ok: true };
         }
 
