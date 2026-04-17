@@ -9,7 +9,7 @@ const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyV5NGNP6_6goMa2rRx
 
 // SUPABASE CONFIG
 const SUPABASE_URL = "https://utclfqjietlxzlorxhrs.supabase.co";
-const SUPABASE_KEY = "sb_publishable_0QwQuFL1ruoURS8zkBl_Uw_bLH1X0ZH";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Y2xmcWppZXRseHpsb3J4aHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNTYyNTQsImV4cCI6MjA5MTkzMjI1NH0.EgDK7xkSZHZyUlGF5m2C7bZjrfkx1M8cBXzxIFedDa4";
 window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Estado de sesión y UI
@@ -2884,28 +2884,34 @@ document.addEventListener("DOMContentLoaded", () => {
             .from('usuarios')
             .select('*')
             .eq('usuario', payload.usuario)
-            .eq('activo', 'SI')
-            .single();
+            .limit(1);
 
-          if (error || !data) throw new Error("Usuario no existe o está inactivo.");
+          if (error) throw error;
+          const userObj = data && data.length > 0 ? data[0] : null;
+
+          if (!userObj || String(userObj.activo).toUpperCase() !== 'SI') {
+             throw new Error("Usuario no existe o está inactivo.");
+          }
+          
+          const dataFromDb = userObj;
           
           // Nota: En producción real, la contraseña debería compararse haseada.
           // Aquí mantengo la lógica de compatibilidad que tenía tu código.
-          if (data.password !== payload.password) throw new Error("Contraseña incorrecta.");
+          if (dataFromDb.password !== payload.password) throw new Error("Contraseña incorrecta.");
 
           return {
             ok: true,
             data: {
-              token: btoa(data.usuario + ":" + Date.now()), // Token temporal compatible
-              mustChange: !!data.must_change,
+              token: btoa(dataFromDb.usuario + ":" + Date.now()), // Token temporal compatible
+              mustChange: !!dataFromDb.must_change,
               user: {
-                usuario: data.usuario,
-                municipio: data.municipio,
-                municipiosAllowed: data.municipios_allowed || [],
-                clues: data.clues,
-                unidad: data.unidad,
-                rol: data.rol,
-                email: data.email || ""
+                usuario: dataFromDb.usuario,
+                municipio: dataFromDb.municipio,
+                municipiosAllowed: dataFromDb.municipios_allowed || [],
+                clues: dataFromDb.clues,
+                unidad: dataFromDb.unidad,
+                rol: dataFromDb.rol,
+                email: dataFromDb.email || ""
               }
             }
           };
