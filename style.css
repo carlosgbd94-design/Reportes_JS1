@@ -175,16 +175,21 @@ body.mobile-mode.lowperf {
 }
 
 #btnBrowseFile {
-  background: var(--card-2);
-  border: 1px dashed var(--card-border);
-  color: var(--muted);
+  background: var(--md-sys-color-surface-container-high, #f1f4f8);
+  border: 1px dashed var(--md-sys-color-outline-variant);
+  color: var(--md-sys-color-primary);
   height: 52px;
+  font-weight: 700;
 }
 
 #btnBrowseFile:hover {
   border-style: solid;
-  border-color: var(--accent);
-  color: var(--text);
+  border-color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-surface-container-highest);
+}
+
+#btnBrowseFile .material-symbols-rounded {
+  color: var(--md-sys-color-primary);
 }
 
 #btnBrowseFile.hasFile {
@@ -7120,23 +7125,30 @@ body.lowperf .table-responsive {
 /* Pie Fijo */
 .modalFooter {
   padding: 16px 24px 22px;
-  background: rgba(0, 0, 0, 0.1);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--md-sys-color-surface-container-low, #f7f9fc);
+  border-top: 1px solid var(--md-sys-color-outline-variant);
   display: flex;
   justify-content: flex-end;
   gap: 12px;
   flex-shrink: 0;
 }
 
+.modalFooter .btn:disabled {
+  background-color: rgba(26, 28, 32, 0.12) !important;
+  color: rgba(26, 28, 32, 0.38) !important;
+  box-shadow: none !important;
+}
+
 .modalNote {
   margin-top: 16px;
-  background: rgba(243, 229, 255, 0.08);
-  border: 1px solid rgba(243, 229, 255, 0.2);
+  background: var(--md-sys-color-surface-container);
+  border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 14px;
   padding: 12px 14px;
-  color: #cbd5e1;
+  color: var(--md-sys-color-on-surface-variant);
   font-size: 13px;
   line-height: 1.4;
+  font-weight: 500;
 }
 
 
