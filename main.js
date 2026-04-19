@@ -5655,13 +5655,13 @@ async function getTodayReports(fecha = "", force = false) {
 
       if (role === "UNIDAD") {
         pct = Number(status.compliance_pct || 0);
-        label = `Mi Cumplimiento: ${pct}%`;
+        label = `${pct}%`;
       } else if (role === "MUNICIPAL") {
         pct = Number(status.municipal_avg || status.compliance_pct || 0);
-        label = `Promedio Municipal: ${pct}%`;
+        label = `${pct}%`;
       } else {
         pct = Number(status.global_avg || status.compliance_pct || 0);
-        label = `Cumplimiento Global: ${pct}%`;
+        label = `${pct}%`;
       }
 
       dayBadge.textContent = label;
@@ -6700,7 +6700,7 @@ async function getTodayReports(fecha = "", force = false) {
 
     $("who").textContent = `${user.clues || "—"} — ${user.unidad || "—"}`;
     $("welcome").textContent = `Hola, ${user.usuario}`;
-    $("rolTxt").textContent = `Perfil: ${user.rol || "UNIDAD"}`;
+    $("rolTxt").textContent = (user.rol || "UNIDAD").replace(/^Perfil:\s*/i, "");
     if ($("tabCAPText")) {
       $("tabCAPText").textContent = (user.rol === "UNIDAD") ? "Captura" : "Panel";
     }
@@ -6711,11 +6711,11 @@ async function getTodayReports(fecha = "", force = false) {
     }
 
     if (user.rol === "ADMIN" || user.rol === "JURISDICCIONAL") {
-      $("munTxt").textContent = "Municipio(s): Todos";
+      $("munTxt").textContent = "Todos";
     } else if (user.rol === "MUNICIPAL") {
-      $("munTxt").textContent = `Municipio(s): ${user.municipio || "—"}`;
+      $("munTxt").textContent = (user.municipio || "—").replace(/^Municipio\(s\):\s*/i, "").replace(/^Municipio:\s*/i, "");
     } else {
-      $("munTxt").textContent = `Municipio: ${user.municipio || "—"}`;
+      $("munTxt").textContent = (user.municipio || "—").replace(/^Municipio:\s*/i, "");
     }
 
     // --- BOTTOM NAV PERMISSIONS ---

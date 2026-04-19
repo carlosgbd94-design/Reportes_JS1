@@ -32,7 +32,7 @@
 }
 
 * {
-  box-sizing: border-box
+  box-sizing: border-box;
 }
 
 body {
@@ -258,9 +258,23 @@ body.mobile-mode.lowperf {
 @media (max-width: 1024px) {
   .statusbarPublic {
     justify-content: center;
-    overflow-x: auto;
+    flex-wrap: wrap; 
     width: 100%;
-    padding: 4px 0;
+    padding: 8px 0;
+    gap: 8px; 
+  }
+}
+
+@media (max-width: 520px) {
+  .statusbarPublic {
+    flex-direction: column !important; /* Force vertical stacking on mobile */
+    align-items: stretch !important;
+  }
+  
+  .badge {
+    width: 100% !important;
+    min-width: 100% !important;
+    flex: 1 1 auto;
   }
 }
 
@@ -271,10 +285,12 @@ body.mobile-mode.lowperf {
   border-radius: 14px;
   background-color: #ffffff;
   border: 1px solid var(--md-sys-color-outline-variant);
-  gap: 4px;
-  min-width: 120px;
+  gap: 2px;
+  min-width: 130px;
   box-shadow: var(--md-shadow-1);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  align-items: center; /* Better alignment */
+  text-align: center;
 }
 
 .badge:hover {
@@ -286,104 +302,123 @@ body.mobile-mode.lowperf {
   font-size: 20px;
 }
 
-/* Semática de Categoría */
+/* Semática de Categoría - Disabled as it was showing redundant labels */
 .badge::before {
-  content: attr(data-label);
-  font-size: 9px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  opacity: 0.6;
+  display: none;
 }
 
 /* Colores Semánticos */
 .sessionInfoRow {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 14px;
+  flex-wrap: wrap; /* Better stacking */
+  gap: 12px;
+  margin-top: 20px;
   justify-content: flex-start;
 }
 
 .sessionTile {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 16px;
-  border-radius: 12px;
+  gap: 16px;
+  padding: 12px 20px 12px 14px;
+  border-radius: 20px;
   background-color: #ffffff;
-  border: 1px solid var(--md-sys-color-outline-variant);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  min-width: 180px;
+  border: 2px solid var(--md-sys-color-outline-variant);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 200px;
   flex: 0 1 auto;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  box-shadow: var(--md-shadow-1);
+  position: relative;
+  overflow: hidden;
 }
 
 .sessionTile:hover {
-  transform: translateY(-1.5px);
-  box-shadow: var(--md-shadow-1);
-}
-
-.sessionTile::before {
-  display: none; /* Hide the vertical label logic */
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: var(--md-shadow-2);
 }
 
 /* Internal Data Column */
 .sessionTile .dataCol {
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
 
 .sessionTile .dataLabel {
-  font-size: 9px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  opacity: 0.7;
-  line-height: 1;
+  letter-spacing: 0.1em;
+  opacity: 0.6;
   margin-bottom: 2px;
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 .sessionTile .dataValue {
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.2;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--md-sys-color-on-surface);
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .sessionTile .material-symbols-rounded {
-  font-size: 22px;
+  font-size: 24px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
   flex-shrink: 0;
+  background: var(--md-sys-color-surface-container-highest);
 }
 
-/* Semántica Reforzada */
+/* Semántica Premium */
 .sessionTile.good {
-  background-color: #ecfdf5 !important;
-  border-color: #10b98140 !important;
-  color: #065f46 !important;
+  border-color: #10b98130;
+  color: #065f46;
+}
+.sessionTile.good:hover { border-color: #10b981; }
+.sessionTile.good .material-symbols-rounded {
+  background: #dcfce7;
+  color: #166534;
 }
 
 .sessionTile.info {
-  background-color: #eff6ff !important;
-  border-color: #3b82f640 !important;
-  color: #1e40af !important;
+  border-color: #3b82f630;
+  color: #1e40af;
+}
+.sessionTile.info:hover { border-color: #3b82f6; }
+.sessionTile.info .material-symbols-rounded {
+  background: #e0f2fe;
+  color: #075985;
 }
 
 .sessionTile.warn {
-  background-color: #fffbeb !important;
-  border-color: #f59e0b40 !important;
-  color: #92400e !important;
+  border-color: #f59e0b30;
+  color: #92400e;
+}
+.sessionTile.warn:hover { border-color: #f59e0b; }
+.sessionTile.warn .material-symbols-rounded {
+  background: #fef3c7;
+  color: #d97706;
 }
 
 .sessionTile.secondary {
-  background-color: #f8fafc !important;
-  border-color: #cbd5e1 !important;
-  color: #334155 !important;
+  border-color: #cbd5e130;
+  color: #334155;
+}
+.sessionTile.secondary:hover { border-color: #64748b; }
+.sessionTile.secondary .material-symbols-rounded {
+  background: #f1f5f9;
+  color: #475569;
+}
 #bFecha {
-  background-color: #f0fdf4 !important; /* Mint Soft */
+  background-color: #f0fdf4 !important;
   border-color: #dcfce7 !important;
   color: #166534 !important;
 }
-#bFecha .material-symbols-rounded { color: #166534; }
 #bFecha .material-symbols-rounded { color: #166534; }
 
 #bHora {
@@ -482,23 +517,30 @@ body.mobile-mode.lowperf {
   text-align: left;
 }
 
-#cardLogin input {
-  width: 100%;
-  height: 56px;
-  padding: 0 16px;
-  font-family: inherit;
-  font-size: 16px;
-  color: var(--md-sys-color-on-surface);
-  background-color: #f1f4f8; /* Surface container */
-  border: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: 12px;
-  transition: all 0.2s cubic-bezier(0, 0, 0.2, 1);
-  outline: none;
+#cardLogin input,
+#cardLogin .passField input,
+#cardLogin input:not([type="checkbox"]):not([type="radio"]),
+#cardLogin .passField input:not([type="checkbox"]):not([type="radio"]) {
+  width: 100% !important;
+  height: 54px !important;
+  padding: 0 16px !important;
+  font-family: inherit !important;
+  font-size: 16px !important;
+  color: var(--md-sys-color-on-surface) !important;
+  background-color: #f8fafc !important; /* Unified background */
+  border: 1.5px solid var(--md-sys-color-outline-variant) !important;
+  border-radius: 14px !important;
+  transition: all 0.2s cubic-bezier(0, 0, 0.2, 1) !important;
+  outline: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
 }
 
-#cardLogin input:focus {
-  border: 2px solid var(--md-sys-color-primary);
-  background-color: #ffffff;
+#cardLogin input:focus,
+#cardLogin .passField input:focus {
+  border: 2px solid var(--md-sys-color-primary) !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(0, 51, 102, 0.1) !important;
 }
 
 #cardLogin .ghostBtn {
@@ -619,7 +661,7 @@ input::placeholder {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px
+  gap: 10px;
 }
 
 .title h2 {
@@ -633,49 +675,16 @@ input::placeholder {
 .pill {
   font-size: 12px;
   font-weight: 700;
-  color: var(--muted)
+  color: var(--muted);
 }
 
 .who {
   margin-top: 4px;
   color: var(--md-sys-color-on-surface-variant);
-  font-size: 13px
+  font-size: 13px;
 }
 
-#cardApp .title {
-  display: block;
-}
-
-#cardApp .title>div:first-child {
-  width: 100%;
-  min-width: 0;
-}
-
-#cardApp .statusbar {
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 16px;
-  justify-content: stretch;
-  align-items: stretch;
-}
-
-#cardApp .statusbar .badge {
-  width: 100%;
-  border-radius: 16px;
-  justify-content: center;
-}
-
-#cardApp #rolTxt,
-#cardApp #munTxt,
-#cardApp #dayTxt {
-  display: block;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+/* ✅ BADGE LEGACY PURGED */
 
 .statusBanner {
   margin-top: 12px;
@@ -7578,5 +7587,4 @@ body.bioConfirmOpen {
   color: var(--md-sys-color-primary);
   text-decoration: none;
   font-weight: 700;
-}
 }
