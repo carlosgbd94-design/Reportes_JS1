@@ -390,27 +390,30 @@ body.mobile-mode.lowperf {
 
 .ghostBtn {
   background: transparent;
-  color: var(--text-muted);
-  border: 1px solid var(--outline);
-  font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  font-weight: 600;
   font-size: 14px;
-  font-family: 'Poppins';
+  padding: 12px;
+  border-radius: 12px;
+  transition: all 0.2s ease;
 }
 
 .ghostBtn:hover {
-  background: var(--surface-low);
-  border-color: var(--outline);
-  color: var(--text);
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-primary);
 }
 
 #cardLogin {
-  width: min(400px, 100%);
-  background: var(--surface);
-  border-radius: 20px;
+  width: 100%;
+  max-width: 440px;
+  background: #ffffff;
+  border-radius: 28px;
   padding: 40px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--outline);
-  animation: modalIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--md-shadow-3);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  animation: modalIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: center;
 }
 
 label {
@@ -677,24 +680,28 @@ button {
 }
 
 #btnLogin {
-  margin-top: 32px;
+  margin-top: 24px;
   width: 100%;
-  background: var(--primary);
+  padding: 14px;
+  background-color: var(--md-sys-color-primary) !important;
   color: #FFFFFF !important;
   font-weight: 700;
-  box-shadow: var(--shadow-2);
+  border-radius: 12px;
+  box-shadow: var(--md-shadow-1);
   border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 #btnLogin:hover {
-  background: var(--secondary);
-  color: #FFFFFF !important;
-  box-shadow: var(--shadow-3);
+  background-color: var(--md-sys-color-secondary) !important;
+  box-shadow: var(--md-shadow-2);
   transform: translateY(-2px);
 }
 
 #btnLogin:active {
   transform: translateY(0);
+  opacity: 0.9;
 }
 
 input[type="date"] {
