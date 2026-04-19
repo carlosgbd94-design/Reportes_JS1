@@ -366,48 +366,21 @@ body.mobile-mode.lowperf {
   }
 }
 
-/* ✅ LOGIN v2 (INTEGRADO) */
+/* ✅ SECTION: LOGIN (Unified & Clean) */
 .loginWrap {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 40px 24px;
-  background: radial-gradient(circle at top right, var(--md-sys-color-primary-container), transparent 60%),
-              radial-gradient(circle at bottom left, var(--md-sys-color-secondary-container), transparent 60%);
+  min-height: 80vh;
+  padding: 40px 20px;
+  background: radial-gradient(circle at top right, #d6e3ff, transparent 60%),
+              radial-gradient(circle at bottom left, #d2e8d1, transparent 60%);
 }
 
 #cardLogin {
   width: 100%;
-  max-width: 440px;
-  background: white;
-  border-radius: 28px;
-  padding: 48px;
-  box-shadow: var(--md-shadow-3);
-  border: 1px solid var(--md-sys-color-outline-variant);
-  animation: modalIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  text-align: center;
-}
-
-.ghostBtn {
-  background: transparent;
-  color: var(--md-sys-color-on-surface-variant);
-  border: 1px solid var(--md-sys-color-outline-variant);
-  font-weight: 600;
-  font-size: 14px;
-  padding: 12px;
-  border-radius: 12px;
-  transition: all 0.2s ease;
-}
-
-.ghostBtn:hover {
-  background: var(--md-sys-color-surface-container);
-  color: var(--md-sys-color-primary);
-}
-
-#cardLogin {
-  width: 100%;
-  max-width: 440px;
-  background: #ffffff;
+  max-width: 420px;
+  background-color: #ffffff !important;
   border-radius: 28px;
   padding: 40px;
   box-shadow: var(--md-shadow-3);
@@ -416,38 +389,45 @@ body.mobile-mode.lowperf {
   text-align: center;
 }
 
-label {
+#cardLogin label {
   display: block;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--md-sys-color-primary);
-  margin: 20px 0 8px 4px;
+  margin: 24px 0 8px 4px;
+  text-align: left;
 }
 
-input,
-select,
-textarea {
+#cardLogin input {
   width: 100%;
   height: 56px;
   padding: 0 16px;
   font-family: inherit;
   font-size: 16px;
   color: var(--md-sys-color-on-surface);
-  background-color: var(--md-sys-color-surface);
-  border: 1px solid var(--md-sys-color-outline);
+  background-color: #f1f4f8; /* Surface container */
+  border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 12px;
   transition: all 0.2s cubic-bezier(0, 0, 0.2, 1);
   outline: none;
 }
 
-input:focus,
-select:focus,
-textarea:focus {
+#cardLogin input:focus {
   border: 2px solid var(--md-sys-color-primary);
-  padding: 0 15px; /* Adjust for border width change */
-  background-color: var(--md-sys-color-surface);
-  box-shadow: none;
+  background-color: #ffffff;
+}
+
+#cardLogin .ghostBtn {
+  margin-top: 16px;
+  width: 100%;
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  font-weight: 600;
+  padding: 12px;
+  border-radius: 12px;
 }
 
 input::placeholder {
@@ -650,7 +630,7 @@ label {
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.01em;
-  color: var(--primary);
+  color: var(--md-sys-color-primary);
   margin: 16px 0 8px;
 }
 
@@ -685,12 +665,17 @@ button {
   padding: 14px;
   background-color: var(--md-sys-color-primary) !important;
   color: #FFFFFF !important;
-  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 800;
   border-radius: 12px;
   box-shadow: var(--md-shadow-1);
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 #btnLogin:hover {
@@ -699,9 +684,24 @@ button {
   transform: translateY(-2px);
 }
 
-#btnLogin:active {
-  transform: translateY(0);
-  opacity: 0.9;
+.passField {
+  position: relative;
+  width: 100%;
+}
+
+#togglePassword {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: var(--md-sys-color-on-surface-variant);
+  user-select: none;
+  font-size: 22px;
+}
+
+#password {
+  padding-right: 48px !important;
 }
 
 input[type="date"] {
@@ -856,11 +856,12 @@ option {
 }
 
 .btn {
-  background: var(--primary);
+  background-color: var(--md-sys-color-primary);
   color: #FFFFFF !important;
-  font-weight: 700;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 800;
   border: none;
-  box-shadow: var(--shadow-2);
+  box-shadow: var(--md-shadow-1);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: inline-flex;
   align-items: center;
@@ -868,13 +869,13 @@ option {
   gap: 12px;
   min-height: 52px;
   padding: 12px 24px;
-  border-radius: 20px;
+  border-radius: 16px;
+  cursor: pointer;
 }
 
 .btn:hover {
-  background: var(--secondary);
-  color: #FFFFFF !important;
-  box-shadow: var(--shadow-3);
+  background-color: var(--md-sys-color-secondary);
+  box-shadow: var(--md-shadow-2);
   transform: translateY(-2px);
 }
 
@@ -916,10 +917,10 @@ option {
 }
 
 .tab.active {
-  background: var(--primary);
+  background-color: var(--md-sys-color-primary);
   color: #FFFFFF !important;
-  border-color: var(--primary);
-  box-shadow: var(--shadow-2);
+  border-color: var(--md-sys-color-primary);
+  box-shadow: var(--md-shadow-1);
 }
 
 /* ===== AJUSTE TIPOGRÁFICO GLOBAL ===== */
@@ -999,16 +1000,28 @@ label,
   transition: all 0.2s ease;
 }
 
+.miniBtn.active {
+  background-color: var(--md-sys-color-surface-container-high);
+  border-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-primary);
+}
+
+.miniBtn.active:hover {
+  background-color: var(--md-sys-color-primary);
+  color: #FFFFFF;
+  border-color: var(--md-sys-color-primary);
+}
+
 .tab:hover {
   background: var(--surface-low);
-  border-color: var(--primary);
-  color: var(--primary);
+  border-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-primary);
 }
 
 .tab.active {
-  background: var(--primary);
+  background: var(--md-sys-color-primary);
   color: #FFFFFF;
-  border-color: var(--primary);
+  border-color: var(--md-sys-color-primary);
   box-shadow: 0 8px 16px -2px rgba(79, 70, 229, 0.3);
   transform: translateY(-1px);
 }
@@ -7465,47 +7478,12 @@ body.bioConfirmOpen {
   }
 }
 
-/* ===== BOTONES MODERNOS (TODOS / NINGUNO) ===== */
-.modernActionBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  background: rgba(99, 102, 241, 0.15);
-  /* Accent soft */
-  color: var(--accent);
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.modernActionBtn:hover {
-  background: rgba(99, 102, 241, 0.25);
-  border-color: rgba(99, 102, 241, 0.5);
-}
-
-.modernActionBtn.outlined {
-  background: transparent;
-  color: var(--muted);
-  border-color: var(--line);
-}
-
-.modernActionBtn.outlined:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-/* ✅ APP FOOTER (Limpieza Final) */
+/* ✅ APP FOOTER (Unified) */
 .appFooter {
   text-align: center;
   padding: 40px 20px;
   font-size: 11px;
   color: var(--md-sys-color-on-surface-variant);
-  opacity: 1;
   font-weight: 500;
   letter-spacing: 0.5px;
   width: 100%;
@@ -7515,29 +7493,8 @@ body.bioConfirmOpen {
 }
 
 .appFooter a {
-  color: inherit;
+  color: var(--md-sys-color-primary);
   text-decoration: none;
   font-weight: 700;
-  transition: color 0.2s ease;
 }
-
-.appFooter a:hover {
-  color: var(--md-sys-color-primary);
-  text-decoration: underline;
-}
-
-/* ✅ MD3 FINAL STABILIZATION */
-.header-distribution {
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center;
-  width: 100%;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-@media (max-width: 768px) {
-  .header-distribution {
-    justify-content: center !important;
-  }
 }
