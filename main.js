@@ -195,23 +195,37 @@ document.addEventListener("DOMContentLoaded", () => {
     overlay.classList.remove("show");
   }
 
-  /* MQ3 Ripple Effect */
+  /* MD3 Ripple Effect - Modernized with high-precision positioning */
   function createRipple(event, targetElement = null) {
     const button = targetElement || event.currentTarget;
     if (!button || typeof button.getBoundingClientRect !== "function") return;
-    
+
+    // Ensure button is ready for absolute positioning children
+    if (getComputedStyle(button).position === "static") {
+      button.style.position = "relative";
+    }
+    if (getComputedStyle(button).overflow !== "hidden") {
+      button.style.overflow = "hidden";
+    }
+
     const circle = document.createElement("span");
     const diameter = Math.max(button.clientWidth, button.clientHeight);
     const radius = diameter / 2;
+    const rect = button.getBoundingClientRect();
 
     circle.style.width = circle.style.height = `${diameter}px`;
-    circle.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`;
-    circle.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`;
-    circle.classList.add("ripple");
+    circle.style.left = `${event.clientX - rect.left - radius}px`;
+    circle.style.top = `${event.clientY - rect.top - radius}px`;
+    circle.classList.add("md-ripple");
 
-    const ripple = button.getElementsByClassName("ripple")[0];
-    if (ripple) { ripple.remove(); }
+    // Clear previous ripples properly
+    const oldRipples = button.querySelectorAll(".md-ripple");
+    oldRipples.forEach(r => r.remove());
+    
     button.appendChild(circle);
+
+    // Auto-remove after animation
+    setTimeout(() => circle.remove(), 600);
   }
 
 
@@ -1735,7 +1749,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Global listeners
     document.addEventListener("click", (ev) => {
       // Ripple
-      const btn = ev.target.closest(".md-btn, .btn, .ghostBtn, .miniBtn");
+      const btn = ev.target.closest(".md-btn, .btn, .ghostBtn, .miniBtn, .tab, .md-delete-btn");
       if (btn) createRipple(ev, btn);
 
       // Group Toggle
@@ -4897,9 +4911,12 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
       <td>
         <input type="number" class="sr-cantidad-input" min="0" step="1" value="${data?.cantidad || ""}" placeholder="0">
       </td>
-      <td>
-        <button type="button" class="miniBtn bad" onclick="this.closest('tr').remove();">
-          <span class="material-symbols-rounded">delete</span>
+      <td style="text-align: center;">
+        <button type="button" class="md-delete-btn" title="Eliminar este lote" onclick="this.closest('tr').remove();">
+          <svg viewBox="0 0 24 24">
+            <path class="trash-lid" d="M15 4V3H9v1H4v2h16V4h-5z" />
+            <path d="M5 21a2 2 0 002 2h10a2 2 0 002-2V7H5v14zM8 9h2v10H8V9zm4 0h2v10h-2V9zm4 0h2v10h-2V9z" />
+          </svg>
         </button>
       </td>
     `;
@@ -6701,8 +6718,16 @@ async function getTodayReports(fecha = "", force = false) {
     $("who").textContent = `${user.clues || "—"} — ${user.unidad || "—"}`;
     $("welcome").textContent = `Hola, ${user.usuario}`;
     $("rolTxt").textContent = (user.rol || "UNIDAD").replace(/^Perfil:\s*/i, "");
-    if ($("tabCAPText")) {
-      $("tabCAPText").textContent = (user.rol === "UNIDAD") ? "Captura" : "Panel";
+    
+    const capTab = $("btnTabCAP");
+    if (capTab) {
+      if (user.rol === "UNIDAD") {
+        capTab.classList.add("capture-header-mode");
+        if ($("tabCAPText")) $("tabCAPText").textContent = "Captura";
+      } else {
+        capTab.classList.remove("capture-header-mode");
+        if ($("tabCAPText")) $("tabCAPText").textContent = "Panel";
+      }
     }
 
     if ($("btnOpenUpload")) {
