@@ -101,18 +101,15 @@ body.mobile-mode.lowperf {
 }
 
 .top {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
-  height: var(--header-height);
   z-index: 1000;
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border-bottom: 1px solid var(--md-sys-color-outline-variant);
   transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
 .top:hover {
@@ -137,16 +134,19 @@ body.mobile-mode.lowperf {
 }
 
 .topInner {
-  padding: 32px 24px;
-  background: var(--md-surface);
-  border-bottom: 1px solid var(--md-outline-variant);
+  padding: 12px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-color: var(--md-sys-color-surface);
 }
 
 .brandCenter {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
   align-items: center;
+  gap: 20px;
 }
 
 .brandMain {
@@ -202,11 +202,10 @@ body.mobile-mode.lowperf {
 }
 
 .brandText h1 {
-  font-size: clamp(2rem, 3vw, 3rem);
+  font-size: 1.5rem;
   margin: 0;
   font-weight: 800;
-  letter-spacing: -.03em;
-  line-height: 1.1;
+  letter-spacing: -.02em;
   color: var(--md-sys-color-primary);
 }
 
@@ -220,17 +219,13 @@ body.mobile-mode.lowperf {
 }
 
 .logoBadge {
-  width: fit-content;
-  padding: 16px 20px;
-  border-radius: 28px;
-  background: var(--md-surface-container-low);
-  border: 1px solid var(--md-outline-variant);
-  box-shadow: var(--md-shadow-1);
+  padding: 8px 12px;
+  border-radius: 16px;
+  background: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline-variant);
   display: flex;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
 }
 
 .logoBadge:hover {
@@ -239,9 +234,8 @@ body.mobile-mode.lowperf {
 }
 
 .logoBadge img {
-  height: 64px;
+  height: 48px;
   width: auto;
-  object-fit: contain;
 }
 
 .statusbarPublic {
@@ -376,45 +370,27 @@ body.mobile-mode.lowperf {
 
 @media (max-width: 980px) {
   .topInner {
-    padding: 18px 18px 18px;
+    padding: 12px 16px;
   }
 
-  .brandMain {
-    grid-template-columns: 1fr;
-    gap: 14px;
-    justify-items: center;
-  }
-
-  .brandText {
+  .brandCenter {
+    justify-content: center;
     text-align: center;
   }
 
-  .brandText p {
-    max-width: none;
-  }
-
-  .statusbarPublic {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+  .brandMain {
+    flex-direction: column;
     gap: 8px;
   }
 
-  .statusbarPublic #bJueves,
-  .statusbarPublic #bGuardado {
-    grid-column: span 2;
+  .statusbarPublic {
+    justify-content: center;
+    width: 100%;
   }
 
   .badge {
-    min-height: 56px;
-    padding: 13px 15px;
-    justify-content: flex-start;
-  }
-
-  #hdrFecha,
-  #hdrHora,
-  #hdrJueves,
-  #hdrGuardado {
-    font-size: 1.02rem;
+    padding: 6px 12px;
+    font-size: 12px;
   }
 }
 
@@ -423,18 +399,17 @@ body.mobile-mode.lowperf {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  padding: 40px 24px;
   background: radial-gradient(circle at top right, var(--md-sys-color-primary-container), transparent 60%),
               radial-gradient(circle at bottom left, var(--md-sys-color-secondary-container), transparent 60%);
-  padding: 24px;
 }
 
 #cardLogin {
   width: 100%;
   max-width: 440px;
   background: white;
-  border-radius: 32px;
-  padding: 56px;
+  border-radius: 28px;
+  padding: 48px;
   box-shadow: var(--md-shadow-3);
   border: 1px solid var(--md-sys-color-outline-variant);
   animation: modalIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
@@ -550,7 +525,7 @@ input::placeholder {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 24px;
-  margin-top: calc(var(--header-height) + 24px);
+  margin-top: 24px;
   padding: 0;
 }
 
