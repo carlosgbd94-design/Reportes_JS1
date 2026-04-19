@@ -122,19 +122,37 @@ body.mobile-mode.lowperf {
 }
 
 .brandCenter {
-  display: flex !important;
-  justify-content: space-between !important;
+  display: grid !important;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "branding insights";
   align-items: center;
   width: 100%;
-  gap: 20px;
-  flex-wrap: wrap;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .brandCenter {
+    grid-template-columns: 1fr;
+    grid-template-areas: 
+      "branding"
+      "insights";
+    gap: 16px;
+    text-align: center;
+  }
 }
 
 .brandMain {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 20px;
+  grid-area: branding;
+  display: flex;
   align-items: center;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .brandMain {
+    flex-direction: column;
+    gap: 12px;
+  }
 }
 
 /* ✅ DRIVE BUTTON SPECIFIC (Unified IconBtn Style) */
@@ -182,157 +200,124 @@ body.mobile-mode.lowperf {
   text-align: left;
 }
 
+@media (max-width: 1024px) {
+  .brandText {
+    text-align: center;
+  }
+}
+
 .brandText h1 {
-  font-size: 1.5rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.8rem;
   margin: 0;
-  font-weight: 800;
-  letter-spacing: -.02em;
+  font-weight: 900;
+  letter-spacing: -0.03em;
   color: var(--md-sys-color-primary);
+  line-height: 1;
 }
 
 .brandText p {
-  margin: 8px 0 0 0;
+  margin: 4px 0 0 0;
   color: var(--md-sys-color-on-surface-variant);
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 1.35;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
   max-width: 42ch;
 }
 
 .logoBadge {
-  padding: 8px 12px;
-  border-radius: 16px;
-  background: var(--md-sys-color-surface-container-low);
+  padding: 12px;
+  border-radius: 18px;
+  background: #ffffff;
   border: 1px solid var(--md-sys-color-outline-variant);
   display: flex;
-  gap: 12px;
+  gap: 16px;
   align-items: center;
-}
-
-.logoBadge:hover {
-  box-shadow: var(--md-shadow-2);
-  background: var(--md-surface-container);
-}
-
-.logoBadge img {
-  height: 48px;
-  width: auto;
-}
-
-.statusbarPublic {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: 12px;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 100px;
-  font-size: 13px;
-  font-weight: 700;
-  background-color: var(--md-sys-color-surface-variant);
-  color: var(--md-sys-color-on-surface-variant);
-  border: 1px solid var(--md-sys-color-outline-variant);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
-}
-
-.badge.good, .badge.ok {
-  background-color: #d1fae5 !important;
-  color: #065f46 !important;
-  border-color: transparent !important;
-}
-
-.badge.warn {
-  background-color: #fef3c7 !important;
-  color: #92400e !important;
-  border-color: transparent !important;
-}
-
-.badge.bad {
-  background-color: #fee2e2 !important;
-  color: #991b1b !important;
-  border-color: transparent !important;
-}
-
-.badge.info {
-  background-color: #d6e3ff !important;
-  color: #003366 !important;
-  border-color: transparent !important;
-}
-
-.badge.secondary {
-  background-color: #f1f4f8 !important;
-  color: #43474e !important;
-  border-color: transparent !important;
-}
-
-.badge:hover {
   box-shadow: var(--md-shadow-1);
 }
 
-.badge .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
+.logoBadge img {
+  height: 44px;
+  width: auto;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.05));
 }
 
-.badge.good .dot { background-color: var(--md-sys-color-success); }
-.badge.warn .dot { background-color: var(--md-sys-color-warning); }
-.badge.bad .dot { background-color: var(--md-sys-color-error); }
-
-#bFecha .material-symbols-rounded {
-  color: #1B6D4F;
-  /* Darker Green */
+.statusbarPublic {
+  grid-area: insights;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
 }
 
-#bHora .material-symbols-rounded {
-  color: #004d80;
-  /* Darker Blue */
+@media (max-width: 1024px) {
+  .statusbarPublic {
+    justify-content: center;
+    overflow-x: auto;
+    width: 100%;
+    padding: 4px 0;
+  }
 }
 
-.badge.weather-badge {
-  background: #E0F2F1;
-  /* Soft Cyan container */
-  color: #004D40;
-  /* Dark Teal text */
-  border: 1px solid rgba(0, 77, 64, 0.1);
+.badge {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 16px;
+  border-radius: 14px;
+  background-color: #ffffff;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  gap: 4px;
+  min-width: 120px;
+  box-shadow: var(--md-shadow-1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.badge.weather-badge .material-symbols-rounded {
-  color: #00796B;
-  /* Teal Icon */
+.badge:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--md-shadow-2);
 }
 
+.badge .material-symbols-rounded {
+  font-size: 20px;
+}
+
+/* Semática de Categoría */
+.badge::before {
+  content: attr(data-label);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.6;
+}
+
+/* Colores Semánticos */
 #bFecha {
-  border-color: rgba(143, 129, 229, .28);
+  background-color: #f0fdf4 !important; /* Mint Soft */
+  border-color: #dcfce7 !important;
+  color: #166534 !important;
 }
-
-#bFecha .dot {
-  background: #c37bff;
-}
-
-#bFecha .dot::after {
-  background: rgba(195, 123, 255, .14);
-}
+#bFecha .material-symbols-rounded { color: #166534; }
 
 #bHora {
-  border-color: rgba(72, 155, 205, .24);
+  background-color: #f0f7ff !important; /* Blue Soft */
+  border-color: #e0f2fe !important;
+  color: #075985 !important;
 }
+#bHora .material-symbols-rounded { color: #075985; }
 
-#bHora .dot {
-  background: #48c7ff;
+#bClima {
+  background-color: #f0fdfa !important; /* Teal Soft */
+  border-color: #ccfbf1 !important;
+  color: #115e59 !important;
 }
+#bClima .material-symbols-rounded { color: #115e59; }
 
-#bHora .dot::after {
-  background: rgba(72, 199, 255, .14);
+#bGuardado {
+  background-color: #fefce8 !important; /* Amber Soft */
+  border-color: #fef08a !important;
+  color: #854d0e !important;
 }
+#bGuardado .material-symbols-rounded { color: #854d0e; }
 
 #hdrFecha,
 #hdrHora,
