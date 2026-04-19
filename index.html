@@ -225,21 +225,33 @@
                     <div class="who" id="who"></div>
 
                     <div class="statusbar header-distribution sessionInfoRow">
-                      <div class="sessionTile good" data-label="Perfil">
+                      <div class="sessionTile good">
                         <span class="material-symbols-rounded">verified_user</span>
-                        <span id="rolTxt">—</span>
+                        <div class="dataCol">
+                          <span class="dataLabel">Perfil</span>
+                          <span id="rolTxt" class="dataValue">—</span>
+                        </div>
                       </div>
-                      <div class="sessionTile info" data-label="Municipio">
+                      <div class="sessionTile info">
                         <span class="material-symbols-rounded">location_on</span>
-                        <span id="munTxt">—</span>
+                        <div class="dataCol">
+                          <span class="dataLabel">Municipio</span>
+                          <span id="munTxt" class="dataValue">—</span>
+                        </div>
                       </div>
-                      <div class="sessionTile warn" id="bCumplimiento" data-label="Progreso">
+                      <div class="sessionTile warn" id="bCumplimiento">
                         <span class="material-symbols-rounded">trending_up</span>
-                        <span id="dayTxt">—</span>
+                        <div class="dataCol">
+                          <span class="dataLabel">Progreso</span>
+                          <span id="dayTxt" class="dataValue">—</span>
+                        </div>
                       </div>
-                      <div class="sessionTile secondary" id="bNotif" style="display:none" data-label="Alertas">
+                      <div class="sessionTile secondary" id="bNotif" style="display:none">
                         <span class="material-symbols-rounded">notifications</span>
-                        <span id="notifTxt">0</span>
+                        <div class="dataCol">
+                          <span class="dataLabel">Alertas</span>
+                          <span id="notifTxt" class="dataValue">0</span>
+                        </div>
                       </div>
                     </div>
                   </div>
