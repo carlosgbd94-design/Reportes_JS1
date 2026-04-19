@@ -224,15 +224,23 @@
                     <h2 id="welcome">Hola</h2>
                     <div class="who" id="who"></div>
 
-                    <div class="statusbar header-distribution">
-                      <span class="badge good"><span class="dot"></span><span id="rolTxt">Rol: —</span></span>
-                      <span class="badge info"><span class="dot"></span><span id="munTxt">Municipio(s): —</span></span>
-                      <span class="badge warn" id="bCumplimiento"><span class="dot"></span><span
-                          id="dayTxt">—</span></span>
-                      <span class="badge secondary" id="bNotif" style="display:none">
-                        <span class="dot"></span>
-                        <span id="notifTxt">Actividad: 0</span>
-                      </span>
+                    <div class="statusbar header-distribution sessionInfoRow">
+                      <div class="sessionTile good" data-label="Perfil">
+                        <span class="material-symbols-rounded">verified_user</span>
+                        <span id="rolTxt">—</span>
+                      </div>
+                      <div class="sessionTile info" data-label="Municipio">
+                        <span class="material-symbols-rounded">location_on</span>
+                        <span id="munTxt">—</span>
+                      </div>
+                      <div class="sessionTile warn" id="bCumplimiento" data-label="Progreso">
+                        <span class="material-symbols-rounded">trending_up</span>
+                        <span id="dayTxt">—</span>
+                      </div>
+                      <div class="sessionTile secondary" id="bNotif" style="display:none" data-label="Alertas">
+                        <span class="material-symbols-rounded">notifications</span>
+                        <span id="notifTxt">0</span>
+                      </div>
                     </div>
                   </div>
                 </div>
