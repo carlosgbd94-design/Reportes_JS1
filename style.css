@@ -123,11 +123,11 @@ body.mobile-mode.lowperf {
 
 .brandCenter {
   display: grid !important;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: auto 1fr;
   grid-template-areas: "branding insights";
   align-items: center;
   width: 100%;
-  gap: 24px;
+  gap: 32px;
 }
 
 @media (max-width: 1024px) {
@@ -143,9 +143,10 @@ body.mobile-mode.lowperf {
 
 .brandMain {
   grid-area: branding;
-  display: flex;
+  display: flex !important;
   align-items: center;
   gap: 24px;
+  width: max-content;
 }
 
 @media (max-width: 1024px) {
