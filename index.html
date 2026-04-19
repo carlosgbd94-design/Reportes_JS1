@@ -1,0 +1,1793 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@0..1" rel="stylesheet">
+<link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<link rel="shortcut icon" href="favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-title" content="Reportes" />
+<link rel="manifest" href="site.webmanifest" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Reportes y existencias Jurisdicción Sanitaria 1</title>
+
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+<body>
+  <div class="wrap">
+
+    <div class="top">
+      <div class="topInner">
+        <div class="brandCenter">
+
+          <div class="brandMain">
+            <div class="logoBadge" aria-label="Logos institucionales">
+              <img id="logoA" src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/Seseq_vertical_2025.png" alt="SESEQ">
+              <img id="logoB" src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/logo_Q.png" alt="Gobierno de Querétaro">
+            </div>
+            </div>
+
+            <div class="brandText">
+              <h1>JS1 Reportes</h1>
+              <p>Existencia de biológicos + Consumibles (solo jueves)</p>
+            </div>
+          </div>
+
+          <div class="statusbar statusbarPublic">
+            <span class="badge secondary" id="bFecha">
+              <span class="material-symbols-rounded">calendar_month</span>
+              <span id="hdrFecha">Fecha: —</span>
+            </span>
+
+            <span class="badge info" id="bHora">
+              <span class="material-symbols-rounded">schedule</span>
+              <span id="hdrHora">Hora: —</span>
+            </span>
+
+            <span class="badge weather-badge" id="bClima">
+              <span class="material-symbols-rounded">partly_cloudy_day</span>
+              <span id="hdrClima">—</span>
+            </span>
+
+            <span class="badge good" id="bGuardado" style="display:none">
+              <span class="material-symbols-rounded">save</span>
+              <span id="hdrGuardado">Guardado: —</span>
+            </span>
+          </div>
+
+      </div>
+    </div>
+
+    <!-- ✅ LOGIN centrado debajo del header -->
+    <div class="loginWrap">
+      <div class="card" id="cardLogin">
+        <div class="title">
+          <h2>Iniciar sesión</h2>
+          <span class="pill" id="loginStatus" style="display:none">—</span>
+        </div>
+
+        <form id="loginForm" autocomplete="on">
+          <label>Usuario</label>
+          <input id="usuario" name="username" autocomplete="username" placeholder="CLUES_NOMBRE_UNIDAD">
+
+          <label>Contraseña</label>
+          <div class="passField">
+            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••">
+            <span class="material-symbols-rounded" id="togglePassword">visibility_off</span>
+          </div>
+
+          <button class="btn" id="btnLogin" type="submit">Entrar</button>
+          <button class="ghostBtn" id="btnForgotPassword" type="button" style="margin-top:10px; width:100%;">
+            <span class="material-symbols-rounded">mail</span> Olvidé mi contraseña
+          </button>
+        </form>
+
+        <div class="hint">Si tarda, verás una pantalla de carga.</div>
+      </div>
+    </div>
+
+    <div class="grid">
+
+      <!-- RIGHT (APP) -->
+      <div class="gridRight" id="rightColumn" style="display:none">
+
+        <div class="rightLayout">
+
+          <!-- ✅ SIDEBAR -->
+          <div class="sideCard" id="cardSide">
+            <div class="sideTitle">
+              <h3>Acciones</h3>
+              <span class="pill" id="capStatus">—</span>
+            </div>
+
+            <div class="actions" style="justify-content:flex-start">
+              <button class="iconbtn" id="btnExport" title="Exportar reporte seleccionado" style="display:none">
+                <span class="material-symbols-rounded">download</span> Exportar Reportes
+              </button>
+
+
+              <button class="iconbtn" id="btnClearLiveFeed" title="Limpiar actividad reciente" style="display:none">
+                <span class="material-symbols-rounded">notifications_paused</span> Limpiar actividad
+              </button>
+
+              <button class="iconbtn" id="btnLogout" title="Cerrar sesión">
+                <span class="material-symbols-rounded">logout</span> Salir
+              </button>
+
+              <button class="iconbtn" id="btnOpenUpload" title="Subir evidencias a Drive" style="display:none">
+                <span class="material-symbols-rounded">cloud_upload</span> Subir archivos
+              </button>
+
+              <button class="iconbtn" id="btnTopNotifications" type="button" style="display:none">
+                <div class="badge-wrapper">
+                  <span class="material-symbols-rounded">notifications</span>
+                  <span id="topNotifBadge" class="liveBadge" style="display:none">0</span>
+                </div>
+                Notificaciones
+              </button>
+            </div>
+
+            <div id="topNotifDropdown" class="topNotifDropdown" style="display:none">
+              <div class="topNotifCard">
+                <div class="topNotifCardHead">
+                  <div class="topNotifHeaderTop">
+                    <div style="flex: 0 1 auto; min-width: 0;">
+                      <div class="topNotifTitle">Notificaciones</div>
+                      <div class="topNotifSub" id="topNotifSub">Bandeja de entrada</div>
+                    </div>
+
+                    <div class="topNotifKpis">
+                      <div class="notifStat" title="Notificaciones no leídas">
+                        <span class="material-symbols-rounded">mail</span>
+                        <span id="topNotifUnreadKpi">0</span>
+                      </div>
+                      <div class="notifStat" title="Total notificaciones visibles">
+                        <span class="material-symbols-rounded">list</span>
+                        <span id="topNotifTotalKpi">0</span>
+                      </div>
+                      <div class="notifStat" title="Perfil de usuario">
+                        <span class="material-symbols-rounded">person</span>
+                        <span id="topNotifRoleKpi">—</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="topNotifHeadActions">
+                    <button type="button" class="ghostBtn" id="btnTopNotifRefresh"
+                      title="Actualizar bandeja de entrada">
+                      <span class="material-symbols-rounded">refresh</span>
+                    </button>
+
+                    <button type="button" class="ghostBtn" id="btnTopNotifOnlyUnread" title="Mostrar solo no leídas">
+                      <span class="material-symbols-rounded">filter_alt</span>
+                    </button>
+
+                    <button type="button" class="ghostBtn" id="btnTopNotifMarkVisibleRead"
+                      title="Marcar visibles como leídas">
+                      <span class="material-symbols-rounded">done_all</span>
+                    </button>
+
+                    <button type="button" class="ghostBtn" id="btnTopNotifClose" title="Cerrar panel">
+                      <span class="material-symbols-rounded">close</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="topNotifBody">
+
+                  <div class="notifList topNotifList" id="topNotifListWrap">
+                    <div class="notifEmpty">Aún no hay notificaciones.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+            <div class="hr sideDivider"></div>
+
+            <div class="sideFactWrap">
+              <div class="sideTitle" style="margin-bottom:8px">
+                <h3>Dato curioso del programa</h3>
+                <span class="pill" id="factTag">—</span>
+              </div>
+
+              <div class="fact">
+                <div class="factTitle">
+                  <span class="material-symbols-rounded" id="factIcon"
+                    style="font-size:22px;color:var(--md-sys-color-primary)">syringe</span>
+                  <span id="factTitle">—</span>
+                </div>
+                <p class="factBody" id="factBody">—</p>
+              </div>
+
+              <div class="hint" style="margin-top:12px">
+              </div>
+            </div>
+          </div>
+          <div class="mainStack">
+
+            <!-- ✅ MAIN -->
+            <div class="mainStack">
+
+              <div class="card" id="cardApp">
+                <div class="title">
+                  <div>
+                    <h2 id="welcome">Hola</h2>
+                    <div class="who" id="who"></div>
+
+                    <div class="statusbar header-distribution">
+                      <span class="badge good"><span class="dot"></span><span id="rolTxt">Rol: —</span></span>
+                      <span class="badge info"><span class="dot"></span><span id="munTxt">Municipio(s): —</span></span>
+                      <span class="badge warn" id="bCumplimiento"><span class="dot"></span><span
+                          id="dayTxt">—</span></span>
+                      <span class="badge secondary" id="bNotif" style="display:none">
+                        <span class="dot"></span>
+                        <span id="notifTxt">Actividad: 0</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="tabs">
+                  <button class="tab active" id="tabCAP">
+                    <div class="badge-wrapper">
+                      <span class="material-symbols-rounded">assignment</span>
+                      <span id="pinolBadgeMain" class="liveBadge pulse" style="display:none">0</span>
+                    </div>
+                    <span id="tabCAPText">Captura</span>
+                  </button>
+
+                  <button class="tab" id="tabNOTIFS" style="display:none">
+                    <div class="badge-wrapper">
+                      <span class="material-symbols-rounded">notifications</span>
+                      <span id="notifBadgeMain" class="liveBadge pulse" style="display:none">0</span>
+                    </div>
+                    <span>Notificaciones</span>
+                  </button>
+
+                  <button class="tab" id="tabADMIN" style="display:none">
+                    <span class="material-symbols-rounded">admin_panel_settings</span>
+                    <span>Administración</span>
+                  </button>
+                </div>
+              </div>
+
+              <div id="sectionCapturaUnidad" style="display:none">
+                <!-- CAPTURA -->
+                <div class="sectionTitle">
+                  <h3>Captura de reportes</h3>
+                </div>
+
+                <div class="tabs">
+                  <button class="tab active" id="tabSR">
+                    <span class="material-symbols-rounded">vaccines</span>
+                    <span>Existencia de biológicos</span>
+                  </button>
+                  <button class="tab" id="tabCONS">
+                    <span class="material-symbols-rounded">medical_services</span>
+                    <span>Consumibles (jueves)</span>
+                  </button>
+                  <button class="tab" id="tabBIO" style="display:none">
+                    <span class="material-symbols-rounded">science</span>
+                    <span>Pedido de biológico</span>
+                  </button>
+                  <button class="tab" id="tabPINOL" style="display:none">
+                    <span class="material-symbols-rounded">inventory_2</span>
+                    <span>Solicitar pinol</span>
+                  </button>
+                </div>
+
+                <div class="hr"></div>
+                <div class="captureStateBox" id="captureStateBox">—</div>
+              </div>
+
+              <!-- SR (EXISTENCIA DE BIOLÓGICOS) -->
+              <div id="formSR">
+                <label>Nombre del responsable</label>
+                <input id="nombreSR" placeholder="Nombre completo">
+
+                <div class="tableWrap" style="margin-top:16px;">
+                  <table class="summaryTable" id="srCaptureTable">
+                    <thead>
+                      <tr>
+                        <th>Biológico</th>
+                        <th>Lote</th>
+                        <th>Caducidad</th>
+                        <th>Recepción</th>
+                        <th>Cantidad (frascos)</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="srCaptureTbody">
+                      <!-- Dynamic rows here -->
+                    </tbody>
+                  </table>
+                </div>
+
+                <button class="ghostBtn" id="btnAddSRRow" style="margin-top:10px; width:100%;">
+                  <span class="material-symbols-rounded">add_circle</span> Agregar otro lote/biológico
+                </button>
+
+                <div class="hr" style="margin:20px 0;"></div>
+
+                <button class="btn" id="btnSaveSR">Guardar existencia</button>
+
+                <div class="subActions">
+                  <button class="ghostBtn" id="btnEditSR" style="display:none" title="Editar la existencia de hoy">
+                    <span class="material-symbols-rounded">edit_square</span> Editar existencia de hoy
+                  </button>
+                  <button class="ghostBtn" id="btnCancelEditSR" style="display:none" title="Cancelar edición">
+                    <span class="material-symbols-rounded">close</span> Cancelar edición
+                  </button>
+                </div>
+
+                <div class="hint">Se permite 1 captura por día por unidad. Si hay error, usa “Editar”.</div>
+              </div>
+
+              <!-- CONSUMIBLES -->
+              <div id="formCONS" style="display:none">
+                <label>Nombre de quien captura</label>
+                <input id="nombreCONS" placeholder="Nombre completo">
+
+                <div class="row">
+                  <div>
+                    <label>Existencia SRP (dosis)</label>
+                    <input id="srp_dosis" type="number" min="0" placeholder="0">
+                  </div>
+                  <div>
+                    <label>Existencia SR (dosis)</label>
+                    <input id="sr_dosis" type="number" min="0" placeholder="0">
+                  </div>
+                </div>
+
+                <label>Jeringa aplic 0.5 ml (060.550.2657)</label>
+                <input id="jeringa_aplic_05ml_0605502657" type="number" min="0" placeholder="0">
+
+                <label>Jeringa reconst 5 ml (060.550.0438)</label>
+                <input id="jeringa_reconst_5ml_0605500438" type="number" min="0" placeholder="0">
+
+                <label>Aguja (060.040.3711)</label>
+                <input id="aguja_0600403711" type="number" min="0" placeholder="(Automático)" disabled>
+
+                <button class="btn" id="btnSaveCONS">Guardar consumibles</button>
+
+                <div class="subActions">
+                  <button class="ghostBtn" id="btnEditCONS" style="display:none" title="Editar el reporte de hoy">
+                    <span class="material-symbols-rounded">edit</span> Editar reporte de hoy
+                  </button>
+                  <button class="ghostBtn" id="btnCancelEditCONS" style="display:none" title="Cancelar edición">
+                    <span class="material-symbols-rounded">close</span> Cancelar edición
+                  </button>
+                </div>
+
+                <div class="hint">Este reporte se captura solo en jueves. Aguja se calcula automáticamente.</div>
+              </div>
+
+              <!-- PEDIDO DE BIOLÓGICO -->
+              <div id="formBIO" style="display:none">
+                <div class="row">
+                  <div>
+                    <label>Nombre de quien captura</label>
+                    <input id="nombreBIO" placeholder="Nombre completo">
+                  </div>
+                  <div>
+                    <div class="bioProgramBox">
+                      <div class="bioProgramLabel">Fecha objetivo de pedido</div>
+                      <div class="bioProgramDate" id="fechaPedidoBIOBox">—</div>
+                      <div class="bioProgramSub" id="bioHint">—</div>
+                    </div>
+                    <input id="fechaPedidoBIO" disabled style="display:none">
+                  </div>
+                </div>
+
+                <div class="bioDayAlert" id="bioDayAlert">—</div>
+
+                <div class="tableWrap bioTableWrap" style="margin-top:10px; max-height:560px; width:100%;">
+                  <table class="summaryTable bioSummaryTable">
+                    <colgroup>
+                      <col style="width:18%">
+                      <col style="width:10%">
+                      <col style="width:10%">
+                      <col style="width:38%">
+                      <col style="width:8%">
+                      <col style="width:8%">
+                      <col style="width:8%">
+                    </colgroup>
+                    <thead>
+                      <tr>
+                        <th>Biológico</th>
+                        <th>Existencia<br><span class="thMini">frascos</span></th>
+                        <th>Pedido<br><span class="thMini">frascos</span></th>
+                        <th>Validación</th>
+                        <th>Promedio<br><span class="thMini">frascos</span></th>
+                        <th>Máx<br><span class="thMini">dosis</span></th>
+                        <th>Mín<br><span class="thMini">dosis</span></th>
+                      </tr>
+                    </thead>
+                    <tbody id="bioTbody">
+                      <tr>
+                        <td colspan="7" class="muted">Cargando…</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="hint"
+                  style="margin-top:12px; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06);">
+                  <b>Referencia de captura:</b> Máx/Mín se muestran en dosis. Promedio, existencia actual y pedido se
+                  muestran en frascos.
+                </div>
+
+                <button class="btn" id="btnSaveBIO">Guardar pedido de biológico</button>
+
+                <div class="subActions">
+                  <button class="ghostBtn" id="btnEditBIO" style="display:none"
+                    title="Editar el pedido de biológico actual">
+                    <span class="material-symbols-rounded">edit_square</span> Editar pedido actual
+                  </button>
+                  <button class="ghostBtn" id="btnCancelEditBIO" style="display:none" title="Cancelar edición">
+                    <span class="material-symbols-rounded">close</span> Cancelar edición
+                  </button>
+                </div>
+              </div>
+
+              <!-- ✅ CONFIRMACIÓN DE BIOLÓGICO (Estructura Reparada) -->
+              <div id="bioConfirmOverlay" class="overlay" aria-hidden="true">
+                <div class="modalGlass" style="max-width:500px;">
+                  <div class="modalHead"
+                    style="background:linear-gradient(135deg, rgba(243, 229, 255, 0.1), rgba(0, 0, 0, 0.05));">
+
+                    <div class="modalEyebrow" style="color:var(--warn);">
+                      <span class="material-symbols-rounded" style="font-size:16px;">warning</span>
+                      Validación preventiva
+                    </div>
+                    <div class="modalTitle">Revisar pedido</div>
+                    <div class="modalSub" id="bioConfirmIntro">
+                      Se han detectado observaciones en tu captura.
+                    </div>
+                  </div>
+
+                  <div class="modalBody">
+                    <div id="bioConfirmList" class="modalFields"></div>
+                    <div class="modalNote"
+                      style="background:rgba(245, 158, 11, 0.08); border-color:rgba(245, 158, 11, 0.2); color:#e2e8f0; margin-top:20px;">
+                      <strong>¿Deseas continuar?</strong> Una vez guardado, no se podrán realizar correcciones
+                      automáticas.
+                    </div>
+                  </div>
+
+                  <div class="modalFooter">
+                    <button class="ghostBtn" id="btnBioConfirmCancel" type="button">
+                      <span class="material-symbols-rounded">close</span> Corregir
+                    </button>
+                    <button class="btn" id="btnBioConfirmAccept" type="button"
+                      style="margin-top:0; background:var(--warn); border-color:rgba(0,0,0,0.1);">
+                      <span class="material-symbols-rounded">done_all</span> Confirmar y Guardar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PINOL -->
+              <div id="formPINOL" style="display:none">
+                <div class="hint" style="margin-bottom:10px;">
+                  🧴 <b>Multilimpiador desinfectante Pinol®</b> CONT. NET. 828 mL.<br>
+                  El insumo es para uso exclusivo de los refrigeradores de vacunas y farmacia.
+                </div>
+
+                <label>Nombre de quien realiza la solicitud</label>
+                <input id="nombrePINOL" placeholder="Nombre completo">
+
+                <div class="row">
+                  <div>
+                    <label>Existencia actual de pinol (botellas)</label>
+                    <input id="pinol_existencia" type="number" min="0" step="1" placeholder="0">
+                  </div>
+                  <div>
+                    <label>Solicitud de botellas de pinol</label>
+                    <input id="pinol_solicitud" type="number" min="0" step="1" placeholder="0">
+                  </div>
+                </div>
+
+                <label>Observaciones</label>
+                <textarea id="pinol_observaciones" placeholder="Opcional" rows="2"></textarea>
+
+                <button class="btn" id="btnSavePINOL">Guardar solicitud de pinol</button>
+              </div>
+              <div class="card" id="panelAdminOpsTabs" style="display:none">
+                <div class="tabs">
+                  <button class="tab active" id="tabOPS_CAPTURE">
+                    <span class="material-symbols-rounded">dashboard</span>
+                    <span>Resumen de captura</span>
+                  </button>
+                  <button class="tab" id="tabOPS_HISTORY">
+                    <span class="material-symbols-rounded">query_stats</span>
+                    <span>Métricas históricas</span>
+                  </button>
+                  <button class="tab" id="tabOPS_PINOL">
+                    <div class="badge-wrapper">
+                      <span class="material-symbols-rounded">inventory</span>
+                      <span id="pinolBadgeTab" class="liveBadge" style="display:none">0</span>
+                    </div>
+                    <span>Solicitudes de pinol</span>
+                  </button>
+                  <button class="tab" id="tabLOTES" style="display:none">
+                    <span class="material-symbols-rounded">inventory_2</span>
+                    <span>Carga de lotes</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- NOTIFICACIONES -->
+              <div class="card" id="panelNOTIFS" style="display:none">
+                <div class="notifHero">
+                  <div class="notifHeroTitle">Centro de notificaciones</div>
+                  <div class="notifHeroSub">
+                    Consulta tu bandeja, revisa actividad reciente y envía avisos internos a municipios o unidades.
+                  </div>
+
+                  <div class="notifStats">
+                    <div class="notifStat">
+                      <div class="notifStatLabel">No leídas</div>
+                      <div class="notifStatValue" id="notifUnreadKpi">0</div>
+                    </div>
+                    <div class="notifStat">
+                      <div class="notifStatLabel">Visibles</div>
+                      <div class="notifStatValue" id="notifTotalKpi">0</div>
+                    </div>
+                    <div class="notifStat">
+                      <div class="notifStatLabel">Perfil</div>
+                      <div class="notifStatValue" id="notifRoleKpi">—</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="notifShell">
+                  <div class="notifPane" id="notifInboxPane" style="display:none">
+                    <div class="notifPaneTitle">
+                      <h3>Bandeja</h3>
+                      <div class="subActions" style="margin-top:0">
+                        <button type="button" class="md-btn md-btn-tonal" id="btnNotifRefresh">
+                          <span class="material-symbols-rounded">refresh</span> Actualizar
+                        </button>
+                        <button type="button" class="md-btn md-btn-outlined" id="btnNotifOnlyUnread">
+                          <span class="material-symbols-rounded">mail</span> Filtrar
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="notifList" id="notifListWrap" style="display:none">
+                      <div class="notifEmpty">Aún no hay notificaciones.</div>
+                    </div>
+                  </div>
+
+                  <div class="notifPane" id="notifComposerPane" style="display:none">
+                    <div class="notifPaneTitle">
+                      <h3>Enviar notificación</h3>
+                      <span class="pill">ADMIN / MUNICIPAL</span>
+                    </div>
+
+                    <div class="notifComposer">
+                      <div class="notifComposerGroup">
+                        <label for="notifTargetScope">Alcance</label>
+                        <select id="notifTargetScope">
+                          <option value="ALL_MY_UNITS">Todas mis unidades</option>
+                          <option value="MUNICIPIO">Municipio</option>
+                          <option value="CLUES">CLUES</option>
+                        </select>
+                      </div>
+
+                      <div class="notifComposerGroup" id="notifMunicipioBox">
+                        <label for="notifTargetMunicipio">Municipio</label>
+                        <select id="notifTargetMunicipio"></select>
+                      </div>
+
+                      <div class="notifComposerGroup" id="notifUnidadBox">
+                        <label for="notifTargetClues">Unidad / CLUES</label>
+                        <select id="notifTargetClues"></select>
+                      </div>
+
+                      <div class="notifComposerGroup">
+                        <label for="notifTemplate">Plantilla institucional</label>
+                        <select id="notifTemplate">
+                          <option value="">Seleccionar plantilla…</option>
+                          <option value="CAPTURA_PENDIENTE">Recordatorio de captura</option>
+                          <option value="OBS_ADMIN">Observación administrativa</option>
+                          <option value="AVISO_GENERAL">Aviso general</option>
+                        </select>
+                      </div>
+
+                      <div class="notifComposerGroup">
+                        <label for="notifType">Tipo de aviso</label>
+                        <select id="notifType">
+                          <option value="INFO">Información</option>
+                          <option value="SUCCESS">Éxito</option>
+                          <option value="WARN">Alerta</option>
+                          <option value="ERROR">Crítica</option>
+                        </select>
+                      </div>
+
+                      <div class="notifComposerGroup">
+                        <label for="notifTitle">Título</label>
+                        <input id="notifTitle" placeholder="Ej. Pedido programado">
+                      </div>
+
+                      <div class="notifComposerGroup">
+                        <label for="notifMessage">Mensaje detallado</label>
+                        <textarea id="notifMessage" rows="5" style="width:100%; resize:vertical;"
+                          placeholder="Escribe el detalle de la notificación..."></textarea>
+                      </div>
+
+                      <button type="button" class="md-btn md-btn-filled" id="btnSendNotification" style="width:100%">
+                        <span class="material-symbols-rounded">send</span> Enviar notificación
+                      </button>
+
+                      <div class="hint" style="margin-top:8px">
+                        Consejo: Envía recordatorios operativos o avisos de surtimiento.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- RESUMEN DE CAPTURA -->
+              <div class="card" id="panelCaptureSummary" style="display:none">
+                <div class="sectionTitle">
+                  <h3>Resumen de captura de existencia de biológicos de hoy</h3>
+                  <button class="miniBtn" id="btnRefreshCaptureSummary" title="Actualizar resumen">
+                    <span class="material-symbols-rounded">refresh</span> Actualizar
+                  </button>
+                </div>
+
+                <div class="hint">
+                  Consulta qué unidades ya capturaron y cuáles faltan, por fecha y por tipo de reporte.
+                </div>
+
+                <div class="row" style="margin-top:10px">
+                  <div>
+                    <label for="summaryTipo">Tipo de consulta</label>
+                    <select id="summaryTipo">
+                      <option value="SR">Existencia de biológicos</option>
+                      <option value="CONS">Consumibles</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label for="summaryFecha">Fecha a consultar</label>
+                    <input type="date" id="summaryFecha">
+                  </div>
+                </div>
+
+                <div class="hint" id="summaryMsg" style="margin-top:8px">—</div>
+
+                <div class="dashboardKpis">
+                  <div class="kpiCard info">
+                    <div class="kpiCardLabel">Fecha</div>
+                    <div class="kpiCardValue" id="sumFecha">—</div>
+                  </div>
+                  <div class="kpiCard">
+                    <div class="kpiCardLabel">Total unidades</div>
+                    <div class="kpiCardValue" id="sumTotal">0</div>
+                  </div>
+                  <div class="kpiCard ok" id="kpiCardCapturadas">
+                    <div class="kpiCardLabel">Capturadas</div>
+                    <div class="kpiCardValue" id="sumCapturadas">0</div>
+                  </div>
+                  <div class="kpiCard warn" id="kpiCardFaltantes">
+                    <div class="kpiCardLabel">Faltantes</div>
+                    <div class="kpiCardValue" id="sumFaltantes">0</div>
+                  </div>
+                </div>
+
+                <div class="captureSummaryGrid">
+                  <div>
+                    <div class="sectionHeader">
+                      <div class="sectionTitleWrap">
+                        <span class="material-symbols-rounded" style="color: #4ade80;">check_circle</span>
+                        <h3>Unidades que ya capturaron</h3>
+                      </div>
+                    </div>
+
+                    <div class="tableWrap captureTableDesktop">
+                      <table class="summaryTable">
+                        <thead>
+                          <tr>
+                            <th>Municipio</th>
+                            <th>CLUES</th>
+                            <th>Unidad</th>
+                            <th>Capturó</th>
+                            <th>Estatus</th>
+                          </tr>
+                        </thead>
+                        <tbody id="capturadasTbody">
+                          <tr>
+                            <td colspan="5" class="muted">Sin datos</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div class="captureCardsMobile" id="capturadasCards">
+                      <div class="muted">Sin datos</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="sectionHeader" style="border-left-color: var(--warn);">
+                      <div class="sectionTitleWrap">
+                        <span class="material-symbols-rounded" style="color: var(--warn);">pending_actions</span>
+                        <h3>Faltantes por capturar</h3>
+                      </div>
+                    </div>
+
+                    <div class="tableWrap captureTableDesktop">
+                      <table class="summaryTable">
+                        <thead>
+                          <tr>
+                            <th>Municipio</th>
+                            <th>CLUES</th>
+                            <th>Unidad</th>
+                            <th>Estatus</th>
+                          </tr>
+                        </thead>
+                        <tbody id="faltantesTbody">
+                          <tr>
+                            <td colspan="4" class="muted">Sin datos</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div class="captureCardsMobile" id="faltantesCards">
+                      <div class="muted">Sin datos</div>
+                    </div>
+                  </div>
+                </div>
+
+                <span id="capturadasCount" style="display: none !important;">0</span>
+                <span id="faltantesCount" style="display: none !important;">0</span>
+
+              </div>
+
+              <!-- MÉTRICAS HISTÓRICAS -->
+
+              <div class="card" id="panelHISTORY" style="display:none">
+                <div class="sectionTitle">
+                  <h3>Métricas históricas por unidad</h3>
+                  <button class="miniBtn" id="btnRefreshHistory" title="Actualizar métricas">
+                    <span class="material-symbols-rounded">refresh</span> Actualizar
+                  </button>
+                </div>
+
+                <div class="hint">
+                  Consulta cumplimiento histórico operativo por unidad, considerando pedido de biológico y consumibles.
+                </div>
+
+                <div class="row" style="margin-top:10px">
+                  <div>
+                    <label>Fecha inicial</label>
+                    <input type="date" id="histFechaInicio">
+                  </div>
+                  <div>
+                    <label>Fecha final</label>
+                    <input type="date" id="histFechaFin">
+                  </div>
+                </div>
+
+                <div class="dashboardKpis">
+                  <div class="kpiCard info">
+                    <div class="kpiCardLabel">Unidades evaluadas</div>
+                    <div class="kpiCardValue" id="histTotalUnidades">0</div>
+                  </div>
+                  <div class="kpiCard" id="kpiCardHistSR">
+                    <div class="kpiCardLabel">Promedio biológico</div>
+                    <div class="kpiCardValue" id="histPromSR">0%</div>
+                  </div>
+                  <div class="kpiCard" id="kpiCardHistCONS">
+                    <div class="kpiCardLabel">Promedio consumibles</div>
+                    <div class="kpiCardValue" id="histPromCONS">0%</div>
+                  </div>
+                </div>
+
+                <div class="tableWrap usersTableDesktop" style="margin-top:10px;">
+                  <table class="summaryTable">
+                    <thead>
+                      <tr>
+                        <th>Municipio</th>
+                        <th>CLUES</th>
+                        <th>Unidad</th>
+                        <th>% Operativo</th>
+                        <th>% BIO</th>
+                        <th>Capturas BIO</th>
+                        <th>Faltas BIO</th>
+                        <th>% CONS</th>
+                        <th>Capturas CONS</th>
+                        <th>Faltas CONS</th>
+                        <th>Última CONS</th>
+                      </tr>
+                    </thead>
+                    <tbody id="historyTbody">
+                      <tr>
+                        <td colspan="11" class="muted">Sin datos</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="mobileCardsWrap" id="historyCards">
+                  <div class="muted">Sin datos</div>
+                </div>
+              </div>
+
+              <!-- SOLICITUDES DE PINOL -->
+              <div class="card" id="panelPINOLADMIN" style="display:none">
+                <div class="sectionTitle">
+                  <h3>Solicitudes de pinol</h3>
+                  <button class="miniBtn" id="btnRefreshPinol" title="Actualizar solicitudes">
+                    <span class="material-symbols-rounded">refresh</span> Actualizar
+                  </button>
+                </div>
+
+                <div class="hint">
+                  🧴 <b>Multilimpiador desinfectante Pinol®</b> CONT. NET. 828 mL.<br>
+                  Uso exclusivo para limpieza de refrigeradores de vacunas y área de farmacia.<br><br>
+                  Consulta solicitudes de las unidades y marca como entregadas cuando corresponda.
+                </div>
+
+                <div class="dashboardKpis" style="margin-top:16px;">
+                  <div class="kpiCard info">
+                    <div class="kpiCardLabel">Total solicitudes</div>
+                    <div class="kpiCardValue" id="pinolTotal">0</div>
+                  </div>
+
+                  <div class="kpiCard" id="kpiCardPinolPendientes">
+                    <div class="kpiCardLabel">Pendientes</div>
+                    <div class="kpiCardValue" id="pinolPendientes">0</div>
+                  </div>
+
+                  <div class="kpiCard warn">
+                    <div class="kpiCardLabel">Entregadas sin acuse</div>
+                    <div class="kpiCardValue" id="pinolEntregadas">0</div>
+                  </div>
+
+                  <div class="kpiCard ok">
+                    <div class="kpiCardLabel">Recibidas</div>
+                    <div class="kpiCardValue" id="pinolRecibidas">0</div>
+                  </div>
+                </div>
+
+                <div class="hint" id="pinolAlertMsg" style="margin-top:8px">—</div>
+
+                <div class="row" style="margin-top:10px">
+                  <div>
+                    <label for="pinolFiltroEstatus">Filtrar por estatus</label>
+                    <select id="pinolFiltroEstatus">
+                      <option value="TODOS">Todos</option>
+                      <option value="PENDIENTE">Pendientes</option>
+                      <option value="ENTREGADO">Entregadas</option>
+                      <option value="RECIBIDO">Recibidas</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="tableWrap pinolTableDesktop" style="margin-top:10px; overflow-x: auto;">
+                  <table class="summaryTable" style="min-width: 1400px; white-space: nowrap;">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Municipio</th>
+                        <th>CLUES</th>
+                        <th>Unidad</th>
+                        <th>Existencia (Botellas)</th>
+                        <th>Solicitud (botellas 828 mL)</th>
+                        <th>Observaciones</th>
+                        <th>Capturó</th>
+                        <th>Fecha entrega</th>
+                        <th>Entregó</th>
+                        <th>Estatus</th>
+                        <th>Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody id="pinolTbody">
+                      <tr>
+                        <td colspan="12" class="muted">Sin datos</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="mobileCardsWrap" id="pinolCards">
+                  <div class="muted">Sin datos</div>
+                </div>
+              </div>
+
+              <div class="card" id="panelEDITLOG" style="display:none">
+                <div class="sectionTitle">
+                  <h3>Historial de ediciones</h3>
+                  <button class="miniBtn" id="btnRefreshEditLog" title="Actualizar historial">
+                    <span class="material-symbols-rounded">refresh</span> Actualizar
+                  </button>
+                </div>
+
+                <div class="hint">
+                  Consulta qué reportes fueron editados, por quién y cuándo.
+                </div>
+
+                <div class="row" style="margin-top:10px">
+                  <div>
+                    <label for="editLogTipo">Tipo</label>
+                    <select id="editLogTipo">
+                      <option value="TODOS">Todos</option>
+                      <option value="SR">Existencia de biológicos</option>
+                      <option value="CONS">Consumibles</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label for="editLogFecha">Fecha</label>
+                    <input type="date" id="editLogFecha">
+                  </div>
+                </div>
+
+                <div class="tableWrap" style="margin-top:10px;">
+                  <table class="summaryTable">
+                    <thead>
+                      <tr>
+                        <th>Fecha reporte</th>
+                        <th>Tipo</th>
+                        <th>Municipio</th>
+                        <th>CLUES</th>
+                        <th>Unidad</th>
+                        <th>Editó</th>
+                        <th>Fecha edición</th>
+                        <th>Detalle</th>
+                      </tr>
+                    </thead>
+                    <tbody id="editLogTbody">
+                      <tr>
+                        <td colspan="8" class="muted">Sin datos</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="mobileCardsWrap" id="editLogCards">
+                  <div class="muted">Sin datos</div>
+                </div>
+              </div>
+
+              <!-- CARGA DE LOTES -->
+              <div class="card" id="panelLOTES" style="display:none">
+                <div class="sectionTitle">
+                  <h3>Carga de lotes por municipio</h3>
+                  <button class="miniBtn" id="btnRefreshLotesAdmin" title="Actualizar lotes">
+                    <span class="material-symbols-rounded">refresh</span> Actualizar
+                  </button>
+                </div>
+
+                <div class="hint">
+                  Administra el catálogo de lotes y caducidades. Puedes asignar un lote a un municipio específico o usar <b>*</b> para que sea global.
+                </div>
+
+                <div class="hr"></div>
+
+                <div class="loteEntryRow">
+                  <div class="row">
+                    <div>
+                      <label>Biológico</label>
+                      <select id="loteBio"></select>
+                    </div>
+                    <div>
+                      <label>Lote</label>
+                      <input id="loteTxt" placeholder="EJ: 12345">
+                    </div>
+                    <div>
+                      <label>Caducidad</label>
+                      <input id="loteCad" placeholder="MMM-AA (EJ: JUL-27)">
+                    </div>
+                  </div>
+                  <div class="row" style="margin-top:10px">
+                    <div>
+                      <label>Fecha Recepción</label>
+                      <input type="date" id="loteRec">
+                    </div>
+                    <div>
+                      <label>Municipio (* para todos)</label>
+                      <select id="loteMuni">
+                        <option value="*">TODOS (*)</option>
+                        <option value="QUERÉTARO">QUERÉTARO</option>
+                        <option value="CORREGIDORA">CORREGIDORA</option>
+                        <option value="EL MARQUÉS">EL MARQUÉS</option>
+                        <option value="HUIMILPAN">HUIMILPAN</option>
+                      </select>
+                    </div>
+                    <div style="display:flex; align-items:flex-end;">
+                      <button class="btn" id="btnAddLoteRow" style="width:100%">
+                        <span class="material-symbols-rounded">add</span> Agregar lote
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="hr"></div>
+
+                <div class="tableWrap" style="margin-top:16px; max-height:400px;">
+                  <table class="summaryTable">
+                    <thead>
+                      <tr>
+                        <th>Biológico</th>
+                        <th>Lote</th>
+                        <th>Caducidad</th>
+                        <th>Estatus</th>
+                        <th>Recepción</th>
+                        <th>Municipio</th>
+                        <th>Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody id="lotesAdminTbody">
+                      <tr><td colspan="6" class="muted">Sin lotes cargados.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <button class="btn" id="btnSaveLotesAdmin" style="margin-top:20px; width:100%;">
+                  <span class="material-symbols-rounded">save</span> Guardar catálogo de lotes
+                </button>
+              </div>
+
+              <!-- ADMIN -->
+              <div class="card" id="panelADMIN" style="display:none">
+                <div class="sectionTitle">
+                  <h3>Administración de usuarios</h3>
+                  <button class="miniBtn" id="btnRefreshUsers" title="Actualizar lista">
+                    <span class="material-symbols-rounded">refresh</span> Actualizar
+                  </button>
+                </div>
+
+                <div class="hint">
+                  Alta basada en la hoja <b>USUARIOS</b>:
+                  <span class="muted">usuario | password | municipio | clues | unidad | rol | activo</span>.
+                </div>
+
+                <div class="hr"></div>
+
+                <div class="sectionTitle">
+                  <h3>Apertura extraordinaria de consumibles</h3>
+                  <span class="pill" id="consOverrideStateTxt">—</span>
+                </div>
+
+                <div class="hint">
+                  Permite habilitar captura de consumibles en una fecha extraordinaria por contingencia operativa.
+                </div>
+
+                <div class="row">
+                  <div>
+                    <label>Fecha extraordinaria</label>
+                    <input type="date" id="consOverrideDate">
+                  </div>
+                  <div>
+                    <label>Motivo</label>
+                    <input id="consOverrideReason" placeholder="Ej: Semana Santa / suspensión oficial">
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div>
+                    <button class="btn" id="btnSaveConsOverride">Guardar apertura extraordinaria</button>
+                  </div>
+                  <div>
+                    <button class="ghostBtn" id="btnClearConsOverride">Desactivar apertura extraordinaria</button>
+                  </div>
+                </div>
+
+                <div class="hr"></div>
+
+                <div class="sectionTitle">
+                  <h3>Alta de usuario</h3>
+                  <span class="pill">Solo ADMIN</span>
+                </div>
+
+                <div class="row">
+                  <div>
+                    <label>Usuario</label>
+                    <input id="new_usuario" placeholder="Ej: ana.maria">
+                  </div>
+                  <div>
+                    <label>Contraseña</label>
+                    <input id="new_password" placeholder="Temporal">
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div>
+                    <label>Rol (ADMIN / MUNICIPAL / UNIDAD)</label>
+                    <select id="new_rol">
+                      <option>UNIDAD</option>
+                      <option>MUNICIPAL</option>
+                      <option>ADMIN</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label>Activo (SI/NO)</label>
+                    <select id="new_activo">
+                      <option>SI</option>
+                      <option>NO</option>
+                    </select>
+                  </div>
+                </div>
+
+                <label>Municipio (uno o varios separados por coma). ADMIN puede usar *</label>
+                <input id="new_municipio" list="municipiosList" placeholder="Ej: Querétaro | Corregidora,Huimilpan | *">
+                <datalist id="municipiosList"></datalist>
+
+                <div class="row">
+                  <div>
+                    <label>CLUES (solo UNIDAD)</label>
+                    <input id="new_clues" list="cluesList" placeholder="QTSSA00xxxx">
+                    <datalist id="cluesList"></datalist>
+                  </div>
+                  <div>
+                    <label>Unidad (solo UNIDAD)</label>
+                    <input id="new_unidad" list="unidadesList" placeholder="Nombre de la unidad">
+                    <datalist id="unidadesList"></datalist>
+                  </div>
+                </div>
+
+                <button class="btn" id="btnCreateUser">Crear usuario</button>
+
+                <div class="hr"></div>
+
+                <div class="sectionTitle">
+                  <h3>Usuarios</h3>
+                  <span class="pill" id="usersCount">—</span>
+                </div>
+
+                <div class="tableWrap usersTableDesktop">
+                  <table class="summaryTable">
+                    <thead>
+                      <tr>
+                        <th>usuario</th>
+                        <th>municipio</th>
+                        <th>clues</th>
+                        <th>unidad</th>
+                        <th>rol</th>
+                        <th>activo</th>
+                        <th>acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody id="usersTbody">
+                      <tr>
+                        <td colspan="7" class="muted">Cargando…</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="mobileCardsWrap" id="usersCards">
+                  <div class="muted">Cargando…</div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay" id="overlay">
+
+        <div class="loader">
+          <div class="loaderCircle">
+            <svg viewBox="25 25 50 50">
+              <circle cx="50" cy="50" r="20" fill="none" class="path"></circle>
+            </svg>
+          </div>
+          <div class="loaderTitle" id="overlayTitle">Procesando</div>
+          <div class="loaderText" id="overlayMsg">Un momento…</div>
+          <div class="loaderSub">Por favor espera mientras se completa la operación.</div>
+        </div>
+      </div>
+
+      <!-- ✅ MODAL ENTREGA DE PINOL MD3 -->
+      <div class="pinolModal" id="pinolEntregaModal">
+        <div class="modalGlass" style="max-width:600px; border-radius:28px;">
+          <div class="modalHead">
+            <div class="modalEyebrow" style="
+              background: #dcfce7;
+              color: #166534;
+              padding: 6px 14px;
+              border-radius: 12px;
+              display: inline-flex;
+              align-items: center;
+              gap: 8px;
+              font-weight: 800;
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              margin-bottom: 12px;
+            ">
+              <span class="material-symbols-rounded" style="font-size:18px;">inventory_2</span>
+              Gestión de Insumos
+            </div>
+            <div class="modalTitle" style="font-weight:900; margin-bottom:8px;">Confirmar entrega de pinol</div>
+            <div class="modalSub" style="color:var(--md-sys-color-on-surface-variant); line-height:1.5;">
+              Ingresa un comentario opcional para la unidad antes de notificar la entrega oficial del insumo.
+            </div>
+          </div>
+
+          <div class="modalBody" style="padding-top:20px;">
+            <div class="pinolModalMeta" style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+              gap: 12px;
+              margin-bottom: 24px;
+            ">
+              <div class="fieldCard"
+                style="background: var(--md-surface-container-low); border: 1px solid var(--md-outline-variant); padding: 12px;">
+                <label style="margin:0 0 4px; font-size:10px; color:var(--md-sys-color-primary);">MUNICIPIO</label>
+                <div id="pinolEntregaMetaMunicipio"
+                  style="font-weight:900; font-size:14px; color:var(--md-sys-color-on-surface);">—</div>
+              </div>
+              <div class="fieldCard"
+                style="background: var(--md-surface-container-low); border: 1px solid var(--md-outline-variant); padding: 12px;">
+                <label style="margin:0 0 4px; font-size:10px; color:var(--md-sys-color-primary);">CLUES</label>
+                <div id="pinolEntregaMetaClues"
+                  style="font-weight:900; font-size:14px; color:var(--md-sys-color-on-surface);">—</div>
+              </div>
+              <div class="fieldCard"
+                style="background: var(--md-surface-container-low); border: 1px solid var(--md-outline-variant); padding: 12px;">
+                <label style="margin:0 0 4px; font-size:10px; color:var(--md-sys-color-primary);">UNIDAD</label>
+                <div id="pinolEntregaMetaUnidad"
+                  style="font-weight:900; font-size:14px; color:var(--md-sys-color-on-surface);">—</div>
+              </div>
+            </div>
+
+            <div class="fieldCard" style="background:transparent; border:none; padding:0;">
+              <label
+                style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:10px; display:block;">
+                COMENTARIO PARA LA UNIDAD (OPCIONAL)
+              </label>
+              <textarea id="pinolEntregaComentario" placeholder="Ej: Se entregó material completo. Favor de resguardar."
+                style="
+                min-height: 100px;
+                background: var(--md-surface-container-highest);
+                border: 1px solid var(--md-outline-variant);
+                border-radius: 16px;
+                padding: 14px;
+                font-size: 15px;
+                width: 100%;
+                resize: none;
+              "></textarea>
+            </div>
+
+            <div class="modalNote"
+              style="font-size:12px; color:var(--md-sys-color-secondary); margin-top:16px; background:var(--md-surface-container-low); padding:10px; border-radius:12px; border-left:4px solid #166534;">
+              Este mensaje se enviará como notificación inmediata a la unidad seleccionada.
+            </div>
+
+            <div class="modalFooter" style="margin-top:32px; display:flex; justify-content:flex-end; gap:12px;">
+              <button class="ghostBtn" id="btnCancelarEntregaPinol" type="button"
+                style="font-weight:700; border:none; background:transparent;">
+                <span class="material-symbols-rounded">close</span> Cancelar
+              </button>
+
+              <button class="btn" id="btnConfirmarEntregaPinol" type="button" style="
+                background: linear-gradient(135deg, #166534 0%, #15803d 100%);
+                color: #ffffff;
+                padding: 12px 28px;
+                border: none;
+                border-radius: 14px;
+                font-weight: 800;
+                box-shadow: 0 4px 12px rgba(22, 101, 52, 0.25);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+              ">
+                <span class="material-symbols-rounded">check_circle</span>
+                Confirmar entrega y notificar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="toast good" id="toast">
+        <div class="dot"></div>
+        <div class="msg" id="toastMsg">Listo</div>
+        <button class="toastClose" id="toastClose" type="button" aria-label="Cerrar notificación">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+
+      <div class="liveFeed" id="liveFeed"></div>
+
+
+      <div class="overlay" id="passwordOverlay">
+        <div class="modalGlass" style="max-width:480px; border-radius:28px;">
+          <div class="modalHead">
+            <div class="modalEyebrow" style="
+              background: var(--md-sys-color-primary-container);
+              color: var(--md-sys-color-on-primary-container);
+              padding: 6px 14px;
+              border-radius: 12px;
+              display: inline-flex;
+              align-items: center;
+              gap: 8px;
+              font-weight: 800;
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              margin-bottom: 12px;
+            ">
+              <span class="material-symbols-rounded" style="font-size:18px;">security</span>
+              Seguridad de la cuenta
+            </div>
+            <div class="modalTitle" style="font-weight:900; margin-bottom:8px;">Cambio de contraseña</div>
+            <div class="modalSub" style="color:var(--md-sys-color-on-surface-variant); line-height:1.5;">
+              Debes actualizar tu contraseña para continuar. Registra también tu correo de recuperación institucional.
+            </div>
+          </div>
+
+          <div class="modalBody" style="padding-top:20px;">
+            <div class="modalFields" style="display:flex; flex-direction:column; gap:16px;">
+
+              <div class="fieldCard" style="background:transparent; border:none; padding:0;">
+                <label
+                  style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:8px; display:block;">CONTRASEÑA
+                  ACTUAL</label>
+                <div class="pwdWrap" style="position:relative;">
+                  <input id="pwdCurrent" type="password" placeholder="Contraseña actual" style="
+                    background: var(--md-surface-container-highest);
+                    border: 1px solid var(--md-outline-variant);
+                    border-radius: 12px;
+                    padding: 14px;
+                    font-size: 16px;
+                    width: 100%;
+                  ">
+                  <button type="button" class="pwdToggle" data-target="pwdCurrent"
+                    style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--md-sys-color-primary);">
+                    <span class="material-symbols-rounded">visibility</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="fieldCard" style="background:transparent; border:none; padding:0;">
+                <label
+                  style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:8px; display:block;">NUEVA
+                  CONTRASEÑA</label>
+                <div class="pwdWrap" style="position:relative;">
+                  <input id="pwdNew" type="password" placeholder="Nueva contraseña" style="
+                    background: var(--md-surface-container-highest);
+                    border: 1px solid var(--md-outline-variant);
+                    border-radius: 12px;
+                    padding: 14px;
+                    font-size: 16px;
+                    width: 100%;
+                  ">
+                  <button type="button" class="pwdToggle" data-target="pwdNew"
+                    style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--md-sys-color-primary);">
+                    <span class="material-symbols-rounded">visibility</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="fieldCard" style="background:transparent; border:none; padding:0;">
+                <label
+                  style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:8px; display:block;">CONFIRMAR
+                  NUEVA</label>
+                <div class="pwdWrap" style="position:relative;">
+                  <input id="pwdConfirm" type="password" placeholder="Confirmar nueva contraseña" style="
+                    background: var(--md-surface-container-highest);
+                    border: 1px solid var(--md-outline-variant);
+                    border-radius: 12px;
+                    padding: 14px;
+                    font-size: 16px;
+                    width: 100%;
+                  ">
+                  <button type="button" class="pwdToggle" data-target="pwdConfirm"
+                    style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--md-sys-color-primary);">
+                    <span class="material-symbols-rounded">visibility</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="fieldCard" style="background:transparent; border:none; padding:0;">
+                <label
+                  style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:8px; display:block;">CORREO
+                  DE RECUPERACIÓN</label>
+                <input id="myEmail" type="email" placeholder="nombre@correo.com" style="
+                  background: var(--md-surface-container-highest);
+                  border: 1px solid var(--md-outline-variant);
+                  border-radius: 12px;
+                  padding: 14px;
+                  font-size: 16px;
+                  width: 100%;
+                ">
+              </div>
+
+            </div>
+
+            <div class="modalNote"
+              style="font-size:13px; color:var(--md-sys-color-secondary); margin:20px 0; background:var(--md-sys-color-surface-container-low); padding:12px; border-radius:12px; border-left:4px solid var(--md-sys-color-primary);">
+              Usa un correo al que sí tengas acceso. Ahí se enviará tu enlace de recuperación si olvidas la contraseña.
+            </div>
+
+            <div class="modalFooter" style="display:flex; justify-content:flex-end; gap:12px;">
+              <button class="ghostBtn" id="btnPwdClose" type="button"
+                style="display:none; border:none; background:transparent; font-weight:700;">
+                <span class="material-symbols-rounded">close</span> Cerrar
+              </button>
+
+              <button class="btn" id="btnPwdSave" type="button" style="
+                background: linear-gradient(135deg, #001B3D 0%, #003366 100%);
+                color: #ffffff;
+                padding: 12px 24px;
+                border: none;
+                border-radius: 12px;
+                font-weight: 800;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+              ">
+                Guardar y Continuar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modalOverlay" id="forgotOverlay">
+        <div class="modalGlass" style="max-width:440px; border-radius:28px;">
+          <div class="modalHead">
+            <div class="modalEyebrow" style="
+              background: var(--md-sys-color-primary-container);
+              color: var(--md-sys-color-on-primary-container);
+              padding: 6px 14px;
+              border-radius: 12px;
+              display: inline-flex;
+              align-items: center;
+              gap: 8px;
+              font-weight: 800;
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+              margin-bottom: 12px;
+            ">
+              <span class="material-symbols-rounded" style="font-size:18px;">mail</span>
+              Recuperación
+            </div>
+            <div class="modalTitle" style="font-weight:900; margin-bottom:8px;">Recuperar contraseña</div>
+            <div class="modalSub" style="color:var(--md-sys-color-on-surface-variant); line-height:1.5;">
+              Ingresa tu usuario. Si tu cuenta tiene un correo registrado, recibirás un enlace seguro para
+              restablecerla.
+            </div>
+          </div>
+
+          <div class="modalBody" style="padding-top:20px;">
+            <div class="modalFields">
+              <div class="fieldCard" style="background:transparent; border:none; padding:0;">
+                <label
+                  style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:8px; display:block;">USUARIO</label>
+                <input id="forgotUsuario" type="text" placeholder="Tu usuario" style="
+                  background: var(--md-surface-container-highest);
+                  border: 1px solid var(--md-outline-variant);
+                  border-radius: 12px;
+                  padding: 14px;
+                  font-size: 16px;
+                  width: 100%;
+                ">
+              </div>
+            </div>
+
+            <div class="modalFooter" style="margin-top:32px; display:flex; justify-content:flex-end; gap:12px;">
+              <button class="ghostBtn" id="btnForgotClose" type="button"
+                style="border:none; background:transparent; font-weight:700;">
+                <span class="material-symbols-rounded">close</span> Cerrar
+              </button>
+
+              <button class="btn" id="btnForgotSend" type="button" style="
+                background: linear-gradient(135deg, #001B3D 0%, #003366 100%);
+                color: #ffffff;
+                padding: 12px 24px;
+                border: none;
+                border-radius: 12px;
+                font-weight: 800;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+              ">
+                Enviar enlace
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ✅ DRIVE UPLOAD MODAL -->
+      <div class="overlay" id="uploadFilesOverlay">
+
+        <div class="modalGlass" style="max-width:540px;">
+          <div class="modalHead">
+            <div class="modalEyebrow">
+              <span class="material-symbols-rounded" style="font-size:16px;">cloud_upload</span>
+              Gestor de Archivos - Drive
+            </div>
+            <div class="modalTitle">Subir evidencias</div>
+            <div class="modalSub">
+              Elige el archivo y la categoría. Se guardará automáticamente en la carpeta de tu unidad.
+            </div>
+          </div>
+
+          <div class="modalBody">
+            <div class="modalFields">
+              <div class="fieldCard">
+                <label for="uploadCategory">Categoría del archivo</label>
+                <select id="uploadCategory">
+                  <option value="Evidencia de capacitaciones" selected>Evidencia de capacitaciones</option>
+                  <option value="Evidencias de campaña">Evidencias de campaña</option>
+                  <option value="Otros reportes">Otros reportes</option>
+                </select>
+              </div>
+
+              <!-- ✅ MUNICIPAL FIELDS -->
+              <div id="uploadMunicipalMuniWrap" class="fieldCard" style="display:none">
+                <label for="uploadMuniSelect">Municipio</label>
+                <select id="uploadMuniSelect"></select>
+              </div>
+
+              <div id="uploadMunicipalUnitWrap" class="fieldCard" style="display:none">
+                <label for="uploadUnitSelect">Unidad a supervisar</label>
+                <select id="uploadUnitSelect"></select>
+              </div>
+
+              <div id="uploadCluesView" class="modalNote" style="display:none; color:var(--good); font-weight:700;">
+                CLUES: <span id="uploadCluesValue">—</span>
+              </div>
+
+
+              <div class="fieldCard">
+                <label for="uploadFileInput">Seleccionar archivo (Máx. 15MB)</label>
+                <div class="fileInputWrap">
+                  <input type="file" id="uploadFileInput" style="display:none">
+                  <button type="button" class="btn" id="btnBrowseFile"
+                    style="width:100%; justify-content:center; gap:8px;">
+                    <span class="material-symbols-rounded">attach_file</span>
+                    <span id="fileNameLabel">Ningún archivo seleccionado</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="modalNote" id="uploadStatusNote">
+              Los archivos se organizarán por CLUES y Nombre de Unidad en el servidor central.
+            </div>
+
+            <div class="modalFooter">
+              <button class="ghostBtn" id="btnCloseUpload" type="button">
+                <span class="material-symbols-rounded">close</span> Cancelar
+              </button>
+
+              <button class="btn" id="btnDoUpload" type="button" style="margin-top:0;" disabled>
+                <span class="material-symbols-rounded">publish</span> Subir a Drive
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="overlay" id="exportOverlay">
+
+        <div class="modalGlass">
+          <div class="modalHead">
+            <div class="modalEyebrow">
+              <span class="material-symbols-rounded" style="font-size:16px;">download</span>
+              Exportación de Datos
+            </div>
+            <div class="modalTitle" id="exportModalTitle">¿Qué quieres exportar?</div>
+            <div class="modalSub">
+              Configura los parámetros de tu reporte a continuación.
+            </div>
+          </div>
+
+          <div class="modalBody">
+            <div class="modalFields">
+              <div class="fieldCard">
+                <label>Tipo de reporte</label>
+                <select id="exportTipo">
+                  <option value="SR">Existencia de biológicos</option>
+                  <option value="CONS">Consumibles</option>
+                  <option value="BIO">Pedido de biológico</option>
+                </select>
+              </div>
+
+              <div id="exportFechaMonthBox" style="display:none;">
+                <label>¿Qué mes quieres exportar?</label>
+                <div class="row" style="gap:10px; flex-wrap:nowrap;">
+                  <select id="exportMonth" style="flex:2;">
+                    <option value="01">Enero</option>
+                    <option value="02">Febrero</option>
+                    <option value="03">Marzo</option>
+                    <option value="04">Abril</option>
+                    <option value="05">Mayo</option>
+                    <option value="06">Junio</option>
+                    <option value="07">Julio</option>
+                    <option value="08">Agosto</option>
+                    <option value="09">Septiembre</option>
+                    <option value="10">Octubre</option>
+                    <option value="11">Noviembre</option>
+                    <option value="12">Diciembre</option>
+                  </select>
+                  <select id="exportYear" style="flex:1;">
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                  </select>
+                </div>
+              </div>
+
+              <div id="exportBioExactDateBox" style="display:none; margin-top:12px;">
+                <label>Captura específica detectada</label>
+                <select id="exportBioExactDate">
+                </select>
+                <div class="hint" style="margin-top:4px;">
+                  Se generaron múltiples capturas este mes. Selecciona el corte exacto.
+                </div>
+              </div>
+
+              <div id="exportFechaSingleBox" style="display:none;">
+                <label>Fecha a exportar</label>
+                <input type="date" id="exportFecha">
+              </div>
+
+              <div id="exportFechaRangeBox" style="display:block;">
+                <div class="row" style="gap:20px;">
+                  <div style="flex:1;">
+                    <label>Fecha inicial</label>
+                    <input type="date" id="exportFechaInicio">
+                  </div>
+                  <div style="flex:1;">
+                    <label>Fecha final</label>
+                    <input type="date" id="exportFechaFin">
+                  </div>
+                </div>
+              </div>
+
+              <div class="hint" id="exportFechaHint">
+                Elegir el periodo de exportación deseado.
+              </div>
+
+              <div class="hr"></div>
+
+              <div id="exportMunicipiosBox" style="display:block; margin-top:12px;">
+                <label>Municipios a exportar</label>
+
+                <div class="exportMuniQuickActions">
+                  <button type="button" class="exportQuickBtn" id="btnExportSelectAll">
+                    <span class="material-symbols-rounded">done_all</span> Todos
+                  </button>
+                  <button type="button" class="exportQuickBtn" id="btnExportClearAll">
+                    <span class="material-symbols-rounded">remove_done</span> Ninguno
+                  </button>
+                </div>
+
+                <div id="exportMunicipiosChecks" style="margin-top:10px;"></div>
+
+                <div id="exportSplitWrap" class="exportSplitWrap" style="display:none; padding-top:10px;">
+                  <label for="exportSplitByMunicipio" class="modern-toggle">
+                    <div class="modernToggleText">
+                      <div class="modernToggleTitle">Separar exportación por municipio</div>
+                      <div class="modernToggleSub">Generar un ZIP con un archivo por cada municipio seleccionado</div>
+                    </div>
+                    <div class="modernToggleSwitch">
+                      <input type="checkbox" id="exportSplitByMunicipio">
+                      <span class="modernToggleSlider"></span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modalFooter">
+            <button class="ghostBtn" id="btnCancelExport" type="button">
+              <span class="material-symbols-rounded">close</span> Cancelar
+            </button>
+            <button class="btn" id="btnDoExport" type="button" style="margin-top:0;">
+              <span class="material-symbols-rounded">download</span> Generar Reporte
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="appFooter">
+        &copy; <span id="footerYear">2026</span> JS1 Reportes | Desarrollado por <a href="mailto:carlosgbd94@gmail.com"
+          style="color:inherit;text-decoration:underline;">carlosgbd94@gmail.com</a>
+      </div>
+
+    <!-- ✅ VISTA EN VIVO MD3 -->
+    <div id="liveViewOverlay" class="overlay" aria-hidden="true"
+      style="z-index: 10000; align-items:flex-end; justify-content:center; padding: 20px 0 0 0;">
+      <div class="modal modalGlass" style="width: 100%; max-width: 900px; height: 90vh; display: flex; flex-direction: column;">
+        
+        <div class="modalHeader" style="background: transparent; border-bottom: 1px solid rgba(0,0,0,0.05); padding: 24px 32px;">
+          <div style="flex: 1;">
+            <div id="liveViewUnidad" style="font-size: 20px; font-weight: 800; color: var(--primary);">Unidad: —</div>
+            <div id="liveViewMunicipio" style="font-size: 13px; font-weight: 600; color: var(--muted); margin-top: 4px;">—</div>
+          </div>
+          <button class="btn-modal-close-md3" id="btnLiveViewClose" title="Cerrar vista">
+            <span class="material-symbols-rounded">close</span>
+          </button>
+        </div>
+
+        <div class="modalBody" style="flex: 1; overflow-y: auto; padding: 32px; background: rgba(255,255,255,0.4);">
+          
+          <!-- KPIs Entregables -->
+          <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 32px;">
+            <div class="card" style="padding: 20px; border-radius: 24px; background: #fff; box-shadow: var(--md-shadow-1);">
+              <div style="font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase;">Estado Semafórico</div>
+              <div style="height: 180px; margin-top: 16px;">
+                <canvas id="chartSemaforo"></canvas>
+              </div>
+            </div>
+            <div class="card" style="padding: 20px; border-radius: 24px; background: #fff; box-shadow: var(--md-shadow-1);">
+              <div style="font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase;">Vencimientos Próximos</div>
+              <div style="height: 180px; margin-top: 16px;">
+                <canvas id="chartCaducidad"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabla Detalle Lotes -->
+          <div class="card" style="padding: 0; border-radius: 24px; overflow: hidden; background: #fff; box-shadow: var(--md-shadow-1);">
+            <table class="summaryTable" id="liveViewTable" style="margin:0;">
+              <thead style="background: var(--md-surface-container); border-bottom: 2px solid var(--line);">
+                <tr>
+                  <th style="padding: 16px; border-radius: 0;">Biológico</th>
+                  <th>Lote</th>
+                  <th style="text-align:center;">Existencia</th>
+                  <th style="text-align:center;">Caducidad</th>
+                  <th>Semaforización</th>
+                  <th>Última Rec.</th>
+                </tr>
+              </thead>
+              <tbody id="liveViewTbody">
+                <tr><td colspan="6" style="padding: 40px; text-align:center; color: var(--muted);">Selecciona una unidad para ver detalles</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    </div><!-- end wrap -->
+
+    <!-- 📱 BOTTOM NAVIGATION (MOBILE ONLY) -->
+    <nav class="bottom-nav" id="mobileNav" style="display:none">
+      <button class="nav-item active" data-tab="tabCAP">
+        <span class="material-symbols-rounded">assignment</span>
+        <span>Captura</span>
+      </button>
+      <button class="nav-item" data-tab="tabNOTIFS" id="navNotifs" style="display:none">
+        <div class="badge-wrapper">
+          <span class="material-symbols-rounded">notifications</span>
+          <span id="notifBadgeNav" class="liveBadge">0</span>
+        </div>
+        <span>Avisos</span>
+      </button>
+      <button class="nav-item" data-tab="tabADMIN" id="navAdmin" style="display:none">
+        <span class="material-symbols-rounded">admin_panel_settings</span>
+        <span>Admin</span>
+      </button>
+    </nav>
+
+    <script defer src="main.js"></script>
+
+  </body>
+</html>
