@@ -1,44 +1,38 @@
 :root {
-  /* 🏛️ PALETA STATE-OF-THE-ART (v5 INDIGO) */
-  --primary: #4F46E5;
-  --on-primary: #FFFFFF;
-  --primary-container: #EEF2FF;
-  --on-primary-container: #3730A3;
+  /* 🏛️ MD3 GLOBAL TOKENS (Institutional Palette) */
+  --md-sys-color-primary: #003366; /* Azul Marino Institucional */
+  --md-sys-color-on-primary: #ffffff;
+  --md-sys-color-primary-container: #d6e3ff;
+  --md-sys-color-on-primary-container: #001b3d;
   
-  --secondary: #6366F1;
-  --on-secondary: #FFFFFF;
-  
-  --bg: #F8FAFC;         /* Slate 50 */
-  --surface: #FFFFFF;
-  --surface-low: #F1F5F9; /* Slate 100 */
-  --surface-hover: #F8FAFC;
-  
-  --text: #0F172A;       /* Slate 900 */
-  --text-muted: #64748B;  /* Slate 500 */
-  
-  --outline: #E2E8F0;     /* Slate 200 */
-  --outline-thick: #CBD5E1;
-  
-  /* Semaforización Sólida (Traffic Lights) */
-  --good: #10B981;        /* Emerald 500 */
-  --on-good: #FFFFFF;
-  --good-container: #D1FAE5;
-  --on-good-container: #065F46;
-  
-  --warn: #F59E0B;        /* Amber 500 */
-  --on-warn: #FFFFFF;
-  --warn-container: #FEF3C7;
-  --on-warn-container: #78350F;
-  
-  --bad: #EF4444;         /* Red 500 */
-  --on-bad: #FFFFFF;
-  --bad-container: #FEE2E2;
-  --on-bad-container: #7F1D1D;
+  --md-sys-color-secondary: #006b54; /* Esmeralda Institucional */
+  --md-sys-color-on-secondary: #ffffff;
+  --md-sys-color-secondary-container: #d2e8d1;
+  --md-sys-color-on-secondary-container: #002117;
 
-  /* Elevation (State of the Art Shadows) */
-  --shadow-1: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
-  --shadow-2: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  --shadow-3: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  --md-sys-color-surface: #fdfcff;
+  --md-sys-color-on-surface: #1a1c20;
+  --md-sys-color-surface-container-low: #f7f9fc;
+  --md-sys-color-surface-container: #f1f4f8;
+  --md-sys-color-surface-variant: #e0e2ec;
+  --md-sys-color-on-surface-variant: #43474e;
+  
+  --md-sys-color-outline: #73777f;
+  --md-sys-color-outline-variant: #c3c7cf;
+
+  /* State Colors */
+  --md-sys-color-error: #ba1a1a;
+  --md-sys-color-success: #006b54;
+  --md-sys-color-warning: #f59e0b;
+
+  /* MD3 Elevations */
+  --md-shadow-1: 0 1px 2px rgba(0,0,0,0.1), 0 1px 3px 1px rgba(0,0,0,0.06);
+  --md-shadow-2: 0 4px 6px -1px rgba(0,0,0,0.12), 0 2px 4px -2px rgba(0,0,0,0.08);
+  --md-shadow-3: 0 12px 24px -4px rgba(0,0,0,0.16), 0 8px 16px -4px rgba(0,0,0,0.1);
+
+  /* Layout Base */
+  --glass-bg: rgba(255, 255, 255, 0.98);
+  --glass-blur: blur(20px);
 }
 
 @media (max-width: 520px) {
@@ -54,7 +48,7 @@
 body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: var(--md-sys-color-surface);
+  background-color: var(--md-sys-color-surface-container-low);
   color: var(--md-sys-color-on-surface);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -70,10 +64,9 @@ body.mobile-mode.lowperf {
 
 /* ✅ FULL WIDTH REAL */
 .wrap {
-  width: 100%;
-  max-width: 1440px;
+  width: min(1600px, calc(100vw - 40px));
   margin: 0 auto;
-  padding: 0 24px 40px;
+  padding: 16px 0 40px;
 }
 
 @media (max-width: 520px) {
@@ -109,7 +102,7 @@ body.mobile-mode.lowperf {
   -webkit-backdrop-filter: var(--glass-blur);
   border-bottom: 1px solid var(--md-sys-color-outline-variant);
   transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: var(--md-shadow-1);
 }
 
 .top:hover {
@@ -134,19 +127,20 @@ body.mobile-mode.lowperf {
 }
 
 .topInner {
-  padding: 12px 24px;
+  padding: 8px 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  background-color: var(--md-sys-color-surface);
+  gap: 8px;
+  background-color: transparent;
 }
 
 .brandCenter {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
+  display: flex !important;
+  justify-content: space-between !important;
   align-items: center;
+  width: 100%;
   gap: 20px;
+  flex-wrap: wrap;
 }
 
 .brandMain {
@@ -483,37 +477,38 @@ input::placeholder {
 .tabs {
   display: flex !important;
   gap: 8px;
-  padding: 4px;
-  background-color: var(--md-sys-color-surface-variant);
-  border-radius: 100px;
-  width: fit-content;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
+  width: 100%;
 }
 
 .tab {
-  background: transparent !important;
+  flex: 1;
+  min-height: 48px !important;
+  padding: 10px 16px !important;
+  border-radius: 12px !important;
+  background-color: var(--md-sys-color-surface-container-low) !important;
   color: var(--md-sys-color-on-surface-variant) !important;
-  border-radius: 100px !important;
-  padding: 10px 24px !important;
   font-weight: 700 !important;
-  font-size: 14px !important;
-  border: none !important;
+  font-size: 13px !important;
+  border: 1px solid var(--md-sys-color-outline-variant) !important;
   cursor: pointer;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
-  min-height: 48px !important;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .tab:hover {
-  background-color: rgba(0, 51, 102, 0.08) !important;
+  background-color: var(--md-sys-color-surface-container) !important;
+  border-color: var(--md-sys-color-primary) !important;
 }
 
 .tab.active {
   background-color: var(--md-sys-color-primary) !important;
   color: var(--md-sys-color-on-primary) !important;
-  box-shadow: var(--md-shadow-2) !important;
+  box-shadow: var(--md-shadow-1) !important;
+  border-color: transparent !important;
 }
 
 .tab .material-symbols-rounded {
@@ -522,28 +517,43 @@ input::placeholder {
 
 /* ✅ GRID (contenedor general) */
 .grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  display: flex !important;
+  flex-direction: column;
   gap: 24px;
-  margin-top: 24px;
+  margin-top: 16px;
   padding: 0;
+  width: 100%;
 }
 
-@media (max-width: 520px) {
-  .grid {
-    padding: 0 8px;
+.mainStack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.rightLayout {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .rightLayout {
+    grid-template-columns: 1fr;
   }
 }
 
 .card {
   border: 1px solid var(--md-sys-color-outline-variant);
-  border-radius: 28px;
-  background: #ffffff;
-  padding: 32px;
+  border-radius: 20px;
+  background: white;
+  padding: 24px;
   box-shadow: var(--md-shadow-1);
   min-width: 0;
   position: relative;
-  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .card:hover {
@@ -571,10 +581,10 @@ input::placeholder {
 
 .title h2 {
   margin: 0;
-  font-size: 16px;
+  font-size: 18px;
   color: var(--md-sys-color-primary);
   font-weight: 800;
-  letter-spacing: 0.02rem;
+  letter-spacing: -0.01rem;
 }
 
 .pill {
@@ -1746,20 +1756,20 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
 
 .summaryTable {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  background-color: var(--md-sys-color-surface);
+  border-collapse: collapse;
+  table-layout: fixed;
+  background-color: white;
 }
 
 .summaryTable thead th {
   position: sticky;
   top: 0;
   z-index: 10;
-  background-color: var(--md-sys-color-surface-variant);
+  background-color: var(--md-sys-color-surface-container);
   color: var(--md-sys-color-primary);
-  padding: 16px 20px;
-  font-size: 12px;
-  font-weight: 700;
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-bottom: 2px solid var(--md-sys-color-outline-variant);
@@ -1767,11 +1777,11 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
 }
 
 .summaryTable tbody td {
-  padding: 16px 20px;
+  padding: 12px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--text);
-  border-bottom: 1px solid var(--outline-variant);
+  color: var(--md-sys-color-on-surface);
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
   background: transparent;
   transition: background 0.2s ease;
 }
@@ -1791,7 +1801,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
 }
 
 .summaryTable tbody tr:hover td {
-  background: var(--card-border);
+  background-color: var(--md-sys-color-surface-container-low);
 }
 
 /* ===== BATCH TRACKING & SHELF LIFE STYLES ===== */
