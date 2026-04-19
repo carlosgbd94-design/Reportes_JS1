@@ -7637,3 +7637,114 @@ body.bioConfirmOpen {
     justify-content: center !important;
   }
 }
+
+/* ============================================================== */
+/* === SENIOR UX MD3 BUTTON REFACTORING (HARDWARE ACCELERATED) == */
+/* ============================================================== */
+
+/* 1. Base Button MD3 Architecture */
+button {
+  position: relative;
+  overflow: hidden;
+  will-change: transform, box-shadow, background-color;
+  border-radius: 100px !important;
+  transition: box-shadow 300ms cubic-bezier(0.2, 0, 0, 1), background-color 300ms cubic-bezier(0.2, 0, 0, 1), transform 100ms ease, opacity 200ms !important;
+  --md-ripple-color: rgba(255, 255, 255, 0.3);
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Base Ripple Setup */
+button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150%;
+  padding-bottom: 150%;
+  background: radial-gradient(circle, var(--md-ripple-color) 10%, transparent 70%);
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  transition: transform 600ms cubic-bezier(0.2, 0, 0, 1), opacity 300ms ease;
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+button:active {
+  transform: scale(0.96) !important;
+  transition: transform 100ms ease !important;
+}
+
+button:active::after {
+  transform: translate(-50%, -50%) scale(2.5);
+  opacity: 1;
+  transition: 0s;
+}
+
+/* 2. MD3 Filled Button (.btn) */
+.btn {
+  background-color: var(--md-sys-color-primary, #0061a4) !important;
+  color: var(--md-sys-color-on-primary, #ffffff) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12) !important;
+  border: none !important;
+  --md-ripple-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.16) !important;
+  background-color: var(--md-sys-color-primary, #0061a4) !important;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08)) !important;
+}
+
+.btn:disabled {
+  background-color: rgba(28, 27, 31, 0.12) !important;
+  color: rgba(28, 27, 31, 0.38) !important;
+  box-shadow: none !important;
+  background-image: none !important;
+}
+
+/* 3. MD3 Text Button (.ghostBtn) */
+.ghostBtn {
+  background-color: transparent !important;
+  color: var(--md-sys-color-primary, #0061a4) !important;
+  box-shadow: none !important;
+  border: none !important;
+  --md-ripple-color: rgba(0, 97, 164, 0.15); /* Primary with opacity */
+}
+
+.ghostBtn:hover {
+  background-color: rgba(0, 97, 164, 0.08) !important; /* state overlay */
+}
+
+/* 4. MD3 Outlined/Tonal Button (.iconbtn) */
+.iconbtn {
+  background-color: var(--md-sys-color-surface, #fdfcff) !important;
+  color: var(--md-sys-color-primary, #0061a4) !important;
+  border: 1px solid var(--md-sys-color-outline, #73777f) !important;
+  box-shadow: none !important;
+  --md-ripple-color: rgba(0, 97, 164, 0.12);
+}
+
+.iconbtn:hover {
+  background-color: var(--md-sys-color-secondary-container, #d7e3f7) !important;
+  color: var(--md-sys-color-on-secondary-container, #101c2b) !important;
+  border-color: var(--md-sys-color-primary, #0061a4) !important;
+}
+
+.iconbtn .material-symbols-rounded {
+  color: inherit !important; 
+}
+
+/* 5. MD3 Small Tonal Button (.miniBtn) */
+.miniBtn {
+  background-color: var(--md-sys-color-secondary-container, #d7e3f7) !important;
+  color: var(--md-sys-color-on-secondary-container, #101c2b) !important;
+  border: none !important;
+  box-shadow: none !important;
+  --md-ripple-color: rgba(16, 28, 43, 0.12);
+}
+
+.miniBtn:hover {
+  background-color: rgba(16, 28, 43, 0.08) !important; /* subtle darken */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+}
