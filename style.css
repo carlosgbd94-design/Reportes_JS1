@@ -1,18 +1,12 @@
 :root {
-  /* 🏛️ MD3 GLOBAL TOKENS (Institutional Palette) */
-  --md-sys-color-primary: #003366; /* Azul Marino Institucional */
+  /* 🏛️ MD3 FINAL TOKENS (Solid Opaque System) */
+  --md-sys-color-primary: #003366; 
   --md-sys-color-on-primary: #ffffff;
-  --md-sys-color-primary-container: #d6e3ff;
-  --md-sys-color-on-primary-container: #001b3d;
-  
-  --md-sys-color-secondary: #006b54; /* Esmeralda Institucional */
+  --md-sys-color-secondary: #006b54; 
   --md-sys-color-on-secondary: #ffffff;
-  --md-sys-color-secondary-container: #d2e8d1;
-  --md-sys-color-on-secondary-container: #002117;
 
-  --md-sys-color-surface: #fdfcff;
+  --md-sys-color-surface: #ffffff;
   --md-sys-color-on-surface: #1a1c20;
-  --md-sys-color-surface-container-low: #f7f9fc;
   --md-sys-color-surface-container: #f1f4f8;
   --md-sys-color-surface-variant: #e0e2ec;
   --md-sys-color-on-surface-variant: #43474e;
@@ -23,16 +17,12 @@
   /* State Colors */
   --md-sys-color-error: #ba1a1a;
   --md-sys-color-success: #006b54;
-  --md-sys-color-warning: #f59e0b;
+  --md-sys-color-warning: #7d5700; /* Darker amber for contrast */
 
   /* MD3 Elevations */
-  --md-shadow-1: 0 1px 2px rgba(0,0,0,0.1), 0 1px 3px 1px rgba(0,0,0,0.06);
-  --md-shadow-2: 0 4px 6px -1px rgba(0,0,0,0.12), 0 2px 4px -2px rgba(0,0,0,0.08);
-  --md-shadow-3: 0 12px 24px -4px rgba(0,0,0,0.16), 0 8px 16px -4px rgba(0,0,0,0.1);
-
-  /* Layout Base */
-  --glass-bg: rgba(255, 255, 255, 0.98);
-  --glass-blur: blur(20px);
+  --md-shadow-1: 0 1px 3px rgba(0,0,0,0.12);
+  --md-shadow-2: 0 4px 8px rgba(0,0,0,0.16);
+  --md-shadow-3: 0 12px 24px rgba(0,0,0,0.2);
 }
 
 @media (max-width: 520px) {
@@ -97,11 +87,8 @@ body.mobile-mode.lowperf {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border-bottom: 1px solid var(--md-sys-color-outline-variant);
-  transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+  background-color: #ffffff;
+  border-bottom: 2px solid var(--md-sys-color-outline-variant);
   box-shadow: var(--md-shadow-1);
 }
 
@@ -131,7 +118,7 @@ body.mobile-mode.lowperf {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background-color: transparent;
+  background-color: #ffffff;
 }
 
 .brandCenter {
@@ -256,32 +243,32 @@ body.mobile-mode.lowperf {
 }
 
 .badge.good, .badge.ok {
-  background-color: var(--md-sys-color-success-container) !important;
-  color: var(--md-sys-color-on-success-container) !important;
+  background-color: #d1fae5 !important;
+  color: #065f46 !important;
   border-color: transparent !important;
 }
 
 .badge.warn {
-  background-color: #ffe082 !important; /* Amber container */
-  color: #5d4037 !important;
+  background-color: #fef3c7 !important;
+  color: #92400e !important;
   border-color: transparent !important;
 }
 
 .badge.bad {
-  background-color: var(--md-sys-color-error-container) !important;
-  color: var(--md-sys-color-on-error-container) !important;
+  background-color: #fee2e2 !important;
+  color: #991b1b !important;
   border-color: transparent !important;
 }
 
 .badge.info {
-  background-color: var(--md-sys-color-primary-container) !important;
-  color: var(--md-sys-color-on-primary-container) !important;
+  background-color: #d6e3ff !important;
+  color: #003366 !important;
   border-color: transparent !important;
 }
 
 .badge.secondary {
-  background-color: var(--md-sys-color-secondary-container) !important;
-  color: var(--md-sys-color-on-secondary-container) !important;
+  background-color: #f1f4f8 !important;
+  color: #43474e !important;
   border-color: transparent !important;
 }
 
@@ -7507,17 +7494,18 @@ body.bioConfirmOpen {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
+/* ✅ APP FOOTER (Limpieza Final) */
 .appFooter {
   text-align: center;
   padding: 40px 20px;
   font-size: 11px;
   color: var(--md-sys-color-on-surface-variant);
-  opacity: 0.6;
+  opacity: 1;
   font-weight: 500;
   letter-spacing: 0.5px;
   width: 100%;
   margin-top: 40px;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  border-top: 1px solid var(--md-sys-color-outline-variant);
   clear: both;
 }
 
@@ -7533,38 +7521,7 @@ body.bioConfirmOpen {
   text-decoration: underline;
 }
 
-/* ✅ MD3 CLOSE BUTTON */
-.btn-modal-close-md3 {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    width: 48px;
-    height: 48px;
-    border-radius: 50% !important;
-    background: var(--md-surface-container-highest) !important;
-    color: var(--md-sys-color-on-surface-variant) !important;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.2, 0, 0, 1);
-    z-index: 100;
-    box-shadow: var(--md-shadow-1);
-    border: none;
-    padding: 0;
-}
-
-.btn-modal-close-md3:hover {
-    background: var(--md-sys-color-error-container) !important;
-    color: var(--md-sys-color-on-error-container) !important;
-    transform: rotate(90deg) scale(1.1);
-    box-shadow: var(--md-shadow-2);
-}
-
-.btn-modal-close-md3 .material-symbols-rounded {
-    font-size: 24px;
-}
-/* Senior UX Layout %26 Masterclass fixes */
+/* ✅ MD3 FINAL STABILIZATION */
 .header-distribution {
   display: flex !important;
   justify-content: space-between !important;
@@ -7578,115 +7535,4 @@ body.bioConfirmOpen {
   .header-distribution {
     justify-content: center !important;
   }
-}
-
-/* ============================================================== */
-/* === SENIOR UX MD3 BUTTON REFACTORING (HARDWARE ACCELERATED) == */
-/* ============================================================== */
-
-/* 1. Base Button MD3 Architecture */
-button {
-  position: relative;
-  overflow: hidden;
-  will-change: transform, box-shadow, background-color;
-  border-radius: 100px !important;
-  transition: box-shadow 300ms cubic-bezier(0.2, 0, 0, 1), background-color 300ms cubic-bezier(0.2, 0, 0, 1), transform 100ms ease, opacity 200ms !important;
-  --md-ripple-color: rgba(255, 255, 255, 0.3);
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-}
-
-/* Base Ripple Setup */
-button::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 150%;
-  padding-bottom: 150%;
-  background: radial-gradient(circle, var(--md-ripple-color) 10%, transparent 70%);
-  transform: translate(-50%, -50%) scale(0);
-  opacity: 0;
-  transition: transform 600ms cubic-bezier(0.2, 0, 0, 1), opacity 300ms ease;
-  pointer-events: none;
-  border-radius: 50%;
-}
-
-button:active {
-  transform: scale(0.96) !important;
-  transition: transform 100ms ease !important;
-}
-
-button:active::after {
-  transform: translate(-50%, -50%) scale(2.5);
-  opacity: 1;
-  transition: 0s;
-}
-
-/* 2. MD3 Filled Button (.btn) */
-.btn {
-  background-color: var(--md-sys-color-primary, #0061a4) !important;
-  color: var(--md-sys-color-on-primary, #ffffff) !important;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12) !important;
-  border: none !important;
-  --md-ripple-color: rgba(255, 255, 255, 0.3);
-}
-
-.btn:hover {
-  box-shadow: 0 4px 8px rgba(0,0,0,0.16) !important;
-  background-color: var(--md-sys-color-primary, #0061a4) !important;
-  background-image: linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08)) !important;
-}
-
-.btn:disabled {
-  background-color: rgba(28, 27, 31, 0.12) !important;
-  color: rgba(28, 27, 31, 0.38) !important;
-  box-shadow: none !important;
-  background-image: none !important;
-}
-
-/* 3. MD3 Text Button (.ghostBtn) */
-.ghostBtn {
-  background-color: transparent !important;
-  color: var(--md-sys-color-primary, #0061a4) !important;
-  box-shadow: none !important;
-  border: none !important;
-  --md-ripple-color: rgba(0, 97, 164, 0.15); /* Primary with opacity */
-}
-
-.ghostBtn:hover {
-  background-color: rgba(0, 97, 164, 0.08) !important; /* state overlay */
-}
-
-/* 4. MD3 Outlined/Tonal Button (.iconbtn) */
-.iconbtn {
-  background-color: var(--md-sys-color-surface, #fdfcff) !important;
-  color: var(--md-sys-color-primary, #0061a4) !important;
-  border: 1px solid var(--md-sys-color-outline, #73777f) !important;
-  box-shadow: none !important;
-  --md-ripple-color: rgba(0, 97, 164, 0.12);
-}
-
-.iconbtn:hover {
-  background-color: var(--md-sys-color-secondary-container, #d7e3f7) !important;
-  color: var(--md-sys-color-on-secondary-container, #101c2b) !important;
-  border-color: var(--md-sys-color-primary, #0061a4) !important;
-}
-
-.iconbtn .material-symbols-rounded {
-  color: inherit !important; 
-}
-
-/* 5. MD3 Small Tonal Button (.miniBtn) */
-.miniBtn {
-  background-color: var(--md-sys-color-secondary-container, #d7e3f7) !important;
-  color: var(--md-sys-color-on-secondary-container, #101c2b) !important;
-  border: none !important;
-  box-shadow: none !important;
-  --md-ripple-color: rgba(16, 28, 43, 0.12);
-}
-
-.miniBtn:hover {
-  background-color: rgba(16, 28, 43, 0.08) !important; /* subtle darken */
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
 }
