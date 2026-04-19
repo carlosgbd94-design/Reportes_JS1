@@ -1101,9 +1101,9 @@ label,
 }
 
 #tabSR.active {
-  background: rgb(0 167 255 / 15%);
-  border-color: #1abcff;
-  color: #E2E8F0;
+  background: #0284c7;
+  border-color: #0369a1;
+  color: #ffffff;
 }
 
 #tabCONS {
@@ -1115,9 +1115,9 @@ label,
 }
 
 #tabCONS.active {
-  background: rgba(230, 168, 69, 0.15);
-  border-color: var(--warn);
-  color: #E2E8F0;
+  background: #d97706;
+  border-color: #b45309;
+  color: #ffffff;
 }
 
 #tabBIO {
@@ -1129,8 +1129,8 @@ label,
 }
 
 #tabBIO.active {
-  background: rgba(142, 153, 164, 0.2);
-  border-color: #8e99a4;
+  background: #475569;
+  border-color: #334155;
   color: #ffffff;
 }
 
@@ -1143,9 +1143,9 @@ label,
 }
 
 #tabPINOL.active {
-  background: rgba(56, 198, 142, 0.15);
-  border-color: var(--good);
-  color: #E2E8F0;
+  background: #059669;
+  border-color: #047857;
+  color: #ffffff;
 }
 
 .hr {
