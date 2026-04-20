@@ -23,6 +23,15 @@
   --md-shadow-1: 0 1px 3px rgba(0,0,0,0.12);
   --md-shadow-2: 0 4px 8px rgba(0,0,0,0.16);
   --md-shadow-3: 0 12px 24px rgba(0,0,0,0.2);
+
+  /* Legacy aliases for backward compatibility */
+  --warn: #f59e0b;
+  --good: #10b981;
+  --bad: #ba1a1a;
+  --text: var(--md-sys-color-on-surface);
+  --muted: var(--md-sys-color-on-surface-variant);
+  --bg: var(--md-sys-color-surface-container);
+  --line: var(--md-sys-color-outline-variant);
 }
 
 @media (max-width: 520px) {
@@ -414,48 +423,7 @@ body.mobile-mode.lowperf {
   background: #f1f5f9;
   color: #475569;
 }
-#bFecha {
-  background-color: #f0fdf4 !important;
-  border-color: #dcfce7 !important;
-  color: #166534 !important;
-}
-#bFecha .material-symbols-rounded { color: #166534; }
-
-#bHora {
-  background-color: #f0f7ff !important; /* Blue Soft */
-  border-color: #e0f2fe !important;
-  color: #075985 !important;
-}
-#bHora .material-symbols-rounded { color: #075985; }
-
-#bClima {
-  background-color: #f0fdfa !important; /* Teal Soft */
-  border-color: #ccfbf1 !important;
-  color: #115e59 !important;
-}
-#bClima .material-symbols-rounded { color: #115e59; }
-
-#bGuardado {
-  background-color: #fefce8 !important; /* Amber Soft */
-  border-color: #fef08a !important;
-  color: #854d0e !important;
-}
-#bGuardado .material-symbols-rounded { color: #854d0e; }
-
-#hdrFecha,
-#hdrHora,
-#hdrClima,
-#hdrJueves,
-#hdrGuardado {
-  font-family: 'Poppins';
-  font-size: clamp(1rem, 1.1vw, 1.1rem);
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--text);
-}
+/* Legacy badges and header styles nuked to allow Tailwind to work */
 
 @media (max-width: 980px) {
   .topInner {
@@ -518,22 +486,18 @@ body.mobile-mode.lowperf {
 }
 
 #cardLogin input,
-#cardLogin .passField input,
-#cardLogin input:not([type="checkbox"]):not([type="radio"]),
-#cardLogin .passField input:not([type="checkbox"]):not([type="radio"]) {
+#cardLogin .passField input {
   width: 100% !important;
-  height: 54px !important;
-  padding: 0 16px !important;
+  height: 52px !important;
+  padding: 0 56px !important; /* Fixed padding to avoid icons */
   font-family: inherit !important;
-  font-size: 16px !important;
+  font-size: 15px !important;
   color: var(--md-sys-color-on-surface) !important;
-  background-color: #f8fafc !important; /* Unified background */
+  background-color: #f8fafc !important;
   border: 1.5px solid var(--md-sys-color-outline-variant) !important;
-  border-radius: 14px !important;
-  transition: all 0.2s cubic-bezier(0, 0, 0.2, 1) !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
   outline: none !important;
-  box-shadow: none !important;
-  margin: 0 !important;
 }
 
 #cardLogin input:focus,
@@ -806,6 +770,131 @@ input[type="date"] {
 .badge.good .dot {
   background: #1B6D4F;
   /* Verde MD3 oscuro para contraste */
+}
+
+/* ==========================================================
+   📱 PREMIUM LOGIN OVERLAY (FULL SCREEN)
+   ========================================================== */
+
+#loginWrapper {
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+              visibility 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.login-bg {
+  background-color: #f8fafc;
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(210,100%,98%,1) 0, transparent 50%), 
+    radial-gradient(at 50% 0%, hsla(220,100%,94%,1) 0, transparent 50%), 
+    radial-gradient(at 100% 0%, hsla(160,100%,96%,1) 0, transparent 50%), 
+    radial-gradient(at 0% 50%, hsla(215,100%,95%,1) 0, transparent 50%), 
+    radial-gradient(at 100% 50%, hsla(225,100%,94%,1) 0, transparent 50%), 
+    radial-gradient(at 0% 100%, hsla(210,100%,96%,1) 0, transparent 50%), 
+    radial-gradient(at 50% 100%, hsla(160,100%,95%,1) 0, transparent 50%), 
+    radial-gradient(at 100% 100%, hsla(220,100%,96%,1) 0, transparent 50%);
+  background-size: 200% 200%;
+  animation: mesh-flow 15s ease infinite alternate;
+  filter: none;
+}
+
+@keyframes mesh-flow {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 100% 100%; }
+}
+
+/* ==========================================================
+   📱 PRESIDENTIAL LOGIN V5 (ROBUST & BULLETPROOF)
+   ========================================================== */
+
+/* 🚫 DISABLE BACKGROUND SCROLL WHEN LOGIN IS ACTIVE */
+body:has(#loginWrapper:not(.hidden)) {
+  overflow: hidden !important;
+  height: 100vh;
+}
+
+#loginWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.4s ease;
+  background-color: #f8fafc;
+}
+
+#loginWrapper.hidden {
+  display: none !important;
+}
+
+/* SLEEK MESH FOR V5 */
+.login-bg {
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(210,100%,97%,1) 0, transparent 50%), 
+    radial-gradient(at 100% 0%, hsla(160,100%,97%,1) 0, transparent 50%), 
+    radial-gradient(at 100% 100%, hsla(220,100%,97%,1) 0, transparent 50%), 
+    radial-gradient(at 0% 100%, hsla(215,100%,97%,1) 0, transparent 50%);
+  opacity: 0.8;
+}
+
+#cardLogin {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  /* Precision shadow for MD3 Elevation 3-4 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 
+              0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+              0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.rounded-3xl { border-radius: 1.5rem; }
+
+/* 🛡️ INPUT REFINEMENT V5.1 (BLOCKER) */
+#usuario, #password {
+  padding-left: 56px !important;
+  padding-right: 52px !important; /* Protect the eye icon */
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+#usuario:focus, #password:focus {
+  border-color: #003366 !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 51, 102, 0.08) !important;
+  transform: scale(1.01);
+}
+
+/* Password Toggle Icon placement correction */
+#togglePassword {
+  transition: all 0.2s ease;
+  user-select: none;
+}
+#togglePassword:hover {
+  transform: scale(1.1);
+  color: #003366;
+}
+
+/* COMPACTNESS GUARANTEE */
+@media (max-height: 800px) {
+  #cardLogin {
+    transform: scale(0.9);
+  }
+}
+@media (max-height: 680px) {
+  #cardLogin {
+    transform: scale(0.85);
+  }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 /* ✅ SEMAFORIZACIÓN TRADICIONAL */
@@ -5932,12 +6021,7 @@ body.mobile-mode .top .statusbar>.badge {
   min-width: 0;
 }
 
-body.mobile-mode #bFecha,
-body.mobile-mode #bHora,
-body.mobile-mode #bJueves {
-  flex: 1 1 0;
-  min-width: 0;
-}
+/* body.mobile-mode #bFecha overrides nuked to prevent item stretching */
 
 body.mobile-mode #hdrFecha,
 body.mobile-mode #hdrHora,
@@ -6180,7 +6264,7 @@ body.mobile-mode .resetWindow {
 body.mobile-mode .row,
 body.mobile-mode .captureSummaryGrid,
 body.mobile-mode .rightLayout {
-  grid-template-columns: 1fr !important;
+  /* grid-template-columns: 1fr !important; -- Eliminado para permitir grid moderno */
 }
 
 body.mobile-mode #rightColumn,
@@ -6500,7 +6584,7 @@ body.mobile-mode #formSR input[type="number"] {
 }
 
 body.mobile-mode #formPINOL .row {
-  grid-template-columns: 1fr !important;
+  /* grid-template-columns: 1fr !important; -- Nuked to prevent dashboard squash */
   gap: 10px;
 }
 

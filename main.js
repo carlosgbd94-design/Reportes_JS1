@@ -133,14 +133,33 @@ document.addEventListener("DOMContentLoaded", () => {
             showOverlay("Iniciando sesión...", "Conectando");
 
             try {
-                const loginResult = await apiCall("login", { usuario: email, password: password }, { immediate: true });
+                // Autenticación Nativa Supabase
+                const { data, error } = await window.supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
                 
-                if (!loginResult || !loginResult.ok) {
-                    throw new Error((loginResult && loginResult.error) || "Credenciales incorrectas.");
+                if (error) {
+                    throw new Error("Credenciales incorrectas.");
                 }
 
-                TOKEN = loginResult.data.token;
-                USER = loginResult.data.user;
+                // Extrayendo el Perfil atado por el Trigger SQL
+                const { data: perfil, error: perfilError } = await window.supabase
+                    .from('perfiles')
+                    .select('*')
+                    .eq('id', data.user.id)
+                    .single();
+
+                if (perfilError) {
+                    console.warn("[Auth] No se pudo recuperar perfil extendido:", perfilError);
+                }
+
+                TOKEN = data.session.access_token;
+                USER = buildUserFromPerfil(data.user.id, data.user.email, perfil);
+
+                // Verificación de integridad para depuración
+                console.log("[Auth Success] Sesión iniciada para:", USER.email, "Rol:", USER.rol, "CLUES:", USER.clues);
+                
                 saveSession(TOKEN, USER);
                     
                 // ✅ ARRANQUE ÚNICO: Todas las peticiones iniciales se agrupan automáticamente
@@ -2857,7 +2876,8 @@ document.addEventListener("DOMContentLoaded", () => {
       "listmynotifications", "marknotificationread", "deletenotification",
       "biogetform", "biogetdatesformonth", "unitstatus", "unitcatalog", 
       "pinolsolicitud", "listpinol", "markpinoldelivered", "confirmpinolreceipt",
-      "sendnotification", "getlotesbymunicipio", "savelotes"
+      "sendnotification", "getlotesbymunicipio", "savelotes", "uploadfile", "listfiles",
+      "export", "bioexportmatrix", "biogetexportoptions", "admingetunitdetail"
     ];
 
     if (SUPABASE_ACTIONS.includes(action.toLowerCase())) {
@@ -2865,9 +2885,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // --- ACCIONES LEGADAS (DRIVE / GAS) ---
-    if (action === "uploadfile") {
-      return _rawApiCall(body);
-    }
+    // (Removido uploadfile legacy)
 
     // --- FALLBACK BATCHING LEGADO ---
     // 1. Verificar Caché (Si no es inmediata o batch)
@@ -2974,18 +2992,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         case "whoami": {
-          // Reutilizamos el login logic o buscamos por el token decodificado
-          const userStr = localStorage.getItem("JS1_USER");
-          if (!userStr) return { ok: false, error: "Sin sesión" };
-          const user = JSON.parse(userStr);
-          
-          return {
-            ok: true,
-            data: {
-              ...user,
-              fechaPedidoProgramada: todayYmdLocal() // Implementar lógica de fecha si es necesario
-            }
-          };
+          // 🛡️ NEUTRALIZADO: whoami() ahora valida directamente contra Supabase Auth.
+          // Este case ya no se invoca, pero se mantiene como fallback seguro.
+          console.warn("[supabaseRequest] whoami case invocado — debe usar whoami() directo");
+          return { ok: false, error: "Use whoami() directo" };
         }
 
         case "savesr": {
@@ -3057,7 +3067,7 @@ document.addEventListener("DOMContentLoaded", () => {
             sr_dosis: Number(payload.sr_dosis || 0),
             jeringa_reconst_5ml_0605500438: Number(payload.jeringa_reconst_5ml_0605500438 || 0),
             jeringa_aplic_05ml_0605502657: Number(payload.jeringa_aplic_05ml_0605502657 || 0),
-            aguja_06004037: Number(payload.aguja_0600403711 || payload.aguja_06004037 || 0),
+            aguja_0600403711: Number(payload.aguja_0600403711 || payload.aguja_06004037 || 0),
             capturado_por: USER.usuario,
             editado: payload.editado || 'NO'
           };
@@ -3127,7 +3137,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 sr_dosis: consData.sr_dosis,
                 jeringa_reconst_5ml_0605500438: consData.jeringa_reconst_5ml_0605500438,
                 jeringa_aplic_05ml_0605502657: consData.jeringa_aplic_05ml_0605502657,
-                aguja_0600403711: consData.aguja_06004037
+                aguja_0600403711: consData.aguja_0600403711
               } : null
             }
           };
@@ -3346,34 +3356,51 @@ document.addEventListener("DOMContentLoaded", () => {
           return { ok: true, data };
         }
 
+        case "biogetexportoptions": {
+          const { data, error } = await supabase.from('unidades').select('municipio');
+          if (error) throw error;
+          const uniqueMunis = [...new Set(data.map(u => u.municipio))].sort();
+          return { ok: true, data: { municipios: uniqueMunis } };
+        }
+
         case "export": {
           const tipo = (payload.tipo || "SR").toUpperCase();
           const table = tipo === "SR" ? "biologicos_existencia" : "consumibles";
-          const { data, error } = await supabase
+          let query = supabase
             .from(table)
-            .select('*, unidades(*)')
+            .select('*')
             .gte('fecha', payload.fechaInicio)
             .lte('fecha', payload.fechaFin);
 
+          const { data, error } = await query;
           if (error) throw error;
           
-          // Filtrar por municipios si es necesario
           const municipios = payload.municipios || [];
           const filtered = municipios.length > 0
-            ? data.filter(d => municipios.includes(d.unidades?.municipio))
+            ? data.filter(d => municipios.includes(d.unidades?.municipio || d.municipio))
             : data;
 
           return { ok: true, data: filtered };
         }
 
-        case "bioExportMatrix": {
-          const { data, error } = await supabase
+        case "bioexportmatrix": {
+          let query = supabase
             .from('biologicos_pedido')
-            .select('*, unidades(*)')
-            .eq('fecha_objetivo', payload.fechaInicio);
+            .select('*');
+          
+          if (payload.fechaInicio) {
+             query = query.eq('fecha_objetivo', payload.fechaInicio);
+          }
 
+          const { data, error } = await query;
           if (error) throw error;
-          return { ok: true, data };
+
+          const municipios = payload.municipios || [];
+          const filtered = municipios.length > 0
+            ? data.filter(d => municipios.includes(d.unidades?.municipio || d.municipio))
+            : data;
+
+          return { ok: true, data: filtered };
         }
 
         case "listpinol": {
@@ -3539,6 +3566,36 @@ document.addEventListener("DOMContentLoaded", () => {
           const { error } = await supabase.from('usuarios').insert(record);
           if (error) throw error;
           return { ok: true };
+        }
+
+        case "uploadfile": {
+          const file = payload.file;
+          const { category, targetClues, targetUnidad } = payload;
+          
+          // Sanitizar partes de la ruta
+          const cleanCat = normalizePath(category).replace(/ /g, '_');
+          const cleanUnidad = normalizePath(targetUnidad).replace(/[\s\/]/g, '_');
+          
+          // Formatter para la carpeta: categoria/CLUES - Unidad/YYYYMMDD-HHmm - Nombre.ext
+          const dateStr = new Date().toISOString().replace(/T/, '-').replace(/:/g, '').split('.')[0]; 
+          const cleanFileName = normalizePath(file.name).replace(/\s/g, '_');
+          const unspaced = `${targetClues}_${cleanFileName}`;
+          
+          // Ruta final: Categoria / CLUES_Unidad / YYYYMMDD-HHmm-CLUES_Nombre.ext
+          const folderPath = `${cleanCat}/${targetClues}_${cleanUnidad}/${dateStr}-${unspaced}`;
+          
+          const { error } = await supabase.storage.from('evidencias').upload(folderPath, file, {
+            cacheControl: '3600',
+            upsert: true
+          });
+          if (error) throw error;
+          return { ok: true, data: { path: folderPath } };
+        }
+
+        case "listfiles": {
+          const { data: filesData, error: filesErr } = await supabase.rpc('get_evidences_list');
+          if (filesErr) throw filesErr;
+          return { ok: true, data: filesData || [] };
         }
 
         case "adminresetpassword": {
@@ -5504,18 +5561,89 @@ window.handleSRLoteChange = function(selectEl) {
     }, 120);
   }
 
+/**
+ * 🛡️ whoami() — Validación REAL de sesión Auth + perfil fresco
+ * Ya NO lee de localStorage. Valida contra Supabase Auth y luego
+ * consulta public.perfiles para obtener rol, clues, municipio, etc.
+ */
 async function whoami() {
-    if (!TOKEN) return null;
     try {
-        const r = await apiCall("whoami");
-        if (r && r.ok && r.data) {
-            return r.data;
+        // 1. Verificar que existe una sesión activa en Supabase Auth
+        const { data: { session }, error: sessionError } = await window.supabase.auth.getSession();
+        if (sessionError || !session) {
+            console.warn("[whoami] No hay sesión Auth activa");
+            clearSession();
+            return null;
         }
-        return null;
+
+        // 2. Actualizar TOKEN con el access_token fresco
+        TOKEN = session.access_token;
+
+        // 3. Consultar perfil fresco desde la DB (respeta RLS)
+        const { data: perfil, error: perfilError } = await window.supabase
+            .from('perfiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+        if (perfilError || !perfil) {
+            console.error("[whoami] Perfil no encontrado para UID:", session.user.id, perfilError);
+            clearSession();
+            return null;
+        }
+
+        // 4. Verificar que el usuario esté activo
+        if (String(perfil.activo || "SI").toUpperCase() !== "SI") {
+            console.warn("[whoami] Usuario desactivado:", perfil.usuario);
+            await window.supabase.auth.signOut();
+            clearSession();
+            return null;
+        }
+
+        // 5. Construir USER de forma canónica y persistir
+        USER = buildUserFromPerfil(session.user.id, session.user.email, perfil);
+        saveSession(TOKEN, USER);
+
+        console.log("[whoami] Sesión validada:", USER.email, "Rol:", USER.rol);
+        return USER;
     } catch (e) {
-        console.error("Error al obtener perfil de usuario:", e);
+        console.error("[whoami] Error fatal:", e);
+        clearSession();
         return null;
     }
+}
+
+/**
+ * 🏗️ buildUserFromPerfil — Constructor canónico del objeto USER
+ * Garantiza que municipiosAllowed se derive correctamente del rol.
+ * Esta es la ÚNICA fuente de verdad para construir USER.
+ */
+function buildUserFromPerfil(uid, email, perfil) {
+    const rol = String((perfil && perfil.rol) || "UNIDAD").toUpperCase();
+    const municipio = (perfil && perfil.municipio) || "";
+
+    // Derivar municipiosAllowed basándose en el rol
+    let municipiosAllowed = [];
+    if (rol === "ADMIN" || rol === "JURISDICCIONAL") {
+        municipiosAllowed = ["*"]; // Acceso total
+    } else if (rol === "MUNICIPAL") {
+        municipiosAllowed = municipio ? [municipio] : [];
+    }
+    // UNIDAD no necesita municipiosAllowed
+
+    return {
+        uid: uid,
+        email: email,
+        rol: rol,
+        usuario: (perfil && perfil.usuario) || email,
+        clues: (perfil && perfil.clues) || "",
+        unidad: (perfil && perfil.unidad) || "",
+        municipio: municipio,
+        municipiosAllowed: municipiosAllowed,
+        activo: (perfil && perfil.activo) || "SI",
+        must_change: !!(perfil && perfil.must_change),
+        mustChange: !!(perfil && perfil.must_change)
+    };
 }
 
 
@@ -5638,13 +5766,32 @@ async function getTodayReports(fecha = "", force = false) {
   };
 
 
-  function showRightColumn(show) {
-    const loginWrap = document.querySelector(".loginWrap");
-    toggleEl("rightColumn", show, "block");
-    toggleEl("cardLogin", !show, "block");
+  /**
+   * 🌓 CONTROL DE VISTAS (LOGIN vs APP)
+   * Administra la entrada/salida del overlay premium y la visibilidad del dashboard.
+   */
 
+  function showRightColumn(show) {
+    const loginWrap = document.getElementById("loginWrapper");
+    const cardLogin = document.getElementById("cardLogin");
+
+    // 1. Dashboard visibility
+    toggleEl("rightColumn", show, "flex");
+
+    // 2. Login Overlay transition
     if (loginWrap) {
-      loginWrap.style.display = show ? "none" : "flex";
+      if (show) {
+        // Exit: Fade out and slide up
+        if (cardLogin) cardLogin.style.transform = "translateY(-40px) scale(0.95)";
+        loginWrap.classList.add("hidden");
+      } else {
+        // Entry: Show premium overlay
+        loginWrap.classList.remove("hidden");
+        if (cardLogin) {
+            cardLogin.style.transform = "translateY(0) scale(1)";
+            cardLogin.classList.add("animate-fade-in-up");
+        }
+      }
     }
   }
 
@@ -6215,7 +6362,7 @@ async function getTodayReports(fecha = "", force = false) {
     wrap.appendChild(grid);
     box.style.display = "block";
 
-    if (USER.rol === "ADMIN") {
+    if (USER.rol === "ADMIN" || USER.rol === "JURISDICCIONAL") {
       document.querySelectorAll(".exportMunicipioChk").forEach(chk => chk.checked = true);
     }
   }
@@ -6781,6 +6928,7 @@ async function getTodayReports(fecha = "", force = false) {
     if ($("btnExport")) $("btnExport").style.display = canExport ? "inline-flex" : "none";
     if ($("btnExportBIO")) $("btnExportBIO").style.display = canExport ? "inline-flex" : "none";
     if ($("tabADMIN")) $("tabADMIN").style.display = isAdmin ? "block" : "none";
+    if ($("btnViewArchivos")) $("btnViewArchivos").style.display = (isAdmin || isJurisdiccional) ? "flex" : "none";
     if ($("tabNOTIFS")) $("tabNOTIFS").style.display = (isAdmin || isJurisdiccional || isMunicipal) ? "block" : "none";
     if ($("btnTopNotifications")) $("btnTopNotifications").style.display = (isUnidad || isAdmin || isJurisdiccional || isMunicipal) ? "inline-flex" : "none";
 
@@ -6881,7 +7029,7 @@ async function getTodayReports(fecha = "", force = false) {
       opsTab: "SUMMARY"
     });
     localStorage.removeItem("JS1_TOKEN");
-    $("loginStatus").textContent = "—";
+    if ($("loginStatus")) $("loginStatus").textContent = "—";
     showRightColumn(false);
 
     if ($("bGuardado")) $("bGuardado").style.display = "none";
@@ -6928,9 +7076,17 @@ async function getTodayReports(fecha = "", force = false) {
     const isJurisdiccional = role === "JURISDICCIONAL";
     const isOps = isAdmin || isMunicipal || isJurisdiccional;
 
-    $("tabCAP")?.classList.toggle("active", panel === "CAP");
-    $("tabNOTIFS")?.classList.toggle("active", panel === "NOTIFS");
-    $("tabADMIN")?.classList.toggle("active", panel === "ADMIN");
+    const updateTabClass = (id, cond) => {
+      const el = $(id);
+      if (el) {
+        if (cond) { el.classList.add("tab-active"); el.classList.remove("tab-inactive"); }
+        else { el.classList.add("tab-inactive"); el.classList.remove("tab-active"); }
+      }
+    };
+
+    updateTabClass("tabCAP", panel === "CAP");
+    updateTabClass("tabNOTIFS", panel === "NOTIFS");
+    updateTabClass("tabADMIN", panel === "ADMIN");
 
     // Sincronizar Bottom Nav
     document.querySelectorAll(".nav-item").forEach(el => {
@@ -6978,11 +7134,20 @@ async function getTodayReports(fecha = "", force = false) {
 
   function activateCapture(tab) {
     const role = String((USER && USER.rol) || "").trim().toUpperCase();
+
+    const updateTabClass = (id, cond) => {
+      const el = $(id);
+      if (el) {
+        if (cond) { el.classList.add("tab-active"); el.classList.remove("tab-inactive"); }
+        else { el.classList.add("tab-inactive"); el.classList.remove("tab-active"); }
+      }
+    };
+
     if (role !== "UNIDAD") {
-      $("tabSR")?.classList.remove("active");
-      $("tabCONS")?.classList.remove("active");
-      $("tabBIO")?.classList.remove("active");
-      $("tabPINOL")?.classList.remove("active");
+      updateTabClass("tabSR", false);
+      updateTabClass("tabCONS", false);
+      updateTabClass("tabBIO", false);
+      updateTabClass("tabPINOL", false);
 
       if ($("formSR")) $("formSR").style.display = "none";
       if ($("formCONS")) $("formCONS").style.display = "none";
@@ -7013,10 +7178,10 @@ async function getTodayReports(fecha = "", force = false) {
       clearTabAttention("tabPINOL");
     }
 
-    $("tabSR").classList.toggle("active", tab === "SR");
-    $("tabCONS").classList.toggle("active", tab === "CONS");
-    $("tabBIO").classList.toggle("active", tab === "BIO");
-    $("tabPINOL").classList.toggle("active", tab === "PINOL");
+    updateTabClass("tabSR", tab === "SR");
+    updateTabClass("tabCONS", tab === "CONS");
+    updateTabClass("tabBIO", tab === "BIO");
+    updateTabClass("tabPINOL", tab === "PINOL");
 
     $("formSR").style.display = "none";
     $("formCONS").style.display = "none";
@@ -7080,10 +7245,18 @@ async function getTodayReports(fecha = "", force = false) {
     const panelHISTORY = $("panelHISTORY");
     const panelLOTES = $("panelLOTES");
 
-    $("tabOPS_CAPTURE")?.classList.toggle("active", tab === "CAPTURE");
-    $("tabOPS_PINOL")?.classList.toggle("active", tab === "PINOL");
-    $("tabOPS_HISTORY")?.classList.toggle("active", tab === "HISTORY");
-    $("tabLOTES")?.classList.toggle("active", tab === "LOTES");
+    const updateTabClass = (id, cond) => {
+      const el = $(id);
+      if (el) {
+        if (cond) { el.classList.add("tab-active"); el.classList.remove("tab-inactive"); }
+        else { el.classList.add("tab-inactive"); el.classList.remove("tab-active"); }
+      }
+    };
+
+    updateTabClass("tabOPS_CAPTURE", tab === "CAPTURE");
+    updateTabClass("tabOPS_PINOL", tab === "PINOL");
+    updateTabClass("tabOPS_HISTORY", tab === "HISTORY");
+    updateTabClass("tabLOTES", tab === "LOTES");
 
     if (panelCaptureSummary) panelCaptureSummary.style.display = (tab === "CAPTURE") ? "block" : "none";
     if ($("panelEDITLOG")) $("panelEDITLOG").style.display = "none";
@@ -7709,7 +7882,7 @@ $("btnSaveSR").onclick = async () => {
         return;
       }
 
-      generateProfessionalXLSX(tipo, res.data, fIni, fFin);
+      await generateProfessionalXLSX(tipo, res.data, fIni, fFin, municipios);
       showToast("El reporte se generó correctamente");
 
     } catch (e) {
@@ -7723,57 +7896,191 @@ $("btnSaveSR").onclick = async () => {
   /**
    * Generador de Excel Profesional (Cliente)
    */
-  function generateProfessionalXLSX(tipo, data, fIni, fFin) {
-    let sheetName = tipo === "SR" ? "Existencias" : (tipo === "CONS" ? "Consumibles" : "Pedidos");
-    let filename = `Reporte_${tipo}_${fIni}.xlsx`;
-
-    let rows = [];
-    
-    if (tipo === "SR") {
-      rows = data.map(d => ({
-        'Municipio': d.unidades?.municipio,
-        'CLUES': d.clues,
-        'Unidad': d.unidades?.nombre,
-        'Biológico': d.biologico,
-        'Lote': d.lote,
-        'Caducidad': d.caducidad,
-        'Cantidad (frascos)': d.cantidad_frascos,
-        'Fecha Reporte': d.fecha_reporte,
-        'Capturado por': d.capturado_por
-      }));
-    } else if (tipo === "CONS") {
-      rows = data.map(d => ({
-        'Municipio': d.unidades?.municipio,
-        'CLUES': d.clues,
-        'Unidad': d.unidades?.nombre,
-        'SRP (dosis)': d.srp_dosis,
-        'SR (dosis)': d.sr_dosis,
-        'Jeringa 0.5ml': d.jeringa_aplic_05ml,
-        'Jeringa 5ml': d.jeringa_reconst_5ml,
-        'Aguja': d.aguja_0600403711,
-        'Fecha Reporte': d.fecha_reporte,
-        'Capturado por': d.capturado_por
-      }));
-    } else {
-      // Pedidos
-      rows = data.map(d => ({
-        'Municipio': d.unidades?.municipio,
-        'CLUES': d.clues,
-        'Unidad': d.unidades?.nombre,
-        'Biológico': d.biologico,
-        'Existencia (frascos)': d.existencia_frascos,
-        'Pedido (frascos)': d.pedido_frascos,
-        'Fecha Objetivo': d.fecha_objetivo,
-        'Capturado por': d.capturado_por
-      }));
+  async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipios = []) {
+    if (!window.ExcelJS) {
+      showToast("Librería de exportación no cargada", false);
+      return;
     }
 
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'JS1 Reportes';
+    const sheetName = tipo === "SR" ? "EXISTENCIAS" : (tipo === "CONS" ? "CONSUMIBLES" : "PEDIDOS");
+    const ws = wb.addWorksheet(sheetName, { views: [{ showGridLines: false }] });
+
+    const unidadesSet = new Set();
+    const mapUnidades = {};
     
-    // Generar archivo y descargar
-    XLSX.writeFile(wb, filename);
+    data.forEach(d => {
+      unidadesSet.add(d.clues);
+      if (d.unidades && d.unidades.nombre) {
+        mapUnidades[d.clues] = d.unidades.nombre.toUpperCase();
+      } else {
+        mapUnidades[d.clues] = (d.unidad || "UNIDAD DESCONOCIDA").toUpperCase();
+      }
+    });
+
+    const arrClues = Array.from(unidadesSet).sort();
+    
+    let insumos = [];
+    if (tipo === "CONS") {
+      insumos = [
+        { key: "srp_dosis", label: "DOSIS DE SRP", color: "A75985" },
+        { key: "sr_dosis", label: "DOSIS DE SR", color: "5C4B92" },
+        { key: "jeringa_reconst_5ml_0605500438", label: "JERINGA DE RECONSTITUCIÓN 5 mL", color: "EAD1DC" },
+        { key: "jeringa_aplic_05ml_0605502657", label: "JERINGA DE APLICACIÓN 0.5 mL", color: "E2B7A8" },
+        { key: "aguja_0600403711", label: "AGUJA", color: "E1955D" }
+      ];
+    } else {
+      insumos = [
+        { key: "BCG", label: "BCG", color: "4A86E8" },
+        { key: "HEPATITIS 10", label: "HEPATITIS 10", color: "CC0000" },
+        { key: "HEXAVALENTE", label: "HEXAVALENTE", color: "93C47D" },
+        { key: "DPT", label: "DPT", color: "F1C232" },
+        { key: "ROTAVIRUS", label: "ROTAVIRUS", color: "3D85C6" },
+        { key: "NEUMOCOCO 13", label: "NEUMOCOCO 13", color: "1155CC" },
+        { key: "NEUMOCOCO 23", label: "NEUMOCOCO 23", color: "0B5394" },
+        { key: "SRP", label: "SRP", color: "A64D79" },
+        { key: "SR", label: "SR", color: "741B47" },
+        { key: "VPH", label: "VPH", color: "76A5AF" },
+        { key: "VARICELA", label: "VARICELA", color: "45818E" },
+        { key: "HEPATITIS 20", label: "HEPATITIS 20", color: "8E7CC3" },
+        { key: "TD", label: "TD", color: "999999" },
+        { key: "TDPA", label: "TDPA", color: "E69138" },
+        { key: "INFLUENZA", label: "INFLUENZA", color: "B6D7A8" },
+        { key: "RABIA", label: "RABIA", color: "C90076" },
+        { key: "FAVI", label: "FAVI", color: "A61D2B" }
+      ];
+    }
+
+    const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2F3E46' } };
+    const fontWhite = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Arial', size: 12 };
+    const borderAll = {
+      top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' }
+    };
+    
+    let headerRowText = tipo === "SR" ? "EXISTENCIA DE BIOLÓGICO" : (tipo === "CONS" ? "CONSUMIBLES SR/SRP" : "PEDIDO BIOLÓGICO");
+
+    ws.getCell('A1').value = 'REPORTE';
+    ws.getCell('A1').fill = headerFill;
+    ws.getCell('A1').font = fontWhite;
+    ws.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
+    ws.mergeCells('A1:B1');
+    ws.getCell('C1').value = headerRowText;
+    ws.getCell('C1').font = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Arial', size: 18 };
+    ws.getCell('C1').fill = headerFill;
+    ws.getCell('C1').alignment = { vertical: 'middle', horizontal: 'center' };
+    ws.mergeCells(1, 3, 1, 3 + arrClues.length);
+    ws.getRow(1).height = 50;
+
+    let munisLabel = "TODOS";
+    if (selectedMunicipios && selectedMunicipios.length > 0) {
+      munisLabel = selectedMunicipios.join(", ").toUpperCase();
+    } else if (data[0]?.municipio) {
+      munisLabel = data[0].municipio.toUpperCase();
+    }
+    
+    ws.getCell('A2').value = 'MUNICIPIO: ' + munisLabel;
+    ws.getCell('A2').font = { bold: true };
+    ws.getCell('A2').alignment = { horizontal: 'left' };
+    ws.mergeCells('A2:B2');
+    
+    const lastColIndex = 1 + arrClues.length + (tipo === "CONS" ? 0 : 1);
+    ws.getCell(2, Math.max(3, lastColIndex)).value = (tipo==='BIO'? 'FECHA PEDIDO: ': 'FECHA REPORTE: ') + fIni;
+    ws.getCell(2, Math.max(3, lastColIndex)).font = { bold: true };
+    ws.getCell(2, Math.max(3, lastColIndex)).alignment = { horizontal: 'right' };
+    
+    const headerRowIdx = 3;
+    const headerRow = ws.getRow(headerRowIdx);
+    let colIndex = 1;
+    const colName = tipo === "CONS" ? "INSUMO" : "BIOLÓGICO";
+    ws.getCell(headerRowIdx, colIndex).value = colName;
+    ws.getCell(headerRowIdx, colIndex).fill = headerFill;
+    ws.getCell(headerRowIdx, colIndex).font = fontWhite;
+    ws.getCell(headerRowIdx, colIndex).alignment = { vertical: 'middle', horizontal: 'center' };
+    colIndex++;
+
+    arrClues.forEach(clues => {
+      ws.getCell(headerRowIdx, colIndex).value = `${clues} - ${mapUnidades[clues]}`;
+      ws.getCell(headerRowIdx, colIndex).fill = headerFill;
+      ws.getCell(headerRowIdx, colIndex).font = fontWhite;
+      ws.getCell(headerRowIdx, colIndex).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      ws.getCell(headerRowIdx, colIndex).border = borderAll;
+      ws.getColumn(colIndex).width = 20;
+
+      if (tipo === "BIO") {
+        ws.getCell(4, colIndex).value = "PEDIDO";
+        ws.getCell(4, colIndex).font = { bold: true };
+        ws.getCell(4, colIndex).alignment = { horizontal: 'center' };
+        ws.getCell(4, colIndex).border = borderAll;
+      }
+      colIndex++;
+    });
+
+    if (tipo !== "CONS") {
+      ws.getCell(headerRowIdx, colIndex).value = "TOTAL";
+      ws.getCell(headerRowIdx, colIndex).fill = headerFill;
+      ws.getCell(headerRowIdx, colIndex).font = fontWhite;
+      ws.getCell(headerRowIdx, colIndex).alignment = { vertical: 'middle', horizontal: 'center' };
+      ws.getCell(headerRowIdx, colIndex).border = borderAll;
+      colIndex++;
+    }
+
+    ws.getColumn(1).width = 30;
+    headerRow.height = 40;
+
+    let rowCursor = tipo === "BIO" ? 5 : 4;
+
+    insumos.forEach(insumo => {
+      let cIdx = 1;
+      const fgColor = { argb: 'FF' + insumo.color.replace('#', '') };
+      
+      ws.getCell(rowCursor, cIdx).value = insumo.label;
+      ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor };
+      ws.getCell(rowCursor, cIdx).font = { color: { argb: 'FFFFFFFF' }, bold: true };
+      ws.getCell(rowCursor, cIdx).border = borderAll;
+      
+      let rowTotal = 0;
+      cIdx++;
+
+      arrClues.forEach(clues => {
+        let val = 0;
+        const matchingRecords = data.filter(d => d.clues === clues);
+        
+        if (tipo === "CONS") {
+          matchingRecords.forEach(d => { val += Number(d[insumo.key] || 0); });
+        } else if (tipo === "SR") {
+          matchingRecords.filter(d => String(d.biologico).toUpperCase() === String(insumo.label).toUpperCase())
+            .forEach(d => { val += Number(d.cantidad_frascos || 0); });
+        } else {
+          matchingRecords.filter(d => String(d.biologico).toUpperCase() === String(insumo.label).toUpperCase())
+            .forEach(d => { val += Number(d.pedido_frascos || 0); });
+        }
+
+        rowTotal += val;
+        ws.getCell(rowCursor, cIdx).value = val || '';
+        ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '40' + insumo.color } };
+        ws.getCell(rowCursor, cIdx).border = borderAll;
+        ws.getCell(rowCursor, cIdx).alignment = { horizontal: 'center' };
+        cIdx++;
+      });
+
+      if (tipo !== "CONS") {
+        ws.getCell(rowCursor, cIdx).value = rowTotal || '';
+        ws.getCell(rowCursor, cIdx).border = borderAll;
+        ws.getCell(rowCursor, cIdx).alignment = { horizontal: 'center', vertical: 'middle' };
+        ws.getCell(rowCursor, cIdx).font = { bold: true };
+      }
+      rowCursor++;
+    });
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/octet-stream' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Reporte_${tipo}_${fIni}.xlsx`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   }
 
 
@@ -9374,8 +9681,7 @@ $("btnSaveSR").onclick = async () => {
         const bcl1 = $("bClima");
         const bcl2 = $("bClima2");
         if (bcl1) {
-          bcl1.classList.remove("warn");
-          bcl1.classList.add("good");
+          // Weather coloring managed by CSS/Tailwind for MD3 consistency
         }
         if (bcl2) {
           bcl2.style.background = "var(--md-sys-color-secondary-container)";
@@ -9637,6 +9943,17 @@ $("btnSaveSR").onclick = async () => {
     }
   }
 
+  /**
+   * Sanitiza una cadena para uso en Storage (remueve acentos y caracteres especiales)
+   */
+  function normalizePath(str) {
+    if (!str) return "";
+    return str.normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // Remueve acentos
+      .replace(/[^a-zA-Z0-9\/\-\_\.\s]/g, "") // Solo permite ASCII básico, /, -, ., _ y espacios
+      .trim();
+  }
+
   async function openLiveView(clues, unidad, municipio) {
     try {
       showOverlay("Obteniendo inventario", "Cargando datos detallados de " + unidad);
@@ -9784,3 +10101,109 @@ $("btnSaveSR").onclick = async () => {
           }
       }
   });
+
+  // ==========================================
+  // PANEL DE ARCHIVOS (VISUALIZADOR)
+  // ==========================================
+  let ARCHIVOS_DATA = [];
+
+  $("btnViewArchivos")?.addEventListener("click", () => {
+    const panels = ["panelCAP", "panelAdminOpsTabs", "panelCaptureSummary", "panelPINOLADMIN", "panelHISTORY", "panelEDITLOG", "panelNOTIFS", "panelADMIN", "sectionCapturaUnidad"];
+    panels.forEach(p => { if ($(p)) $(p).style.display = "none"; });
+    if ($("panelArchivos")) $("panelArchivos").style.display = "block";
+    
+    // Update tab classes
+    const tabs = ["tabCAP", "tabNOTIFS", "tabADMIN"];
+    tabs.forEach(t => { 
+      if($(t)) {
+        $(t).classList.add("tab-inactive");
+        $(t).classList.remove("tab-active");
+      }
+    });
+    const tArchivos = $("btnViewArchivos");
+    if (tArchivos) {
+      tArchivos.classList.add("tab-active");
+      tArchivos.classList.remove("tab-inactive");
+    }
+
+    renderArchivosView();
+  });
+
+  $("btnRefreshArchivos")?.addEventListener("click", renderArchivosView);
+  $("archivosSearch")?.addEventListener("input", filterArchivosGrid);
+  $("archivosCategoria")?.addEventListener("change", filterArchivosGrid);
+
+  async function renderArchivosView() {
+    try {
+      showOverlay("Cargando evidencias...", "Leyendo desde Supabase");
+      const res = await apiCall({ action: "listfiles" });
+      if (res && res.ok) {
+        ARCHIVOS_DATA = res.data;
+        filterArchivosGrid();
+      } else {
+        showToast("Error al cargar archivos", false);
+      }
+    } catch(e) {
+       console.error(e);
+       showToast("Error", false);
+    } finally {
+      hideOverlay();
+    }
+  }
+
+  function filterArchivosGrid() {
+    const container = $("archivosContainer");
+    if (!container) return;
+    const catFilt = $("archivosCategoria").value.toLowerCase();
+    const txtFilt = $("archivosSearch").value.toLowerCase();
+    const role = (USER.rol || "").toUpperCase();
+    const myClues = USER.clues || "";
+    
+    let filtered = ARCHIVOS_DATA.filter(f => {
+       const pathParts = (f.name||"").split("/");
+       if (pathParts.length < 3) return false;
+       const cluMun = pathParts[1];
+       
+       if (role === "UNIDAD") {
+          if (!cluMun.includes(myClues)) return false;
+       }
+       return true;
+    });
+
+    if (txtFilt) {
+      filtered = filtered.filter(f => f.name.toLowerCase().includes(txtFilt));
+    }
+    if (catFilt) {
+      filtered = filtered.filter(f => f.name.toLowerCase().includes(catFilt));
+    }
+
+    if (filtered.length === 0) {
+      container.innerHTML = `<div class="col-span-full text-center text-outline p-8 bg-surface-variant rounded-2xl">No se encontraron archivos.</div>`;
+      return;
+    }
+
+    container.innerHTML = filtered.map(f => {
+       const url = `${SUPABASE_URL}/storage/v1/object/public/evidencias/${encodeURIComponent(f.name)}`;
+       const parts = f.name.split("/");
+       const cat = parts[0];
+       const cluesUnidad = parts[1];
+       const fileName = parts[2];
+       const dObj = new Date(f.created_at);
+       const dateStr = dObj.toLocaleDateString() + " " + dObj.toLocaleTimeString();
+
+       return `<div class="bg-surface-variant/30 border border-outline-variant/50 rounded-2xl p-4 flex flex-col gap-2 transition-all hover:shadow-md3-1 hover:bg-surface-variant/60">
+                 <div class="flex items-start gap-3">
+                    <span class="material-symbols-rounded text-primary/70 text-[32px]">description</span>
+                    <div class="flex-1 min-w-0">
+                       <p class="font-bold text-[13px] text-primary truncate" title="${fileName}">${fileName}</p>
+                       <p class="text-[11px] font-semibold text-outline-variant/80 mt-1 uppercase tracking-wide truncate" title="${cluesUnidad}">${cluesUnidad}</p>
+                    </div>
+                 </div>
+                 <div class="flex items-center justify-between mt-2 pt-2 border-t border-outline-variant/30">
+                   <div class="text-[10px] text-outline font-medium">${dateStr}</div>
+                   <a href="${url}" target="_blank" class="bg-primary text-white rounded-lg px-3 py-1.5 text-[11px] font-bold no-underline transition-all hover:scale-105">Ver</a>
+                 </div>
+               </div>`;
+    }).join("");
+  }
+

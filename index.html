@@ -18,119 +18,217 @@
 
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/exceljs/dist/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <!-- Tailwind CSS Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style type="text/tailwindcss">
+    @layer components {
+      .tab-btn {
+        @apply transition-all duration-300 ease-out border-none outline-none cursor-pointer;
+      }
+      .tab-active {
+        @apply bg-primary text-white scale-105 shadow-md3-2 z-10;
+      }
+      .tab-inactive {
+        @apply bg-surface-variant/40 text-surface-on hover:bg-surface-variant hover:text-primary opacity-80 scale-100 shadow-none hover:shadow-md3-1;
+      }
+    }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: '#003366',
+              container: '#d6e3ff',
+              on: '#ffffff',
+              onContainer: '#001b3d',
+            },
+            secondary: {
+              DEFAULT: '#535f70',
+              container: '#d7e3f7',
+              on: '#ffffff',
+              onContainer: '#101c2b',
+            },
+            surface: {
+              DEFAULT: '#fdfcff',
+              on: '#1a1c20',
+              variant: '#f1f5f9',
+              onVariant: '#43474e',
+            },
+            outline: {
+              DEFAULT: '#73777f',
+              variant: '#c3c7cf',
+            },
+          },
+          boxShadow: {
+            'md3-1': '0 1px 2px 0 rgba(0,0,0,0.05), 0 1px 3px 1px rgba(0,0,0,0.02)',
+            'md3-2': '0 4px 6px -1px rgba(0,0,0,0.12), 0 2px 4px -2px rgba(0,0,0,0.08)',
+            'md3-3': '0 12px 24px -4px rgba(0,0,0,0.12), 0 8px 16px -4px rgba(0,0,0,0.08)',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
 </head>
 
 <body>
-  <div class="wrap">
+  <div class="wrap bg-surface-container min-h-screen">
 
-    <div class="top">
-      <div class="topInner">
-        <div class="brandCenter">
+    <!-- ✅ MODERN FLOATING HEADER -->
+    <div class="fixed top-4 inset-x-4 sm:inset-x-8 h-[85px] z-[1000] bg-white/90 backdrop-blur-xl border border-outline-variant/30 rounded-3xl flex items-center justify-center shadow-[0_8px_32px_rgba(0,51,102,0.08)] transition-all duration-500 hover:shadow-md3-3" id="mainHeader">
+      <div class="w-full max-w-[1600px] px-6 flex items-center justify-between">
+        <div class="flex items-center gap-6">
 
-          <div class="brandMain">
-            <div class="logoBadge" aria-label="Logos institucionales">
-              <img id="logoA" src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/Seseq_vertical_2025.png" alt="SESEQ">
-              <img id="logoB" src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/logo_Q.png" alt="Gobierno de Querétaro">
-            </div>
-
-            <div class="brandText">
-              <h1>JS1 Reportes</h1>
-              <p>Existencia de biológicos + Consumibles (solo jueves)</p>
-            </div>
+          <!-- Logos con estilo neumórfico sutil -->
+          <div class="bg-surface-container-low px-5 py-2.5 rounded-[22px] border border-outline-variant/20 flex gap-5 shadow-sm" aria-label="Logos institucionales">
+            <img id="logoA" class="h-[44px] w-auto drop-shadow-md" src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/Seseq_vertical_2025.png" alt="SESEQ">
+            <div class="w-[1px] h-10 bg-outline-variant/30 self-center"></div>
+            <img id="logoB" class="h-[44px] w-auto drop-shadow-md" src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/logo_Q.png" alt="Gobierno de Querétaro">
           </div>
 
-          <div class="statusbar statusbarPublic">
-            <span class="badge secondary" id="bFecha" data-label="Fecha">
-              <span class="material-symbols-rounded">calendar_month</span>
-              <span id="hdrFecha">—</span>
-            </span>
-
-            <span class="badge info" id="bHora" data-label="Hora">
-              <span class="material-symbols-rounded">schedule</span>
-              <span id="hdrHora">—</span>
-            </span>
-
-            <span class="badge weather-badge" id="bClima" data-label="Clima">
-              <span class="material-symbols-rounded">partly_cloudy_day</span>
-              <span id="hdrClima">—</span>
-            </span>
-
-            <span class="badge good" id="bGuardado" style="display:none" data-label="Estado">
-              <span class="material-symbols-rounded">save</span>
-              <span id="hdrGuardado">—</span>
-            </span>
+          <div class="hidden lg:flex flex-col">
+            <h1 class="text-2xl font-black text-primary m-0 tracking-tight flex items-center gap-2">
+              JS1 <span class="text-secondary font-medium tracking-normal opacity-50">Reportes</span>
+            </h1>
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-status-success animate-pulse"></span>
+              <p class="text-[10px] text-surface-onVariant/60 m-0 font-bold uppercase tracking-widest leading-none">Plataforma Institucional de Gestión</p>
+            </div>
           </div>
-
-      </div>
-    </div>
-
-    <!-- ✅ LOGIN centrado debajo del header -->
-    <div class="loginWrap">
-      <div class="card" id="cardLogin">
-        <div class="title">
-          <h2>Iniciar sesión</h2>
-          <span class="pill" id="loginStatus" style="display:none">—</span>
         </div>
 
-        <form id="loginForm" autocomplete="on">
-          <label>Usuario</label>
-          <input id="usuario" name="username" autocomplete="username" placeholder="CLUES_NOMBRE_UNIDAD">
+        <!-- Badges unificadas: Cápsulas Independientes de Alta Gama -->
+        <div class="flex items-center gap-3">
+          <span class="hidden md:flex items-center gap-2 bg-white text-primary rounded-full px-5 py-2.5 text-[11px] font-black shadow-lg shadow-primary/5 transition-transform hover:scale-105 cursor-default whitespace-nowrap flex-shrink-0 border border-outline-variant/30" id="bFecha">
+            <span class="material-symbols-rounded text-[19px]">calendar_month</span>
+            <span id="hdrFecha">—</span>
+          </span>
 
-          <label>Contraseña</label>
-          <div class="passField">
-            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="••••••••">
-            <span class="material-symbols-rounded" id="togglePassword">visibility_off</span>
-          </div>
+          <span class="hidden sm:flex items-center gap-2 bg-white text-secondary rounded-full px-5 py-2.5 text-[11px] font-black shadow-lg shadow-secondary/5 transition-transform hover:scale-105 cursor-default whitespace-nowrap flex-shrink-0 border border-outline-variant/30" id="bHora">
+            <span class="material-symbols-rounded text-[19px]">schedule</span>
+            <span id="hdrHora">—</span>
+          </span>
 
-          <button class="btn" id="btnLogin" type="submit">Entrar</button>
-          <button class="ghostBtn" id="btnForgotPassword" type="button" style="margin-top:10px; margin-bottom: 20px; width:100%;">
-            <span class="material-symbols-rounded">mail</span> Olvidé mi contraseña
-          </button>
-        </form>
+          <span class="flex items-center gap-2 bg-gradient-to-br from-blue-600 to-primary !text-white rounded-full px-5 py-2.5 text-[11px] font-black shadow-lg shadow-primary/20 transition-transform hover:scale-105 cursor-default whitespace-nowrap flex-shrink-0" id="bClima">
+            <span class="material-symbols-rounded text-[19px] !text-white">wb_sunny</span>
+            <span id="hdrClima" class="!text-white">Qro —</span>
+          </span>
 
-        <div class="hint">Si tarda, verás una pantalla de carga.</div>
+          <span class="bg-status-success text-white rounded-full px-5 py-2.5 text-[10px] font-black flex items-center gap-2 shadow-lg shadow-status-success/20 animate-in fade-in flex-shrink-0 ml-2" id="bGuardado" style="display:none">
+            <span class="material-symbols-rounded text-[16px]">sync</span>
+            <span id="hdrGuardado">Actualizado</span>
+          </span>
+        </div>
       </div>
     </div>
 
-    <div class="grid">
 
-      <!-- RIGHT (APP) -->
-      <div class="gridRight" id="rightColumn" style="display:none">
+    <!-- 📱 LOGIN OVERLAY (FULL SCREEN PREMIUM) -->
+    <div id="loginWrapper" class="fixed inset-0 z-[9999] flex items-center justify-center bg-primary overflow-hidden">
+      <!-- Dynamic Background (CSS Managed) -->
+      <div class="login-bg absolute inset-0 z-0"></div>
+      
+      <!-- Standard Presidential Login Card (V5 - Bulletproof) -->
+      <div class="relative z-10 w-full max-w-[380px] px-4 mx-auto" id="cardLogin">
+        <div class="bg-white rounded-3xl p-8 border border-outline-variant/30 shadow-[0_20px_50px_rgba(0,51,102,0.15)] overflow-hidden relative">
+          
+          <div class="flex flex-col items-center mb-6 text-center">
+            <div class="w-16 h-16 bg-surface-container-low rounded-2xl flex items-center justify-center mb-4 border border-outline-variant/10">
+              <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/logo_Q.png" alt="Logo Q" class="w-12 h-auto">
+            </div>
+            <h1 class="text-2xl font-black text-primary m-0 tracking-tight">JS1 Reportes</h1>
+            <p class="text-[10px] text-surface-onVariant/60 font-black uppercase tracking-[0.2em] mt-2">Gestión de Biológicos e Insumos</p>
+          </div>
 
-        <div class="rightLayout">
+          <form id="loginForm" autocomplete="on" class="flex flex-col">
+            <div class="space-y-4">
+              
+              <!-- Identificador (Standard Layout) -->
+              <div class="group">
+                <label class="text-[9px] font-black text-primary uppercase tracking-[0.1em] mb-1.5 ml-1 block opacity-60">Identificador</label>
+                <div class="relative">
+                  <span class="material-symbols-rounded absolute left-4 top-1/2 -translate-y-1/2 text-primary/30 group-focus-within:text-primary transition-colors text-[20px]">person</span>
+                  <input id="usuario" name="username" class="w-full bg-surface-variant/20 border-[1.5px] border-outline-variant/30 rounded-xl pl-12 pr-4 py-3 text-[15px] font-bold text-surface-on outline-none focus:border-primary focus:bg-white focus:shadow-sm transition-all" autocomplete="username" placeholder="CLUES o Usuario">
+                </div>
+              </div>
 
-          <!-- ✅ SIDEBAR -->
-          <div class="sideCard" id="cardSide">
-            <div class="sideTitle">
-              <h3>Acciones</h3>
-              <span class="pill" id="capStatus">—</span>
+              <!-- Contraseña (Standard Layout) -->
+              <div class="group">
+                <label class="text-[9px] font-black text-primary uppercase tracking-[0.1em] mb-1.5 ml-1 block opacity-60">Contraseña</label>
+                <div class="relative">
+                  <span class="material-symbols-rounded absolute left-4 top-1/2 -translate-y-1/2 text-primary/30 group-focus-within:text-primary transition-colors text-[20px]">lock</span>
+                  <input id="password" name="password" type="password" class="w-full bg-surface-variant/20 border-[1.5px] border-outline-variant/30 rounded-xl pl-12 pr-12 py-3 text-[15px] font-bold text-surface-on outline-none focus:border-primary focus:bg-white focus:shadow-sm transition-all" autocomplete="current-password" placeholder="••••••••">
+                  <span class="material-symbols-rounded absolute right-4 top-1/2 -translate-y-1/2 text-primary/30 cursor-pointer hover:text-primary transition-colors text-[18px]" id="togglePassword">visibility_off</span>
+                </div>
+              </div>
             </div>
 
-            <div class="actions" style="justify-content:flex-start">
-              <button class="iconbtn" id="btnExport" title="Exportar reporte seleccionado" style="display:none">
-                <span class="material-symbols-rounded">download</span> Exportar Reportes
+            <button class="bg-primary text-white rounded-xl h-[52px] font-black text-[15px] tracking-wider shadow-lg hover:brightness-110 active:scale-95 transition-all flex items-center justify-center mt-8 w-full" id="btnLogin" type="submit">
+              ENTRAR
+              <span class="material-symbols-rounded ml-2 text-[18px]">login</span>
+            </button>
+            
+            <button class="bg-transparent text-primary/40 border-none h-[36px] font-bold text-[10px] uppercase tracking-widest flex items-center justify-center mt-4 w-full cursor-pointer hover:text-primary transition-all" id="btnForgotPassword" type="button">
+              ¿Olvidaste tu contraseña?
+            </button>
+          </form>
+
+          <footer class="mt-8 border-t border-primary/5 pt-4 text-center">
+             <p class="text-[9px] text-primary/30 font-black uppercase tracking-[0.2em]">Jurisdicción Sanitaria No. 1</p>
+          </footer>
+        </div>
+      </div>
+    </div>
+
+    <div class="max-w-[1750px] w-full mx-auto px-4 sm:px-10 pt-[130px] pb-12">
+
+      <!-- RIGHT (APP) -->
+      <div class="w-full flex flex-col gap-8 hidden" id="rightColumn">
+        
+        <!-- 🚀 ACCIONES (HERO HEADER) -->
+        <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all hover:shadow-md3-2" id="cardSide">
+          <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center gap-3">
+              <span class="p-2.5 bg-primary/10 text-primary rounded-2xl">
+                <span class="material-symbols-rounded text-[24px]">apps</span>
+              </span>
+              <h3 class="text-lg font-black text-primary m-0 tracking-tight">Acciones Principales</h3>
+            </div>
+            <span class="bg-primary text-white px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider" id="capStatus">—</span>
+          </div>
+
+            <div class="flex flex-wrap gap-2 justify-start">
+              <button class="bg-surface-variant text-surface-on rounded-2xl h-12 px-4 font-semibold text-sm transition-all hover:bg-primary hover:text-white flex items-center justify-center gap-2 cursor-pointer border-none" id="btnExport" title="Exportar reporte seleccionado" style="display:none">
+                <span class="material-symbols-rounded text-[20px]">download</span> Exportar Reportes
               </button>
 
-
-              <button class="iconbtn" id="btnClearLiveFeed" title="Limpiar actividad reciente" style="display:none">
-                <span class="material-symbols-rounded">notifications_paused</span> Limpiar actividad
+              <button class="bg-surface-variant text-surface-on rounded-2xl h-12 px-4 font-semibold text-sm transition-all hover:bg-primary hover:text-white flex items-center justify-center gap-2 cursor-pointer border-none" id="btnClearLiveFeed" title="Limpiar actividad reciente" style="display:none">
+                <span class="material-symbols-rounded text-[20px]">notifications_paused</span> Limpiar actividad
               </button>
 
-              <button class="iconbtn" id="btnLogout" title="Cerrar sesión">
-                <span class="material-symbols-rounded">logout</span> Salir
+              <button class="bg-[#ffeeee] text-[#cc0000] rounded-2xl h-12 px-4 font-semibold text-sm transition-all hover:bg-[#cc0000] hover:text-white flex items-center justify-center gap-2 cursor-pointer border-none" id="btnLogout" title="Cerrar sesión">
+                <span class="material-symbols-rounded text-[20px]">logout</span> Salir
               </button>
 
-              <button class="iconbtn" id="btnOpenUpload" title="Subir evidencias a Drive" style="display:none">
-                <span class="material-symbols-rounded">cloud_upload</span> Subir archivos
+              <button class="bg-surface-variant text-surface-on rounded-2xl h-12 px-4 font-semibold text-sm transition-all hover:bg-primary hover:text-white flex items-center justify-center gap-2 cursor-pointer border-none" id="btnOpenUpload" title="Subir evidencias a Drive" style="display:none">
+                <span class="material-symbols-rounded text-[20px]">cloud_upload</span> Subir archivos
               </button>
 
-              <button class="iconbtn" id="btnTopNotifications" type="button" style="display:none">
-                <div class="badge-wrapper">
-                  <span class="material-symbols-rounded">notifications</span>
-                  <span id="topNotifBadge" class="liveBadge" style="display:none">0</span>
+              <button class="bg-surface-variant text-surface-on rounded-2xl h-12 px-4 font-semibold text-sm transition-all hover:bg-primary hover:text-white flex items-center justify-center gap-2 cursor-pointer border-none" id="btnViewArchivos" title="Ver evidencias" style="display:none">
+                <span class="material-symbols-rounded text-[20px]">folder_open</span> Explorador
+              </button>
+
+              <button class="bg-surface-variant text-surface-on rounded-2xl h-12 px-4 font-semibold text-sm transition-all hover:bg-primary hover:text-white flex items-center justify-center gap-2 cursor-pointer border-none relative" id="btnTopNotifications" type="button" style="display:none">
+                <div class="flex items-center justify-center relative">
+                  <span class="material-symbols-rounded text-[20px]">notifications</span>
+                  <span id="topNotifBadge" class="absolute -top-1 -right-2 bg-status-error text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full" style="display:none">0</span>
                 </div>
                 Notificaciones
               </button>
@@ -194,115 +292,116 @@
 
             <div class="hr sideDivider"></div>
 
-            <div class="sideFactWrap">
-              <div class="sideTitle" style="margin-bottom:8px">
-                <h3>Dato curioso del programa</h3>
-                <span class="pill" id="factTag">—</span>
+            <div class="relative overflow-hidden bg-gradient-to-br from-secondary-container to-white rounded-[28px] p-8 border border-outline-variant after:content-['💡'] after:absolute after:-top-3.5 after:-right-3.5 after:text-[70px] after:opacity-[0.08] after:rotate-[15deg]">
+              <div class="flex justify-between items-center mb-2">
+                <h3 class="text-xs uppercase tracking-[0.1em] text-primary font-bold m-0">Dato curioso del programa</h3>
+                <span class="bg-primary text-white px-3.5 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-[0.08em] shadow-md3-1" id="factTag">—</span>
               </div>
 
               <div class="fact">
-                <div class="factTitle">
-                  <span class="material-symbols-rounded" id="factIcon"
-                    style="font-size:22px;color:var(--md-sys-color-primary)">syringe</span>
+                <div class="flex items-center gap-2.5 font-extrabold text-primary mb-2">
+                  <span class="material-symbols-rounded text-[22px] text-primary" id="factIcon">syringe</span>
                   <span id="factTitle">—</span>
                 </div>
-                <p class="factBody" id="factBody">—</p>
+                <p class="text-sm leading-relaxed text-surface-onVariant m-0" id="factBody">—</p>
               </div>
 
-              <div class="hint" style="margin-top:12px">
-              </div>
+              <div class="text-[11px] opacity-60 text-center mt-3 font-medium"></div>
             </div>
           </div>
-          <div class="mainStack">
 
-            <!-- ✅ MAIN -->
-            <div class="mainStack">
-
-              <div class="card" id="cardApp">
-                <div class="title">
+        <!-- ✅ MAIN CONTENT (GREETING & MODULES) -->
+        <div class="w-full space-y-8">
+          <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] transition-shadow hover:shadow-[0_16px_32px_rgba(0,51,102,0.08)] overflow-hidden" id="cardApp">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-outline-variant/30 pb-6 mb-6">
                   <div>
-                    <h2 id="welcome">Hola</h2>
-                    <div class="who" id="who"></div>
+                    <h2 class="text-2xl font-extrabold text-primary m-0 tracking-tight" id="welcome">Hola</h2>
+                    <div class="text-[11px] text-surface-onVariant uppercase tracking-[0.1em] font-bold opacity-80 mt-1" id="who"></div>
 
-                    <div class="statusbar header-distribution sessionInfoRow">
-                      <div class="sessionTile good">
-                        <span class="material-symbols-rounded">verified_user</span>
-                        <div class="dataCol">
-                          <span class="dataLabel">Perfil</span>
-                          <span id="rolTxt" class="dataValue">—</span>
+                    <div class="flex flex-wrap gap-3 mt-5">
+                      <div class="bg-status-success/10 text-status-success border border-status-success/30 rounded-2xl px-4 py-2.5 text-xs font-bold flex items-center gap-3 transition-all">
+                        <span class="material-symbols-rounded text-[20px]">verified_user</span>
+                        <div class="flex flex-col">
+                          <span class="text-[9px] uppercase tracking-[0.05em] opacity-80">Perfil</span>
+                          <span id="rolTxt" class="text-sm tracking-tight">—</span>
                         </div>
                       </div>
-                      <div class="sessionTile info">
-                        <span class="material-symbols-rounded">location_on</span>
-                        <div class="dataCol">
-                          <span class="dataLabel">Municipio</span>
-                          <span id="munTxt" class="dataValue">—</span>
+                      <div class="bg-status-info/10 text-status-info border border-status-info/30 rounded-2xl px-4 py-2.5 text-xs font-bold flex items-center gap-3 transition-all">
+                        <span class="material-symbols-rounded text-[20px]">location_on</span>
+                        <div class="flex flex-col">
+                          <span class="text-[9px] uppercase tracking-[0.05em] opacity-80">Municipio</span>
+                          <span id="munTxt" class="text-sm tracking-tight">—</span>
                         </div>
                       </div>
-                      <div class="sessionTile warn" id="bCumplimiento">
-                        <span class="material-symbols-rounded">trending_up</span>
-                        <div class="dataCol">
-                          <span class="dataLabel">Progreso</span>
-                          <span id="dayTxt" class="dataValue">—</span>
+                      <div class="bg-status-warning/10 text-status-warning border border-status-warning/30 rounded-2xl px-4 py-2.5 text-xs font-bold flex items-center gap-3 transition-all" id="bCumplimiento">
+                        <span class="material-symbols-rounded text-[20px]">trending_up</span>
+                        <div class="flex flex-col">
+                          <span class="text-[9px] uppercase tracking-[0.05em] opacity-80">Progreso</span>
+                          <span id="dayTxt" class="text-sm tracking-tight">—</span>
                         </div>
                       </div>
-                      <div class="sessionTile secondary" id="bNotif" style="display:none">
-                        <span class="material-symbols-rounded">notifications</span>
-                        <div class="dataCol">
-                          <span class="dataLabel">Alertas</span>
-                          <span id="notifTxt" class="dataValue">0</span>
+                      <div class="bg-secondary-container text-secondary-onContainer border border-secondary-container/50 rounded-2xl px-4 py-2.5 text-xs font-bold flex items-center gap-3 transition-all" id="bNotif" style="display:none">
+                        <span class="material-symbols-rounded text-[20px]">notifications</span>
+                        <div class="flex flex-col">
+                          <span class="text-[9px] uppercase tracking-[0.05em] opacity-80">Alertas</span>
+                          <span id="notifTxt" class="text-sm tracking-tight">0</span>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div class="tabs">
-                  <button class="tab active" id="tabCAP">
-                    <div class="badge-wrapper">
-                      <span class="material-symbols-rounded">assignment</span>
-                      <span id="pinolBadgeMain" class="liveBadge pulse" style="display:none">0</span>
+                <div class="flex flex-wrap gap-2 mb-2 p-1.5 bg-surface-variant/50 rounded-[20px] w-fit">
+                  <button class="tab-btn tab-active flex items-center gap-2.5 h-[46px] px-5 sm:px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px]" id="tabCAP">
+                    <div class="relative flex items-center justify-center">
+                      <span class="material-symbols-rounded text-[20px]">assignment</span>
+                      <span id="pinolBadgeMain" class="absolute -top-1.5 -right-2 bg-status-error text-white text-[9px] font-black px-1.5 py-0.5 rounded-full" style="display:none">0</span>
                     </div>
                     <span id="tabCAPText">Captura</span>
                   </button>
 
-                  <button class="tab" id="tabNOTIFS" style="display:none">
-                    <div class="badge-wrapper">
-                      <span class="material-symbols-rounded">notifications</span>
-                      <span id="notifBadgeMain" class="liveBadge pulse" style="display:none">0</span>
+                  <button class="tab-btn tab-inactive flex items-center gap-2.5 h-[46px] px-5 sm:px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px]" id="tabNOTIFS" style="display:none">
+                    <div class="relative flex items-center justify-center">
+                      <span class="material-symbols-rounded text-[20px]">notifications</span>
+                      <span id="notifBadgeMain" class="absolute -top-1.5 -right-2 bg-status-error text-white text-[9px] font-black px-1.5 py-0.5 rounded-full" style="display:none">0</span>
                     </div>
                     <span>Notificaciones</span>
                   </button>
 
-                  <button class="tab" id="tabADMIN" style="display:none">
-                    <span class="material-symbols-rounded">admin_panel_settings</span>
+                  <button class="tab-btn tab-inactive flex items-center gap-2.5 h-[46px] px-5 sm:px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px]" id="tabADMIN" style="display:none">
+                    <span class="material-symbols-rounded text-[20px]">admin_panel_settings</span>
                     <span>Administración</span>
+                  </button>
+
+                  <button class="tab-btn tab-inactive flex items-center gap-2.5 h-[46px] px-5 sm:px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px]" id="btnViewArchivos" style="display:none">
+                    <span class="material-symbols-rounded text-[20px]">folder_open</span>
+                    <span>Evidencias</span>
                   </button>
                 </div>
               </div>
 
               <div id="sectionCapturaUnidad" style="display:none">
                 <!-- CAPTURA -->
-                <div class="sectionTitle">
-                  <h3>Captura de reportes</h3>
+                <div class="flex items-center mb-6 mt-2">
+                  <h3 class="text-[17px] font-extrabold text-primary tracking-tight m-0 bg-primary-container/40 px-6 py-2.5 rounded-2xl border border-primary/10">Captura de reportes</h3>
                 </div>
 
-                <div class="tabs">
-                  <button class="tab active" id="tabSR">
-                    <span class="material-symbols-rounded">vaccines</span>
-                    <span>Existencia de biológicos</span>
+                <div class="flex flex-wrap gap-3 mb-6 p-1.5 bg-surface-variant/30 rounded-2xl w-fit">
+                  <button class="tab-btn tab-active flex items-center gap-2.5 h-[42px] px-4 rounded-[14px] font-semibold tracking-wide text-sm" id="tabSR">
+                    <span class="material-symbols-rounded text-[18px]">vaccines</span>
+                    <span>Biológicos</span>
                   </button>
-                  <button class="tab" id="tabCONS">
-                    <span class="material-symbols-rounded">medical_services</span>
-                    <span>Consumibles (jueves)</span>
+                  <button class="tab-btn tab-inactive flex items-center gap-2.5 h-[42px] px-4 rounded-[14px] font-semibold tracking-wide text-sm" id="tabCONS">
+                    <span class="material-symbols-rounded text-[18px]">medical_services</span>
+                    <span>Consumibles</span>
                   </button>
-                  <button class="tab" id="tabBIO" style="display:none">
-                    <span class="material-symbols-rounded">science</span>
-                    <span>Pedido de biológico</span>
+                  <button class="tab-btn tab-inactive flex items-center gap-2.5 h-[42px] px-4 rounded-[14px] font-semibold tracking-wide text-sm" id="tabBIO" style="display:none">
+                    <span class="material-symbols-rounded text-[18px]">science</span>
+                    <span>Pedido</span>
                   </button>
-                  <button class="tab" id="tabPINOL" style="display:none">
-                    <span class="material-symbols-rounded">inventory_2</span>
-                    <span>Solicitar pinol</span>
+                  <button class="tab-btn tab-inactive flex items-center gap-2.5 h-[42px] px-4 rounded-[14px] font-semibold tracking-wide text-sm" id="tabPINOL" style="display:none">
+                    <span class="material-symbols-rounded text-[18px]">inventory_2</span>
+                    <span>Pinol</span>
                   </button>
                 </div>
 
@@ -312,107 +411,107 @@
 
               <!-- SR (EXISTENCIA DE BIOLÓGICOS) -->
               <div id="formSR">
-                <label>Nombre del responsable</label>
-                <input id="nombreSR" placeholder="Nombre completo">
+                <label class="text-[13px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-2 mt-4 ml-2">Nombre del responsable</label>
+                <input id="nombreSR" placeholder="Nombre completo" class="w-full bg-surface-variant border border-outline-variant/30 rounded-xl px-4 py-3 text-[15px] font-medium text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all placeholder:text-outline-variant/70">
 
-                <div class="tableWrap" style="margin-top:16px;">
-                  <table class="summaryTable" id="srCaptureTable">
+                <div class="mt-4 overflow-x-auto rounded-[20px] border border-outline-variant/30 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                  <table class="w-full border-collapse text-left text-[13px] whitespace-nowrap" id="srCaptureTable">
                     <thead>
-                      <tr>
-                        <th>Biológico</th>
-                        <th>Lote</th>
-                        <th>Caducidad</th>
-                        <th>Recepción</th>
-                        <th>Cantidad (frascos)</th>
-                        <th></th>
+                      <tr class="bg-surface-variant text-surface-onVariant uppercase tracking-[0.05em] font-extrabold border-b border-outline-variant/30">
+                        <th class="p-4 py-3">Biológico</th>
+                        <th class="p-4 py-3">Lote</th>
+                        <th class="p-4 py-3">Caducidad</th>
+                        <th class="p-4 py-3">Recepción</th>
+                        <th class="p-4 py-3">Cantidad (frascos)</th>
+                        <th class="p-4 py-3 text-center">Acción</th>
                       </tr>
                     </thead>
-                    <tbody id="srCaptureTbody">
+                    <tbody id="srCaptureTbody" class="bg-white">
                       <!-- Dynamic rows here -->
                     </tbody>
                   </table>
                 </div>
 
-                <button class="ghostBtn" id="btnAddSRRow" style="margin-top:10px; width:100%;">
-                  <span class="material-symbols-rounded">add_circle</span> Agregar otro lote/biológico
+                <button class="bg-primary/10 text-primary border-none rounded-xl h-[46px] font-semibold text-[14px] flex items-center justify-center gap-2.5 transition-all hover:bg-primary/20 cursor-pointer w-full mt-4" id="btnAddSRRow">
+                  <span class="material-symbols-rounded text-[20px]">add_circle</span> Agregar otro lote/biológico
                 </button>
 
-                <div class="hr" style="margin:20px 0;"></div>
+                <div class="h-[1px] bg-outline-variant/40 w-full my-6"></div>
 
-                <button class="btn" id="btnSaveSR">Guardar existencia</button>
+                <button class="bg-primary text-white rounded-xl h-[50px] font-bold text-[15px] tracking-[0.02em] shadow-md3-2 hover:bg-[#002244] hover:-translate-y-[2px] transition-all flex items-center justify-center w-full border-none cursor-pointer" id="btnSaveSR">Guardar existencia</button>
 
-                <div class="subActions">
-                  <button class="ghostBtn" id="btnEditSR" style="display:none" title="Editar la existencia de hoy">
-                    <span class="material-symbols-rounded">edit_square</span> Editar existencia de hoy
+                <div class="flex flex-wrap gap-2 mt-4 justify-end">
+                  <button class="bg-transparent text-primary border border-primary/20 rounded-xl px-4 h-[42px] font-semibold text-[13px] flex items-center gap-2 transition-all hover:bg-primary hover:text-white cursor-pointer" id="btnEditSR" style="display:none" title="Editar la existencia de hoy">
+                    <span class="material-symbols-rounded text-[18px]">edit_square</span> Editar existencia de hoy
                   </button>
-                  <button class="ghostBtn" id="btnCancelEditSR" style="display:none" title="Cancelar edición">
-                    <span class="material-symbols-rounded">close</span> Cancelar edición
+                  <button class="bg-transparent text-status-error border border-status-error/20 rounded-xl px-4 h-[42px] font-semibold text-[13px] flex items-center gap-2 transition-all hover:bg-status-error hover:text-white cursor-pointer" id="btnCancelEditSR" style="display:none" title="Cancelar edición">
+                    <span class="material-symbols-rounded text-[18px]">close</span> Cancelar edición
                   </button>
                 </div>
 
-                <div class="hint">Se permite 1 captura por día por unidad. Si hay error, usa “Editar”.</div>
+                <div class="text-[11px] opacity-60 text-center font-medium mt-4">Se permite 1 captura por día por unidad. Si hay error, usa “Editar”.</div>
               </div>
 
               <!-- CONSUMIBLES -->
-              <div id="formCONS" style="display:none">
-                <label>Nombre de quien captura</label>
-                <input id="nombreCONS" placeholder="Nombre completo">
+              <div id="formCONS" style="display:none" class="flex flex-col gap-1">
+                <label class="text-[13px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1 mt-4 ml-2">Nombre de quien captura</label>
+                <input id="nombreCONS" placeholder="Nombre completo" class="w-full bg-surface-variant border border-outline-variant/30 rounded-xl px-4 py-3 text-[15px] font-medium text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all placeholder:text-outline-variant/70 mb-2">
 
-                <div class="row">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
                   <div>
-                    <label>Existencia SRP (dosis)</label>
-                    <input id="srp_dosis" type="number" min="0" placeholder="0">
+                    <label class="text-[13px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1 ml-2">Existencia SRP (dosis)</label>
+                    <input id="srp_dosis" type="number" min="0" placeholder="0" class="w-full bg-surface-variant border border-outline-variant/30 rounded-xl px-4 py-3 text-[15px] font-medium text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all placeholder:text-outline-variant/70">
                   </div>
                   <div>
-                    <label>Existencia SR (dosis)</label>
-                    <input id="sr_dosis" type="number" min="0" placeholder="0">
+                    <label class="text-[13px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1 ml-2">Existencia SR (dosis)</label>
+                    <input id="sr_dosis" type="number" min="0" placeholder="0" class="w-full bg-surface-variant border border-outline-variant/30 rounded-xl px-4 py-3 text-[15px] font-medium text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all placeholder:text-outline-variant/70">
                   </div>
                 </div>
 
-                <label>Jeringa aplic 0.5 ml (060.550.2657)</label>
-                <input id="jeringa_aplic_05ml_0605502657" type="number" min="0" placeholder="0">
+                <label class="text-[13px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1 mt-2 ml-2">Jeringa aplic 0.5 ml (060.550.2657)</label>
+                <input id="jeringa_aplic_05ml_0605502657" type="number" min="0" placeholder="0" class="w-full bg-surface-variant border border-outline-variant/30 rounded-xl px-4 py-3 text-[15px] font-medium text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all placeholder:text-outline-variant/70 mb-2">
 
-                <label>Jeringa reconst 5 ml (060.550.0438)</label>
-                <input id="jeringa_reconst_5ml_0605500438" type="number" min="0" placeholder="0">
+                <label class="text-[13px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1 mt-2 ml-2">Jeringa reconst 5 ml (060.550.0438)</label>
+                <input id="jeringa_reconst_5ml_0605500438" type="number" min="0" placeholder="0" class="w-full bg-surface-variant border border-outline-variant/30 rounded-xl px-4 py-3 text-[15px] font-medium text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all placeholder:text-outline-variant/70 mb-2">
 
-                <label>Aguja (060.040.3711)</label>
-                <input id="aguja_0600403711" type="number" min="0" placeholder="(Automático)" disabled>
+                <label class="text-[13px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1 mt-2 ml-2">Aguja (060.040.3711)</label>
+                <input id="aguja_0600403711" type="number" min="0" placeholder="(Automático)" disabled class="w-full bg-surface-variant/40 border border-outline-variant/20 rounded-xl px-4 py-3 text-[15px] font-medium text-surface-on/50 outline-none cursor-not-allowed mb-6">
 
-                <button class="btn" id="btnSaveCONS">Guardar consumibles</button>
+                <button class="bg-primary text-white rounded-xl h-[50px] font-bold text-[15px] tracking-[0.02em] shadow-md3-2 hover:bg-[#002244] hover:-translate-y-[2px] transition-all flex items-center justify-center w-full border-none cursor-pointer" id="btnSaveCONS">Guardar consumibles</button>
 
-                <div class="subActions">
-                  <button class="ghostBtn" id="btnEditCONS" style="display:none" title="Editar el reporte de hoy">
-                    <span class="material-symbols-rounded">edit</span> Editar reporte de hoy
+                <div class="flex flex-wrap gap-2 mt-4 justify-end">
+                  <button class="bg-transparent text-primary border border-primary/20 rounded-xl px-4 h-[42px] font-semibold text-[13px] flex items-center gap-2 transition-all hover:bg-primary hover:text-white cursor-pointer" id="btnEditCONS" style="display:none" title="Editar el reporte de hoy">
+                    <span class="material-symbols-rounded text-[18px]">edit</span> Editar reporte de hoy
                   </button>
-                  <button class="ghostBtn" id="btnCancelEditCONS" style="display:none" title="Cancelar edición">
-                    <span class="material-symbols-rounded">close</span> Cancelar edición
+                  <button class="bg-transparent text-status-error border border-status-error/20 rounded-xl px-4 h-[42px] font-semibold text-[13px] flex items-center gap-2 transition-all hover:bg-status-error hover:text-white cursor-pointer" id="btnCancelEditCONS" style="display:none" title="Cancelar edición">
+                    <span class="material-symbols-rounded text-[18px]">close</span> Cancelar edición
                   </button>
                 </div>
 
-                <div class="hint">Este reporte se captura solo en jueves. Aguja se calcula automáticamente.</div>
+                <div class="text-[11px] opacity-60 text-center font-medium mt-4">Este reporte se captura solo en jueves. Aguja se calcula automáticamente.</div>
               </div>
 
               <!-- PEDIDO DE BIOLÓGICO -->
-              <div id="formBIO" style="display:none">
-                <div class="row">
+              <div id="formBIO" style="display:none" class="flex flex-col gap-1">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label>Nombre de quien captura</label>
-                    <input id="nombreBIO" placeholder="Nombre completo">
+                    <label class="text-[13px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1 ml-2">Nombre de quien captura</label>
+                    <input id="nombreBIO" placeholder="Nombre completo" class="w-full bg-surface-variant border border-outline-variant/30 rounded-xl px-4 py-3 text-[15px] font-medium text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all placeholder:text-outline-variant/70">
                   </div>
                   <div>
-                    <div class="bioProgramBox">
-                      <div class="bioProgramLabel">Fecha objetivo de pedido</div>
-                      <div class="bioProgramDate" id="fechaPedidoBIOBox">—</div>
-                      <div class="bioProgramSub" id="bioHint">—</div>
+                    <div class="bg-primary/5 border border-primary/20 rounded-xl p-3 flex flex-col items-center justify-center h-[calc(100%-24px)] mt-6 relative">
+                      <div class="text-[11px] font-bold uppercase tracking-[0.05em] text-primary/70 mb-1">Fecha objetivo de pedido</div>
+                      <div class="text-lg font-black text-primary tracking-tight" id="fechaPedidoBIOBox">—</div>
+                      <div class="text-[10px] uppercase font-bold tracking-widest text-primary/60 mt-1" id="bioHint">—</div>
                     </div>
                     <input id="fechaPedidoBIO" disabled style="display:none">
                   </div>
                 </div>
 
-                <div class="bioDayAlert" id="bioDayAlert">—</div>
+                <div class="bg-[#ffeeee]/50 text-status-error font-medium p-3 rounded-lg text-sm text-center border border-status-error/20 mb-2" id="bioDayAlert">—</div>
 
-                <div class="tableWrap bioTableWrap" style="margin-top:10px; max-height:560px; width:100%;">
-                  <table class="summaryTable bioSummaryTable">
+                <div class="overflow-x-auto rounded-[20px] border border-outline-variant/30 shadow-[0_2px_8px_rgba(0,0,0,0.02)] mt-2 max-h-[560px] w-full">
+                  <table class="w-full border-collapse text-left text-[13px] whitespace-nowrap">
                     <colgroup>
                       <col style="width:18%">
                       <col style="width:10%">
@@ -423,202 +522,199 @@
                       <col style="width:8%">
                     </colgroup>
                     <thead>
-                      <tr>
-                        <th>Biológico</th>
-                        <th>Existencia<br><span class="thMini">frascos</span></th>
-                        <th>Pedido<br><span class="thMini">frascos</span></th>
-                        <th>Validación</th>
-                        <th>Promedio<br><span class="thMini">frascos</span></th>
-                        <th>Máx<br><span class="thMini">dosis</span></th>
-                        <th>Mín<br><span class="thMini">dosis</span></th>
+                      <tr class="bg-surface-variant text-surface-onVariant uppercase tracking-[0.05em] font-extrabold border-b border-outline-variant/30 sticky top-0 z-10">
+                        <th class="p-4 py-3">Biológico</th>
+                        <th class="p-4 py-3 text-center">Existencia<br><span class="text-[10px] font-semibold opacity-70 tracking-widest uppercase">frascos</span></th>
+                        <th class="p-4 py-3 text-center">Pedido<br><span class="text-[10px] font-semibold opacity-70 tracking-widest uppercase">frascos</span></th>
+                        <th class="p-4 py-3">Validación</th>
+                        <th class="p-4 py-3 text-center">Promedio<br><span class="text-[10px] font-semibold opacity-70 tracking-widest uppercase">frascos</span></th>
+                        <th class="p-4 py-3 text-center">Máx<br><span class="text-[10px] font-semibold opacity-70 tracking-widest uppercase">dosis</span></th>
+                        <th class="p-4 py-3 text-center">Mín<br><span class="text-[10px] font-semibold opacity-70 tracking-widest uppercase">dosis</span></th>
                       </tr>
                     </thead>
-                    <tbody id="bioTbody">
+                    <tbody id="bioTbody" class="bg-white">
                       <tr>
-                        <td colspan="7" class="muted">Cargando…</td>
+                        <td colspan="7" class="p-4 py-6 text-center text-surface-onVariant/60 font-medium">Cargando…</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
-                <div class="hint"
-                  style="margin-top:12px; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06);">
-                  <b>Referencia de captura:</b> Máx/Mín se muestran en dosis. Promedio, existencia actual y pedido se
-                  muestran en frascos.
+                <div class="mt-4 p-4 rounded-xl bg-surface-on/5 border border-surface-on/10 text-sm text-surface-onVariant">
+                  <b>Referencia de captura:</b> Máx/Mín se muestran en dosis. Promedio, existencia actual y pedido se muestran en frascos.
                 </div>
 
-                <button class="btn" id="btnSaveBIO">Guardar pedido de biológico</button>
+                <button class="bg-primary text-white rounded-xl h-[50px] font-bold text-[15px] tracking-[0.02em] shadow-md3-2 hover:bg-[#002244] hover:-translate-y-[2px] transition-all flex items-center justify-center w-full border-none cursor-pointer mt-6" id="btnSaveBIO">Guardar pedido de biológico</button>
 
-                <div class="subActions">
-                  <button class="ghostBtn" id="btnEditBIO" style="display:none"
-                    title="Editar el pedido de biológico actual">
-                    <span class="material-symbols-rounded">edit_square</span> Editar pedido actual
+                <div class="flex flex-wrap gap-2 mt-4 justify-end">
+                  <button class="bg-transparent text-primary border border-primary/20 rounded-xl px-4 h-[42px] font-semibold text-[13px] flex items-center gap-2 transition-all hover:bg-primary hover:text-white cursor-pointer" id="btnEditBIO" style="display:none" title="Editar el pedido de biológico actual">
+                    <span class="material-symbols-rounded text-[18px]">edit_square</span> Editar pedido actual
                   </button>
-                  <button class="ghostBtn" id="btnCancelEditBIO" style="display:none" title="Cancelar edición">
-                    <span class="material-symbols-rounded">close</span> Cancelar edición
+                  <button class="bg-transparent text-status-error border border-status-error/20 rounded-xl px-4 h-[42px] font-semibold text-[13px] flex items-center gap-2 transition-all hover:bg-status-error hover:text-white cursor-pointer" id="btnCancelEditBIO" style="display:none" title="Cancelar edición">
+                    <span class="material-symbols-rounded text-[18px]">close</span> Cancelar edición
                   </button>
                 </div>
               </div>
 
-              <!-- ✅ CONFIRMACIÓN DE BIOLÓGICO (Estructura Reparada) -->
-              <div id="bioConfirmOverlay" class="overlay" aria-hidden="true">
-                <div class="modalGlass" style="max-width:500px;">
-                  <div class="modalHead"
-                    style="background:linear-gradient(135deg, rgba(243, 229, 255, 0.1), rgba(0, 0, 0, 0.05));">
-
-                    <div class="modalEyebrow" style="color:var(--warn);">
-                      <span class="material-symbols-rounded" style="font-size:16px;">warning</span>
+              <!-- ✅ CONFIRMACIÓN DE BIOLÓGICO (Migrado a Tailwind) -->
+              <div id="bioConfirmOverlay" class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible" aria-hidden="true">
+                <div class="w-full max-w-[500px] bg-white border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
+                  <div class="p-8 pb-6 bg-gradient-to-br from-status-warning/10 to-transparent border-b border-outline-variant/20">
+                    <div class="flex items-center gap-2 text-status-warning text-xs font-bold uppercase tracking-[0.1em] mb-3">
+                      <span class="material-symbols-rounded text-base">warning</span>
                       Validación preventiva
                     </div>
-                    <div class="modalTitle">Revisar pedido</div>
-                    <div class="modalSub" id="bioConfirmIntro">
+                    <div class="text-[22px] font-extrabold text-primary tracking-tight mb-2">Revisar pedido</div>
+                    <div class="text-[13px] font-medium text-surface-onVariant/80" id="bioConfirmIntro">
                       Se han detectado observaciones en tu captura.
                     </div>
                   </div>
 
-                  <div class="modalBody">
-                    <div id="bioConfirmList" class="modalFields"></div>
-                    <div class="modalNote"
-                      style="background:rgba(245, 158, 11, 0.08); border-color:rgba(245, 158, 11, 0.2); color:#e2e8f0; margin-top:20px;">
-                      <strong>¿Deseas continuar?</strong> Una vez guardado, no se podrán realizar correcciones
-                      automáticas.
+                  <div class="p-8 bg-surface-variant/20 max-h-[60vh] overflow-y-auto">
+                    <div id="bioConfirmList" class="flex flex-col gap-3"></div>
+                    <div class="mt-6 p-4 bg-status-warning/10 border border-status-warning/20 rounded-xl text-[13px] text-surface-onVariant">
+                      <strong class="text-status-warning block mb-1">¿Deseas continuar?</strong> Una vez guardado, no se podrán realizar correcciones automáticas.
                     </div>
                   </div>
 
-                  <div class="modalFooter">
-                    <button class="ghostBtn" id="btnBioConfirmCancel" type="button">
-                      <span class="material-symbols-rounded">close</span> Corregir
+                  <div class="flex items-center justify-end gap-3 p-6 bg-white border-t border-outline-variant/30">
+                    <button class="bg-transparent text-primary hover:bg-primary/5 px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer" id="btnBioConfirmCancel" type="button">
+                      <span class="material-symbols-rounded text-[20px]">close</span> Corregir
                     </button>
-                    <button class="btn" id="btnBioConfirmAccept" type="button"
-                      style="margin-top:0; background:var(--warn); border-color:rgba(0,0,0,0.1);">
-                      <span class="material-symbols-rounded">done_all</span> Confirmar y Guardar
+                    <button class="bg-[#d97706] text-white hover:bg-[#b45309] hover:-translate-y-0.5 px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all shadow-md3-1 border-none cursor-pointer" id="btnBioConfirmAccept" type="button">
+                      <span class="material-symbols-rounded text-[20px]">done_all</span> Confirmar y Guardar
                     </button>
                   </div>
                 </div>
               </div>
 
               <!-- PINOL -->
-              <div id="formPINOL" style="display:none">
-                <div class="hint" style="margin-bottom:10px;">
-                  🧴 <b>Multilimpiador desinfectante Pinol®</b> CONT. NET. 828 mL.<br>
+              <div id="formPINOL" style="display:none" class="flex flex-col gap-1">
+                <div class="text-[12px] opacity-70 font-medium mb-4 p-3 rounded-xl border border-outline-variant/30 bg-surface-variant/20">
+                  <span class="text-xl inline-block mb-1">🧴</span> <b>Multilimpiador desinfectante Pinol®</b> CONT. NET. 828 mL.<br>
                   El insumo es para uso exclusivo de los refrigeradores de vacunas y farmacia.
                 </div>
 
-                <label>Nombre de quien realiza la solicitud</label>
-                <input id="nombrePINOL" placeholder="Nombre completo">
+                <label class="text-[13px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1 mt-2 ml-2">Nombre de quien realiza la solicitud</label>
+                <input id="nombrePINOL" placeholder="Nombre completo" class="w-full bg-surface-variant border border-outline-variant/30 rounded-xl px-4 py-3 text-[15px] font-medium text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all placeholder:text-outline-variant/70 mb-2">
 
-                <div class="row">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
                   <div>
-                    <label>Existencia actual de pinol (botellas)</label>
-                    <input id="pinol_existencia" type="number" min="0" step="1" placeholder="0">
+                    <label class="text-[13px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1 ml-2">Existencia actual de pinol (botellas)</label>
+                    <input id="pinol_existencia" type="number" min="0" step="1" placeholder="0" class="w-full bg-surface-variant border border-outline-variant/30 rounded-xl px-4 py-3 text-[15px] font-medium text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all placeholder:text-outline-variant/70">
                   </div>
                   <div>
-                    <label>Solicitud de botellas de pinol</label>
-                    <input id="pinol_solicitud" type="number" min="0" step="1" placeholder="0">
+                    <label class="text-[13px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1 ml-2">Solicitud de botellas de pinol</label>
+                    <input id="pinol_solicitud" type="number" min="0" step="1" placeholder="0" class="w-full bg-surface-variant border border-outline-variant/30 rounded-xl px-4 py-3 text-[15px] font-medium text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all placeholder:text-outline-variant/70">
                   </div>
                 </div>
 
-                <label>Observaciones</label>
-                <textarea id="pinol_observaciones" placeholder="Opcional" rows="2"></textarea>
+                <label class="text-[13px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1 mt-2 ml-2">Observaciones</label>
+                <textarea id="pinol_observaciones" placeholder="Opcional" rows="2" class="w-full bg-surface-variant border border-outline-variant/30 rounded-xl px-4 py-3 text-[15px] font-medium text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all placeholder:text-outline-variant/70 min-h-[80px] mb-6 resize-y"></textarea>
 
-                <button class="btn" id="btnSavePINOL">Guardar solicitud de pinol</button>
+                <button class="bg-primary text-white rounded-xl h-[50px] font-bold text-[15px] tracking-[0.02em] shadow-md3-2 hover:bg-[#002244] hover:-translate-y-[2px] transition-all flex items-center justify-center w-full border-none cursor-pointer" id="btnSavePINOL">Guardar solicitud de pinol</button>
               </div>
-              <div class="card" id="panelAdminOpsTabs" style="display:none">
-                <div class="tabs">
-                  <button class="tab active" id="tabOPS_CAPTURE">
-                    <span class="material-symbols-rounded">dashboard</span>
+
+              <!-- TABS ADMINISTRACIÓN -->
+              <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mt-8 mb-8" id="panelAdminOpsTabs" style="display:none">
+                <div class="flex flex-wrap gap-2 mb-2 p-1.5 bg-surface-variant/50 rounded-[20px] w-fit">
+                  <button class="tab-btn tab-active flex items-center gap-2.5 h-[46px] px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px]" id="tabOPS_CAPTURE">
+                    <span class="material-symbols-rounded text-[20px]">dashboard</span>
                     <span>Resumen de captura</span>
                   </button>
-                  <button class="tab" id="tabOPS_HISTORY">
-                    <span class="material-symbols-rounded">query_stats</span>
+                  <button class="tab-btn tab-inactive flex items-center gap-2.5 h-[46px] px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px]" id="tabOPS_HISTORY">
+                    <span class="material-symbols-rounded text-[20px]">query_stats</span>
                     <span>Métricas históricas</span>
                   </button>
-                  <button class="tab" id="tabOPS_PINOL">
-                    <div class="badge-wrapper">
-                      <span class="material-symbols-rounded">inventory</span>
-                      <span id="pinolBadgeTab" class="liveBadge" style="display:none">0</span>
+                  <button class="tab-btn tab-inactive flex items-center gap-2.5 h-[46px] px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px] relative" id="tabOPS_PINOL">
+                    <div class="relative flex items-center justify-center">
+                      <span class="material-symbols-rounded text-[20px]">inventory</span>
+                      <span id="pinolBadgeTab" class="absolute -top-1.5 -right-2 bg-status-error text-white text-[9px] font-black px-1.5 py-0.5 rounded-full" style="display:none">0</span>
                     </div>
                     <span>Solicitudes de pinol</span>
                   </button>
-                  <button class="tab" id="tabLOTES" style="display:none">
-                    <span class="material-symbols-rounded">inventory_2</span>
+                  <button class="tab-btn tab-inactive flex items-center gap-2.5 h-[46px] px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px]" id="tabLOTES" style="display:none">
+                    <span class="material-symbols-rounded text-[20px]">inventory_2</span>
                     <span>Carga de lotes</span>
                   </button>
                 </div>
               </div>
 
               <!-- NOTIFICACIONES -->
-              <div class="card" id="panelNOTIFS" style="display:none">
-                <div class="notifHero">
-                  <div class="notifHeroTitle">Centro de notificaciones</div>
-                  <div class="notifHeroSub">
-                    Consulta tu bandeja, revisa actividad reciente y envía avisos internos a municipios o unidades.
+              <!-- NOTIFICACIONES -->
+              <div class="bg-white rounded-[32px] overflow-hidden shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8 border border-outline-variant/30" id="panelNOTIFS" style="display:none">
+                <div class="bg-primary text-white p-8 relative flex flex-col xl:flex-row justify-between gap-8 h-auto break-words bg-gradient-to-br from-primary to-primary-container/80">
+                  <div class="z-10">
+                    <div class="text-[28px] font-extrabold tracking-tight m-0">Centro de notificaciones</div>
+                    <div class="text-[15px] max-w-[500px] mt-2 opacity-90 leading-relaxed font-medium">
+                      Consulta tu bandeja, revisa actividad reciente y envía avisos internos a municipios o unidades.
+                    </div>
                   </div>
 
-                  <div class="notifStats">
-                    <div class="notifStat">
-                      <div class="notifStatLabel">No leídas</div>
-                      <div class="notifStatValue" id="notifUnreadKpi">0</div>
+                  <div class="flex gap-4 sm:gap-6 z-10 flex-wrap">
+                    <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl min-w-[100px] flex-1">
+                      <div class="text-[11px] font-bold uppercase tracking-[0.1em] opacity-80 mb-1 leading-tight">No leídas</div>
+                      <div class="text-[26px] font-black leading-none" id="notifUnreadKpi">0</div>
                     </div>
-                    <div class="notifStat">
-                      <div class="notifStatLabel">Visibles</div>
-                      <div class="notifStatValue" id="notifTotalKpi">0</div>
+                    <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl min-w-[100px] flex-1">
+                      <div class="text-[11px] font-bold uppercase tracking-[0.1em] opacity-80 mb-1 leading-tight">Visibles</div>
+                      <div class="text-[26px] font-black leading-none" id="notifTotalKpi">0</div>
                     </div>
-                    <div class="notifStat">
-                      <div class="notifStatLabel">Perfil</div>
-                      <div class="notifStatValue" id="notifRoleKpi">—</div>
+                    <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl min-w-[100px] flex-1 hidden sm:block">
+                      <div class="text-[11px] font-bold uppercase tracking-[0.1em] opacity-80 mb-1 leading-tight">Perfil</div>
+                      <div class="text-[26px] font-black leading-none break-all text-ellipsis overflow-hidden max-w-[110px]" id="notifRoleKpi">—</div>
                     </div>
                   </div>
                 </div>
 
-                <div class="notifShell">
-                  <div class="notifPane" id="notifInboxPane" style="display:none">
-                    <div class="notifPaneTitle">
-                      <h3>Bandeja</h3>
-                      <div class="subActions" style="margin-top:0">
-                        <button type="button" class="md-btn md-btn-tonal" id="btnNotifRefresh">
-                          <span class="material-symbols-rounded">refresh</span> Actualizar
+                <div class="flex flex-col lg:flex-row gap-6 p-8">
+                  <div class="flex-1 bg-white rounded-3xl p-6 border border-outline-variant/30 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col outline outline-1 outline-primary/5" id="notifInboxPane" style="display:none">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-outline-variant/30 pb-4 mb-4 gap-4">
+                      <h3 class="text-lg font-extrabold text-primary m-0 tracking-tight">Bandeja</h3>
+                      <div class="flex gap-2">
+                        <button type="button" class="bg-primary/10 text-primary hover:bg-primary/20 h-[42px] px-4 rounded-[14px] font-bold flex items-center justify-center gap-2 transition-all border-none cursor-pointer text-[13px]" id="btnNotifRefresh">
+                          <span class="material-symbols-rounded text-[18px]">refresh</span> Actualizar
                         </button>
-                        <button type="button" class="md-btn md-btn-outlined" id="btnNotifOnlyUnread">
-                          <span class="material-symbols-rounded">mail</span> Filtrar
+                        <button type="button" class="bg-transparent border border-outline-variant/50 hover:bg-surface-variant text-surface-on h-[42px] px-4 rounded-[14px] font-bold flex items-center justify-center gap-2 transition-all cursor-pointer text-[13px]" id="btnNotifOnlyUnread">
+                          <span class="material-symbols-rounded text-[18px]">mail</span> Filtrar
                         </button>
                       </div>
                     </div>
 
-                    <div class="notifList" id="notifListWrap" style="display:none">
-                      <div class="notifEmpty">Aún no hay notificaciones.</div>
+                    <div class="flex flex-col gap-3 overflow-y-auto pr-2" id="notifListWrap" style="display:none">
+                      <div class="text-sm text-surface-onVariant/60 text-center py-10 font-medium italic">Aún no hay notificaciones.</div>
                     </div>
                   </div>
 
-                  <div class="notifPane" id="notifComposerPane" style="display:none">
-                    <div class="notifPaneTitle">
-                      <h3>Enviar notificación</h3>
-                      <span class="pill">ADMIN / MUNICIPAL</span>
+                  <div class="flex-1 bg-white rounded-3xl p-6 border border-outline-variant/30 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col outline outline-1 outline-primary/5" id="notifComposerPane" style="display:none">
+                    <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-6">
+                      <h3 class="text-lg font-extrabold text-primary m-0 tracking-tight">Enviar notificación</h3>
+                      <span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest hidden sm:block border border-primary/20">ADMIN / MUNICIPAL</span>
                     </div>
 
-                    <div class="notifComposer">
-                      <div class="notifComposerGroup">
-                        <label for="notifTargetScope">Alcance</label>
-                        <select id="notifTargetScope">
+                    <div class="flex flex-col gap-4">
+                      <div>
+                        <label for="notifTargetScope" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Alcance</label>
+                        <select id="notifTargetScope" class="w-full bg-surface-variant border border-outline-variant/30 rounded-[14px] px-4 h-[48px] text-[15px] font-semibold text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all">
                           <option value="ALL_MY_UNITS">Todas mis unidades</option>
                           <option value="MUNICIPIO">Municipio</option>
                           <option value="CLUES">CLUES</option>
                         </select>
                       </div>
 
-                      <div class="notifComposerGroup" id="notifMunicipioBox">
-                        <label for="notifTargetMunicipio">Municipio</label>
-                        <select id="notifTargetMunicipio"></select>
+                      <div id="notifMunicipioBox">
+                        <label for="notifTargetMunicipio" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Municipio</label>
+                        <select id="notifTargetMunicipio" class="w-full bg-surface-variant border border-outline-variant/30 rounded-[14px] px-4 h-[48px] text-[15px] font-semibold text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all"></select>
                       </div>
 
-                      <div class="notifComposerGroup" id="notifUnidadBox">
-                        <label for="notifTargetClues">Unidad / CLUES</label>
-                        <select id="notifTargetClues"></select>
+                      <div id="notifUnidadBox">
+                        <label for="notifTargetClues" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Unidad / CLUES</label>
+                        <select id="notifTargetClues" class="w-full bg-surface-variant border border-outline-variant/30 rounded-[14px] px-4 h-[48px] text-[15px] font-semibold text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all"></select>
                       </div>
 
-                      <div class="notifComposerGroup">
-                        <label for="notifTemplate">Plantilla institucional</label>
-                        <select id="notifTemplate">
+                      <div>
+                        <label for="notifTemplate" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Plantilla institucional</label>
+                        <select id="notifTemplate" class="w-full bg-surface-variant border border-outline-variant/30 rounded-[14px] px-4 h-[48px] text-[15px] font-semibold text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all">
                           <option value="">Seleccionar plantilla…</option>
                           <option value="CAPTURA_PENDIENTE">Recordatorio de captura</option>
                           <option value="OBS_ADMIN">Observación administrativa</option>
@@ -626,9 +722,9 @@
                         </select>
                       </div>
 
-                      <div class="notifComposerGroup">
-                        <label for="notifType">Tipo de aviso</label>
-                        <select id="notifType">
+                      <div>
+                        <label for="notifType" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Tipo de aviso</label>
+                        <select id="notifType" class="w-full bg-surface-variant border border-outline-variant/30 rounded-[14px] px-4 h-[48px] text-[15px] font-semibold text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all">
                           <option value="INFO">Información</option>
                           <option value="SUCCESS">Éxito</option>
                           <option value="WARN">Alerta</option>
@@ -636,22 +732,21 @@
                         </select>
                       </div>
 
-                      <div class="notifComposerGroup">
-                        <label for="notifTitle">Título</label>
-                        <input id="notifTitle" placeholder="Ej. Pedido programado">
+                      <div>
+                        <label for="notifTitle" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Título</label>
+                        <input id="notifTitle" placeholder="Ej. Pedido programado" class="w-full bg-surface-variant border border-outline-variant/30 rounded-[14px] px-4 h-[48px] text-[15px] font-semibold text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all placeholder:text-outline-variant/70">
                       </div>
 
-                      <div class="notifComposerGroup">
-                        <label for="notifMessage">Mensaje detallado</label>
-                        <textarea id="notifMessage" rows="5" style="width:100%; resize:vertical;"
-                          placeholder="Escribe el detalle de la notificación..."></textarea>
+                      <div>
+                        <label for="notifMessage" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Mensaje detallado</label>
+                        <textarea id="notifMessage" rows="5" class="w-full bg-surface-variant border border-outline-variant/30 rounded-[14px] p-4 text-[15px] font-semibold text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all resize-y min-h-[100px] placeholder:text-outline-variant/70" placeholder="Escribe el detalle de la notificación..."></textarea>
                       </div>
 
-                      <button type="button" class="md-btn md-btn-filled" id="btnSendNotification" style="width:100%">
-                        <span class="material-symbols-rounded">send</span> Enviar notificación
+                      <button type="button" class="bg-primary text-white rounded-[14px] h-[52px] font-bold text-[15px] tracking-wide shadow-md3-2 hover:bg-[#002244] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2.5 w-full border-none cursor-pointer mt-2" id="btnSendNotification">
+                        <span class="material-symbols-rounded text-[20px]">send</span> Enviar notificación
                       </button>
 
-                      <div class="hint" style="margin-top:8px">
+                      <div class="text-[11px] opacity-60 text-center font-medium mt-1">
                         Consejo: Envía recordatorios operativos o avisos de surtimiento.
                       </div>
                     </div>
@@ -660,34 +755,34 @@
               </div>
 
               <!-- RESUMEN DE CAPTURA -->
-              <div class="card" id="panelCaptureSummary" style="display:none">
-                <div class="sectionTitle">
-                  <h3>Resumen de captura de existencia de biológicos de hoy</h3>
-                  <button class="miniBtn" id="btnRefreshCaptureSummary" title="Actualizar resumen">
-                    <span class="material-symbols-rounded">refresh</span> Actualizar
+              <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8" id="panelCaptureSummary" style="display:none">
+                <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-4">
+                  <h3 class="text-[17px] font-extrabold text-primary tracking-tight m-0 bg-primary-container/40 px-6 py-2.5 rounded-2xl border border-primary/10">Resumen de captura de existencia de biológicos de hoy</h3>
+                  <button class="bg-surface-variant text-surface-on hover:bg-surface-onVariant/10 px-3 h-[36px] rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all outline-none border-none cursor-pointer text-[12px]" id="btnRefreshCaptureSummary" title="Actualizar resumen">
+                    <span class="material-symbols-rounded text-[16px]">refresh</span> <span class="hidden sm:inline">Actualizar</span>
                   </button>
                 </div>
 
-                <div class="hint">
+                <div class="text-[12px] opacity-70 font-medium mb-4">
                   Consulta qué unidades ya capturaron y cuáles faltan, por fecha y por tipo de reporte.
                 </div>
 
-                <div class="row" style="margin-top:10px">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
                   <div>
-                    <label for="summaryTipo">Tipo de consulta</label>
-                    <select id="summaryTipo">
+                    <label for="summaryTipo" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Tipo de consulta</label>
+                    <select id="summaryTipo" class="w-full bg-surface-variant border border-outline-variant/30 rounded-xl px-4 py-3 text-[15px] font-medium text-surface-on focus:bg-white focus:border-primary outline-none transition-all">
                       <option value="SR">Existencia de biológicos</option>
                       <option value="CONS">Consumibles</option>
                     </select>
                   </div>
 
                   <div>
-                    <label for="summaryFecha">Fecha a consultar</label>
-                    <input type="date" id="summaryFecha">
+                    <label for="summaryFecha" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Fecha a consultar</label>
+                    <input type="date" id="summaryFecha" class="w-full bg-surface-variant border border-outline-variant/30 rounded-xl px-4 py-3 text-[15px] font-medium text-surface-on focus:bg-white focus:border-primary outline-none transition-all">
                   </div>
                 </div>
 
-                <div class="hint" id="summaryMsg" style="margin-top:8px">—</div>
+                <div class="text-[12px] opacity-70 font-medium mt-2 italic text-primary" id="summaryMsg">—</div>
 
                 <div class="dashboardKpis">
                   <div class="kpiCard info">
@@ -780,11 +875,11 @@
 
               <!-- MÉTRICAS HISTÓRICAS -->
 
-              <div class="card" id="panelHISTORY" style="display:none">
-                <div class="sectionTitle">
-                  <h3>Métricas históricas por unidad</h3>
-                  <button class="miniBtn" id="btnRefreshHistory" title="Actualizar métricas">
-                    <span class="material-symbols-rounded">refresh</span> Actualizar
+              <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8 overflow-hidden" id="panelHISTORY" style="display:none">
+                <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-6">
+                  <h3 class="text-lg font-extrabold text-primary m-0 tracking-tight">Métricas históricas por unidad</h3>
+                  <button class="bg-primary/10 text-primary hover:bg-primary/20 px-4 h-[42px] rounded-xl font-bold flex items-center justify-center gap-2 transition-all border-none cursor-pointer text-sm" id="btnRefreshHistory" title="Actualizar métricas">
+                    <span class="material-symbols-rounded text-[18px]">refresh</span> Actualizar
                   </button>
                 </div>
 
@@ -818,26 +913,26 @@
                   </div>
                 </div>
 
-                <div class="tableWrap usersTableDesktop" style="margin-top:10px;">
-                  <table class="summaryTable">
+                <div class="tableWrap usersTableDesktop mt-6 overflow-x-auto w-full rounded-2xl border border-outline-variant/30 shadow-sm">
+                  <table class="w-full text-left border-collapse min-w-[1200px]">
                     <thead>
-                      <tr>
-                        <th>Municipio</th>
-                        <th>CLUES</th>
-                        <th>Unidad</th>
-                        <th>% Operativo</th>
-                        <th>% BIO</th>
-                        <th>Capturas BIO</th>
-                        <th>Faltas BIO</th>
-                        <th>% CONS</th>
-                        <th>Capturas CONS</th>
-                        <th>Faltas CONS</th>
-                        <th>Última CONS</th>
+                      <tr class="bg-surface-variant text-surface-onVariant uppercase tracking-[0.05em] font-extrabold text-xs border-b border-outline-variant/30">
+                        <th class="p-4">Municipio</th>
+                        <th class="p-4">CLUES</th>
+                        <th class="p-4">Unidad</th>
+                        <th class="p-4 text-center">% Operativo</th>
+                        <th class="p-4 text-center">% BIO</th>
+                        <th class="p-4 text-center">Capturas BIO</th>
+                        <th class="p-4 text-center">Faltas BIO</th>
+                        <th class="p-4 text-center">% CONS</th>
+                        <th class="p-4 text-center">Capturas CONS</th>
+                        <th class="p-4 text-center">Faltas CONS</th>
+                        <th class="p-4">Última CONS</th>
                       </tr>
                     </thead>
-                    <tbody id="historyTbody">
+                    <tbody id="historyTbody" class="bg-white text-[13px] font-medium [&>tr>td]:p-4 [&>tr>td]:whitespace-nowrap [&>tr]:border-b [&>tr]:border-outline-variant/20">
                       <tr>
-                        <td colspan="11" class="muted">Sin datos</td>
+                        <td colspan="11" class="p-6 text-center text-surface-onVariant/60">Sin datos</td>
                       </tr>
                     </tbody>
                   </table>
@@ -849,11 +944,11 @@
               </div>
 
               <!-- SOLICITUDES DE PINOL -->
-              <div class="card" id="panelPINOLADMIN" style="display:none">
-                <div class="sectionTitle">
-                  <h3>Solicitudes de pinol</h3>
-                  <button class="miniBtn" id="btnRefreshPinol" title="Actualizar solicitudes">
-                    <span class="material-symbols-rounded">refresh</span> Actualizar
+              <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8 overflow-hidden" id="panelPINOLADMIN" style="display:none">
+                <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-6">
+                  <h3 class="text-lg font-extrabold text-primary m-0 tracking-tight">Solicitudes de pinol</h3>
+                  <button class="bg-primary/10 text-primary hover:bg-primary/20 px-4 h-[42px] rounded-xl font-bold flex items-center justify-center gap-2 transition-all border-none cursor-pointer text-sm" id="btnRefreshPinol" title="Actualizar solicitudes">
+                    <span class="material-symbols-rounded text-[18px]">refresh</span> Actualizar
                   </button>
                 </div>
 
@@ -899,27 +994,27 @@
                   </div>
                 </div>
 
-                <div class="tableWrap pinolTableDesktop" style="margin-top:10px; overflow-x: auto;">
-                  <table class="summaryTable" style="min-width: 1400px; white-space: nowrap;">
+                <div class="tableWrap pinolTableDesktop mt-6 overflow-x-auto w-full rounded-2xl border border-outline-variant/30 shadow-sm relative z-0">
+                  <table class="w-full text-left border-collapse min-w-[1400px]">
                     <thead>
-                      <tr>
-                        <th>Fecha</th>
-                        <th>Municipio</th>
-                        <th>CLUES</th>
-                        <th>Unidad</th>
-                        <th>Existencia (Botellas)</th>
-                        <th>Solicitud (botellas 828 mL)</th>
-                        <th>Observaciones</th>
-                        <th>Capturó</th>
-                        <th>Fecha entrega</th>
-                        <th>Entregó</th>
-                        <th>Estatus</th>
-                        <th>Acción</th>
+                      <tr class="bg-surface-variant text-surface-onVariant uppercase tracking-[0.05em] font-extrabold text-xs border-b border-outline-variant/30">
+                        <th class="p-4">Fecha</th>
+                        <th class="p-4">Municipio</th>
+                        <th class="p-4">CLUES</th>
+                        <th class="p-4">Unidad</th>
+                        <th class="p-4 text-center">Exist. (Bot.)</th>
+                        <th class="p-4 text-center">Solicitó (828 mL)</th>
+                        <th class="p-4">Observaciones</th>
+                        <th class="p-4">Capturó</th>
+                        <th class="p-4">Entrega</th>
+                        <th class="p-4">Entregó</th>
+                        <th class="p-4">Estatus</th>
+                        <th class="p-4 text-center">Acción</th>
                       </tr>
                     </thead>
-                    <tbody id="pinolTbody">
+                    <tbody id="pinolTbody" class="bg-white text-[13px] font-medium [&>tr>td]:p-4 [&>tr>td]:whitespace-nowrap [&>tr]:border-b [&>tr]:border-outline-variant/20">
                       <tr>
-                        <td colspan="12" class="muted">Sin datos</td>
+                        <td colspan="12" class="p-6 text-center text-surface-onVariant/60">Sin datos</td>
                       </tr>
                     </tbody>
                   </table>
@@ -930,11 +1025,11 @@
                 </div>
               </div>
 
-              <div class="card" id="panelEDITLOG" style="display:none">
-                <div class="sectionTitle">
-                  <h3>Historial de ediciones</h3>
-                  <button class="miniBtn" id="btnRefreshEditLog" title="Actualizar historial">
-                    <span class="material-symbols-rounded">refresh</span> Actualizar
+              <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8 overflow-hidden" id="panelEDITLOG" style="display:none">
+                <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-6">
+                  <h3 class="text-lg font-extrabold text-primary m-0 tracking-tight">Historial de ediciones</h3>
+                  <button class="bg-primary/10 text-primary hover:bg-primary/20 px-4 h-[42px] rounded-xl font-bold flex items-center justify-center gap-2 transition-all border-none cursor-pointer text-sm" id="btnRefreshEditLog" title="Actualizar historial">
+                    <span class="material-symbols-rounded text-[18px]">refresh</span> Actualizar
                   </button>
                 </div>
 
@@ -1064,25 +1159,50 @@
                 </button>
               </div>
 
+              <!-- ARCHIVOS -->
+              <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8" id="panelArchivos" style="display:none">
+                <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-4">
+                  <h3 class="text-[17px] font-extrabold text-primary tracking-tight m-0 bg-primary-container/40 px-6 py-2.5 rounded-2xl border border-primary/10">Navegador de Evidencias</h3>
+                  <button class="bg-surface-variant text-surface-on hover:bg-surface-onVariant/10 px-3 h-[36px] rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all outline-none border-none cursor-pointer text-[12px]" id="btnRefreshArchivos" title="Actualizar lista">
+                    <span class="material-symbols-rounded text-[18px]">refresh</span>
+                  </button>
+                </div>
+                <!-- Controls -->
+                <div class="flex flex-wrap gap-4 mb-6">
+                   <select id="archivosCategoria" class="bg-surface-variant rounded-xl border border-outline-variant/50 h-10 px-4 text-sm outline-none font-semibold text-primary">
+                     <option value="">Todas las Categorías</option>
+                     <option value="Evidencia de capacitaciones">Capacitaciones</option>
+                     <option value="Evidencias de campaña">Campañas</option>
+                     <option value="Supervisión">Supervisión</option>
+                     <option value="Otros reportes">Otros reportes</option>
+                   </select>
+                   <input type="text" id="archivosSearch" placeholder="Buscar por Clues o Unidad..." class="bg-surface-variant rounded-xl border border-outline-variant/50 h-10 px-4 text-sm outline-none min-w-[250px] font-semibold text-primary" />
+                </div>
+                <!-- Grid -->
+                <div id="archivosContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  <!-- JS will populate -->
+                </div>
+              </div>
+
               <!-- ADMIN -->
-              <div class="card" id="panelADMIN" style="display:none">
-                <div class="sectionTitle">
-                  <h3>Administración de usuarios</h3>
-                  <button class="miniBtn" id="btnRefreshUsers" title="Actualizar lista">
-                    <span class="material-symbols-rounded">refresh</span> Actualizar
+              <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8" id="panelADMIN" style="display:none">
+                <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-4">
+                  <h3 class="text-[17px] font-extrabold text-primary tracking-tight m-0 bg-primary-container/40 px-6 py-2.5 rounded-2xl border border-primary/10">Administración de usuarios</h3>
+                  <button class="bg-surface-variant text-surface-on hover:bg-surface-onVariant/10 px-3 h-[36px] rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all outline-none border-none cursor-pointer text-[12px]" id="btnRefreshUsers" title="Actualizar lista">
+                    <span class="material-symbols-rounded text-[16px]">refresh</span> <span class="hidden sm:inline">Actualizar</span>
                   </button>
                 </div>
 
-                <div class="hint">
+                <div class="text-[12px] opacity-70 font-medium mb-4">
                   Alta basada en la hoja <b>USUARIOS</b>:
-                  <span class="muted">usuario | password | municipio | clues | unidad | rol | activo</span>.
+                  <span class="opacity-50">usuario | password | municipio | clues | unidad | rol | activo</span>.
                 </div>
 
-                <div class="hr"></div>
+                <div class="h-[1px] bg-outline-variant/40 w-full my-6"></div>
 
-                <div class="sectionTitle">
-                  <h3>Apertura extraordinaria de consumibles</h3>
-                  <span class="pill" id="consOverrideStateTxt">—</span>
+                <div class="flex items-center gap-4 mb-2">
+                  <h3 class="text-[15px] font-extrabold text-primary m-0">Apertura extraordinaria de consumibles</h3>
+                  <span class="bg-surface-variant text-surface-onVariant px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest border border-outline-variant/30" id="consOverrideStateTxt">—</span>
                 </div>
 
                 <div class="hint">
@@ -1218,8 +1338,8 @@
       </div>
 
       <!-- ✅ MODAL ENTREGA DE PINOL MD3 -->
-      <div class="pinolModal" id="pinolEntregaModal">
-        <div class="modalGlass" style="max-width:600px; border-radius:28px;">
+      <div id="pinolEntregaModal" class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible" aria-hidden="true">
+        <div class="w-full max-w-[600px] bg-white border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100 flex flex-col">
           <div class="modalHead">
             <div class="modalEyebrow" style="
               background: #dcfce7;
