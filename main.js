@@ -3534,13 +3534,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         case "admingetunitdetail": {
+          const targetFecha = payload.fecha || todayYmdLocal();
           const { data, error } = await supabase
             .from('existencia_detalle')
             .select('*')
             .eq('clues', payload.clues)
-            .eq('fecha', payload.fecha || todayYmdLocal());
+            .eq('fecha', targetFecha)
+            .order('biologico', { ascending: true });
           if (error) throw error;
-          return { ok: true, data: data || [] };
+          return { ok: true, data: data || [], meta: { fecha: targetFecha } };
         }
 
         case "adminlistusers": {
@@ -4947,50 +4949,69 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
     const bioOptions = biotics.map(b => `<option value="${b}" ${data?.biologico === b ? 'selected' : ''}>${b}</option>`).join("");
     
     tr.innerHTML = `
-      <td>
-        <select class="sr-bio-select" onchange="handleSRBioChange(this)">
+      <td class="p-4 py-3">
+        <select class="sr-bio-select w-full bg-slate-50 border-2 border-slate-400 rounded-xl px-3 py-2.5 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" onchange="handleSRBioChange(this)">
           <option value="">Selecciona…</option>
           ${bioOptions}
         </select>
       </td>
-      <td>
-        <select class="sr-lote-select" onchange="handleSRLoteChange(this)">
+      <td class="p-4 py-3">
+        <select class="sr-lote-select w-full bg-slate-50 border-2 border-slate-400 rounded-xl px-3 py-2.5 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" onchange="handleSRLoteChange(this)">
           <option value="">—</option>
         </select>
       </td>
-      <td class="sr-cad-cell muted">—</td>
-      <td>
-        <input type="date" class="sr-recepcion-input" value="${data?.fecha_recepcion || ""}">
-        <div class="sr-permanencia-hint" style="font-size: 10px; color: var(--warn); font-weight: 700; margin-top: 4px; display: none;">
-          ⚠️ Biológico ha superado límite de permanencia normada
+      <td class="sr-cad-cell p-4 py-3 font-black text-[13px] text-slate-900/60">—</td>
+      <td class="p-4 py-3">
+        <div class="relative group">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-rounded text-slate-400 text-[18px] pointer-events-none transition-colors group-focus-within:text-primary">calendar_month</span>
+          <input type="date" style="padding-left: 38px !important;" class="sr-recepcion-input w-full bg-slate-50 border-2 border-slate-400 rounded-xl pr-3 py-2 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" value="${data?.fecha_recepcion || ""}">
+        </div>
+        <div class="sr-permanencia-hint" style="font-size: 10px; color: #dc2626; font-weight: 800; margin-top: 6px; display: none;">
+          ⚠️ Biolgico ha superado lmite de permanencia
         </div>
       </td>
-      <td>
-        <input type="number" class="sr-cantidad-input" min="0" step="1" value="${data?.cantidad || ""}" placeholder="0">
+      <td class="p-4 py-3">
+        <div class="relative group">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-rounded text-slate-400 text-[18px] pointer-events-none transition-colors group-focus-within:text-primary">inventory_2</span>
+          <input type="number" style="padding-left: 38px !important;" class="sr-cantidad-input w-full bg-slate-50 border-2 border-slate-400 rounded-xl pr-3 py-2.5 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" min="0" step="1" value="${data?.cantidad || ""}" placeholder="0">
+        </div>
       </td>
-      <td style="text-align: center;">
-        <button type="button" class="md-delete-btn" title="Eliminar este lote" onclick="this.closest('tr').remove();">
-          <svg viewBox="0 0 24 24">
-            <path class="trash-lid" d="M15 4V3H9v1H4v2h16V4h-5z" />
-            <path d="M5 21a2 2 0 002 2h10a2 2 0 002-2V7H5v14zM8 9h2v10H8V9zm4 0h2v10h-2V9zm4 0h2v10h-2V9z" />
-          </svg>
-        </button>
+      <td class="p-4 py-3 text-center">
+        <div class="flex justify-center items-center">
+          <button type="button" class="md-delete-btn group" title="Eliminar este lote" onclick="this.closest('tr').remove();">
+            <svg viewBox="0 0 24 24" class="w-6 h-6">
+              <path class="trash-lid transition-transform duration-200 group-hover:-translate-y-1" fill="currentColor" d="M15 4V3H9v1H4v2h16V4h-5z" />
+              <path fill="currentColor" d="M5 21a2 2 0 002 2h10a2 2 0 002-2V7H5v14zM8 9h2v10H8V9zm4 0h2v10h-2V9zm4 0h2v10h-2V9z" />
+            </svg>
+          </button>
+        </div>
       </td>
     `;
+    
+    // Inyectar caché de DOM
+    tr._cache = {
+      bioSelect: tr.querySelector(".sr-bio-select"),
+      loteSelect: tr.querySelector(".sr-lote-select"),
+      cadCell: tr.querySelector(".sr-cad-cell"),
+      recepcionInput: tr.querySelector(".sr-recepcion-input"),
+      cantidadInput: tr.querySelector(".sr-cantidad-input"),
+      permanenciaHint: tr.querySelector(".sr-permanencia-hint")
+    };
     
     tbody.appendChild(tr);
     
     if (data) {
-      window.handleSRBioChange(tr.querySelector(".sr-bio-select"), data.lote);
+      window.handleSRBioChange(tr._cache.bioSelect, data.lote);
     }
   }
 
 window.handleSRBioChange = function(selectEl, preselectLote = null) {
     const tr = selectEl.closest("tr");
+    const cache = tr._cache || {};
     const bio = String(selectEl.value || "").trim().toUpperCase();
     
-    const loteSelect = tr.querySelector(".sr-lote-select");
-    const cadCell = tr.querySelector(".sr-cad-cell");
+    const loteSelect = cache.loteSelect || tr.querySelector(".sr-lote-select");
+    const cadCell = cache.cadCell || tr.querySelector(".sr-cad-cell");
     
     loteSelect.innerHTML = '<option value="">Selecciona lote…</option>';
     cadCell.textContent = "—";
@@ -5027,8 +5048,9 @@ window.handleSRBioChange = function(selectEl, preselectLote = null) {
 }
 
 function refreshSRValidation(tr) {
-    const bioSelect = tr.querySelector(".sr-bio-select");
-    const cantidadInput = tr.querySelector(".sr-cantidad-input");
+    const cache = tr._cache || {};
+    const bioSelect = cache.bioSelect || tr.querySelector(".sr-bio-select");
+    const cantidadInput = cache.cantidadInput || tr.querySelector(".sr-cantidad-input");
     const bio = String(bioSelect.value || "").trim().toUpperCase();
     const cantidad = Number(cantidadInput.value || 0);
     
@@ -5063,10 +5085,11 @@ function refreshSRValidation(tr) {
 
 window.handleSRLoteChange = function(selectEl) {
     const tr = selectEl.closest("tr");
+    const cache = tr._cache || {};
     const opt = selectEl.selectedOptions[0];
-    const cadCell = tr.querySelector(".sr-cad-cell");
-    const recInput = tr.querySelector(".sr-recepcion-input");
-    const hint = tr.querySelector(".sr-permanencia-hint");
+    const cadCell = cache.cadCell || tr.querySelector(".sr-cad-cell");
+    const recInput = cache.recepcionInput || tr.querySelector(".sr-recepcion-input");
+    const hint = cache.permanenciaHint || tr.querySelector(".sr-permanencia-hint");
     
     if (!opt || !opt.dataset.cad) {
       cadCell.textContent = "—";
@@ -5421,6 +5444,56 @@ window.handleSRLoteChange = function(selectEl) {
     }
 
     return false;
+  }
+
+  function isBusinessDay(date) {
+    const day = date.getDay();
+    if (day === 0 || day === 6) return false; // Fin de semana
+    if (isMexicanHoliday(date)) return false; // Feriado
+    return true;
+  }
+
+  /**
+   * Obtiene el X-ésimo día hábil anterior o posterior
+   */
+  function getBusinessDayOffset(date, offset) {
+    const d = new Date(date);
+    let count = 0;
+    const step = offset > 0 ? 1 : -1;
+    const target = Math.abs(offset);
+
+    while (count < target) {
+      d.setDate(d.getDate() + step);
+      if (isBusinessDay(d)) {
+        count++;
+      }
+    }
+    return new Date(d);
+  }
+
+  /**
+   * Calcula la ventana inteligente centrada en el día 22
+   * 1. Busca el día 22. Si no es hábil, retrocede al anterior más cercano.
+   * 2. Calcula 1 día hábil antes y 1 después de ese punto.
+   */
+  function calculateBioIntelligentWindow(year, month) {
+    // Mes es 0-indexed en JS
+    let target = new Date(year, month, 22);
+
+    // 1. Ajustar target si no es hábil (retroceder)
+    while (!isBusinessDay(target)) {
+      target.setDate(target.getDate() - 1);
+    }
+
+    // 2. Ventana
+    const startWindow = getBusinessDayOffset(target, -1);
+    const endWindow = getBusinessDayOffset(target, 1);
+
+    return {
+      start: startWindow,
+      target: target,
+      end: endWindow
+    };
   }
 
   function sameDate(a, b) {
@@ -5807,9 +5880,11 @@ async function getTodayReports(fecha = "", force = false) {
 
     const dayBadge = $("dayTxt");
     const container = $("bCumplimiento") || (dayBadge ? dayBadge.parentElement : null);
+    const iconBg = $("bCumplimientoIconBg");
 
     if (dayBadge && container) {
       container.classList.remove("good", "ok", "warn", "bad");
+      if (iconBg) iconBg.style.backgroundColor = ""; // Reset icon bg
       
       let pct = 0;
       let label = "Sin dato";
@@ -5832,104 +5907,113 @@ async function getTodayReports(fecha = "", force = false) {
       
       const tone = getComplianceBadgeTone(pct);
       container.classList.add(tone);
+      
+      // Update icon background for premium look if colored
+      if (iconBg && ["good", "warn", "bad"].includes(tone)) {
+        iconBg.style.backgroundColor = "rgba(255, 255, 255, 0.25)";
+      }
     }
   }
 
 
   function updateCaptureStateBanner() {
     const box = $("captureStateBox");
-    if (!box || !USER || USER.rol !== "UNIDAD") return;
+    const container = $("captureStateContainer");
+    const iconEl = $("captureStateIcon");
+    const iconBg = $("captureStateIconBg");
+    const textEl = $("captureStateText");
+    const eyebrow = $("captureStateEyebrow");
+
+    if (!box || !container || !USER || USER.rol !== "UNIDAD") return;
 
     const activeTab =
-      $("tabSR")?.classList.contains("active") ? "SR" :
-        $("tabCONS")?.classList.contains("active") ? "CONS" :
-          $("tabBIO")?.classList.contains("active") ? "BIO" :
-            $("tabPINOL")?.classList.contains("active") ? "PINOL" : "SR";
+      $("tabSR")?.classList.contains("tab-active") ? "SR" :
+        $("tabCONS")?.classList.contains("tab-active") ? "CONS" :
+          $("tabBIO")?.classList.contains("tab-active") ? "BIO" :
+            $("tabPINOL")?.classList.contains("tab-active") ? "PINOL" : "SR";
 
-    box.className = "captureStateBox";
-    box.textContent = "";
+    const setTone = (tone, icon, title, msg) => {
+      box.classList.remove("hidden");
+      const config = {
+        ok: { bg: "bg-emerald-50/80", border: "border-emerald-200/60", iconBg: "bg-emerald-500/10", iconBorder: "border-emerald-500/20", iconColor: "text-emerald-600", textColor: "text-emerald-900", accent: "text-emerald-600/70" },
+        warn: { bg: "bg-amber-50/80", border: "border-amber-200/60", iconBg: "bg-amber-500/10", iconBorder: "border-amber-500/20", iconColor: "text-amber-600", textColor: "text-amber-900", accent: "text-amber-600/70" },
+        bad: { bg: "bg-rose-50/80", border: "border-rose-200/60", iconBg: "bg-rose-500/10", iconBorder: "border-rose-500/20", iconColor: "text-rose-600", textColor: "text-rose-900", accent: "text-rose-600/70" }
+      }[tone];
+
+      container.className = `flex items-center gap-5 backdrop-blur-md border p-5 rounded-[22px] transition-all shadow-sm ${config.bg} ${config.border}`;
+      iconBg.className = `w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border transition-all ${config.iconBg} ${config.iconBorder}`;
+      iconEl.className = `material-symbols-rounded text-[26px] ${config.iconColor} ${tone !== "ok" ? "animate-pulse" : ""}`;
+      iconEl.textContent = icon;
+      eyebrow.className = `text-[10px] font-black uppercase tracking-[0.15em] leading-none mb-1 ${config.accent}`;
+      eyebrow.textContent = title;
+      textEl.className = `text-[14px] font-bold leading-snug ${config.textColor}`;
+      textEl.innerHTML = msg;
+    };
 
     if (activeTab === "SR") {
       if (HAS_TODAY_SR && TODAY_CACHE && TODAY_CACHE.sr) {
         if (EDIT_SR) {
-          box.classList.add("show", "warn");
-          box.innerHTML = `<span class="material-symbols-rounded">edit_square</span><b>MODO EDICIÓN ACTIVO:</b> estás corrigiendo la existencia de biológicos de hoy.`;
+          setTone("warn", "edit_square", "Modo Edición", `<b>MODO EDICIÓN ACTIVO:</b> estás corrigiendo la existencia de biológicos de hoy.`);
         } else {
-          box.classList.add("show", "ok");
-          box.innerHTML = `<span class="material-symbols-rounded">task_alt</span><b>YA CAPTURADO HOY:</b> la existencia de biológicos ya fue registrada${(TODAY_CACHE.sr && TODAY_CACHE.sr.editado === "SI") ? " y editada" : ""}. Si necesitas corregirla, usa el botón <b>Editar existencia de hoy</b>.`;
+          setTone("ok", "task_alt", "Reporte Completo", `<b>YA CAPTURADO HOY:</b> la existencia de biológicos ya fue registrada${(TODAY_CACHE.sr && TODAY_CACHE.sr.editado === "SI") ? " y editada" : ""}. Si necesitas corregirla, usa el botón <b>Editar existencia de hoy</b>.`);
         }
       } else {
-        box.classList.add("show", "warn");
-        box.innerHTML = `<span class="material-symbols-rounded">schedule</span><b>AÚN SIN CAPTURA:</b> la existencia de biológicos todavía no se ha registrado hoy.`;
+        setTone("warn", "schedule", "Pendiente de Captura", `<b>AÚN SIN CAPTURA:</b> la existencia de biológicos todavía no se ha registrado hoy.`);
       }
       return;
     }
 
     if (activeTab === "CONS") {
       if (!(STATUS && STATUS.canCaptureConsumibles)) {
-        box.classList.add("show", "bad");
-        box.innerHTML = `<span class="material-symbols-rounded">event_busy</span><b>CONSUMIBLES NO DISPONIBLE:</b> este reporte solo se captura en jueves.`;
+        setTone("bad", "event_busy", "No Disponible", `<b>CONSUMIBLES NO DISPONIBLE:</b> este reporte solo se captura en jueves.`);
         return;
       }
 
       if (STATUS.consumiblesHolidayOverride) {
-        box.classList.add("show", "warn");
-        box.innerHTML = `<span class="material-symbols-rounded">event_available</span><b>CONSUMIBLES HABILITADO:</b> este reporte se puede capturar el día de hoy ya que el jueves es día no laborable.`;
+        setTone("warn", "event_available", "Apertura Especial", `<b>CONSUMIBLES HABILITADO:</b> este reporte se puede capturar el día de hoy ya que el jueves es día no laborable.`);
         return;
       }
 
       if (STATUS.consumiblesManualOverride) {
-        box.classList.add("show", "ok");
-        box.innerHTML = `<span class="material-symbols-rounded">admin_panel_settings</span><b>CONSUMIBLES HABILITADO:</b> apertura extraordinaria activada por administración.`;
+        setTone("ok", "admin_panel_settings", "Apertura Especial", `<b>CONSUMIBLES HABILITADO:</b> apertura extraordinaria activada por administración.`);
         return;
       }
 
       if (HAS_TODAY_CONS && TODAY_CACHE && TODAY_CACHE.cons) {
         if (EDIT_CONS) {
-          box.classList.add("show", "warn");
-          box.innerHTML = `<span class="material-symbols-rounded">edit_square</span><b>MODO EDICIÓN ACTIVO:</b> estás corrigiendo el reporte de consumibles de hoy.`;
+          setTone("warn", "edit_square", "Modo Edición", `<b>MODO EDICIÓN ACTIVO:</b> estás corrigiendo el reporte de consumibles de hoy.`);
         } else {
-          box.classList.add("show", "ok");
-          box.innerHTML = `<span class="material-symbols-rounded">task_alt</span><b>YA CAPTURADO HOY:</b> consumibles ya fue registrado${(TODAY_CACHE.cons && TODAY_CACHE.cons.editado === "SI") ? " y editado" : ""}. Si necesitas corregirlo, usa el botón <b>Editar reporte de hoy</b>.`;
+          setTone("ok", "task_alt", "Reporte Completo", `<b>YA CAPTURADO HOY:</b> consumibles ya fue registrado${(TODAY_CACHE.cons && TODAY_CACHE.cons.editado === "SI") ? " y editada" : ""}. Si necesitas corregirlo, usa el botón <b>Editar reporte de hoy</b>.`);
         }
       } else {
-        box.classList.add("show", "ok");
-        box.innerHTML = `<span class="material-symbols-rounded">inventory_2</span><b>CONSUMIBLES HABILITADO:</b> el reporte de consumibles está disponible para captura el día de hoy.`;
+        setTone("ok", "inventory_2", "Disponible", `<b>CONSUMIBLES HABILITADO:</b> el reporte de consumibles está disponible para captura el día de hoy.`);
       }
       return;
     }
 
     if (activeTab === "BIO") {
-      if (!BIO_IS_ENABLED) {
-        box.classList.add("show", "bad");
-        box.innerHTML = `<span class="material-symbols-rounded">event_busy</span><b>PEDIDO DE BIOLÓGICO NO DISPONIBLE:</b> hoy no se encuentra habilitado para captura.`;
+      const canBio = (typeof BIO_STATE !== "undefined" && BIO_STATE.canCapture);
+      
+      if (!canBio) {
+        setTone("bad", "event_busy", "No Disponible", `<b>PEDIDO DE BIOLÓGICO NO DISPONIBLE:</b> hoy no se encuentra habilitado para captura o la ventana operativa ha cerrado.`);
         return;
       }
 
       if (HAS_SAVED_BIO) {
         if (EDIT_BIO) {
-          box.classList.add("show", "warn");
-          box.innerHTML = `<span class="material-symbols-rounded">edit_square</span><b>MODO EDICIÓN ACTIVO:</b> estás corrigiendo el pedido de biológico guardado.`;
+          setTone("warn", "edit_square", "Modo Edición", `<b>MODO EDICIÓN ACTIVO:</b> estás corrigiendo el pedido de biológico guardado.`);
         } else {
-          box.classList.add("show", "ok");
-          box.innerHTML = `<span class="material-symbols-rounded">task_alt</span><b>PEDIDO YA GUARDADO:</b> ya existe un pedido de biológico capturado para la fecha programada. Si necesitas corregirlo, usa el botón <b>Editar pedido guardado</b>.`;
+          setTone("ok", "task_alt", "Pedido Guardado", `<b>PEDIDO YA GUARDADO:</b> ya existe un pedido de biológico capturado para la fecha programada. Si necesitas corregirlo, usa el botón <b>Editar pedido guardado</b>.`);
         }
       } else {
-        box.classList.add("show", "warn");
-        box.innerHTML = `<span class="material-symbols-rounded">schedule</span><b>PEDIDO PENDIENTE:</b> aún no se registra el pedido de biológico actual.`;
+        setTone("ok", "schedule", "Pedido Pendiente", `<b>PEDIDO HABILITADO:</b> ya puedes capturar tu pedido de biológico. Revisa los detalles en la ficha logística inferior.`);
       }
       return;
     }
 
     if (activeTab === "PINOL") {
-      box.classList.add("show", "ok");
-      if (USER && USER.rol === "UNIDAD") {
-        box.innerHTML = `<span class="material-symbols-rounded">inventory_2</span><b>PINOL:</b> desde aquí puedes hacer tu solicitud de pinol.`;
-      } else {
-        box.innerHTML = `<span class="material-symbols-rounded">inventory_2</span><b>PINOL:</b> desde aquí puedes consultar, registrar o confirmar movimientos de pinol.`;
-      }
+      setTone("ok", "inventory_2", "Sección Pinol", USER && USER.rol === "UNIDAD" ? `<b>PINOL:</b> desde aquí puedes hacer tu solicitud de pinol.` : `<b>PINOL:</b> desde aquí puedes consultar, registrar o confirmar movimientos de pinol.`);
     }
-
   }
 
   let EDIT_SR = false;
@@ -5951,7 +6035,8 @@ async function getTodayReports(fecha = "", force = false) {
     fechaPedidoProgramada: "",
     captureWindowStart: "",
     captureWindowEnd: "",
-    captureWindowStatus: "EARLY"
+    captureWindowStatus: "EARLY",
+    cache: [] // DOM references for faster access
   };
 
   function renderBioRows(rows) {
@@ -5964,44 +6049,67 @@ async function getTodayReports(fecha = "", force = false) {
     }
 
     tbody.innerHTML = rows.map((r, i) => `
-    <tr>
-      <td class="bioNameCell">
-        <div class="bioName">💉 ${escapeHtml(r.biologico || "")}</div>
+    <tr class="transition-colors hover:bg-surface-variant/5">
+      <td class="p-4 py-3 bioNameCell">
+        <div class="bioName font-black text-primary tracking-tight text-[14px]">
+          💉 ${escapeHtml(r.biologico || "")}
+        </div>
       </td>
-      <td class="bioInputCell bioExistenciaCell">
-        <input
-          class="bioInput"
-          type="number"
-          min="0"
-          step="1"
-          inputmode="numeric"
-          data-i="${i}"
-          data-kind="existencia"
-          value="${r.existencia_actual_frascos ?? ""}"
-          placeholder="0"
-        >
+      <td class="p-4 py-3 bioInputCell bioExistenciaCell">
+        <div class="relative group">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-rounded text-slate-400 text-[18px] pointer-events-none transition-colors group-focus-within:text-primary">inventory_2</span>
+          <input
+            class="bioInput w-full bg-slate-50 border-2 border-slate-400 rounded-xl pr-3 py-2 text-[15px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all placeholder:text-slate-400/50"
+            style="padding-left: 38px !important;"
+            type="number"
+            min="0"
+            step="1"
+            inputmode="numeric"
+            data-i="${i}"
+            data-kind="existencia"
+            value="${r.existencia_actual_frascos ?? ""}"
+            placeholder="0"
+          >
+        </div>
       </td>
-      <td class="bioInputCell bioPedidoCell">
-        <input
-          class="bioInput"
-          type="number"
-          min="0"
-          step="1"
-          inputmode="numeric"
-          data-i="${i}"
-          data-kind="pedido"
-          value="${r.pedido_frascos ?? ""}"
-          placeholder="0"
-        >
+      <td class="p-4 py-3 bioInputCell bioPedidoCell">
+        <div class="relative group">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-rounded text-primary/40 text-[18px] pointer-events-none transition-colors group-focus-within:text-primary">add_box</span>
+          <input
+            class="bioInput w-full bg-slate-50 border-2 border-primary/40 rounded-xl pr-3 py-2 text-[15px] font-black text-primary focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(37,99,235,0.1)] outline-none transition-all placeholder:text-primary/30"
+            style="padding-left: 38px !important;"
+            type="number"
+            min="0"
+            step="1"
+            inputmode="numeric"
+            data-i="${i}"
+            data-kind="pedido"
+            value="${r.pedido_frascos ?? ""}"
+            placeholder="0"
+          >
+        </div>
       </td>
-      <td class="bioValidationCell">
-        <div id="bioAlert_${i}" class="bioAlertWrap"></div>
+      <td class="p-4 py-3 bioValidationCell">
+        <div id="bioAlert_${i}" class="bioAlertWrap flex justify-center"></div>
       </td>
-      <td class="bioMetricCell bioPromedioCell"><div class="bioMetric bioPromedioValue">${r.promedio_frascos ?? ""}</div></td>
-      <td class="bioMetricCell"><div class="bioMetric">${r.max_dosis ?? ""}</div></td>
-      <td class="bioMetricCell"><div class="bioMetric">${r.min_dosis ?? ""}</div></td>
+      <td class="p-4 py-3 text-center bioMetricCell bioPromedioCell">
+        <div class="bioMetric bioPromedioValue font-black text-surface-on/70 text-[13px]">${r.promedio_frascos ?? ""}</div>
+      </td>
+      <td class="p-4 py-3 text-center bioMetricCell">
+        <div class="bioMetric font-bold text-surface-on/60 text-[13px]">${r.max_dosis ?? ""}</div>
+      </td>
+      <td class="p-4 py-3 text-center bioMetricCell">
+        <div class="bioMetric font-bold text-surface-on/60 text-[13px]">${r.min_dosis ?? ""}</div>
+      </td>
     </tr>
   `).join("");
+
+    // Performance Update: Cache DOM references once to avoid querySelector in refreshBioAlerts
+    BIO_STATE.cache = rows.map((_, i) => ({
+      pedido: tbody.querySelector(`input[data-i="${i}"][data-kind="pedido"]`),
+      existencia: tbody.querySelector(`input[data-i="${i}"][data-kind="existencia"]`),
+      alert: document.getElementById(`bioAlert_${i}`)
+    }));
 
     refreshBioAlerts();
 
@@ -6115,19 +6223,19 @@ async function getTodayReports(fecha = "", force = false) {
     let hasBlockingError = false;
 
     BIO_STATE.rows.forEach((r, i) => {
-      const pedidoEl = document.querySelector(`input[data-i="${i}"][data-kind="pedido"]`);
-      const existenciaEl = document.querySelector(`input[data-i="${i}"][data-kind="existencia"]`);
+      const cached = BIO_STATE.cache[i];
+      if (!cached) return;
 
-      const pedidoRaw = pedidoEl ? String(pedidoEl.value || "").trim() : "";
-      const existenciaRaw = existenciaEl ? String(existenciaEl.value || "").trim() : "";
+      const pedidoEl = cached.pedido;
+      const existenciaEl = cached.existencia;
+      const td = cached.alert;
 
-      const touched =
-        force ||
-        pedidoEl?.dataset.touched === "1" ||
-        existenciaEl?.dataset.touched === "1";
+      if (!pedidoEl || !existenciaEl || !td) return;
 
-      const td = $("bioAlert_" + i);
-      if (!td) return;
+      const pedidoRaw = String(pedidoEl.value || "").trim();
+      const existenciaRaw = String(existenciaEl.value || "").trim();
+
+      const touched = force || pedidoEl.dataset.touched === "1" || existenciaEl.dataset.touched === "1";
 
       const bioKey = String(r.biologico || "")
         .normalize("NFD")
@@ -6148,11 +6256,16 @@ async function getTodayReports(fecha = "", force = false) {
         isCurrentUnitCaravana() && bioKey === "BCG";
 
       if (pedidoRaw === "" && existenciaRaw === "") {
-        td.className = "bioAlertWrap neutral";
-        td.innerHTML = `
-    <span class="bioAlertBadge neutral">⏳ Pendiente</span>
-    <div class="bioAlertText">Vacío = 0 al guardar.</div>
-  `;
+        const html = `
+          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-outline-variant/30 bg-surface-variant/50 text-surface-onVariant/70 shadow-sm">
+            <span class="material-symbols-rounded text-base">hourglass_empty</span>
+            <span class="text-[11px] font-bold uppercase tracking-wider">Pendiente</span>
+          </div>
+        `;
+        if (td.innerHTML !== html) {
+          td.className = "bioAlertWrap flex items-center justify-center h-full";
+          td.innerHTML = html;
+        }
         return;
       }
 
@@ -6162,33 +6275,36 @@ async function getTodayReports(fecha = "", force = false) {
       const pedido = pedidoRaw === "" ? 0 : Number(pedidoRaw);
       const existencia = existenciaRaw === "" ? 0 : Number(existenciaRaw);
 
-      const multiplo = Number(r.multiplo_pedido || 1);
       const promedio = Number(r.promedio_frascos || 0);
       const totalDisponible = existencia + pedido;
       const faltantePromedio = Math.max(0, promedio - totalDisponible);
 
-      const requiereMultiplo =
-        ["HEXAVALENTE", "ROTAVIRUS", "NEUMO 13", "NEUMO 20", "SRP"].includes(bioKey);
+      // RECTIFICACIÓN: Forzar múltiplo de 5 y establecer nombres exactos
+      const requires5 = ["HEXAVALENTE", "ROTAVIRUS", "NEUMOCOCICA 13", "NEUMOCOCICA 20", "SRP"].includes(bioKey);
+      const multiplo = requires5 ? 5 : Number(r.multiplo_pedido || 1);
 
       if (!Number.isInteger(existencia) || !Number.isInteger(pedido) || existencia < 0 || pedido < 0) {
-        msgs.push("Usa frascos enteros iguales o mayores a 0.");
+        msgs.push("Cantidades inválidas.");
         level = "bad";
         hasStrongAlert = true;
         hasBlockingError = true;
       }
 
       if (sinValidacionOperativa) {
-        td.className = "bioAlertWrap info";
-        td.innerHTML = `
-    <span class="bioAlertBadge info">ℹ️ Sin validación operativa</span>
-    <div class="bioAlertText">
-      Captura referencial o extraordinaria. Sin validación por promedio en este momento.
-    </div>
-  `;
+        const html = `
+          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-blue-200 bg-blue-50 text-blue-700 shadow-sm">
+            <span class="material-symbols-rounded text-base">info</span>
+            <span class="text-[11px] font-bold uppercase tracking-wider">Extraordinaria</span>
+          </div>
+        `;
+        if (td.innerHTML !== html) {
+          td.className = "bioAlertWrap flex items-center justify-center h-full whitespace-normal";
+          td.innerHTML = html;
+        }
         return;
       }
 
-      if (requiereMultiplo && multiplo > 1 && pedido > 0 && (pedido % multiplo !== 0)) {
+      if (multiplo > 1 && pedido > 0 && (pedido % multiplo !== 0)) {
         msgs.push(`El pedido debe ser múltiplo de ${multiplo}.`);
         level = "bad";
         hasStrongAlert = true;
@@ -6196,9 +6312,7 @@ async function getTodayReports(fecha = "", force = false) {
       }
 
       if (!omitirAdvertenciaPorCaravana && promedio > 0 && totalDisponible < promedio) {
-        msgs.push(
-          `Total al pedir: ${totalDisponible} frascos. Promedio esperado: ${promedio}. Faltan ${faltantePromedio} frascos.`
-        );
+        msgs.push(`Total al pedir: ${totalDisponible} frascos. Promedio esperado: ${promedio}. Faltan ${faltantePromedio} frascos.`);
         if (level !== "bad") {
           level = "warn";
           hasStrongAlert = true;
@@ -6206,21 +6320,32 @@ async function getTodayReports(fecha = "", force = false) {
       }
 
       if (!msgs.length) {
-        td.className = "bioAlertWrap ok";
-        td.innerHTML = `
-    <span class="bioAlertBadge ok">✅ Correcto</span>
-    <div class="bioAlertText">
-      Captura lista. Total al pedir: ${totalDisponible} frascos${promedio > 0 ? ` · promedio: ${promedio}.` : "."}
-    </div>
-  `;
+        const html = `
+          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm">
+            <span class="material-symbols-rounded text-base">check_circle</span>
+            <span class="text-[11px] font-bold uppercase tracking-wider">Correcto</span>
+          </div>
+        `;
+        if (td.innerHTML !== html) {
+          td.className = "bioAlertWrap flex items-center justify-center h-full whitespace-normal";
+          td.innerHTML = html;
+        }
       } else {
-        td.className = `bioAlertWrap ${level}`;
-        td.innerHTML = `
-    <span class="bioAlertBadge ${level}">
-      ${level === "bad" ? "⛔ Error" : "⚠️ Atención"}
-    </span>
-    <div class="bioAlertText">${msgs.map(escapeHtml).join(" · ")}</div>
-  `;
+        const tone = level === "bad" ? "rose" : "amber";
+        const icon = level === "bad" ? "error" : "warning";
+        const text = level === "bad" ? "Error" : "Atención";
+        
+        const html = `
+          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-${tone}-200 bg-${tone}-50 text-${tone}-700 shadow-sm">
+            <span class="material-symbols-rounded text-base animate-pulse">${icon}</span>
+            <span class="text-[11px] font-bold uppercase tracking-wider">${text}</span>
+          </div>
+          <div class="text-[10px] font-bold text-${tone}-800/80 px-2 leading-tight text-center max-w-full">${msgs.join("<br>")}</div>
+        `;
+        if (td.innerHTML !== html) {
+          td.className = "bioAlertWrap flex flex-col gap-1 items-center justify-center h-full whitespace-normal py-2";
+          td.innerHTML = html;
+        }
       }
     });
 
@@ -6376,47 +6501,71 @@ async function getTodayReports(fecha = "", force = false) {
       return;
     }
 
+    // --- NUEVO ALGORITMO INTELIGENTE (FRONTEND OVERRIDE) ---
+    const now = new Date();
+    const currentWindow = calculateBioIntelligentWindow(now.getFullYear(), now.getMonth());
+
+    const windowStartYmd = formatDateMx(currentWindow.start).split("T")[0];
+    const windowTargetYmd = formatDateMx(currentWindow.target).split("T")[0];
+    const windowEndYmd = formatDateMx(currentWindow.end).split("T")[0];
+    const hoyYmd = todayYmdLocal();
+
+    const canCaptureLocal = hoyYmd >= windowStartYmd && hoyYmd <= windowEndYmd;
+    const isCaptureDayLocal = hoyYmd === windowTargetYmd;
+
+    let windowStatus = "EARLY";
+    if (hoyYmd > windowEndYmd) windowStatus = "LATE";
+    else if (canCaptureLocal) windowStatus = "OPEN";
+
     BIO_STATE = {
-      rows: r.data.rows || [],
-      isCaptureDay: !!r.data.isCaptureDay,
-      canCapture: !!r.data.canCapture,
-      fechaPedidoProgramada: r.data.fechaPedidoProgramada || "",
-      captureWindowStart: r.data.captureWindowStart || "",
-      captureWindowEnd: r.data.captureWindowEnd || "",
-      captureWindowStatus: r.data.captureWindowStatus || "EARLY",
-      diffDays: Number(r.data.diffDays || 0)
+      rows: r.data.rows || [], // BLINDAJE: Mantener filas originales intactas
+      isCaptureDay: isCaptureDayLocal,
+      canCapture: canCaptureLocal,
+      fechaPedidoProgramada: windowTargetYmd,
+      captureWindowStart: windowStartYmd,
+      captureWindowEnd: windowEndYmd,
+      captureWindowStatus: windowStatus,
+      diffDays: 0 // No crítico ahora
     };
 
     HAS_SAVED_BIO = !!r.data.hasSavedBio;
     EDIT_BIO = false;
 
-    $("fechaPedidoBIO").value = r.data.fechaPedidoProgramada || "";
-    $("fechaPedidoBIOBox").textContent = r.data.fechaPedidoProgramada || "—";
+    $("fechaPedidoBIO").value = BIO_STATE.fechaPedidoProgramada || "";
+    $("fechaPedidoBIOBox").textContent = BIO_STATE.fechaPedidoProgramada || "—";
 
     const bioHint = $("bioHint");
     const bioDayAlert = $("bioDayAlert");
 
     bioDayAlert.className = "bioDayAlert show";
 
-    if (r.data.canCapture && r.data.isCaptureDay) {
+    if (BIO_STATE.canCapture && BIO_STATE.isCaptureDay) {
       bioHint.textContent = "Hoy corresponde la captura del pedido biológico.";
-      bioDayAlert.classList.add("ok");
-      bioDayAlert.innerHTML = `<span class="material-symbols-rounded">event_available</span><span>Captura habilitada hoy. Ventana operativa: <b>${escapeHtml(r.data.captureWindowStart || "")}</b> al <b>${escapeHtml(r.data.captureWindowEnd || "")}</b>.</span>`;
-    } else if (r.data.canCapture) {
+      bioDayAlert.classList.remove("hidden");
+      bioDayAlert.className = bioDayAlert.className.replace(/border-\S+/g, "") + " border-emerald-500/30 bg-emerald-50/50";
+      bioDayAlert.querySelector(".bioDayIcon").className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600";
+      bioDayAlert.querySelector(".bioDayMsg").innerHTML = `Captura habilitada hoy. Ventana operativa: <b>${escapeHtml(BIO_STATE.captureWindowStart || "")}</b> al <b>${escapeHtml(BIO_STATE.captureWindowEnd || "")}</b>.`;
+    } else if (BIO_STATE.canCapture) {
       bioHint.textContent = "Captura habilitada dentro de la ventana operativa.";
-      bioDayAlert.classList.add("ok");
-      bioDayAlert.innerHTML = `<span class="material-symbols-rounded">event_available</span><span>Puedes capturar del <b>${escapeHtml(r.data.captureWindowStart || "")}</b> al <b>${escapeHtml(r.data.captureWindowEnd || "")}</b>. Fecha objetivo: <b>${escapeHtml(r.data.fechaPedidoProgramada || "")}</b>.</span>`;
-    } else if (r.data.captureWindowStatus === "EARLY") {
+      bioDayAlert.classList.remove("hidden");
+      bioDayAlert.className = bioDayAlert.className.replace(/border-\S+/g, "") + " border-emerald-500/30 bg-emerald-50/50";
+      bioDayAlert.querySelector(".bioDayIcon").className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600";
+      bioDayAlert.querySelector(".bioDayMsg").innerHTML = `Puedes capturar del <b>${escapeHtml(BIO_STATE.captureWindowStart || "")}</b> al <b>${escapeHtml(BIO_STATE.captureWindowEnd || "")}</b>. Fecha objetivo: <b>${escapeHtml(BIO_STATE.fechaPedidoProgramada || "")}</b>.`;
+    } else if (BIO_STATE.captureWindowStatus === "EARLY") {
       bioHint.textContent = "Aún no inicia la ventana de captura.";
-      bioDayAlert.classList.add("warn");
-      bioDayAlert.innerHTML = `<span class="material-symbols-rounded">schedule</span><span>La captura se habilita del <b>${escapeHtml(r.data.captureWindowStart || "")}</b> al <b>${escapeHtml(r.data.captureWindowEnd || "")}</b>. Fecha objetivo: <b>${escapeHtml(r.data.fechaPedidoProgramada || "")}</b>.</span>`;
+      bioDayAlert.classList.remove("hidden");
+      bioDayAlert.className = bioDayAlert.className.replace(/border-\S+/g, "") + " border-amber-500/30 bg-amber-50/50";
+      bioDayAlert.querySelector(".bioDayIcon").className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-500/10 text-amber-600";
+      bioDayAlert.querySelector(".bioDayMsg").innerHTML = `La captura se habilita del <b>${escapeHtml(BIO_STATE.captureWindowStart || "")}</b> al <b>${escapeHtml(BIO_STATE.captureWindowEnd || "")}</b>.`;
     } else {
       bioHint.textContent = "La ventana de captura ya cerró.";
-      bioDayAlert.classList.add("bad");
-      bioDayAlert.innerHTML = `<span class="material-symbols-rounded">event_busy</span><span>La ventana operativa terminó el <b>${escapeHtml(r.data.captureWindowEnd || "")}</b>. Fecha objetivo: <b>${escapeHtml(r.data.fechaPedidoProgramada || "")}</b>.</span>`;
+      bioDayAlert.classList.remove("hidden");
+      bioDayAlert.className = bioDayAlert.className.replace(/border-\S+/g, "") + " border-rose-500/30 bg-rose-50/50";
+      bioDayAlert.querySelector(".bioDayIcon").className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-rose-500/10 text-rose-600";
+      bioDayAlert.querySelector(".bioDayMsg").innerHTML = `La ventana operativa terminó el <b>${escapeHtml(BIO_STATE.captureWindowEnd || "")}</b>.`;
     }
 
-    renderBioRows(r.data.rows || []);
+    renderBioRows(BIO_STATE.rows || []);
     applyCaptureLockState();
     updateCaptureStateBanner();
   }
@@ -6495,6 +6644,8 @@ async function getTodayReports(fecha = "", force = false) {
 
     if ($("btnSaveBIO")) {
       $("btnSaveBIO").disabled = bioLocked || !BIO_STATE.canCapture;
+      // Usamos la clase blindada en style.css para evitar que el botón desaparezca
+      $("btnSaveBIO").className = "btn-save-premium";
       $("btnSaveBIO").textContent = EDIT_BIO ? "Actualizar pedido de biológico" : "Guardar pedido de biológico";
     }
 
@@ -6914,7 +7065,7 @@ async function getTodayReports(fecha = "", force = false) {
         saludo = "Buenas noches 🌙 Seguimos trabajando";
       }
 
-      $("capStatus").innerHTML = `<h2 class="greetingTitle">${saludo}</h2>`;
+      if ($("welcome")) $("welcome").textContent = saludo;
       paintStatusChips(STATUS);
     }
 
@@ -6928,9 +7079,22 @@ async function getTodayReports(fecha = "", force = false) {
     if ($("btnExport")) $("btnExport").style.display = canExport ? "inline-flex" : "none";
     if ($("btnExportBIO")) $("btnExportBIO").style.display = canExport ? "inline-flex" : "none";
     if ($("tabADMIN")) $("tabADMIN").style.display = isAdmin ? "block" : "none";
-    if ($("btnViewArchivos")) $("btnViewArchivos").style.display = (isAdmin || isJurisdiccional) ? "flex" : "none";
     if ($("tabNOTIFS")) $("tabNOTIFS").style.display = (isAdmin || isJurisdiccional || isMunicipal) ? "block" : "none";
     if ($("btnTopNotifications")) $("btnTopNotifications").style.display = (isUnidad || isAdmin || isJurisdiccional || isMunicipal) ? "inline-flex" : "none";
+
+    // ✅ EXPLORADOR REFUEZO (HEADER ONLY)
+    if ($("btnViewArchivos")) {
+      $("btnViewArchivos").style.display = "flex";
+    }
+
+    // Role-based tailoring for Explorer UI
+    if (isUnidad) {
+       if ($("archivosSearch")) $("archivosSearch").placeholder = "Buscar por fecha...";
+       if ($("archivosCategoria")) $("archivosCategoria").style.display = "none";
+    } else {
+       if ($("archivosSearch")) $("archivosSearch").placeholder = "Buscar por Clues o Unidad...";
+       if ($("archivosCategoria")) $("archivosCategoria").style.display = "block";
+    }
 
     if ($("topNotifRoleKpi")) $("topNotifRoleKpi").textContent = user.rol || "—";
 
@@ -7416,10 +7580,16 @@ $("btnSaveSR").onclick = async () => {
   const items = [];
   let hasInvalid = false;
   document.querySelectorAll("#srCaptureTbody tr").forEach(tr => {
-    const bio = tr.querySelector(".sr-bio-select").value;
-    const lote = tr.querySelector(".sr-lote-select").value;
-    const cantidad = tr.querySelector(".sr-cantidad-input").value;
-    const recepcion = tr.querySelector(".sr-recepcion-input").value;
+    const cache = tr._cache || {};
+    const bioSelect = cache.bioSelect || tr.querySelector(".sr-bio-select");
+    const loteSelect = cache.loteSelect || tr.querySelector(".sr-lote-select");
+    const cantidadInput = cache.cantidadInput || tr.querySelector(".sr-cantidad-input");
+    const recepcionInput = cache.recepcionInput || tr.querySelector(".sr-recepcion-input");
+
+    const bio = bioSelect.value;
+    const lote = loteSelect.value;
+    const cantidad = cantidadInput.value;
+    const recepcion = recepcionInput.value;
 
     if (!bio && !lote && !cantidad) return; // Fila vacía, ignorar
 
@@ -9956,19 +10126,23 @@ $("btnSaveSR").onclick = async () => {
 
   async function openLiveView(clues, unidad, municipio) {
     try {
-      showOverlay("Obteniendo inventario", "Cargando datos detallados de " + unidad);
+      showOverlay("Obteniendo inventario en vivo…", "Cargando existencia de " + unidad);
       
-      const tipo = ($("summaryTipo")?.value) || "SR";
-      const fecha = ($("summaryFecha")?.value) || todayStr_();
+      const fecha = ($("summaryFecha") && $("summaryFecha").value) ? $("summaryFecha").value : todayYmdLocal();
 
-      const res = await apiCall("adminGetUnitDetail", { clues, tipo, fecha });
+      const res = await apiCall("adminGetUnitDetail", { clues, fecha });
       hideOverlay();
 
-      if (!res.ok) throw new Error(res.error);
+      if (!res || !res.ok) throw new Error((res && res.error) || "Sin respuesta del servidor");
 
-      // ✅ Usar los IDs correctos que están en index.html
+      const fechaFormatted = formatAppDate(fecha);
+
       if ($("liveViewUnidad")) $("liveViewUnidad").textContent = "Unidad: " + unidad;
-      if ($("liveViewMunicipio")) $("liveViewMunicipio").textContent = municipio + " | " + clues;
+      if ($("liveViewMunicipio")) {
+        $("liveViewMunicipio").innerHTML = 
+          escapeHtml(municipio) + " &nbsp;|&nbsp; " + escapeHtml(clues) +
+          `<span style="margin-left:12px; font-size:11px; background:#e8f0fe; color:#003366; padding:2px 10px; border-radius:20px; font-weight:700;">📅 ${fechaFormatted}</span>`;
+      }
       
       const tbody = $("liveViewTbody");
       if (!tbody) return;
@@ -10103,30 +10277,92 @@ $("btnSaveSR").onclick = async () => {
   });
 
   // ==========================================
-  // PANEL DE ARCHIVOS (VISUALIZADOR)
+  // PANEL DE ARCHIVOS (VISUALIZADOR DROPDOWN)
   // ==========================================
   let ARCHIVOS_DATA = [];
 
-  $("btnViewArchivos")?.addEventListener("click", () => {
-    const panels = ["panelCAP", "panelAdminOpsTabs", "panelCaptureSummary", "panelPINOLADMIN", "panelHISTORY", "panelEDITLOG", "panelNOTIFS", "panelADMIN", "sectionCapturaUnidad"];
-    panels.forEach(p => { if ($(p)) $(p).style.display = "none"; });
-    if ($("panelArchivos")) $("panelArchivos").style.display = "block";
-    
-    // Update tab classes
-    const tabs = ["tabCAP", "tabNOTIFS", "tabADMIN"];
-    tabs.forEach(t => { 
-      if($(t)) {
-        $(t).classList.add("tab-inactive");
-        $(t).classList.remove("tab-active");
-      }
-    });
-    const tArchivos = $("btnViewArchivos");
-    if (tArchivos) {
-      tArchivos.classList.add("tab-active");
-      tArchivos.classList.remove("tab-inactive");
-    }
+  function getArchivosDropdownRefs() {
+    return {
+      box: $("archivosDropdown"),
+      btn: $("btnViewArchivos"),
+      host: $("cardSide")
+    };
+  }
 
-    renderArchivosView();
+  function positionArchivosDropdown() {
+    const refs = getArchivosDropdownRefs();
+    if (!refs.box || !refs.host || !refs.btn) return;
+
+    const hostRect = refs.host.getBoundingClientRect();
+    const btnRect = refs.btn.getBoundingClientRect();
+    const boxWidth = refs.box.offsetWidth;
+    const hostWidth = refs.host.clientWidth;
+
+    let top = (btnRect.bottom - hostRect.top) + 8;
+    let left = (btnRect.right - hostRect.left) - boxWidth;
+
+    if (left < 12) left = 12;
+    const maxLeft = Math.max(12, hostWidth - boxWidth - 12);
+    if (left > maxLeft) left = maxLeft;
+
+    const availableHeight = Math.max(380, window.innerHeight - btnRect.bottom - 24);
+
+    refs.box.style.top = top + "px";
+    refs.box.style.left = left + "px";
+    refs.box.style.maxHeight = availableHeight + "px";
+  }
+
+  function toggleArchivosDropdown() {
+    const box = $("archivosDropdown");
+    if (!box) return;
+
+    const isOpen = box.style.display === "block";
+    if (isOpen) {
+      box.classList.remove("open");
+      box.style.display = "none";
+    } else {
+      // Ocultar notif si está abierto
+      if (typeof closeTopNotifDropdown === "function") closeTopNotifDropdown();
+
+      box.style.display = "block";
+      // Force reflow for animation
+      void box.offsetWidth;
+      box.classList.add("open");
+      positionArchivosDropdown();
+      renderArchivosView();
+    }
+  }
+
+  $("btnViewArchivos")?.addEventListener("click", ev => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    toggleArchivosDropdown();
+  });
+
+  $("btnArchivosClose")?.addEventListener("click", ev => {
+    ev.preventDefault();
+    toggleArchivosDropdown();
+  });
+
+  document.addEventListener("click", ev => {
+    const box = $("archivosDropdown");
+    if (box && box.style.display === "block") {
+      const isBtn = ev.target.closest("#btnViewArchivos");
+      if (!box.contains(ev.target) && !isBtn) {
+        box.classList.remove("open");
+        box.style.display = "none";
+      }
+    }
+  });
+
+  document.addEventListener("keydown", ev => {
+    if (ev.key === "Escape") {
+      const box = $("archivosDropdown");
+      if (box && box.style.display === "block") {
+        box.classList.remove("open");
+        box.style.display = "none";
+      }
+    }
   });
 
   $("btnRefreshArchivos")?.addEventListener("click", renderArchivosView);
@@ -10154,26 +10390,35 @@ $("btnSaveSR").onclick = async () => {
   function filterArchivosGrid() {
     const container = $("archivosContainer");
     if (!container) return;
-    const catFilt = $("archivosCategoria").value.toLowerCase();
-    const txtFilt = $("archivosSearch").value.toLowerCase();
-    const role = (USER.rol || "").toUpperCase();
-    const myClues = USER.clues || "";
-    
+
+    const catFilt = ($("archivosCategoria")?.value || "").toLowerCase();
+    const txtFilt = ($("archivosSearch")?.value || "").toLowerCase();
+    const role = String((typeof USER !== "undefined" && USER && USER.rol) ? USER.rol : "").toUpperCase();
+    const myClues = (typeof USER !== "undefined" && USER && USER.clues) ? USER.clues : "";
+    const isUnidad = role === "UNIDAD";
+
     let filtered = ARCHIVOS_DATA.filter(f => {
        const pathParts = (f.name||"").split("/");
        if (pathParts.length < 3) return false;
-       const cluMun = pathParts[1];
        
-       if (role === "UNIDAD") {
-          if (!cluMun.includes(myClues)) return false;
-       }
-       return true;
+        const category = (pathParts[0] || "").toLowerCase();
+        const cluMun = (pathParts[1] || "").toLowerCase();
+        const myCluesClean = String(myClues).trim().toLowerCase();
+
+        // ✅ REGLA: UNIDAD solo ve 'Supervisión'
+        if (isUnidad) {
+           if (!category.includes("supervisi")) return false;
+           if (!cluMun.includes(myCluesClean)) return false;
+        }
+        return true;
     });
 
     if (txtFilt) {
       filtered = filtered.filter(f => f.name.toLowerCase().includes(txtFilt));
     }
-    if (catFilt) {
+    
+    // Si no es unidad, aplicamos el filtro de categoría manual
+    if (!isUnidad && catFilt) {
       filtered = filtered.filter(f => f.name.toLowerCase().includes(catFilt));
     }
 

@@ -1383,11 +1383,28 @@ body.mobile-mode #btnTopNotifications {
 #btnExport {
   background: linear-gradient(135deg, rgba(79, 140, 255, .18), rgba(0, 0, 0, .05));
   border-color: rgba(79, 140, 255, .26);
+  color: #2563eb !important;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 #btnExport:hover {
   background: linear-gradient(135deg, rgba(79, 140, 255, .24), rgba(0, 0, 0, .07));
   border-color: rgba(79, 140, 255, .38);
+  color: #1e40af !important;
+  transform: translateX(4px);
+}
+
+#btnViewArchivos {
+  background: linear-gradient(135deg, rgba(20, 184, 166, .16), rgba(0, 0, 0, .05));
+  border-color: rgba(20, 184, 166, .24);
+  color: #0d9488 !important;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#btnViewArchivos:hover {
+  background: linear-gradient(135deg, rgba(20, 184, 166, .24), rgba(0, 0, 0, .07));
+  border-color: rgba(20, 184, 166, .36);
+  color: #0f766e !important;
   transform: translateX(4px);
 }
 
@@ -1405,11 +1422,14 @@ body.mobile-mode #btnTopNotifications {
 #btnLogout {
   background: linear-gradient(135deg, rgba(239, 68, 68, .14), rgba(0, 0, 0, .05));
   border-color: rgba(239, 68, 68, .24);
+  color: #b91c1c !important;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 #btnLogout:hover {
   background: linear-gradient(135deg, rgba(239, 68, 68, .20), rgba(0, 0, 0, .07));
   border-color: rgba(239, 68, 68, .34);
+  color: #991b1b !important;
   transform: translateX(4px);
 }
 
@@ -1437,6 +1457,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
 #btnTopNotifications:hover {
   background: linear-gradient(135deg, rgba(236, 72, 153, .24), rgba(0, 0, 0, .07));
   border-color: rgba(236, 72, 153, .36);
+  color: #be185d !important;
   transform: translateX(4px);
 }
 
@@ -2219,10 +2240,10 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   margin: 0 0 16px 0;
   padding: 12px 16px;
   border-radius: 16px;
-  background: var(--md-surface-container-low);
-  border: 1px solid var(--md-outline-variant);
-  color: var(--md-sys-color-on-surface);
-  font-weight: 600;
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  font-weight: 700;
   font-size: 15px;
   box-shadow: none;
   transition: all 0.2s ease;
@@ -2296,12 +2317,12 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   margin: 0;
   padding: 10px 16px;
   text-align: center;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 16px;
   border-radius: 12px;
-  background: var(--md-surface-container-low);
-  border: 1px solid var(--md-outline-variant);
-  color: var(--md-sys-color-on-surface);
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #0f172a !important;
   box-shadow: none;
   transition: all 0.2s ease;
 }
@@ -7653,3 +7674,115 @@ body.bioConfirmOpen {
   text-decoration: none;
   font-weight: 700;
 }
+
+/* ? PREMIUM STATUS CHIPS (Semaforización Pro) */
+#bCumplimiento.good {
+  background: linear-gradient(135deg, #006b54 0%, #00a484 100%) !important;
+  color: white !important;
+  box-shadow: 0 4px 14px rgba(0, 107, 84, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+#bCumplimiento.warn {
+  background: linear-gradient(135deg, #7d5700 0%, #d49a00 100%) !important;
+  color: white !important;
+  box-shadow: 0 4px 14px rgba(125, 87, 0, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+#bCumplimiento.bad {
+  background: linear-gradient(135deg, #ba1a1a 0%, #ff4d4d 100%) !important;
+  color: white !important;
+  box-shadow: 0 4px 14px rgba(186, 26, 26, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+#bCumplimiento.good span, #bCumplimiento.warn span, #bCumplimiento.bad span {
+  color: white !important;
+}
+
+#bCumplimiento.good .opacity-50, #bCumplimiento.warn .opacity-50, #bCumplimiento.bad .opacity-50 {
+  opacity: 0.7 !important;
+}
+
+
+/* ? SENIOR UX: CAPTURE TABLES FORCED REFINEMENTS */
+#srCaptureTable th, #srCaptureTable td, 
+#bioTbody td {
+  padding: 12px 16px !important;
+  vertical-align: middle;
+}
+
+#srCaptureTable td.text-center, 
+#srCaptureTable th.text-center {
+  text-align: center !important;
+}
+
+/* Centrado absoluto del icono de eliminar */
+#srCaptureTable .md-delete-btn {
+  margin: 0 auto !important;
+  display: flex !important;
+}
+
+/* Bordes de alta visibilidad para inputs */
+#srCaptureTable input, 
+#srCaptureTable select,
+#formBIO .bioInput {
+  border: 1.5px solid #c3c7cf !important; /* outline-variant */
+  background-color: #ffffff !important;
+  border-radius: 12px !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #1a1c20 !important;
+  box-shadow: none !important;
+}
+
+#srCaptureTable input:focus, 
+#srCaptureTable select:focus,
+#formBIO .bioInput:focus {
+  border-color: #003366 !important; /* primary */
+  box-shadow: 0 0 0 3px rgba(0,51,102,0.1) !important;
+}
+
+/* Forzado de borde en inputs de fecha */
+#srCaptureTable input[type="date"] {
+  min-height: 42px;
+  -webkit-appearance: listbox !important;
+}
+
+/* RECTIFICACIN: BLINDAJE DE BOTN DE GUARDADO INSTITUCIONAL */
+.btn-save-premium {
+    background-color: #003366 !important;
+    color: #ffffff !important;
+    border-radius: 12px !important;
+    height: 50px !important;
+    font-weight: 700 !important;
+    font-size: 15px !important;
+    letter-spacing: 0.02em !important;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.12), 0 2px 4px -2px rgba(0,0,0,0.08) !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    border: none !important;
+    cursor: pointer !important;
+    margin-top: 24px !important;
+    gap: 10px !important;
+}
+.btn-save-premium:hover {
+    background-color: #002244 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1) !important;
+}
+.btn-save-premium:disabled {
+    background-color: #73777f !important;
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+}
+
+/* Performance Optimizations (Invisible) */
+.animate-pulse { will-change: opacity, transform; }
+.material-symbols-rounded { will-change: transform, opacity; }
+.bioInput, .sr-recepcion-input, .sr-cantidad-input, .sr-bio-select, .sr-lote-select { will-change: border-color, box-shadow, background-color; }
+.logistics-card, .bioAlertWrap { will-change: transform, opacity; }
