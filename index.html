@@ -24,6 +24,13 @@
   <!-- Tailwind CSS Play CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style type="text/tailwindcss">
+    @layer base {
+      button, input, optgroup, select, textarea {
+        @apply border-[#94a3b8] rounded-[14px] font-extrabold;
+        padding: 12px 18px !important;
+        border-width: 2.5px !important;
+      }
+    }
     @layer components {
       .tab-btn {
         @apply transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] border-none outline-none cursor-pointer flex items-center justify-center select-none;
@@ -364,9 +371,9 @@
         <div class="w-full space-y-8">
           <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] transition-shadow hover:shadow-[0_16px_32px_rgba(0,51,102,0.08)] overflow-hidden" id="cardApp">
                 <!-- 👤 RELOCATED PREMIUM WELCOME HUB -->
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-10 pb-8 border-b border-outline-variant/30">
-                  <!-- Welcome & Info (Expanded Width) -->
-                  <div class="flex flex-col leading-tight min-w-[320px] lg:min-w-[450px]">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 lg:gap-8 mb-10 pb-8 border-b border-outline-variant/30">
+                  <!-- Welcome & Info (Fluid Width) -->
+                  <div class="flex flex-col leading-tight min-w-[200px] flex-1">
                     <h2 class="text-3xl font-black text-primary m-0 tracking-tight" id="welcome">
                       Hola
                     </h2>
@@ -377,9 +384,9 @@
                   </div>
 
                   <!-- Integrated Premium Status Chips -->
-                  <div class="flex flex-wrap gap-4 w-full md:w-auto">
+                  <div class="flex flex-wrap md:flex-nowrap gap-2 lg:gap-4 w-full md:w-auto">
                     <!-- Perfil Premium -->
-                    <div class="flex-1 md:flex-none md:min-w-[240px] bg-white border border-outline-variant/20 rounded-[22px] px-6 py-3.5 flex items-center gap-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all hover:shadow-md3-1">
+                    <div class="flex-1 min-w-[130px] md:min-w-[150px] max-w-[300px] bg-white border border-outline-variant/20 rounded-[22px] px-3 md:px-5 py-3.5 flex items-center gap-3 lg:gap-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all hover:shadow-md3-1">
                       <div class="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                         <span class="material-symbols-rounded text-[24px] text-primary">verified_user</span>
                       </div>
@@ -390,7 +397,7 @@
                     </div>
 
                     <!-- Municipio Premium -->
-                    <div class="flex-1 md:flex-none md:min-w-[240px] bg-white border border-outline-variant/20 rounded-[22px] px-6 py-3.5 flex items-center gap-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all hover:shadow-md3-1">
+                    <div class="flex-1 min-w-[130px] md:min-w-[150px] max-w-[300px] bg-white border border-outline-variant/20 rounded-[22px] px-3 md:px-5 py-3.5 flex items-center gap-3 lg:gap-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all hover:shadow-md3-1">
                       <div class="w-11 h-11 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0">
                         <span class="material-symbols-rounded text-[24px] text-orange-600">location_on</span>
                       </div>
@@ -401,7 +408,7 @@
                     </div>
 
                     <!-- Progreso Premium -->
-                    <div id="bCumplimiento" class="flex-1 md:flex-none md:min-w-[240px] bg-white border border-outline-variant/20 rounded-[22px] px-6 py-3.5 flex items-center gap-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all hover:shadow-md3-1 cursor-help">
+                    <div id="bCumplimiento" class="flex-1 min-w-[130px] md:min-w-[150px] max-w-[300px] bg-white border border-outline-variant/20 rounded-[22px] px-3 md:px-5 py-3.5 flex items-center gap-3 lg:gap-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all hover:shadow-md3-1 cursor-help">
                       <div class="w-11 h-11 rounded-xl bg-current/10 flex items-center justify-center shrink-0" id="bCumplimientoIconBg">
                         <span class="material-symbols-rounded text-[24px]">trending_up</span>
                       </div>
@@ -424,19 +431,19 @@
 
                     <!-- Redesigned & Scaled Tabs -->
                     <div class="flex flex-wrap gap-3 p-2 bg-surface-variant/10 backdrop-blur-md rounded-[26px] w-full lg:w-auto border border-outline-variant/20 shadow-inner">
-                      <button class="tab-btn tab-active flex items-center gap-3.5 h-[52px] px-6 md:min-w-[240px] rounded-[22px] font-bold tracking-wide text-[14px]" id="tabSR" onclick="activateCapture('SR')">
+                      <button class="tab-btn tab-active flex-1 md:flex-none items-center gap-3.5 h-[52px] px-6 min-w-[140px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[14px]" id="tabSR" onclick="activateCapture('SR')">
                         <span class="material-symbols-rounded text-[22px]">vaccines</span>
                         <span>Biológicos</span>
                       </button>
-                      <button class="tab-btn tab-inactive flex items-center gap-3.5 h-[52px] px-6 md:min-w-[240px] rounded-[22px] font-bold tracking-wide text-[14px]" id="tabCONS" onclick="activateCapture('CONS')">
+                      <button class="tab-btn tab-inactive flex-1 md:flex-none items-center gap-3.5 h-[52px] px-6 min-w-[140px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[14px]" id="tabCONS" onclick="activateCapture('CONS')">
                         <span class="material-symbols-rounded text-[22px]">medical_services</span>
                         <span>Consumibles</span>
                       </button>
-                      <button class="tab-btn tab-inactive flex items-center gap-3.5 h-[52px] px-6 md:min-w-[240px] rounded-[22px] font-bold tracking-wide text-[14px]" id="tabBIO" style="display:none" onclick="activateCapture('BIO')">
+                      <button class="tab-btn tab-inactive flex-1 md:flex-none items-center gap-3.5 h-[52px] px-6 min-w-[140px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[14px]" id="tabBIO" style="display:none" onclick="activateCapture('BIO')">
                         <span class="material-symbols-rounded text-[22px]">science</span>
                         <span>Pedido</span>
                       </button>
-                      <button class="tab-btn tab-inactive flex items-center gap-3.5 h-[52px] px-6 md:min-w-[240px] rounded-[22px] font-bold tracking-wide text-[14px]" id="tabPINOL" style="display:none" onclick="activateCapture('PINOL')">
+                      <button class="tab-btn tab-inactive flex-1 md:flex-none items-center gap-3.5 h-[52px] px-6 min-w-[140px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[14px]" id="tabPINOL" style="display:none" onclick="activateCapture('PINOL')">
                         <span class="material-symbols-rounded text-[22px]">inventory_2</span>
                         <span>Pinol</span>
                       </button>
@@ -1205,60 +1212,102 @@
                 </div>
 
                 <div class="hint">
-                  Administra el catálogo de lotes y caducidades. Puedes asignar un lote a un municipio específico o usar <b>*</b> para que sea global.
+                  Administra el catálogo de lotes y caducidades. Asigna lotes a municipios específicos seleccionándolos en la cuadrícula inferior.
                 </div>
 
-                <div class="hr"></div>
+                <div style="max-width: 1000px; margin: 0 auto;">
+                  <div class="loteEntryRow" style="background: rgba(0, 51, 102, 0.02); padding: 24px; border-radius: 24px; border: 1px solid var(--md-outline-variant); margin-top:20px;">
+                    <div class="row" style="grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                      <div>
+                        <label style="display:block; margin-bottom:8px; font-weight:800; font-size:12px; color:var(--md-sys-color-primary);">BIOLÓGICO</label>
+                        <select id="loteBio" style="width:100%"></select>
+                      </div>
+                      <div>
+                        <label style="display:block; margin-bottom:8px; font-weight:800; font-size:12px; color:var(--md-sys-color-primary);">LOTE</label>
+                        <input id="loteTxt" placeholder="EJ: 12345" style="width:100%">
+                      </div>
+                      <div>
+                        <label style="display:block; margin-bottom:8px; font-weight:800; font-size:12px; color:var(--md-sys-color-primary);">CADUCIDAD</label>
+                        <input id="loteCad" placeholder="MMM-AA (EJ: JUL-27)" style="width:100%">
+                      </div>
+                    </div>
+                    
+                    <div class="row" style="margin-top:20px; grid-template-columns: 1fr 2fr; gap: 20px;">
+                      <div>
+                        <label style="display:block; margin-bottom:8px; font-weight:800; font-size:12px; color:var(--md-sys-color-primary);">FECHA RECEPCIÓN</label>
+                        <input type="date" id="loteRec" style="width:100%">
+                      </div>
+                      <div style="display:flex; align-items:flex-end; opacity: 0.6; font-size: 11px; font-weight: 600; padding-bottom: 12px;">
+                        <span class="material-symbols-rounded" style="font-size:16px; margin-right:6px;">info</span>
+                        Completa los datos del biológico antes de asignar municipios.
+                      </div>
+                    </div>
 
-                <div class="loteEntryRow">
-                  <div class="row">
-                    <div>
-                      <label>Biológico</label>
-                      <select id="loteBio"></select>
+                    <div style="margin-top:24px;">
+                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <label style="font-weight:800; font-size:12px; color:var(--md-sys-color-primary); text-transform:uppercase; letter-spacing:0.05em;">Municipios asignados</label>
+                        <div class="exportMuniQuickActions">
+                          <button type="button" class="exportQuickBtn" id="btnLoteSelectAll">
+                            <span class="material-symbols-rounded">done_all</span> Todos
+                          </button>
+                          <button type="button" class="exportQuickBtn" id="btnLoteClearAll">
+                            <span class="material-symbols-rounded">remove_done</span> Ninguno
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <div id="loteMuniGrid" class="exportMunicipiosGrid">
+                        <!-- Municipios labels... -->
+                        <label class="modern-toggle exportMunicipioToggle" for="lote_qro">
+                          <div class="modernToggleText"><div class="modernToggleTitle">QUERÉTARO</div></div>
+                          <div class="modernToggleSwitch">
+                            <input type="checkbox" class="loteMuniChk" id="lote_qro" value="QUERÉTARO">
+                            <span class="modernToggleSlider"></span>
+                          </div>
+                        </label>
+                        <label class="modern-toggle exportMunicipioToggle" for="lote_cor">
+                          <div class="modernToggleText"><div class="modernToggleTitle">CORREGIDORA</div></div>
+                          <div class="modernToggleSwitch">
+                            <input type="checkbox" class="loteMuniChk" id="lote_cor" value="CORREGIDORA">
+                            <span class="modernToggleSlider"></span>
+                          </div>
+                        </label>
+                        <label class="modern-toggle exportMunicipioToggle" for="lote_mar">
+                          <div class="modernToggleText"><div class="modernToggleTitle">EL MARQUÉS</div></div>
+                          <div class="modernToggleSwitch">
+                            <input type="checkbox" class="loteMuniChk" id="lote_mar" value="EL MARQUÉS">
+                            <span class="modernToggleSlider"></span>
+                          </div>
+                        </label>
+                        <label class="modern-toggle exportMunicipioToggle" for="lote_hui">
+                          <div class="modernToggleText"><div class="modernToggleTitle">HUIMILPAN</div></div>
+                          <div class="modernToggleSwitch">
+                            <input type="checkbox" class="loteMuniChk" id="lote_hui" value="HUIMILPAN">
+                            <span class="modernToggleSlider"></span>
+                          </div>
+                        </label>
+                      </div>
                     </div>
-                    <div>
-                      <label>Lote</label>
-                      <input id="loteTxt" placeholder="EJ: 12345">
-                    </div>
-                    <div>
-                      <label>Caducidad</label>
-                      <input id="loteCad" placeholder="MMM-AA (EJ: JUL-27)">
-                    </div>
-                  </div>
-                  <div class="row" style="margin-top:10px">
-                    <div>
-                      <label>Fecha Recepción</label>
-                      <input type="date" id="loteRec">
-                    </div>
-                    <div>
-                      <label>Municipio (* para todos)</label>
-                      <select id="loteMuni">
-                        <option value="*">TODOS (*)</option>
-                        <option value="QUERÉTARO">QUERÉTARO</option>
-                        <option value="CORREGIDORA">CORREGIDORA</option>
-                        <option value="EL MARQUÉS">EL MARQUÉS</option>
-                        <option value="HUIMILPAN">HUIMILPAN</option>
-                      </select>
-                    </div>
-                    <div style="display:flex; align-items:flex-end;">
-                      <button class="btn" id="btnAddLoteRow" style="width:100%">
-                        <span class="material-symbols-rounded">add</span> Agregar lote
-                      </button>
-                    </div>
+
+                    <button class="btn" id="btnAddLoteRow" style="margin-top:24px; width:100%; height: 56px;">
+                      <span class="material-symbols-rounded">add_circle</span> Confirmar y agregar al catálogo
+                    </button>
                   </div>
                 </div>
 
-                <div class="hr"></div>
+                <div class="batch-search-box">
+                  <span class="material-symbols-rounded search-icon">search</span>
+                  <input type="text" id="loteSearchInput" placeholder="Buscar por número de lote o nombre de vacuna..." autocomplete="off">
+                </div>
 
-                <div class="tableWrap" style="margin-top:16px; max-height:400px;">
+                <div class="tableWrap" id="lotesTableWrap">
                   <table class="summaryTable">
                     <thead>
                       <tr>
-                        <th>Biológico</th>
+                        <th>Biológico y Registro</th>
                         <th>Lote</th>
-                        <th>Caducidad</th>
-                        <th>Estatus</th>
-                        <th>Recepción</th>
+                        <th>Vigencia de Lote</th>
+                        <th>Estatus Logístico</th>
                         <th>Municipio</th>
                         <th>Acción</th>
                       </tr>
@@ -1284,7 +1333,7 @@
                 </div>
                 <!-- Controls -->
                 <div class="flex flex-wrap gap-4 mb-6">
-                   <select id="archivosCategoria" class="bg-surface-variant rounded-xl border border-outline-variant/50 h-10 px-4 text-sm outline-none font-semibold text-primary">
+                   <select id="archivosCategoria" class="bg-surface-variant rounded-xl border border-outline-variant/30 py-3 px-5 text-sm outline-none font-bold text-primary">
                      <option value="">Todas las Categorías</option>
                      <option value="Evidencia de capacitaciones">Capacitaciones</option>
                      <option value="Evidencias de campaña">Campañas</option>

@@ -19,6 +19,8 @@ let USER = null;
 let TOKEN = null;
 let UNIT_BATCHES = [];
 let BATCH_CATALOG = [];
+let BATCH_FILTER = "all"; 
+let BATCH_SEARCH_QUERY = "";
 let CONFIG_BIOLOGICOS_CATALOG = [];
 
 // Estado reactivo de la UI — debe declararse aquí para que showToast funcione pre-login
@@ -4607,6 +4609,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
+  // --- EVENTOS BUSCADOR ---
+  document.addEventListener("input", (e) => {
+    if (e.target.id === "loteSearchInput") {
+      BATCH_SEARCH_QUERY = e.target.value;
+      renderLotesAdmin();
+    }
+  });
+
 async function loadBatchesForSession(user) {
     if (!user) return;
     try {
@@ -4742,32 +4752,64 @@ async function loadBatchesForSession(user) {
     updateLogisticsSummary();
 
     if (!BATCH_CATALOG.length) {
-      tbody.innerHTML = `<tr><td colspan="7" class="muted">Sin lotes cargados.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="muted">Sin lotes cargados.</td></tr>`;
       return;
     }
 
-    const now = new Date();
-    
-    tbody.innerHTML = BATCH_CATALOG.map((item, idx) => {
-      // Cálculo de logística
+    // Aplicar Filtro Pro
+    let filtered = BATCH_CATALOG;
+    if (BATCH_FILTER === 'critical') filtered = BATCH_CATALOG.filter(x => getExpiryLogistics(x.caducidad).level >= 3 && getExpiryLogistics(x.caducidad).level < 5);
+    if (BATCH_FILTER === 'alert') filtered = BATCH_CATALOG.filter(x => getExpiryLogistics(x.caducidad).level === 2);
+    if (BATCH_FILTER === 'safe') filtered = BATCH_CATALOG.filter(x => getExpiryLogistics(x.caducidad).level === 1);
+    if (BATCH_FILTER === 'expired') filtered = BATCH_CATALOG.filter(x => getExpiryLogistics(x.caducidad).level === 5);
+
+    // 2. Aplicar Búsqueda Inteligente (Lote/Bio)
+    let finalFiltered = filtered;
+    if (BATCH_SEARCH_QUERY) {
+      const query = BATCH_SEARCH_QUERY.toLowerCase().trim();
+      finalFiltered = filtered.filter(x => 
+        String(x.lote || "").toLowerCase().includes(query) || 
+        String(x.biologico || "").toLowerCase().includes(query)
+      );
+    }
+
+    if (!finalFiltered.length) {
+      tbody.innerHTML = `<tr><td colspan="6" class="muted" style="padding:24px;">No se encontraron resultados para "${BATCH_SEARCH_QUERY || BATCH_FILTER}".</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = finalFiltered.map((item) => {
+      const idx = BATCH_CATALOG.indexOf(item);
       const expiryInfo = getExpiryLogistics(item.caducidad);
       
       return `
-        <tr>
-          <td>${escapeHtml(item.biologico)}</td>
-          <td>${escapeHtml(item.lote)}</td>
-          <td>${escapeHtml(item.caducidad)}</td>
+        <tr class="lote-row-${expiryInfo.class}">
           <td>
-            <div class="status-pill ${expiryInfo.class}">
-              <span class="material-symbols-rounded" style="font-size:14px">${expiryInfo.icon}</span>
+            <div style="font-weight:900; color:var(--md-sys-color-primary);">${escapeHtml(item.biologico)}</div>
+            <div style="font-size:10px; opacity:0.6; font-weight:600;">${escapeHtml(item.fecha_recepcion || "—")}</div>
+          </td>
+          <td style="font-family:monospace; font-weight:700; font-size:14px;">${escapeHtml(item.lote)}</td>
+          <td>
+             <div style="font-weight:900;">${escapeHtml(item.caducidad)}</div>
+             <div class="lote-life-container">
+               <div class="lote-life-bar ${expiryInfo.class}" style="width: ${expiryInfo.progress}%"></div>
+             </div>
+          </td>
+          <td>
+            <div class="status-pill ${expiryInfo.class}" title="${expiryInfo.friendly}">
+              <span class="material-symbols-rounded" style="font-size:16px">${expiryInfo.icon}</span>
               ${expiryInfo.label}
             </div>
           </td>
-          <td>${escapeHtml(item.fecha_recepcion || "—")}</td>
-          <td>${escapeHtml(item.municipio)}</td>
+          <td style="font-weight:800; text-transform:uppercase; font-size:11px; letter-spacing:0.02em;">
+             ${escapeHtml(item.municipio)}
+          </td>
           <td>
-            <button type="button" class="miniBtn bad" onclick="deleteLoteRowAdmin(${idx})">
-              <span class="material-symbols-rounded">delete</span>
+            <button type="button" class="md-delete-btn group" title="Eliminar este lote" onclick="deleteLoteRowAdmin(${idx})">
+              <svg viewBox="0 0 24 24" class="w-6 h-6">
+                <path class="trash-lid transition-transform duration-200 group-hover:-translate-y-1" fill="currentColor" d="M15 4V3H9v1H4v2h16V4h-5z" />
+                <path fill="currentColor" d="M5 21a2 2 0 002 2h10a2 2 0 002-2V7H5v14zM8 9h2v10H8V9zm4 0h2v10h-2V9zm4 0h2v10h-2V9z" />
+              </svg>
             </button>
           </td>
         </tr>
@@ -4775,12 +4817,29 @@ async function loadBatchesForSession(user) {
     }).join("");
   }
 
+  function formatFriendlyTime(days) {
+    if (days < 0) return "Expirado";
+    if (days === 0) return "Vence hoy";
+    if (days < 7) return `En ${days}d (Esta semana)`;
+    
+    const months = Math.floor(days / 30.44);
+    const remainingDays = Math.floor(days % 30.44);
+    
+    if (months === 0) return `En ${days} días`;
+    if (months === 1) return `En 1 mes${remainingDays > 0 ? ` y ${remainingDays}d` : ""}`;
+    if (months < 12) return `En ${months} meses${remainingDays > 5 ? ` y ${remainingDays}d` : ""}`;
+    
+    const years = Math.floor(months / 12);
+    const remMonths = months % 12;
+    return `En ${years} año${years > 1 ? "s" : ""}${remMonths > 0 ? ` y ${remMonths}m` : ""}`;
+  }
+
   function getExpiryLogistics(cadStr) {
-    if (!cadStr || cadStr === "—") return { label: "N/A", class: "ok", icon: "check_circle", days: 999 };
+    if (!cadStr || cadStr === "—") return { label: "N/A", class: "ok", icon: "check_circle", days: 999, level: 0 };
     
     const months = { "ENE":0,"FEB":1,"MAR":2,"ABR":3,"MAY":4,"JUN":5,"JUL":6,"AGO":7,"SEP":8,"OCT":9,"NOV":10,"DIC":11 };
     const parts = cadStr.split("-");
-    if (parts.length !== 2) return { label: "ERROR", class: "bad", icon: "error", days: 0 };
+    if (parts.length !== 2) return { label: "ERROR", class: "bad", icon: "error", days: 0, level: 0 };
     
     const m = months[parts[0]];
     const y = 2000 + parseInt(parts[1]);
@@ -4788,14 +4847,20 @@ async function loadBatchesForSession(user) {
     const today = new Date();
     today.setHours(0,0,0,0);
     
+    const totalLifeDays = 730; // Aproximación de 2 años de vida útil para la barra de progreso
     const diffTime = expiryDate - today;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const friendly = formatFriendlyTime(diffDays);
     
-    if (diffDays < 0) return { label: "CADUCADO", class: "bad", icon: "dangerous", days: diffDays };
-    if (diffDays <= 90) return { label: `CRÍTICO (${diffDays}d)`, class: "bad", icon: "emergency", days: diffDays };
-    if (diffDays <= 180) return { label: `ALERTA (${diffDays}d)`, class: "warn", icon: "warning", days: diffDays };
+    // Procentajes para la barra de progreso
+    let progress = Math.max(0, Math.min(100, (diffDays / totalLifeDays) * 100));
     
-    return { label: "VIGENTE", class: "ok", icon: "shield_with_heart", days: diffDays };
+    if (diffDays < 0) return { label: "CADUCADO", class: "bad", icon: "dangerous", days: diffDays, level: 5, friendly, progress: 0 };
+    if (diffDays <= 30) return { label: `INMINENTE (${friendly})`, class: "bad imminent", icon: "emergency", days: diffDays, level: 4, friendly, progress };
+    if (diffDays <= 90) return { label: `CRÍTICO (${friendly})`, class: "bad", icon: "warning", days: diffDays, level: 3, friendly, progress };
+    if (diffDays <= 180) return { label: `ALERTA (${friendly})`, class: "warn", icon: "info", days: diffDays, level: 2, friendly, progress };
+    
+    return { label: `VIGENTE (${friendly})`, class: "ok", icon: "verified", days: diffDays, level: 1, friendly, progress };
   }
 
   function updateLogisticsSummary() {
@@ -4811,27 +4876,49 @@ async function loadBatchesForSession(user) {
       if (hr) parent.insertBefore(summaryDiv, hr);
     }
 
-    const total = BATCH_CATALOG.length;
-    const critical = BATCH_CATALOG.filter(x => getExpiryLogistics(x.caducidad).class === "bad").length;
-    const alert = BATCH_CATALOG.filter(x => getExpiryLogistics(x.caducidad).class === "warn").length;
+    const summary = BATCH_CATALOG.reduce((acc, x) => {
+      const exp = getExpiryLogistics(x.caducidad);
+      if (exp.level === 5) acc.expired++;
+      else if (exp.level >= 3) acc.critical++;
+      else if (exp.level === 2) acc.alert++;
+      else acc.safe++;
+      return acc;
+    }, { expired: 0, critical: 0, alert: 0, safe: 0 });
 
     summaryDiv.innerHTML = `
-      <div class="logistics-card">
-        <span class="val">${total}</span>
+      <div class="logistics-card filter-btn ${BATCH_FILTER === 'all' ? 'active' : ''}" onclick="setLoteFilter('all')">
+        <span class="val">${BATCH_CATALOG.length}</span>
         <span class="lbl">TOTAL LOTES</span>
       </div>
-      <div class="logistics-card">
-        <span class="val" style="color:#dc2626">${critical}</span>
-        <span class="lbl">CRÍTICO / CADUCADO</span>
+      <div class="logistics-card filter-btn ${BATCH_FILTER === 'critical' ? 'active' : ''}" onclick="setLoteFilter('critical')" style="--card-color: #dc2626">
+        <span class="val" style="color:#dc2626">${summary.critical}</span>
+        <span class="lbl">CRÍTICO</span>
       </div>
-      <div class="logistics-card">
-        <span class="val" style="color:#d97706">${alert}</span>
-        <span class="lbl">PRÓXIMO A VENCER</span>
+      <div class="logistics-card filter-btn ${BATCH_FILTER === 'alert' ? 'active' : ''}" onclick="setLoteFilter('alert')" style="--card-color: #d97706">
+        <span class="val" style="color:#d97706">${summary.alert}</span>
+        <span class="lbl">EN ALERTA</span>
+      </div>
+      <div class="logistics-card filter-btn ${BATCH_FILTER === 'expired' ? 'active' : ''}" onclick="setLoteFilter('expired')" style="--card-color: #7f1d1d">
+        <span class="val" style="color:#7f1d1d">${summary.expired}</span>
+        <span class="lbl">VENCIDOS</span>
       </div>
     `;
   }
 
-  // ELIMINADO: El listener de btnAddSRRow se movió a la sección de inicialización para evitar duplicados.
+  window.setLoteFilter = function(filter) {
+    BATCH_FILTER = filter;
+    renderLotesAdmin();
+  };
+
+  // --- REDISEÑO LOTES 2.0: Acción Masiva de Municipios ---
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("#btnLoteSelectAll")) {
+        document.querySelectorAll(".loteMuniChk").forEach(chk => chk.checked = true);
+    }
+    if (e.target.closest("#btnLoteClearAll")) {
+        document.querySelectorAll(".loteMuniChk").forEach(chk => chk.checked = false);
+    }
+  });
 
   $("btnAddLoteRow")?.addEventListener("click", () => {
     const biologico = $("loteBio").value;
@@ -4843,10 +4930,17 @@ async function loadBatchesForSession(user) {
     const caducidad = parseInputToMmmAa(rawCad);
     
     const fecha_recepcion = $("loteRec").value;
-    const municipio = $("loteMuni").value; // Ahora es un SELECT
+    
+    // RECOLECCIÓN MULTIMUNICIPIO (Lógica individual explícita)
+    const selectedMunis = Array.from(document.querySelectorAll(".loteMuniChk:checked")).map(cb => cb.value);
 
     if (!lote || !caducidad) {
       showToast("Lote y caducidad son obligatorios", false, "warn");
+      return;
+    }
+
+    if (selectedMunis.length === 0) {
+      showToast("Selecciona al menos un municipio", false, "warn");
       return;
     }
 
@@ -4856,20 +4950,30 @@ async function loadBatchesForSession(user) {
       return;
     }
 
-    // VALIDACIÓN DE DUPLICADOS
-    const exists = BATCH_CATALOG.find(x => x.biologico === biologico && x.lote === lote);
-    if (exists) {
-      showToast(`El lote ${lote} ya existe para ${biologico}`, false, "warn");
-      return;
+    let addedCount = 0;
+    selectedMunis.forEach(muni => {
+      // VALIDACIÓN DE DUPLICADOS (Por Municipio)
+      const exists = BATCH_CATALOG.find(x => x.biologico === biologico && x.lote === lote && x.municipio === muni);
+      if (!exists) {
+        BATCH_CATALOG.push({ biologico, lote, caducidad, fecha_recepcion, municipio: muni });
+        addedCount++;
+      }
+    });
+
+    if (addedCount > 0) {
+      renderLotesAdmin();
+      showToast(selectedMunis.length > 1 ? `${addedCount} municipios asignados al lote` : "Lote agregado correctamente");
+    } else {
+      showToast("El lote ya existe en los municipios seleccionados", false, "warn");
     }
 
-    BATCH_CATALOG.push({ biologico, lote, caducidad, fecha_recepcion, municipio });
-    renderLotesAdmin();
-
-    // Limpiar campos parciales
+    // Limpiar campos parciales y desmarcar
     $("loteTxt").value = "";
     $("loteCad").value = "";
     $("loteRec").value = "";
+    
+    document.querySelectorAll(".loteMuniChk").forEach(chk => chk.checked = false);
+
     $("loteTxt").focus();
   });
 

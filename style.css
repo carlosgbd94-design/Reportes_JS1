@@ -1,5 +1,5 @@
 :root {
-  /* 🏛️ MD3 FINAL TOKENS (Solid Opaque System) */
+  /* ðŸ›ï¸ MD3 FINAL TOKENS (Solid Opaque System) */
   --md-sys-color-primary: #003366; 
   --md-sys-color-on-primary: #ffffff;
   --md-sys-color-secondary: #006b54; 
@@ -61,7 +61,7 @@ body.mobile-mode.lowperf {
   background-image: none;
 }
 
-/* ✅ FULL WIDTH REAL */
+/* âœ… FULL WIDTH REAL */
 .wrap {
   width: min(1600px, calc(100vw - 40px));
   margin: 0 auto;
@@ -165,7 +165,7 @@ body.mobile-mode.lowperf {
   }
 }
 
-/* ✅ DRIVE BUTTON SPECIFIC (Unified IconBtn Style) */
+/* âœ… DRIVE BUTTON SPECIFIC (Unified IconBtn Style) */
 #btnOpenUpload {
   background: linear-gradient(135deg, rgba(0, 150, 136, .16), rgba(0, 0, 0, .05));
   border-color: rgba(0, 150, 136, .24);
@@ -311,12 +311,12 @@ body.mobile-mode.lowperf {
   font-size: 20px;
 }
 
-/* Semática de Categoría - Disabled as it was showing redundant labels */
+/* SemÃ¡tica de CategorÃ­a - Disabled as it was showing redundant labels */
 .badge::before {
   display: none;
 }
 
-/* Colores Semánticos */
+/* Colores SemÃ¡nticos */
 .sessionInfoRow {
   display: flex;
   flex-wrap: wrap; /* Better stacking */
@@ -383,7 +383,7 @@ body.mobile-mode.lowperf {
   background: var(--md-sys-color-surface-container-highest);
 }
 
-/* Semántica Premium */
+/* SemÃ¡ntica Premium */
 .sessionTile.good {
   border-color: #10b98130;
   color: #065f46;
@@ -451,7 +451,7 @@ body.mobile-mode.lowperf {
   }
 }
 
-/* ✅ SECTION: LOGIN (Unified & Clean) */
+/* âœ… SECTION: LOGIN (Unified & Clean) */
 .loginWrap {
   display: flex;
   align-items: center;
@@ -525,7 +525,7 @@ input::placeholder {
 
 /* .tabs y .tab heredados eliminados para consolidacin Senior */
 
-/* ✅ GRID (contenedor general) */
+/* âœ… GRID (contenedor general) */
 .grid {
   display: flex !important;
   flex-direction: column;
@@ -555,7 +555,7 @@ input::placeholder {
     grid-template-columns: 1fr;
   }
 }
-/* 🧱 Dashboard Section Blocks (Cards) */
+/* ðŸ§± Dashboard Section Blocks (Cards) */
 .card, .panel, .sideFactWrap, .header-distribution {
   border: 1px solid rgba(0, 0, 0, 0.08); /* Delimited border requested */
   border-radius: 16px;
@@ -599,7 +599,7 @@ input::placeholder {
   font-size: 13px;
 }
 
-/* ✅ BADGE LEGACY PURGED */
+/* âœ… BADGE LEGACY PURGED */
 
 .statusBanner {
   margin-top: 12px;
@@ -721,7 +721,7 @@ input[type="date"] {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
 }
-/* ✅ STATUS PILLS PARA SEMAFORIZACIÓN MD3 */
+/* âœ… STATUS PILLS PARA SEMAFORIZACIÃ“N MD3 */
 .statusPill {
   display: inline-flex;
   align-items: center;
@@ -773,7 +773,7 @@ input[type="date"] {
 }
 
 /* ==========================================================
-   📱 PREMIUM LOGIN OVERLAY (FULL SCREEN)
+   ðŸ“± PREMIUM LOGIN OVERLAY (FULL SCREEN)
    ========================================================== */
 
 #loginWrapper {
@@ -803,10 +803,10 @@ input[type="date"] {
 }
 
 /* ==========================================================
-   📱 PRESIDENTIAL LOGIN V5 (ROBUST & BULLETPROOF)
+   ðŸ“± PRESIDENTIAL LOGIN V5 (ROBUST & BULLETPROOF)
    ========================================================== */
 
-/* 🚫 DISABLE BACKGROUND SCROLL WHEN LOGIN IS ACTIVE */
+/* ðŸš« DISABLE BACKGROUND SCROLL WHEN LOGIN IS ACTIVE */
 body:has(#loginWrapper:not(.hidden)) {
   overflow: hidden !important;
   height: 100vh;
@@ -844,7 +844,7 @@ body:has(#loginWrapper:not(.hidden)) {
 
 .rounded-3xl { border-radius: 1.5rem; }
 
-/* 🛡️ INPUT REFINEMENT V5.1 (BLOCKER) */
+/* ðŸ›¡ï¸ INPUT REFINEMENT V5.1 (BLOCKER) */
 #usuario, #password {
   padding-left: 56px !important;
   padding-right: 52px !important; /* Protect the eye icon */
@@ -897,7 +897,7 @@ body:has(#loginWrapper:not(.hidden)) {
   animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
-/* ✅ SEMAFORIZACIÓN TRADICIONAL */
+/* âœ… SEMAFORIZACIÃ“N TRADICIONAL */
 .shelf-life-danger { color: #dc2626 !important; font-weight: 800; }
 .shelf-life-warn   { color: #d97706 !important; font-weight: 800; }
 .shelf-life-ok     { color: #10b981 !important; font-weight: 800; }
@@ -920,27 +920,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   filter: none;
 }
 
-input:not([type="checkbox"]):not([type="radio"]),
-select,
-textarea {
-  background: var(--surface);
-  border: 1.5px solid var(--outline);
-  border-radius: 16px;
-  padding: 14px 20px;
-  font-size: 16px;
-  font-weight: 500;
-  font-family: 'Poppins';
-  color: var(--text);
-  transition: all 0.2s ease;
-}
+/* ✅ Grosor institucional gestionado vía @layer base en index.html */
 
 input:not([type="checkbox"]):not([type="radio"]):focus,
 select:focus,
 textarea:focus {
-  border-color: var(--primary-action);
-  background: var(--surface);
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
-  outline: none;
+  border-color: var(--md-sys-color-primary);
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 51, 102, 0.08);
+  transform: translateY(-1px);
 }
 
 input::placeholder {
@@ -948,25 +936,6 @@ input::placeholder {
   opacity: 0.6;
 }
 
-
-select {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 10px 14px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--md-sys-color-primary);
-  /* Azul Grafito */
-  cursor: pointer;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-  transition: all 0.2s;
-}
-
-select:focus {
-  border-color: var(--md-sys-color-secondary);
-  box-shadow: 0 0 0 3px rgba(0, 106, 106, 0.1);
-}
 
 option {
   background: #ffffff;
@@ -1054,7 +1023,7 @@ option {
   box-shadow: var(--md-shadow-1);
 }
 
-/* ===== AJUSTE TIPOGRÁFICO GLOBAL ===== */
+/* ===== AJUSTE TIPOGRÃFICO GLOBAL ===== */
 label,
 .captureMobileLabel,
 .mobileInfoLabel,
@@ -1109,7 +1078,7 @@ label,
 }
 
 .pinolKpiGood .kpiValue {
-/* 📑 TABS MATERIAL YOU (MD3) - REESTRUCTURADOS (DEFINITIVO) */
+/* ðŸ“‘ TABS MATERIAL YOU (MD3) - REESTRUCTURADOS (DEFINITIVO) */
 .tabs {
   display: flex;
   gap: 14px;
@@ -1158,7 +1127,7 @@ label,
   color: #ffffff !important;
 }
 
-/* 🏷️ Capture Header Title Mode (Non-interactive) */
+/* ðŸ·ï¸ Capture Header Title Mode (Non-interactive) */
 .capture-header-mode {
   width: 100% !important;
   max-width: none !important;
@@ -1606,7 +1575,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   display: none;
 }
 
-/* 🔥 CORRECCIÓN GLOBAL: Permitir que los badges sobresalgan de los botones sin recortarse */
+/* ðŸ”¥ CORRECCIÃ“N GLOBAL: Permitir que los badges sobresalgan de los botones sin recortarse */
 .ghostBtn,
 .md-btn-icon,
 .badge-wrapper,
@@ -1841,7 +1810,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   width: 100%;
 }
 
-/* ✅ NUEVO LAYOUT: sidebar + main */
+/* âœ… NUEVO LAYOUT: sidebar + main */
 .rightLayout {
   display: grid;
   grid-template-columns: 1fr;
@@ -1957,8 +1926,30 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   background: var(--card);
   box-shadow: 0 8px 24px rgba(0, 0, 0, .15);
   padding: 0;
-  /* quitamos el padding manual para que la tabla llegue a los bordes */
-  max-height: 520px;
+}
+
+.tableWrap {
+  margin-top: 16px;
+  max-height: 480px; 
+  overflow-y: auto;
+  border-radius: 12px;
+  position: relative;
+}
+
+/* ✅ Scrollbar Minimalista MD3 */
+.tableWrap::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.tableWrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+.tableWrap::-webkit-scrollbar-thumb {
+  background: var(--md-sys-color-outline-variant);
+  border-radius: 10px;
+}
+.tableWrap::-webkit-scrollbar-thumb:hover {
+  background: var(--md-sys-color-primary);
 }
 
 .summaryTable {
@@ -1983,6 +1974,57 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   text-align: left;
 }
 
+/* Buscador Inteligente Lotes */
+.batch-search-box {
+  background: white;
+  border: 2px solid var(--md-sys-color-outline-variant);
+  border-radius: 20px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--md-shadow-1);
+  transition: all 0.3s ease;
+}
+
+.batch-search-box:focus-within {
+  border-color: var(--md-sys-color-primary);
+  box-shadow: var(--md-shadow-2);
+}
+
+.batch-search-box .search-icon {
+  color: var(--md-sys-color-primary);
+  font-size: 24px;
+}
+
+.batch-search-box input {
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface);
+  width: 100%;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Anchos Pro para Logística 2.0 (Forzado en th y td) */
+.summaryTable :is(th, td):nth-child(1) { width: 18%; } /* Bio y Registro */
+.summaryTable :is(th, td):nth-child(2) { width: 12%; } /* Lote */
+.summaryTable :is(th, td):nth-child(3) { width: 14%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } /* Vigencia */
+.summaryTable :is(th, td):nth-child(4) { width: 35%; } /* Estatus Logístico */
+.summaryTable :is(th, td):nth-child(5) { width: 13%; } /* Municipio */
+.summaryTable :is(th, td):nth-child(6) { width: 8%; text-align: center; }  /* Acción (Centrado) */
+
+.summaryTable :is(th, td):last-child {
+  padding-right: 16px !important;
+  display: table-cell;
+  vertical-align: middle;
+}
+
 .summaryTable tbody td {
   padding: 12px 16px;
   font-size: 14px;
@@ -1993,11 +2035,11 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   transition: background 0.2s ease;
 }
 
-/* Alineación específica para columnas de datos en captura */
-#srCaptureTable th:nth-child(1) { width: 25%; } /* Biológico */
+/* AlineaciÃ³n especÃ­fica para columnas de datos en captura */
+#srCaptureTable th:nth-child(1) { width: 25%; } /* BiolÃ³gico */
 #srCaptureTable th:nth-child(2) { width: 25%; } /* Lote */
 #srCaptureTable th:nth-child(3) { width: 15%; text-align: center; } /* Caducidad */
-#srCaptureTable th:nth-child(4) { width: 15%; text-align: center; } /* Recepción */
+#srCaptureTable th:nth-child(4) { width: 15%; text-align: center; } /* RecepciÃ³n */
 #srCaptureTable th:nth-child(5) { width: 15%; text-align: center; } /* Cantidad */
 #srCaptureTable th:nth-child(6) { width: 5%; }  /* Acciones */
 
@@ -2007,12 +2049,12 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   width: 100%;
 }
 
-#srCaptureTable th:nth-child(1), #srCaptureTable td:nth-child(1) { width: 20%; } /* Biológico */
+#srCaptureTable th:nth-child(1), #srCaptureTable td:nth-child(1) { width: 20%; } /* BiolÃ³gico */
 #srCaptureTable th:nth-child(2), #srCaptureTable td:nth-child(2) { width: 18%; } /* Lote */
 #srCaptureTable th:nth-child(3), #srCaptureTable td:nth-child(3) { width: 15%; text-align: center; } /* Caducidad */
-#srCaptureTable th:nth-child(4), #srCaptureTable td:nth-child(4) { width: 22%; text-align: center; } /* Recepción */
+#srCaptureTable th:nth-child(4), #srCaptureTable td:nth-child(4) { width: 22%; text-align: center; } /* RecepciÃ³n */
 #srCaptureTable th:nth-child(5), #srCaptureTable td:nth-child(5) { width: 15%; text-align: center; } /* Cantidad */
-#srCaptureTable th:nth-child(6), #srCaptureTable td:nth-child(6) { width: 10%; text-align: center; } /* Acción */
+#srCaptureTable th:nth-child(6), #srCaptureTable td:nth-child(6) { width: 10%; text-align: center; } /* AcciÃ³n */
 
 #srCaptureTable select, 
 #srCaptureTable input {
@@ -2071,7 +2113,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
 
 /* Modern Delete Button */
 /* Modern Delete Button - Enhanced for Animations */
-/* 🗑️ Modern Delete Button - Consolidada Senior (Definitivo) */
+/* ðŸ—‘ï¸ Modern Delete Button - Consolidada Senior (Definitivo) */
 .md-delete-btn {
   background: var(--md-sys-color-surface-container-highest, #f1f5f9);
   border: none;
@@ -2090,7 +2132,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
 }
 
 .md-delete-btn:hover {
-  background-color: #dc2626 !important; /* Rojo sólido intenso */
+  background-color: #dc2626 !important; /* Rojo sÃ³lido intenso */
   color: #ffffff !important;
   transform: scale(1.1) translateY(-2px);
   box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4);
@@ -2120,35 +2162,96 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
 
 /* ===== LOGISTICS STATUS PILLS & CARDS ===== */
 .status-pill {
-  padding: 4px 10px;
-  border-radius: 20px;
+  padding: 6px 14px;
+  border-radius: 12px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 900;
   text-transform: uppercase;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  letter-spacing: 0.03em;
+  transition: all 0.3s ease;
+  min-height: 32px;
 }
-.status-pill.ok { background: rgba(34, 197, 94, 0.1); color: #16a34a; border: 1px solid rgba(34, 197, 94, 0.3); }
-.status-pill.warn { background: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3); }
-.status-pill.bad { background: rgba(239, 68, 68, 0.1); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.3); }
+.status-pill.ok { background: #dcfce7; color: #166534; border: 1.5px solid #bbf7d0; }
+.status-pill.warn { background: #fef3c7; color: #92400e; border: 1.5px solid #fde68a; }
+.status-pill.bad { background: #fee2e2; color: #b91c1c; border: 1.5px solid #fecaca; }
+.status-pill.bad.imminent { 
+  background: #fef2f2; 
+  color: #991b1b; 
+  border-color: #ef4444; 
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+  animation: pulse-danger 2s infinite;
+}
 
 .logistics-summary {
   display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 16px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
 }
+
 .logistics-card {
   flex: 1;
-  min-width: 140px;
-  background: var(--md-surface-container-low);
-  border: 1px solid var(--md-outline-variant);
-  border-radius: 16px;
-  padding: 16px;
+  min-width: 160px;
+  background: #ffffff;
+  border: 1.5px solid var(--md-outline-variant);
+  border-radius: 20px;
+  padding: 20px;
   text-align: center;
   box-shadow: var(--md-shadow-1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.logistics-card.filter-btn {
+  cursor: pointer;
+  user-select: none;
+}
+
+.logistics-card.filter-btn:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--md-shadow-3);
+  border-color: var(--card-color, var(--md-sys-color-primary));
+}
+
+.logistics-card.filter-btn.active {
+  background: var(--card-color, var(--md-sys-color-primary));
+  border-color: transparent;
+}
+
+.logistics-card.filter-btn.active .val,
+.logistics-card.filter-btn.active .lbl {
+  color: #ffffff !important;
+}
+
+.lote-life-container {
+  width: 100%;
+  height: 4px;
+  background: #f1f5f9;
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.lote-life-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 1s ease-out;
+}
+
+.lote-life-bar.ok { background: #22c55e; }
+.lote-life-bar.warn { background: #f59e0b; }
+.lote-life-bar.bad { background: #ef4444; }
+
+tr.lote-row-bad.imminent {
+  background: rgba(239, 68, 68, 0.02);
 }
 .logistics-card .val { font-size: 20px; font-weight: 800; color: var(--md-sys-color-primary); display: block; }
 .logistics-card .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700; }
@@ -2189,7 +2292,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   width: min(1100px, 100%);
 }
 
-/* ===== PANELES DE CAPTURA — DISEÑO UNIFICADO ===== */
+/* ===== PANELES DE CAPTURA â€” DISEÃ‘O UNIFICADO ===== */
 
 #formSR,
 #formCONS,
@@ -2201,7 +2304,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   width: min(1100px, 100%);
 }
 
-/* — Label unificado — */
+/* â€” Label unificado â€” */
 #formSR>label,
 #formCONS>label,
 #formBIO>label,
@@ -2221,14 +2324,14 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   opacity: 0.85;
 }
 
-/* Primer label de cada panel  — título del campo nombre */
+/* Primer label de cada panel  â€” tÃ­tulo del campo nombre */
 #formSR>label:first-of-type,
 #formCONS>label:first-of-type,
 #formPINOL>label:first-of-type {
   margin-top: 4px;
 }
 
-/* — Input "nombre" unificado — */
+/* â€” Input "nombre" unificado â€” */
 #formSR>#nombreSR,
 #formCONS>#nombreCONS,
 #formBIO #nombreBIO,
@@ -2259,7 +2362,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   box-shadow: 0 0 0 3px var(--md-sys-color-primary-container);
 }
 
-/* — Row grid unificada — */
+/* â€” Row grid unificada â€” */
 #formSR .row,
 #formCONS .row,
 #formBIO .row:not(.bioTableWrap .row),
@@ -2287,7 +2390,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   pointer-events: none;
 }
 
-/* — Cell dentro del row (SR grid label-input) — */
+/* â€” Cell dentro del row (SR grid label-input) â€” */
 #formSR .row>div {
   display: grid;
   grid-template-columns: minmax(130px, 160px) minmax(0, 1fr);
@@ -2296,7 +2399,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   min-width: 0;
 }
 
-/* — Label dentro de row (SR) — */
+/* â€” Label dentro de row (SR) â€” */
 #formSR .row>div>label {
   margin: 0;
   padding-left: 4px;
@@ -2308,7 +2411,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   text-transform: uppercase;
 }
 
-/* — Inputs numéricos unificados — */
+/* â€” Inputs numÃ©ricos unificados â€” */
 #formSR input[type="number"],
 #formCONS input[type="number"],
 #formPINOL input[type="number"] {
@@ -2335,7 +2438,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   box-shadow: 0 0 0 3px var(--md-sys-color-primary-container);
 }
 
-/* — SR: última row con 1 solo campo — */
+/* â€” SR: Ãºltima row con 1 solo campo â€” */
 #formSR .row:last-of-type {
   width: min(520px, 100%);
   margin: 0 auto;
@@ -2346,7 +2449,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   display: none;
 }
 
-/* — Sub-actions unificados — */
+/* â€” Sub-actions unificados â€” */
 #formSR .subActions,
 #formCONS .subActions,
 #formBIO .subActions {
@@ -2379,7 +2482,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   min-width: 220px;
   width: min(280px, 100%); */
 
-/* — Botón guardar unificado — */
+/* â€” BotÃ³n guardar unificado â€” */
 #formSR #btnSaveSR,
 #formCONS #btnSaveCONS,
 #formBIO #btnSaveBIO,
@@ -2390,7 +2493,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   display: block;
 }
 
-/* — Hint unificado por panel — */
+/* â€” Hint unificado por panel â€” */
 #formSR .hint,
 #formCONS .hint,
 #formPINOL .hint {
@@ -2402,7 +2505,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   opacity: 0.8;
 }
 
-/* — Responsive ≤520px — */
+/* â€” Responsive â‰¤520px â€” */
 @media (max-width: 520px) {
 
   #formSR,
@@ -2789,7 +2892,7 @@ body.mobile-mode .miniBtn .material-symbols-rounded {
   display: none;
 }
 
-/* Animación de pulso leve para el badge */
+/* AnimaciÃ³n de pulso leve para el badge */
 @keyframes badgePulse {
   0% {
     transform: scale(1);
@@ -2956,7 +3059,7 @@ body.mobile-mode .notifActionRow .miniBtn {
   justify-content: center;
 }
 
-/* 👇 PÉGALO AQUÍ */
+/* ðŸ‘‡ PÃ‰GALO AQUÃ */
 
 #rightColumn {
   width: 100%;
@@ -2976,7 +3079,7 @@ body.mobile-mode .notifActionRow .miniBtn {
   min-width: 0;
 }
 
-/* continúa tu CSS normal */
+/* continÃºa tu CSS normal */
 
 .captureSummaryGrid {
   display: grid;
@@ -2998,7 +3101,7 @@ body.mobile-mode .notifActionRow .miniBtn {
   }
 }
 
-/* ===== VISIBILIDAD ESTRICTA MÓVIL / ESCRITORIO ===== */
+/* ===== VISIBILIDAD ESTRICTA MÃ“VIL / ESCRITORIO ===== */
 .mobileCardsWrap,
 .captureCardsMobile {
   display: none !important;
@@ -3089,7 +3192,7 @@ body.mobile-mode .captureCardsMobile {
   letter-spacing: -0.5px;
 }
 
-/* ===== TÍTULOS DE SECCIÓN INSTITUCIONALES ===== */
+/* ===== TÃTULOS DE SECCIÃ“N INSTITUCIONALES ===== */
 .sectionHeader {
   display: flex;
   align-items: center;
@@ -3179,7 +3282,7 @@ th {
   z-index: 10;
 }
 
-/* ✅ CONTRASTE DINÁMICO EN SCROLL (MD3 Institutional) */
+/* âœ… CONTRASTE DINÃMICO EN SCROLL (MD3 Institutional) */
 .tableWrap.is-scrolled th,
 .is-scrolled th {
   background: var(--md-sys-color-primary) !important;
@@ -3267,7 +3370,7 @@ tr:hover td {
   margin-top: 12px;
 }
 
-/* ── Quick Action Buttons (Todos / Ninguno) ── */
+/* â”€â”€ Quick Action Buttons (Todos / Ninguno) â”€â”€ */
 .exportMuniQuickActions {
   display: flex;
   gap: 8px;
@@ -3320,8 +3423,8 @@ tr:hover td {
   transform: scale(.96);
 }
 
-/* ── Modern Toggle: DESKTOP = checkbox, MOBILE = iOS switch ── */
-/* ── Modern Toggle: DISEÑO INSTITUCIONAL ── */
+/* â”€â”€ Modern Toggle: DESKTOP = checkbox, MOBILE = iOS switch â”€â”€ */
+/* â”€â”€ Modern Toggle: DISEÃ‘O INSTITUCIONAL â”€â”€ */
 .modern-toggle {
   width: 100%;
   display: flex;
@@ -3423,7 +3526,7 @@ tr:hover td {
   transform: rotate(-45deg) scale(1);
 }
 
-/* ── Municipios Grid: wraps to fit card ── */
+/* â”€â”€ Municipios Grid: wraps to fit card â”€â”€ */
 .exportMunicipiosGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -3451,7 +3554,7 @@ tr:hover td {
   display: none;
 }
 
-/* ── Mobile: switch to iOS-style toggle ── */
+/* â”€â”€ Mobile: switch to iOS-style toggle â”€â”€ */
 @media (max-width: 640px) {
   .exportMunicipiosGrid {
     grid-template-columns: 1fr 1fr;
@@ -3553,7 +3656,7 @@ input[disabled] {
   line-height: 1.35;
 }
 
-/* ✅ MODERNA ANIMACIÓN DE CARGA (MD3 CIRULAR PROGRESS) */
+/* âœ… MODERNA ANIMACIÃ“N DE CARGA (MD3 CIRULAR PROGRESS) */
 .loaderCircle {
   width: 64px;
   height: 64px;
@@ -4714,7 +4817,7 @@ body.mobile-mode .topNotifCard {
 }
 
 /* El modalGlass ya tiene sus propios estilos generales, 
-     solo agregamos ajustes específicos si fuera necesario. */
+     solo agregamos ajustes especÃ­ficos si fuera necesario. */
 
 #pinolEntregaModal .modalGlass {
   box-shadow:
@@ -4738,7 +4841,7 @@ body.mobile-mode .topNotifCard {
   font-weight: 500;
 }
 
-/* Animación de entrada para el modal */
+/* AnimaciÃ³n de entrada para el modal */
 @keyframes modalFadeIn {
   from {
     opacity: 0;
@@ -4764,7 +4867,7 @@ body.mobile-mode .topNotifCard {
   }
 }
 
-/* ===== PEDIDO BIOLÓGICO: FECHA PROGRAMADA — ESTILO INFO CARD ===== */
+/* ===== PEDIDO BIOLÃ“GICO: FECHA PROGRAMADA â€” ESTILO INFO CARD ===== */
 .bioProgramBox {
   position: relative;
   isolation: isolate;
@@ -4779,7 +4882,7 @@ body.mobile-mode .topNotifCard {
   overflow: hidden;
 }
 
-/* Barra lateral izquierda degradada — estilo info card */
+/* Barra lateral izquierda degradada â€” estilo info card */
 .bioProgramBox::before {
   content: "";
   position: absolute;
@@ -4912,7 +5015,7 @@ body.mobile-mode .topNotifCard {
   font-size: 18px;
 }
 
-/* Solo bCumplimiento tiene semáforo */
+/* Solo bCumplimiento tiene semÃ¡foro */
 #bCumplimiento.good { background: #DCFCE7; color: #166534; border-color: #BBF7D0; }
 #bCumplimiento.warn { background: #FEF3C7; color: #92400E; border-color: #FDE68A; }
 #bCumplimiento.bad { background: #FEE2E2; color: #991B1B; border-color: #FECACA; }
@@ -5066,7 +5169,7 @@ body.mobile-mode .topNotifCard {
   text-transform: uppercase;
 }
 
-/* Columnas operativas — resaltadas */
+/* Columnas operativas â€” resaltadas */
 #formBIO .bioSummaryTable thead th:nth-child(1),
 #formBIO .bioSummaryTable thead th:nth-child(2),
 #formBIO .bioSummaryTable thead th:nth-child(3),
@@ -5089,7 +5192,7 @@ body.mobile-mode .topNotifCard {
   white-space: normal;
   line-height: 1.2;
   color: #001B3D;
-  /* Oxford Blue Profundo para Contraste Máximo */
+  /* Oxford Blue Profundo para Contraste MÃ¡ximo */
   font-weight: 800;
   position: sticky;
   top: 0;
@@ -5264,7 +5367,7 @@ body.mobile-mode .topNotifCard {
   position: relative;
 }
 
-/* Línea sutil bajo el header — reemplaza la sombra pesada */
+/* LÃ­nea sutil bajo el header â€” reemplaza la sombra pesada */
 #formBIO thead::after {
   content: "";
   position: absolute;
@@ -5276,7 +5379,7 @@ body.mobile-mode .topNotifCard {
   background: linear-gradient(90deg, transparent, rgba(79, 140, 255, .12) 20%, rgba(79, 140, 255, .12) 80%, transparent);
 }
 
-/* ===== NOMBRE DEL BIOLÓGICO ===== */
+/* ===== NOMBRE DEL BIOLÃ“GICO ===== */
 .bioName {
   font-size: 14px;
   font-weight: 700;
@@ -5294,7 +5397,7 @@ body.mobile-mode .topNotifCard {
   display: none;
 }
 
-/* ===== MÉTRICAS REFERENCIALES (Máx, Mín, Promedio) ===== */
+/* ===== MÃ‰TRICAS REFERENCIALES (MÃ¡x, MÃ­n, Promedio) ===== */
 .bioMetric {
   min-width: 36px;
   width: 36px;
@@ -5336,7 +5439,7 @@ body.mobile-mode .topNotifCard {
   display: inline-flex;
 }
 
-/* Promedio — HIGHLIGHTED (Alto Contraste) */
+/* Promedio â€” HIGHLIGHTED (Alto Contraste) */
 #formBIO tbody td:nth-child(5) .bioMetric {
   color: var(--md-sys-color-primary);
   font-weight: 800;
@@ -5358,7 +5461,7 @@ body.mobile-mode .topNotifCard {
   pointer-events: none;
 }
 
-/* Máx y Mín — Más oscuros para lectura */
+/* MÃ¡x y MÃ­n â€” MÃ¡s oscuros para lectura */
 #formBIO tbody td:nth-child(6) .bioMetric,
 #formBIO tbody td:nth-child(7) .bioMetric {
   color: var(--md-sys-color-on-surface-variant);
@@ -5367,7 +5470,7 @@ body.mobile-mode .topNotifCard {
   opacity: 0.8;
 }
 
-/* ===== INPUTS EXISTENCIA / PEDIDO — ÉNFASIS PRINCIPAL ===== */
+/* ===== INPUTS EXISTENCIA / PEDIDO â€” Ã‰NFASIS PRINCIPAL ===== */
 #formBIO tbody td:nth-child(2) input,
 #formBIO tbody td:nth-child(3) input {
   width: 100%;
@@ -5449,7 +5552,7 @@ body.mobile-mode .topNotifCard {
   text-align: center;
 }
 
-/* ===== VALIDACIÓN — COLORES INTACTOS, DISEÑO LIGERO ===== */
+/* ===== VALIDACIÃ“N â€” COLORES INTACTOS, DISEÃ‘O LIGERO ===== */
 .bioAlertWrap {
   position: relative;
   display: flex;
@@ -5560,7 +5663,7 @@ body.mobile-mode .topNotifCard {
   opacity: 0.8;
 }
 
-/* ===== BOTÓN GUARDAR BIO ===== */
+/* ===== BOTÃ“N GUARDAR BIO ===== */
 #btnSaveBIO {
   background: var(--primary-action);
   color: var(--on-primary-action);
@@ -5630,7 +5733,7 @@ body.mobile-mode .topNotifCard {
   box-shadow: 0 0 0 1px rgba(0, 0, 0, .10), 0 4px 10px rgba(0, 0, 0, .20);
 }
 
-/* ===== RESUMEN DE CAPTURA: CARDS SOLO EN MÃ“VIL ===== */
+/* ===== RESUMEN DE CAPTURA: CARDS SOLO EN MÃƒâ€œVIL ===== */
 .captureCardsMobile {
   display: none;
 }
@@ -5749,7 +5852,7 @@ body.mobile-mode .captureCardsMobile {
   box-shadow: 0 4px 10px rgba(0, 0, 0, .12);
 }
 
-/* ===== MOBILE REAL / BLOQUE ÃšNICO LIMPIO ===== */
+/* ===== MOBILE REAL / BLOQUE ÃƒÅ¡NICO LIMPIO ===== */
 
 html,
 body {
@@ -5957,7 +6060,7 @@ body.mobile-mode .top {
   }
 }
 
-/* REPARACIÓN DE LINTS DE TURNOS ANTERIORES */
+/* REPARACIÃ“N DE LINTS DE TURNOS ANTERIORES */
 @keyframes modalGlassIn {
   from {
     opacity: 0;
@@ -6883,7 +6986,7 @@ body.lowperf *::after {
   scroll-behavior: auto !important;
 }
 
-/* ── LOW PERFORMANCE / ECONOMY MODE OVERHAUL ── */
+/* â”€â”€ LOW PERFORMANCE / ECONOMY MODE OVERHAUL â”€â”€ */
 body.lowperf .card,
 body.lowperf .panel,
 body.lowperf .kpi,
@@ -6920,7 +7023,7 @@ body.lowperf .modalGlass h3 {
   color: var(--md-sys-color-on-surface) !important;
 }
 
-/* 🔔 NOTIFICATIONS & SEMANTIC BADGES: Keep their identity colors */
+/* ðŸ”” NOTIFICATIONS & SEMANTIC BADGES: Keep their identity colors */
 body.lowperf .toast,
 body.lowperf .badge,
 body.lowperf .chip,
@@ -7144,7 +7247,7 @@ body.lowperf .table-responsive {
 }
 
 /* ===== VENTANAS MODERNAS RESET / PASSWORD ===== */
-/* ✅ OVERLAY v2 (PANTALLA DE CARGA MODERNA) */
+/* âœ… OVERLAY v2 (PANTALLA DE CARGA MODERNA) */
 .overlay {
   position: fixed;
   inset: 0;
@@ -7196,7 +7299,7 @@ body.lowperf .table-responsive {
 }
 
 
-/* ✅ MODAL GLASS: La card flotante */
+/* âœ… MODAL GLASS: La card flotante */
 .modalGlass {
   width: min(560px, 100%);
   max-height: 90vh;
@@ -7264,7 +7367,7 @@ body.lowperf .table-responsive {
 }
 
 
-/* 🏔️ CUERPO CON SCROLL INTELIGENTE */
+/* ðŸ”ï¸ CUERPO CON SCROLL INTELIGENTE */
 .modalBody {
   padding: 24px;
   overflow-y: auto;
@@ -7292,7 +7395,7 @@ body.lowperf .table-responsive {
   gap: 16px;
 }
 
-/* 💎 FIELD CARDS: Mejor contraste en superficies claras */
+/* ðŸ’Ž FIELD CARDS: Mejor contraste en superficies claras */
 .fieldCard {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -7655,7 +7758,7 @@ body.bioConfirmOpen {
   }
 }
 
-/* ✅ APP FOOTER (Unified) */
+/* âœ… APP FOOTER (Unified) */
 .appFooter {
   text-align: center;
   padding: 40px 20px;
@@ -7675,7 +7778,7 @@ body.bioConfirmOpen {
   font-weight: 700;
 }
 
-/* ? PREMIUM STATUS CHIPS (Semaforizaci�n Pro) */
+/* ? PREMIUM STATUS CHIPS (Semaforización Pro) */
 #bCumplimiento.good {
   background: linear-gradient(135deg, #006b54 0%, #00a484 100%) !important;
   color: white !important;
