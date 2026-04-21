@@ -1241,6 +1241,7 @@ document.addEventListener("DOMContentLoaded", () => {
       notifUnreadKpi.textContent = String(unreadVisible);
     }
 
+    console.log(`[Badge DEBUG] unreadForBadge:`, unreadForBadge);
     LIVE_STATE.notifCount = unreadForBadge;
     syncMainNotifBadge(unreadForBadge);
 
@@ -7167,7 +7168,7 @@ async function getTodayReports(fecha = "", force = false) {
     const mobileNav = $("mobileNav");
     if (mobileNav) {
       mobileNav.style.display = isMobile ? "flex" : "none";
-      if ($("navNotifs")) $("navNotifs").style.display = (user.rol !== "UNIDAD") ? "flex" : "none";
+      if ($("navNotifs")) $("navNotifs").style.display = "flex";
       if ($("navAdmin")) $("navAdmin").style.display = (user.rol === "ADMIN") ? "flex" : "none";
     }
 
@@ -7200,7 +7201,7 @@ async function getTodayReports(fecha = "", force = false) {
     if ($("btnExport")) $("btnExport").style.display = canExport ? "inline-flex" : "none";
     if ($("btnExportBIO")) $("btnExportBIO").style.display = canExport ? "inline-flex" : "none";
     if ($("tabADMIN")) $("tabADMIN").style.display = isAdmin ? "block" : "none";
-    if ($("tabNOTIFS")) $("tabNOTIFS").style.display = (isAdmin || isJurisdiccional || isMunicipal) ? "block" : "none";
+    if ($("tabNOTIFS")) $("tabNOTIFS").style.display = (isUnidad || isAdmin || isJurisdiccional || isMunicipal) ? "block" : "none";
     if ($("btnTopNotifications")) $("btnTopNotifications").style.display = (isUnidad || isAdmin || isJurisdiccional || isMunicipal) ? "inline-flex" : "none";
 
     // ✅ EXPLORADOR REFUEZO (HEADER ONLY)
