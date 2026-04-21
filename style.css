@@ -465,14 +465,16 @@ body.mobile-mode.lowperf {
 
 #cardLogin {
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
   background-color: #ffffff !important;
-  border-radius: 28px;
-  padding: 40px;
-  box-shadow: var(--md-shadow-3);
-  border: 1px solid var(--md-sys-color-outline-variant);
-  animation: modalIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 40px;
+  padding: 48px;
+  box-shadow: 0 25px 60px -15px rgba(0, 51, 102, 0.15), 0 0 1px rgba(0,0,0,0.1);
+  border: none !important;
+  animation: none;
   text-align: center;
+  position: relative;
+  z-index: 2;
 }
 
 #cardLogin label {
@@ -827,12 +829,12 @@ body:has(#loginWrapper:not(.hidden)) {
 
 /* SLEEK MESH FOR V5 */
 .login-bg {
-  background-image: 
-    radial-gradient(at 0% 0%, hsla(210,100%,97%,1) 0, transparent 50%), 
-    radial-gradient(at 100% 0%, hsla(160,100%,97%,1) 0, transparent 50%), 
-    radial-gradient(at 100% 100%, hsla(220,100%,97%,1) 0, transparent 50%), 
-    radial-gradient(at 0% 100%, hsla(215,100%,97%,1) 0, transparent 50%);
-  opacity: 0.8;
+  background: radial-gradient(at 0% 0%, hsla(210,100%,98%,1) 0, transparent 50%), 
+              radial-gradient(at 100% 0%, hsla(160,100%,98%,1) 0, transparent 50%),
+              radial-gradient(at 100% 100%, hsla(220,100%,98%,1) 0, transparent 50%),
+              radial-gradient(at 0% 100%, hsla(210,100%,98%,1) 0, transparent 50%),
+              #f8fafc;
+  opacity: 1;
 }
 
 #cardLogin {
