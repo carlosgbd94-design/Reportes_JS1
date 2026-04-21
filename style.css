@@ -8098,3 +8098,52 @@ input, textarea, select, [contenteditable] {
   caret-color: #003366 !important;
   color: #001b3d !important;
 }
+
+/* 💎 PREMIUM ACTION BUTTONS (Institutional Gradient) */
+.btn-premium-action {
+  background: linear-gradient(180deg, #001b3d 0%, #003366 100%) !important;
+  color: #ffffff !important;
+  border-radius: 100px !important;
+  box-shadow: 0 4px 15px rgba(0, 51, 102, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  font-family: 'Poppins', sans-serif !important;
+  cursor: pointer !important;
+  padding: 12px 24px !important;
+  height: 52px !important;
+  text-transform: none !important;
+  letter-spacing: 0.02em !important;
+  font-weight: 700 !important;
+}
+
+.btn-premium-action:hover {
+  transform: translateY(-2.5px) scale(1.01) !important;
+  box-shadow: 0 12px 25px rgba(0, 51, 102, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  filter: brightness(1.15) !important;
+}
+
+.btn-premium-action:active {
+  transform: translateY(0) scale(0.97) !important;
+}
+
+.btn-premium-action:disabled {
+  background: #94a3b8 !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+  opacity: 0.7 !important;
+}
+
+/* ✨ SAVE BUTTON ANIMATION (Breathing Glow) */
+.btn-save-animate {
+  animation: btn-glow 3s infinite ease-in-out !important;
+}
+
+@keyframes btn-glow {
+  0%, 100% { 
+    box-shadow: 0 4px 12px rgba(0, 51, 102, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1); 
+  }
+  50% { 
+    box-shadow: 0 8px 30px rgba(0, 51, 102, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.2); 
+    transform: translateY(-1px);
+  }
+}
