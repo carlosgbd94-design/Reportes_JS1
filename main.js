@@ -10274,6 +10274,7 @@ $("btnSaveSR").onclick = async () => {
 
      try {
        // 1. Mostrar modal inmediatamente con estado de carga
+       overlay.classList.add("show");
        overlay.style.display = "flex";
        overlay.ariaHidden = "false";
        tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:60px; text-align:center;"><div class="spinner-small" style="margin:0 auto 12px;"></div>Obteniendo detalle...</td></tr>';
@@ -10354,11 +10355,11 @@ $("btnSaveSR").onclick = async () => {
          } else {
            const c = res.data[0];
            const rows = [
-             { label: "Existencia SRP (Dosis)", val: c.srp_dosis || 0 },
-             { label: "Existencia SR (Dosis)", val: c.sr_dosis || 0 },
-             { label: "Jeringa Reconst. 5ml (060.550.0438)", val: c.jeringa_reconst_5ml_0605500438 || 0 },
-             { label: "Jeringa Aplic. 0.5ml (060.550.2657)", val: c.jeringa_aplic_05ml_0605502657 || 0 },
-             { label: "Aguja (060.004.0371.1)", val: c.aguja_0600403711 || 0 }
+             { label: "Surtimiento SRP (Dosis)", val: c.srp_dosis || 0 },
+             { label: "Surtimiento SR (Dosis)", val: c.sr_dosis || 0 },
+             { label: "Jeringa de 5 ml", val: c.jeringa_reconst_5ml_0605500438 || 0 },
+             { label: "Jeringa de 0.5 ml", val: c.jeringa_aplic_05ml_0605502657 || 0 },
+             { label: "Aguja", val: c.aguja_0600403711 || 0 }
            ];
            tbody.innerHTML = rows.map(r => `
              <tr>
@@ -10451,12 +10452,13 @@ $("btnSaveSR").onclick = async () => {
     }
   }
 
-  if ($("btnLiveViewClose")) {
-    $("btnLiveViewClose").onclick = () => {
-      $("liveViewOverlay").style.display = "none";
-      $("liveViewOverlay").ariaHidden = "true";
-    };
-  }
+   if ($("btnLiveViewClose")) {
+     $("btnLiveViewClose").onclick = () => {
+       $("liveViewOverlay").classList.remove("show");
+       $("liveViewOverlay").style.display = "none";
+       $("liveViewOverlay").ariaHidden = "true";
+     };
+   }
 
   window.openLiveView = openLiveView;
 
