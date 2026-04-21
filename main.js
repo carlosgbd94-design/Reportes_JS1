@@ -4583,10 +4583,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // ✅ OPTIMIZACIÓN: Carga concurrente y agrupada
     // Al usar apiCall para múltiples cosas aquí, el API_BATCH_TIMER las agrupará en UN solo POST
     try {
+      // ? Visibilidad de pestañas por Rol
       const isOps = user?.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(user.rol);
+      const isLotesAdmin = user?.rol && ["ADMIN", "JURISDICCIONAL"].includes(user.rol);
       
-      toggleEl("tabLOTES", isOps, "flex");
-      if (!isOps) toggleEl("panelLOTES", false);
+      toggleEl("tabLOTES", isLotesAdmin, "flex");
+      if (!isLotesAdmin) toggleEl("panelLOTES", false);
 
       // Lanzamos peticiones. El batcher las atrapará.
       const pLotes = loadBatchesForSession(user);
@@ -7523,9 +7525,12 @@ async function getTodayReports(fecha = "", force = false) {
     if (tab === "HISTORY") clearTabAttention("tabOPS_HISTORY");
     if (tab === "LOTES") clearTabAttention("tabLOTES");
 
-    const role = String((USER && USER.rol) || "").trim().toUpperCase();
-    const isOps = role === "ADMIN" || role === "MUNICIPAL" || role === "JURISDICCIONAL";
-    if (!isOps) return;
+     const role = String((USER && USER.rol) || "").trim().toUpperCase();
+     const isOps = ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(role);
+     const canSeeLotes = ["ADMIN", "JURISDICCIONAL"].includes(role);
+
+     if (tab === "LOTES" && !canSeeLotes) return;
+     if (!isOps) return;
 
     const panelCaptureSummary = $("panelCaptureSummary");
     const panelPINOLADMIN = $("panelPINOLADMIN");
