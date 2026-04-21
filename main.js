@@ -3018,7 +3018,17 @@ document.addEventListener("DOMContentLoaded", () => {
            const municipio = payload.municipio || USER.municipio;
            const unidad = payload.unidad || USER.unidad;
 
-           // 1. Preparar Matriz Resumen (Wide Table - EXISTENCIA_BIOLOGICOS)
+           // 1. Obtener catálogo de lotes para autocompletado de caducidad
+           const { data: catLotes } = await supabase.from('lotes').select('biologico, lote, caducidad');
+           const loteMap = {};
+           if (catLotes) {
+             catLotes.forEach(l => {
+               const key = `${l.biologico.toUpperCase()}:${l.lote.toUpperCase()}`;
+               loteMap[key] = l.caducidad;
+             });
+           }
+
+           // 2. Preparar Matriz Resumen (Wide Table - EXISTENCIA_BIOLOGICOS)
            const summaryRecord = {
              id: btoa(clues + ":" + fecha + ":" + Date.now()),
              timestamp: new Date().toISOString(),
@@ -3033,7 +3043,7 @@ document.addEventListener("DOMContentLoaded", () => {
            const BIOS = ["bcg", "hepatitis_b", "hexavalente", "dpt", "rotavirus", "neumococica_13", "neumococica_20", "srp", "sr", "vph", "varicela", "hepatitis_a", "td", "tdpa", "covid_19", "influenza", "vsr"];
            BIOS.forEach(b => summaryRecord[b] = 0);
 
-           // 2. Preparar Detalle (Long Table - EXISTENCIA_DETALLE)
+           // 3. Preparar Detalle (Long Table - EXISTENCIA_DETALLE)
            const detailRecords = items.map(it => {
              const bioKey = it.biologico.toLowerCase().replace(/ /g, "_");
              // Normalización especial para Neumocócica
@@ -3042,6 +3052,14 @@ document.addEventListener("DOMContentLoaded", () => {
              if (BIOS.includes(finalKey)) {
                summaryRecord[finalKey] += Number(it.cantidad || 0);
              }
+
+             // Lookup automático de caducidad si viene vacío
+             let finalCad = it.caducidad;
+             if (!finalCad || finalCad.trim() === "") {
+               const lookupKey = `${it.biologico.toUpperCase()}:${it.lote.toUpperCase()}`;
+               finalCad = loteMap[lookupKey] || "";
+             }
+
              return {
                fecha,
                clues,
@@ -3049,14 +3067,14 @@ document.addEventListener("DOMContentLoaded", () => {
                municipio,
                biologico: it.biologico,
                lote: it.lote,
-               caducidad: it.caducidad,
+               caducidad: mmmaaToIsoDate(finalCad), // CONVERSIÓN A ISO PARA DB
                fecha_recepcion: it.fecha_recepcion,
                cantidad: Number(it.cantidad || 0),
                capturado_por: USER.usuario
              };
            });
 
-           // 3. Ejecutar Inserción Dual en Paralelo
+           // 4. Ejecutar Inserción Dual en Paralelo
            const [resSummary, resDetail] = await Promise.all([
              supabase.from('biologicos_existencia').insert(summaryRecord),
              supabase.from('existencia_detalle').insert(detailRecords)
@@ -3695,7 +3713,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const { error: insError } = await supabase.from('lotes').insert(items.map(it => ({
               biologico: it.biologico,
               lote: it.lote,
-              caducidad: it.caducidad,
+              caducidad: mmmaaToIsoDate(it.caducidad), // CONVERSIÓN PARA DB
               fecha_recepcion: it.fecha_recepcion || null,
               municipio: it.municipio || "*"
             })));
@@ -10327,13 +10345,13 @@ $("btnSaveSR").onclick = async () => {
               else cadStats.more++;
 
               return `
-                <tr>
-                  <td style="padding:16px 24px; font-weight:700; color:var(--md-sys-color-on-surface);">${escapeHtml(r.biologico)}</td>
-                  <td style="font-weight:600;">${escapeHtml(r.lote)}</td>
-                  <td style="text-align:center; font-weight:800; color:var(--primary);">${escapeHtml(r.cantidad || 0)}</td>
-                  <td style="font-weight:700; text-align:center;">${escapeHtml(r.caducidad)}</td>
-                  <td style="text-align:center;"><span class="statusPill statusPill-${status.key}">${status.label}</span></td>
-                  <td style="font-weight:600; color:var(--muted);">${formatAppDate(r.fecha_recepcion)}</td>
+                <tr style="border-bottom: 1px solid #f0f0f0;">
+                  <td style="padding:10px 16px; font-weight:700; color:var(--md-sys-color-on-surface);">${escapeHtml(r.biologico)}</td>
+                  <td style="padding:10px 16px; font-weight:600;">${escapeHtml(r.lote)}</td>
+                  <td style="padding:10px 16px; text-align:center; font-weight:800; color:var(--primary);">${escapeHtml(r.cantidad || 0)}</td>
+                  <td style="padding:10px 16px; font-weight:700; text-align:center; color:var(--md-sys-color-on-surface-variant);">${escapeHtml(isoToMmmaa(r.caducidad))}</td>
+                  <td style="padding:10px 16px; text-align:center;"><span class="statusPill statusPill-${status.key}" style="font-size:10px; padding:2px 8px;">${status.label}</span></td>
+                  <td style="padding:10px 16px; font-weight:600; text-align:center; color:var(--muted);">${formatAppDate(r.fecha_recepcion)}</td>
                 </tr>
               `;
            }).join("");
@@ -10379,11 +10397,23 @@ $("btnSaveSR").onclick = async () => {
      }
  }
 
-  function getMonthsTo(mmmAa) {
-    if (!mmmAa || !mmmAa.includes("-")) return 99;
-    const parts = mmmAa.split("-");
-    const mStr = parts[0].toUpperCase();
-    const yStr = parts[1];
+  function getMonthsTo(mmmaa) {
+    if (!mmmaa) return 99;
+    // Soporte tanto para MMM-YY como para ISO YYYY-MM-DD
+    let mStr, yStr;
+    if (mmmaa.includes("-") && mmmaa.length <= 7) {
+      const parts = mmmaa.split("-");
+      mStr = parts[0].toUpperCase();
+      yStr = parts[1];
+    } else {
+      // Es ISO? yyyy-mm-dd
+      const parts = mmmaa.split("-");
+      if (parts.length < 2) return 99;
+      const months = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+      mStr = months[parseInt(parts[1]) - 1];
+      yStr = parts[0].substring(2);
+    }
+
     const months = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
     const mIdx = months.indexOf(mStr);
     if (mIdx === -1) return 99;
@@ -10395,8 +10425,33 @@ $("btnSaveSR").onclick = async () => {
     return (cadDate.getFullYear() - now.getFullYear()) * 12 + (cadDate.getMonth() - now.getMonth());
   }
 
-  function getSemaforoStatus(mmmAa) {
-    const diff = getMonthsTo(mmmAa);
+  function mmmaaToIsoDate(str) {
+    if (!str || !str.includes("-") || str.length > 7) return str;
+    try {
+      const [mStr, yStr] = str.toUpperCase().split("-");
+      const months = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+      const mIdx = months.indexOf(mStr);
+      if (mIdx === -1) return str;
+      const year = 2000 + parseInt(yStr);
+      const lastDay = new Date(year, mIdx + 1, 0).getDate();
+      return `${year}-${String(mIdx + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    } catch(e) { return str; }
+  }
+
+  function isoToMmmaa(isoStr) {
+    if (!isoStr || isoStr.length < 7) return isoStr;
+    try {
+      const parts = isoStr.split("-"); 
+      if (parts.length < 2) return isoStr;
+      const y = parts[0].substring(2);
+      const mIdx = parseInt(parts[1]) - 1;
+      const months = ["ENE","FEB","MAR","ABR","MAY","JUN","JUL","AGO","SEP","OCT","NOV","DIC"];
+      return `${months[mIdx]}-${y}`;
+    } catch(e) { return isoStr; }
+  }
+
+  function getSemaforoStatus(val) {
+    const diff = getMonthsTo(val);
     if (diff <= 3) return { key: "pronto", label: "Caducidad Próxima", color: "#f87171" };
     if (diff <= 6) return { key: "normal", label: "Permanencia Media", color: "#fbbf24" };
     return { key: "lejana", label: "Vigente", color: "#4ade80" };
@@ -10425,7 +10480,7 @@ $("btnSaveSR").onclick = async () => {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } }
+        plugins: { legend: { position: 'right', labels: { boxWidth: 8, font: { size: 9, weight: '700' } } } }
       }
     });
 
@@ -10443,7 +10498,10 @@ $("btnSaveSR").onclick = async () => {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+        scales: { 
+          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 8 } }, grid: { display: false } },
+          x: { ticks: { font: { size: 8, weight: '700' } }, grid: { display: false } }
+        },
         plugins: { legend: { display: false } }
       }
     });
