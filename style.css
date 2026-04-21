@@ -775,39 +775,7 @@ input[type="date"] {
   /* Verde MD3 oscuro para contraste */
 }
 
-/* ==========================================================
-   ðŸ“± PREMIUM LOGIN OVERLAY (FULL SCREEN)
-   ========================================================== */
-
-#loginWrapper {
-  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
-              visibility 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.login-bg {
-  background-color: #f8fafc;
-  background-image: 
-    radial-gradient(at 0% 0%, hsla(210,100%,98%,1) 0, transparent 50%), 
-    radial-gradient(at 50% 0%, hsla(220,100%,94%,1) 0, transparent 50%), 
-    radial-gradient(at 100% 0%, hsla(160,100%,96%,1) 0, transparent 50%), 
-    radial-gradient(at 0% 50%, hsla(215,100%,95%,1) 0, transparent 50%), 
-    radial-gradient(at 100% 50%, hsla(225,100%,94%,1) 0, transparent 50%), 
-    radial-gradient(at 0% 100%, hsla(210,100%,96%,1) 0, transparent 50%), 
-    radial-gradient(at 50% 100%, hsla(160,100%,95%,1) 0, transparent 50%), 
-    radial-gradient(at 100% 100%, hsla(220,100%,96%,1) 0, transparent 50%);
-  background-size: 200% 200%;
-  animation: mesh-flow 15s ease infinite alternate;
-  filter: none;
-}
-
-@keyframes mesh-flow {
-  0% { background-position: 0% 0%; }
-  100% { background-position: 100% 100%; }
-}
-
-/* ==========================================================
-   ðŸ“± PRESIDENTIAL LOGIN V5 (ROBUST & BULLETPROOF)
-   ========================================================== */
+/* Nuked redundant legacy login block to prevent visibility conflicts */
 
 /* ðŸš« DISABLE BACKGROUND SCROLL WHEN LOGIN IS ACTIVE */
 body:has(#loginWrapper:not(.hidden)) {
@@ -819,12 +787,14 @@ body:has(#loginWrapper:not(.hidden)) {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.4s ease;
-  background-color: #f8fafc;
+  background: transparent !important; /* Managed by .login-bg */
 }
 
 #loginWrapper.hidden {
   display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
 }
 
 /* SLEEK MESH FOR V5 */
