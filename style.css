@@ -8092,3 +8092,9 @@ body.bioConfirmOpen {
     opacity: 0;
   }
 }
+
+/* ✅ GLOBAL ACCESSIBILITY: Visible Caret Fix */
+input, textarea, select, [contenteditable] {
+  caret-color: #003366 !important;
+  color: #001b3d !important;
+}
