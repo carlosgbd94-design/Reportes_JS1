@@ -186,10 +186,11 @@ body.mobile-mode.lowperf {
 
 #btnBrowseFile {
   background: var(--md-sys-color-surface-container-high, #f1f4f8);
-  border: 1px dashed var(--md-sys-color-outline-variant);
-  color: var(--md-sys-color-primary);
-  height: 52px;
+  border: 4px dashed var(--md-sys-color-outline-variant, #cbd5e1);
+  color: #003366 !important;
+  height: 58px;
   font-weight: 700;
+  border-radius: 16px;
 }
 
 #btnBrowseFile:hover {
