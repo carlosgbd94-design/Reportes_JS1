@@ -3548,14 +3548,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
         case "admingetunitdetail": {
           const targetFecha = payload.fecha || todayYmdLocal();
-          const { data, error } = await supabase
-            .from('existencia_detalle')
-            .select('*')
-            .eq('clues', payload.clues)
-            .eq('fecha', targetFecha)
-            .order('biologico', { ascending: true });
-          if (error) throw error;
-          return { ok: true, data: data || [], meta: { fecha: targetFecha } };
+          const tipo = (payload.tipo || "SR").toUpperCase();
+          
+          if (tipo === "SR") {
+            const { data, error } = await window.supabase
+              .from('existencia_detalle')
+              .select('*')
+              .eq('clues', payload.clues)
+              .eq('fecha', targetFecha)
+              .order('biologico', { ascending: true });
+            if (error) throw error;
+            return { ok: true, data: data || [], meta: { fecha: targetFecha, tipo } };
+          } else {
+            const { data, error } = await window.supabase
+              .from('consumibles')
+              .select('*')
+              .eq('clues', payload.clues)
+              .eq('fecha', targetFecha)
+              .limit(1);
+            if (error) throw error;
+            return { ok: true, data: data || [], meta: { fecha: targetFecha, tipo } };
+          }
         }
 
         case "adminlistusers": {
@@ -10252,71 +10265,116 @@ $("btnSaveSR").onclick = async () => {
       .trim();
   }
 
-  async function openLiveView(clues, unidad, municipio) {
-    try {
-      showOverlay("Obteniendo inventario en vivo…", "Cargando existencia de " + unidad);
-      
-      const fecha = ($("summaryFecha") && $("summaryFecha").value) ? $("summaryFecha").value : todayYmdLocal();
+   async function openLiveView(clues, unidad, municipio) {
+     const overlay = $("liveViewOverlay");
+     const tbody = $("liveViewTbody");
+     const headRow = $("liveViewTable")?.querySelector("thead tr");
+     
+     if (!overlay || !tbody) return;
 
-      const res = await apiCall("adminGetUnitDetail", { clues, fecha });
-      hideOverlay();
+     try {
+       // 1. Mostrar modal inmediatamente con estado de carga
+       overlay.style.display = "flex";
+       overlay.ariaHidden = "false";
+       tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:60px; text-align:center;"><div class="spinner-small" style="margin:0 auto 12px;"></div>Obteniendo detalle...</td></tr>';
+       
+       const fecha = ($("summaryFecha") && $("summaryFecha").value) ? $("summaryFecha").value : todayYmdLocal();
+       const tipo = ($("summaryTipo") && $("summaryTipo").value) ? $("summaryTipo").value : "SR";
+       const fechaFormatted = formatAppDate(fecha);
 
-      if (!res || !res.ok) throw new Error((res && res.error) || "Sin respuesta del servidor");
+       // 2. Títulos
+       if ($("liveViewUnidad")) $("liveViewUnidad").textContent = (tipo === "SR" ? "Existencia: " : "Consumibles: ") + unidad;
+       if ($("liveViewMunicipio")) {
+         $("liveViewMunicipio").innerHTML = 
+           escapeHtml(municipio) + " &nbsp;|&nbsp; " + escapeHtml(clues) +
+           `<span style="margin-left:12px; font-size:11px; background:#e8f0fe; color:#003366; padding:2px 10px; border-radius:20px; font-weight:700;">📅 ${fechaFormatted}</span>`;
+       }
 
-      const fechaFormatted = formatAppDate(fecha);
+       // 3. Petición real
+       const res = await apiCall("adminGetUnitDetail", { clues, fecha, tipo });
+       if (!res || !res.ok) throw new Error((res && res.error) || "Sin respuesta del servidor");
 
-      if ($("liveViewUnidad")) $("liveViewUnidad").textContent = "Unidad: " + unidad;
-      if ($("liveViewMunicipio")) {
-        $("liveViewMunicipio").innerHTML = 
-          escapeHtml(municipio) + " &nbsp;|&nbsp; " + escapeHtml(clues) +
-          `<span style="margin-left:12px; font-size:11px; background:#e8f0fe; color:#003366; padding:2px 10px; border-radius:20px; font-weight:700;">📅 ${fechaFormatted}</span>`;
-      }
-      
-      const tbody = $("liveViewTbody");
-      if (!tbody) return;
-
-      if (!res.data || !res.data.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay registros detallados para esta captura.</td></tr>';
-        renderLiveCharts({pronto:0,normal:0,lejana:0}, {m3:0,m6:0,m12:0,more:0});
-      } else {
-        const items = res.data;
-        let semStats = { pronto: 0, normal: 0, lejana: 0 };
-        let cadStats = { m3: 0, m6: 0, m12: 0, more: 0 };
-
-        tbody.innerHTML = items.map(r => {
-           const status = getSemaforoStatus(r.caducidad);
-           semStats[status.key]++;
-           const diffMonths = getMonthsTo(r.caducidad);
-           if (diffMonths <= 3) cadStats.m3++;
-           else if (diffMonths <= 6) cadStats.m6++;
-           else if (diffMonths <= 12) cadStats.m12++;
-           else cadStats.more++;
-
-           return `
-             <tr>
-               <td style="padding:16px 24px; font-weight:700; color:var(--md-sys-color-on-surface);">${escapeHtml(r.biologico)}</td>
-               <td style="font-weight:600;">${escapeHtml(r.lote)}</td>
-               <td style="text-align:center; font-weight:800; color:var(--primary);">${escapeHtml(r.cantidad || 0)}</td>
-               <td style="font-weight:700; text-align:center;">${escapeHtml(r.caducidad)}</td>
-               <td style="text-align:center;"><span class="statusPill statusPill-${status.key}">${status.label}</span></td>
-               <td style="font-weight:600; color:var(--muted);">${formatAppDate(r.fecha_recepcion)}</td>
-             </tr>
+       // 4. Renderizar según tipo
+       if (tipo === "SR") {
+         // Ajustar headers Bio
+         if (headRow) {
+           headRow.innerHTML = `
+             <th style="padding: 16px;">Biológico</th>
+             <th>Lote</th>
+             <th style="text-align:center;">Existencia</th>
+             <th style="text-align:center;">Caducidad</th>
+             <th>Semaforización</th>
+             <th>Última Rec.</th>
            `;
-        }).join("");
+         }
 
-        renderLiveCharts(semStats, cadStats);
-      }
+         if (!res.data || !res.data.length) {
+           tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay registros detallados para esta fecha.</td></tr>';
+           renderLiveCharts({pronto:0,normal:0,lejana:0}, {m3:0,m6:0,m12:0,more:0});
+         } else {
+           const items = res.data;
+           let semStats = { pronto: 0, normal: 0, lejana: 0 };
+           let cadStats = { m3: 0, m6: 0, m12: 0, more: 0 };
 
-      if ($("liveViewOverlay")) {
-        $("liveViewOverlay").style.display = "flex";
-        $("liveViewOverlay").ariaHidden = "false";
-      }
+           tbody.innerHTML = items.map(r => {
+              const status = getSemaforoStatus(r.caducidad);
+              semStats[status.key]++;
+              const diffMonths = getMonthsTo(r.caducidad);
+              if (diffMonths <= 3) cadStats.m3++;
+              else if (diffMonths <= 6) cadStats.m6++;
+              else if (diffMonths <= 12) cadStats.m12++;
+              else cadStats.more++;
 
-    } catch (e) {
-      if (typeof hideOverlay === "function") hideOverlay();
-      showToast("Error al cargar detalle: " + e.message, false);
-    }
-}
+              return `
+                <tr>
+                  <td style="padding:16px 24px; font-weight:700; color:var(--md-sys-color-on-surface);">${escapeHtml(r.biologico)}</td>
+                  <td style="font-weight:600;">${escapeHtml(r.lote)}</td>
+                  <td style="text-align:center; font-weight:800; color:var(--primary);">${escapeHtml(r.cantidad || 0)}</td>
+                  <td style="font-weight:700; text-align:center;">${escapeHtml(r.caducidad)}</td>
+                  <td style="text-align:center;"><span class="statusPill statusPill-${status.key}">${status.label}</span></td>
+                  <td style="font-weight:600; color:var(--muted);">${formatAppDate(r.fecha_recepcion)}</td>
+                </tr>
+              `;
+           }).join("");
+           renderLiveCharts(semStats, cadStats);
+         }
+       } else {
+         // Tipo CONSUMIBLES
+         if (headRow) {
+           headRow.innerHTML = `
+             <th style="padding: 16px;">Insumo / Concepto</th>
+             <th style="text-align:center;">Cantidad / Dosis</th>
+             <th colspan="4">Detalles adicionales</th>
+           `;
+         }
+
+         if (!res.data || !res.data.length) {
+           tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay reporte de consumibles hoy.</td></tr>';
+           renderLiveCharts({pronto:0,normal:0,lejana:0}, {m3:0,m6:0,m12:0,more:0});
+         } else {
+           const c = res.data[0];
+           const rows = [
+             { label: "SRP (Dosis en existencia)", val: c.srp_dosis },
+             { label: "SR (Dosis en existencia)", val: c.sr_dosis },
+             { label: "Pinol (Botellas)", val: c.pinol_botellas || 0 }
+           ];
+           tbody.innerHTML = rows.map(r => `
+             <tr>
+               <td style="padding:16px 24px; font-weight:700;">${r.label}</td>
+               <td style="text-align:center; font-weight:800; color:var(--primary);">${r.val}</td>
+               <td colspan="4" class="muted">Reportado por ${escapeHtml(c.capturado_por || "—")}</td>
+             </tr>
+           `).join("");
+           renderLiveCharts({pronto:0,normal:0,lejana:1}, {m3:0,m6:0,m12:0,more:1}); 
+         }
+       }
+
+     } catch (e) {
+       console.error("openLiveView error:", e);
+       if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">Error al cargar: ${escapeHtml(e.message)}</td></tr>`;
+       showToast("Error al cargar detalle: " + e.message, false);
+     }
+ }
 
   function getMonthsTo(mmmAa) {
     if (!mmmAa || !mmmAa.includes("-")) return 99;
@@ -10341,12 +10399,14 @@ $("btnSaveSR").onclick = async () => {
     return { key: "lejana", label: "Vigente", color: "#4ade80" };
   }
 
-  function renderLiveCharts(sem, cad) {
-    const ctxSem = $("chartSemaforo").getContext("2d");
-    const ctxCad = $("chartCaducidad").getContext("2d");
+   function renderLiveCharts(sem, cad) {
+     try {
+       const ctxSem = $("chartSemaforo")?.getContext("2d");
+       const ctxCad = $("chartCaducidad")?.getContext("2d");
+       if (!ctxSem || !ctxCad) return;
 
-    if (CHART_SEM) CHART_SEM.destroy();
-    if (CHART_CAD) CHART_CAD.destroy();
+       if (CHART_SEM) CHART_SEM.destroy();
+       if (CHART_CAD) CHART_CAD.destroy();
 
     CHART_SEM = new Chart(ctxSem, {
       type: 'doughnut',
