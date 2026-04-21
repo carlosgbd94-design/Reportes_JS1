@@ -10354,9 +10354,11 @@ $("btnSaveSR").onclick = async () => {
          } else {
            const c = res.data[0];
            const rows = [
-             { label: "SRP (Dosis en existencia)", val: c.srp_dosis },
-             { label: "SR (Dosis en existencia)", val: c.sr_dosis },
-             { label: "Pinol (Botellas)", val: c.pinol_botellas || 0 }
+             { label: "Existencia SRP (Dosis)", val: c.srp_dosis || 0 },
+             { label: "Existencia SR (Dosis)", val: c.sr_dosis || 0 },
+             { label: "Jeringa Reconst. 5ml (060.550.0438)", val: c.jeringa_reconst_5ml_0605500438 || 0 },
+             { label: "Jeringa Aplic. 0.5ml (060.550.2657)", val: c.jeringa_aplic_05ml_0605502657 || 0 },
+             { label: "Aguja (060.004.0371.1)", val: c.aguja_0600403711 || 0 }
            ];
            tbody.innerHTML = rows.map(r => `
              <tr>
@@ -10444,6 +10446,9 @@ $("btnSaveSR").onclick = async () => {
         plugins: { legend: { display: false } }
       }
     });
+    } catch (err) {
+      console.warn("Chart error:", err);
+    }
   }
 
   if ($("btnLiveViewClose")) {
