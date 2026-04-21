@@ -18,6 +18,15 @@ let CON_IS_ENABLED = false;
 let USER = null;
 let TOKEN = null;
 let UNIT_BATCHES = [];
+
+/* Fix for invisible caret/cursor */
+const style = document.createElement('style');
+style.textContent = `
+  input, textarea, [contenteditable] {
+    caret-color: #003366 !important;
+  }
+`;
+document.head.appendChild(style);
 let BATCH_CATALOG = [];
 let BATCH_FILTER = "all"; 
 let BATCH_SEARCH_QUERY = "";
