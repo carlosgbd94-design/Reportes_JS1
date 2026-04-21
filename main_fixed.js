@@ -1,4 +1,4 @@
-﻿import { apiCall } from './api.js';
+import { apiCall } from './api.js';
 import { store } from './store.js';
 import { $, normalizeTextKey, fixUtf8Text, canSeeMunicipio, debounce } from './utils.js';
 
@@ -1006,7 +1006,7 @@ const overlayTitle = overlayTitle;
 
     if (topBadge) {
       if (n > 0) {
-        if (topBadge.style.display !== "inline-flex") topBadge.style.display = "inline-flex";
+        if (topBadge.style.display !== "flex") topBadge.style.display = "flex";
         if (topBadge.textContent !== nextText) topBadge.textContent = nextText;
         btnTopNotifications?.classList.add("liveAccent", "notifHot");
       } else {
@@ -1105,8 +1105,8 @@ const overlayTitle = overlayTitle;
       notifUnreadKpi.textContent = String(unreadVisible);
     }
 
-    syncMainNotifBadge(unreadForBadge);
     LIVE_STATE.notifCount = unreadForBadge;
+    syncMainNotifBadge(unreadForBadge);
 
     if (notifTxt) {
       notifTxt.textContent = `Actividad: ${unreadVisible}`;
@@ -2633,10 +2633,10 @@ const overlayTitle = overlayTitle;
   }
 
   async function requestPasswordResetFlow() {
-    const usuario = $("forgotUsuario") ? $("forgotUsuario").value.trim() : "";
+    const email = $("forgotUsuario") ? $("forgotUsuario").value.trim() : "";
 
-    if (!usuario) {
-      showToast("Ingresa tu usuario", false);
+    if (!email) {
+      showToast("Ingresa tu correo institucional", false);
       return;
     }
 
@@ -2644,23 +2644,23 @@ const overlayTitle = overlayTitle;
     closeForgotModal();
 
     // Mostramos la pantalla de carga global del sistema
-    showOverlay("Estamos enviando el enlace de recuperaciÃ³nâ€¦", "Recuperando acceso");
+    showOverlay("Estamos enviando el enlace de recuperación…", "Recuperando acceso");
 
     try {
-      const r = await apiCall({
-        action: "requestPasswordReset",
-        usuario
+      // Usamos el cliente global window.supabase inicializado en main.js
+      const { data, error } = await window.supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://carlosgbd94-design.github.io/Reportes_JS1/reset.html',
       });
 
-      if (!r || !r.ok) {
-        showToast((r && r.error) ? r.error : "No se pudo enviar el enlace", false);
+      if (error) {
+        showToast(error.message || "No se pudo enviar el enlace", false);
         return;
       }
 
-      showToast("Se enviÃ³ el enlace de recuperaciÃ³n");
+      showToast("Se envió el enlace de recuperación a tu correo");
     } catch (e) {
       console.error(e);
-      showToast("Error al solicitar recuperaciÃ³n", false);
+      showToast("Error al solicitar recuperación", false);
     } finally {
       hideOverlay();
     }

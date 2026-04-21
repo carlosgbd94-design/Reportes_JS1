@@ -39,7 +39,7 @@
         @apply bg-gradient-to-br from-primary to-[#004d99] text-white scale-[1.05] shadow-[0_12px_24px_-8px_rgba(0,51,102,0.4)] z-10 ring-1 ring-inset ring-white/20;
       }
       .tab-inactive {
-        @apply bg-white/40 backdrop-blur-md text-surface-on hover:bg-white hover:text-primary opacity-80 scale-100 shadow-none hover:shadow-[0_8px_20px_rgba(0,51,102,0.1)] border border-outline-variant/10 hover:border-primary/20;
+        @apply bg-white text-surface-on hover:bg-white hover:text-primary opacity-100 scale-100 shadow-none hover:shadow-[0_8px_20px_rgba(0,51,102,0.1)] border border-outline-variant hover:border-primary/20;
       }
     }
   </style>
@@ -89,7 +89,7 @@
   <div class="wrap bg-surface-container min-h-screen">
 
     <!-- ✅ MODERN FLOATING HEADER -->
-    <div class="fixed top-4 inset-x-4 sm:inset-x-8 h-[85px] z-[1000] bg-white/90 backdrop-blur-xl border border-outline-variant/30 rounded-3xl flex items-center justify-center shadow-[0_8px_32px_rgba(0,51,102,0.08)] transition-all duration-500 hover:shadow-md3-3" id="mainHeader">
+    <div class="fixed top-4 inset-x-4 sm:inset-x-8 h-[85px] z-[1000] bg-white border border-outline-variant rounded-3xl flex items-center justify-center shadow-[0_8px_32px_rgba(0,51,102,0.08)] transition-all duration-500 hover:shadow-md3-3" id="mainHeader">
       <div class="w-full max-w-[1600px] px-6 flex items-center justify-between">
         <div class="flex items-center gap-6">
 
@@ -235,7 +235,7 @@
               </div>
 
               <!-- 💡 INSIGHT CAPSULE: DATO CURIOSO (Senior UX - Luminescent Refinement) -->
-              <div class="flex-1 max-w-[750px] h-[52px] bg-white/70 backdrop-blur-xl border border-white/40 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.04),0_0_15px_rgba(245,158,11,0.05)] overflow-hidden flex items-center group transition-all hover:bg-white/90 hover:shadow-[0_12px_40px_rgba(0,0,0,0.06),0_0_20px_rgba(245,158,11,0.1)] cursor-help" title="Tip dinámico del programa">
+              <div class="flex-1 max-w-[750px] h-[52px] bg-white border border-outline-variant rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.04),0_0_15px_rgba(245,158,11,0.05)] overflow-hidden flex items-center group transition-all hover:bg-white hover:shadow-[0_12px_40px_rgba(0,0,0,0.06),0_0_20px_rgba(245,158,11,1.0)] cursor-help" title="Tip dinámico del programa">
                 <!-- Visual Accent: Faded Gradient -->
                 <div class="w-1.5 h-full bg-gradient-to-b from-orange-400 to-orange-600 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity"></div>
                 
@@ -430,7 +430,7 @@
                     </div>
 
                     <!-- Redesigned & Scaled Tabs -->
-                    <div class="flex flex-wrap gap-3 p-2 bg-surface-variant/10 backdrop-blur-md rounded-[26px] w-full lg:w-auto border border-outline-variant/20 shadow-inner">
+                    <div class="flex flex-wrap gap-3 p-2 bg-surface-variant rounded-[26px] w-full lg:w-auto border border-outline-variant shadow-inner">
                       <button class="tab-btn tab-active flex-1 md:flex-none items-center gap-3.5 h-[52px] px-6 min-w-[140px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[14px]" id="tabSR" onclick="activateCapture('SR')">
                         <span class="material-symbols-rounded text-[22px]">vaccines</span>
                         <span>Biológicos</span>
@@ -452,7 +452,7 @@
 
                   <!-- 🔔 PREMIUM CAPTURE STATUS ALERT (Integrated with Panels) -->
                   <div id="captureStateBox" class="hidden my-8 group px-2">
-                    <div id="captureStateContainer" class="flex items-center gap-5 backdrop-blur-md border p-6 rounded-[24px] transition-all shadow-sm">
+                    <div id="captureStateContainer" class="flex items-center gap-5 bg-white border p-6 rounded-[24px] transition-all shadow-sm">
                       <div id="captureStateIconBg" class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border transition-all">
                         <span id="captureStateIcon" class="material-symbols-rounded text-[26px]">info</span>
                       </div>
@@ -774,15 +774,15 @@
                   </div>
 
                   <div class="flex gap-4 sm:gap-6 z-10 flex-wrap">
-                    <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl min-w-[100px] flex-1">
+                    <div class="bg-white border border-slate-200 p-4 rounded-2xl min-w-[100px] flex-1">
                       <div class="text-[11px] font-bold uppercase tracking-[0.1em] opacity-80 mb-1 leading-tight">No leídas</div>
                       <div class="text-[26px] font-black leading-none" id="notifUnreadKpi">0</div>
                     </div>
-                    <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl min-w-[100px] flex-1">
+                    <div class="bg-white border border-slate-200 p-4 rounded-2xl min-w-[100px] flex-1">
                       <div class="text-[11px] font-bold uppercase tracking-[0.1em] opacity-80 mb-1 leading-tight">Visibles</div>
                       <div class="text-[26px] font-black leading-none" id="notifTotalKpi">0</div>
                     </div>
-                    <div class="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl min-w-[100px] flex-1 hidden sm:block">
+                    <div class="bg-white border border-slate-200 p-4 rounded-2xl min-w-[100px] flex-1 hidden sm:block">
                       <div class="text-[11px] font-bold uppercase tracking-[0.1em] opacity-80 mb-1 leading-tight">Perfil</div>
                       <div class="text-[26px] font-black leading-none break-all text-ellipsis overflow-hidden max-w-[110px]" id="notifRoleKpi">—</div>
                     </div>
@@ -1487,17 +1487,16 @@
         </div>
       </div>
 
-      <div class="overlay" id="overlay">
-
-        <div class="loader">
-          <div class="loaderCircle">
-            <svg viewBox="25 25 50 50">
-              <circle cx="50" cy="50" r="20" fill="none" class="path"></circle>
-            </svg>
+      <div id="overlay" class="overlay" aria-hidden="true">
+        <div class="overlay-content">
+          <div class="md-spinner"></div>
+          <div class="overlay-text">
+            <h3 id="overlayTitle">Procesando</h3>
+            <p id="overlayMsg">Cargando JS1 Reportes…</p>
+            <div class="loaderSub" style="font-size: 13px; font-weight: 700; color: #535f70; margin-top: 10px; opacity: 0.8;">
+              Por favor espera mientras se completa la operación.
+            </div>
           </div>
-          <div class="loaderTitle" id="overlayTitle">Procesando</div>
-          <div class="loaderText" id="overlayMsg">Un momento…</div>
-          <div class="loaderSub">Por favor espera mientras se completa la operación.</div>
         </div>
       </div>
 
@@ -1616,7 +1615,7 @@
 
 
       <div class="overlay" id="passwordOverlay">
-        <div class="modalGlass" style="max-width:480px; border-radius:28px;">
+        <div class="modal" style="max-width:480px; border-radius:28px; background: white; box-shadow: var(--md-shadow-5); overflow: hidden;">
           <div class="modalHead">
             <div class="modalEyebrow" style="
               background: var(--md-sys-color-primary-container);
@@ -1748,7 +1747,7 @@
       </div>
 
       <div class="modalOverlay" id="forgotOverlay">
-        <div class="modalGlass" style="max-width:440px; border-radius:28px;">
+        <div class="modal" style="max-width:440px; border-radius:28px; background: white; box-shadow: var(--md-shadow-5); overflow: hidden;">
           <div class="modalHead">
             <div class="modalEyebrow" style="
               background: var(--md-sys-color-primary-container);
@@ -1815,7 +1814,7 @@
       <!-- ✅ DRIVE UPLOAD MODAL -->
       <div class="overlay" id="uploadFilesOverlay">
 
-        <div class="modalGlass" style="max-width:540px;">
+        <div class="modal" style="max-width:540px; background: white; border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden;">
           <div class="modalHead">
             <div class="modalEyebrow">
               <span class="material-symbols-rounded" style="font-size:16px;">cloud_upload</span>
@@ -1886,7 +1885,7 @@
 
       <div class="overlay" id="exportOverlay">
 
-        <div class="modalGlass">
+        <div class="modal" style="background: white; border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden;">
           <div class="modalHead">
             <div class="modalEyebrow">
               <span class="material-symbols-rounded" style="font-size:16px;">download</span>
@@ -2016,7 +2015,7 @@
     <!-- ✅ VISTA EN VIVO MD3 -->
     <div id="liveViewOverlay" class="overlay" aria-hidden="true"
       style="z-index: 10000; align-items:flex-end; justify-content:center; padding: 20px 0 0 0;">
-      <div class="modal modalGlass" style="width: 100%; max-width: 900px; height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal" style="width: 100%; max-width: 900px; height: 90vh; display: flex; flex-direction: column; background: #ffffff; border-radius: 28px; overflow: hidden; box-shadow: var(--md-shadow-3);">
         
         <div class="modalHeader" style="background: transparent; border-bottom: 1px solid rgba(0,0,0,0.05); padding: 24px 32px;">
           <div style="flex: 1;">
@@ -2028,7 +2027,7 @@
           </button>
         </div>
 
-        <div class="modalBody" style="flex: 1; overflow-y: auto; padding: 32px; background: rgba(255,255,255,0.4);">
+        <div class="modalBody" style="flex: 1; overflow-y: auto; padding: 32px; background: #f8f9fc;">
           
           <!-- KPIs Entregables -->
           <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 32px;">
@@ -2089,6 +2088,12 @@
         <span>Admin</span>
       </button>
     </nav>
+
+    </nav>
+    
+    <!-- ✅ MODERN TOAST CONTAINER (STACKABLE) -->
+    <div id="toast-container" class="toast-stack-container" aria-live="polite"></div>
+
 
     <script defer src="main.js"></script>
 

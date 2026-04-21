@@ -196,13 +196,10 @@ document.addEventListener("DOMContentLoaded", () => {
       $("btnLogout")?.click();
     });
 });
-// --------------------------------
   const $ = (id) => document.getElementById(id);
   const overlay = $("overlay");
   const overlayMsg = $("overlayMsg");
-  const toast = $("toast");
-  const toastMsg = $("toastMsg");
-
+  const toastContainer = $("toast-container");
   const overlayTitle = $("overlayTitle");
   let TOAST_TIMER = null;
 
@@ -279,11 +276,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function showToast(msg, ok = true, type = null, options = {}) {
-    if (!toast || !toastMsg) return;
+    const container = $("toast-container");
+    if (!container) return;
 
     const {
       force = false,
-      cooldownMs = 1400
+      cooldownMs = 1500,
+      duration = 4000
     } = options || {};
 
     const finalType = type ? type : (ok ? "good" : "bad");
@@ -291,41 +290,49 @@ document.addEventListener("DOMContentLoaded", () => {
     const toastKey = `${cleanMsg}|${finalType}`;
     const now = Date.now();
 
-    if (!LIVE_STATE.toastMeta) {
-      LIVE_STATE.toastMeta = {
-        key: "",
-        ts: 0
-      };
-    }
-
-    const sameToast =
-      LIVE_STATE.toastMeta.key === toastKey &&
-      (now - Number(LIVE_STATE.toastMeta.ts || 0)) < cooldownMs;
-
+    // Anti-spam check
+    if (!LIVE_STATE.toastMeta) LIVE_STATE.toastMeta = { key: "", ts: 0 };
+    const sameToast = LIVE_STATE.toastMeta.key === toastKey && (now - Number(LIVE_STATE.toastMeta.ts || 0)) < cooldownMs;
     if (!force && sameToast) return;
 
     LIVE_STATE.toastMeta.key = toastKey;
     LIVE_STATE.toastMeta.ts = now;
-    LIVE_STATE.lastToastKey = toastKey;
 
-    toastMsg.textContent = cleanMsg;
-    toast.classList.remove("good", "bad", "warn");
-    toast.classList.add(finalType);
+    // Create modern toast element
+    const toastEl = document.createElement("div");
+    toastEl.className = `toast-new ${finalType}`;
+    
+    const icon = finalType === "good" ? "check_circle" : (finalType === "bad" ? "error" : "warning");
+    
+    toastEl.innerHTML = `
+      <div class="toast-icon">
+        <span class="material-symbols-rounded">${icon}</span>
+      </div>
+      <div class="toast-content">
+        <div class="toast-message">${cleanMsg}</div>
+      </div>
+    `;
 
-    toast.classList.remove("show");
-    void toast.offsetWidth;
-    toast.classList.add("show");
+    container.appendChild(toastEl);
 
-    if (TOAST_TIMER) clearTimeout(TOAST_TIMER);
-    TOAST_TIMER = setTimeout(() => {
-      toast.classList.remove("show");
-      LIVE_STATE.lastToastKey = "";
-      if (LIVE_STATE.toastMeta) {
-        LIVE_STATE.toastMeta.key = "";
-        LIVE_STATE.toastMeta.ts = 0;
-      }
-    }, 3600);
-  }  /** ===== UTILS PORTED FROM BACKEND ===== **/
+    // Entrance animation
+    requestAnimationFrame(() => {
+      toastEl.classList.add("show");
+    });
+
+    // Auto-remove
+    setTimeout(() => {
+      toastEl.classList.add("removing");
+      toastEl.addEventListener("transitionend", () => {
+        toastEl.remove();
+        if (LIVE_STATE.toastMeta.key === toastKey) {
+          LIVE_STATE.toastMeta.key = "";
+          LIVE_STATE.toastMeta.ts = 0;
+        }
+      }, { once: true });
+    }, duration);
+  }
+  /** ===== UTILS PORTED FROM BACKEND ===== **/
   function normalizeTextKey_(v) {
     return String(v ?? "")
       .trim()
@@ -470,52 +477,34 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateNotifBadge() {
-    const badge = $("bNotif");
-    const txt = $("notifTxt");
+    const topBadge = $("topNotifBadge");
+    const navBadge = $("notifBadgeNav");
     const btnClear = $("btnClearLiveFeed");
-
-    if (!badge || !txt) return;
 
     const n = Number(LIVE_STATE.notifCount || 0);
     const warn = Number(LIVE_STATE.notifWarnCount || 0);
 
-    const shouldShow = n > 0;
-    const nextText = warn > 0
-      ? `Actividad: ${n} · Alertas: ${warn}`
-      : `Actividad: ${n}`;
-
-    if (shouldShow) {
-      if (badge.style.display !== "inline-flex") {
-        badge.style.display = "inline-flex";
+    // Update Top Header Badge
+    if (topBadge) {
+      topBadge.textContent = n > 99 ? "99+" : n;
+      topBadge.setAttribute("data-count", n);
+      topBadge.style.display = n > 0 ? "flex" : "none";
+      if (n > 0) {
+        topBadge.classList.remove("badge-pulse");
+        void topBadge.offsetWidth;
+        topBadge.classList.add("badge-pulse");
       }
-      if (!badge.classList.contains("liveAccent")) {
-        badge.classList.add("liveAccent");
-      }
-      badge.classList.toggle("notifHot", warn > 0);
-
-      if (txt.textContent !== nextText) {
-        txt.textContent = nextText;
-      }
-
-      pulseBadge("bNotif");
-
-      if (btnClear && btnClear.style.display !== "inline-flex") {
-        btnClear.style.display = "inline-flex";
-      }
-      return;
     }
 
-    if (badge.style.display !== "none") {
-      badge.style.display = "none";
-    }
-    badge.classList.remove("notifHot", "liveAccent", "pulse", "warn");
-
-    if (txt.textContent !== "Actividad: 0") {
-      txt.textContent = "Actividad: 0";
+    // Update Bottom Nav Badge (Mobile)
+    if (navBadge) {
+      navBadge.textContent = n > 99 ? "99+" : n;
+      navBadge.setAttribute("data-count", n);
+      navBadge.style.display = n > 0 ? "flex" : "none";
     }
 
-    if (btnClear && btnClear.style.display !== "none") {
-      btnClear.style.display = "none";
+    if (btnClear) {
+      btnClear.style.display = n > 0 ? "inline-flex" : "none";
     }
   }
 
@@ -1115,9 +1104,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const n = Number(unread || 0);
     const badge = $("notifBadgeMain");
     const topBadge = $("topNotifBadge");
+    const navBadge = $("notifBadgeNav");
     const tabNOTIFS = $("tabNOTIFS");
     const btnTopNotifications = $("btnTopNotifications");
     const nextText = String(n);
+
+    // Sync state for local logic
+    if (typeof LIVE_STATE !== "undefined") {
+      LIVE_STATE.notifCount = n;
+    }
 
     if (badge) {
       if (n > 0) {
@@ -1133,7 +1128,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (topBadge) {
       if (n > 0) {
-        if (topBadge.style.display !== "inline-flex") topBadge.style.display = "inline-flex";
+        if (topBadge.style.display !== "flex") topBadge.style.display = "flex";
         if (topBadge.textContent !== nextText) topBadge.textContent = nextText;
         btnTopNotifications?.classList.add("liveAccent", "notifHot");
       } else {
@@ -1141,6 +1136,20 @@ document.addEventListener("DOMContentLoaded", () => {
         if (topBadge.textContent !== "0") topBadge.textContent = "0";
         btnTopNotifications?.classList.remove("liveAccent", "notifHot");
       }
+    }
+
+    if (navBadge) {
+      if (n > 0) {
+        navBadge.textContent = n > 99 ? "99+" : n;
+        navBadge.style.display = "flex";
+      } else {
+        navBadge.textContent = "0";
+        navBadge.style.display = "none";
+      }
+    }
+
+    if (typeof updateNotifBadge === "function") {
+      updateNotifBadge();
     }
   }
 
@@ -1232,8 +1241,8 @@ document.addEventListener("DOMContentLoaded", () => {
       notifUnreadKpi.textContent = String(unreadVisible);
     }
 
-    syncMainNotifBadge(unreadForBadge);
     LIVE_STATE.notifCount = unreadForBadge;
+    syncMainNotifBadge(unreadForBadge);
 
     if (notifTxt) {
       notifTxt.textContent = `Actividad: ${unreadVisible}`;
@@ -2768,10 +2777,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function requestPasswordResetFlow() {
-    const usuario = $("forgotUsuario") ? $("forgotUsuario").value.trim() : "";
+    const email = $("forgotUsuario") ? $("forgotUsuario").value.trim() : "";
 
-    if (!usuario) {
-      showToast("Ingresa tu usuario", false);
+    if (!email) {
+      showToast("Ingresa tu correo institucional", false);
       return;
     }
 
@@ -2782,17 +2791,17 @@ document.addEventListener("DOMContentLoaded", () => {
     showOverlay("Estamos enviando el enlace de recuperación…", "Recuperando acceso");
 
     try {
-      const r = await apiCall({
-        action: "requestPasswordReset",
-        usuario
+      // Usamos el cliente global window.supabase inicializado en main.js
+      const { data, error } = await window.supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://carlosgbd94-design.github.io/Reportes_JS1/reset.html',
       });
 
-      if (!r || !r.ok) {
-        showToast((r && r.error) ? r.error : "No se pudo enviar el enlace", false);
+      if (error) {
+        showToast(error.message || "No se pudo enviar el enlace", false);
         return;
       }
 
-      showToast("Se envió el enlace de recuperación");
+      showToast("Se envió el enlace de recuperación a tu correo");
     } catch (e) {
       console.error(e);
       showToast("Error al solicitar recuperación", false);
@@ -2879,7 +2888,7 @@ document.addEventListener("DOMContentLoaded", () => {
       "biogetform", "biogetdatesformonth", "unitstatus", "unitcatalog", 
       "pinolsolicitud", "listpinol", "markpinoldelivered", "confirmpinolreceipt",
       "sendnotification", "getlotesbymunicipio", "savelotes", "uploadfile", "listfiles",
-      "export", "bioexportmatrix", "biogetexportoptions", "admingetunitdetail"
+      "export", "bioexportmatrix", "biogetexportoptions", "admingetunitdetail", "requestpasswordreset"
     ];
 
     if (SUPABASE_ACTIONS.includes(action.toLowerCase())) {
@@ -3689,6 +3698,14 @@ document.addEventListener("DOMContentLoaded", () => {
           return { ok: true, data };
         }
 
+        case "requestpasswordreset": {
+          const targetEmail = payload.email || payload.usuario || "";
+          const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
+            redirectTo: 'https://carlosgbd94-design.github.io/Reportes_JS1/reset.html'
+          });
+          if (error) throw error;
+          return { ok: true };
+        }
         default:
           return _rawApiCall(payload);
       }
@@ -6039,12 +6056,12 @@ async function getTodayReports(fecha = "", force = false) {
     const setTone = (tone, icon, title, msg) => {
       box.classList.remove("hidden");
       const config = {
-        ok: { bg: "bg-emerald-50/80", border: "border-emerald-200/60", iconBg: "bg-emerald-500/10", iconBorder: "border-emerald-500/20", iconColor: "text-emerald-600", textColor: "text-emerald-900", accent: "text-emerald-600/70" },
-        warn: { bg: "bg-amber-50/80", border: "border-amber-200/60", iconBg: "bg-amber-500/10", iconBorder: "border-amber-500/20", iconColor: "text-amber-600", textColor: "text-amber-900", accent: "text-amber-600/70" },
-        bad: { bg: "bg-rose-50/80", border: "border-rose-200/60", iconBg: "bg-rose-500/10", iconBorder: "border-rose-500/20", iconColor: "text-rose-600", textColor: "text-rose-900", accent: "text-rose-600/70" }
+        ok: { bg: "bg-emerald-100", border: "border-emerald-200", iconBg: "bg-emerald-500/10", iconBorder: "border-emerald-500/20", iconColor: "text-emerald-600", textColor: "text-emerald-900", accent: "text-emerald-600/70" },
+        warn: { bg: "bg-orange-100", border: "border-orange-200", iconBg: "bg-orange-500/10", iconBorder: "border-orange-500/20", iconColor: "text-orange-600", textColor: "text-orange-900", accent: "text-orange-600/70" },
+        bad: { bg: "bg-rose-100", border: "border-rose-200", iconBg: "bg-rose-500/10", iconBorder: "border-rose-500/20", iconColor: "text-rose-600", textColor: "text-rose-900", accent: "text-rose-600/70" }
       }[tone];
 
-      container.className = `flex items-center gap-5 backdrop-blur-md border p-5 rounded-[22px] transition-all shadow-sm ${config.bg} ${config.border}`;
+      container.className = `flex items-center gap-5 bg-white border p-5 rounded-[22px] transition-all shadow-sm ${config.bg} ${config.border}`;
       iconBg.className = `w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border transition-all ${config.iconBg} ${config.iconBorder}`;
       iconEl.className = `material-symbols-rounded text-[26px] ${config.iconColor} ${tone !== "ok" ? "animate-pulse" : ""}`;
       iconEl.textContent = icon;

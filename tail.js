@@ -1,252 +1,7 @@
-﻿  let TOAST_TIMER = null;
-
-  function showOverlay(msg = "Cargandoâ€¦", title = "Procesando") {
-    if (overlayTitle) overlayTitle.textContent = title;
-    if (overlayMsg) overlayMsg.textContent = msg;
-    overlay.classList.add("show");
-  }
-
-  function hideOverlay() {
-    overlay.classList.remove("show");
-  }
-
-  /* MQ3 Ripple Effect */
-  function createRipple(event, targetElement = null) {
-    const button = targetElement || event.currentTarget;
-    if (!button || typeof button.getBoundingClientRect !== "function") return;
-    
-    const circle = document.createElement("span");
-    const diameter = Math.max(button.clientWidth, button.clientHeight);
-    const radius = diameter / 2;
-
-    circle.style.width = circle.style.height = `${diameter}px`;
-    circle.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`;
-    circle.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`;
-    circle.classList.add("ripple");
-
-    const ripple = button.getElementsByClassName("ripple")[0];
-    if (ripple) { ripple.remove(); }
-    button.appendChild(circle);
-  }
-
-
-  function smartLoader(taskFn, options = {}) {
-    const {
-      delay = 180,
-      message = "Cargandoâ€¦",
-      title = "Procesando"
-    } = options;
-
-    let shown = false;
-
-    const timer = setTimeout(() => {
-      shown = true;
-      showOverlay(message, title);
-    }, delay);
-
-    return Promise.resolve()
-      .then(() => taskFn())
-      .then((result) => {
-        clearTimeout(timer);
-        if (shown) hideOverlay();
-        return result;
-      })
-      .catch((error) => {
-        clearTimeout(timer);
-        if (shown) hideOverlay();
-        throw error;
-      });
-  }
-
-  function showToast(msg, ok = true, type = null, options = {}) {
-    if (!toast || !toastMsg) return;
-
-    const {
-      force = false,
-      cooldownMs = 1400
-    } = options || {};
-
-    const finalType = type ? type : (ok ? "good" : "bad");
-    const cleanMsg = String(msg || "").trim();
-    const toastKey = `${cleanMsg}|${finalType}`;
-    const now = Date.now();
-
-    if (!LIVE_STATE.toastMeta) {
-      LIVE_STATE.toastMeta = {
-        key: "",
-        ts: 0
-      };
-    }
-
-    const sameToast =
-      LIVE_STATE.toastMeta.key === toastKey &&
-      (now - Number(LIVE_STATE.toastMeta.ts || 0)) < cooldownMs;
-
-    if (!force && sameToast) return;
-
-    LIVE_STATE.toastMeta.key = toastKey;
-    LIVE_STATE.toastMeta.ts = now;
-    LIVE_STATE.lastToastKey = toastKey;
-
-    toastMsg.textContent = cleanMsg;
-    toast.classList.remove("good", "bad", "warn");
-    toast.classList.add(finalType);
-
-    toast.classList.remove("show");
-    void toast.offsetWidth;
-    toast.classList.add("show");
-
-    if (TOAST_TIMER) clearTimeout(TOAST_TIMER);
-    TOAST_TIMER = setTimeout(() => {
-      toast.classList.remove("show");
-      LIVE_STATE.lastToastKey = "";
-      if (LIVE_STATE.toastMeta) {
-        LIVE_STATE.toastMeta.key = "";
-        LIVE_STATE.toastMeta.ts = 0;
-      }
-    }, 3600);
-  }  /** ===== UTILS PORTED FROM BACKEND ===== **/
-  // Redundante: normalizeTextKey_, fixUtf8Text_, canSeeMunicipio_ ya importados
-
-
-  function hideToastNow() {
-    if (!toast) return;
-
-    if (TOAST_TIMER) {
-      clearTimeout(TOAST_TIMER);
-      TOAST_TIMER = null;
-    }
-
-    toast.classList.remove("show");
-    LIVE_STATE.lastToastKey = "";
-
-    if (!LIVE_STATE.toastMeta) {
-      LIVE_STATE.toastMeta = {
-        key: "",
-        ts: 0
-      };
-    } else {
-      LIVE_STATE.toastMeta.key = "";
-      LIVE_STATE.toastMeta.ts = 0;
-    }
-  }
-
-  function showWarnToast(msg, options = {}) {
-    showToast(msg, true, "warn", options);
-  }
-
-  function setBtnBusy(id, busy, busyText = "Procesandoâ€¦") {
-    const btn = $(id);
-    if (!btn) return;
-
-    if (busy) {
-      if (!btn.dataset.originalText) {
-        btn.dataset.originalText = btn.textContent || "";
-      }
-      btn.disabled = true;
-      btn.textContent = busyText;
-      btn.dataset.busy = "1";
-    } else {
-      btn.disabled = false;
-      if (btn.dataset.originalText) {
-        btn.textContent = btn.dataset.originalText;
-      }
-      btn.dataset.busy = "0";
-    }
-  }
-
-  function isBtnBusy(id) {
-    const btn = $(id);
-    return !!(btn && btn.dataset.busy === "1");
-  }
-
-  // Redundante: debounce ya importado
-
-  function toggleEl(id, show, displayWhenShown = "") {
-    const el = $(id);
-    if (!el) return;
-
-    if (show) {
-      if (displayWhenShown) {
-        el.style.display = displayWhenShown;
-      } else {
-        el.style.removeProperty("display");
-      }
-      el.hidden = false;
-    } else {
-      el.style.display = "none";
-      el.hidden = true;
-    }
-  }
-
-  function exposeAppFns() {
-    window.getTodayReports = getTodayReports;
-    window.getCaptureOverview = getCaptureOverview;
-    window.getHistoryMetrics = getHistoryMetrics;
-    window.loadNotifications = loadNotifications;
-    window.reloadCaptureSummarySilent = reloadCaptureSummarySilent;
-  }
-
-  function assertCriticalFns() {
-    const required = [
-      "getTodayReports",
-      "getCaptureOverview",
-      "getHistoryMetrics",
-      "loadNotifications",
-      "reloadCaptureSummarySilent"
-    ];
-
-    const missing = required.filter(name => typeof window[name] !== "function");
-
-    if (missing.length) {
-      console.error("Funciones crÃ­ticas faltantes:", missing);
-    }
-  }
-
-  function updateNotifBadge() {
-    const badge = $("bNotif");
-    const txt = $("notifTxt");
-    const btnClear = $("btnClearLiveFeed");
-
-    if (!badge || !txt) return;
-
-    const n = Number(LIVE_STATE.notifCount || 0);
-    const warn = Number(LIVE_STATE.notifWarnCount || 0);
-
-    const shouldShow = n > 0;
-    const nextText = warn > 0
-      ? `Actividad: ${n} Â· Alertas: ${warn}`
-      : `Actividad: ${n}`;
-
-    if (shouldShow) {
-      if (badge.style.display !== "inline-flex") {
-        badge.style.display = "inline-flex";
-      }
-      if (!badge.classList.contains("liveAccent")) {
-        badge.classList.add("liveAccent");
-      }
-      badge.classList.toggle("notifHot", warn > 0);
-
-      if (txt.textContent !== nextText) {
-        txt.textContent = nextText;
-      }
-
-      pulseBadge("bNotif");
-
-      if (btnClear && btnClear.style.display !== "inline-flex") {
-        btnClear.style.display = "inline-flex";
-      }
-      return;
-    }
-
-    if (badge.style.display !== "none") {
-      badge.style.display = "none";
-    }
-    badge.classList.remove("notifHot", "liveAccent", "pulse", "warn");
-
-    if (txt.textContent !== "Actividad: 0") {
-      txt.textContent = "Actividad: 0";
-    }
+  /** 
+   * 🛠️ NOTA: Las funciones de utilidad (showToast, showOverlay, updateNotifBadge, etc.) 
+   * han sido consolidadas en main.js para evitar redundancias y conflictos. 
+   **/
 
     if (btnClear && btnClear.style.display !== "none") {
       btnClear.style.display = "none";
@@ -845,13 +600,18 @@
     return NOTIF_BADGE_REFS;
   }
 
-  function syncMainNotifBadge(unread = 0) {
     const n = Number(unread || 0);
     const badge = $("notifBadgeMain");
     const topBadge = $("topNotifBadge");
+    const navBadge = $("notifBadgeNav"); 
     const tabNOTIFS = $("tabNOTIFS");
     const btnTopNotifications = $("btnTopNotifications");
     const nextText = String(n);
+
+    // Sync state for main.js logic
+    if (typeof LIVE_STATE !== "undefined") {
+      LIVE_STATE.notifCount = n;
+    }
 
     if (badge) {
       if (n > 0) {
@@ -875,6 +635,24 @@
         if (topBadge.textContent !== "0") topBadge.textContent = "0";
         btnTopNotifications?.classList.remove("liveAccent", "notifHot");
       }
+    }
+
+    // Modern Nav Badge (Bottom Nav Mobile)
+    if (navBadge) {
+      if (n > 0) {
+        navBadge.textContent = n > 99 ? "99+" : n;
+        navBadge.style.display = "flex";
+        navBadge.classList.add("badge-pulse");
+      } else {
+        navBadge.textContent = "0";
+        navBadge.style.display = "none";
+        navBadge.classList.remove("badge-pulse");
+      }
+    }
+
+    // Call global update if exists
+    if (typeof updateNotifBadge === "function") {
+      updateNotifBadge();
     }
   }
 
@@ -2494,10 +2272,10 @@
   }
 
   async function requestPasswordResetFlow() {
-    const usuario = $("forgotUsuario") ? $("forgotUsuario").value.trim() : "";
+    const email = $("forgotUsuario") ? $("forgotUsuario").value.trim() : "";
 
-    if (!usuario) {
-      showToast("Ingresa tu usuario", false);
+    if (!email) {
+      showToast("Ingresa tu correo institucional", false);
       return;
     }
 
@@ -2505,23 +2283,23 @@
     closeForgotModal();
 
     // Mostramos la pantalla de carga global del sistema
-    showOverlay("Estamos enviando el enlace de recuperaciÃ³nâ€¦", "Recuperando acceso");
+    showOverlay("Estamos enviando el enlace de recuperación…", "Recuperando acceso");
 
     try {
-      const r = await apiCall({
-        action: "requestPasswordReset",
-        usuario
+      // Usamos el cliente global window.supabase inicializado en main.js
+      const { data, error } = await window.supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://carlosgbd94-design.github.io/Reportes_JS1/reset.html',
       });
 
-      if (!r || !r.ok) {
-        showToast((r && r.error) ? r.error : "No se pudo enviar el enlace", false);
+      if (error) {
+        showToast(error.message || "No se pudo enviar el enlace", false);
         return;
       }
 
-      showToast("Se enviÃ³ el enlace de recuperaciÃ³n");
+      showToast("Se envió el enlace de recuperación a tu correo");
     } catch (e) {
       console.error(e);
-      showToast("Error al solicitar recuperaciÃ³n", false);
+      showToast("Error al solicitar recuperación", false);
     } finally {
       hideOverlay();
     }
