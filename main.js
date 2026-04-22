@@ -1912,6 +1912,13 @@ document.addEventListener("DOMContentLoaded", () => {
     box.style.display = "block";
     box.classList.add("open");
 
+    // Cerrar Explorador si está abierto
+    const archBox = document.getElementById("archivosDropdown");
+    if (archBox && archBox.style.display === "block") {
+       archBox.classList.remove("open");
+       archBox.style.display = "none";
+    }
+
     const currentItems = Array.isArray(LIVE_STATE.notifications) ? LIVE_STATE.notifications : [];
     const currentVisible = getFilteredNotifications(currentItems);
 
