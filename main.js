@@ -859,6 +859,52 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
   }
 
+  function formatNotifDate(ts) {
+    if (!ts) return "";
+    try {
+      const d = new Date(ts);
+      if (isNaN(d.getTime())) return ts;
+      const day = String(d.getDate()).padStart(2, '0');
+      const months = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+      const month = months[d.getMonth()];
+      const year = String(d.getFullYear()).slice(-2);
+      return `${day}-${month}-${year}`;
+    } catch (e) { return ts; }
+  }
+
+  function formatNotifBody(title, message) {
+    if (!message) return "";
+    let clean = message;
+    const isDelivery = (title && title.toLowerCase().includes("entrega")) || message.toLowerCase().includes("entregada");
+    
+    if (isDelivery) {
+      clean = "Pinol entregado:";
+    } else {
+      clean = title ? `${title}:` : "Notificación:";
+    }
+
+    const unidadMatch = message.match(/Unidad:\s*([^.\n]+)/i);
+    const unidad = unidadMatch ? unidadMatch[1].trim().split(" CLUES:")[0].split(" Solicitó:")[0] : "";
+    
+    const fechaMatch = message.match(/Fecha de solicitud:\s*([\d-]+)/i);
+    let fechaReq = fechaMatch ? fechaMatch[1] : "";
+    if (fechaReq) {
+      const d = new Date(fechaReq);
+      if (!isNaN(d.getTime())) {
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth()+1).padStart(2, '0');
+        const yy = String(d.getFullYear()).slice(-2);
+        fechaReq = `${dd}-${mm}-${yy}`;
+      }
+    }
+
+    let html = `<strong style="color:var(--md-sys-color-primary);">${clean}</strong>`;
+    if (fechaReq) html += `<div style="margin-top:2px;">Fecha de solicitud: ${fechaReq}</div>`;
+    if (unidad) html += `<div>Unidad de salud: ${unidad}</div>`;
+    
+    return html;
+  }
+
   function buildNotificationsHtml(items = []) {
     const arr = Array.isArray(items) ? items : [];
 
@@ -913,8 +959,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ${frascosTag}
               </div>
               <div class="notifMeta">
-                ${escapeHtml(item.created_ts || "")}
-                ${item.from_usuario ? ` · ${escapeHtml(item.from_usuario)}` : ""}
+                ${formatNotifDate(item.created_ts)}
               </div>
             </div>
             
@@ -931,7 +976,7 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
           </div>
           
-          <div class="notifBody snippet">${escapeHtml(item.message || "")}</div>
+          <div class="notifBody snippet">${formatNotifBody(item.title, item.message)}</div>
         </div>
       </div>
     `;
@@ -1036,7 +1081,7 @@ document.addEventListener("DOMContentLoaded", () => {
 </div>
         </button>
 
-        <div class="notifGroupBody" style="display:${collapsed ? "none" : "flex"};">
+        <div class="notifGroupBody" style="display:${collapsed ? "none" : "flex"}; flex-direction: column;">
           ${buildNotificationsHtml(group.items)}
         </div>
       </section>
@@ -1107,11 +1152,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (topBadge) {
       if (n > 0) {
-        if (topBadge.style.display !== "flex") topBadge.style.display = "flex";
+        topBadge.style.setProperty("display", "flex", "important");
         if (topBadge.textContent !== nextText) topBadge.textContent = nextText;
         btnTopNotifications?.classList.add("liveAccent", "notifHot");
       } else {
-        if (topBadge.style.display !== "none") topBadge.style.display = "none";
+        topBadge.style.setProperty("display", "none", "important");
         if (topBadge.textContent !== "0") topBadge.textContent = "0";
         btnTopNotifications?.classList.remove("liveAccent", "notifHot");
       }

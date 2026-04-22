@@ -1474,11 +1474,11 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   margin-top: 0;
   z-index: 2000000;
   contain: layout paint;
-  background: none !important; /* Fix: ensures no square white background */
+  background: none !important;
   box-shadow: none !important;
   border: none !important;
+  outline: none !important;
   padding: 0;
-  overflow: visible;
 }
 
 .topNotifCard {
@@ -1554,7 +1554,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   position: absolute !important;
   top: -8px !important;
   right: -8px !important;
-  display: flex !important;
+  display: flex; /* Removed !important to allow JS style.display = 'none' to work */
   align-items: center !important;
   justify-content: center !important;
   width: 20px !important;
@@ -1565,7 +1565,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   font-weight: 900 !important;
   line-height: 1 !important;
   color: #ffffff !important;
-  background: #ff0000 !important; /* Fix: forced ultra-red for visibility */
+  background: #ff0000 !important; 
   border: 2px solid #ffffff !important;
   box-shadow: 0 3px 10px rgba(255, 0, 0, 0.5) !important;
   z-index: 99999 !important;
@@ -4765,13 +4765,17 @@ body.mobile-mode .topNotifCard {
 
 .notifMiniBtn span { font-size: 16px; }
 
+#topNotifBadge {
+  display: none; /* JS will toggle this with !important */
+}
+
 .notifBody.snippet {
   margin-top: 4px;
   font-size: 11px;
-  line-height: 1.4;
+  line-height: 1.3;
   color: #64748b;
   display: -webkit-box;
-  -webkit-line-clamp: 1; /* Extreme compactness */
+  -webkit-line-clamp: 3; /* Increased to show formatted info */
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
