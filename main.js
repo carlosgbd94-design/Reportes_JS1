@@ -3770,17 +3770,27 @@ document.addEventListener("DOMContentLoaded", () => {
           const file = payload.file;
           const { category, targetClues, targetUnidad } = payload;
           
-          // Sanitizar partes de la ruta
-          const cleanCat = normalizePath(category).replace(/ /g, '_');
+          // Mapear categoría a TIPO para la nomenclatura oficial
+          let tipo = "REPORTE";
+          const catUpper = category.toUpperCase();
+          if (catUpper.includes("CAPACITACI")) tipo = "CAPACITACIÓN";
+          else if (catUpper.includes("CAMPA")) tipo = "CAMPAÑA";
+          else if (catUpper.includes("SUPERVISI")) tipo = "SUPERVISIÓN";
+
+          // Formatter para la fecha: YYYY-MM-DD
+          const now = new Date();
+          const yyyy = now.getFullYear();
+          const mm = String(now.getMonth() + 1).padStart(2, '0');
+          const dd = String(now.getDate()).padStart(2, '0');
+          const dateSlug = `${yyyy}-${mm}-${dd}`;
+
+          // Nomenclatura oficial: YYYY-MM-DD-EVIDENCIA-TIPO-CLUES_UNIDAD.ext
+          const extension = file.name.split('.').pop();
           const cleanUnidad = normalizePath(targetUnidad).replace(/[\s\/]/g, '_');
+          const officialName = `${dateSlug}-EVIDENCIA-${tipo}-${targetClues}_${cleanUnidad}.${extension}`;
           
-          // Formatter para la carpeta: categoria/CLUES - Unidad/YYYYMMDD-HHmm - Nombre.ext
-          const dateStr = new Date().toISOString().replace(/T/, '-').replace(/:/g, '').split('.')[0]; 
-          const cleanFileName = normalizePath(file.name).replace(/\s/g, '_');
-          const unspaced = `${targetClues}_${cleanFileName}`;
-          
-          // Ruta final: Categoria / CLUES_Unidad / YYYYMMDD-HHmm-CLUES_Nombre.ext
-          const folderPath = `${cleanCat}/${targetClues}_${cleanUnidad}/${dateStr}-${unspaced}`;
+          // Ruta final: Categoria / CLUES_Unidad / Nombre_Oficial
+          const folderPath = `${cleanCat}/${targetClues}_${cleanUnidad}/${officialName}`;
           
           const { error } = await supabase.storage.from('evidencias').upload(folderPath, file, {
             cacheControl: '3600',
@@ -10980,9 +10990,14 @@ $("btnSaveSR").onclick = async () => {
       filtered = filtered.filter(f => f.name.toLowerCase().includes(txtFilt));
     }
     
-    // Si no es unidad, aplicamos el filtro de categoría manual
-    if (!isUnidad && catFilt) {
-      filtered = filtered.filter(f => f.name.toLowerCase().includes(catFilt));
+    // Filtro de categoría inteligente (ignora guiones bajos y acentos)
+    if (catFilt) {
+      const normalize = str => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/_/g, " ");
+      const normalizedCat = normalize(catFilt).toLowerCase();
+      filtered = filtered.filter(f => {
+        const pathCat = normalize(f.name.split("/")[0] || "").toLowerCase();
+        return pathCat === normalizedCat;
+      });
     }
 
     if (filtered.length === 0) {
@@ -10993,24 +11008,25 @@ $("btnSaveSR").onclick = async () => {
     container.innerHTML = filtered.map(f => {
        const url = `${SUPABASE_URL}/storage/v1/object/public/evidencias/${encodeURIComponent(f.name)}`;
        const parts = f.name.split("/");
-       const cat = parts[0];
-       const cluesUnidad = parts[1];
        const fileName = parts[2];
+       const cluesUnidad = parts[1];
        const dObj = new Date(f.created_at);
-       const dateStr = dObj.toLocaleDateString() + " " + dObj.toLocaleTimeString();
 
-       return `<div class="bg-surface-variant/30 border border-outline-variant/50 rounded-2xl p-4 flex flex-col gap-2 transition-all hover:shadow-md3-1 hover:bg-surface-variant/60">
-                 <div class="flex items-start gap-3">
-                    <span class="material-symbols-rounded text-primary/70 text-[32px]">description</span>
-                    <div class="flex-1 min-w-0">
-                       <p class="font-bold text-[13px] text-primary truncate" title="${fileName}">${fileName}</p>
-                       <p class="text-[11px] font-semibold text-outline-variant/80 mt-1 uppercase tracking-wide truncate" title="${cluesUnidad}">${cluesUnidad}</p>
-                    </div>
-                 </div>
-                 <div class="flex items-center justify-between mt-2 pt-2 border-t border-outline-variant/30">
-                   <div class="text-[10px] text-outline font-medium">${dateStr}</div>
-                   <a href="${url}" target="_blank" class="bg-primary text-white rounded-lg px-3 py-1.5 text-[11px] font-bold no-underline transition-all hover:scale-105">Ver</a>
-                 </div>
+       return `<div class="bg-surface-variant/20 border border-outline-variant/30 rounded-xl p-3 flex items-center gap-3 transition-all hover:bg-surface-variant/50 group">
+                  <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20">
+                     <span class="material-symbols-rounded text-primary text-[22px]">description</span>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                     <p class="font-bold text-[12px] text-primary truncate leading-tight" title="${fileName}">${fileName}</p>
+                     <div class="flex items-center gap-2 mt-0.5">
+                        <span class="text-[9px] font-bold text-outline-variant uppercase tracking-wider truncate max-w-[150px]">${cluesUnidad.replace(/_/g, ' ')}</span>
+                        <span class="text-[9px] text-outline opacity-60">•</span>
+                        <span class="text-[9px] text-outline font-medium">${dObj.toLocaleDateString()}</span>
+                     </div>
+                  </div>
+                  <a href="${url}" target="_blank" class="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center transition-all hover:scale-110 shadow-sm" title="Ver archivo">
+                    <span class="material-symbols-rounded text-[18px]">visibility</span>
+                  </a>
                </div>`;
     }).join("");
   }
