@@ -643,6 +643,50 @@ label {
   margin: 16px 0 8px;
 }
 
+/* 🪄 MODERN PREMIUM INPUT GROUP */
+.modern-input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    transition: transform 0.2s ease;
+}
+
+.modern-input-group .input-icon {
+    position: absolute;
+    left: 20px;
+    z-index: 5;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Elastic feel */
+    pointer-events: none;
+    color: var(--md-sys-color-on-surface-variant);
+    opacity: 0.5;
+    font-size: 22px;
+}
+
+.modern-input-group input {
+    width: 100% !important;
+    padding-left: 56px !important; 
+    transition: all 0.3s ease !important;
+}
+
+.modern-input-group:focus-within .input-icon {
+    transform: translateX(-8px) scale(1.1); /* Slotted left + slight pop */
+    opacity: 1;
+    color: var(--md-sys-color-primary);
+}
+
+.modern-input-group:focus-within input {
+    padding-left: 48px !important;
+    border-color: var(--md-sys-color-primary) !important;
+    background-color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(0, 51, 102, 0.08) !important;
+}
+
+.modern-input-group:focus-within input::placeholder {
+    transition: opacity 0.2s ease;
+    opacity: 0 !important; /* Makes placeholder disappear on focus as requested */
+}
+
 input:focus,
 select:focus,
 textarea:focus {
@@ -2009,25 +2053,25 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
 }
 
 /* AlineaciÃ³n especÃ­fica para columnas de datos en captura */
-#srCaptureTable th:nth-child(1) { width: 25%; } /* BiolÃ³gico */
-#srCaptureTable th:nth-child(2) { width: 25%; } /* Lote */
-#srCaptureTable th:nth-child(3) { width: 15%; text-align: center; } /* Caducidad */
-#srCaptureTable th:nth-child(4) { width: 15%; text-align: center; } /* RecepciÃ³n */
-#srCaptureTable th:nth-child(5) { width: 15%; text-align: center; } /* Cantidad */
-#srCaptureTable th:nth-child(6) { width: 5%; }  /* Acciones */
-
-#srCaptureTable td:nth-child(3),
 #srCaptureTable {
   table-layout: fixed;
   width: 100%;
 }
 
-#srCaptureTable th:nth-child(1), #srCaptureTable td:nth-child(1) { width: 20%; } /* BiolÃ³gico */
-#srCaptureTable th:nth-child(2), #srCaptureTable td:nth-child(2) { width: 18%; } /* Lote */
-#srCaptureTable th:nth-child(3), #srCaptureTable td:nth-child(3) { width: 15%; text-align: center; } /* Caducidad */
-#srCaptureTable th:nth-child(4), #srCaptureTable td:nth-child(4) { width: 22%; text-align: center; } /* RecepciÃ³n */
-#srCaptureTable th:nth-child(5), #srCaptureTable td:nth-child(5) { width: 15%; text-align: center; } /* Cantidad */
-#srCaptureTable th:nth-child(6), #srCaptureTable td:nth-child(6) { width: 10%; text-align: center; } /* AcciÃ³n */
+#srCaptureTable th, 
+#srCaptureTable td {
+  padding: 8px 10px !important;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+/* Distribución de columnas optimizada para evitar scroll horizontal */
+#srCaptureTable th:nth-child(1), #srCaptureTable td:nth-child(1) { width: 22%; text-align: left; }   /* Biológico */
+#srCaptureTable th:nth-child(2), #srCaptureTable td:nth-child(2) { width: 18%; }                     /* Lote */
+#srCaptureTable th:nth-child(3), #srCaptureTable td:nth-child(3) { width: 14%; text-align: center; } /* Caducidad */
+#srCaptureTable th:nth-child(4), #srCaptureTable td:nth-child(4) { width: 18%; text-align: center; } /* Recepción */
+#srCaptureTable th:nth-child(5), #srCaptureTable td:nth-child(5) { width: 18%; text-align: center; } /* Cantidad */
+#srCaptureTable th:nth-child(6), #srCaptureTable td:nth-child(6) { width: 10%; text-align: center; } /* Acción */
 
 #srCaptureTable select, 
 #srCaptureTable input {
@@ -3518,9 +3562,9 @@ tr:hover td {
   font-size: 11px;
   letter-spacing: .3px;
   text-transform: uppercase;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .exportMunicipioToggle .modernToggleSub {
@@ -7783,7 +7827,7 @@ body.bioConfirmOpen {
 /* ? SENIOR UX: CAPTURE TABLES FORCED REFINEMENTS */
 #srCaptureTable th, #srCaptureTable td, 
 #bioTbody td {
-  padding: 12px 16px !important;
+  padding: 8px 10px !important; /* Reduced from 12px 16px */
   vertical-align: middle;
 }
 
@@ -8118,4 +8162,171 @@ input, textarea, select, [contenteditable] {
     box-shadow: 0 8px 30px rgba(0, 51, 102, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.2); 
     transform: translateY(-1px);
   }
+}
+
+/* 💠 SEMAFORIZACIÓN PREMIUM - STOCK & VALIDACIÓN */
+.input-good {
+  border-color: #10b981 !important;
+  background-color: #f0fdf4 !important;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.08) !important;
+}
+
+.input-warn {
+  border-color: #f59e0b !important;
+  background-color: #fffbeb !important;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.08) !important;
+}
+
+.input-bad {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2 !important;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.08) !important;
+}
+
+/* 💠 SEMAFORIZACIÓN PREMIUM - CADUCIDAD (PILLS) */
+.shelf-life-ok, .shelf-life-warn, .shelf-life-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  min-width: 95px;
+  border: 1.5px solid transparent;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+}
+
+.shelf-life-ok {
+  background: linear-gradient(135deg, #d1fae5, #ecfdf5);
+  color: #065f46;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.shelf-life-warn {
+  background: linear-gradient(135deg, #fef3c7, #fffbeb);
+  color: #92400e;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.shelf-life-danger {
+  background: linear-gradient(135deg, #fee2e2, #fef2f2);
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.2);
+  animation: pulse-danger-soft 2.5s infinite;
+}
+
+@keyframes pulse-danger-soft {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.2); }
+  70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* 💠 HINT DE PERMANENCIA (COMPACT & MODERN) */
+.sr-permanencia-hint {
+  font-size: 9px;
+  font-weight: 800;
+  margin-top: 4px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  transition: all 0.2s ease;
+  letter-spacing: 0.01em;
+}
+
+.sr-permanencia-hint.hint-warn {
+  background: #fff9db;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+.sr-permanencia-hint.hint-bad {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.sr-permanencia-hint span {
+  font-size: 14px;
+}
+
+/* 💠 VISTA EN VIVO PREMIUM: SEMAFORIZACIÓN PRO */
+.status-pill-pro {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.04);
+  transition: all 0.2s ease;
+}
+
+.status-pill-pro::before {
+  content: "";
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.status-pill-pro.lejana {
+  background: #ecfdf5;
+  color: #059669;
+}
+.status-pill-pro.lejana::before { background: #10b981; }
+
+.status-pill-pro.normal {
+  background: #fffbeb;
+  color: #d97706;
+}
+.status-pill-pro.normal::before { background: #fbbf24; }
+
+.status-pill-pro.pronto {
+  background: #fef2f2;
+  color: #dc2626;
+}
+.status-pill-pro.pronto::before { background: #ef4444; }
+
+.status-pill-pro.expired {
+  background: #27272a;
+  color: #ffffff;
+  animation: pulse-danger-pro 2s infinite;
+}
+.status-pill-pro.expired::before { background: #ef4444; }
+
+@keyframes pulse-danger-pro {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.live-view-row:hover {
+  background-color: #f8fafc !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.live-view-count-badge {
+  background: #f1f5f9;
+  color: #1e293b;
+  padding: 4px 12px;
+  border-radius: 8px;
+  font-weight: 900;
+  font-size: 14px;
+  display: inline-block;
 }

@@ -42,6 +42,28 @@
       .tab-inactive {
         @apply bg-white text-surface-on hover:bg-white hover:text-primary opacity-100 scale-100 shadow-none hover:shadow-[0_8px_20px_rgba(0,51,102,0.1)] border border-outline-variant hover:border-primary/20;
       }
+      /* --- Admin Sub-Tabs --- */
+      .nav-tab-admin {
+        @apply px-5 py-2.5 rounded-[18px] text-[10px] font-black uppercase tracking-widest flex items-center gap-2.5 transition-all duration-300 select-none border border-transparent;
+      }
+      .nav-tab-admin.active {
+        @apply bg-primary text-white shadow-[0_8px_20px_-4px_rgba(0,51,102,0.3)] scale-[1.05];
+      }
+      .nav-tab-admin:not(.active) {
+        @apply bg-surface hover:bg-primary/5 text-primary/60 hover:text-primary border-outline-variant/30;
+      }
+      .admin-sub-panel.hide {
+        @apply hidden;
+      }
+      .custom-scroll::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scroll::-webkit-scrollbar-track {
+        @apply bg-transparent;
+      }
+      .custom-scroll::-webkit-scrollbar-thumb {
+        @apply bg-outline-variant/50 rounded-full hover:bg-primary/30;
+      }
     }
   </style>
   <script>
@@ -161,20 +183,20 @@
               <!-- Identificador (Standard Layout) -->
               <div class="group">
                 <label class="text-[9px] font-black text-primary uppercase tracking-[0.1em] mb-1.5 ml-1 block opacity-60">Usuario</label>
-                <div class="relative">
-                  <span class="material-symbols-rounded absolute left-4 top-1/2 -translate-y-1/2 text-primary/30 group-focus-within:text-primary transition-colors text-[20px]">person</span>
-                  <input id="usuario" name="username" class="w-full bg-surface-variant/20 border-[1.5px] border-outline-variant/30 rounded-xl pl-12 pr-4 py-3 text-[15px] font-bold text-surface-on outline-none focus:border-primary focus:bg-white focus:shadow-sm transition-all" autocomplete="username" placeholder="Correo electrónico">
-                </div>
+              <div class="modern-input-group">
+                <span class="input-icon material-symbols-rounded">person</span>
+                <input id="usuario" name="username" class="rounded-xl h-14 text-[15px] font-bold" autocomplete="username" placeholder="Correo electrónico">
+              </div>
               </div>
 
               <!-- Contraseña (Standard Layout) -->
               <div class="group">
                 <label class="text-[9px] font-black text-primary uppercase tracking-[0.1em] mb-1.5 ml-1 block opacity-60">Contraseña</label>
-                <div class="relative">
-                  <span class="material-symbols-rounded absolute left-4 top-1/2 -translate-y-1/2 text-primary/30 group-focus-within:text-primary transition-colors text-[20px]">lock</span>
-                  <input id="password" name="password" type="password" class="w-full bg-surface-variant/20 border-[1.5px] border-outline-variant/30 rounded-xl pl-12 pr-12 py-3 text-[15px] font-bold text-surface-on outline-none focus:border-primary focus:bg-white focus:shadow-sm transition-all" autocomplete="current-password" placeholder="••••••••">
-                  <span class="material-symbols-rounded absolute right-4 top-1/2 -translate-y-1/2 text-primary/30 cursor-pointer hover:text-primary transition-colors text-[18px]" id="togglePassword">visibility_off</span>
-                </div>
+              <div class="modern-input-group">
+                <span class="input-icon material-symbols-rounded">lock</span>
+                <input id="password" name="password" type="password" class="rounded-xl h-14 text-[15px] font-bold" autocomplete="current-password" placeholder="••••••••">
+                <span class="material-symbols-rounded absolute right-4 top-1/2 -translate-y-1/2 text-primary/30 cursor-pointer hover:text-primary transition-colors text-[18px] z-10" id="togglePassword">visibility_off</span>
+              </div>
               </div>
             </div>
 
@@ -203,8 +225,7 @@
         <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all hover:shadow-md3-2" id="cardSide">
             <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10">
               
-              <!-- 💠 LEFT: ACTION BUTTONS (Classic Position) -->
-              <div class="flex flex-wrap gap-2.5 justify-start">
+                  <div class="flex flex-wrap gap-2.5 justify-start">
                   <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm hover:scale-[1.02] active:scale-95" id="btnExport" title="Exportar reporte seleccionado" style="display:none">
                     <span class="material-symbols-rounded text-[20px]">download</span> Exportar Reportes
                   </button>
@@ -228,7 +249,7 @@
                   <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm relative text-surface-on hover:scale-[1.02] active:scale-95" id="btnTopNotifications" type="button" style="display:none">
                     <div class="flex items-center justify-center relative">
                       <span class="material-symbols-rounded text-[20px]">notifications</span>
-                      <span id="topNotifBadge" class="absolute -top-1 -right-2 bg-status-error text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full" style="display:none">0</span>
+                      <span id="topNotifBadge" class="absolute -top-1 -right-2 bg-status-error text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full" style="display:none">00</span>
                     </div>
                     Notificaciones
                   </button>
@@ -471,9 +492,9 @@
                 <div class="bg-white border-2 border-slate-200 rounded-[32px] p-6 shadow-sm mb-6 mt-4">
                   <div class="flex-1 w-full">
                     <label class="text-[11px] font-black text-primary uppercase tracking-[0.2em] block mb-4 ml-1">Nombre del responsable de la existencia diaria</label>
-                    <div class="relative">
-                      <span class="absolute left-6 top-1/2 -translate-y-1/2 material-symbols-rounded text-slate-400 text-[24px] pointer-events-none">person</span>
-                      <input id="nombreSR" placeholder="Nombre completo" style="padding-left: 70px !important; opacity: 1 !important; pointer-events: auto !important; background-color: #f8fafc !important;" class="w-full h-[58px] border-2 border-slate-400 rounded-2xl pr-6 text-[15px] font-bold text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_0_0_5px_rgba(0,51,102,0.1)] transition-all outline-none placeholder:text-slate-400/60">
+                    <div class="modern-input-group">
+                      <span class="input-icon material-symbols-rounded">person</span>
+                      <input id="nombreSR" placeholder="Nombre completo" class="w-full h-[58px] rounded-2xl pr-6 text-[15px] font-bold outline-none shadow-md">
                     </div>
                   </div>
                 </div>
@@ -519,7 +540,10 @@
               <!-- CONSUMIBLES -->
               <div id="formCONS" style="display:none" class="flex flex-col gap-1">
                 <label class="text-[13px] font-extrabold text-primary uppercase tracking-[0.05em] block mb-1 mt-4 ml-2">Nombre de quien captura</label>
-                <input id="nombreCONS" placeholder="Nombre completo" class="w-full bg-white border border-outline-variant rounded-xl px-4 py-3 text-[15px] font-bold text-surface-on focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all placeholder:text-outline-variant mb-2">
+                <div class="modern-input-group">
+                  <span class="input-icon material-symbols-rounded">person</span>
+                  <input id="nombreCONS" placeholder="Nombre completo" class="rounded-xl h-12 text-[15px] font-bold outline-none">
+                </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
                   <div>
@@ -562,9 +586,9 @@
                     <!-- Campo de Nombre Premium -->
                     <div class="flex-1 w-full">
                       <label class="text-[11px] font-black text-primary uppercase tracking-[0.2em] block mb-4 ml-1">Nombre de quien captura el pedido</label>
-                      <div class="relative">
-                        <span class="absolute left-6 top-1/2 -translate-y-1/2 material-symbols-rounded text-slate-400 text-[24px] pointer-events-none">person</span>
-                        <input id="nombreBIO" placeholder="Nombre completo" style="padding-left: 70px !important; opacity: 1 !important; pointer-events: auto !important; background-color: #f8fafc !important;" class="w-full h-[58px] border-2 border-slate-400 rounded-2xl pr-6 text-[15px] font-bold text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_0_0_5px_rgba(0,51,102,0.1)] transition-all outline-none placeholder:text-slate-400/60">
+                      <div class="modern-input-group">
+                        <span class="input-icon material-symbols-rounded">person</span>
+                        <input id="nombreBIO" placeholder="Nombre completo" class="w-full h-[58px] rounded-2xl pr-6 text-[15px] font-bold outline-none shadow-md">
                       </div>
                     </div>
 
@@ -700,9 +724,9 @@
                     <!-- Contenedor Nombre con Contorno Marcado -->
                     <div class="flex-1 bg-white border-2 border-slate-200 rounded-[28px] p-6 shadow-sm">
                       <label class="text-[11px] font-black text-primary uppercase tracking-[0.2em] block mb-4 ml-1">Nombre de quien realiza la solicitud</label>
-                      <div class="relative">
-                        <span class="absolute left-6 top-1/2 -translate-y-1/2 material-symbols-rounded text-slate-400 text-[24px] pointer-events-none">person</span>
-                        <input id="nombrePINOL" placeholder="Nombre completo del responsable" style="padding-left: 70px !important; opacity: 1 !important; pointer-events: auto !important; background-color: #f8fafc !important;" class="w-full h-[58px] border-2 border-slate-400 rounded-2xl pr-6 text-[15px] font-bold text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_0_0_5px_rgba(0,51,102,0.1)] transition-all outline-none placeholder:text-slate-400/60">
+                      <div class="modern-input-group">
+                        <span class="input-icon material-symbols-rounded">person</span>
+                        <input id="nombrePINOL" placeholder="Nombre completo del responsable" class="w-full h-[58px] rounded-2xl pr-6 text-[15px] font-bold outline-none shadow-md">
                       </div>
                     </div>
 
@@ -755,9 +779,13 @@
                     </div>
                     <span>Solicitudes de pinol</span>
                   </button>
-                  <button class="tab-btn tab-inactive flex items-center gap-2.5 h-[46px] px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px]" id="tabLOTES" style="display:none">
+                   <button class="tab-btn tab-inactive flex items-center gap-2.5 h-[46px] px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px]" id="tabLOTES" style="display:none">
                     <span class="material-symbols-rounded text-[20px]">inventory_2</span>
                     <span>Carga de lotes</span>
+                  </button>
+                  <button class="tab-btn tab-inactive flex items-center gap-2.5 h-[46px] px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px]" id="tabOPS_ADMIN">
+                    <span class="material-symbols-rounded text-[20px]">admin_panel_settings</span>
+                    <span>Administración</span>
                   </button>
                 </div>
               </div>
@@ -900,7 +928,10 @@
 
                   <div>
                     <label for="summaryFecha" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Fecha a consultar</label>
-                    <input type="date" id="summaryFecha" class="w-full bg-surface-variant border border-outline-variant/30 rounded-xl px-4 py-3 text-[15px] font-medium text-surface-on focus:bg-white focus:border-primary outline-none transition-all">
+                    <div class="modern-input-group">
+                      <span class="input-icon material-symbols-rounded">calendar_today</span>
+                      <input type="date" id="summaryFecha" class="rounded-xl h-12 text-[15px] font-bold">
+                    </div>
                   </div>
                 </div>
 
@@ -1295,9 +1326,9 @@
                   </div>
                 </div>
 
-                <div class="batch-search-box">
-                  <span class="material-symbols-rounded search-icon">search</span>
-                  <input type="text" id="loteSearchInput" placeholder="Buscar por número de lote o nombre de vacuna..." autocomplete="off">
+                <div class="modern-input-group mb-6">
+                  <span class="input-icon material-symbols-rounded">search</span>
+                  <input type="text" id="loteSearchInput" placeholder="Buscar lote o vacuna..." autocomplete="off" class="rounded-xl h-12 text-[14px] font-bold">
                 </div>
 
                 <div class="tableWrap" id="lotesTableWrap">
@@ -1340,7 +1371,10 @@
                      <option value="Supervisión">Supervisión</option>
                      <option value="Otros reportes">Otros reportes</option>
                    </select>
-                   <input type="text" id="archivosSearch" placeholder="Buscar por Clues o Unidad..." class="bg-surface-variant rounded-xl border border-outline-variant/50 h-10 px-4 text-sm outline-none min-w-[250px] font-semibold text-primary" />
+                <div class="modern-input-group flex-1">
+                   <span class="input-icon material-symbols-rounded">search</span>
+                   <input type="text" id="archivosSearch" placeholder="Buscar por Clues o Unidad..." class="rounded-xl h-11 text-sm font-bold" />
+                </div>
                 </div>
                 <!-- Grid -->
                 <div id="archivosContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -1348,138 +1382,216 @@
                 </div>
               </div>
 
-              <!-- ADMIN -->
+              <!-- ADMIN (MODULAR REFACTOR) -->
               <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8" id="panelADMIN" style="display:none">
-                <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-4">
-                  <h3 class="text-[17px] font-extrabold text-primary tracking-tight m-0 bg-primary-container/40 px-6 py-2.5 rounded-2xl border border-primary/10">Administración de usuarios</h3>
-                  <button class="bg-surface-variant text-surface-on hover:bg-surface-onVariant/10 px-3 h-[36px] rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all outline-none border-none cursor-pointer text-[12px]" id="btnRefreshUsers" title="Actualizar lista">
-                    <span class="material-symbols-rounded text-[16px]">refresh</span> <span class="hidden sm:inline">Actualizar</span>
-                  </button>
-                </div>
-
-                <div class="text-[12px] opacity-70 font-medium mb-4">
-                  Alta basada en la hoja <b>USUARIOS</b>:
-                  <span class="opacity-50">usuario | password | municipio | clues | unidad | rol | activo</span>.
-                </div>
-
-                <div class="h-[1px] bg-outline-variant/40 w-full my-6"></div>
-
-                <div class="flex items-center gap-4 mb-2">
-                  <h3 class="text-[15px] font-extrabold text-primary m-0">Apertura extraordinaria de consumibles</h3>
-                  <span class="bg-surface-variant text-surface-onVariant px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest border border-outline-variant/30" id="consOverrideStateTxt">—</span>
-                </div>
-
-                <div class="hint">
-                  Permite habilitar captura de consumibles en una fecha extraordinaria por contingencia operativa.
-                </div>
-
-                <div class="row">
-                  <div>
-                    <label>Fecha extraordinaria</label>
-                    <input type="date" id="consOverrideDate">
+                <!-- Header del Panel -->
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-10 pb-6 border-b border-outline-variant/20">
+                  <div class="flex items-center gap-5">
+                    <div class="w-[52px] h-[52px] rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm">
+                      <span class="material-symbols-rounded text-[30px]">admin_panel_settings</span>
+                    </div>
+                    <div class="flex flex-col">
+                      <h3 class="text-[20px] font-black text-primary tracking-tight m-0 uppercase">Administración</h3>
+                      <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Gestión Institucional de Parámetros</p>
+                    </div>
                   </div>
-                  <div>
-                    <label>Motivo</label>
-                    <input id="consOverrideReason" placeholder="Ej: Semana Santa / suspensión oficial">
+                  
+                  <div class="flex items-center gap-2.5 bg-surface-variant/40 p-1.5 rounded-[22px] border border-outline-variant/20">
+                    <button class="nav-tab-admin active" id="tabAdminAperturas" onclick="activateAdminSubPanel('aperturas')">
+                      <span class="material-symbols-rounded text-[18px]">event_available</span> Aperturas
+                    </button>
+                    <button class="nav-tab-admin" id="tabAdminCatalogo" onclick="activateAdminSubPanel('catalogo')">
+                      <span class="material-symbols-rounded text-[18px]">inventory_2</span> Catálogo
+                    </button>
+                    <button class="nav-tab-admin" id="tabAdminSeguridad" onclick="activateAdminSubPanel('seguridad')">
+                      <span class="material-symbols-rounded text-[18px]">verified_user</span> Seguridad
+                    </button>
+                  </div>
+
+                  <div class="flex items-center gap-3">
+                    <button class="w-[42px] h-[42px] rounded-xl bg-surface-variant text-primary hover:bg-primary hover:text-white flex items-center justify-center transition-all shadow-sm border-none cursor-pointer" id="btnRefreshUsers" title="Actualizar datos">
+                      <span class="material-symbols-rounded">refresh</span>
+                    </button>
                   </div>
                 </div>
 
-                <div class="row">
-                  <div>
-                    <button class="btn-premium-action btn-save-animate" id="btnSaveConsOverride">Guardar apertura extraordinaria</button>
-                  </div>
-                  <div>
-                    <button class="ghostBtn" id="btnClearConsOverride">Desactivar apertura extraordinaria</button>
-                  </div>
-                </div>
+                <!-- SUB-PANEL 1: APERTURAS -->
+                <div id="adminSection_aperturas" class="admin-sub-panel animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Apertura Consumibles -->
+                    <div class="bg-surface/50 rounded-[28px] p-6 border border-outline-variant/30">
+                       <div class="flex items-center gap-3 mb-6">
+                         <span class="material-symbols-rounded text-primary opacity-60">shopping_cart</span>
+                         <h4 class="text-[13px] font-black text-primary m-0 uppercase tracking-widest">Apertura: Consumibles</h4>
+                       </div>
+                       <div class="space-y-4">
+                         <div class="flex flex-col gap-1.5">
+                           <label class="text-[10px] font-black text-primary/60 uppercase ml-1">Fecha de Apertura Extraordinaria</label>
+                           <input type="date" id="consOverrideDate" class="bg-white border-2 border-outline-variant/30 rounded-xl px-4 h-12 text-sm font-bold text-primary outline-none focus:border-primary transition-all">
+                         </div>
+                         <div class="flex flex-col gap-1.5">
+                           <label class="text-[10px] font-black text-primary/60 uppercase ml-1">Motivo (Visible para unidades)</label>
+                           <input type="text" id="consOverrideReason" placeholder="Ej. Inventario Anual, Feriado..." class="bg-white border-2 border-outline-variant/30 rounded-xl px-4 h-12 text-sm font-bold text-primary outline-none focus:border-primary transition-all">
+                         </div>
+                         <div class="pt-4 flex gap-3">
+                           <button class="flex-1 h-12 rounded-xl bg-primary text-white font-black text-[12px] uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all" id="btnSaveConsOverride">Activar Apertura</button>
+                           <button class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center hover:bg-rose-600 hover:text-white transition-all shadow-sm" id="btnClearConsOverride" title="Restablecer Reglas"><span class="material-symbols-rounded">block</span></button>
+                         </div>
+                         <div class="mt-4 p-3 rounded-xl bg-primary/5 border border-primary/10 text-center font-black text-[10px] text-primary uppercase tracking-widest" id="consOverrideStateTxt">CARGANDO REGLAS...</div>
+                       </div>
+                    </div>
 
-                <div class="hr"></div>
-
-                <div class="sectionTitle">
-                  <h3>Alta de usuario</h3>
-                  <span class="pill">Solo ADMIN</span>
-                </div>
-
-                <div class="row">
-                  <div>
-                    <label>Usuario</label>
-                    <input id="new_usuario" placeholder="Ej: ana.maria">
-                  </div>
-                  <div>
-                    <label>Contraseña</label>
-                    <input id="new_password" placeholder="Temporal">
-                  </div>
-                </div>
-
-                <div class="row">
-                  <div>
-                    <label>Rol (ADMIN / MUNICIPAL / UNIDAD)</label>
-                    <select id="new_rol">
-                      <option>UNIDAD</option>
-                      <option>MUNICIPAL</option>
-                      <option>ADMIN</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label>Activo (SI/NO)</label>
-                    <select id="new_activo">
-                      <option>SI</option>
-                      <option>NO</option>
-                    </select>
-                  </div>
-                </div>
-
-                <label>Municipio (uno o varios separados por coma). ADMIN puede usar *</label>
-                <input id="new_municipio" list="municipiosList" placeholder="Ej: Querétaro | Corregidora,Huimilpan | *">
-                <datalist id="municipiosList"></datalist>
-
-                <div class="row">
-                  <div>
-                    <label>CLUES (solo UNIDAD)</label>
-                    <input id="new_clues" list="cluesList" placeholder="QTSSA00xxxx">
-                    <datalist id="cluesList"></datalist>
-                  </div>
-                  <div>
-                    <label>Unidad (solo UNIDAD)</label>
-                    <input id="new_unidad" list="unidadesList" placeholder="Nombre de la unidad">
-                    <datalist id="unidadesList"></datalist>
+                    <!-- Apertura Biológicos -->
+                    <div class="bg-surface/50 rounded-[28px] p-6 border border-outline-variant/30">
+                       <div class="flex items-center gap-3 mb-6">
+                         <span class="material-symbols-rounded text-primary opacity-60">vaccines</span>
+                         <h4 class="text-[13px] font-black text-primary m-0 uppercase tracking-widest">Apertura: Biológicos (Mensual)</h4>
+                       </div>
+                       <div class="grid grid-cols-2 gap-4">
+                          <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] font-black text-primary/60 uppercase ml-1">Mes Objetivo</label>
+                            <input type="month" id="bioOverrideMonth" class="bg-white border-2 border-outline-variant/30 rounded-xl px-4 h-11 text-[13px] font-bold text-primary outline-none">
+                          </div>
+                          <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] font-black text-primary/60 uppercase ml-1">Día de Entrega</label>
+                            <input type="date" id="bioOverrideTarget" class="bg-white border-2 border-outline-variant/30 rounded-xl px-4 h-11 text-[13px] font-bold text-primary outline-none">
+                          </div>
+                          <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] font-black text-primary/60 uppercase ml-1">Apertura Sistema</label>
+                            <input type="date" id="bioOverrideStart" class="bg-white border-2 border-outline-variant/30 rounded-xl px-4 h-11 text-[13px] font-bold text-primary outline-none">
+                          </div>
+                          <div class="flex flex-col gap-1.5">
+                            <label class="text-[10px] font-black text-primary/60 uppercase ml-1">Cierre Sistema</label>
+                            <input type="date" id="bioOverrideEnd" class="bg-white border-2 border-outline-variant/30 rounded-xl px-4 h-11 text-[13px] font-bold text-primary outline-none">
+                          </div>
+                       </div>
+                       <button class="w-full h-12 rounded-xl bg-primary text-white font-black text-[12px] uppercase tracking-widest mt-6 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all" id="btnSaveBioOverride">Actualizar Calendario</button>
+                    </div>
                   </div>
                 </div>
 
-                <button class="btn" id="btnCreateUser">Crear usuario</button>
+                <!-- SUB-PANEL 2: CATALOGO (PARÁMETROS) -->
+                <div id="adminSection_catalogo" class="admin-sub-panel hide animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div class="flex flex-col gap-8">
+                     <!-- Bulk Edit Controls -->
+                     <div class="bg-surface/50 rounded-[32px] p-8 border border-outline-variant/30">
+                        <div class="flex flex-col xl:flex-row gap-10">
+                           <!-- Units Selection -->
+                           <div class="flex-1 flex flex-col gap-6">
+                              <div class="flex flex-col gap-1">
+                                <h4 class="text-[12px] font-black text-primary m-0 uppercase tracking-widest flex items-center gap-2">
+                                  <span class="material-symbols-rounded text-lg text-primary/60">location_on</span> Configurar Unidades
+                                </h4>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase mt-1">Busca y selecciona las unidades a modificar</p>
+                              </div>
 
-                <div class="hr"></div>
+                              <div class="flex flex-col gap-4">
+                                <div class="modern-input-group">
+                                  <span class="input-icon material-symbols-rounded">search</span>
+                                  <input type="text" id="unitBulkSearch" placeholder="Nombre de unidad o CLUES..." class="rounded-2xl h-14 text-[14px] font-bold text-primary outline-none shadow-sm">
+                                </div>
+                                
+                                <div class="flex items-center justify-between px-2">
+                                   <div class="flex items-center gap-3">
+                                      <button class="flex items-center gap-2 bg-primary/5 hover:bg-primary/10 text-primary px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all border-none cursor-pointer" onclick="selectAllFilteredUnits()">
+                                        <span class="material-symbols-rounded text-sm">check_circle</span> Marcar Lista
+                                      </button>
+                                      <button class="flex items-center gap-2 bg-surface hover:bg-outline-variant/10 text-slate-500 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all border border-outline-variant/20 cursor-pointer" onclick="deselectAllUnits()">
+                                        <span class="material-symbols-rounded text-sm">cancel</span> Limpiar
+                                      </button>
+                                   </div>
+                                   <button class="text-primary font-black text-[10px] uppercase hover:underline border-none bg-transparent cursor-pointer flex items-center gap-1" onclick="loadAllUnitsBulk()">
+                                      <span class="material-symbols-rounded text-[14px]">public</span> Ver Todas
+                                   </button>
+                                </div>
 
-                <div class="sectionTitle">
-                  <h3>Usuarios</h3>
-                  <span class="pill" id="usersCount">—</span>
+                                <div id="unitBulkList" class="flex flex-wrap gap-2.5 h-[200px] overflow-y-auto p-5 bg-white/50 rounded-2xl border border-outline-variant/20 content-start custom-scroll">
+                                   <div class="muted p-2 text-center text-[11px] font-bold opacity-40 py-10 w-full flex flex-col items-center gap-3">
+                                      <span class="material-symbols-rounded text-[32px]">manage_search</span>
+                                      Escribe para buscar unidades...
+                                   </div>
+                                </div>
+                              </div>
+                           </div>
+
+                           <div class="w-[1px] bg-outline-variant/20 hidden xl:block"></div>
+
+                           <!-- Vaccines Selection -->
+                           <div class="flex-1 flex flex-col gap-6">
+                              <div class="flex flex-col gap-1">
+                                <h4 class="text-[12px] font-black text-primary m-0 uppercase tracking-widest flex items-center gap-2">
+                                  <span class="material-symbols-rounded text-lg text-primary/60">vaccines</span> Configurar Biológicos
+                                </h4>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase mt-1">Selecciona las vacunas que se habilitarán u ocultarán</p>
+                              </div>
+
+                              <div class="flex items-center gap-3">
+                                 <button class="flex-1 flex items-center justify-center gap-2 bg-primary/5 hover:bg-primary/10 text-primary p-3 rounded-xl text-[10px] font-black uppercase transition-all border-none cursor-pointer" onclick="selectAllVaccinesBulk()">
+                                   <span class="material-symbols-rounded text-sm">done_all</span> Marcar Todas
+                                 </button>
+                                 <button class="flex-1 flex items-center justify-center gap-2 bg-surface hover:bg-outline-variant/10 text-slate-500 p-3 rounded-xl text-[10px] font-black uppercase transition-all border border-outline-variant/20 cursor-pointer" onclick="deselectAllVaccinesBulk()">
+                                   <span class="material-symbols-rounded text-sm">block</span> Desmarcar
+                                 </button>
+                              </div>
+
+                              <div id="bioBulkVaccinesList" class="grid grid-cols-2 gap-3 h-[241px] overflow-y-auto p-5 bg-white/50 rounded-2xl border border-outline-variant/20 custom-scroll">
+                                 <!-- JS populate -->
+                              </div>
+                           </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row gap-4 mt-12 pt-10 border-t border-outline-variant/20">
+                           <button class="flex-1 h-16 rounded-2xl bg-primary text-white font-black text-[13px] uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3" onclick="handleBulkBioVisibility('SI')" id="btnBulkBioEnable">
+                             <div class="flex flex-col items-center">
+                               <span class="material-symbols-rounded text-2xl">visibility</span>
+                               <span class="mt-1">Habilitar en Unidades</span>
+                             </div>
+                           </button>
+                           <button class="flex-1 h-16 rounded-2xl bg-white text-rose-600 border-2 border-rose-100 font-black text-[13px] uppercase tracking-widest hover:bg-rose-50 transition-all flex items-center justify-center gap-3" onclick="handleBulkBioVisibility('NO')" id="btnBulkBioDisable">
+                              <div class="flex flex-col items-center">
+                               <span class="material-symbols-rounded text-2xl">visibility_off</span>
+                               <span class="mt-1">Inhabilitar / Ocultar</span>
+                             </div>
+                           </button>
+                        </div>
+                     </div>
+                  </div>
                 </div>
 
-                <div class="tableWrap usersTableDesktop">
-                  <table class="summaryTable">
-                    <thead>
-                      <tr>
-                        <th>usuario</th>
-                        <th>municipio</th>
-                        <th>clues</th>
-                        <th>unidad</th>
-                        <th>rol</th>
-                        <th>activo</th>
-                        <th>acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody id="usersTbody">
-                      <tr>
-                        <td colspan="7" class="muted">Cargando…</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <!-- SUB-PANEL 3: SEGURIDAD (USUARIOS) -->
+                <div id="adminSection_seguridad" class="admin-sub-panel hide animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div class="bg-surface/50 rounded-[32px] overflow-hidden border border-outline-variant/30 shadow-sm">
+                    <div class="p-6 bg-primary/5 border-b border-outline-variant/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                       <div class="flex items-center gap-3">
+                          <span class="material-symbols-rounded text-primary text-[24px]">group</span>
+                          <h4 class="text-[14px] font-black text-primary m-0 uppercase tracking-widest">Gestión de Acceso Institucional</h4>
+                       </div>
+                       <span class="text-[11px] font-bold text-primary/60 uppercase" id="usersCount">...</span>
+                    </div>
+                    
+                    <div class="overflow-x-auto min-h-[400px]">
+                      <table class="w-full text-left border-collapse" id="usersTableDesktop">
+                        <thead>
+                          <tr class="bg-primary/5">
+                            <th class="px-6 py-4 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">Identificador</th>
+                            <th class="px-6 py-4 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">Ubicación</th>
+                            <th class="px-6 py-4 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">Rol</th>
+                            <th class="px-6 py-4 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">Estado</th>
+                            <th class="px-6 py-4 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-right">Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody id="usersTbody" class="divide-y divide-outline-variant/20">
+                          <!-- JS populate -->
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    <!-- Mobile View for Users -->
+                    <div id="usersCards" class="grid grid-cols-1 md:grid-cols-2 p-6 gap-5 lg:hidden">
+                       <!-- JS populate -->
+                    </div>
+                  </div>
                 </div>
-
-                <div class="mobileCardsWrap" id="usersCards">
-                  <div class="muted">Cargando…</div>
-                </div>
-
               </div>
             </div>
 
@@ -1644,60 +1756,33 @@
             <div class="modalFields" style="display:flex; flex-direction:column; gap:16px;">
 
               <div class="fieldCard" style="background:transparent; border:none; padding:0;">
-                <label
-                  style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:8px; display:block;">CONTRASEÑA
-                  ACTUAL</label>
-                <div class="pwdWrap" style="position:relative;">
-                  <input id="pwdCurrent" type="password" placeholder="Contraseña actual" style="
-                    background: var(--md-surface-container-highest);
-                    border: 1px solid var(--md-outline-variant);
-                    border-radius: 12px;
-                    padding: 14px;
-                    font-size: 16px;
-                    width: 100%;
-                  ">
-                  <button type="button" class="pwdToggle" data-target="pwdCurrent"
-                    style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--md-sys-color-primary);">
+                <label style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:8px; display:block;">CONTRASEÑA ACTUAL</label>
+                <div class="modern-input-group">
+                  <span class="input-icon material-symbols-rounded">lock_open</span>
+                  <input id="pwdCurrent" type="password" placeholder="Contraseña actual" class="rounded-xl h-12">
+                  <button type="button" class="pwdToggle" data-target="pwdCurrent" style="position:absolute; right:10px; z-index:10; background:none; border:none; color:var(--md-sys-color-primary);">
                     <span class="material-symbols-rounded">visibility</span>
                   </button>
                 </div>
               </div>
 
               <div class="fieldCard" style="background:transparent; border:none; padding:0;">
-                <label
-                  style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:8px; display:block;">NUEVA
-                  CONTRASEÑA</label>
-                <div class="pwdWrap" style="position:relative;">
-                  <input id="pwdNew" type="password" placeholder="Nueva contraseña" style="
-                    background: var(--md-surface-container-highest);
-                    border: 1px solid var(--md-outline-variant);
-                    border-radius: 12px;
-                    padding: 14px;
-                    font-size: 16px;
-                    width: 100%;
-                  ">
-                  <button type="button" class="pwdToggle" data-target="pwdNew"
-                    style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--md-sys-color-primary);">
+                <label style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:8px; display:block;">NUEVA CONTRASEÑA</label>
+                <div class="modern-input-group">
+                  <span class="input-icon material-symbols-rounded">lock</span>
+                  <input id="pwdNew" type="password" placeholder="Nueva contraseña" class="rounded-xl h-12">
+                  <button type="button" class="pwdToggle" data-target="pwdNew" style="position:absolute; right:10px; z-index:10; background:none; border:none; color:var(--md-sys-color-primary);">
                     <span class="material-symbols-rounded">visibility</span>
                   </button>
                 </div>
               </div>
 
               <div class="fieldCard" style="background:transparent; border:none; padding:0;">
-                <label
-                  style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:8px; display:block;">CONFIRMAR
-                  NUEVA</label>
-                <div class="pwdWrap" style="position:relative;">
-                  <input id="pwdConfirm" type="password" placeholder="Confirmar nueva contraseña" style="
-                    background: var(--md-surface-container-highest);
-                    border: 1px solid var(--md-outline-variant);
-                    border-radius: 12px;
-                    padding: 14px;
-                    font-size: 16px;
-                    width: 100%;
-                  ">
-                  <button type="button" class="pwdToggle" data-target="pwdConfirm"
-                    style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--md-sys-color-primary);">
+                <label style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:8px; display:block;">CONFIRMAR NUEVA</label>
+                <div class="modern-input-group">
+                  <span class="input-icon material-symbols-rounded">gpp_maybe</span>
+                  <input id="pwdConfirm" type="password" placeholder="Confirmar nueva contraseña" class="rounded-xl h-12">
+                  <button type="button" class="pwdToggle" data-target="pwdConfirm" style="position:absolute; right:10px; z-index:10; background:none; border:none; color:var(--md-sys-color-primary);">
                     <span class="material-symbols-rounded">visibility</span>
                   </button>
                 </div>
@@ -1707,14 +1792,10 @@
                 <label
                   style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:8px; display:block;">CORREO
                   DE RECUPERACIÓN</label>
-                <input id="myEmail" type="email" placeholder="nombre@correo.com" style="
-                  background: var(--md-surface-container-highest);
-                  border: 1px solid var(--md-outline-variant);
-                  border-radius: 12px;
-                  padding: 14px;
-                  font-size: 16px;
-                  width: 100%;
-                ">
+                <div class="modern-input-group">
+                  <span class="input-icon material-symbols-rounded">alternate_email</span>
+                  <input id="myEmail" type="email" placeholder="nombre@correo.com" class="rounded-xl h-12">
+                </div>
               </div>
 
             </div>
@@ -1778,14 +1859,10 @@
               <div class="fieldCard" style="background:transparent; border:none; padding:0;">
                 <label
                   style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:8px; display:block;">USUARIO</label>
-                <input id="forgotUsuario" type="text" placeholder="Tu usuario" style="
-                  background: var(--md-surface-container-highest);
-                  border: 1px solid var(--md-outline-variant);
-                  border-radius: 12px;
-                  padding: 14px;
-                  font-size: 16px;
-                  width: 100%;
-                ">
+                <div class="modern-input-group">
+                  <span class="input-icon material-symbols-rounded">contact_mail</span>
+                  <input id="forgotUsuario" type="text" placeholder="Tu usuario" class="rounded-xl h-12">
+                </div>
               </div>
             </div>
 
@@ -1942,20 +2019,29 @@
                 </div>
               </div>
 
-              <div id="exportFechaSingleBox" style="display:none;">
-                <label>Fecha a exportar</label>
-                <input type="date" id="exportFecha">
+              <div id="exportFechaSingleBox" style="display:none; margin-bottom:12px;">
+                <label class="text-[11px] font-black text-primary/40 uppercase tracking-widest block mb-2">Fecha a exportar</label>
+                <div class="modern-input-group">
+                  <span class="input-icon material-symbols-rounded">event</span>
+                  <input type="date" id="exportFecha" class="rounded-xl h-11">
+                </div>
               </div>
 
               <div id="exportFechaRangeBox" style="display:block;">
-                <div class="row" style="gap:20px;">
+                <div class="flex gap-4">
                   <div style="flex:1;">
-                    <label>Fecha inicial</label>
-                    <input type="date" id="exportFechaInicio">
+                    <label class="text-[11px] font-black text-primary/40 uppercase tracking-widest block mb-1">Inicio</label>
+                    <div class="modern-input-group">
+                      <span class="input-icon material-symbols-rounded">play_circle</span>
+                      <input type="date" id="exportFechaInicio" class="rounded-xl h-11">
+                    </div>
                   </div>
                   <div style="flex:1;">
-                    <label>Fecha final</label>
-                    <input type="date" id="exportFechaFin">
+                    <label class="text-[11px] font-black text-primary/40 uppercase tracking-widest block mb-1">Fin</label>
+                    <div class="modern-input-group">
+                      <span class="input-icon material-symbols-rounded">stop_circle</span>
+                      <input type="date" id="exportFechaFin" class="rounded-xl h-11">
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2012,54 +2098,70 @@
           style="color:inherit;text-decoration:underline;">carlosgbd94@gmail.com</a>
       </div>
 
-    <!-- ✅ VISTA EN VIVO MD3 (COMPACT & OPTIMIZED) -->
-    <div id="liveViewOverlay" class="overlay" aria-hidden="true"
-      style="z-index: 10000; align-items:center; justify-content:center; padding: 0;">
-      <div class="modal" style="width: 100%; max-width: 960px; height: 95vh; display: flex; flex-direction: column; background: #ffffff; border-radius: 32px; overflow: hidden; box-shadow: 0 40px 100px rgba(0,0,0,0.5);">
+    <!-- ✅ VISTA EN VIVO PREMIUM (REDESIGNED) -->
+    <div id="liveViewOverlay" class="overlay" aria-hidden="true" style="z-index: 10000; align-items:center; justify-content:center; padding: 0;">
+      <div class="modal" style="width: 100%; max-width: 1180px; height: 95vh; display: flex; flex-direction: column; background: #ffffff; border-radius: 32px; overflow: hidden; box-shadow: 0 40px 100px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);">
         
-        <div class="modalHeader" style="background: var(--md-sys-color-surface); border-bottom: 1px solid rgba(0,0,0,0.08); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;">
+        <!-- Header con Identidad Visual Fuerte -->
+        <div class="modalHeader" style="background: #ffffff; border-bottom: 1px solid #f1f5f9; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between;">
           <div style="flex: 1;">
-            <div id="liveViewUnidad" style="font-size: 18px; font-weight: 900; color: var(--primary); letter-spacing: -0.02em;">Unidad: —</div>
-            <div id="liveViewMunicipio" style="font-size: 12px; font-weight: 700; color: var(--muted); margin-top: 2px;">—</div>
+            <div id="liveViewUnidad" style="font-size: 22px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em; line-height: 1.2;">Unidad: —</div>
+            <div id="liveViewMunicipio" style="font-size: 13px; font-weight: 700; color: #64748b; margin-top: 4px; display: flex; align-items: center; gap: 8px;">—</div>
           </div>
-          <button class="btn-modal-close-md3" id="btnLiveViewClose" title="Cerrar vista" style="background: var(--md-sys-color-surface-container-highest); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;">
-            <span class="material-symbols-rounded">close</span>
+          <button class="btn-modal-close-md3" id="btnLiveViewClose" title="Cerrar vista" style="background: #f1f5f9; border-radius: 16px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: all 0.2s ease;">
+            <span class="material-symbols-rounded" style="color: #475569; font-size: 28px;">close</span>
           </button>
         </div>
 
-        <div class="modalBody" style="flex: 1; overflow-y: auto; padding: 16px; background: #fdfdfd;">
+        <div class="modalBody" style="flex: 1; overflow-y: auto; padding: 24px 32px; background: #f8fafc;">
           
-          <!-- KPIs Entregables (Side-by-Side Compact) -->
-          <div class="grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
-            <div class="card" style="padding: 12px; border-radius: 20px; background: #fff; border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
-              <div style="font-size: 10px; font-weight: 900; color: var(--primary); text-transform: uppercase; opacity: 0.6; letter-spacing: 0.05em; margin-bottom: 8px;">Estado Semafórico</div>
-              <div style="height: 140px;">
+          <!-- Summary Metrics & Resumen Visual Compacto -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 24px;">
+            
+            <div style="background: #fff; border-radius: 24px; padding: 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 20px;">
+              <div style="width: 100px; height: 100px; flex-shrink: 0;">
                 <canvas id="chartSemaforo"></canvas>
               </div>
-            </div>
-            <div class="card" style="padding: 12px; border-radius: 20px; background: #fff; border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
-              <div style="font-size: 10px; font-weight: 900; color: var(--primary); text-transform: uppercase; opacity: 0.6; letter-spacing: 0.05em; margin-bottom: 8px;">Vencimientos Próximos</div>
-              <div style="height: 140px;">
-                <canvas id="chartCaducidad"></canvas>
+              <div style="flex: 1;">
+                <div style="font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">Salud del Inventario</div>
+                <div style="font-size: 18px; font-weight: 900; color: #0f172a;">Estado Semafórico</div>
+                <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">Distribución por vigencia</div>
               </div>
             </div>
+
+            <div style="background: #fff; border-radius: 24px; padding: 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 20px;">
+              <div style="width: 140px; height: 100px; flex-shrink: 0;">
+                <canvas id="chartCaducidad"></canvas>
+              </div>
+              <div style="flex: 1;">
+                <div style="font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">Riesgo de Caducidad</div>
+                <div style="font-size: 18px; font-weight: 900; color: #0f172a;">Próximos Vencimientos</div>
+                <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">Análisis de tiempo</div>
+              </div>
+            </div>
+
           </div>
 
-          <!-- Tabla Detalle Lotes (Compact Rows) -->
-          <div class="card" style="padding: 0; border-radius: 20px; overflow: hidden; background: #fff; border: 1px solid rgba(0,0,0,0.08);">
-            <table class="summaryTable" id="liveViewTable" style="margin:0; width: 100%; border-collapse: collapse;">
-              <thead style="background: #f1f4f8; border-bottom: 2px solid #e2e8f0;">
-                <tr>
-                  <th style="padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 900; color: var(--primary); text-transform: uppercase;">Biológico</th>
-                  <th style="padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 900; color: var(--primary); text-transform: uppercase;">Lote</th>
-                  <th style="padding: 12px 16px; text-align: center; font-size: 11px; font-weight: 900; color: var(--primary); text-transform: uppercase;">Existencia</th>
-                  <th style="padding: 12px 16px; text-align: center; font-size: 11px; font-weight: 900; color: var(--primary); text-transform: uppercase;">Caducidad</th>
-                  <th style="padding: 12px 16px; text-align: center; font-size: 11px; font-weight: 900; color: var(--primary); text-transform: uppercase;">Semaforización</th>
-                  <th style="padding: 12px 16px; text-align: center; font-size: 11px; font-weight: 900; color: var(--primary); text-transform: uppercase;">Última Rec.</th>
+          <!-- Tabla de Inventario Detallado -->
+          <div style="background: #fff; border-radius: 24px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);">
+            <div style="padding: 16px 24px; background: #fff; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-size: 14px; font-weight: 900; color: #0f172a;">Detalle de Existencia Actual</div>
+              <div style="font-size: 11px; font-weight: 700; color: #64748b; background: #f1f5f9; padding: 4px 12px; border-radius: 8px;">Vista Operativa</div>
+            </div>
+            
+            <table id="liveViewTable" style="width: 100%; border-collapse: collapse; margin: 0;">
+              <thead>
+                <tr style="background: #f8fafc; border-bottom: 1px solid #f1f5f9;">
+                  <th style="padding: 16px 24px; text-align: left; font-size: 11px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">Biológico</th>
+                  <th style="padding: 16px 24px; text-align: left; font-size: 11px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">Lote</th>
+                  <th style="padding: 16px 24px; text-align: center; font-size: 11px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">Existencia</th>
+                  <th style="padding: 16px 24px; text-align: center; font-size: 11px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">Caducidad</th>
+                  <th style="padding: 16px 24px; text-align: center; font-size: 11px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">Semaforización</th>
+                  <th style="padding: 16px 24px; text-align: center; font-size: 11px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">Última Rec.</th>
                 </tr>
               </thead>
-              <tbody id="liveViewTbody" style="font-size: 13px;">
-                <tr><td colspan="6" style="padding: 30px; text-align:center; color: var(--muted); font-weight: 600;">Selecciona una unidad para ver detalles</td></tr>
+              <tbody id="liveViewTbody">
+                <tr><td colspan="6" style="padding: 60px; text-align:center; color: #94a3b8; font-weight: 600;">Selecciona una unidad para ver detalles</td></tr>
               </tbody>
             </table>
           </div>

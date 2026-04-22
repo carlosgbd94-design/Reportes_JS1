@@ -82,6 +82,9 @@ function clearSession() {
   } catch(e) {}
 }
 
+// 📌 CONFIGURACIÓN DE ROTACIÓN DE DATOS (FACTS)
+let FACTS_TIMER = null;
+
 document.addEventListener("DOMContentLoaded", () => {
     // 🛡️ ARRANQUE ÚNICO (Expert Implementation)
     (async () => {
@@ -1146,6 +1149,22 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         navBadge.textContent = "0";
         navBadge.style.display = "none";
+      }
+    }
+
+    // Sync state for local logic
+    if (typeof LIVE_STATE !== "undefined") {
+      LIVE_STATE.notifCount = n;
+    }
+
+    const deskBadge = $("notifBadgeDesktop");
+    if (deskBadge) {
+      if (n > 0) {
+        deskBadge.textContent = n > 99 ? "99+" : n;
+        deskBadge.style.display = "flex";
+      } else {
+        deskBadge.textContent = "0";
+        deskBadge.style.display = "none";
       }
     }
 
@@ -2890,7 +2909,9 @@ document.addEventListener("DOMContentLoaded", () => {
       "biogetform", "biogetdatesformonth", "unitstatus", "unitcatalog", 
       "pinolsolicitud", "listpinol", "markpinoldelivered", "confirmpinolreceipt",
       "sendnotification", "getlotesbymunicipio", "savelotes", "uploadfile", "listfiles",
-      "export", "bioexportmatrix", "biogetexportoptions", "admingetunitdetail", "requestpasswordreset"
+      "export", "bioexportmatrix", "biogetexportoptions", "admingetunitdetail", "requestpasswordreset",
+      "adminlistusers", "admincreateuser", "admintoggleuser", "adminresetpassword", "admindeleteuser", 
+      "adminsetbiooverride", "admintogglebioparam", "adminsetconsumiblesoverride", "admingetconsumiblesoverride"
     ];
 
     if (SUPABASE_ACTIONS.includes(action.toLowerCase())) {
@@ -2950,7 +2971,7 @@ document.addEventListener("DOMContentLoaded", () => {
       switch (actionLower) {
         case "login": {
           const { data, error } = await supabase
-            .from('usuarios')
+            .from('usuarios_legacy')
             .select('*')
             .ilike('usuario', payload.usuario)
             .limit(1);
@@ -3217,20 +3238,44 @@ document.addEventListener("DOMContentLoaded", () => {
           const role = String(USER?.rol || "").toUpperCase();
           const clues = String(USER?.clues || "").trim();
 
-          let paramsQuery = supabase.from('biologicos_params').select('*');
-          
+          // Filtrar biológicos por estado activo (Whitelist)
+          paramsQuery = paramsQuery.eq('activo', 'SI');
+
           if (role === 'UNIDAD') {
             if (!clues) throw new Error("La sesión no tiene una CLUES válida asignada.");
-            // Usamos ilike para evitar problemas de casing en la DB
             paramsQuery = paramsQuery.ilike('clues', clues);
           }
 
-          console.log(`[Supabase DEBUG] biogetform for ${role} (CLUES: ${clues})`);
+          console.log(`[Supabase DEBUG] biogetform with active filter`);
 
-          const [resParams, resSaved] = await Promise.all([
+          const [resParams, resSaved, resCalendar] = await Promise.all([
             paramsQuery,
-            supabase.from('biologicos_pedido').select('*').ilike('clues', clues).eq('fecha_captura', todayYmdLocal())
+            supabase.from('biologicos_pedido').select('*').ilike('clues', clues).eq('fecha_captura', todayYmdLocal()),
+            supabase.from('calendario_pedidos').select('*').eq('anio_mes', todayYmdLocal().substring(0, 7)).eq('activo', 'SI')
           ]);
+
+          // Lógica de ventana: Primero calendario, luego inteligente
+          const now = new Date();
+          let intelligentWindow = calculateBioIntelligentWindow(now.getFullYear(), now.getMonth());
+          let windowSource = "DYNAMIC";
+
+          if (resCalendar.data && resCalendar.data.length > 0) {
+            const cal = resCalendar.data[0];
+            intelligentWindow = {
+              start: new Date(cal.habilitar_desde),
+              target: new Date(cal.fecha_programada),
+              end: new Date(cal.habilitar_hasta)
+            };
+            windowSource = "CALENDAR";
+          }
+
+          const windowStartYmd = dateToLocalYmd(intelligentWindow.start);
+          const windowTargetYmd = dateToLocalYmd(intelligentWindow.target);
+          const windowEndYmd = dateToLocalYmd(intelligentWindow.end);
+          const hoyYmd = todayYmdLocal();
+
+          const canCaptureLocal = hoyYmd >= windowStartYmd && hoyYmd <= windowEndYmd;
+          const isCaptureDayLocal = hoyYmd === windowTargetYmd;
 
           return {
             ok: true,
@@ -3245,9 +3290,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 pedido_frascos: null
               })),
               hasSavedBio: resSaved.data && resSaved.data.length > 0,
-              canCapture: true,
-              isCaptureDay: true,
-              fechaPedidoProgramada: todayYmdLocal()
+              canCapture: canCaptureLocal,
+              isCaptureDay: isCaptureDayLocal,
+              fechaPedidoProgramada: windowTargetYmd,
+              captureWindowStart: windowStartYmd,
+              captureWindowEnd: windowEndYmd,
+              windowSource: windowSource
             }
           };
         }
@@ -3370,15 +3418,99 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         case "unitstatus": {
-          // Lógica simplificada de estatus (puede mejorarse con reglas de negocio)
+          const today = todayYmdLocal();
+          const clues = USER.clues;
+          
+          // 1. Verificar Apertura Manual (Consumibles)
+          const { data: consOverride } = await supabase
+            .from('aperturas_consumibles')
+            .select('*')
+            .eq('fecha', today)
+            .eq('activo', 'SI')
+            .maybeSingle();
+
+          // 2. Verificar Apertura Manual (Biológicos - Calendario Pedidos)
+          // (Este usa el mes actual y busca si hoy cae en ventana habilitada)
+          const currentMonth = today.substring(0, 7); // YYYY-MM
+          const { data: bioOverride } = await supabase
+            .from('calendario_pedidos')
+            .select('*')
+            .eq('anio_mes', currentMonth)
+            .eq('activo', 'SI')
+            .maybeSingle();
+
+          // 3. Lógica Inteligente (Días festivos / Fines de semana)
+          const consIntelligent = getConsumiblesStatus(today, clues);
+          
+          // Bio pedidos: Jueves y Viernes por estándar
+          const dow = new Date().getDay();
+          const canCaptureExistenciaBioStandard = (dow === 4 || dow === 5);
+          
+          // Pedido mensual (Ventana inteligente)
+          const bioWindow = calculateBioIntelligentWindow(new Date().getFullYear(), new Date().getMonth());
+          const isBioWindowOpen = today >= dateToLocalYmd(bioWindow.start) && today <= dateToLocalYmd(bioWindow.end);
+
+          // 4. Consolidar Respuestas
+          let canCons = consIntelligent.canCaptureConsumibles;
+          let consReason = consIntelligent.consumiblesReason || "Disponible solo jueves";
+          
+          if (consOverride) {
+            canCons = true;
+            consReason = consOverride.motivo || "Apertura extraordinaria habilitada por Administrador";
+          }
+
+          let canBio = canCaptureExistenciaBioStandard || isBioWindowOpen;
+          let bioReason = isBioWindowOpen ? "Ventana de pedido mensual abierta" : (canCaptureExistenciaBioStandard ? "Día operativo (Jueves/Viernes)" : "Disponible jueves y viernes");
+
+          if (bioOverride) {
+            const isTodayInBioWindow = today >= bioOverride.habilitar_desde && today <= bioOverride.habilitar_hasta;
+            if (isTodayInBioWindow) {
+              canBio = true;
+              bioReason = bioOverride.motivo || "Apertura extraordinaria habilitada por Administrador";
+            }
+          }
+
           return {
             ok: true,
             data: {
-              today: todayYmdLocal(),
-              canCaptureConsumibles: new Date().getDay() === 4, // Jueves
-              canCaptureBio: new Date().getDay() === 5 // Viernes (Actualizado según requerimiento semanal)
+              today: today,
+              canCaptureConsumibles: canCons,
+              consumiblesReason: consReason,
+              canCaptureBio: canBio,
+              bioReason: bioReason,
+              isExtraordinary: !!(consOverride || (bioOverride && today >= bioOverride.habilitar_desde && today <= bioOverride.habilitar_hasta))
             }
           };
+        }
+
+        case "adminsetconsumiblesoverride": {
+          if (USER.rol !== "ADMIN") throw new Error("No autorizado");
+          const { fecha, motivo, enabled } = payload;
+          
+          if (enabled === "NO") {
+             const { error } = await supabase.from('aperturas_consumibles').delete().eq('fecha', fecha || todayYmdLocal());
+             if (error) throw error;
+          } else {
+             const { error } = await supabase.from('aperturas_consumibles').upsert({
+               fecha: fecha || todayYmdLocal(),
+               motivo: motivo || "APERTURA EXTRAORDINARIA",
+               activo: 'SI',
+               creado_por: USER.usuario,
+               timestamp: new Date().toISOString()
+             }, { onConflict: 'fecha' });
+             if (error) throw error;
+          }
+          return { ok: true };
+        }
+
+        case "admingetconsumiblesoverride": {
+          const { data, error } = await supabase
+            .from('aperturas_consumibles')
+            .select('*')
+            .eq('activo', 'SI')
+            .maybeSingle();
+          if (error) throw error;
+          return { ok: true, data };
         }
 
         case "unitcatalog": {
@@ -3591,7 +3723,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         case "adminlistusers": {
           const { data, error } = await supabase
-            .from('usuarios')
+            .from('usuarios_legacy')
             .select('*')
             .order('usuario', { ascending: true });
           if (error) throw error;
@@ -3609,7 +3741,7 @@ document.addEventListener("DOMContentLoaded", () => {
             rol: payload.rol,
             activo: 'SI'
           };
-          const { error } = await supabase.from('usuarios').insert(record);
+          const { error } = await supabase.from('usuarios_legacy').insert(record);
           if (error) throw error;
           return { ok: true };
         }
@@ -3647,7 +3779,7 @@ document.addEventListener("DOMContentLoaded", () => {
         case "adminresetpassword": {
           const inputHash = await hashPassword(payload.newPassword);
           const { error } = await supabase
-            .from('usuarios')
+            .from('usuarios_legacy')
             .update({ password: inputHash })
             .eq('usuario', payload.usuario);
           if (error) throw error;
@@ -3656,7 +3788,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         case "adminsetactive": {
           const { error } = await supabase
-            .from('usuarios')
+            .from('usuarios_legacy')
             .update({ activo: payload.activo ? 'SI' : 'NO' })
             .eq('usuario', payload.usuario);
           if (error) throw error;
@@ -3723,12 +3855,74 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         case "biogetdatesformonth": {
+          const { month, year } = payload;
+          if (!month || !year) throw new Error("Parámetros insuficientes");
+          
+          // Buscamos capturas reales en biologicos_pedido para este mes
+          const start = `${year}-${month.padStart(2, '0')}-01`;
+          const end = `${year}-${month.padStart(2, '0')}-31`;
+
           const { data, error } = await supabase
-            .from('calendario_pedidos')
-            .select('*')
-            .eq('activo', 'SI');
+            .from('biologicos_pedido')
+            .select('fecha_captura, fecha_pedido_programada')
+            .gte('fecha_captura', start)
+            .lte('fecha_captura', end);
+            
           if (error) throw error;
-          return { ok: true, data };
+          
+          // Formatear fechas únicas y detectar tipo
+          const uniqueDates = Array.from(new Set((data || []).map(d => d.fecha_captura))).sort();
+          const targetBioWindow = calculateBioIntelligentWindow(parseInt(year), parseInt(month) - 1);
+          const windowStartYmd = dateToLocalYmd(targetBioWindow.start);
+          const windowEndYmd = dateToLocalYmd(targetBioWindow.end);
+
+          const result = uniqueDates.map(d => {
+            const isMensual = d >= windowStartYmd && d <= windowEndYmd;
+            return {
+              date: d,
+              type: isMensual ? "MENSUAL" : "EXTRAORDINARIO"
+            };
+          });
+
+          return { ok: true, data: result };
+        }
+
+        case "adminsetbiooverride": {
+          if (USER.rol !== "ADMIN") throw new Error("No autorizado");
+          const { anio_mes, fecha_target, habilitar_desde, habilitar_hasta, motivo, activo } = payload;
+          
+          const { error } = await supabase
+            .from('calendario_pedidos')
+            .upsert({
+              anio_mes,
+              fecha_programada: fecha_target,
+              habilitar_desde,
+              habilitar_hasta,
+              motivo,
+              activo: activo || 'SI'
+            });
+
+          if (error) throw error;
+          return { ok: true };
+        }
+
+        case "admintogglebioparam": {
+          if (USER.rol !== "ADMIN") throw new Error("No autorizado");
+          const { cluesList, vaccinesList, activo } = payload;
+          
+          // Para cada unidad y cada biológico, actualizamos o insertamos el parámetro
+          const ops = [];
+          for (const c of cluesList) {
+            for (const v of vaccinesList) {
+              ops.push(supabase.from('biologicos_params').upsert({
+                clues: c,
+                biologico: v,
+                activo: activo
+              }, { onConflict: 'clues, biologico' }));
+            }
+          }
+          await Promise.all(ops);
+          return { ok: true };
         }
 
         case "requestpasswordreset": {
@@ -5122,9 +5316,7 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
           <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-rounded text-slate-400 text-[18px] pointer-events-none transition-colors group-focus-within:text-primary">calendar_month</span>
           <input type="date" style="padding-left: 38px !important;" class="sr-recepcion-input w-full bg-slate-50 border-2 border-slate-400 rounded-xl pr-3 py-2 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" value="${data?.fecha_recepcion || ""}">
         </div>
-        <div class="sr-permanencia-hint" style="font-size: 10px; color: #dc2626; font-weight: 800; margin-top: 6px; display: none;">
-          ⚠️ Biolgico ha superado lmite de permanencia
-        </div>
+        <div class="sr-permanencia-hint" style="display: none;"></div>
       </td>
       <td class="p-4 py-3">
         <div class="relative group">
@@ -5156,10 +5348,42 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
     
     tbody.appendChild(tr);
     
+    // Listener para actualización en tiempo real de permanencia
+    tr._cache.recepcionInput.addEventListener("input", () => window.updatePermanenciaHint(tr));
+    
     if (data) {
       window.handleSRBioChange(tr._cache.bioSelect, data.lote);
     }
-  }
+}
+
+window.updatePermanenciaHint = function(tr) {
+    const cache = tr._cache || {};
+    const recInput = cache.recepcionInput || tr.querySelector(".sr-recepcion-input");
+    const hint = cache.permanenciaHint || tr.querySelector(".sr-permanencia-hint");
+    
+    if (!recInput || !recInput.value || !hint) {
+        if (hint) hint.style.display = "none";
+        return;
+    }
+
+    const dRec = new Date(recInput.value);
+    const now = new Date();
+    const diffDays = Math.floor((now - dRec) / (1000 * 60 * 60 * 24));
+
+    hint.classList.remove("hint-warn", "hint-bad");
+
+    if (diffDays > 90) {
+        hint.style.display = "flex";
+        hint.classList.add("hint-bad");
+        hint.innerHTML = `<span class="material-symbols-rounded" style="font-size:14px">history_toggle_off</span> Límite excedido (> 3 meses)`;
+    } else if (diffDays >= 60) {
+        hint.style.display = "flex";
+        hint.classList.add("hint-warn");
+        hint.innerHTML = `<span class="material-symbols-rounded" style="font-size:14px">warning</span> Próximo a límite (90 días)`;
+    } else {
+        hint.style.display = "none";
+    }
+}
 
 window.handleSRBioChange = function(selectEl, preselectLote = null) {
     const tr = selectEl.closest("tr");
@@ -5228,12 +5452,13 @@ function refreshSRValidation(tr) {
       const { promedio_frascos } = config;
       if (promedio_frascos > 0 && cantidad < (promedio_frascos * 0.5)) {
           cantidadInput.classList.add("input-warn");
-          tr.title = `Existencia baja. Promedio: ${promedio_frascos}.`;
+          tr.title = `Stock bajo. Promedio: ${promedio_frascos}.`;
       } else if (promedio_frascos > 0 && cantidad > (promedio_frascos * 2)) {
           cantidadInput.classList.add("input-bad");
-          tr.title = `Existencia alta. Promedio: ${promedio_frascos}.`;
+          tr.title = `Sobrestock. Promedio: ${promedio_frascos}.`;
       } else {
           cantidadInput.classList.add("input-good");
+          tr.title = `Stock óptimo. Promedio: ${promedio_frascos}.`;
       }
     }
 }
@@ -5265,19 +5490,8 @@ window.handleSRLoteChange = function(selectEl) {
       recInput.value = rec;
     }
 
-    // ✅ Validación de Permanencia Normada (> 3 meses/90 días)
-    if (recInput && recInput.value && hint) {
-        const dRec = new Date(recInput.value);
-        const now = new Date();
-        const diffDays = Math.floor((now - dRec) / (1000 * 60 * 60 * 24));
-        if (diffDays > 90) {
-            hint.style.display = "block";
-        } else {
-            hint.style.display = "none";
-        }
-    } else if (hint) {
-        hint.style.display = "none";
-    }
+    // ✅ Actualizar semaforización de permanencia
+    window.updatePermanenciaHint(tr);
 }
 
   $("btnAddSRRow")?.addEventListener("click", () => addSRRow());
@@ -5549,7 +5763,11 @@ window.handleSRLoteChange = function(selectEl) {
   }
 
   function todayYmdLocal() {
-    const d = new Date();
+    return dateToLocalYmd(new Date());
+  }
+
+  function dateToLocalYmd(d) {
+    if (!d || isNaN(d.getTime())) return "";
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const dd = String(d.getDate()).padStart(2, "0");
@@ -6040,10 +6258,16 @@ async function getTodayReports(fecha = "", force = false) {
 
     if (dayBadge && container) {
       container.classList.remove("good", "ok", "warn", "bad");
-      if (iconBg) iconBg.style.backgroundColor = ""; // Reset icon bg
+      if (iconBg) iconBg.style.backgroundColor = "";
       
-      let pct = 0;
-      let label = "Sin dato";
+      // Mostrar motivo si es algo extraordinario
+      if (status.isExtraordinary) {
+         if ($("hdrGuardado")) {
+            $("hdrGuardado").textContent = status.consReason || status.bioReason || "Apertura Especial";
+            $("bGuardado").style.display = "flex";
+            $("bGuardado").classList.replace("bg-status-success", "bg-orange-500");
+         }
+      }
 
       // Lógica de métrica por perfil (v5 State of the Art)
       const role = USER?.rol || "UNIDAD";
@@ -6337,15 +6561,15 @@ async function getTodayReports(fecha = "", force = false) {
         exactSelect.innerHTML = "";
 
         const res = await apiCall({ action: "bioGetDatesForMonth", token: TOKEN, month: mm, year: yy });
-        if (res && res.ok && res.data && res.data.length > 1) {
+        if (res && res.ok && res.data && res.data.length > 0) {
           res.data.forEach(d => {
             const opt = document.createElement("option");
-            opt.value = d;
-            opt.textContent = `${d} (Captura detectada)`;
+            opt.value = d.date;
+            opt.textContent = `${d.date} (${d.type === "MENSUAL" ? "Pedido Mensual" : "Extraordinario"})`;
             exactSelect.appendChild(opt);
           });
           exactBox.style.display = "block";
-          $("exportFechaHint").textContent = "Múltiples capturas detectadas. Elige una.";
+          $("exportFechaHint").textContent = res.data.length > 1 ? "Múltiples capturas detectadas. Elige una." : "1 captura detectada para este mes.";
         }
       }
 
@@ -6661,9 +6885,16 @@ async function getTodayReports(fecha = "", force = false) {
     const now = new Date();
     const currentWindow = calculateBioIntelligentWindow(now.getFullYear(), now.getMonth());
 
-    const windowStartYmd = formatDateMx(currentWindow.start).split("T")[0];
-    const windowTargetYmd = formatDateMx(currentWindow.target).split("T")[0];
-    const windowEndYmd = formatDateMx(currentWindow.end).split("T")[0];
+    // Fechas ISO para lógica de validación
+    const windowStartYmd = dateToLocalYmd(currentWindow.start);
+    const windowTargetYmd = dateToLocalYmd(currentWindow.target);
+    const windowEndYmd = dateToLocalYmd(currentWindow.end);
+    
+    // Fechas amigables para visualización en el Banner
+    const windowStartFriendly = formatDateMx(currentWindow.start);
+    const windowEndFriendly = formatDateMx(currentWindow.end);
+    const windowTargetFriendly = formatDateMx(currentWindow.target);
+    
     const hoyYmd = todayYmdLocal();
 
     const canCaptureLocal = hoyYmd >= windowStartYmd && hoyYmd <= windowEndYmd;
@@ -6674,21 +6905,22 @@ async function getTodayReports(fecha = "", force = false) {
     else if (canCaptureLocal) windowStatus = "OPEN";
 
     BIO_STATE = {
-      rows: r.data.rows || [], // BLINDAJE: Mantener filas originales intactas
+      rows: r.data.rows || [], 
       isCaptureDay: isCaptureDayLocal,
       canCapture: canCaptureLocal,
       fechaPedidoProgramada: windowTargetYmd,
-      captureWindowStart: windowStartYmd,
-      captureWindowEnd: windowEndYmd,
+      fechaPedidoFriendly: windowTargetFriendly, // Para visualización elegante
+      captureWindowStart: windowStartFriendly, 
+      captureWindowEnd: windowEndFriendly,     
       captureWindowStatus: windowStatus,
-      diffDays: 0 // No crítico ahora
+      diffDays: 0 
     };
 
     HAS_SAVED_BIO = !!r.data.hasSavedBio;
     EDIT_BIO = false;
 
     $("fechaPedidoBIO").value = BIO_STATE.fechaPedidoProgramada || "";
-    $("fechaPedidoBIOBox").textContent = BIO_STATE.fechaPedidoProgramada || "—";
+    $("fechaPedidoBIOBox").textContent = BIO_STATE.fechaPedidoFriendly || "—";
 
     const bioHint = $("bioHint");
     const bioDayAlert = $("bioDayAlert");
@@ -7189,8 +7421,12 @@ async function getTodayReports(fecha = "", force = false) {
       $("btnOpenUpload").style.display = isOpsAdmin ? "none" : "inline-flex";
     }
 
-    if (user.rol === "ADMIN" || user.rol === "JURISDICCIONAL") {
-      $("munTxt").textContent = "Todos";
+    if (user.rol === "ADMIN") {
+      if ($("munTxt")) $("munTxt").textContent = "Todos";
+      refreshUsers().catch(console.error);
+      refreshBulkBioSetup?.();
+    } else if (user.rol === "JURISDICCIONAL") {
+      if ($("munTxt")) $("munTxt").textContent = "Todos";
     } else if (user.rol === "MUNICIPAL") {
       $("munTxt").textContent = (user.municipio || "—").replace(/^Municipio\(s\):\s*/i, "").replace(/^Municipio:\s*/i, "");
     } else {
@@ -7203,7 +7439,11 @@ async function getTodayReports(fecha = "", force = false) {
     if (mobileNav) {
       mobileNav.style.display = isMobile ? "flex" : "none";
       if ($("navNotifs")) $("navNotifs").style.display = "flex";
-      if ($("navAdmin")) $("navAdmin").style.display = (user.rol === "ADMIN") ? "flex" : "none";
+      if ($("navAdmin")) $("navAdmin").style.display = (user.rol?.toUpperCase() === "ADMIN") ? "flex" : "none";
+    }
+
+    if ($("tabOPS_ADMIN")) {
+      $("tabOPS_ADMIN").onclick = () => activateMain("ADMIN");
     }
 
     if (STATUS) {
@@ -7371,7 +7611,7 @@ async function getTodayReports(fecha = "", force = false) {
     clearLiveFeed();
   }
 
-  function activateMain(panel) {
+  function activateMain(panel, forceSubTab) {
     if (panel === "NOTIFS" && USER && USER.rol === "UNIDAD") {
       closeTopNotifDropdown();
       openTopNotifDropdown();
@@ -7408,25 +7648,46 @@ async function getTodayReports(fecha = "", force = false) {
     updateTabClass("tabNOTIFS", panel === "NOTIFS");
     updateTabClass("tabADMIN", panel === "ADMIN");
 
+    // Sincronizar Pestañas de Operaciones/Admin (Bottom Row)
+    updateTabClass("tabOPS_ADMIN", panel === "ADMIN");
+    
+    // Si entramos en ADMIN, debemos desmarcar las pestañas de OPS
+    if (panel === "ADMIN") {
+      updateTabClass("tabOPS_CAPTURE", false);
+      updateTabClass("tabOPS_HISTORY", false);
+      updateTabClass("tabOPS_PINOL", false);
+      updateTabClass("tabLOTES", false);
+    }
+
     // Sincronizar Bottom Nav
     document.querySelectorAll(".nav-item").forEach(el => {
       const target = el.getAttribute("data-tab");
       el.classList.toggle("active", target === `tab${panel}`);
     });
 
+
     if ($("panelCAP")) $("panelCAP").style.display = (panel === "CAP" && isUnidad) ? "block" : "none";
-    if ($("panelAdminOpsTabs")) $("panelAdminOpsTabs").style.display = (panel === "CAP" && isOps) ? "block" : "none";
+    if ($("panelAdminOpsTabs")) {
+      // Visible en CAP (para navegar a ops) y en ADMIN (para regresar a CAP)
+      const isVisible = (panel === "CAP" || panel === "ADMIN") && isOps;
+      $("panelAdminOpsTabs").style.display = isVisible ? "block" : "none";
+    }
     if ($("panelCaptureSummary")) $("panelCaptureSummary").style.display = "none";
     if ($("panelPINOLADMIN")) $("panelPINOLADMIN").style.display = "none";
     if ($("panelHISTORY")) $("panelHISTORY").style.display = "none";
     if ($("panelEDITLOG")) $("panelEDITLOG").style.display = "none";
+    if ($("panelLOTES")) $("panelLOTES").style.display = "none";
+    if ($("panelArchivos")) $("panelArchivos").style.display = "none";
+
     if ($("panelNOTIFS")) $("panelNOTIFS").style.display = (panel === "NOTIFS") ? "block" : "none";
     if ($("panelADMIN")) $("panelADMIN").style.display = (panel === "ADMIN" && isAdmin) ? "block" : "none";
 
+
     if (panel === "CAP" && isOps) {
-      if (!samePanel || APP_STATE.opsTab !== "CAPTURE") {
-        syncAppState({ opsTab: "CAPTURE" });
-        activateOpsTab("CAPTURE");
+      const targetSub = forceSubTab || APP_STATE.opsTab || "CAPTURE";
+      if (!samePanel || APP_STATE.opsTab !== targetSub) {
+        syncAppState({ opsTab: targetSub });
+        activateOpsTab(targetSub);
       }
       refreshPinolBadgeOnly().catch(() => { });
       if (!samePanel) schedulePanelScroll("panelCaptureSummary", 80, false);
@@ -7580,6 +7841,12 @@ async function getTodayReports(fecha = "", force = false) {
     updateTabClass("tabOPS_PINOL", tab === "PINOL");
     updateTabClass("tabOPS_HISTORY", tab === "HISTORY");
     updateTabClass("tabLOTES", tab === "LOTES");
+    updateTabClass("tabOPS_ADMIN", false); // Siempre desactiva admin al entrar a una opsTab
+
+    // Si no estamos en el panel de CAP (Dashboard), forzamos el cambio
+    if (APP_STATE.mainPanel !== "CAP") {
+      activateMain("CAP", tab);
+    }
 
     if (panelCaptureSummary) panelCaptureSummary.style.display = (tab === "CAPTURE") ? "block" : "none";
     if ($("panelEDITLOG")) $("panelEDITLOG").style.display = "none";
@@ -8412,32 +8679,61 @@ $("btnSaveSR").onclick = async () => {
     window.URL.revokeObjectURL(url);
   }
 
+  // --- PANEL ADMINISTRATIVO (LOGICA MODULAR) ---
+  window.activateAdminSubPanel = function(panelId) {
+    // 1. Alternar Clases de Pestañas
+    document.querySelectorAll(".nav-tab-admin").forEach(btn => {
+      const isTarget = btn.id === "tabAdmin" + panelId.charAt(0).toUpperCase() + panelId.slice(1);
+      btn.classList.toggle("active", isTarget);
+    });
 
+    // 2. Alternar Visibilidad de Paneles
+    document.querySelectorAll(".admin-sub-panel").forEach(p => {
+      const isTarget = p.id === "adminSection_" + panelId;
+      p.classList.toggle("hide", !isTarget);
+    });
 
-  $("btnRefreshUsers").onclick = () => refreshUsers();
-  $("btnRefreshPinol").onclick = () => refreshPinol();
-  $("pinolFiltroEstatus").addEventListener("change", () => refreshPinol());
+    // 3. Carga Automática según el Panel
+    if (panelId === 'seguridad') refreshUsers();
+    if (panelId === 'aperturas') loadConsumiblesOverrideAdmin();
+    if (panelId === 'catalogo') refreshBulkBioSetup();
+  };
+
+  const rBtn = $("btnRefreshUsers");
+  if (rBtn) {
+    rBtn.onclick = () => {
+      const activeSub = document.querySelector(".nav-tab-admin.active")?.id;
+      if (activeSub === 'tabAdminSeguridad') refreshUsers();
+      else if (activeSub === 'tabAdminAperturas') loadConsumiblesOverrideAdmin();
+      else if (activeSub === 'tabAdminCatalogo') refreshBulkBioSetup();
+      else refreshUsers();
+    };
+  }
+  
+  const pBtn = $("btnRefreshPinol");
+  if (pBtn) pBtn.onclick = () => refreshPinol();
+  
+  // Link Save Biological Calendar
+  $("btnSaveBioOverride")?.addEventListener("click", saveBioOverride);
+  if ($("pinolFiltroEstatus")) {
+    $("pinolFiltroEstatus").addEventListener("change", () => refreshPinol());
+  }
 
   async function loadConsumiblesOverrideAdmin() {
     if (!USER || USER.rol !== "ADMIN") return;
 
     try {
-      const r = await apiCall({
-        action: "adminGetConsumiblesOverride",
-        token: TOKEN
-      });
-
-      if (!r || !r.ok) return;
-
+      const r = await apiCall({ action: "adminGetConsumiblesOverride" });
+      if (!r || !r.ok) {
+        if ($("consOverrideStateTxt")) $("consOverrideStateTxt").textContent = "REGLA ESTÁNDAR";
+        return;
+      }
+      
       const data = r.data || {};
-
       if ($("consOverrideDate")) $("consOverrideDate").value = data.fecha || "";
       if ($("consOverrideReason")) $("consOverrideReason").value = data.motivo || "";
-
       if ($("consOverrideStateTxt")) {
-        $("consOverrideStateTxt").textContent = data.enabled
-          ? `Activa: ${data.fecha || "—"}`
-          : "Inactiva";
+        $("consOverrideStateTxt").textContent = data.fecha ? "ACTIVA: " + formatDateMx(data.fecha) : "REGLA ESTÁNDAR";
       }
     } catch (e) {
       console.error("loadConsumiblesOverrideAdmin error:", e);
@@ -8455,10 +8751,19 @@ $("btnSaveSR").onclick = async () => {
     }
 
     if ($("tabCONS")) {
-      $("tabCONS").disabled = !(STATUS && STATUS.canCaptureConsumibles);
-      $("tabCONS").title = $("tabCONS").disabled
-        ? "Disponible solo jueves o por apertura extraordinaria"
-        : "";
+      const can = !!(STATUS && STATUS.canCaptureConsumibles);
+      $("tabCONS").disabled = !can;
+      $("tabCONS").title = can ? (STATUS.consumiblesReason || "Abierto") : "Cerrado: Solo jueves o por apertura extraordinaria";
+      
+      // Mostrar leyenda de motivo si está abierto
+      if (can && (STATUS.consumiblesReason && !STATUS.consumiblesReason.includes("Jueves"))) {
+         showToast(STATUS.consumiblesReason, true, "info");
+      }
+    }
+
+    if ($("tabBIO")) {
+       const can = !!(STATUS && STATUS.canCaptureBio);
+       $("tabBIO").title = can ? (STATUS.bioReason || "Abierto") : "Cerrado: Solo jueves/viernes o ventana mensual";
     }
 
     paintStatusChips(STATUS);
@@ -8467,34 +8772,31 @@ $("btnSaveSR").onclick = async () => {
   $("btnSaveConsOverride").onclick = async () => {
     if (isBtnBusy("btnSaveConsOverride")) return;
 
-    setBtnBusy("btnSaveConsOverride", true, "Guardando…");
-    showOverlay("Guardando apertura extraordinaria…", "Consumibles");
+    const fecha = $("consOverrideDate").value;
+    const motivo = $("consOverrideReason").value;
 
-    const safeNum = v => Number(v || 0);
+    if (!fecha) {
+      showToast("Selecciona una fecha de apertura", false, "warn");
+      return;
+    }
 
-    const payloadConsumibles = {
-      srp_dosis: safeNum($("srp_dosis")?.value),
-      sr_dosis: safeNum($("sr_dosis")?.value),
-      jeringa_reconst_5ml_0605500438: safeNum($("jeringa_reconst_5ml_0605500438")?.value),
-      jeringa_aplic_05ml_0605502657: safeNum($("jeringa_aplic_05ml_0605502657")?.value),
-      aguja_0600403711: safeNum($("aguja_0600403711")?.value)
-    };
+    setBtnBusy("btnSaveConsOverride", true, "Guardando...");
+    showOverlay("Configurando apertura extraordinaria...", "Administración");
 
     try {
       const r = await apiCall({
         action: "adminSetConsumiblesOverride",
-        token: TOKEN,
-        enabled: "SI",
-        fecha: $("consOverrideDate") ? $("consOverrideDate").value : "",
-        motivo: $("consOverrideReason") ? $("consOverrideReason").value.trim() : ""
+        fecha, 
+        motivo,
+        enabled: "SI"
       });
 
       if (!r || !r.ok) {
-        showToast((r && r.error) ? r.error : "No se pudo guardar", false);
+        showToast(r?.error || "No se pudo guardar la apertura", false);
         return;
       }
 
-      showToast("Apertura extraordinaria guardada");
+      showToast("Apertura extraordinaria habilitada con éxito", true);
       await loadConsumiblesOverrideAdmin();
       await refreshConsumiblesStatusUi();
     } catch (e) {
@@ -8508,73 +8810,30 @@ $("btnSaveSR").onclick = async () => {
 
   $("btnClearConsOverride").onclick = async () => {
     if (isBtnBusy("btnClearConsOverride")) return;
+    if (!confirm("¿Deseas desactivar la apertura extraordinaria de consumibles?")) return;
 
-    setBtnBusy("btnClearConsOverride", true, "Desactivando…");
-    showOverlay("Desactivando apertura extraordinaria…", "Consumibles");
-
+    setBtnBusy("btnClearConsOverride", true, "Limpiando...");
     try {
       const r = await apiCall({
         action: "adminSetConsumiblesOverride",
-        token: TOKEN,
         enabled: "NO"
       });
 
-      if (!r || !r.ok) {
-        showToast((r && r.error) ? r.error : "No se pudo desactivar", false);
-        return;
-      }
+      if (!r || !r.ok) throw new Error(r?.error || "Error al desactivar");
 
       showToast("Apertura extraordinaria desactivada");
+      $("consOverrideDate").value = "";
+      $("consOverrideReason").value = "";
       await loadConsumiblesOverrideAdmin();
       await refreshConsumiblesStatusUi();
     } catch (e) {
       console.error("btnClearConsOverride error:", e);
-      showToast("Error al desactivar apertura extraordinaria", false);
+      showToast("Error al desactivar", false);
     } finally {
       setBtnBusy("btnClearConsOverride", false);
-      hideOverlay();
     }
   };
 
-  $("btnCreateUser").onclick = async () => {
-    if (isBtnBusy("btnCreateUser")) return;
-    setBtnBusy("btnCreateUser", true, "Creando…");
-    showOverlay("Creando usuario…");
-    try {
-      const payload = {
-        action: "adminCreateUser",
-        token: TOKEN,
-        usuario: $("new_usuario").value.trim(),
-        password: $("new_password").value.trim(),
-        municipio: $("new_municipio").value.trim(),
-        clues: $("new_clues").value.trim(),
-        unidad: $("new_unidad").value.trim(),
-        rol: $("new_rol").value,
-        activo: $("new_activo").value
-      };
-
-      const r = await apiCall(payload);
-      if (!r || !r.ok) { showToast((r && r.error) ? r.error : "No se pudo crear", false); return; }
-
-      showToast("Usuario creado");
-      $("new_usuario").value = "";
-      $("new_password").value = "";
-      $("new_municipio").value = "";
-      $("new_clues").value = "";
-      $("new_unidad").value = "";
-      $("new_rol").value = "UNIDAD";
-      $("new_activo").value = "SI";
-
-      await loadUnitCatalog();
-      bindAdminAutocomplete();
-      refreshUsers();
-    } catch (e) {
-      showToast("Error al crear usuario", false);
-    } finally {
-      setBtnBusy("btnCreateUser", false);
-      hideOverlay();
-    }
-  };
 
   async function refreshUsers() {
     if (!USER || USER.rol !== "ADMIN") return;
@@ -8616,52 +8875,72 @@ $("btnSaveSR").onclick = async () => {
 
       for (const u of users) {
         const tr = document.createElement("tr");
-        tr.innerHTML = `
-        <td>${escapeHtml(u.usuario)}</td>
-        <td>${escapeHtml(u.municipio)}</td>
-        <td>${escapeHtml(u.clues)}</td>
-        <td>${escapeHtml(u.unidad)}</td>
-        <td>${escapeHtml(u.rol)}</td>
-        <td>${escapeHtml(u.activo)}</td>
-        <td>
-          <div class="miniRow">
-            <button class="miniBtn" data-action="reset" data-user="${escapeAttr(u.usuario)}" title="Reset password">
-              <span class="material-symbols-rounded">lock_reset</span>
-            </button>
-            <button class="miniBtn" data-action="toggle" data-user="${escapeAttr(u.usuario)}" data-active="${escapeAttr(u.activo)}" title="Activar/Inactivar">
-              <span class="material-symbols-rounded">${u.activo === 'SI' ? 'toggle_on' : 'toggle_off'}</span>
-            </button>
-            <button class="miniBtn bad" data-action="delete" data-user="${escapeAttr(u.usuario)}" title="Eliminar">
-              <span class="material-symbols-rounded">delete</span>
-            </button>
-          </div>
-        </td>
-      `;
-        tbody.appendChild(tr);
-      }
+        tr.className = "hover:bg-primary/5 transition-colors group border-b border-outline-variant/30";
+        
+        const isActivo = u.activo === "SI";
+        const roleClass = u.rol === "ADMIN" ? "bg-primary/10 text-primary border-primary/20" : "bg-slate-100 text-slate-600 border-slate-200";
+        const statusClass = isActivo ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700";
 
-      if (cards) {
-        cards.style.display = "block";
-        cards.innerHTML = users.map(u => `
-        <div class="mobileInfoCard">
-          <div class="mobileInfoHead">
-            <div class="mobileInfoTitle">${escapeHtml(u.usuario || "Usuario")}</div>
-            <div class="mobileInfoBadge ${String(u.activo || "").toUpperCase() === "SI" ? "ok" : "bad"}">
-              ${String(u.activo || "").toUpperCase() === "SI" ? "Activo" : "Inactivo"}
+        tr.innerHTML = `
+        <td class="px-6 py-5">
+           <div class="flex flex-col">
+              <span class="font-extrabold text-primary text-[14px]">${escapeHtml(u.usuario)}</span>
+              <span class="text-[10px] font-bold text-slate-400">CUENTA ACTIVA</span>
+           </div>
+        </td>
+        <td class="px-6 py-5">
+           <div class="flex flex-col gap-0.5">
+              <span class="text-[11px] font-black text-slate-600 uppercase tracking-tighter">${escapeHtml(u.unidad || 'Unidad No Asignada')}</span>
+              <span class="text-[10px] font-bold text-slate-400">${escapeHtml(u.municipio)} | <span class="text-primary/70">${escapeHtml(u.clues)}</span></span>
+           </div>
+        </td>
+        <td class="px-6 py-5">
+           <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${roleClass}">${escapeHtml(u.rol)}</span>
+        </td>
+        <td class="px-6 py-5">
+           <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full ${isActivo ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-rose-400'}"></span>
+              <span class="text-[11px] font-black uppercase ${statusClass.split(' ')[1]}">${isActivo ? 'Habilitado' : 'Suspendido'}</span>
+           </div>
+        </td>
+        <td class="px-6 py-5 text-right">
+          <div class="flex items-center justify-end gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
+            <button class="w-8 h-8 rounded-xl bg-surface-variant flex items-center justify-center text-surface-on hover:bg-primary hover:text-white transition-all shadow-sm" data-action="reset" data-user="${escapeAttr(u.usuario)}" title="Nueva Contraseña">
+              <span class="material-symbols-rounded text-lg">key</span>
+            </button>
+            <button class="w-8 h-8 rounded-xl ${isActivo ? 'bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white'} flex items-center justify-center transition-all shadow-sm" data-action="toggle" data-user="${escapeAttr(u.usuario)}" data-active="${escapeAttr(u.activo)}" title="${isActivo ? 'Bloquear Acceso' : 'Activar Acceso'}">
+              <span class="material-symbols-rounded text-lg">${isActivo ? 'block' : 'check_circle'}</span>
+            </button>
+            <button class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white flex items-center justify-center transition-all shadow-sm" data-action="delete" data-user="${escapeAttr(u.usuario)}" title="Eliminar definitivamente">
+              <span class="material-symbols-rounded text-lg">delete</span>
+            </button>
+          </div>
+        </td>`;
+        tbody.appendChild(tr);
+
+        // Cards Mobile (Modernizadas)
+        if (cards) {
+          const card = document.createElement("div");
+          card.className = "bg-white p-6 rounded-[28px] border border-outline-variant/30 shadow-sm flex flex-col gap-4";
+          card.innerHTML = `
+            <div class="flex items-center justify-between">
+               <div class="flex flex-col">
+                 <span class="text-[14px] font-black text-primary">${escapeHtml(u.usuario)}</span>
+                 <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">${escapeHtml(u.rol)}</span>
+               </div>
+               <span class="px-3 py-1 rounded-full text-[10px] font-black ${statusClass}">${isActivo ? 'ACTIVO' : 'SUSPENDIDO'}</span>
             </div>
-          </div>
-          <div class="mobileInfoFields">
-            <div class="mobileInfoField"><div class="mobileInfoLabel">Municipio</div><div class="mobileInfoValue">${escapeHtml(u.municipio || "—")}</div></div>
-            <div class="mobileInfoField"><div class="mobileInfoLabel">CLUES</div><div class="mobileInfoValue">${escapeHtml(u.clues || "—")}</div></div>
-            <div class="mobileInfoField"><div class="mobileInfoLabel">Rol</div><div class="mobileInfoValue">${escapeHtml(u.rol || "—")}</div></div>
-          </div>
-          <div class="mobileActionRow">
-            <button class="miniBtn" data-action="reset" data-user="${escapeAttr(u.usuario)}"><span class="material-symbols-rounded">lock_reset</span></button>
-            <button class="miniBtn" data-action="toggle" data-user="${escapeAttr(u.usuario)}" data-active="${escapeAttr(u.activo)}"><span class="material-symbols-rounded">${u.activo === 'SI' ? 'toggle_on' : 'toggle_off'}</span></button>
-            <button class="miniBtn bad" data-action="delete" data-user="${escapeAttr(u.usuario)}"><span class="material-symbols-rounded">delete</span></button>
-          </div>
-        </div>
-      `).join("");
+            <div class="text-[11px] font-bold text-slate-600 leading-snug">
+               <span class="text-primary/70">${escapeHtml(u.clues)}</span> — ${escapeHtml(u.unidad || 'Sin Unidad')}
+            </div>
+            <div class="grid grid-cols-3 gap-2 border-t border-outline-variant/20 pt-4">
+               <button class="h-11 rounded-2xl bg-surface-variant flex items-center justify-center text-primary" data-action="reset" data-user="${escapeAttr(u.usuario)}"><span class="material-symbols-rounded text-xl">key</span></button>
+               <button class="h-11 rounded-2xl bg-surface-variant flex items-center justify-center text-primary" data-action="toggle" data-user="${escapeAttr(u.usuario)}" data-active="${escapeAttr(u.activo)}"><span class="material-symbols-rounded text-xl">${isActivo ? 'lock' : 'lock_open'}</span></button>
+               <button class="h-11 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600" data-action="delete" data-user="${escapeAttr(u.usuario)}"><span class="material-symbols-rounded text-xl">delete</span></button>
+            </div>
+          `;
+          cards.appendChild(card);
+        }
       }
 
       // VINCULAR EVENTOS
@@ -9180,7 +9459,10 @@ $("btnSaveSR").onclick = async () => {
     { icon: "settings", tag: "Operación", title: "Comunicación", body: "La coordinación entre unidad y jurisdicción mejora la distribución de biológicos." }
   ];
   let factIdx = Math.floor(Math.random() * FACTS.length);
-  let FACTS_TIMER = null;
+
+  function rotateFact() {
+    renderFact();
+  }
 
   function renderFact() {
     if (!FACTS || !FACTS.length) return;
@@ -10318,12 +10600,12 @@ $("btnSaveSR").onclick = async () => {
          // Ajustar headers Bio
          if (headRow) {
            headRow.innerHTML = `
-             <th style="padding: 16px;">Biológico</th>
-             <th>Lote</th>
-             <th style="text-align:center;">Existencia</th>
-             <th style="text-align:center;">Caducidad</th>
-             <th>Semaforización</th>
-             <th>Última Rec.</th>
+             <th style="padding: 16px 24px; text-align: left;">Biológico</th>
+             <th style="padding: 16px 24px; text-align: left;">Lote</th>
+             <th style="padding: 16px 24px; text-align: center;">Existencia</th>
+             <th style="padding: 16px 24px; text-align: center;">Caducidad</th>
+             <th style="padding: 16px 24px; text-align: center;">Semaforización</th>
+             <th style="padding: 16px 24px; text-align: center;">Última Rec.</th>
            `;
          }
 
@@ -10345,13 +10627,17 @@ $("btnSaveSR").onclick = async () => {
               else cadStats.more++;
 
               return `
-                <tr style="border-bottom: 1px solid #f0f0f0;">
-                  <td style="padding:10px 16px; font-weight:700; color:var(--md-sys-color-on-surface);">${escapeHtml(r.biologico)}</td>
-                  <td style="padding:10px 16px; font-weight:600;">${escapeHtml(r.lote)}</td>
-                  <td style="padding:10px 16px; text-align:center; font-weight:800; color:var(--primary);">${escapeHtml(r.cantidad || 0)}</td>
-                  <td style="padding:10px 16px; font-weight:700; text-align:center; color:var(--md-sys-color-on-surface-variant);">${escapeHtml(isoToMmmaa(r.caducidad))}</td>
-                  <td style="padding:10px 16px; text-align:center;"><span class="statusPill statusPill-${status.key}" style="font-size:10px; padding:2px 8px;">${status.label}</span></td>
-                  <td style="padding:10px 16px; font-weight:600; text-align:center; color:var(--muted);">${formatAppDate(r.fecha_recepcion)}</td>
+                <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
+                  <td style="padding:14px 24px; font-weight:800; color:#0f172a;">${escapeHtml(r.biologico || "—")}</td>
+                  <td style="padding:14px 24px; font-weight:600; color:#475569;">${escapeHtml(r.lote || "—")}</td>
+                  <td style="padding:14px 24px; text-align:center;">
+                    <span class="live-view-count-badge">${escapeHtml(r.cantidad || 0)}</span>
+                  </td>
+                  <td style="padding:14px 24px; font-weight:700; text-align:center; color:#1e293b;">${escapeHtml(isoToMmmaa(r.caducidad))}</td>
+                  <td style="padding:14px 24px; text-align:center;">
+                    <span class="status-pill-pro ${status.key}">${status.label}</span>
+                  </td>
+                  <td style="padding:14px 24px; font-weight:600; text-align:center; color:#94a3b8; font-size: 11px;">${formatAppDate(r.fecha_recepcion)}</td>
                 </tr>
               `;
            }).join("");
@@ -10361,9 +10647,9 @@ $("btnSaveSR").onclick = async () => {
          // Tipo CONSUMIBLES
          if (headRow) {
            headRow.innerHTML = `
-             <th style="padding: 16px;">Insumo / Concepto</th>
-             <th style="text-align:center;">Cantidad / Dosis</th>
-             <th colspan="4">Detalles adicionales</th>
+             <th style="padding: 16px 24px; text-align: left;">Insumo / Concepto</th>
+             <th style="padding: 16px 24px; text-align: center;">Cantidad / Dosis</th>
+             <th style="padding: 16px 24px; text-align: left;" colspan="4">Detalles adicionales</th>
            `;
          }
 
@@ -10380,10 +10666,12 @@ $("btnSaveSR").onclick = async () => {
              { label: "Aguja", val: c.aguja_0600403711 || 0 }
            ];
            tbody.innerHTML = rows.map(r => `
-             <tr>
-               <td style="padding:16px 24px; font-weight:700;">${r.label}</td>
-               <td style="text-align:center; font-weight:800; color:var(--primary);">${r.val}</td>
-               <td colspan="4" class="muted">Reportado por ${escapeHtml(c.capturado_por || "—")}</td>
+             <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
+               <td style="padding:16px 24px; font-weight:800; color:#0f172a;">${r.label}</td>
+               <td style="padding:16px 24px; text-align:center;">
+                 <span class="live-view-count-badge">${r.val || 0}</span>
+               </td>
+               <td colspan="4" style="padding:16px 24px; color:#94a3b8; font-size:12px; font-weight:600;">Reportado por ${escapeHtml(c.capturado_por || "—")}</td>
              </tr>
            `).join("");
            renderLiveCharts({pronto:0,normal:0,lejana:1}, {m3:0,m6:0,m12:0,more:1}); 
@@ -10452,9 +10740,10 @@ $("btnSaveSR").onclick = async () => {
 
   function getSemaforoStatus(val) {
     const diff = getMonthsTo(val);
-    if (diff <= 3) return { key: "pronto", label: "Caducidad Próxima", color: "#f87171" };
-    if (diff <= 6) return { key: "normal", label: "Permanencia Media", color: "#fbbf24" };
-    return { key: "lejana", label: "Vigente", color: "#4ade80" };
+    if (diff < 0) return { key: "expired", label: "Expirado", color: "#ba1a1a" };
+    if (diff <= 3) return { key: "pronto", label: "Cad. Próxima", color: "#ef4444" };
+    if (diff <= 6) return { key: "normal", label: "Cad. Media", color: "#f59e0b" };
+    return { key: "lejana", label: "Vigente", color: "#10b981" };
   }
 
    function renderLiveCharts(sem, cad) {
@@ -10705,3 +10994,213 @@ $("btnSaveSR").onclick = async () => {
     }).join("");
   }
 
+  /**
+   * ✅ GESTIÓN LOGÍSTICA - ADMIN
+   */
+  /**
+   * ✅ GESTIÓN LOGÍSTICA - ADMIN (REFACTORED FOR TABS)
+   */
+  async function refreshBulkBioSetup() {
+    if (!USER || USER.rol !== "ADMIN") return;
+
+    // 1. Cargar Catálogo de Biológicos para el Bulk Tool
+    loadBioBulkCatalogo();
+
+    // 2. Listener de Búsqueda de Unidades
+    const searchInput = $("unitBulkSearch");
+    if (searchInput) {
+      searchInput.oninput = debounce(() => searchBioBulkUnits(searchInput.value), 300);
+    }
+  }
+
+  async function loadBioBulkCatalogo() {
+    const wrap = $("bioBulkVaccinesList");
+    if (!wrap) return;
+
+    try {
+      const res = await supabase.from('biologicos_catalogo').select('*').order('orden_biologico');
+      if (res.error) throw res.error;
+
+      wrap.innerHTML = res.data.map(v => `
+        <label class="flex items-center gap-3 p-2.5 rounded-xl bg-white hover:bg-primary/5 cursor-pointer transition-all border border-outline-variant/30 group">
+          <input type="checkbox" class="bioBulkCheckbox w-4 h-4 rounded border-primary" value="${escapeAttr(v.biologico)}">
+          <div class="flex flex-col min-w-0">
+            <span class="text-[11px] font-black text-primary truncate">${escapeHtml(v.biologico)}</span>
+            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">${escapeHtml(v.clave_biologico || 'S.C.')}</span>
+          </div>
+        </label>
+      `).join('');
+    } catch (e) {
+      console.error("Error loading bio catalog:", e);
+      wrap.innerHTML = `<div class="muted col-span-2 text-center text-[11px]">Error al cargar catálogo</div>`;
+    }
+  }
+
+  window.loadAllUnitsBulk = async function() {
+    const wrap = $("unitBulkList");
+    if (!wrap) return;
+    
+    showOverlay("Cargando todas las unidades...", "Carga Global");
+    try {
+      const { data, error } = await supabase
+        .from('unidades')
+        .select('clues, unidad, municipio')
+        .eq('activo', 'SI')
+        .order('unidad');
+
+      if (error) throw error;
+      renderBulkUnitItems(data);
+      showToast(`Cargadas ${data.length} unidades`, true);
+    } catch (e) {
+      console.error("Error global units load:", e);
+      showToast("Error al cargar todas las unidades", false, "error");
+    } finally {
+      hideOverlay();
+    }
+  };
+
+  window.selectAllFilteredUnits = function() {
+    const checks = document.querySelectorAll(".unitBulkCheckbox");
+    if (checks.length === 0) {
+      showToast("No hay unidades listadas para marcar", false, "warn");
+      return;
+    }
+    checks.forEach(i => i.checked = true);
+    showToast(`Marcadas ${checks.length} unidades`, true);
+  };
+
+  window.deselectAllUnits = function() {
+    const checks = document.querySelectorAll(".unitBulkCheckbox");
+    checks.forEach(i => i.checked = false);
+    showToast("Unidades desmarcadas");
+  };
+
+  window.selectAllVaccinesBulk = function() {
+    const checks = document.querySelectorAll(".bioBulkCheckbox");
+    checks.forEach(i => i.checked = true);
+    showToast("Todos los biológicos marcados");
+  };
+
+  window.deselectAllVaccinesBulk = function() {
+    const checks = document.querySelectorAll(".bioBulkCheckbox");
+    checks.forEach(i => i.checked = false);
+    showToast("Biológicos desmarcados");
+  };
+
+  function renderBulkUnitItems(data) {
+    const wrap = $("unitBulkList");
+    if (!wrap) return;
+    if (!data || data.length === 0) {
+      wrap.innerHTML = `<div class="muted p-2 text-center text-[11px] font-bold opacity-40 py-10 w-full">No se encontraron unidades</div>`;
+      return;
+    }
+    wrap.innerHTML = data.map(u => `
+      <label class="flex items-center gap-3 p-3 rounded-xl bg-white hover:bg-primary/5 cursor-pointer transition-all border border-outline-variant/30 group shadow-sm min-w-[200px] flex-1">
+        <input type="checkbox" class="unitBulkCheckbox w-4 h-4 rounded border-primary" value="${escapeAttr(u.clues)}">
+        <div class="flex flex-col min-w-0">
+          <span class="text-[11px] font-black text-primary truncate">${escapeHtml(u.unidad)}</span>
+          <span class="text-[9px] font-bold text-slate-400 uppercase tracking-tight truncate">${escapeHtml(u.municipio)}</span>
+        </div>
+      </label>
+    `).join('');
+  }
+
+  async function searchBioBulkUnits(query) {
+    const wrap = $("unitBulkList");
+    if (!wrap) return;
+    if (!query || query.length < 2) {
+      wrap.innerHTML = `<div class="muted p-2 text-center text-[11px] font-bold opacity-40 py-10 w-full flex flex-col items-center gap-3">
+                        <span class="material-symbols-rounded text-[32px]">manage_search</span>
+                        Escribe para buscar unidades...
+                      </div>`;
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('unidades')
+        .select('clues, unidad, municipio')
+        .or(`clues.ilike.%${query}%,unidad.ilike.%${query}%`)
+        .limit(30);
+
+      if (error) throw error;
+      renderBulkUnitItems(data);
+    } catch (e) {
+      console.error("Error searching units:", e);
+      wrap.innerHTML = `<div class="muted p-2 text-center text-[11px]">Error en la búsqueda</div>`;
+    }
+  }
+
+  window.handleBulkBioVisibility = async function(activo) {
+    const selectedClues = Array.from(document.querySelectorAll(".unitBulkCheckbox:checked")).map(i => i.value);
+    const selectedVaccines = Array.from(document.querySelectorAll(".bioBulkCheckbox:checked")).map(i => i.value);
+
+    if (selectedClues.length === 0 || selectedVaccines.length === 0) {
+      showToast("Selecciona al menos una unidad y un biológico", false, "warn");
+      return;
+    }
+
+    const actionText = activo === 'SI' ? 'HABILITAR' : 'OCULTAR';
+    if (!confirm(`¿Estás seguro de ${actionText} los ${selectedVaccines.length} biológicos seleccionados en las ${selectedClues.length} unidades?`)) return;
+
+    showOverlay("Aplicando cambios masivos...", "Admin Logística");
+    try {
+      const res = await apiCall({
+        action: "adminToggleBioParam",
+        cluesList: selectedClues,
+        vaccinesList: selectedVaccines,
+        activo: activo
+      });
+
+      if (res && res.ok) {
+        showToast("Configuración actualizada con éxito", true);
+        document.querySelectorAll(".unitBulkCheckbox, .bioBulkCheckbox").forEach(i => i.checked = false);
+      } else {
+        throw new Error(res?.error || "Error en el servidor");
+      }
+    } catch (e) {
+      showToast("Error: " + e.message, false);
+    } finally {
+      hideOverlay();
+    }
+  };
+
+  async function saveBioOverride() {
+    const month = $("bioOverrideMonth").value; // YYYY-MM
+    const target = $("bioOverrideTarget").value;
+    const start = $("bioOverrideStart").value;
+    const end = $("bioOverrideEnd").value;
+
+    if (!month || !target || !start || !end) {
+      showToast("Por favor completa todos los campos de la ventana", false, "warn");
+      return;
+    }
+
+    showOverlay("Guardando ventana extraordinaria...", "Calendario");
+    try {
+      const res = await apiCall({
+        action: "adminSetBioOverride",
+        anio_mes: month,
+        fecha_target: target,
+        habilitar_desde: start,
+        habilitar_hasta: end,
+        motivo: "APERTURA EXTRAORDINARIA ADMIN",
+        activo: "SI"
+      });
+
+      if (res && res.ok) {
+        showToast("Ventana extraordinaria habilitada", true);
+        // Limpiar para evitar duplicados accidentales
+        $("bioOverrideTarget").value = "";
+        $("bioOverrideStart").value = "";
+        $("bioOverrideEnd").value = "";
+        await refreshConsumiblesStatusUi();
+      } else {
+        throw new Error(res?.error || "Error al guardar");
+      }
+    } catch (e) {
+      showToast("Error: " + e.message, false);
+    } finally {
+      hideOverlay();
+    }
+  }
