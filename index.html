@@ -223,37 +223,43 @@
         
         <!-- 🚀 ACCIONES (HERO HEADER) -->
         <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all hover:shadow-md3-2" id="cardSide">
-            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10">
-              
-                  <div class="flex flex-wrap gap-2.5 justify-start">
-                  <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm hover:scale-[1.02] active:scale-95" id="btnExport" title="Exportar reporte seleccionado" style="display:none">
-                    <span class="material-symbols-rounded text-[20px]">download</span> Exportar Reportes
-                  </button>
+          <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10">
+            
+            <div class="flex flex-wrap gap-2.5 justify-start">
+              <!-- 1. Salir -->
+              <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm hover:scale-[1.02] active:scale-95" id="btnLogout" title="Cerrar sesión">
+                <span class="material-symbols-rounded text-[20px]">logout</span> Salir
+              </button>
 
-                  <button class="bg-surface-variant/50 text-surface-on rounded-2xl h-[48px] px-5 font-semibold text-sm transition-all hover:bg-primary hover:text-white flex items-center justify-center gap-2.5 cursor-pointer border-none hover:shadow-md3-1" id="btnClearLiveFeed" title="Limpiar actividad reciente" style="display:none">
-                    <span class="material-symbols-rounded text-[20px]">notifications_paused</span> Limpiar actividad
-                  </button>
+              <!-- 2. Exportar reportes -->
+              <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm hover:scale-[1.02] active:scale-95" id="btnExport" title="Exportar reporte seleccionado" style="display:none">
+                <span class="material-symbols-rounded text-[20px]">download</span> Exportar Reportes
+              </button>
 
-                  <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm hover:scale-[1.02] active:scale-95" id="btnLogout" title="Cerrar sesión">
-                    <span class="material-symbols-rounded text-[20px]">logout</span> Salir
-                  </button>
+              <!-- 3. Subir archivos -->
+              <button class="bg-surface-variant/50 text-surface-on rounded-2xl h-[48px] px-5 font-semibold text-sm transition-all hover:bg-primary hover:text-white flex items-center justify-center gap-2.5 cursor-pointer border-none hover:shadow-md3-1" id="btnOpenUpload" title="Subir evidencias al servidor" style="display:none">
+                <span class="material-symbols-rounded text-[20px]">cloud_upload</span> Subir archivos
+              </button>
 
-                  <button class="bg-surface-variant/50 text-surface-on rounded-2xl h-[48px] px-5 font-semibold text-sm transition-all hover:bg-primary hover:text-white flex items-center justify-center gap-2.5 cursor-pointer border-none hover:shadow-md3-1" id="btnOpenUpload" title="Subir evidencias al servidor" style="display:none">
-                    <span class="material-symbols-rounded text-[20px]">cloud_upload</span> Subir archivos
-                  </button>
+              <!-- 4. Explorador -->
+              <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm hover:scale-[1.02] active:scale-95" id="btnViewArchivos" title="Ver evidencias" style="display:none">
+                <span class="material-symbols-rounded text-[20px]">folder_open</span> Explorador
+              </button>
 
-                  <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm hover:scale-[1.02] active:scale-95" id="btnViewArchivos" title="Ver evidencias" style="display:none">
-                    <span class="material-symbols-rounded text-[20px]">folder_open</span> Explorador
-                  </button>
+              <!-- 5. Notificaciones -->
+              <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm relative text-surface-on hover:scale-[1.02] active:scale-95" id="btnTopNotifications" type="button" style="display:none">
+                <div class="flex items-center justify-center relative">
+                  <span class="material-symbols-rounded text-[20px]">notifications</span>
+                  <span id="topNotifBadge" class="absolute -top-1 -right-2 bg-status-error text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full" style="display:none">00</span>
+                </div>
+                Notificaciones
+              </button>
 
-                  <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm relative text-surface-on hover:scale-[1.02] active:scale-95" id="btnTopNotifications" type="button" style="display:none">
-                    <div class="flex items-center justify-center relative">
-                      <span class="material-symbols-rounded text-[20px]">notifications</span>
-                      <span id="topNotifBadge" class="absolute -top-1 -right-2 bg-status-error text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full" style="display:none">00</span>
-                    </div>
-                    Notificaciones
-                  </button>
-              </div>
+              <!-- 6. Limpiar Actividad (Auxiliar) -->
+              <button class="bg-surface-variant/50 text-surface-on rounded-2xl h-[48px] px-5 font-semibold text-sm transition-all hover:bg-primary hover:text-white flex items-center justify-center gap-2.5 cursor-pointer border-none hover:shadow-md3-1" id="btnClearLiveFeed" title="Limpiar actividad reciente" style="display:none">
+                <span class="material-symbols-rounded text-[20px]">notifications_paused</span> Limpiar actividad
+              </button>
+            </div>
 
               <!-- 💡 INSIGHT CAPSULE: DATO CURIOSO (Senior UX - Luminescent Refinement) -->
               <div class="flex-1 max-w-[750px] h-[52px] bg-white/80 backdrop-blur-md border-none rounded-2xl shadow-[0_12px_45px_-8px_rgba(0,0,0,0.08),0_4px_12px_-2px_rgba(0,0,0,0.03)] overflow-hidden flex items-center group transition-all hover:bg-white hover:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.12),0_0_20px_rgba(245,158,11,0.1)] cursor-help" title="Tip dinámico del programa">
@@ -917,20 +923,20 @@
                   Consulta qué unidades ya capturaron y cuáles faltan, por fecha y por tipo de reporte.
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-                  <div>
-                    <label for="summaryTipo" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Tipo de consulta</label>
-                    <select id="summaryTipo" class="w-full bg-surface-variant border border-outline-variant/30 rounded-xl px-4 py-3 text-[15px] font-medium text-surface-on focus:bg-white focus:border-primary outline-none transition-all">
+                <div class="flex flex-col md:flex-row items-end gap-5 mt-4">
+                  <div class="flex-1 w-full md:max-w-[300px]">
+                    <label for="summaryTipo" class="text-[11px] font-black text-primary/50 uppercase tracking-widest block mb-2 ml-1">Tipo de consulta</label>
+                    <select id="summaryTipo" class="w-full bg-white border border-outline-variant/40 rounded-xl px-4 h-[52px] text-[15px] font-bold text-primary focus:border-primary outline-none transition-all shadow-sm">
                       <option value="SR">Existencia de biológicos</option>
                       <option value="CONS">Consumibles</option>
                     </select>
                   </div>
 
-                  <div>
-                    <label for="summaryFecha" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Fecha a consultar</label>
+                  <div class="flex-1 w-full md:max-w-[280px]">
+                    <label for="summaryFecha" class="text-[11px] font-black text-primary/50 uppercase tracking-widest block mb-2 ml-1">Fecha a consultar</label>
                     <div class="modern-input-group">
-                      <span class="input-icon material-symbols-rounded">calendar_today</span>
-                      <input type="date" id="summaryFecha" class="rounded-xl h-12 text-[15px] font-bold">
+                      <span class="input-icon material-symbols-rounded !text-primary/40">calendar_today</span>
+                      <input type="date" id="summaryFecha" class="rounded-xl h-[52px] text-[15px] font-bold">
                     </div>
                   </div>
                 </div>

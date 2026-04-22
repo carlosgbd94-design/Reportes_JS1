@@ -7508,6 +7508,7 @@ async function getTodayReports(fecha = "", force = false) {
     if ($("panelCAP")) $("panelCAP").style.display = isUnidad ? "block" : "none";
     if ($("panelAdminOpsTabs")) $("panelAdminOpsTabs").style.display = (isAdmin || isJurisdiccional || isMunicipal) ? "block" : "none";
     if ($("tabOPS_PINOL")) $("tabOPS_PINOL").style.display = (isAdmin || isMunicipal) ? "block" : "none";
+    if ($("tabOPS_ADMIN")) $("tabOPS_ADMIN").style.display = isAdmin ? "flex" : "none";
 
 
 
@@ -11204,3 +11205,30 @@ $("btnSaveSR").onclick = async () => {
       hideOverlay();
     }
   }
+
+  // === GLOBAL UX ENHANCEMENTS ===
+  
+  // 1. Open native date picker when clicking anywhere in the input or its container group
+  document.addEventListener("click", (e) => {
+    // Only target date or month inputs
+    const isDateInput = (el) => el && el.tagName === "INPUT" && (el.type === "date" || el.type === "month");
+    
+    let targetInput = null;
+    if (isDateInput(e.target)) {
+      targetInput = e.target;
+    } else {
+      // Check if clicking inside a group that contains a date input (icon, padding, etc)
+      const group = e.target.closest(".modern-input-group");
+      if (group) {
+        targetInput = group.querySelector('input[type="date"], input[type="month"]');
+      }
+    }
+
+    if (targetInput && typeof targetInput.showPicker === "function") {
+      try {
+        targetInput.showPicker();
+      } catch (err) {
+        // Silently fail if browser doesn't support it or state doesn't allow it
+      }
+    }
+  });

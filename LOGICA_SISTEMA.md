@@ -30,8 +30,25 @@ El panel de Administración está dividido en sub-paneles modulares para evitar 
 2. **Catálogo de Biológicos**: Control de parámetros (min/max) y visibilidad de vacunas por unidad.
 3. **Seguridad y Usuarios**: Control de acceso, actualización de roles y estado de cuentas (Sincronizado con Supabase Auth).
 
+> [!IMPORTANT]
+> La pestaña de **Administración** en el panel superior es exclusiva para el rol `ADMIN`. Los roles `MUNICIPAL` y `JURISDICCIONAL` tienen acceso a los resúmenes y métricas, pero no al panel de control administrativo.
+
 ## 3. Integración con Supabase
 
 - **Auth**: El login utiliza `supabase.auth`. No se crean usuarios directamente desde tablas manuales.
 - **Validación**: La función `unitStatus` es el motor central. Consulta las tablas de configuración antes de permitir cualquier operación de guardado.
 - **Sincronización**: Los cambios en roles o permisos se reflejan instantáneamente sin necesidad de refrescar la sesión del usuario final en la mayoría de los casos.
+
+## 4. Interfaz y Experiencia de Usuario (UX)
+
+### Barra de Acciones Principal
+Para optimizar el flujo de trabajo, los botones de acción en el encabezado siguen el orden específico solicitado:
+1.  **Salir**: Cierre seguro de la sesión.
+2.  **Exportar reportes**: Extracción de datos en formatos externos.
+3.  **Subir archivos**: Carga de nuevas evidencias al servidor.
+4.  **Explorador**: Visualización de archivos y evidencias existentes.
+5.  **Notificaciones**: Centro de comunicación y alertas.
+
+### Mejoras de Interacción
+- **Selectores de Fecha**: Todos los campos de tipo `date` y `month` activan automáticamente el calendario nativo al hacer clic en cualquier parte del componente (incluyendo iconos y bordes), mejorando la accesibilidad y velocidad de captura.
+- **Resumen de Captura**: Los filtros se presentan en una sola fila compacta para optimizar el espacio vertical en pantallas grandes.
