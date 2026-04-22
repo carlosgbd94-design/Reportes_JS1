@@ -913,7 +913,7 @@
               <!-- RESUMEN DE CAPTURA -->
               <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8" id="panelCaptureSummary" style="display:none">
                 <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-4">
-                  <h3 class="text-[17px] font-extrabold text-primary tracking-tight m-0 bg-primary-container/40 px-6 py-2.5 rounded-2xl border border-primary/10">Resumen de captura de existencia de biológicos de hoy</h3>
+                  <h3 id="captureSummaryTitle" class="text-[17px] font-extrabold text-primary tracking-tight m-0 bg-primary-container/40 px-6 py-2.5 rounded-2xl border border-primary/10">Resumen de captura de existencia de biológicos de hoy</h3>
                   <button class="bg-surface-variant text-surface-on hover:bg-surface-onVariant/10 px-3 h-[36px] rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all outline-none border-none cursor-pointer text-[12px]" id="btnRefreshCaptureSummary" title="Actualizar resumen">
                     <span class="material-symbols-rounded text-[16px]">refresh</span> <span class="hidden sm:inline">Actualizar</span>
                   </button>
@@ -929,6 +929,7 @@
                     <select id="summaryTipo" class="w-full bg-white border border-outline-variant/40 rounded-xl px-4 h-[52px] text-[15px] font-bold text-primary focus:border-primary outline-none transition-all shadow-sm">
                       <option value="SR">Existencia de biológicos</option>
                       <option value="CONS">Consumibles</option>
+                      <option value="BIO">Pedido de biológico</option>
                     </select>
                   </div>
 

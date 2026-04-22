@@ -58,6 +58,37 @@ const CACHEABLE_ACTIONS = {
   "notificationUserCatalog": 3600000 // 1 hora
 };
 
+// --- LOGÍSTICA DE CAPTURA (VENTANAS INTELIGENTES) ---
+const MEXICAN_HOLIDAYS_2026 = [
+  "2026-01-01", "2026-02-02", "2026-03-16", "2026-05-01", 
+  "2026-09-16", "2026-11-16", "2026-12-25"
+];
+
+function isWorkDay(d) {
+  if (!(d instanceof Date)) d = new Date(d);
+  const dow = d.getUTCDay();
+  if (dow === 0 || dow === 6) return false;
+  const ymd = d.toISOString().split('T')[0];
+  return !MEXICAN_HOLIDAYS_2026.includes(ymd);
+}
+
+function getBioCaptureWindow(year, month) {
+  let target = new Date(Date.UTC(year, month - 1, 22));
+  let finalTarget = new Date(target);
+  while (!isWorkDay(finalTarget)) { finalTarget.setUTCDate(finalTarget.getUTCDate() + 1); }
+  let start = new Date(finalTarget);
+  start.setUTCDate(start.getUTCDate() - 1);
+  while (!isWorkDay(start)) { start.setUTCDate(start.getUTCDate() - 1); }
+  let end = new Date(finalTarget);
+  end.setUTCDate(end.getUTCDate() + 1);
+  while (!isWorkDay(end)) { end.setUTCDate(end.getUTCDate() + 1); }
+  return {
+    start: start.toISOString().split('T')[0],
+    target: finalTarget.toISOString().split('T')[0],
+    end: end.toISOString().split('T')[0]
+  };
+}
+
 // --- PERSISTENCIA DE SESIÓN (localStorage) ---
 function saveSession(token, user) {
   try {
@@ -3317,7 +3348,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 pedido_frascos: null
               })),
               hasSavedBio: resSaved.data && resSaved.data.length > 0,
-              canCapture: canCaptureLocal,
               isCaptureDay: isCaptureDayLocal,
               fechaPedidoProgramada: windowTargetYmd,
               captureWindowStart: windowStartYmd,
@@ -3328,21 +3358,27 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         case "admincaptureoverview": {
-          const [resSR, resCons, resUnits] = await Promise.all([
-            supabase.from('biologicos_existencia').select('clues').eq('fecha', payload.fecha),
-            supabase.from('consumibles').select('clues').eq('fecha', payload.fecha),
-            supabase.from('unidades').select('*')
+          const { fecha, tipo } = payload;
+          const [resSR, resCons, resBio, resUnits] = await Promise.all([
+            supabase.from('biologicos_existencia').select('clues').eq('fecha', fecha),
+            supabase.from('consumibles').select('clues').eq('fecha', fecha),
+            supabase.from('biologicos_pedido').select('clues').eq('fecha_captura', fecha),
+            supabase.from('unidades').select('*').eq('activo', 'SI')
           ]);
-          console.log(`[Supabase DEBUG] adminCaptureOverview raw parts:`, { resSR: resSR.data, resCons: resCons.data, resUnits: resUnits.data });
 
-          const capturedClues = (payload.tipo === "SR" ? resSR.data : resCons.data).map(x => x.clues || x.CLUES);
+          let capturedClues = [];
+          if (tipo === "SR") capturedClues = resSR.data.map(x => x.clues || x.CLUES);
+          else if (tipo === "CONS") capturedClues = resCons.data.map(x => x.clues || x.CLUES);
+          else if (tipo === "BIO") capturedClues = resBio.data.map(x => x.clues || x.CLUES);
+
           const capturadas = resUnits.data.filter(u => capturedClues.includes(u.clues || u.CLUES));
           const faltantes = resUnits.data.filter(u => !capturedClues.includes(u.clues || u.CLUES));
 
           return {
             ok: true,
             data: {
-              fecha: payload.fecha,
+              fecha,
+              tipo,
               total_unidades: resUnits.data.length,
               total_capturadas: capturadas.length,
               total_faltantes: faltantes.length,
@@ -7305,7 +7341,30 @@ async function getTodayReports(fecha = "", force = false) {
   }
 
   function renderCaptureSummary(data) {
-    $("sumFecha").textContent = data?.fecha || "—";
+    const fecha = data?.fecha || "";
+    const tipo = data?.tipo || "SR";
+    
+    // Título Dinámico Premium
+    const titleEl = document.getElementById("captureSummaryTitle");
+    if (titleEl) {
+       const tipoTxt = tipo === "CONS" ? "Consumibles" : (tipo === "BIO" ? "Pedido de biológico" : "Existencia de biológicos");
+       titleEl.textContent = `Resumen de captura de ${tipoTxt} - ${formatAppDate(fecha)}`;
+    }
+
+    // Lógica de Ventana Inteligente para Pedido
+    let extraInfo = "";
+    if (tipo === "BIO" && fecha) {
+       const d = new Date(fecha + "T00:00:00");
+       const window = getBioCaptureWindow(d.getFullYear(), d.getMonth() + 1);
+       const isInside = (fecha >= window.start && fecha <= window.end);
+       if (isInside) {
+          extraInfo = `<span class="statusOk" style="background:#e8f5e9; color:#2e7d32; padding:4px 12px; border-radius:12px; font-size:11px; font-weight:800; border:1px solid #c8e6c9;">✅ Ventana oficial: ${window.start} al ${window.end}</span>`;
+       } else {
+          extraInfo = `<span class="statusWarn" style="background:#fff3e0; color:#ef6c00; padding:4px 12px; border-radius:12px; font-size:11px; font-weight:800; border:1px solid #ffe0b2;">⚠️ Pedido extraordinario (Fuera de ventana)</span>`;
+       }
+    }
+
+    $("sumFecha").textContent = fecha || "—";
     $("sumTotal").textContent = data?.total_unidades ?? 0;
     $("sumCapturadas").textContent = data?.total_capturadas ?? 0;
     $("sumFaltantes").textContent = data?.total_faltantes ?? 0;
@@ -7322,9 +7381,8 @@ async function getTodayReports(fecha = "", force = false) {
     }
 
 
-    const tipoTxt = (data?.tipo === "CONS") ? "Consumibles" : "Existencia de biológicos";
-    const msg = data?.mensaje || `Consulta cargada: ${tipoTxt} del ${data?.fecha || "—"}`;
-    $("summaryMsg").textContent = msg;
+    const finalMsg = extraInfo || `Consulta cargada: ${tipo === "CONS" ? "Consumibles" : (tipo === "BIO" ? "Pedido" : "Existencia")} del ${fecha || "—"}`;
+    $("summaryMsg").innerHTML = finalMsg;
 
     const tbodyCap = $("capturadasTbody");
     const tbodyFal = $("faltantesTbody");
@@ -11275,3 +11333,7 @@ $("btnSaveSR").onclick = async () => {
       }
     }
   });
+
+  // Dinamización instantánea del Resumen de Captura
+  document.getElementById("summaryTipo")?.addEventListener("change", () => reloadCaptureSummarySilent());
+  document.getElementById("summaryFecha")?.addEventListener("change", () => reloadCaptureSummarySilent());
