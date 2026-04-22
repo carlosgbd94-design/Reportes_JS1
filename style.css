@@ -1474,16 +1474,18 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   margin-top: 0;
   z-index: 2000000;
   contain: layout paint;
+  background: transparent !important; /* Fix: avoid square white background behind rounded card */
+  box-shadow: none !important;
 }
 
 .topNotifCard {
   width: 100%;
   min-height: 360px;
   max-height: calc(100vh - 24px);
-  border: 1px solid rgba(0, 0, 0, .06);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, .14),
+  border: 1px solid rgba(0, 0, 0, .08);
+  border-radius: 28px; /* More rounded for premium feel */
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .18),
     inset 0 1px 0 rgba(255, 255, 255, .8);
   overflow: hidden;
   display: flex;
@@ -1544,28 +1546,29 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
 }
 
 .notifBadgeCounter,
-.liveBadge {
+.liveBadge,
+#topNotifBadge {
   position: absolute;
   top: -6px;
   right: -6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  border-radius: 10px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1;
-  color: #ffffff;
-  background: linear-gradient(135deg, #ff5f5f, #e63946);
-  border: 1.5px solid #ffffff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  z-index: 20;
+  color: #ffffff !important;
+  background: #ef4444 !important; /* Fix: Force vibrant red, avoiding transparency issues */
+  border: 2px solid #ffffff;
+  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.4);
+  z-index: 50;
   pointer-events: none;
   transform: scale(1);
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .notifBadgeCounter.pulse,
@@ -1692,11 +1695,15 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
 }
 
 .topNotifKpis .notifStat span:not(.material-symbols-rounded) {
-  font-size: 13px;
+  font-size: 11px; /* Reduced to avoid overflow (e.g. MUNICIPAL) */
   font-weight: 900;
-  line-height: 1;
+  line-height: 1.2;
   text-transform: uppercase;
   letter-spacing: -0.2px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #topNotifRoleKpi {
@@ -4353,25 +4360,7 @@ body.mobile-mode .topNotifCard {
 }
 
 /* MQ3 Notification Cards */
-.notifCard {
-  border: 1px solid var(--md-outline-variant);
-  border-radius: 20px;
-  padding: 20px;
-  background: var(--card);
-  box-shadow: var(--md-shadow-1);
-  transition: all 0.25s ease;
-}
-
-.notifCard:hover {
-  border-color: var(--md-sys-color-primary);
-  transform: translateY(-2px);
-  box-shadow: var(--md-shadow-2);
-}
-
-.notifCard.unread {
-  border-left: 6px solid var(--md-sys-color-primary);
-  background: var(--md-surface-container-low);
-}
+/* .notifCard duplicate removed for compactness */
 
 .notifCardHead {
   display: flex;
@@ -4555,25 +4544,17 @@ body.mobile-mode .topNotifCard {
     box-shadow .16s ease;
 }
 
-.notifGroup.warn {
-  border-color: rgba(255, 193, 7, .28);
-  background: linear-gradient(180deg, rgba(255, 193, 7, .06), rgba(0, 0, 0, .03));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04),
-    0 8px 18px rgba(0, 0, 0, .14);
+.notifGroup.warn,
+.notifGroup.neutral {
+  border-color: rgba(0, 0, 0, .08);
+  background: rgba(0, 0, 0, .025);
+  box-shadow: none;
 }
 
 .notifGroup.good {
-  border-color: rgba(76, 175, 80, .26);
-  background: linear-gradient(180deg, rgba(76, 175, 80, .06), rgba(0, 0, 0, .03));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04),
-    0 8px 18px rgba(0, 0, 0, .14);
-}
-
-.notifGroup.neutral {
-  border-color: rgba(0, 0, 0, .12);
-  background: linear-gradient(180deg, rgba(255, 255, 255, .045), rgba(0, 0, 0, .03));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04),
-    0 8px 18px rgba(0, 0, 0, .14);
+  border-color: rgba(76, 175, 80, .20);
+  background: rgba(76, 175, 80, .04);
+  box-shadow: none;
 }
 
 .notifGroup.neutral .notifGroupTitle,
@@ -4735,13 +4716,20 @@ body.mobile-mode .topNotifCard {
 }
 
 .notifBody {
-  margin-top: 3px;
-  font-size: 12px;
-  line-height: 1.35;
-  color: #1A1C1E;
-  /* High contrast correctly set */
+  margin-top: 4px;
+  font-size: 11.5px; /* More compact */
+  line-height: 1.4;
+  color: #44474E;
   white-space: pre-wrap;
-  opacity: 1 !important;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Truncate message to avoid huge cards */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notifCard:hover .notifBody {
+  -webkit-line-clamp: unset; /* Show full message on hover */
 }
 
 .notifType {
