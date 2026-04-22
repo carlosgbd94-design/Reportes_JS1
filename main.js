@@ -903,60 +903,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
       return `
       <div class="${cardClass}" data-id="${escapeAttr(item.id || "")}">
-        <div class="notifCardHead">
-          <div style="min-width:0; flex:1;">
-            <div class="notifCardTitle">
-              ${escapeHtml(item.title || "Notificación")}
-              ${pinolTag}
-              ${frascosTag}
-              ${unreadDot}
+        <div class="notifCardContent">
+          <div class="notifHeaderRow">
+            <div class="notifMainInfo">
+              <div class="notifCardTitle">
+                ${unreadDot}
+                ${escapeHtml(item.title || "Notificación")}
+                ${pinolTag}
+                ${frascosTag}
+              </div>
+              <div class="notifMeta">
+                ${escapeHtml(item.created_ts || "")}
+                ${item.from_usuario ? ` · ${escapeHtml(item.from_usuario)}` : ""}
+              </div>
             </div>
-            <div class="notifMeta">
-              ${escapeHtml(item.created_ts || "")}
-              ${item.from_usuario ? ` · ${escapeHtml(item.from_usuario)}` : ""}
+            
+            <div class="notifCompactActions">
+              ${showConfirmPinol
+                ? `<button type="button" class="notifMiniBtn good" title="Confirmar" onclick="confirmPinolReceiptFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">task_alt</span></button>`
+                : ``
+              }
+              ${!showConfirmPinol && !pinolConfirmed && !isPinolAck && !isRead
+                ? `<button type="button" class="notifMiniBtn primary" title="Leída" onclick="markNotificationReadFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">done</span></button>`
+                : ``
+              }
+              <button type="button" class="notifMiniBtn delete" title="Borrar" onclick="deleteNotificationFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">delete</span></button>
             </div>
           </div>
-
-          <span class="notifType ${type}">
-            <span class="material-symbols-rounded">${typeIcon}</span>
-            ${escapeHtml(notifTypeLabel(type))}
-          </span>
-        </div>
-
-        <div class="notifBody">${escapeHtml(item.message || "")}</div>
-
-        <div class="notifActions">
-          ${showConfirmPinol
-          ? `
-                <button
-                  type="button"
-                  class="md-btn-icon"
-                  title="Confirmar recibido"
-                  onclick="confirmPinolReceiptFlow('${escapeAttr(item.id || "")}')"
-                  style="color: var(--md-sys-color-primary);"
-                >
-                  <span class="material-symbols-rounded">task_alt</span>
-                </button>
-              `
-          : ``
-        }
-
-          ${!showConfirmPinol && !pinolConfirmed && !isPinolAck && !isRead
-          ? `
-                <button
-                  type="button"
-                  class="md-btn-icon"
-                  title="Marcar como leída"
-                  onclick="markNotificationReadFlow('${escapeAttr(item.id || "")}')"
-                  style="color: var(--md-sys-color-primary);"
-                >
-                  <span class="material-symbols-rounded">done</span>
-                </button>
-              `
-          : ``
-        }
-
-          ${createDeleteButtonHtml(`deleteNotificationFlow('${escapeAttr(item.id || "")}')`, "Borrar notificación")}
+          
+          <div class="notifBody snippet">${escapeHtml(item.message || "")}</div>
         </div>
       </div>
     `;

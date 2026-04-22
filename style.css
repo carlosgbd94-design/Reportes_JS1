@@ -1474,8 +1474,11 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   margin-top: 0;
   z-index: 2000000;
   contain: layout paint;
-  background: transparent !important; /* Fix: avoid square white background behind rounded card */
+  background: none !important; /* Fix: ensures no square white background */
   box-shadow: none !important;
+  border: none !important;
+  padding: 0;
+  overflow: visible;
 }
 
 .topNotifCard {
@@ -1483,9 +1486,9 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   min-height: 360px;
   max-height: calc(100vh - 24px);
   border: 1px solid rgba(0, 0, 0, .08);
-  border-radius: 28px; /* More rounded for premium feel */
+  border-radius: 32px; /* More rounded premium feel */
   background: #ffffff;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, .18),
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .2),
     inset 0 1px 0 rgba(255, 255, 255, .8);
   overflow: hidden;
   display: flex;
@@ -1548,24 +1551,24 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
 .notifBadgeCounter,
 .liveBadge,
 #topNotifBadge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 900;
-  line-height: 1;
+  position: absolute !important;
+  top: -8px !important;
+  right: -8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  border-radius: 50% !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
   color: #ffffff !important;
-  background: #ef4444 !important; /* Fix: Force vibrant red, avoiding transparency issues */
-  border: 2px solid #ffffff;
-  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.4);
-  z-index: 50;
+  background: #ff0000 !important; /* Fix: forced ultra-red for visibility */
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 3px 10px rgba(255, 0, 0, 0.5) !important;
+  z-index: 99999 !important;
   pointer-events: none;
   transform: scale(1);
   transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -4686,117 +4689,97 @@ body.mobile-mode .topNotifCard {
 
 .notifCard.unread {
   background: #ffffff;
-  border-left: 4px solid var(--md-sys-color-primary);
+  border-left: none; /* Removed for total unification */
   box-shadow: 0 4px 12px rgba(4, 30, 66, 0.08);
 }
 
-.notifCardHead {
+.notifCardContent {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notifHeaderRow {
+  display: flex;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 6px;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.notifMainInfo {
+  flex: 1;
+  min-width: 0;
 }
 
 .notifCardTitle {
-  font-size: 14px;
-  line-height: 1.2;
+  font-size: 13px;
   font-weight: 800;
   color: var(--md-sys-color-primary);
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
-
 .notifMeta {
-  margin-top: 2px;
   font-size: 10px;
-  line-height: 1.18;
-  color: #44474E;
-  /* Darker grey for metadata contrast */
+  color: #64748b;
   font-weight: 600;
 }
 
-.notifBody {
+.notifUnreadDot {
+  width: 8px;
+  height: 8px;
+  background: #3b82f6;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.notifCompactActions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.notifMiniBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.notifMiniBtn:hover {
+  transform: scale(1.1);
+}
+
+.notifMiniBtn.primary { background: #e0f2fe; color: #0369a1; }
+.notifMiniBtn.good { background: #dcfce7; color: #15803d; }
+.notifMiniBtn.delete { background: #fee2e2; color: #b91c1c; }
+
+.notifMiniBtn span { font-size: 16px; }
+
+.notifBody.snippet {
   margin-top: 4px;
-  font-size: 11.5px; /* More compact */
+  font-size: 11px;
   line-height: 1.4;
-  color: #44474E;
-  white-space: pre-wrap;
+  color: #64748b;
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* Truncate message to avoid huge cards */
+  -webkit-line-clamp: 1; /* Extreme compactness */
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.notifCard:hover .notifBody {
-  -webkit-line-clamp: unset; /* Show full message on hover */
-}
-
-.notifType {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  min-height: 20px;
-  padding: 2px 7px;
-  border-radius: 999px;
-  font-size: 9px;
-  font-weight: 900;
-  white-space: nowrap;
-  letter-spacing: .2px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05),
-    0 1px 2px rgba(0, 0, 0, .14);
-}
-
-.notifType .material-symbols-rounded {
-  font-size: 11px;
-  width: 11px;
-  height: 11px;
-  opacity: .95;
-}
-
-.notifPillPinol {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  margin-left: 5px;
-  padding: 2px 6px;
-  border-radius: 999px;
-  font-size: 9px;
-  font-weight: 900;
-}
-
-.notifPillPinol .material-symbols-rounded {
-  width: 11px;
-  height: 11px;
-  font-size: 11px;
-  padding: 0;
-}
-
-.notifUnreadDot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-left: 5px;
-  border-radius: 999px;
-  vertical-align: middle;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, .10);
-}
-
-.notifActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 6px;
-  align-items: center;
-}
-
-.notifActions .miniBtn,
-.notifActions .ghostBtn {
-  min-height: 28px;
-  padding: 5px 8px;
-  border-radius: 9px;
-  font-size: 11px;
+.notifCard:hover .notifBody.snippet {
+  -webkit-line-clamp: unset;
+  color: #1e293b;
 }
 
 .notifActions .material-symbols-rounded {
