@@ -19,8 +19,14 @@ El sistema determina si un usuario puede capturar información basándose en tre
 
 ### Nivel 3: Reglas Operativas (Estándar)
 - **Consumibles**: Jueves (Día 4).
-- **Pedido de Biológico (Mensual)**: Ventana inteligente calculada alrededor del día 20 de cada mes (Lunes-Viernes).
-- **Existencia de Biológico**: Jueves y Viernes (Días 4 y 5).
+- **Existencia de Biológico**: Diaria (Lunes a Viernes).
+- **Pedido de Biológico (Logística del Día 22)**:
+  - **Fecha Objetivo**: Día 22 de cada mes.
+  - **Ajuste Inteligente**: Si el día 22 es inhábil (sábado, domingo o festivo), el objetivo se mueve al día hábil **anterior**.
+  - **Ventana Oficial (Pedido Mensual)**: 3 días hábiles (1 día antes del objetivo, el día objetivo, y 1 día después).
+  - **Pedido Extraordinario**: Cualquier captura realizada fuera de la ventana oficial se marca automáticamente como "EXTRAORDINARIO".
+  - **Opción "Sin Pedido"**: Permite capturar existencias sin generar solicitud de biológico. Requiere confirmación si la existencia es menor al promedio.
+  - **Bloqueos de Guardado**: El sistema bloquea el guardado **únicamente** si no se respetan los múltiplos de 5 en biológicos críticos (HEXAVALENTE, ROTAVIRUS, NEUMOCÓCICA 13, NEUMOCÓCICA 20 y SRP).
 
 ## 2. Estructura de Administración
 
@@ -28,6 +34,8 @@ El panel de Administración está dividido en sub-paneles modulares para evitar 
 
 1. **Configuración de Aperturas**: Gestión de fechas especiales y overrides para Consumibles y Biológicos.
 2. **Catálogo de Biológicos**: Control de parámetros (min/max) y visibilidad de vacunas por unidad.
+   - **Ordenamiento Geográfico**: Las listas de unidades se ordenan jerárquicamente por Municipio y luego por CLUES para una localización rápida.
+   - **Integridad de Datos**: Al guardar una captura de biológicos, el sistema envía el catálogo completo. Si una vacuna está deshabilitada para la unidad, se guarda automáticamente con valor **0** para mantener la integridad de la matriz de exportación.
 3. **Seguridad y Usuarios**: Control de acceso, actualización de roles y estado de cuentas (Sincronizado con Supabase Auth).
 
 > [!IMPORTANT]

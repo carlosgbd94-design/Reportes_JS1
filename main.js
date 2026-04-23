@@ -23,6 +23,7 @@ let BATCH_CATALOG = [];
 let BATCH_FILTER = "all"; 
 let BATCH_SEARCH_QUERY = "";
 let CONFIG_BIOLOGICOS_CATALOG = [];
+let FULL_BIO_CATALOG = [];
 
 // Estado reactivo de la UI — debe declararse aquí para que showToast funcione pre-login
 const LIVE_STATE = {
@@ -64,30 +65,6 @@ const MEXICAN_HOLIDAYS_2026 = [
   "2026-09-16", "2026-11-16", "2026-12-25"
 ];
 
-function isWorkDay(d) {
-  if (!(d instanceof Date)) d = new Date(d);
-  const dow = d.getUTCDay();
-  if (dow === 0 || dow === 6) return false;
-  const ymd = d.toISOString().split('T')[0];
-  return !MEXICAN_HOLIDAYS_2026.includes(ymd);
-}
-
-function getBioCaptureWindow(year, month) {
-  let target = new Date(Date.UTC(year, month - 1, 22));
-  let finalTarget = new Date(target);
-  while (!isWorkDay(finalTarget)) { finalTarget.setUTCDate(finalTarget.getUTCDate() + 1); }
-  let start = new Date(finalTarget);
-  start.setUTCDate(start.getUTCDate() - 1);
-  while (!isWorkDay(start)) { start.setUTCDate(start.getUTCDate() - 1); }
-  let end = new Date(finalTarget);
-  end.setUTCDate(end.getUTCDate() + 1);
-  while (!isWorkDay(end)) { end.setUTCDate(end.getUTCDate() + 1); }
-  return {
-    start: start.toISOString().split('T')[0],
-    target: finalTarget.toISOString().split('T')[0],
-    end: end.toISOString().split('T')[0]
-  };
-}
 
 // --- PERSISTENCIA DE SESIÓN (localStorage) ---
 function saveSession(token, user) {
@@ -3296,18 +3273,22 @@ document.addEventListener("DOMContentLoaded", () => {
           const role = String(USER?.rol || "").toUpperCase();
           const clues = String(USER?.clues || "").trim();
 
-          // Filtrar biológicos por estado activo (Whitelist)
-          paramsQuery = paramsQuery.eq('activo', 'SI');
-
-          if (role === 'UNIDAD') {
-            if (!clues) throw new Error("La sesión no tiene una CLUES válida asignada.");
-            paramsQuery = paramsQuery.ilike('clues', clues);
+          // 🛡️ Filtro Crítico: Solo traer parámetros de la unidad actual y que estén activos
+          // Si no hay CLUES (caso raro en Admin), intentamos traer un set global (*)
+          let query = supabase.from('biologicos_params')
+            .select('*')
+            .eq('activo', 'SI');
+          
+          if (clues) {
+            query = query.ilike('clues', clues);
+          } else {
+            query = query.eq('clues', '*');
           }
 
-          console.log(`[Supabase DEBUG] biogetform with active filter`);
+          console.log(`[Supabase DEBUG] biogetform for ${clues} (Role: ${role})`);
 
           const [resParams, resSaved, resCalendar] = await Promise.all([
-            paramsQuery,
+            query,
             supabase.from('biologicos_pedido').select('*').ilike('clues', clues).eq('fecha_captura', todayYmdLocal()),
             supabase.from('calendario_pedidos').select('*').eq('anio_mes', todayYmdLocal().substring(0, 7)).eq('activo', 'SI')
           ]);
@@ -3338,7 +3319,7 @@ document.addEventListener("DOMContentLoaded", () => {
           return {
             ok: true,
             data: {
-              rows: resParams.data.map(p => ({
+              rows: (resParams.data || []).map(p => ({
                 biologico: p.biologico,
                 multiplo: p.multiplo,
                 min_dosis: p.min_dosis,
@@ -3359,17 +3340,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
         case "admincaptureoverview": {
           const { fecha, tipo } = payload;
+          
+          let consDates = [fecha];
+          if (tipo === "CONS") {
+            const d = new Date(`${fecha}T12:00:00`);
+            if (d.getDay() === 4) { // Jueves
+              const ayer = new Date(d);
+              ayer.setDate(d.getDate() - 1);
+              if (isMexicanHoliday(d)) {
+                 consDates.push(dateToLocalYmd(ayer));
+              }
+            }
+          }
+
           const [resSR, resCons, resBio, resUnits] = await Promise.all([
             supabase.from('biologicos_existencia').select('clues').eq('fecha', fecha),
-            supabase.from('consumibles').select('clues').eq('fecha', fecha),
+            supabase.from('consumibles').select('clues').in('fecha', consDates),
             supabase.from('biologicos_pedido').select('clues').eq('fecha_captura', fecha),
             supabase.from('unidades').select('*').eq('activo', 'SI')
           ]);
 
+
           let capturedClues = [];
-          if (tipo === "SR") capturedClues = resSR.data.map(x => x.clues || x.CLUES);
-          else if (tipo === "CONS") capturedClues = resCons.data.map(x => x.clues || x.CLUES);
-          else if (tipo === "BIO") capturedClues = resBio.data.map(x => x.clues || x.CLUES);
+          if (tipo === "SR") capturedClues = [...new Set(resSR.data.map(x => x.clues || x.CLUES))];
+          else if (tipo === "CONS") capturedClues = [...new Set(resCons.data.map(x => x.clues || x.CLUES))];
+          else if (tipo === "BIO") {
+            // Para BIO necesitamos el registro completo para tipo_pedido
+            capturedClues = [...new Set(resBio.data.map(x => x.clues || x.CLUES))];
+          }
 
           const capturadas = resUnits.data.filter(u => capturedClues.includes(u.clues || u.CLUES));
           const faltantes = resUnits.data.filter(u => !capturedClues.includes(u.clues || u.CLUES));
@@ -3382,13 +3380,14 @@ document.addEventListener("DOMContentLoaded", () => {
               total_unidades: resUnits.data.length,
               total_capturadas: capturadas.length,
               total_faltantes: faltantes.length,
-              capturadas: capturadas.map(u => ({ 
-                municipio: u.municipio || u.MUNICIPIO,
-                clues: u.clues || u.CLUES,
-                unidad: u.unidad || u.UNIDAD,
-                capturo: "SI", 
-                estatus: "OK" 
-              })),
+              capturadas: capturadas.map(u => {
+                let metadata = { municipio: u.municipio || u.MUNICIPIO, clues: u.clues || u.CLUES, unidad: u.unidad || u.UNIDAD, capturo: "SI", estatus: "OK" };
+                if (tipo === "BIO") {
+                  const record = resBio.data.find(r => r.clues === (u.clues || u.CLUES));
+                  metadata.tipo_pedido = record?.tipo_pedido || "MENSUAL";
+                }
+                return metadata;
+              }),
               faltantes: faltantes.map(u => ({ 
                 municipio: u.municipio || u.MUNICIPIO,
                 clues: u.clues || u.CLUES,
@@ -3417,22 +3416,34 @@ document.addEventListener("DOMContentLoaded", () => {
           const rawCons = resCons.data || [];
           const units = resUnits.data || [];
 
-          // 2. Calcular días esperados
-          const countDows = (start, end, dow) => {
-            let count = 0;
-            let current = new Date(start + "T00:00:00");
-            const stop = new Date(end + "T00:00:00");
-            while (current <= stop) {
-              if (current.getDay() === dow) count++;
-              current.setDate(current.getDate() + 1);
+          // 2. Calcular días esperados (Logística Senior)
+          const getExpectedDates = (start, end, tipo) => {
+            const dates = [];
+            let curr = new Date(start + "T12:00:00");
+            const stop = new Date(end + "T12:00:00");
+            
+            while (curr <= stop) {
+              const dow = curr.getDay();
+              const ymd = dateToLocalYmd(curr);
+              
+              if (tipo === "CONS") {
+                // Jueves es el día estándar
+                if (dow === 4) dates.push(ymd);
+              } else {
+                // Biológicos: Viernes es el día de corte semanal (o el que se decida)
+                // Según LOGICA_SISTEMA es diaria, pero para métricas históricas se suele medir por semana.
+                // Si el usuario no especificó cambio en métricas de BIO, mantenemos Viernes (Día 5).
+                if (dow === 5) dates.push(ymd);
+              }
+              curr.setDate(curr.getDate() + 1);
             }
-            return count;
+            return dates;
           };
 
-          const expectedBio = countDows(fechaInicio, fechaFin, 5); // Viernes
-          const expectedCons = countDows(fechaInicio, fechaFin, 4); // Jueves
+          const expectedDatesCons = getExpectedDates(fechaInicio, fechaFin, "CONS");
+          const expectedDatesBio = getExpectedDates(fechaInicio, fechaFin, "BIO");
 
-          // 3. Agrupar capturas
+          // 3. Agrupar capturas por unidad y ventana
           const metricsMap = {};
           units.forEach(u => {
             metricsMap[u.clues] = {
@@ -3445,13 +3456,35 @@ document.addEventListener("DOMContentLoaded", () => {
             };
           });
 
-          rawBio.forEach(r => {
-            if (metricsMap[r.clues]) metricsMap[r.clues].bio_capturas++;
+          // Consumibles: Una captura por cada ventana esperada
+          expectedDatesCons.forEach(targetJueves => {
+            const dJue = new Date(`${targetJueves}T12:00:00`);
+            const targetWindow = [targetJueves];
+            
+            // Si el jueves es festivo, permitimos también el miércoles
+            if (isMexicanHoliday(dJue)) {
+               const dMie = new Date(dJue);
+               dMie.setDate(dJue.getDate() - 1);
+               targetWindow.push(dateToLocalYmd(dMie));
+            }
+
+            units.forEach(u => {
+              const hasCapture = rawCons.some(r => r.clues === u.clues && targetWindow.includes(r.fecha));
+              if (hasCapture) metricsMap[u.clues].cons_capturas++;
+            });
           });
 
+          // Biológicos: Seguimos lógica similar por Viernes
+          expectedDatesBio.forEach(targetViernes => {
+            units.forEach(u => {
+              const hasCapture = rawBio.some(r => r.clues === u.clues && r.fecha === targetViernes);
+              if (hasCapture) metricsMap[u.clues].bio_capturas++;
+            });
+          });
+
+          // Última fecha de consumibles para visualización
           rawCons.forEach(r => {
             if (metricsMap[r.clues]) {
-               metricsMap[r.clues].cons_capturas++;
                if (metricsMap[r.clues].ultima_cons === "—" || r.fecha > metricsMap[r.clues].ultima_cons) {
                  metricsMap[r.clues].ultima_cons = r.fecha;
                }
@@ -3461,8 +3494,11 @@ document.addEventListener("DOMContentLoaded", () => {
           // 4. Calcular % final
           const rows = units.map(u => {
             const m = metricsMap[u.clues];
-            const bPct = expectedBio > 0 ? Math.round((m.bio_capturas / expectedBio) * 100) : 100;
-            const cPct = expectedCons > 0 ? Math.round((m.cons_capturas / expectedCons) * 100) : 100;
+            const eBio = expectedDatesBio.length;
+            const eCons = expectedDatesCons.length;
+            
+            const bPct = eBio > 0 ? Math.round((m.bio_capturas / eBio) * 100) : 100;
+            const cPct = eCons > 0 ? Math.round((m.cons_capturas / eCons) * 100) : 100;
             const operPct = Math.round((bPct + cPct) / 2);
 
             return {
@@ -3470,14 +3506,14 @@ document.addEventListener("DOMContentLoaded", () => {
               bio_cumplimiento: Math.min(bPct, 100),
               cons_cumplimiento: Math.min(cPct, 100),
               cumplimiento_operativo: Math.min(operPct, 100),
-              bio_faltas: Math.max(0, expectedBio - m.bio_capturas),
-              cons_faltas: Math.max(0, expectedCons - m.cons_capturas),
+              bio_faltas: Math.max(0, eBio - m.bio_capturas),
+              cons_faltas: Math.max(0, eCons - m.cons_capturas),
               total_capturado: m.bio_capturas + m.cons_capturas,
-              total_faltas: Math.max(0, (expectedBio + expectedCons) - (m.bio_capturas + m.cons_capturas))
+              total_faltas: Math.max(0, (eBio + eCons) - (m.bio_capturas + m.cons_capturas))
             };
           });
 
-          return { ok: true, data: { rows } };
+          return { ok: true, data: { rows, expectedBio: expectedDatesBio.length, expectedCons: expectedDatesCons.length } };
         }
 
         case "unitstatus": {
@@ -3485,12 +3521,14 @@ document.addEventListener("DOMContentLoaded", () => {
           const clues = USER.clues;
           
           // 1. Verificar Apertura Manual (Consumibles)
-          const { data: consOverride } = await supabase
+          const { data: consOverride, error: consErr } = await supabase
             .from('aperturas_consumibles')
             .select('*')
             .eq('fecha', today)
             .eq('activo', 'SI')
             .maybeSingle();
+          
+          if (consErr) console.warn("[Supabase] Fallo al consultar aperturas_consumibles (posiblemente tabla inexistente):", consErr);
 
           // 2. Verificar Apertura Manual (Biológicos - Calendario Pedidos)
           // (Este usa el mes actual y busca si hoy cae en ventana habilitada)
@@ -3503,7 +3541,7 @@ document.addEventListener("DOMContentLoaded", () => {
             .maybeSingle();
 
           // 3. Lógica Inteligente (Días festivos / Fines de semana)
-          const consIntelligent = getConsumiblesStatus(today, clues);
+          const consIntelligent = await getConsumiblesStatus(today, clues);
           
           // Bio pedidos: Jueves y Viernes por estándar
           const dow = new Date().getDay();
@@ -3539,6 +3577,8 @@ document.addEventListener("DOMContentLoaded", () => {
               today: today,
               canCaptureConsumibles: canCons,
               consumiblesReason: consReason,
+              consumiblesHolidayOverride: !!consIntelligent.consumiblesHolidayOverride,
+              consumiblesManualOverride: !!consOverride,
               canCaptureBio: canBio,
               bioReason: bioReason,
               isExtraordinary: !!(consOverride || (bioOverride && today >= bioOverride.habilitar_desde && today <= bioOverride.habilitar_hasta))
@@ -3983,18 +4023,69 @@ document.addEventListener("DOMContentLoaded", () => {
           if (USER.rol !== "ADMIN") throw new Error("No autorizado");
           const { cluesList, vaccinesList, activo } = payload;
           
-          // Para cada unidad y cada biológico, actualizamos o insertamos el parámetro
-          const ops = [];
+          // 1. Obtener información oficial de las unidades (para evitar nombres inconsistentes)
+          const { data: unitsInfo } = await supabase
+            .from('unidades')
+            .select('clues, unidad, municipio')
+            .in('clues', cluesList);
+          
+          const unitMap = {};
+          if (unitsInfo) {
+            unitsInfo.forEach(u => unitMap[u.clues] = u);
+          }
+
+          // 2. Obtener parámetros existentes para estas CLUES y biológicos
+          const { data: existingParams } = await supabase
+            .from('biologicos_params')
+            .select('id, clues, biologico')
+            .in('clues', cluesList)
+            .in('biologico', vaccinesList);
+
+          const existingMap = {};
+          if (existingParams) {
+            existingParams.forEach(p => {
+              existingMap[`${p.clues}|${p.biologico}`] = p.id;
+            });
+          }
+
+          // 3. Procesar Cambios (Update si existe, Insert si no)
+          const toUpdate = [];
+          const toInsert = [];
+
           for (const c of cluesList) {
+            const u = unitMap[c] || { unidad: 'UNIDAD DESCONOCIDA', municipio: '*' };
             for (const v of vaccinesList) {
-              ops.push(supabase.from('biologicos_params').upsert({
-                clues: c,
-                biologico: v,
-                activo: activo
-              }, { onConflict: 'clues, biologico' }));
+              const key = `${c}|${v}`;
+              if (existingMap[key]) {
+                toUpdate.push(supabase.from('biologicos_params').update({ 
+                  activo: activo,
+                  unidad: u.unidad, // Aprovechamos para corregir el nombre si es inconsistente
+                  municipio: u.municipio
+                }).eq('id', existingMap[key]));
+              } else {
+                toInsert.push({
+                  clues: c,
+                  biologico: v,
+                  activo: activo,
+                  unidad: u.unidad,
+                  municipio: u.municipio,
+                  max_dosis: 0,
+                  min_dosis: 0,
+                  promedio_frascos: 0,
+                  multiplo: 1
+                });
+              }
             }
           }
-          await Promise.all(ops);
+
+          // 4. Ejecutar Operaciones
+          if (toUpdate.length) await Promise.all(toUpdate);
+          if (toInsert.length) {
+            const { error: insErr } = await supabase.from('biologicos_params').insert(toInsert);
+            if (insErr) throw insErr;
+          }
+
+          console.log(`[Admin] Bio params toggled: ${toUpdate.length} updated, ${toInsert.length} inserted.`);
           return { ok: true };
         }
 
@@ -4155,7 +4246,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function moveToBusinessDayMx(baseYmd, direction = -1) {
     let d = baseYmd;
-    while (isWeekendMx(d) || isHolidayMx(d)) {
+    while (isWeekendMx(d) || isMexicanHoliday(new Date(`${d}T12:00:00`))) {
       d = addDaysYmd(d, direction);
     }
     return d;
@@ -4167,7 +4258,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const dir = count > 0 ? 1 : -1;
     while (added < Math.abs(count)) {
       d = addDaysYmd(d, dir);
-      if (!isWeekendMx(d) && !isHolidayMx(d)) added++;
+      if (!isWeekendMx(d) && !isMexicanHoliday(new Date(`${d}T12:00:00`))) added++;
     }
     return d;
   }
@@ -4176,20 +4267,24 @@ document.addEventListener("DOMContentLoaded", () => {
     const d = new Date(`${todayYmd}T12:00:00`);
     const dow = d.getDay(); // 0=Dom, 3=Mié, 4=Jue
     
-    // Si es jueves no festivo
-    if (dow === 4 && !isHolidayMx(todayYmd)) {
-      return { isThursday: true, canCaptureConsumibles: true, consumiblesCaptureDate: todayYmd, consumiblesReason: "Jueves operativo" };
-    }
-    // Si es miércoles y eL JUEVES es festivo -> habilitar miércoles
-    if (dow === 3) {
-      const jueves = addDaysYmd(todayYmd, 1);
-      if (isHolidayMx(jueves)) {
-        return { canCaptureConsumibles: true, consumiblesCaptureDate: todayYmd, consumiblesReason: "Apertura anticipada por festivo jueves" };
+    const isTodayHoliday = isMexicanHoliday(d);
+    
+    // Si hoy es Jueves
+    if (dow === 4) {
+      if (isTodayHoliday) {
+        return { canCaptureConsumibles: true, consumiblesCaptureDate: todayYmd, consumiblesReason: "Jueves (Festivo habilitado)", consumiblesHolidayOverride: true };
+      } else {
+        return { isThursday: true, canCaptureConsumibles: true, consumiblesCaptureDate: todayYmd, consumiblesReason: "Jueves operativo" };
       }
     }
-    // Si es jueves y el JUEVES es festivo -> No dejar (ya se pidió el miércoles)
-    if (dow === 4 && isHolidayMx(todayYmd)) {
-      return { canCaptureConsumibles: false, consumiblesCaptureDate: "", consumiblesReason: "Hoy es inhábil" };
+    
+    // Si hoy es Miércoles
+    if (dow === 3) {
+      const tomorrow = new Date(d);
+      tomorrow.setDate(d.getDate() + 1);
+      if (isMexicanHoliday(tomorrow)) {
+        return { canCaptureConsumibles: true, consumiblesCaptureDate: todayYmd, consumiblesReason: "Apertura anticipada por festivo jueves", consumiblesHolidayOverride: true };
+      }
     }
     
     return { canCaptureConsumibles: false, consumiblesCaptureDate: "", consumiblesReason: "Disponible solo jueves" };
@@ -4685,15 +4780,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function bindCaptureUtilityEvents() {
-    const src = $("jeringa_reconst_5ml_0605500438");
-    if (!src) return;
-
-    if (src.dataset.syncAgujaBound === "1") return;
-    src.dataset.syncAgujaBound = "1";
-
-    src.addEventListener("input", syncAguja);
-    src.addEventListener("change", syncAguja);
-    src.addEventListener("blur", syncAguja);
+    const ids = ["jeringa_reconst_5ml_0605500438", "jeringa_aplic_05ml_0605502657"];
+    ids.forEach(id => {
+      const el = $(id);
+      if (!el) return;
+      if (el.dataset.syncAgujaBound === "1") return;
+      el.dataset.syncAgujaBound = "1";
+      el.addEventListener("input", syncAguja);
+      el.addEventListener("change", syncAguja);
+      el.addEventListener("blur", syncAguja);
+    });
   }
 
   function runBootUiSetup() {
@@ -4939,25 +5035,32 @@ document.addEventListener("DOMContentLoaded", () => {
 async function loadBatchesForSession(user) {
     if (!user) return;
     try {
-        console.log("🟢 1. Cargando lotes desde Supabase...");
-        const lotesResult = await apiCall("getLotesByMunicipio");
+        console.log("🟢 1. Cargando catálogos y lotes desde Supabase...");
         
+        // Carga paralela de catálogos críticos
+        const [lotesResult, catResult, configResult] = await Promise.all([
+            apiCall("getLotesByMunicipio"),
+            supabase.from('biologicos_catalogo').select('*').order('orden_biologico'),
+            supabase.from('biologicos_params').select('*').eq('clues', user.clues || '*')
+        ]);
+        
+        // 1. Lotes
         const allLotes = (lotesResult && lotesResult.ok && lotesResult.data) ? lotesResult.data : [];
-        console.log(`🟢 2. Backend devolvió ${allLotes.length} lotes en total.`);
-
-        CONFIG_BIOLOGICOS_CATALOG = [];
-        console.log(`🟢 2.5. Config biológicos: ${CONFIG_BIOLOGICOS_CATALOG.length} registros.`);
-
         const userMuni = normalizeTextKey_(user.municipio);
-
         UNIT_BATCHES = allLotes.filter(l => {
             const loteMuni = normalizeTextKey_(l.municipio);
             return loteMuni === "*" || loteMuni === userMuni || loteMuni === "TODOS";
         });
+
+        // 2. Catálogo Maestro (Para integridad de exportación)
+        FULL_BIO_CATALOG = (catResult && catResult.data) ? catResult.data : [];
         
-        console.log(`🟢 3. Lotes filtrados para la unidad (${userMuni}): ${UNIT_BATCHES.length}`);
+        // 3. Configuración de Parámetros (Para validaciones y semaforización)
+        CONFIG_BIOLOGICOS_CATALOG = (configResult && configResult.data) ? configResult.data : [];
+
+        console.log(`🟢 Lotes filtrados: ${UNIT_BATCHES.length} | Catálogo: ${FULL_BIO_CATALOG.length} | Config: ${CONFIG_BIOLOGICOS_CATALOG.length}`);
     } catch (e) {
-        console.error("🔴 ERROR CRÍTICO al cargar lotes:", e);
+        console.error("🔴 ERROR CRÍTICO en carga de sesión:", e);
     }
 }
 
@@ -5695,12 +5798,13 @@ window.handleSRLoteChange = function(selectEl) {
   }
 
   function syncAguja() {
-    const src = $("jeringa_reconst_5ml_0605500438");
+    const j05 = $("jeringa_aplic_05ml_0605502657");
+    const j50 = $("jeringa_reconst_5ml_0605500438");
     const dst = $("aguja_0600403711");
 
-    if (!src || !dst) return;
+    if (!j05 || !j50 || !dst) return;
 
-    const v = Number(src.value || 0);
+    const v = Number(j05.value || 0) + Number(j50.value || 0);
     dst.value = String(v);
   }
 
@@ -5840,7 +5944,10 @@ window.handleSRLoteChange = function(selectEl) {
   }
 
   function dateToLocalYmd(d) {
-    if (!d || isNaN(d.getTime())) return "";
+    if (!d) return "";
+    if (typeof d === "string") return d; 
+    if (!(d instanceof Date)) return ""; 
+    if (isNaN(d.getTime())) return "";
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const dd = String(d.getDate()).padStart(2, "0");
@@ -5924,23 +6031,7 @@ window.handleSRLoteChange = function(selectEl) {
    * 2. Calcula 1 día hábil antes y 1 después de ese punto.
    */
   function calculateBioIntelligentWindow(year, month) {
-    // Mes es 0-indexed en JS
-    let target = new Date(year, month, 22);
-
-    // 1. Ajustar target si no es hábil (retroceder)
-    while (!isBusinessDay(target)) {
-      target.setDate(target.getDate() - 1);
-    }
-
-    // 2. Ventana
-    const startWindow = getBusinessDayOffset(target, -1);
-    const endWindow = getBusinessDayOffset(target, 1);
-
-    return {
-      start: startWindow,
-      target: target,
-      end: endWindow
-    };
+    return getBioCaptureWindow(year, month + 1); // getBioCaptureWindow espera mes 1-12
   }
 
   function sameDate(a, b) {
@@ -6377,7 +6468,7 @@ async function getTodayReports(fecha = "", force = false) {
     const textEl = $("captureStateText");
     const eyebrow = $("captureStateEyebrow");
 
-    if (!box || !container || !USER || USER.rol !== "UNIDAD") return;
+    if (!box || !container || !USER || USER.rol !== "UNIDAD" || !STATUS) return;
 
     const activeTab =
       $("tabSR")?.classList.contains("tab-active") ? "SR" :
@@ -6674,6 +6765,7 @@ async function getTodayReports(fecha = "", force = false) {
   function refreshBioAlerts(force = false) {
     let hasStrongAlert = false;
     let hasBlockingError = false;
+    const sinPedido = $("chkNoPedido") ? $("chkNoPedido").checked : false;
 
     BIO_STATE.rows.forEach((r, i) => {
       const cached = BIO_STATE.cache[i];
@@ -6732,9 +6824,17 @@ async function getTodayReports(fecha = "", force = false) {
       const totalDisponible = existencia + pedido;
       const faltantePromedio = Math.max(0, promedio - totalDisponible);
 
-      // RECTIFICACIÓN: Forzar múltiplo de 5 y establecer nombres exactos
-      const requires5 = ["HEXAVALENTE", "ROTAVIRUS", "NEUMOCOCICA 13", "NEUMOCOCICA 20", "SRP"].includes(bioKey);
-      const multiplo = requires5 ? 5 : Number(r.multiplo_pedido || 1);
+      // 🛡️ REGLA SENIOR: Bloqueo en múltiplos de 5 para biológicos críticos
+      // Solo estos biológicos bloquean el guardado si no son múltiplos de 5
+      const requires5 = [
+        "HEXAVALENTE", 
+        "ROTAVIRUS", 
+        "NEUMOCOCICA 13", 
+        "NEUMOCOCICA 20", 
+        "SRP"
+      ].includes(bioKey);
+      
+      const multiplo = requires5 ? 5 : 1;
 
       if (!Number.isInteger(existencia) || !Number.isInteger(pedido) || existencia < 0 || pedido < 0) {
         msgs.push("Cantidades inválidas.");
@@ -6764,8 +6864,14 @@ async function getTodayReports(fecha = "", force = false) {
         hasBlockingError = true;
       }
 
-      if (!omitirAdvertenciaPorCaravana && promedio > 0 && totalDisponible < promedio) {
-        msgs.push(`Total al pedir: ${totalDisponible} frascos. Promedio esperado: ${promedio}. Faltan ${faltantePromedio} frascos.`);
+      // 🛡️ REGLA: Validación de existencia vs promedio
+      const threshold = sinPedido ? existencia : totalDisponible;
+      if (!omitirAdvertenciaPorCaravana && promedio > 0 && threshold < promedio) {
+        const diff = promedio - threshold;
+        msgs.push(sinPedido 
+          ? `Existencia (${threshold}) menor al promedio (${promedio}). Faltan ${diff} frascos.`
+          : `Total (${threshold}) menor al promedio (${promedio}). Faltan ${diff} frascos.`
+        );
         if (level !== "bad") {
           level = "warn";
           hasStrongAlert = true;
@@ -6862,18 +6968,34 @@ async function getTodayReports(fecha = "", force = false) {
     });
   }
 
-  function collectBioItems() {
-    return BIO_STATE.rows.map((r, i) => {
+   function collectBioItems() {
+    const sinPedido = $("chkNoPedido") ? $("chkNoPedido").checked : false;
+    
+    // 1. Mapear valores actuales del formulario
+    const formValues = {};
+    (BIO_STATE.rows || []).forEach((r, i) => {
       const ex = document.querySelector(`input[data-i="${i}"][data-kind="existencia"]`);
       const pe = document.querySelector(`input[data-i="${i}"][data-kind="pedido"]`);
+      formValues[r.biologico] = {
+        existencia: ex ? Number(ex.value || 0) : 0,
+        pedido: pe ? Number(pe.value || 0) : 0,
+        r: r
+      };
+    });
 
-      const existencia = ex ? String(ex.value || "").trim() : "";
-      const pedido = pe ? String(pe.value || "").trim() : "";
+    // 2. Construir lista final basada en el Catálogo Maestro (para integridad de exportación)
+    const source = (FULL_BIO_CATALOG && FULL_BIO_CATALOG.length) ? FULL_BIO_CATALOG : BIO_STATE.rows;
 
+    return source.map(c => {
+      const val = formValues[c.biologico];
       return {
-        biologico: r.biologico,
-        existencia_actual_frascos: existencia === "" ? 0 : Number(existencia),
-        pedido_frascos: pedido === "" ? 0 : Number(pedido)
+        biologico: c.biologico,
+        existencia_actual_frascos: val ? val.existencia : 0,
+        pedido_frascos: sinPedido ? 0 : (val ? val.pedido : 0),
+        max_dosis: val ? (val.r.max_dosis || 0) : 0,
+        min_dosis: val ? (val.r.min_dosis || 0) : 0,
+        promedio_frascos: val ? (val.r.promedio_frascos || 0) : 0,
+        multiplo: val ? (val.r.multiplo || 1) : 1
       };
     });
   }
@@ -6970,19 +7092,20 @@ async function getTodayReports(fecha = "", force = false) {
     
     const hoyYmd = todayYmdLocal();
 
-    const canCaptureLocal = hoyYmd >= windowStartYmd && hoyYmd <= windowEndYmd;
+    const canCaptureLocal = true; // Siempre permitir captura (Mensual o Extraordinaria)
+    const isInsideWindow = hoyYmd >= windowStartYmd && hoyYmd <= windowEndYmd;
     const isCaptureDayLocal = hoyYmd === windowTargetYmd;
 
-    let windowStatus = "EARLY";
-    if (hoyYmd > windowEndYmd) windowStatus = "LATE";
-    else if (canCaptureLocal) windowStatus = "OPEN";
+    let windowStatus = "EXTRAORDINARY";
+    if (isInsideWindow) windowStatus = "OPEN";
 
     BIO_STATE = {
       rows: r.data.rows || [], 
       isCaptureDay: isCaptureDayLocal,
-      canCapture: canCaptureLocal,
+      isInsideWindow: isInsideWindow,
+      canCapture: true,
       fechaPedidoProgramada: windowTargetYmd,
-      fechaPedidoFriendly: windowTargetFriendly, // Para visualización elegante
+      fechaPedidoFriendly: windowTargetFriendly, 
       captureWindowStart: windowStartFriendly, 
       captureWindowEnd: windowEndFriendly,     
       captureWindowStatus: windowStatus,
@@ -6994,36 +7117,32 @@ async function getTodayReports(fecha = "", force = false) {
 
     $("fechaPedidoBIO").value = BIO_STATE.fechaPedidoProgramada || "";
     $("fechaPedidoBIOBox").textContent = BIO_STATE.fechaPedidoFriendly || "—";
+    
+    // Resetear toggle de "No hacer pedido"
+    if ($("chkNoPedido")) $("chkNoPedido").checked = false;
 
     const bioHint = $("bioHint");
     const bioDayAlert = $("bioDayAlert");
 
     bioDayAlert.className = "bioDayAlert show";
 
-    if (BIO_STATE.canCapture && BIO_STATE.isCaptureDay) {
-      bioHint.textContent = "Hoy corresponde la captura del pedido biológico.";
-      bioDayAlert.classList.remove("hidden");
-      bioDayAlert.className = bioDayAlert.className.replace(/border-\S+/g, "") + " border-emerald-500/30 bg-emerald-50/50";
-      bioDayAlert.querySelector(".bioDayIcon").className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600";
-      bioDayAlert.querySelector(".bioDayMsg").innerHTML = `Captura habilitada hoy. Ventana operativa: <b>${escapeHtml(BIO_STATE.captureWindowStart || "")}</b> al <b>${escapeHtml(BIO_STATE.captureWindowEnd || "")}</b>.`;
-    } else if (BIO_STATE.canCapture) {
-      bioHint.textContent = "Captura habilitada dentro de la ventana operativa.";
-      bioDayAlert.classList.remove("hidden");
-      bioDayAlert.className = bioDayAlert.className.replace(/border-\S+/g, "") + " border-emerald-500/30 bg-emerald-50/50";
-      bioDayAlert.querySelector(".bioDayIcon").className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600";
-      bioDayAlert.querySelector(".bioDayMsg").innerHTML = `Puedes capturar del <b>${escapeHtml(BIO_STATE.captureWindowStart || "")}</b> al <b>${escapeHtml(BIO_STATE.captureWindowEnd || "")}</b>. Fecha objetivo: <b>${escapeHtml(BIO_STATE.fechaPedidoProgramada || "")}</b>.`;
-    } else if (BIO_STATE.captureWindowStatus === "EARLY") {
-      bioHint.textContent = "Aún no inicia la ventana de captura.";
-      bioDayAlert.classList.remove("hidden");
-      bioDayAlert.className = bioDayAlert.className.replace(/border-\S+/g, "") + " border-amber-500/30 bg-amber-50/50";
-      bioDayAlert.querySelector(".bioDayIcon").className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-500/10 text-amber-600";
-      bioDayAlert.querySelector(".bioDayMsg").innerHTML = `La captura se habilita del <b>${escapeHtml(BIO_STATE.captureWindowStart || "")}</b> al <b>${escapeHtml(BIO_STATE.captureWindowEnd || "")}</b>.`;
+    if (BIO_STATE.isInsideWindow) {
+      if (BIO_STATE.isCaptureDay) {
+        bioHint.textContent = "Día objetivo de pedido mensual.";
+        bioDayAlert.className = "bioDayAlert show border-emerald-500/30 bg-emerald-50/50";
+        bioDayAlert.querySelector(".bioDayIcon").className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600";
+        bioDayAlert.querySelector(".bioDayMsg").innerHTML = `<b>PEDIDO MENSUAL:</b> captura habilitada hoy (fecha objetivo). Ventana: ${BIO_STATE.captureWindowStart} al ${BIO_STATE.captureWindowEnd}.`;
+      } else {
+        bioHint.textContent = "Captura de pedido mensual habilitada.";
+        bioDayAlert.className = "bioDayAlert show border-emerald-500/30 bg-emerald-50/50";
+        bioDayAlert.querySelector(".bioDayIcon").className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600";
+        bioDayAlert.querySelector(".bioDayMsg").innerHTML = `<b>PEDIDO MENSUAL:</b> te encuentras dentro de la ventana operativa (${BIO_STATE.captureWindowStart} al ${BIO_STATE.captureWindowEnd}).`;
+      }
     } else {
-      bioHint.textContent = "La ventana de captura ya cerró.";
-      bioDayAlert.classList.remove("hidden");
-      bioDayAlert.className = bioDayAlert.className.replace(/border-\S+/g, "") + " border-rose-500/30 bg-rose-50/50";
-      bioDayAlert.querySelector(".bioDayIcon").className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-rose-500/10 text-rose-600";
-      bioDayAlert.querySelector(".bioDayMsg").innerHTML = `La ventana operativa terminó el <b>${escapeHtml(BIO_STATE.captureWindowEnd || "")}</b>.`;
+      bioHint.textContent = "Fuera de ventana oficial.";
+      bioDayAlert.className = "bioDayAlert show border-amber-500/30 bg-amber-50/50";
+      bioDayAlert.querySelector(".bioDayIcon").className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-500/10 text-amber-600";
+      bioDayAlert.querySelector(".bioDayMsg").innerHTML = `<b>PEDIDO EXTRAORDINARIO:</b> hoy te encuentras fuera de la ventana oficial (${BIO_STATE.captureWindowStart} al ${BIO_STATE.captureWindowEnd}).`;
     }
 
     renderBioRows(BIO_STATE.rows || []);
@@ -7369,8 +7488,63 @@ async function getTodayReports(fecha = "", force = false) {
     $("sumCapturadas").textContent = data?.total_capturadas ?? 0;
     $("sumFaltantes").textContent = data?.total_faltantes ?? 0;
 
-    const capturadas = data?.capturadas || [];
-    const faltantes = data?.faltantes || [];
+    // 🛡️ FILTRO DE TIPO DE PEDIDO (Solo para BIO)
+    let capturadas = data?.capturadas || [];
+    let faltantes = data?.faltantes || [];
+
+    if (tipo === "BIO") {
+      const existingTypes = [...new Set(capturadas.map(c => c.tipo_pedido || "MENSUAL"))];
+      if (existingTypes.length > 0) {
+        let filterHtml = `
+          <div class="flex items-center gap-3 bg-slate-100 p-3 rounded-2xl border border-slate-200 mt-4">
+            <span class="text-[11px] font-black uppercase tracking-wider text-slate-500 ml-2">Filtrar por:</span>
+            <select id="filterBioType" class="bg-white border border-slate-300 rounded-xl px-3 h-10 text-[13px] font-bold text-primary outline-none focus:border-primary shadow-sm">
+              <option value="ALL">Todos los pedidos</option>
+              ${existingTypes.map(t => `<option value="${t}">${t === "MENSUAL" ? "Pedido Mensual" : "Pedido Extraordinario"}</option>`).join("")}
+            </select>
+          </div>
+        `;
+        extraInfo += filterHtml;
+
+        setTimeout(() => {
+          const sel = $("filterBioType");
+          if (sel) {
+            sel.onchange = () => {
+              const val = sel.value;
+              const filtered = val === "ALL" ? data.capturadas : data.capturadas.filter(c => (c.tipo_pedido || "MENSUAL") === val);
+              renderCapturadasOnly(filtered);
+            };
+          }
+        }, 100);
+      }
+    }
+
+    function renderCapturadasOnly(list) {
+      const tbodyCap = $("capturadasTbody");
+      const cardsCap = $("capturadasCards");
+      if (!list.length) {
+        tbodyCap.innerHTML = `<tr><td colspan="5" class="muted">No hay capturas con este filtro</td></tr>`;
+        if (cardsCap) cardsCap.innerHTML = `<div class="muted">No hay capturas</div>`;
+        return;
+      }
+      tbodyCap.innerHTML = list.map(r => `
+        <tr>
+          <td>${escapeHtml(r.municipio || "")}</td>
+          <td>${escapeHtml(r.clues || "")}</td>
+          <td>${escapeHtml(r.unidad || "")}</td>
+          <td>${escapeHtml(r.capturado_por || "")} <br><small class="opacity-60 font-bold">${r.tipo_pedido || "MENSUAL"}</small></td>
+          <td>
+            <div style="display:flex; align-items:center; gap:8px">
+              <span class="statusOk">${r.editado === "SI" ? "Capturado / editado" : "Capturado"}</span>
+              <button class="miniBtn ghostBtn" onclick="openLiveView('${r.clues}','${escapeHtml(r.unidad)}','${escapeHtml(r.municipio)}')" title="Ver inventario en vivo">
+                 <span class="material-symbols-rounded" style="font-size:18px">visibility</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+      // ... cards update omitted for brevity in this replace call, will unify below
+    }
 
     $("capturadasCount").textContent = `${capturadas.length}`;
     $("faltantesCount").textContent = `${faltantes.length}`;
@@ -7384,55 +7558,49 @@ async function getTodayReports(fecha = "", force = false) {
     const finalMsg = extraInfo || `Consulta cargada: ${tipo === "CONS" ? "Consumibles" : (tipo === "BIO" ? "Pedido" : "Existencia")} del ${fecha || "—"}`;
     $("summaryMsg").innerHTML = finalMsg;
 
-    const tbodyCap = $("capturadasTbody");
-    const tbodyFal = $("faltantesTbody");
-    const cardsCap = $("capturadasCards");
-    const cardsFal = $("faltantesCards");
-
-    if (!capturadas.length) {
-      tbodyCap.innerHTML = `<tr><td colspan="5" class="muted">No hay capturas registradas para esa consulta</td></tr>`;
-      if (cardsCap) {
-        cardsCap.innerHTML = `<div class="muted">No hay capturas registradas para esa consulta</div>`;
+    function renderCapturadasOnly(list) {
+      const tbodyCap = $("capturadasTbody");
+      const cardsCap = $("capturadasCards");
+      if (!list.length) {
+        const msg = `No hay capturas registradas para esa consulta`;
+        tbodyCap.innerHTML = `<tr><td colspan="5" class="muted">${msg}</td></tr>`;
+        if (cardsCap) cardsCap.innerHTML = `<div class="muted">${msg}</div>`;
+        return;
       }
-    } else {
-      tbodyCap.innerHTML = capturadas.map(r => `
-      <tr>
-        <td>${escapeHtml(r.municipio || "")}</td>
-        <td>${escapeHtml(r.clues || "")}</td>
-        <td>${escapeHtml(r.unidad || "")}</td>
-        <td>${escapeHtml(r.capturado_por || "")}</td>
-        <td>
-          <div style="display:flex; align-items:center; gap:8px">
-            <span class="statusOk">${r.editado === "SI" ? "Capturado / editado" : "Capturado"}</span>
-            <button class="miniBtn ghostBtn" onclick="openLiveView('${r.clues}','${escapeHtml(r.unidad)}','${escapeHtml(r.municipio)}')" title="Ver inventario en vivo">
-               <span class="material-symbols-rounded" style="font-size:18px">visibility</span>
-            </button>
-          </div>
-        </td>
-      </tr>
-    `).join("");
+      tbodyCap.innerHTML = list.map(r => `
+        <tr>
+          <td>${escapeHtml(r.municipio || "")}</td>
+          <td>${escapeHtml(r.clues || "")}</td>
+          <td>${escapeHtml(r.unidad || "")}</td>
+          <td>
+            ${escapeHtml(r.capturado_por || "")}
+            ${r.tipo_pedido ? `<br><small class="text-primary font-black uppercase tracking-tighter opacity-70">${r.tipo_pedido}</small>` : ""}
+          </td>
+          <td>
+            <div style="display:flex; align-items:center; gap:8px">
+              <span class="statusOk">${r.editado === "SI" ? "Capturado / editado" : "Capturado"}</span>
+              <button class="miniBtn ghostBtn" onclick="openLiveView('${r.clues}','${escapeHtml(r.unidad)}','${escapeHtml(r.municipio)}')" title="Ver inventario en vivo">
+                 <span class="material-symbols-rounded" style="font-size:18px">visibility</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
 
       if (cardsCap) {
-        cardsCap.innerHTML = capturadas.map(r => `
+        cardsCap.innerHTML = list.map(r => `
         <div class="captureMobileCard">
           <div class="captureMobileHead">
             <div class="captureMobileTitle">${escapeHtml(r.unidad || "Unidad sin nombre")}</div>
             <div class="captureMobileStatus ok">${r.editado === "SI" ? "Capturado / editado" : "Capturado"}</div>
           </div>
-
           <div class="captureMobileFields">
             <div class="captureMobileField">
-              <div class="captureMobileLabel">Municipio</div>
-              <div class="captureMobileValue">${escapeHtml(r.municipio || "")}</div>
+              <div class="captureMobileLabel">Municipio / CLUES</div>
+              <div class="captureMobileValue">${escapeHtml(r.municipio || "")} (${escapeHtml(r.clues || "")})</div>
             </div>
-
             <div class="captureMobileField">
-              <div class="captureMobileLabel">CLUES</div>
-              <div class="captureMobileValue">${escapeHtml(r.clues || "")}</div>
-            </div>
-
-            <div class="captureMobileField">
-              <div class="captureMobileLabel">Capturó</div>
+              <div class="captureMobileLabel">Capturó ${r.tipo_pedido ? `(${r.tipo_pedido})` : ""}</div>
               <div class="captureMobileValue">${escapeHtml(r.capturado_por || "")}</div>
             </div>
           </div>
@@ -7440,6 +7608,11 @@ async function getTodayReports(fecha = "", force = false) {
       `).join("");
       }
     }
+
+    renderCapturadasOnly(capturadas);
+
+    const tbodyFal = $("faltantesTbody");
+    const cardsFal = $("faltantesCards");
 
     if (!faltantes.length) {
       tbodyFal.innerHTML = `<tr><td colspan="4" class="muted">No hay pendientes</td></tr>`;
@@ -7483,7 +7656,7 @@ async function getTodayReports(fecha = "", force = false) {
 
   function setLoggedInUI(user, status) {
     USER = user;
-    STATUS = status || null;
+    STATUS = (status && status.data) ? status.data : (status || null);
 
     syncAppState({
       user: USER,
@@ -8384,7 +8557,9 @@ $("btnSaveSR").onclick = async () => {
         action: "saveBio",
         token: TOKEN,
         nombre,
-        items
+        items,
+        tipo_pedido: BIO_STATE.isInsideWindow ? "MENSUAL" : "EXTRAORDINARIO",
+        sin_pedido: $("chkNoPedido") ? $("chkNoPedido").checked : false
       });
 
       if (!r || !r.ok) {
@@ -11148,7 +11323,8 @@ $("btnSaveSR").onclick = async () => {
         .from('unidades')
         .select('clues, unidad, municipio')
         .eq('activo', 'SI')
-        .order('unidad');
+        .order('municipio', { ascending: true })
+        .order('clues', { ascending: true });
 
       if (error) throw error;
       renderBulkUnitItems(data);
@@ -11223,6 +11399,8 @@ $("btnSaveSR").onclick = async () => {
         .from('unidades')
         .select('clues, unidad, municipio')
         .or(`clues.ilike.%${query}%,unidad.ilike.%${query}%`)
+        .order('municipio', { ascending: true })
+        .order('clues', { ascending: true })
         .limit(30);
 
       if (error) throw error;
@@ -11337,3 +11515,27 @@ $("btnSaveSR").onclick = async () => {
   // Dinamización instantánea del Resumen de Captura
   document.getElementById("summaryTipo")?.addEventListener("change", () => reloadCaptureSummarySilent());
   document.getElementById("summaryFecha")?.addEventListener("change", () => reloadCaptureSummarySilent());
+
+  function isWorkDay(d) {
+    if (!d) return false;
+    const dateObj = (d instanceof Date) ? d : new Date(d + "T00:00:00");
+    return isBusinessDay(dateObj);
+  }
+
+  function getBioCaptureWindow(year, month) {
+    let target = new Date(year, month - 1, 22);
+    while (!isBusinessDay(target)) {
+      target.setDate(target.getDate() - 1);
+    }
+    let start = new Date(target);
+    start.setDate(start.getDate() - 1);
+    while (!isBusinessDay(start)) {
+      start.setDate(start.getDate() - 1);
+    }
+    let end = new Date(target);
+    end.setDate(end.getDate() + 1);
+    while (!isBusinessDay(end)) {
+      end.setDate(end.getDate() + 1);
+    }
+    return { start, target, end };
+  }

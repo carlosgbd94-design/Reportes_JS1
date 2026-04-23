@@ -544,45 +544,85 @@
               </div>
 
               <!-- CONSUMIBLES -->
-              <div id="formCONS" style="display:none" class="flex flex-col gap-1">
-                <label class="text-[13px] font-extrabold text-primary uppercase tracking-[0.05em] block mb-1 mt-4 ml-2">Nombre de quien captura</label>
-                <div class="modern-input-group">
-                  <span class="input-icon material-symbols-rounded">person</span>
-                  <input id="nombreCONS" placeholder="Nombre completo" class="rounded-xl h-12 text-[15px] font-bold outline-none">
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-                  <div>
-                    <label class="text-[13px] font-extrabold text-primary uppercase tracking-[0.05em] block mb-1 ml-2">Existencia SRP (dosis)</label>
-                    <input id="srp_dosis" type="number" min="0" placeholder="0" class="w-full bg-white border border-outline-variant rounded-xl px-4 py-3 text-[15px] font-bold text-surface-on focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all placeholder:text-outline-variant">
+              <!-- PANEL DE CONSUMIBLES (REDISEÑO PRO UX UNIFICADO) -->
+              <div id="formCONS" style="display:none" class="flex flex-col gap-8">
+                <!-- Info Header Grande (Estilo Pinol Original) -->
+                <div class="flex items-center gap-6 p-6 rounded-[32px] bg-primary/5 border-2 border-primary/20 shadow-sm mb-2">
+                  <div class="w-16 h-16 rounded-2xl bg-white flex items-center justify-center text-4xl shadow-md shrink-0">💉</div>
+                  <div class="flex-1">
+                    <div class="text-[17px] font-black text-primary leading-tight">Control de Insumos y Consumibles</div>
+                    <div class="text-[12px] font-bold text-surface-onVariant/60 mt-2 italic flex items-center gap-2">
+                      <span class="material-symbols-rounded text-base">info</span>
+                      Reporte semanal obligatorio para el control de inventario de jeringas.
+                    </div>
                   </div>
-                  <div>
-                    <label class="text-[13px] font-extrabold text-primary uppercase tracking-[0.05em] block mb-1 ml-2">Existencia SR (dosis)</label>
-                    <input id="sr_dosis" type="number" min="0" placeholder="0" class="w-full bg-white border border-outline-variant rounded-xl px-4 py-3 text-[15px] font-bold text-surface-on focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all placeholder:text-outline-variant">
+                  <div class="text-right hidden md:block border-l-2 border-primary/10 pl-8">
+                    <div class="text-[10px] font-black text-primary/40 uppercase tracking-[0.2em] leading-none mb-2">Frecuencia</div>
+                    <div class="text-[14px] font-black text-primary">Semanal (Jueves)</div>
                   </div>
                 </div>
 
-                <label class="text-[13px] font-extrabold text-primary uppercase tracking-[0.05em] block mb-1 mt-2 ml-2">Jeringa aplic 0.5 ml (060.550.2657)</label>
-                <input id="jeringa_aplic_05ml_0605502657" type="number" min="0" placeholder="0" class="w-full bg-white border border-outline-variant rounded-xl px-4 py-3 text-[15px] font-bold text-surface-on focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all placeholder:text-outline-variant mb-2">
+                <!-- Cuerpo del Formulario Unificado en 1 Sola Fila -->
+                <div class="bg-white border-2 border-slate-200 rounded-[32px] p-8 shadow-sm space-y-8">
+                  <!-- Responsable -->
+                  <div>
+                    <label class="text-[12px] font-black text-primary uppercase tracking-[0.2em] block mb-3 ml-1">Responsable de Captura</label>
+                    <div class="flex items-center gap-3 h-[54px] px-4 rounded-2xl border-2 border-slate-300 bg-transparent transition-all focus-within:border-primary shadow-none">
+                      <span class="material-symbols-rounded text-[20px] text-primary/40 shrink-0">person</span>
+                      <input id="nombreCONS" placeholder="Nombre completo" class="w-full h-full text-[14px] font-bold outline-none bg-transparent text-slate-800 border-none focus:ring-0 p-0">
+                    </div>
+                  </div>
 
-                <label class="text-[13px] font-extrabold text-primary uppercase tracking-[0.05em] block mb-1 mt-2 ml-2">Jeringa reconst 5 ml (060.550.0438)</label>
-                <input id="jeringa_reconst_5ml_0605500438" type="number" min="0" placeholder="0" class="w-full bg-white border border-outline-variant rounded-xl px-4 py-3 text-[15px] font-bold text-surface-on focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all placeholder:text-outline-variant mb-2">
+                  <!-- Fila Única de Captura (Forzada con Flex Pro UX) -->
+                  <div class="flex flex-row gap-4 lg:gap-6 w-full items-end">
+                    <!-- SRP -->
+                    <div class="flex-1 flex flex-col gap-2 min-w-0">
+                      <label class="text-[11px] font-black text-primary uppercase tracking-widest text-center truncate">SRP (Dosis)</label>
+                      <input id="srp_dosis" type="number" min="0" placeholder="0" class="w-full h-[64px] bg-slate-50 border-2 border-slate-300 rounded-2xl text-[26px] font-black text-slate-900 focus:border-primary transition-all outline-none text-center">
+                    </div>
 
-                <label class="text-[13px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1 mt-2 ml-2">Aguja (060.040.3711)</label>
-                <input id="aguja_0600403711" type="number" min="0" placeholder="(Automático)" disabled class="w-full bg-surface-variant/40 border border-outline-variant/20 rounded-xl px-4 py-3 text-[15px] font-medium text-surface-on/50 outline-none cursor-not-allowed mb-6">
+                    <!-- SR -->
+                    <div class="flex-1 flex flex-col gap-2 min-w-0">
+                      <label class="text-[11px] font-black text-primary uppercase tracking-widest text-center truncate">SR (Dosis)</label>
+                      <input id="sr_dosis" type="number" min="0" placeholder="0" class="w-full h-[64px] bg-slate-50 border-2 border-slate-300 rounded-2xl text-[26px] font-black text-slate-900 focus:border-primary transition-all outline-none text-center">
+                    </div>
 
-                <button class="btn-premium-action btn-save-animate w-full" id="btnSaveCONS">Guardar consumibles</button>
+                    <!-- Jeringa 0.5 -->
+                    <div class="flex-1 flex flex-col gap-2 min-w-0">
+                      <label class="text-[11px] font-black text-primary uppercase tracking-widest text-center truncate">Jeringa 0.5</label>
+                      <input id="jeringa_aplic_05ml_0605502657" type="number" min="0" placeholder="0" class="w-full h-[64px] bg-primary/5 border-2 border-primary/30 rounded-2xl text-[26px] font-black text-primary focus:border-primary focus:bg-white transition-all outline-none text-center">
+                    </div>
 
-                <div class="flex flex-wrap gap-2 mt-4 justify-end">
-                  <button class="bg-transparent text-primary border border-primary/20 rounded-xl px-4 h-[42px] font-semibold text-[13px] flex items-center gap-2 transition-all hover:bg-primary hover:text-white cursor-pointer" id="btnEditCONS" style="display:none" title="Editar el reporte de hoy">
-                    <span class="material-symbols-rounded text-[18px]">edit</span> Editar reporte de hoy
-                  </button>
-                  <button class="bg-transparent text-status-error border border-status-error/20 rounded-xl px-4 h-[42px] font-semibold text-[13px] flex items-center gap-2 transition-all hover:bg-status-error hover:text-white cursor-pointer" id="btnCancelEditCONS" style="display:none" title="Cancelar edición">
-                    <span class="material-symbols-rounded text-[18px]">close</span> Cancelar edición
-                  </button>
+                    <!-- Jeringa 5.0 -->
+                    <div class="flex-1 flex flex-col gap-2 min-w-0">
+                      <label class="text-[11px] font-black text-primary uppercase tracking-widest text-center truncate">Jeringa 5.0</label>
+                      <input id="jeringa_reconst_5ml_0605500438" type="number" min="0" placeholder="0" class="w-full h-[64px] bg-primary/5 border-2 border-primary/30 rounded-2xl text-[26px] font-black text-primary focus:border-primary focus:bg-white transition-all outline-none text-center">
+                    </div>
+
+                    <!-- Aguja (Auto) -->
+                    <div class="flex-1 flex flex-col gap-2 min-w-0">
+                      <label class="text-[11px] font-black text-slate-400 uppercase tracking-widest text-center truncate">Aguja (Auto)</label>
+                      <input id="aguja_0600403711" type="text" placeholder="—" disabled class="w-full h-[64px] bg-slate-100 border-2 border-slate-200 rounded-2xl text-[24px] font-black text-slate-400 text-center cursor-not-allowed">
+                    </div>
+                  </div>
                 </div>
 
-                <div class="text-[11px] opacity-60 text-center font-medium mt-4">Este reporte se captura solo en jueves. Aguja se calcula automáticamente.</div>
+                <!-- Botones Acción Pro -->
+                <div class="flex flex-col sm:flex-row gap-6 items-center">
+                  <button class="btn-premium-action btn-save-animate !py-5 flex-1 w-full text-[15px] tracking-widest uppercase" id="btnSaveCONS">
+                    <span class="material-symbols-rounded">save</span>
+                    Guardar Reporte de Consumibles
+                  </button>
+
+                  <div class="flex gap-3 w-full sm:w-auto">
+                    <button class="flex-1 sm:flex-none bg-white text-primary border-2 border-primary/20 rounded-[22px] px-8 h-[64px] font-black text-[13px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-primary/5 transition-all shadow-md" id="btnEditCONS" style="display:none">
+                      <span class="material-symbols-rounded text-[26px]">edit</span>
+                    </button>
+                    <button class="flex-1 sm:flex-none bg-white text-status-error border-2 border-status-error/20 rounded-[22px] px-8 h-[64px] font-black text-[13px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-status-error/5 transition-all shadow-md" id="btnCancelEditCONS" style="display:none">
+                      <span class="material-symbols-rounded text-[26px]">close</span>
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <!-- PEDIDO DE BIOLÓGICO -->
@@ -609,6 +649,25 @@
                         <div class="text-[11px] font-bold text-primary/60 italic mt-1.5" id="bioHint">—</div>
                       </div>
                       <input id="fechaPedidoBIO" disabled style="display:none">
+                    </div>
+
+                    <!-- 🛡️ OPCIÓN: NO HACER PEDIDO MENSUAL (Solo existencias) -->
+                    <div class="w-full lg:w-[260px] bg-white border-2 border-slate-200 rounded-[24px] p-5 flex flex-col justify-center gap-3 shadow-sm transition-all hover:border-primary/30 group">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                          <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                            <span class="material-symbols-rounded text-[20px]">inventory</span>
+                          </div>
+                          <span class="text-[11px] font-black uppercase tracking-wider text-slate-600 group-hover:text-primary transition-colors">Solo Existencias</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" id="chkNoPedido" class="sr-only peer">
+                          <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
+                      </div>
+                      <div class="text-[10px] font-bold text-slate-400 leading-tight group-hover:text-slate-500 transition-colors">
+                        Activa esta opción si <b>NO</b> necesitas realizar pedido este mes.
+                      </div>
                     </div>
                   </div>
                 </div>
