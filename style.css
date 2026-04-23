@@ -6656,7 +6656,7 @@ body.mobile-mode #panelCAP>#formPINOL {
 }
 
 body.mobile-mode #panelCAP {
-  padding: 0 !important;
+  padding: 16px !important;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -6748,12 +6748,10 @@ body.mobile-mode .rightLayout,
 body.mobile-mode .mainStack,
 body.mobile-mode .card,
 body.mobile-mode .sideCard,
-body.mobile-mode #panelCAP,
-body.mobile-mode #panelCaptureSummary,
-body.mobile-mode #panelPINOLADMIN,
-body.mobile-mode #panelHISTORY,
-body.mobile-mode #panelEDITLOG,
 body.mobile-mode #panelADMIN {
+  width: 100%;
+  padding: 16px !important;
+}
   touch-action: auto;
 }
 
@@ -8342,32 +8340,37 @@ input, textarea, select, [contenteditable] {
   display: inline-block;
 }
 /* 📱 PREMIUM MOBILE NAVIGATION ENHANCEMENTS */
+#mobileBottomNav {
+  z-index: 9999 !important;
+}
+
 #mobileBottomNav .nav-item.active .icon-box {
   background: var(--md-sys-color-primary) !important;
   color: white !important;
-  transform: translateY(-8px) scale(1.15);
-  box-shadow: 0 12px 24px rgba(0, 51, 102, 0.3);
+  transform: translateY(-10px) scale(1.1);
+  box-shadow: 0 15px 30px rgba(0, 51, 102, 0.4);
 }
 
 #mobileBottomNav .nav-item.active .label {
   opacity: 1 !important;
   color: var(--md-sys-color-primary);
   font-weight: 900;
-  transform: translateY(-4px);
+  transform: translateY(-2px);
 }
 
 #mobileBottomNav .nav-item .icon-box {
-  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 #mobileBottomNav .nav-item .label {
   transition: all 0.3s ease;
+  margin-top: 2px;
 }
 
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   #mobileBottomNav {
-    bottom: calc(24px + env(safe-area-inset-bottom));
-    height: calc(76px + env(safe-area-inset-bottom));
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    height: calc(80px + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
@@ -8377,10 +8380,13 @@ body.mobile-mode #cardSide {
 }
 
 body.mobile-mode .wrap {
-  padding-top: 80px !important;
+  padding-top: 100px !important;
+  padding-bottom: 120px !important;
 }
 
 body.mobile-mode #mainHeader {
-  background: rgba(255, 255, 255, 0.9) !important;
-  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important;
 }
+

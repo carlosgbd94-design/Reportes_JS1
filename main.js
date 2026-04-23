@@ -8096,7 +8096,7 @@ async function getTodayReports(fecha = "", force = false) {
       if (p) p.style.display = "none";
     });
 
-    if ($("panelCAP")) $("panelCAP").style.display = (panel === "CAP" && isUnidad) ? "block" : "none";
+    if ($("panelCAP")) $("panelCAP").style.display = (panel === "CAP") ? "block" : "none";
     
     if ($("panelAdminOpsTabs")) {
       const isVisible = (panel === "CAP" || panel === "ADMIN") && isOps;
