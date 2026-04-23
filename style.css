@@ -6387,15 +6387,6 @@ body.mobile-mode #rightColumn,
 body.mobile-mode .mainStack,
 body.mobile-mode #cardApp,
 body.mobile-mode #panelCAP,
-body.mobile-mode #panelCaptureSummary,
-body.mobile-mode #panelADMIN,
-body.mobile-mode #panelPINOLADMIN,
-body.mobile-mode #panelHISTORY,
-body.mobile-mode #panelEDITLOG {
-  width: 100%;
-  min-width: 0;
-}
-
 body.mobile-mode #panelCAP,
 body.mobile-mode #panelCaptureSummary,
 body.mobile-mode #panelADMIN,
@@ -6403,9 +6394,9 @@ body.mobile-mode #panelPINOLADMIN,
 body.mobile-mode #panelHISTORY,
 body.mobile-mode #panelEDITLOG,
 body.mobile-mode #panelNOTIFS {
+  width: 100%;
+  min-width: 0;
   content-visibility: auto;
-  contain: layout paint style;
-  contain-intrinsic-size: 900px;
 }
 
 body.mobile-mode .sectionTitle {
@@ -6665,7 +6656,10 @@ body.mobile-mode #panelCAP>#formPINOL {
 }
 
 body.mobile-mode #panelCAP {
-  padding: 12px 10px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 body.mobile-mode #panelCAP>.hr {
@@ -7947,34 +7941,34 @@ body.bioConfirmOpen {
   line-height: 1.5 !important;
 }
 
-/* ✅ MODERN STACKABLE TOASTS */
+/* ✅ MODERN PREMIUM TOASTS */
 .toast-stack-container {
   position: fixed;
-  top: 24px;
-  right: 24px;
+  top: 32px;
+  right: 32px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  z-index: 11000;
-  max-width: 400px;
-  width: calc(100% - 48px);
+  gap: 16px;
+  z-index: 999999;
+  max-width: 420px;
+  width: calc(100% - 64px);
   pointer-events: none;
 }
 
 .toast-new {
   pointer-events: auto;
   background: #ffffff;
-  border: 1px solid var(--md-outline-variant);
-  padding: 16px 20px;
-  border-radius: 12px;
+  border-radius: 20px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  gap: 18px;
+  padding: 18px 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05);
   transform: translateX(120%);
-  transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  transition: all 0.6s cubic-bezier(0.22, 1, 0.36, 1);
   position: relative;
   overflow: hidden;
+  border: 1px solid var(--toast-border, #e2e8f0);
 }
 
 .toast-new.show {
@@ -7982,47 +7976,89 @@ body.bioConfirmOpen {
 }
 
 .toast-new.removing {
-  transform: translateX(120%);
+  transform: translateX(130%) scale(0.9);
   opacity: 0;
 }
 
-.toast-new::before {
+.toast-new::after {
   content: "";
   position: absolute;
-  left: 0;
-  top: 0;
   bottom: 0;
-  width: 6px;
-  background: var(--toast-accent, var(--md-sys-color-primary));
+  left: 0;
+  height: 4px;
+  width: 100%;
+  background: var(--toast-accent);
+  opacity: 0.3;
 }
 
 .toast-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--toast-bg, var(--md-sys-color-primary-container));
-  color: var(--toast-accent, var(--md-sys-color-primary));
+  background: var(--toast-bg);
+  color: var(--toast-accent);
   flex-shrink: 0;
+  font-size: 24px;
+  box-shadow: 0 4px 10px var(--toast-shadow);
 }
 
 .toast-content {
   flex: 1;
+  min-width: 0;
 }
 
 .toast-message {
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 700;
-  color: var(--md-sys-color-on-surface);
-  line-height: 1.4;
+  color: #0f172a;
+  line-height: 1.5;
 }
 
-/* Toast types */
-.toast-new.good { --toast-accent: #006b54; --toast-bg: #dcfce7; }
-.toast-new.bad { --toast-accent: #ba1a1a; --toast-bg: #fee2e2; }
-.toast-new.warn { --toast-accent: #a16207; --toast-bg: #fef3c7; }
+/* Toast Semantic Types */
+.toast-new.good { 
+  --toast-accent: #10b981; 
+  --toast-bg: #ecfdf5; 
+  --toast-border: #a7f3d0;
+  --toast-shadow: rgba(16, 185, 129, 0.2);
+}
+.toast-new.bad { 
+  --toast-accent: #ef4444; 
+  --toast-bg: #fef2f2; 
+  --toast-border: #fecaca;
+  --toast-shadow: rgba(239, 68, 68, 0.2);
+}
+.toast-new.warn { 
+  --toast-accent: #f59e0b; 
+  --toast-bg: #fffbeb; 
+  --toast-border: #fef3c7;
+  --toast-shadow: rgba(245, 158, 11, 0.2);
+}
+.toast-new.info { 
+  --toast-accent: #3b82f6; 
+  --toast-bg: #eff6ff; 
+  --toast-border: #bfdbfe;
+  --toast-shadow: rgba(59, 130, 246, 0.2);
+}
+
+@media (max-width: 640px) {
+  .toast-stack-container {
+    top: auto;
+    bottom: 32px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+  }
+  .toast-new {
+    transform: translateY(120%);
+    padding: 14px 20px;
+  }
+  .toast-new.show {
+    transform: translateY(0);
+  }
+}
 
 /* ✅ NOTIFICATION BADGE ENHANCEMENTS */
 .liveBadge {
@@ -8304,4 +8340,47 @@ input, textarea, select, [contenteditable] {
   font-weight: 900;
   font-size: 14px;
   display: inline-block;
+}
+/* 📱 PREMIUM MOBILE NAVIGATION ENHANCEMENTS */
+#mobileBottomNav .nav-item.active .icon-box {
+  background: var(--md-sys-color-primary) !important;
+  color: white !important;
+  transform: translateY(-8px) scale(1.15);
+  box-shadow: 0 12px 24px rgba(0, 51, 102, 0.3);
+}
+
+#mobileBottomNav .nav-item.active .label {
+  opacity: 1 !important;
+  color: var(--md-sys-color-primary);
+  font-weight: 900;
+  transform: translateY(-4px);
+}
+
+#mobileBottomNav .nav-item .icon-box {
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#mobileBottomNav .nav-item .label {
+  transition: all 0.3s ease;
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  #mobileBottomNav {
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    height: calc(76px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+body.mobile-mode #cardSide {
+  display: none !important; /* Hide bulky action bar on mobile */
+}
+
+body.mobile-mode .wrap {
+  padding-top: 80px !important;
+}
+
+body.mobile-mode #mainHeader {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(12px);
 }

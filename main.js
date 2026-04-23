@@ -314,7 +314,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const toastEl = document.createElement("div");
     toastEl.className = `toast-new ${finalType}`;
     
-    const icon = finalType === "good" ? "check_circle" : (finalType === "bad" ? "error" : "warning");
+    let icon = "info";
+    if (finalType === "good") icon = "check_circle";
+    else if (finalType === "bad") icon = "error";
+    else if (finalType === "warn") icon = "warning";
+    else if (finalType === "info") icon = "info";
     
     toastEl.innerHTML = `
       <div class="toast-icon">
@@ -1534,65 +1538,170 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // === CENTRO DE NOTIFICACIONES: LGICA DE ENVIO HIERÁRQUICO ===
+  window.initNotificationCenter = async function() {
+    const scopeSelect = $("notifTargetScope");
+    const roleBadge = $("notifBadgeRole");
+    if (!scopeSelect || !USER) return;
+
+    roleBadge.textContent = USER.rol || "PERFIL";
+    
+    // 1. Poblar alcances permitidos según ROL
+    const role = USER.rol?.toUpperCase();
+    let options = "";
+
+    if (role === "ADMIN") {
+      options = `
+        <option value="">Seleccionar alcance...</option>
+        <option value="GLOBAL">🌎 Global (Todos)</option>
+        <option value="MUNICIPIO">🏙️ Personal Municipal (Staff)</option>
+        <option value="CLUES">🏥 Unidad Específica (CLUES)</option>
+        <option value="USUARIO">👤 Usuario Específico</option>
+      `;
+    } else if (role === "JURISDICCIONAL") {
+      options = `
+        <option value="">Seleccionar alcance...</option>
+        <option value="MUNICIPAL_USERS_ALL">👥 Todos los Municipales</option>
+        <option value="USUARIO">👤 Usuario Municipal Específico</option>
+      `;
+    } else if (role === "MUNICIPAL") {
+      options = `
+        <option value="">Seleccionar alcance...</option>
+        <option value="ALL_MY_UNITS">📋 Todas mis Unidades</option>
+        <option value="CLUES">🏥 Unidad Específica</option>
+      `;
+    } else {
+      options = `<option value="">Sin permisos de envío</option>`;
+      $("btnSendNotification").disabled = true;
+      $("btnSendNotification").style.opacity = "0.5";
+    }
+
+    scopeSelect.innerHTML = options;
+
+    // 2. Manejar cambios de alcance para mostrar/ocultar selectores extra
+    scopeSelect.onchange = async () => {
+      const scope = scopeSelect.value;
+      $("notifMunicipioBox").style.display = (scope === "MUNICIPIO" || (scope === "CLUES" && role === "ADMIN")) ? "block" : "none";
+      $("notifUnidadBox").style.display = (scope === "CLUES") ? "block" : "none";
+      $("notifUserBox").style.display = (scope === "USUARIO" || scope === "MUNICIPAL_USER_SPECIFIC") ? "block" : "none";
+
+      // Resetear dropdowns
+      if ($("notifTargetMunicipio")) $("notifTargetMunicipio").innerHTML = "<option value=''>Cargando...</option>";
+      if ($("notifTargetClues")) $("notifTargetClues").innerHTML = "<option value=''>Cargando...</option>";
+      if ($("notifTargetUser")) $("notifTargetUser").innerHTML = "<option value=''>Cargando...</option>";
+
+      // Lógica de carga dinámica
+      if (scope === "MUNICIPIO" || (scope === "CLUES" && role === "ADMIN")) {
+        await populateMunicipiosNotif();
+      } else if (scope === "CLUES" && role === "MUNICIPAL") {
+        await populateCluesNotif(USER.municipio);
+      } else if (scope === "USUARIO" || scope === "MUNICIPAL_USERS_ALL") {
+        await populateUsersNotif(scope);
+      }
+    };
+
+    // Al cambiar municipio, si estamos en scope CLUES (Admin), cargar unidades
+    if ($("notifTargetMunicipio")) {
+      $("notifTargetMunicipio").onchange = () => {
+        if (scopeSelect.value === "CLUES") {
+          populateCluesNotif($("notifTargetMunicipio").value);
+        }
+      };
+    }
+  };
+
+  async function populateMunicipiosNotif() {
+    const select = $("notifTargetMunicipio");
+    if (!select) return;
+    try {
+      const { data } = await supabase.from('unidades').select('municipio').order('municipio');
+      const unique = [...new Set(data.map(i => i.municipio))];
+      select.innerHTML = `<option value="">Seleccionar municipio...</option>` + 
+        unique.map(m => `<option value="${escapeAttr(m)}">${escapeHtml(m)}</option>`).join("");
+    } catch(e) { select.innerHTML = "<option>Error</option>"; }
+  }
+
+  async function populateCluesNotif(mun) {
+    const select = $("notifTargetClues");
+    if (!select || !mun) return;
+    try {
+      const { data } = await supabase.from('unidades').select('clues, unidad').eq('municipio', mun).order('unidad');
+      select.innerHTML = `<option value="">Seleccionar unidad...</option>` + 
+        data.map(u => `<option value="${escapeAttr(u.clues)}">${escapeHtml(u.unidad)}</option>`).join("");
+    } catch(e) { select.innerHTML = "<option>Error</option>"; }
+  }
+
+  async function populateUsersNotif(scope) {
+    const select = $("notifTargetUser");
+    if (!select) return;
+    try {
+      let query = supabase.from('usuarios_legacy').select('usuario, rol').eq('activo', 'SI').order('usuario');
+      
+      // Si es Jurisdiccional, solo ve Municipales
+      if (USER.rol === "JURISDICCIONAL") {
+        query = query.eq('rol', 'MUNICIPAL');
+      }
+
+      const { data } = await query;
+      select.innerHTML = `<option value="">Seleccionar usuario...</option>` + 
+        data.map(u => `<option value="${escapeAttr(u.usuario)}">${escapeHtml(u.usuario)} (${u.rol})</option>`).join("");
+    } catch(e) { select.innerHTML = "<option>Error</option>"; }
+  }
+
   async function sendNotificationFlow() {
     try {
+      const scope = $("notifTargetScope")?.value;
       const payload = {
-        target_scope: $("notifTargetScope")?.value || "ALL_MY_UNITS",
+        target_scope: scope,
         target_municipio: $("notifTargetMunicipio")?.value || "",
         target_clues: $("notifTargetClues")?.value || "",
+        target_usuario: $("notifTargetUser")?.value || "",
         type: $("notifType")?.value || "INFO",
         title: $("notifTitle")?.value || "",
         message: $("notifMessage")?.value || ""
       };
 
-      if (payload.target_scope === "ALL_MY_UNITS" && USER?.rol === "MUNICIPAL" && !String(payload.target_municipio).trim()) {
-        payload.target_municipio = USER?.municipio || "";
-      }
+      // Validaciones de Seguridad y Jerarquía
+      if (!scope) throw new Error("Selecciona un alcance para la notificación");
+      if (!payload.title.trim()) throw new Error("Escribe un título");
+      if (!payload.message.trim()) throw new Error("Escribe un mensaje");
 
-      if (payload.target_scope === "MUNICIPIO" && !String(payload.target_municipio).trim()) {
-        showWarnToast("Selecciona un municipio");
-        return;
-      }
+      if (scope === "CLUES" && !payload.target_clues) throw new Error("Selecciona una unidad destino");
+      if (scope === "MUNICIPIO" && !payload.target_municipio) throw new Error("Selecciona un municipio destino");
+      if (scope === "USUARIO" && !payload.target_usuario) throw new Error("Selecciona un usuario destino");
 
-      if (payload.target_scope === "CLUES") {
-        if (!String(payload.target_municipio).trim()) {
-          showWarnToast("Selecciona un municipio");
-          return;
+      // Auto-completar municipio para el rol MUNICIPAL
+      if (USER.rol === "MUNICIPAL") {
+        if (scope === "ALL_MY_UNITS") {
+           payload.target_scope = "MUNICIPIO_UNITS"; // Nuevo scope interno para diferenciar de MUNICIPIO (Staff)
+           payload.target_municipio = USER.municipio;
+        } else if (scope === "CLUES") {
+           payload.target_municipio = USER.municipio;
         }
-        if (!String(payload.target_clues).trim()) {
-          showWarnToast("Selecciona una unidad / CLUES");
-          return;
-        }
       }
 
-      if (!String(payload.title).trim()) {
-        showWarnToast("Escribe un título para la notificación");
-        return;
+      // Jurisdiccional a todos los municipales
+      if (USER.rol === "JURISDICCIONAL" && scope === "MUNICIPAL_USERS_ALL") {
+         payload.target_scope = "ROLE";
+         payload.target_usuario = "MUNICIPAL"; // Usamos target_usuario para el rol destino en este caso especial
       }
 
-      if (!String(payload.message).trim()) {
-        showWarnToast("Escribe el mensaje de la notificación");
-        return;
+      setBtnBusy("btnSendNotification", true, "Emitiendo...");
+      showOverlay("Emitiendo comunicado oficial...", "Notificaciones");
+
+      const res = await apiCall("sendNotification", payload);
+      
+      if (res && res.ok) {
+        showToast("Comunicado enviado con éxito", true);
+        // Reset form
+        $("notifTitle").value = "";
+        $("notifMessage").value = "";
+      } else {
+        throw new Error(res?.error || "Error al enviar");
       }
-
-      setBtnBusy("btnSendNotification", true, "Enviando…");
-      showOverlay("Enviando notificación interna…", "Notificaciones");
-
-      await apiCall("sendNotification", payload);
-
-      $("notifTitle").value = "";
-      $("notifMessage").value = "";
-      if ($("notifTemplate")) $("notifTemplate").value = "";
-
-      showToast("Notificación enviada correctamente");
-
-      loadNotifications({ silent: true }).catch(err => {
-        console.error("sendNotificationFlow loadNotifications error:", err);
-      });
 
     } catch (e) {
-      console.error("sendNotificationFlow error:", e);
-      showToast(e.message || "No se pudo enviar la notificación", false);
+      showToast(e.message, false, "bad");
     } finally {
       setBtnBusy("btnSendNotification", false);
       hideOverlay();
@@ -3241,13 +3350,32 @@ document.addEventListener("DOMContentLoaded", () => {
             .limit(50);
 
           if (role === 'UNIDAD') {
+            // UNIDADES: Solo ven Global, lo dirigido a su CLUES específica, o a su Municipio (como grupo de UNIDADES).
             const filters = ['target_scope.eq.GLOBAL'];
-            if (municipio) filters.push(`and(target_scope.eq.MUNICIPIO,target_municipio.eq."${municipio}")`);
             if (clues)     filters.push(`and(target_scope.eq.CLUES,target_clues.eq."${clues}")`);
+            if (municipio) filters.push(`and(target_scope.eq.MUNICIPIO_UNITS,target_municipio.eq."${municipio}")`);
             if (usuario)   filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq."${usuario}")`);
             query = query.or(filters.join(','));
-          } else if (role === 'ADMIN' && municipio && municipio !== '*') {
-             query = query.or(`target_scope.eq.GLOBAL,target_municipio.eq."${municipio}"`);
+          } 
+          else if (role === 'MUNICIPAL') {
+            // MUNICIPAL: Ve Global, lo dirigido a su Municipio (Staff), lo dirigido a su ROL, o a su Usuario.
+            const filters = ['target_scope.eq.GLOBAL'];
+            filters.push('and(target_scope.eq.ROLE,target_usuario.eq.MUNICIPAL)');
+            if (municipio) filters.push(`and(target_scope.eq.MUNICIPIO,target_municipio.eq."${municipio}")`);
+            if (usuario)   filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq."${usuario}")`);
+            query = query.or(filters.join(','));
+          }
+          else if (role === 'JURISDICCIONAL') {
+            // JURISDICCIONAL: Ve Global o dirigido a su Usuario.
+            const filters = ['target_scope.eq.GLOBAL'];
+            if (usuario)   filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq."${usuario}")`);
+            query = query.or(filters.join(','));
+          }
+          else if (role === 'ADMIN') {
+             // ADMIN: Ve todo (Global y cualquier otro que haya sido enviado o sea relevante)
+             // Para que el Admin pueda auditar el sistema
+             const filters = ['target_scope.eq.GLOBAL', 'target_scope.eq.MUNICIPIO', 'target_scope.eq.CLUES', 'target_scope.eq.USUARIO', 'target_scope.eq.MUNICIPIO_UNITS', 'target_scope.eq.ROLE'];
+             query = query.or(filters.join(','));
           }
 
           const { data, error } = await query;
@@ -3353,37 +3481,41 @@ document.addEventListener("DOMContentLoaded", () => {
             }
           }
 
-          const [resSR, resCons, resBio, resUnits] = await Promise.all([
+          // 🛡️ Logística de Ventanas: Traemos también el calendario por si hay apertura manual
+          const currentMonth = fecha.substring(0, 7); // YYYY-MM
+
+          const [resSR, resCons, resBio, resUnits, resCalendar] = await Promise.all([
             supabase.from('biologicos_existencia').select('clues').eq('fecha', fecha),
             supabase.from('consumibles').select('clues').in('fecha', consDates),
             supabase.from('biologicos_pedido').select('clues').eq('fecha_captura', fecha),
-            supabase.from('unidades').select('*').eq('activo', 'SI')
+            supabase.from('unidades').select('*').eq('activo', 'SI'),
+            supabase.from('calendario_pedidos').select('*').eq('anio_mes', currentMonth).eq('activo', 'SI').maybeSingle()
           ]);
 
-
           let capturedClues = [];
-          if (tipo === "SR") capturedClues = [...new Set(resSR.data.map(x => x.clues || x.CLUES))];
-          else if (tipo === "CONS") capturedClues = [...new Set(resCons.data.map(x => x.clues || x.CLUES))];
+          if (tipo === "SR") capturedClues = [...new Set((resSR.data || []).map(x => x.clues || x.CLUES))];
+          else if (tipo === "CONS") capturedClues = [...new Set((resCons.data || []).map(x => x.clues || x.CLUES))];
           else if (tipo === "BIO") {
-            // Para BIO necesitamos el registro completo para tipo_pedido
-            capturedClues = [...new Set(resBio.data.map(x => x.clues || x.CLUES))];
+            capturedClues = [...new Set((resBio.data || []).map(x => x.clues || x.CLUES))];
           }
 
-          const capturadas = resUnits.data.filter(u => capturedClues.includes(u.clues || u.CLUES));
-          const faltantes = resUnits.data.filter(u => !capturedClues.includes(u.clues || u.CLUES));
+          const allUnits = resUnits.data || [];
+          const capturadas = allUnits.filter(u => capturedClues.includes(u.clues || u.CLUES));
+          const faltantes = allUnits.filter(u => !capturedClues.includes(u.clues || u.CLUES));
 
           return {
             ok: true,
             data: {
               fecha,
               tipo,
-              total_unidades: resUnits.data.length,
+              total_unidades: allUnits.length,
               total_capturadas: capturadas.length,
               total_faltantes: faltantes.length,
+              calendar_override: resCalendar.data || null,
               capturadas: capturadas.map(u => {
                 let metadata = { municipio: u.municipio || u.MUNICIPIO, clues: u.clues || u.CLUES, unidad: u.unidad || u.UNIDAD, capturo: "SI", estatus: "OK" };
                 if (tipo === "BIO") {
-                  const record = resBio.data.find(r => r.clues === (u.clues || u.CLUES));
+                  const record = (resBio.data || []).find(r => r.clues === (u.clues || u.CLUES));
                   metadata.tipo_pedido = record?.tipo_pedido || "MENSUAL";
                 }
                 return metadata;
@@ -4715,7 +4847,7 @@ document.addEventListener("DOMContentLoaded", () => {
       USER = null;
       TOKEN = null;
       clearSession();
-      if ($("mobileNav")) $("mobileNav").style.display = "none";
+      if ($("mobileBottomNav")) $("mobileBottomNav").style.display = "none";
       setLoggedOutUI();
       hideOverlay();
       showToast("Sesión cerrada");
@@ -7473,11 +7605,25 @@ async function getTodayReports(fecha = "", force = false) {
     // Lógica de Ventana Inteligente para Pedido
     let extraInfo = "";
     if (tipo === "BIO" && fecha) {
-       const d = new Date(fecha + "T00:00:00");
-       const window = getBioCaptureWindow(d.getFullYear(), d.getMonth() + 1);
-       const isInside = (fecha >= window.start && fecha <= window.end);
+       let windowStart, windowEnd, source;
+       
+       // 1. Prioridad: Calendario Administrativo (Apertura Manual)
+       if (data.calendar_override) {
+         windowStart = data.calendar_override.habilitar_desde.split("T")[0]; // ISO Date
+         windowEnd = data.calendar_override.habilitar_hasta.split("T")[0];
+         source = "Administración (Manual)";
+       } else {
+         // 2. Fallback: Algoritmo Inteligente (Día 22 +/- hábiles)
+         const d = new Date(fecha + "T00:00:00");
+         const window = getBioCaptureWindow(d.getFullYear(), d.getMonth() + 1);
+         windowStart = dateToLocalYmd(window.start);
+         windowEnd = dateToLocalYmd(window.end);
+         source = "Algoritmo Inteligente";
+       }
+
+       const isInside = (fecha >= windowStart && fecha <= windowEnd);
        if (isInside) {
-          extraInfo = `<span class="statusOk" style="background:#e8f5e9; color:#2e7d32; padding:4px 12px; border-radius:12px; font-size:11px; font-weight:800; border:1px solid #c8e6c9;">✅ Ventana oficial: ${window.start} al ${window.end}</span>`;
+          extraInfo = `<span class="statusOk" style="background:#e8f5e9; color:#2e7d32; padding:4px 12px; border-radius:12px; font-size:11px; font-weight:800; border:1px solid #c8e6c9;">✅ Ventana oficial: ${windowStart} al ${windowEnd}</span>`;
        } else {
           extraInfo = `<span class="statusWarn" style="background:#fff3e0; color:#ef6c00; padding:4px 12px; border-radius:12px; font-size:11px; font-weight:800; border:1px solid #ffe0b2;">⚠️ Pedido extraordinario (Fuera de ventana)</span>`;
        }
@@ -7703,15 +7849,18 @@ async function getTodayReports(fecha = "", force = false) {
 
     // --- BOTTOM NAV PERMISSIONS ---
     const isMobile = window.innerWidth <= 768;
-    const mobileNav = $("mobileNav");
+    const mobileNav = $("mobileBottomNav");
     if (mobileNav) {
       mobileNav.style.display = isMobile ? "flex" : "none";
-      if ($("navNotifs")) $("navNotifs").style.display = "flex";
-      if ($("navAdmin")) $("navAdmin").style.display = (user.rol?.toUpperCase() === "ADMIN") ? "flex" : "none";
+      if ($("navNotifs")) $("navNotifs").style.display = (isAdmin || isJurisdiccional || isMunicipal) ? "flex" : "none";
+      if ($("navAdmin")) $("navAdmin").style.display = isAdmin ? "flex" : "none";
     }
 
     if ($("tabOPS_ADMIN")) {
       $("tabOPS_ADMIN").onclick = () => activateMain("ADMIN");
+    }
+    if ($("tabOPS_NOTIFS")) {
+      $("tabOPS_NOTIFS").onclick = () => activateMain("NOTIFS");
     }
 
     if (STATUS) {
@@ -7776,6 +7925,7 @@ async function getTodayReports(fecha = "", force = false) {
     if ($("panelCAP")) $("panelCAP").style.display = isUnidad ? "block" : "none";
     if ($("panelAdminOpsTabs")) $("panelAdminOpsTabs").style.display = (isAdmin || isJurisdiccional || isMunicipal) ? "block" : "none";
     if ($("tabOPS_PINOL")) $("tabOPS_PINOL").style.display = (isAdmin || isMunicipal) ? "block" : "none";
+    if ($("tabOPS_NOTIFS")) $("tabOPS_NOTIFS").style.display = (isAdmin || isJurisdiccional || isMunicipal) ? "block" : "none";
     if ($("tabOPS_ADMIN")) $("tabOPS_ADMIN").style.display = isAdmin ? "flex" : "none";
 
 
@@ -7918,10 +8068,11 @@ async function getTodayReports(fecha = "", force = false) {
     updateTabClass("tabADMIN", panel === "ADMIN");
 
     // Sincronizar Pestañas de Operaciones/Admin (Bottom Row)
+    updateTabClass("tabOPS_NOTIFS", panel === "NOTIFS");
     updateTabClass("tabOPS_ADMIN", panel === "ADMIN");
     
-    // Si entramos en ADMIN, debemos desmarcar las pestañas de OPS
-    if (panel === "ADMIN") {
+    // Si entramos en ADMIN o NOTIFS, debemos desmarcar las pestañas de OPS
+    if (panel === "ADMIN" || panel === "NOTIFS") {
       updateTabClass("tabOPS_CAPTURE", false);
       updateTabClass("tabOPS_HISTORY", false);
       updateTabClass("tabOPS_PINOL", false);
@@ -7935,18 +8086,22 @@ async function getTodayReports(fecha = "", force = false) {
     });
 
 
+    // --- Panel Isolation Guard (Crucial for Mobile UX) ---
+    const allPanels = [
+      "panelCAP", "panelNOTIFS", "panelADMIN", "panelCaptureSummary", 
+      "panelPINOLADMIN", "panelHISTORY", "panelEDITLOG", "panelLOTES", "panelArchivos"
+    ];
+    allPanels.forEach(pId => {
+      const p = $(pId);
+      if (p) p.style.display = "none";
+    });
+
     if ($("panelCAP")) $("panelCAP").style.display = (panel === "CAP" && isUnidad) ? "block" : "none";
+    
     if ($("panelAdminOpsTabs")) {
-      // Visible en CAP (para navegar a ops) y en ADMIN (para regresar a CAP)
       const isVisible = (panel === "CAP" || panel === "ADMIN") && isOps;
       $("panelAdminOpsTabs").style.display = isVisible ? "block" : "none";
     }
-    if ($("panelCaptureSummary")) $("panelCaptureSummary").style.display = "none";
-    if ($("panelPINOLADMIN")) $("panelPINOLADMIN").style.display = "none";
-    if ($("panelHISTORY")) $("panelHISTORY").style.display = "none";
-    if ($("panelEDITLOG")) $("panelEDITLOG").style.display = "none";
-    if ($("panelLOTES")) $("panelLOTES").style.display = "none";
-    if ($("panelArchivos")) $("panelArchivos").style.display = "none";
 
     if ($("panelNOTIFS")) $("panelNOTIFS").style.display = (panel === "NOTIFS") ? "block" : "none";
     if ($("panelADMIN")) $("panelADMIN").style.display = (panel === "ADMIN" && isAdmin) ? "block" : "none";
@@ -7967,6 +8122,10 @@ async function getTodayReports(fecha = "", force = false) {
     }
 
     if (panel === "NOTIFS") {
+      if (isOps) {
+        initNotificationCenter().catch(err => console.error("initNotificationCenter error:", err));
+      }
+      
       loadNotifications({ silent: false }).catch(err => {
         console.error("loadNotifications error:", err);
         showToast("No se pudieron cargar las notificaciones", false);

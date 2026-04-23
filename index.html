@@ -13,7 +13,9 @@
 <meta name="apple-mobile-web-app-title" content="Reportes" />
 <link rel="manifest" href="site.webmanifest" />
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Reportes y existencias Jurisdicción Sanitaria 1</title>
 
   <link rel="stylesheet" href="style.css">
@@ -111,16 +113,16 @@
 <body>
   <div class="wrap bg-surface-container min-h-screen">
 
-    <!-- ✅ MODERN FLOATING HEADER -->
-    <div class="fixed top-4 inset-x-4 sm:inset-x-8 h-[85px] z-[1000] bg-white border border-outline-variant rounded-3xl flex items-center justify-center shadow-[0_8px_32px_rgba(0,51,102,0.08)] transition-all duration-500 hover:shadow-md3-3" id="mainHeader">
-      <div class="w-full max-w-[1600px] px-6 flex items-center justify-between">
+    <!-- ✅ MODERN FLOATING HEADER (Miniaturized on Mobile) -->
+    <div class="fixed top-0 sm:top-4 inset-x-0 sm:inset-x-8 h-[64px] sm:h-[85px] z-[1000] bg-white sm:border border-b sm:border-outline-variant sm:rounded-3xl flex items-center justify-center shadow-md sm:shadow-[0_8px_32px_rgba(0,51,102,0.08)] transition-all duration-500" id="mainHeader">
+      <div class="w-full max-w-[1600px] px-4 sm:px-6 flex items-center justify-between">
         <div class="flex items-center gap-6">
 
           <!-- Logos con estilo neumórfico sutil -->
-          <div class="bg-surface-container-low px-5 py-2.5 rounded-[22px] border border-outline-variant/20 flex gap-5 shadow-sm" aria-label="Logos institucionales">
-            <img id="logoA" class="h-[44px] w-auto drop-shadow-md" src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/Seseq_vertical_2025.png" alt="SESEQ">
-            <div class="w-[1px] h-10 bg-outline-variant/30 self-center"></div>
-            <img id="logoB" class="h-[44px] w-auto drop-shadow-md" src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/logo_Q.png" alt="Gobierno de Querétaro">
+          <div class="bg-surface-container-low px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-2xl sm:rounded-[22px] border border-outline-variant/20 flex gap-3 sm:gap-5 shadow-sm" aria-label="Logos institucionales">
+            <img id="logoA" class="h-[32px] sm:h-[44px] w-auto drop-shadow-sm sm:drop-shadow-md" src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/Seseq_vertical_2025.png" alt="SESEQ">
+            <div class="w-[1px] h-6 sm:h-10 bg-outline-variant/30 self-center"></div>
+            <img id="logoB" class="h-[32px] sm:h-[44px] w-auto drop-shadow-sm sm:drop-shadow-md" src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/logo_Q.png" alt="Gobierno de Querétaro">
           </div>
 
           <div class="hidden lg:flex flex-col">
@@ -216,7 +218,7 @@
         </div>
       </div>
 
-    <div class="max-w-[1750px] w-full mx-auto px-4 sm:px-10 pt-[130px] pb-12">
+    <div class="max-w-[1750px] w-full mx-auto px-4 sm:px-10 pt-[100px] sm:pt-[130px] pb-32 sm:pb-12">
 
       <!-- RIGHT (APP) -->
       <div class="w-full flex flex-col gap-8 hidden" id="rightColumn">
@@ -848,6 +850,10 @@
                     <span class="material-symbols-rounded text-[20px]">inventory_2</span>
                     <span>Carga de lotes</span>
                   </button>
+                   <button class="tab-btn tab-inactive flex items-center gap-2.5 h-[46px] px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px]" id="tabOPS_NOTIFS">
+                    <span class="material-symbols-rounded text-[20px]">campaign</span>
+                    <span>Notificaciones</span>
+                  </button>
                   <button class="tab-btn tab-inactive flex items-center gap-2.5 h-[46px] px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px]" id="tabOPS_ADMIN">
                     <span class="material-symbols-rounded text-[20px]">admin_panel_settings</span>
                     <span>Administración</span>
@@ -882,88 +888,79 @@
                   </div>
                 </div>
 
-                <div class="flex flex-col lg:flex-row gap-6 p-8">
-                  <div class="flex-1 bg-white rounded-3xl p-6 border border-outline-variant/30 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col outline outline-1 outline-primary/5" id="notifInboxPane" style="display:none">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-outline-variant/30 pb-4 mb-4 gap-4">
-                      <h3 class="text-lg font-extrabold text-primary m-0 tracking-tight">Bandeja</h3>
-                      <div class="flex gap-2">
-                        <button type="button" class="bg-primary/10 text-primary hover:bg-primary/20 h-[42px] px-4 rounded-[14px] font-bold flex items-center justify-center gap-2 transition-all border-none cursor-pointer text-[13px]" id="btnNotifRefresh">
-                          <span class="material-symbols-rounded text-[18px]">refresh</span> Actualizar
+                <div class="p-8">
+                  <!-- COMPOSER DE NOTIFICACIONES (EXPANDIDO) -->
+                  <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_8px_32px_rgba(0,51,102,0.04)] flex flex-col max-w-4xl mx-auto" id="notifComposerPane">
+                    <div class="flex items-center justify-between pb-6 border-b border-outline-variant/30 mb-8">
+                      <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                          <span class="material-symbols-rounded text-[28px]">campaign</span>
+                        </div>
+                        <div>
+                          <h3 class="text-xl font-black text-primary m-0 tracking-tight">Emisor de Notificaciones</h3>
+                          <p class="text-[12px] font-bold text-surface-onVariant/60 m-0 mt-0.5 uppercase tracking-wider">Centro de avisos institucionales</p>
+                        </div>
+                      </div>
+                      <span class="bg-primary/10 text-primary px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest border border-primary/20" id="notifBadgeRole">CARGANDO...</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <!-- IZQUIERDA: CONFIGURACIN DE DESTINO -->
+                      <div class="flex flex-col gap-6">
+                        <div>
+                          <label for="notifTargetScope" class="text-[12px] font-black text-primary/40 uppercase tracking-widest block mb-2.5 ml-1">1. Definir Alcance</label>
+                          <select id="notifTargetScope" class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-white focus:border-primary outline-none transition-all shadow-sm">
+                            <!-- Se puebla dinámicamente según ROL -->
+                          </select>
+                        </div>
+
+                        <div id="notifMunicipioBox" style="display:none">
+                          <label for="notifTargetMunicipio" class="text-[12px] font-black text-primary/40 uppercase tracking-widest block mb-2.5 ml-1">2. Municipio Destino</label>
+                          <select id="notifTargetMunicipio" class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-white focus:border-primary outline-none transition-all shadow-sm"></select>
+                        </div>
+
+                        <div id="notifUnidadBox" style="display:none">
+                          <label for="notifTargetClues" class="text-[12px] font-black text-primary/40 uppercase tracking-widest block mb-2.5 ml-1">3. Unidad / CLUES</label>
+                          <select id="notifTargetClues" class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-white focus:border-primary outline-none transition-all shadow-sm"></select>
+                        </div>
+
+                        <div id="notifUserBox" style="display:none">
+                          <label for="notifTargetUser" class="text-[12px] font-black text-primary/40 uppercase tracking-widest block mb-2.5 ml-1">2. Usuario Destino</label>
+                          <select id="notifTargetUser" class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-white focus:border-primary outline-none transition-all shadow-sm"></select>
+                        </div>
+
+                        <div>
+                          <label for="notifType" class="text-[12px] font-black text-primary/40 uppercase tracking-widest block mb-2.5 ml-1">Tipo de Prioridad</label>
+                          <select id="notifType" class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-white focus:border-primary outline-none transition-all shadow-sm">
+                            <option value="INFO">💡 Información General</option>
+                            <option value="SUCCESS">✅ Operación Exitosa</option>
+                            <option value="WARN">⚠️ Alerta Operativa</option>
+                            <option value="ERROR">🚨 Bloqueo / Urgente</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <!-- DERECHA: CONTENIDO DEL MENSAJE -->
+                      <div class="flex flex-col gap-6">
+                        <div>
+                          <label for="notifTitle" class="text-[12px] font-black text-primary/40 uppercase tracking-widest block mb-2.5 ml-1">Título del Aviso</label>
+                          <input id="notifTitle" placeholder="Ej. Actualización de Inventario" class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-white focus:border-primary outline-none transition-all shadow-sm placeholder:text-slate-300">
+                        </div>
+
+                        <div>
+                          <label for="notifMessage" class="text-[12px] font-black text-primary/40 uppercase tracking-widest block mb-2.5 ml-1">Mensaje Institucional</label>
+                          <textarea id="notifMessage" rows="6" class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 text-[15px] font-bold text-primary focus:bg-white focus:border-primary outline-none transition-all resize-none shadow-sm placeholder:text-slate-300" placeholder="Escribe el cuerpo de la notificación..."></textarea>
+                        </div>
+
+                        <button type="button" class="bg-primary text-white rounded-2xl h-[64px] font-black text-[16px] uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 w-full border-none cursor-pointer mt-2" id="btnSendNotification">
+                          <span class="material-symbols-rounded text-[24px]">send</span> Enviar Ahora
                         </button>
-                        <button type="button" class="bg-transparent border border-outline-variant/50 hover:bg-surface-variant text-surface-on h-[42px] px-4 rounded-[14px] font-bold flex items-center justify-center gap-2 transition-all cursor-pointer text-[13px]" id="btnNotifOnlyUnread">
-                          <span class="material-symbols-rounded text-[18px]">mail</span> Filtrar
-                        </button>
                       </div>
                     </div>
 
-                    <div class="flex flex-col gap-3 overflow-y-auto pr-2" id="notifListWrap" style="display:none">
-                      <div class="text-sm text-surface-onVariant/60 text-center py-10 font-medium italic">Aún no hay notificaciones.</div>
-                    </div>
-                  </div>
-
-                  <div class="flex-1 bg-white rounded-3xl p-6 border border-outline-variant/30 shadow-[0_4px_16px_rgba(0,0,0,0.03)] flex flex-col outline outline-1 outline-primary/5" id="notifComposerPane" style="display:none">
-                    <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-6">
-                      <h3 class="text-lg font-extrabold text-primary m-0 tracking-tight">Enviar notificación</h3>
-                      <span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest hidden sm:block border border-primary/20">ADMIN / MUNICIPAL</span>
-                    </div>
-
-                    <div class="flex flex-col gap-4">
-                      <div>
-                        <label for="notifTargetScope" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Alcance</label>
-                        <select id="notifTargetScope" class="w-full bg-surface-variant border border-outline-variant/30 rounded-[14px] px-4 h-[48px] text-[15px] font-semibold text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all">
-                          <option value="ALL_MY_UNITS">Todas mis unidades</option>
-                          <option value="MUNICIPIO">Municipio</option>
-                          <option value="CLUES">CLUES</option>
-                        </select>
-                      </div>
-
-                      <div id="notifMunicipioBox">
-                        <label for="notifTargetMunicipio" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Municipio</label>
-                        <select id="notifTargetMunicipio" class="w-full bg-surface-variant border border-outline-variant/30 rounded-[14px] px-4 h-[48px] text-[15px] font-semibold text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all"></select>
-                      </div>
-
-                      <div id="notifUnidadBox">
-                        <label for="notifTargetClues" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Unidad / CLUES</label>
-                        <select id="notifTargetClues" class="w-full bg-surface-variant border border-outline-variant/30 rounded-[14px] px-4 h-[48px] text-[15px] font-semibold text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all"></select>
-                      </div>
-
-                      <div>
-                        <label for="notifTemplate" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Plantilla institucional</label>
-                        <select id="notifTemplate" class="w-full bg-surface-variant border border-outline-variant/30 rounded-[14px] px-4 h-[48px] text-[15px] font-semibold text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all">
-                          <option value="">Seleccionar plantilla…</option>
-                          <option value="CAPTURA_PENDIENTE">Recordatorio de captura</option>
-                          <option value="OBS_ADMIN">Observación administrativa</option>
-                          <option value="AVISO_GENERAL">Aviso general</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label for="notifType" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Tipo de aviso</label>
-                        <select id="notifType" class="w-full bg-surface-variant border border-outline-variant/30 rounded-[14px] px-4 h-[48px] text-[15px] font-semibold text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all">
-                          <option value="INFO">Información</option>
-                          <option value="SUCCESS">Éxito</option>
-                          <option value="WARN">Alerta</option>
-                          <option value="ERROR">Crítica</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label for="notifTitle" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Título</label>
-                        <input id="notifTitle" placeholder="Ej. Pedido programado" class="w-full bg-surface-variant border border-outline-variant/30 rounded-[14px] px-4 h-[48px] text-[15px] font-semibold text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all placeholder:text-outline-variant/70">
-                      </div>
-
-                      <div>
-                        <label for="notifMessage" class="text-[12px] font-bold text-surface-onVariant uppercase tracking-[0.05em] block mb-1.5 ml-1">Mensaje detallado</label>
-                        <textarea id="notifMessage" rows="5" class="w-full bg-surface-variant border border-outline-variant/30 rounded-[14px] p-4 text-[15px] font-semibold text-surface-on focus:bg-white focus:border-primary focus:shadow-[0_0_0_4px_rgba(0,51,102,0.1)] outline-none transition-all resize-y min-h-[100px] placeholder:text-outline-variant/70" placeholder="Escribe el detalle de la notificación..."></textarea>
-                      </div>
-
-                      <button type="button" class="bg-primary text-white rounded-[14px] h-[52px] font-bold text-[15px] tracking-wide shadow-md3-2 hover:bg-[#002244] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2.5 w-full border-none cursor-pointer mt-2" id="btnSendNotification">
-                        <span class="material-symbols-rounded text-[20px]">send</span> Enviar notificación
-                      </button>
-
-                      <div class="text-[11px] opacity-60 text-center font-medium mt-1">
-                        Consejo: Envía recordatorios operativos o avisos de surtimiento.
-                      </div>
+                    <div class="mt-8 pt-6 border-t border-slate-100 flex items-center gap-3 text-[11px] font-bold text-slate-400">
+                      <span class="material-symbols-rounded text-[18px]">verified_user</span>
+                      Seguridad: Solo los roles autorizados pueden emitir comunicados oficiales. Se registra la IP y usuario emisor.
                     </div>
                   </div>
                 </div>
@@ -2238,22 +2235,38 @@
 
     </div><!-- end wrap -->
 
-    <!-- 📱 BOTTOM NAVIGATION (MOBILE ONLY) -->
-    <nav class="bottom-nav" id="mobileNav" style="display:none">
-      <button class="nav-item active" data-tab="tabCAP">
-        <span class="material-symbols-rounded">assignment</span>
-        <span>Captura</span>
       </button>
-      <button class="nav-item" data-tab="tabNOTIFS" id="navNotifs" style="display:none">
-        <div class="badge-wrapper">
-          <span class="material-symbols-rounded">notifications</span>
-          <span id="notifBadgeNav" class="liveBadge">0</span>
+    </nav>
+
+    <!-- ✅ PREMIUM FLOATING BOTTOM NAVIGATION (Mobile Only) -->
+    <nav class="fixed bottom-6 inset-x-6 h-[76px] z-[2000] bg-white/80 backdrop-blur-2xl border border-outline-variant/30 rounded-[32px] flex items-center justify-around px-4 shadow-[0_20px_50px_rgba(0,51,102,0.15)] md:hidden transition-all duration-500" id="mobileBottomNav" style="display:none">
+      <button class="flex flex-col items-center justify-center gap-1.5 w-16 h-16 rounded-2xl transition-all duration-300 nav-item active" data-tab="tabCAP">
+        <div class="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/5 text-primary/40 group-active:scale-90 transition-all icon-box">
+          <span class="material-symbols-rounded text-[26px]">assignment</span>
         </div>
-        <span>Avisos</span>
+        <span class="text-[9px] font-black uppercase tracking-tighter opacity-40 label">Captura</span>
       </button>
-      <button class="nav-item" data-tab="tabADMIN" id="navAdmin" style="display:none">
-        <span class="material-symbols-rounded">admin_panel_settings</span>
-        <span>Admin</span>
+
+      <button class="flex flex-col items-center justify-center gap-1.5 w-16 h-16 rounded-2xl transition-all duration-300 nav-item" data-tab="tabNOTIFS" id="navNotifs">
+        <div class="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/5 text-primary/40 relative icon-box">
+          <span class="material-symbols-rounded text-[26px]">notifications</span>
+          <span id="notifBadgeNav" class="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white" style="display:none">0</span>
+        </div>
+        <span class="text-[9px] font-black uppercase tracking-tighter opacity-40 label">Centro</span>
+      </button>
+
+      <button class="flex flex-col items-center justify-center gap-1.5 w-16 h-16 rounded-2xl transition-all duration-300 nav-item" data-tab="tabADMIN" id="navAdmin">
+        <div class="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/5 text-primary/40 icon-box">
+          <span class="material-symbols-rounded text-[26px]">admin_panel_settings</span>
+        </div>
+        <span class="text-[9px] font-black uppercase tracking-tighter opacity-40 label">Admin</span>
+      </button>
+
+      <button class="flex flex-col items-center justify-center gap-1.5 w-16 h-16 rounded-2xl transition-all duration-300" id="navLogout">
+        <div class="w-10 h-10 flex items-center justify-center rounded-xl bg-red-50 text-red-500/40 icon-box">
+          <span class="material-symbols-rounded text-[26px]">power_settings_new</span>
+        </div>
+        <span class="text-[9px] font-black uppercase tracking-tighter opacity-40 label">Salir</span>
       </button>
     </nav>
 
