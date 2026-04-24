@@ -85,42 +85,46 @@
 
 /* BOTONES PREMIUM UNIFICADOS */
 .btn-premium {
-  background: linear-gradient(180deg, #001b3d 0%, #003366 100%) !important;
+  background: #001b3d !important; /* Base sólida */
+  background: linear-gradient(180deg, #002855 0%, #001b3d 100%) !important;
   color: #ffffff !important;
-  border-radius: 100px !important;
-  box-shadow: 0 4px 15px rgba(0, 51, 102, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  font-family: 'Poppins', 'Inter', sans-serif !important;
+  border-radius: 16px !important; /* Shape que prefieres */
+  box-shadow: 0 2px 8px rgba(0, 30, 60, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  font-family: 'Inter', sans-serif !important;
   cursor: pointer !important;
-  padding: 12px 24px !important;
-  height: 52px !important;
-  text-transform: none !important;
-  letter-spacing: 0.02em !important;
+  padding: 0 24px !important;
+  height: 48px !important;
+  font-size: 14px !important;
   font-weight: 700 !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
+  text-decoration: none !important;
 }
 
 .btn-premium:hover {
-  transform: translateY(-2.5px) scale(1.01) !important;
-  box-shadow: 0 12px 25px rgba(0, 51, 102, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
-  filter: brightness(1.15) !important;
+  background: linear-gradient(180deg, #003366 0%, #002855 100%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 30, 60, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
 }
 
 .btn-premium:active {
-  transform: translateY(0) scale(0.97) !important;
+  transform: translateY(0);
+  filter: brightness(0.9);
 }
 
 .btn-premium-danger {
-  background: linear-gradient(180deg, #991b1b 0%, #7f1d1d 100%) !important;
-  box-shadow: 0 4px 15px rgba(153, 27, 27, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  background: #991b1b !important;
+  background: linear-gradient(180deg, #b91c1c 0%, #991b1b 100%) !important;
+  box-shadow: 0 2px 8px rgba(153, 27, 27, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
 }
 
 .btn-premium-danger:hover {
-  box-shadow: 0 12px 25px rgba(153, 27, 27, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%) !important;
+  box-shadow: 0 6px 16px rgba(153, 27, 27, 0.3) !important;
 }
 
 /* INPUTS PREMIUM */
@@ -815,7 +819,7 @@ textarea:focus {
 }
 
 button {
-  border-radius: 100px; /* MD3 Pill shape for buttons */
+  border-radius: 16px; /* 🎯 Restaurado a Rounded 2XL profesional */
   min-height: 52px;
   padding: 12px 32px;
   font-size: 15px;
@@ -1524,35 +1528,9 @@ body.mobile-mode #btnTopNotifications {
   transform: translateX(4px);
 }
 
-#btnLogout {
-  background: linear-gradient(135deg, rgba(239, 68, 68, .14), rgba(0, 0, 0, .05));
-  border-color: rgba(239, 68, 68, .24);
-  color: #b91c1c !important;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-#btnLogout:hover {
-  background: linear-gradient(135deg, rgba(239, 68, 68, .20), rgba(0, 0, 0, .07));
-  border-color: rgba(239, 68, 68, .34);
-  color: #991b1b !important;
-  transform: translateX(4px);
-}
-
-#btnTopNotifications {
-  position: relative;
-  background: linear-gradient(135deg, rgba(236, 72, 153, .16), rgba(0, 0, 0, .05));
-  border-color: rgba(236, 72, 153, .24);
-}
-
-body.mobile-mode #btnTopNotifications {
-  justify-content: center;
-  align-items: center;
-}
-
-body.mobile-mode #btnTopNotifRefresh {
-  font-size: 14px !important;
-  line-height: 1.02;
-  padding: 5px 5px !important;
+/* ✅ HEADER ACTIONS UNIFIED */
+#btnLogout, #btnExport, #btnOpenUpload, #btnViewArchivos, #btnTopNotifications {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
@@ -8315,7 +8293,7 @@ input, textarea, select, [contenteditable] {
 .btn-premium-action {
   background: linear-gradient(180deg, #001b3d 0%, #003366 100%) !important;
   color: #ffffff !important;
-  border-radius: 100px !important;
+  border-radius: 16px !important;
   box-shadow: 0 4px 15px rgba(0, 51, 102, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
