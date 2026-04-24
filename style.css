@@ -8479,14 +8479,14 @@ body.mobile-mode #cardApp {
 }
 
 body.mobile-mode #welcome {
-  font-size: 1.1rem !important;
-  font-weight: 800 !important;
+  font-size: 0.95rem !important;
+  font-weight: 900 !important;
   letter-spacing: -0.01em;
   margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 260px;
+  max-width: 200px;
 }
 
 body.mobile-mode #mainHeader {
@@ -8506,39 +8506,81 @@ body.mobile-mode #mainHeaderLeft {
   border-radius: 14px !important;
 }
 
-body.mobile-mode #mainHeader > div:last-child {
-  flex: 0 0 auto !important;
-  display: flex !important;
-  gap: 6px !important;
-}
-
+/* Badges adaptativas fluidas (Imagen 1) */
 body.mobile-mode #bFecha, 
 body.mobile-mode #bHora {
   background: white !important;
-  border: 1px solid rgba(0,0,0,0.05) !important;
-  box-shadow: none !important;
-}
-
-/* 📱 CAPTURA SIN ESPACIO MUERTO (Imagen 3) */
-body.mobile-mode #formBIO .bg-slate-50.border-2 {
-  margin-top: 4px !important;
-  padding: 12px !important;
+  border: 1px solid rgba(0,0,0,0.08) !important;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.02) !important;
+  padding: 4px 10px !important;
+  flex: 0 1 auto !important;
   min-width: 0 !important;
-  width: 100% !important;
+  overflow: hidden !important;
 }
 
-body.mobile-mode #formBIO .bg-slate-50 .material-symbols-rounded {
-  font-size: 24px !important;
+body.mobile-mode #bFecha span, 
+body.mobile-mode #bHora span {
+  font-size: clamp(9px, 2.8vw, 11px) !important;
+  white-space: nowrap !important;
 }
 
-body.mobile-mode #formBIO .bg-slate-50 .text-\[19px\] {
+body.mobile-mode #bFecha .material-symbols-rounded, 
+body.mobile-mode #bHora .material-symbols-rounded {
+  font-size: 16px !important;
+}
+
+body.mobile-mode #hdrHora {
+  display: inline-block !important;
+}
+
+/* 📱 CAPTURA SIN ESPACIO MUERTO (Imagen 2) */
+body.mobile-mode #panelCAP td,
+body.mobile-mode #formSR td,
+body.mobile-mode #formBIO td,
+body.mobile-mode #panelCaptureSummary td {
+  display: flex !important;
+  justify-content: flex-start !important; /* Alineación a la izquierda */
+  gap: 16px !important; /* Espacio reducido entre texto e input */
+  padding: 8px 0 !important;
+  text-align: left !important;
+}
+
+body.mobile-mode #formSR td::before,
+body.mobile-mode #formBIO td::before {
+  flex: 0 0 100px !important; /* Ancho fijo para etiquetas */
+  text-align: left !important;
+  white-space: nowrap !important;
+  font-size: 11px !important;
+}
+
+body.mobile-mode #formSR .bioInput,
+body.mobile-mode #formBIO .bioInput,
+body.mobile-mode #formSR select,
+body.mobile-mode #formBIO select {
+  flex: 1 !important; /* El input ocupa el resto pero está cerca */
+  max-width: 180px !important;
+  height: 38px !important;
   font-size: 14px !important;
-  font-weight: 900 !important;
 }
 
-body.mobile-mode #formBIO .bg-slate-50 .text-\[10px\],
-body.mobile-mode #formBIO .bg-slate-50 .text-\[11px\] {
-  font-size: 9px !important;
+/* 📱 CUMPLIMIENTO CENTRADO Y CON COLOR (Imagen 4) */
+body.mobile-mode #bCumplimiento {
+  justify-content: center !important;
+  flex-direction: row !important;
+  gap: 12px !important;
+  padding: 16px !important;
+  min-height: 80px !important;
+}
+
+/* Forzar colores de semaforización en mobile mode */
+body.mobile-mode #bCumplimiento.good { background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important; color: white !important; }
+body.mobile-mode #bCumplimiento.warn { background: linear-gradient(135deg, #d97706 0%, #fbbf24 100%) !important; color: white !important; }
+body.mobile-mode #bCumplimiento.bad { background: linear-gradient(135deg, #dc2626 0%, #f87171 100%) !important; color: white !important; }
+body.mobile-mode #bCumplimiento span { color: inherit !important; }
+
+/* RE-ANIMACIÓN BASURA */
+body.mobile-mode .md-delete-btn:active .trash-lid {
+  transform: translateY(-8px) rotate(-20px) !important;
 }
 
 /* 📱 DISEÑO DE PANELES FULL-WIDTH (Imagen 2) */

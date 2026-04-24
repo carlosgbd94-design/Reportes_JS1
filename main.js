@@ -386,14 +386,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   function hideToastNow() {
-    if (!toast) return;
+    const toastEl = $("toast-container");
+    if (!toastEl) return;
 
     if (TOAST_TIMER) {
       clearTimeout(TOAST_TIMER);
       TOAST_TIMER = null;
     }
 
-    toast.classList.remove("show");
+    // Modern toast system handles multiple toasts; clearing the container or last active one
+    toastEl.innerHTML = ""; 
     LIVE_STATE.lastToastKey = "";
 
     if (!LIVE_STATE.toastMeta) {
@@ -9444,7 +9446,12 @@ $("btnSaveSR").onclick = async () => {
             <div class="grid grid-cols-3 gap-2 border-t border-outline-variant/20 pt-4">
                <button class="h-11 rounded-2xl bg-surface-variant flex items-center justify-center text-primary" data-action="reset" data-user="${escapeAttr(u.usuario)}"><span class="material-symbols-rounded text-xl">key</span></button>
                <button class="h-11 rounded-2xl bg-surface-variant flex items-center justify-center text-primary" data-action="toggle" data-user="${escapeAttr(u.usuario)}" data-active="${escapeAttr(u.activo)}"><span class="material-symbols-rounded text-xl">${isActivo ? 'lock' : 'lock_open'}</span></button>
-               <button class="h-11 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-600" data-action="delete" data-user="${escapeAttr(u.usuario)}"><span class="material-symbols-rounded text-xl">delete</span></button>
+               <button type="button" class="md-delete-btn group" title="Eliminar usuario" onclick="deleteUserFlow('${escapeAttr(u.usuario)}')">
+                 <svg viewBox="0 0 24 24" class="w-6 h-6">
+                   <path class="trash-lid transition-transform duration-200 group-hover:-translate-y-1" fill="currentColor" d="M15 4V3H9v1H4v2h16V4h-5z" />
+                   <path fill="currentColor" d="M5 21a2 2 0 002 2h10a2 2 0 002-2V7H5v14zM8 9h2v10H8V9zm4 0h2v10h-2V9zm4 0h2v10h-2V9z" />
+                 </svg>
+               </button>
             </div>
           `;
           cards.appendChild(card);
