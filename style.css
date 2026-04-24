@@ -8574,6 +8574,12 @@ body.mobile-mode #bHora .material-symbols-rounded {
 }
 
 /* 🌐 ADAPTIVE HEADER (WEB/DESKTOP) */
+#mainHeader {
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
 #mainHeader > div {
   gap: clamp(10px, 2vw, 40px) !important;
   justify-content: space-between !important;
