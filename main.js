@@ -7995,6 +7995,78 @@ async function getTodayReports(fecha = "", force = false) {
     runPostLoginInit(user);
   }
 
+  async function runPostLoginInit(user) {
+    const fechaHoy = todayYmdLocal();
+    await Promise.all([
+      getTodayReports(fechaHoy),
+      loadNotifications({ silent: true }),
+      getCaptureOverview(fechaHoy, "SR"),
+      refreshPinolBadgeOnly?.()
+    ]);
+  }
+
+  async function hydrateSessionUi(user, status, opts = {}) {
+    exposeAppFns();
+    assertCriticalFns();
+
+    const {
+      showSuccessToast = false,
+      mustChangePassword = false
+    } = opts;
+
+    setLoggedInUI(user, status);
+
+    window.MUST_CHANGE_PASSWORD = !!mustChangePassword;
+
+    // Inicializar catálogos de lotes
+    try {
+      if (user.rol === "ADMIN" || user.rol === "JURISDICCIONAL") {
+        toggleEl("tabLOTES", true, "flex");
+      } else {
+        toggleEl("tabLOTES", false);
+        toggleEl("panelLOTES", false);
+      }
+      await loadBatchesForSession(user);
+    } catch (e) {
+      console.warn("Error cargando lotes:", e);
+    }
+
+    const today = await smartLoader(
+      () => getTodayReports(todayYmdLocal(), true),
+      {
+        message: "Cargando información del día…",
+        title: "Inicializando"
+      }
+    );
+
+    hydrateTodayForms(today);
+
+    const isOps = user && (user.rol === "ADMIN" || user.rol === "MUNICIPAL" || user.rol === "JURISDICCIONAL");
+    if (isOps) {
+      const fechaHoy = todayYmdLocal();
+      if ($("summaryFecha")) $("summaryFecha").value = fechaHoy;
+      if ($("summaryTipo")) $("summaryTipo").value = "SR";
+      if ($("histFechaInicio")) $("histFechaInicio").value = fechaHoy;
+      if ($("histFechaFin")) $("histFechaFin").value = fechaHoy;
+
+      const [summary] = await Promise.all([
+        getCaptureOverview(fechaHoy, "SR"),
+        refreshPinolBadgeOnly()
+      ]);
+
+      if (summary) renderCaptureSummary(summary);
+    }
+
+    if (showSuccessToast) {
+      showToast("Sesión iniciada correctamente");
+    }
+
+    requestAnimationFrame(async () => {
+      await loadNotifications({ silent: true });
+      startNotificationsAutoRefresh();
+    });
+  }
+
   function setLoggedOutUI() {
     USER = null;
     STATUS = null;
