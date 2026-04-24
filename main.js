@@ -7887,10 +7887,6 @@ async function getTodayReports(fecha = "", force = false) {
       paintStatusChips(STATUS);
     }
 
-    const isUnidad = user.rol === "UNIDAD";
-    const isAdmin = user.rol === "ADMIN";
-    const isJurisdiccional = user.rol === "JURISDICCIONAL";
-    const isMunicipal = user.rol === "MUNICIPAL";
     const canExport = isAdmin || isJurisdiccional || isMunicipal;
 
 
