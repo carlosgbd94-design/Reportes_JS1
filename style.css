@@ -8515,30 +8515,46 @@ body.mobile-mode #logoB {
 
 /* Badges adaptativas fluidas (Imagen 1) */
 body.mobile-mode #bFecha, 
-body.mobile-mode #bHora {
-  background: white !important;
-  border: 1px solid rgba(0,0,0,0.08) !important;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.02) !important;
-  padding: 4px 10px !important;
-  flex: 0 1 auto !important;
+body.mobile-mode #bHora,
+body.mobile-mode #weatherBadge {
+  flex: 1 1 0% !important;
   min-width: 0 !important;
-  overflow: hidden !important;
+  padding: 6px 8px !important;
+  background: white !important;
+  border: 1px solid rgba(0,0,0,0.06) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.03) !important;
+  justify-content: center !important;
+  border-radius: 12px !important;
 }
 
 body.mobile-mode #bFecha span, 
 body.mobile-mode #bHora span {
-  font-size: clamp(9px, 2.8vw, 11px) !important;
+  font-size: 9.5px !important;
+  font-weight: 900 !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Ocultar prefijos estáticos para ganar espacio */
+body.mobile-mode #bFecha span:not(.material-symbols-rounded),
+body.mobile-mode #bHora span:not(.material-symbols-rounded) {
+  display: inline-block !important;
+}
+
+body.mobile-mode #hdrFecha::before,
+body.mobile-mode #hdrHora::before {
+  content: "" !important; /* Eliminamos el texto redundante de Fecha: / Hora: */
 }
 
 body.mobile-mode #bFecha .material-symbols-rounded, 
 body.mobile-mode #bHora .material-symbols-rounded {
-  font-size: 16px !important;
+  font-size: 15px !important;
+  margin-right: -2px !important;
 }
 
-body.mobile-mode #hdrHora {
-  display: inline-block !important;
-}
+#hdrFecha::before { content: "Fecha: "; }
+#hdrHora::before { content: "Hora: "; }
 
 /* 📱 CAPTURA SIN ESPACIO MUERTO (Imagen 2) */
 body.mobile-mode #panelCAP td,

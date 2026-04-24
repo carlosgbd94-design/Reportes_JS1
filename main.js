@@ -5979,8 +5979,8 @@ window.handleSRLoteChange = function(selectEl) {
     const horaHumana = nowTimeStr();
     const refs = getPublicClockRefs();
 
-    if (refs.hdrFecha) refs.hdrFecha.textContent = `Fecha: ${fechaHumana}`;
-    if (refs.hdrHora) refs.hdrHora.textContent = `Hora: ${horaHumana}`;
+    if (refs.hdrFecha) refs.hdrFecha.textContent = fechaHumana;
+    if (refs.hdrHora) refs.hdrHora.textContent = horaHumana;
   }
 
 
@@ -6543,7 +6543,7 @@ async function getTodayReports(fecha = "", force = false) {
     const fechaHumana = formatDateMx(d);
 
     if ($("hdrFecha")) {
-      $("hdrFecha").textContent = `Fecha: ${fechaHumana}`;
+      $("hdrFecha").textContent = fechaHumana;
     }
 
     const dayBadge = $("dayTxt");
