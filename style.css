@@ -8573,6 +8573,44 @@ body.mobile-mode #bHora .material-symbols-rounded {
   margin-right: -2px !important;
 }
 
+/* 🌐 ADAPTIVE HEADER (WEB/DESKTOP) */
+#mainHeader > div {
+  gap: clamp(10px, 2vw, 40px) !important;
+  justify-content: space-between !important;
+}
+
+#mainHeader > div > div {
+  flex-shrink: 1 !important;
+  min-width: 0 !important;
+}
+
+#logoA, #logoB {
+  height: clamp(30px, 4.5vw, 44px) !important;
+  transition: height 0.3s ease;
+}
+
+/* Ocultar etiquetas Fecha/Hora en pantallas medianas para evitar traslape */
+@media (max-width: 1280px) {
+  #hdrFecha::before,
+  #hdrHora::before {
+    display: none !important;
+  }
+  
+  #bFecha, #bHora, #weatherBadge {
+    padding: 6px 12px !important;
+    gap: 6px !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  #mainHeader > div {
+    gap: 12px !important;
+  }
+  #bFecha span, #bHora span {
+    font-size: 10px !important;
+  }
+}
+
 #hdrFecha::before { content: "Fecha: "; }
 #hdrHora::before { content: "Hora: "; }
 
