@@ -7813,7 +7813,7 @@ async function getTodayReports(fecha = "", force = false) {
 
     $("who").textContent = `${user.clues || "—"} — ${user.unidad || "—"}`;
     // ✅ SALUDO DINÁMICO (Cargando...)
-    if ($("welcome")) $("welcome").textContent = `Hola, ${user.usuario}`;
+    if ($("welcome")) $("welcome").textContent = "Cargando sesión...";
     $("rolTxt").textContent = (user.rol || "UNIDAD").replace(/^Perfil:\s*/i, "");
     
     const capTab = $("btnTabCAP");
@@ -7869,20 +7869,22 @@ async function getTodayReports(fecha = "", force = false) {
       $("dayTxt").textContent = formatDayBadgeMx(STATUS.today);
 
       const hora = new Date().getHours();
+      let title = ""; let emoji = ""; let subtitle = "";
+      if (hora < 12) { title = "¡Buenos días!"; emoji = "☀️"; subtitle = "Excelente momento para sincronizar reportes."; }
+      else if (hora < 19) { title = "¡Buenas tardes!"; emoji = "🌤️"; subtitle = "Continuamos con la gestión de hoy."; }
+      else { title = "¡Buenas noches!"; emoji = "🌙"; subtitle = "Gracias por tu compromiso y dedicación."; }
 
-      let saludo = "";
-
-      if (hora < 12) {
-        saludo = "Buenos días ☀️ Qué bueno verte por aquí";
-      } else if (hora < 19) {
-        saludo = "Buenas tardes 🌤️ Todo listo para continuar";
-      } else {
-        saludo = "Buenas noches 🌙 Seguimos trabajando";
+      if (STATUS && STATUS.isExtraordinary) {
+        subtitle = "⚠️ Captura extraordinaria activa.";
       }
 
       if ($("welcome")) {
-        // Combinación de Saludo Nominal + Temporal (Premium Senior UX)
-        $("welcome").textContent = `${saludo}, ${USER.usuario}`;
+        $("welcome").innerHTML = `
+          <div class="flex flex-col leading-tight">
+            <span class="text-primary">${title} ${emoji}</span>
+            <span class="text-base sm:text-lg font-medium text-primary/40 mt-1 block">${subtitle}</span>
+          </div>
+        `;
       }
       paintStatusChips(STATUS);
     }
