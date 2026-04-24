@@ -7866,16 +7866,19 @@ async function getTodayReports(fecha = "", force = false) {
     }
 
     const hora = new Date().getHours();
-    let title = ""; let emoji = ""; let subtitle = "Cargando métricas de hoy...";
-
-    if (hora < 12) { title = "¡Buenos días!"; emoji = "☀️"; }
-    else if (hora < 19) { title = "¡Buenas tardes!"; emoji = "🌤️"; }
-    else { title = "¡Buenas noches!"; emoji = "🌙"; }
+    if (hora < 12) { 
+      title = "¡Buenos días!"; emoji = "☀️"; 
+      subtitle = "Qué bueno verte por aquí, iniciamos con éxito.";
+    } else if (hora < 19) { 
+      title = "¡Buenas tardes!"; emoji = "🌤️"; 
+      subtitle = "Todo listo para continuar con la gestión.";
+    } else { 
+      title = "¡Buenas noches!"; emoji = "🌙"; 
+      subtitle = "Seguimos trabajando con compromiso.";
+    }
 
     if (STATUS && STATUS.isExtraordinary) {
       subtitle = "⚠️ Captura extraordinaria activa.";
-    } else if (STATUS) {
-      subtitle = "Todo listo para continuar con los reportes.";
     }
 
     if ($("welcome")) {
