@@ -6803,6 +6803,7 @@ body.mobile-mode #panelCaptureSummary thead {
   display: none !important;
 }
 
+/* 📱 MOBILE-FIRST CARD TRANSFORMATION (UX 2026) */
 body.mobile-mode #panelCAP tr,
 body.mobile-mode #formSR tr,
 body.mobile-mode #formBIO tr,
@@ -6810,61 +6811,56 @@ body.mobile-mode #panelCaptureSummary tr {
   display: flex !important;
   flex-direction: column !important;
   background: white !important;
-  border: 1px solid rgba(0,0,0,0.08) !important;
-  border-radius: 20px !important;
-  padding: 16px !important;
-  margin-bottom: 20px !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
-  gap: 4px !important;
+  border: 1px solid rgba(0,0,0,0.06) !important;
+  border-radius: 18px !important;
+  padding: 10px !important;
+  margin-bottom: 12px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.02) !important;
 }
 
 body.mobile-mode #panelCAP td,
 body.mobile-mode #formSR td,
 body.mobile-mode #formBIO td,
 body.mobile-mode #panelCaptureSummary td {
-  display: flex !important;
-  justify-content: space-between !important;
+  display: grid !important;
+  grid-template-columns: 1fr auto !important; /* Inline Label-Value Pattern */
   align-items: center !important;
   width: 100% !important;
-  padding: 10px 0 !important;
+  padding: 6px 0 !important;
   border: none !important;
-  border-bottom: 1px solid rgba(0,0,0,0.04) !important;
-  text-align: right !important;
-  min-height: 44px;
+  border-bottom: 1px solid rgba(0,0,0,0.03) !important;
+  min-height: 40px;
 }
 
-body.mobile-mode #panelCAP td:last-child,
-body.mobile-mode #formSR td:last-child,
-body.mobile-mode #formBIO td:last-child,
-body.mobile-mode #panelCaptureSummary td:last-child {
-  border-bottom: none !important;
+/* Pseudo-labels para el patrón Inline (Grid items) */
+body.mobile-mode #formSR td:nth-child(2)::before { content: "Lote"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
+body.mobile-mode #formSR td:nth-child(3)::before { content: "Caducidad"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
+body.mobile-mode #formSR td:nth-child(4)::before { content: "Recepción"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
+body.mobile-mode #formSR td:nth-child(5)::before { content: "Cantidad"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
+body.mobile-mode #formSR td:nth-child(6)::before { content: "Acción"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
+
+body.mobile-mode #formBIO td:nth-child(2)::before { content: "Existencia"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
+body.mobile-mode #formBIO td:nth-child(3)::before { content: "Pedido"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
+body.mobile-mode #formBIO td:nth-child(4)::before { content: "Validación"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
+body.mobile-mode #formBIO td:nth-child(5)::before { content: "Promedio"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
+body.mobile-mode #formBIO td:nth-child(6)::before { content: "Máx (dosis)"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
+body.mobile-mode #formBIO td:nth-child(7)::before { content: "Mín (dosis)"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
+
+body.mobile-mode #formSR td input,
+body.mobile-mode #formBIO td input {
+  justify-self: end;
 }
 
-/* Pseudo-labels para identificación de datos */
-body.mobile-mode #formSR td:nth-child(1)::before { content: "Biológico"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
-body.mobile-mode #formSR td:nth-child(2)::before { content: "Lote"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
-body.mobile-mode #formSR td:nth-child(3)::before { content: "Caducidad"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
-body.mobile-mode #formSR td:nth-child(4)::before { content: "Recepción"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
-body.mobile-mode #formSR td:nth-child(5)::before { content: "Cantidad"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
-
-body.mobile-mode #formBIO td:nth-child(1)::before { content: "Biológico"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
-body.mobile-mode #formBIO td:nth-child(2)::before { content: "Existencia"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
-body.mobile-mode #formBIO td:nth-child(3)::before { content: "Pedido"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
-body.mobile-mode #formBIO td:nth-child(4)::before { content: "Validación"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
-body.mobile-mode #formBIO td:nth-child(5)::before { content: "Promedio"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
-body.mobile-mode #formBIO td:nth-child(6)::before { content: "Máx (dosis)"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
-body.mobile-mode #formBIO td:nth-child(7)::before { content: "Mín (dosis)"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
-
-body.mobile-mode #formSR td:nth-child(6)::before { content: "Acción"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
-
-/* Highlight del título de la tarjeta */
 body.mobile-mode #formSR td:first-child,
 body.mobile-mode #formBIO td:first-child {
-  background: #f1f5f9 !important;
-  margin: -16px -16px 12px -16px !important;
-  padding: 14px 16px !important;
-  border-radius: 20px 20px 0 0 !important;
-  border-bottom: 2px solid rgba(0,0,0,0.06) !important;
+  background: #f8fafc !important;
+  margin: -10px -10px 8px -10px !important;
+  padding: 10px !important;
+  border-radius: 18px 18px 0 0 !important;
+  border-bottom: 2px solid #3b82f6 !important;
+  font-weight: 900 !important;
+  color: #1e3a8a !important;
+  display: flex !important;
   justify-content: center !important;
 }
 
@@ -6875,7 +6871,25 @@ body.mobile-mode #formBIO td:first-child::before {
 
 body.mobile-mode #formSR .bioInput,
 body.mobile-mode #formBIO .bioInput {
-  max-width: 140px !important;
+  max-width: 110px !important;
+  height: 38px !important;
+  font-size: 14px !important;
+}
+
+/* Condensación de Hint Boxes (Imagen 5) */
+body.mobile-mode .bg-slate-50.border-2.rounded-\[24px\] {
+  padding: 10px 14px !important;
+  border-radius: 16px !important;
+  gap: 10px !important;
+  border-width: 1px !important;
+}
+
+body.mobile-mode .bg-slate-50 .text-\[19px\] {
+  font-size: 15px !important;
+}
+
+body.mobile-mode .bg-slate-50 .text-\[10px\] {
+  font-size: 9px !important;
 }
 
 body.mobile-mode #formBIO td {
@@ -8465,32 +8479,68 @@ body.mobile-mode #cardApp {
 }
 
 body.mobile-mode #welcome {
-  font-size: 1.15rem !important;
-  font-weight: 700 !important;
+  font-size: 1.1rem !important;
+  font-weight: 800 !important;
   letter-spacing: -0.01em;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
 }
 
-/* RESTAURACIÓN DE BADGES HEADER (Solicitud Usuario) */
+/* 📱 HEADER ULTRA-ADAPTABLE (Imagen 1) */
+body.mobile-mode #mainHeader {
+  height: 64px !important;
+  padding: 0 12px !important;
+}
+
+body.mobile-mode #mainHeaderLeft {
+  gap: 12px !important;
+}
+
+body.mobile-mode #logoA, 
+body.mobile-mode #logoB {
+  height: 32px !important;
+}
+
+body.mobile-mode #fechaPedidoBIOBox {
+  font-size: 14px !important;
+  line-height: 1.3 !important;
+  font-weight: 800 !important;
+}
+
+body.mobile-mode .card,
+body.mobile-mode .bg-white.rounded-\[32px\] {
+  border-radius: 24px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04) !important;
+}
+
 body.mobile-mode #bFecha,
 body.mobile-mode #bHora,
 body.mobile-mode #bClima {
   display: flex !important;
-  scale: 0.75;
-  transform-origin: right center;
-  padding: 6px 10px !important;
+  padding: 4px 8px !important;
+  scale: 0.85;
+  margin: 0 !important;
   gap: 4px !important;
-  box-shadow: none !important;
-  margin-left: -15px; /* Compensa la escala */
+  background: #f1f5f9 !important;
+  border: none !important;
+}
+
+body.mobile-mode #bFecha span:not(.material-symbols-rounded),
+body.mobile-mode #bHora span:not(.material-symbols-rounded) {
+  display: none !important; /* Escondemos texto largo "viernes, 24..." */
+}
+
+/* Solo mostramos la hora simplificada */
+body.mobile-mode #hdrHora {
+  display: inline-block !important;
+  font-size: 11px !important;
 }
 
 body.mobile-mode #bClima {
-  display: none !important; /* Mantenemos clima oculto para evitar saturación, solo fecha/hora */
-}
-
-body.mobile-mode #bFecha .material-symbols-rounded,
-body.mobile-mode #bHora .material-symbols-rounded {
-  font-size: 16px !important;
+  display: none !important;
 }
 
 /* 📱 OPTIMIZACIÓN DE ESPACIO INTERNO (MOBILE PRECEDENCE) */
