@@ -168,15 +168,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     console.warn("[Auth] No se pudo recuperar perfil extendido:", perfilError);
                 }
 
+                if (!data.session) throw new Error("No se pudo establecer la sesión.");
                 TOKEN = data.session.access_token;
                 USER = buildUserFromPerfil(data.user.id, data.user.email, perfil);
 
-                // Verificación de integridad para depuración
-                console.log("[Auth Success] Sesión iniciada para:", USER.email, "Rol:", USER.rol, "CLUES:", USER.clues);
-                
                 saveSession(TOKEN, USER);
-                    
-                // ✅ ARRANQUE ÚNICO: Todas las peticiones iniciales se agrupan automáticamente
                 await hydrateSessionUi(USER, null, { showSuccessToast: true });
                     
                 if (USER?.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(USER.rol)) {
@@ -7489,7 +7485,7 @@ async function getTodayReports(fecha = "", force = false) {
   }
 
   function hydrateTodayForms(todayData) {
-    const normalized = normalizeTodayReports(todayData);
+    const normalized = normalizeTodayReports(todayData || {});
 
     TODAY_CACHE = normalized;
 
@@ -7813,8 +7809,6 @@ async function getTodayReports(fecha = "", force = false) {
       mainPanel: "CAP"
     });
 
-    showRightColumn(true);
-
     $("who").textContent = `${user.clues || "—"} — ${user.unidad || "—"}`;
     $("welcome").textContent = `Hola, ${user.usuario}`;
     $("rolTxt").textContent = (user.rol || "UNIDAD").replace(/^Perfil:\s*/i, "");
@@ -8011,6 +8005,8 @@ async function getTodayReports(fecha = "", force = false) {
     } = opts;
 
     setLoggedInUI(user, status);
+    showRightColumn(true); 
+    hideOverlay(); // Resolve mobile stuck-at-overlay issue
 
     window.MUST_CHANGE_PASSWORD = !!mustChangePassword;
 
