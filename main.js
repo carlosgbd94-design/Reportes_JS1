@@ -7847,6 +7847,11 @@ async function getTodayReports(fecha = "", force = false) {
       $("munTxt").textContent = (user.municipio || "—").replace(/^Municipio:\s*/i, "");
     }
 
+    const isAdmin = user.rol?.toUpperCase() === "ADMIN";
+    const isJurisdiccional = user.rol?.toUpperCase() === "JURISDICCIONAL";
+    const isMunicipal = user.rol?.toUpperCase() === "MUNICIPAL";
+    const isUnidad = user.rol?.toUpperCase() === "UNIDAD";
+
     // --- BOTTOM NAV PERMISSIONS ---
     const isMobile = window.innerWidth <= 768;
     const mobileNav = $("mobileBottomNav");

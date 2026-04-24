@@ -6383,10 +6383,6 @@ body.mobile-mode .rightLayout {
   /* grid-template-columns: 1fr !important; -- Eliminado para permitir grid moderno */
 }
 
-body.mobile-mode #rightColumn,
-body.mobile-mode .mainStack,
-body.mobile-mode #cardApp,
-body.mobile-mode #panelCAP,
 body.mobile-mode #panelCAP,
 body.mobile-mode #panelCaptureSummary,
 body.mobile-mode #panelADMIN,
@@ -6396,7 +6392,7 @@ body.mobile-mode #panelEDITLOG,
 body.mobile-mode #panelNOTIFS {
   width: 100%;
   min-width: 0;
-  content-visibility: auto;
+  display: none; /* Default state for isolation */
 }
 
 body.mobile-mode .sectionTitle {
@@ -6452,7 +6448,6 @@ body.mobile-mode .tabs {
   overscroll-behavior-y: none;
   touch-action: pan-x pinch-zoom;
   scrollbar-width: none;
-  contain: layout paint;
 }
 
 body.mobile-mode #cardApp>.tabs {
@@ -8385,8 +8380,24 @@ body.mobile-mode .wrap {
 }
 
 body.mobile-mode #mainHeader {
-  background: rgba(255, 255, 255, 0.95) !important;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(24px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08) !important;
+  height: auto !important;
+  min-height: 64px;
+  padding: 10px 0;
 }
+
+body.mobile-mode #mainHeader .flex-shrink-0 {
+  gap: 8px !important;
+}
+
+body.mobile-mode .wrap {
+  padding-top: 110px !important;
+  padding-bottom: 140px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 
