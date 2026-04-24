@@ -24,6 +24,7 @@ let BATCH_FILTER = "all";
 let BATCH_SEARCH_QUERY = "";
 let CONFIG_BIOLOGICOS_CATALOG = [];
 let FULL_BIO_CATALOG = [];
+let CURRENT_WEATHER = { temp: null, emoji: null, code: null };
 
 // Estado reactivo de la UI — debe declararse aquí para que showToast funcione pre-login
 const LIVE_STATE = {
@@ -98,6 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
     (async () => {
         showOverlay("Cargando JS1 Reportes…", "Inicializando");
         try {
+            initProfileDropdown();
             // whoami verifica la sesión y recupera USER/TOKEN automáticamente
             const u = await whoami();
             if (u) {
@@ -491,35 +493,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateNotifBadge() {
-    const topBadge = $("topNotifBadge");
-    const navBadge = $("notifBadgeNav");
-    const btnClear = $("btnClearLiveFeed");
-
-    const n = Number(LIVE_STATE.notifCount || 0);
-    const warn = Number(LIVE_STATE.notifWarnCount || 0);
-
-    // Update Top Header Badge
-    if (topBadge) {
-      topBadge.textContent = n > 99 ? "99+" : n;
-      topBadge.setAttribute("data-count", n);
-      topBadge.style.display = n > 0 ? "flex" : "none";
-      if (n > 0) {
-        topBadge.classList.remove("badge-pulse");
-        void topBadge.offsetWidth;
-        topBadge.classList.add("badge-pulse");
-      }
-    }
-
-    // Update Bottom Nav Badge (Mobile)
-    if (navBadge) {
-      navBadge.textContent = n > 99 ? "99+" : n;
-      navBadge.setAttribute("data-count", n);
-      navBadge.style.display = n > 0 ? "flex" : "none";
-    }
-
-    if (btnClear) {
-      btnClear.style.display = n > 0 ? "inline-flex" : "none";
-    }
+    const items = Array.isArray(LIVE_STATE.notifications) ? LIVE_STATE.notifications : [];
+    const n = getLocalUnreadNotifCount(items);
+    syncMainNotifBadge(n);
   }
 
   function incrementNotifCounter(type = "good") {
@@ -1163,11 +1139,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (topBadge) {
       if (n > 0) {
         topBadge.style.setProperty("display", "flex", "important");
-        if (topBadge.textContent !== nextText) topBadge.textContent = nextText;
+        topBadge.textContent = n > 99 ? "99+" : String(n);
         btnTopNotifications?.classList.add("liveAccent", "notifHot");
+        
+        // Add animation class
+        topBadge.classList.remove("badge-pulse");
+        void topBadge.offsetWidth;
+        topBadge.classList.add("badge-pulse");
       } else {
         topBadge.style.setProperty("display", "none", "important");
-        if (topBadge.textContent !== "0") topBadge.textContent = "0";
         btnTopNotifications?.classList.remove("liveAccent", "notifHot");
       }
     }
@@ -1198,9 +1178,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    if (typeof updateNotifBadge === "function") {
-      updateNotifBadge();
-    }
   }
 
   async function loadNotifications(options = {}) {
@@ -1267,7 +1244,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const visibleItems = getFilteredNotifications(sourceItems);
     const unreadLocal = getLocalUnreadNotifCount(sourceItems);
     const unreadVisible = getLocalUnreadNotifCount(visibleItems);
-    const unreadForBadge = unreadServerCount === null ? unreadLocal : Number(unreadServerCount || 0);
+    const unreadForBadge = unreadLocal;
     const notifUnreadKpi = $("notifUnreadKpi");
     const notifTxt = $("notifTxt");
 
@@ -2065,11 +2042,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     openTopNotifDropdown();
 
-    if (!Array.isArray(LIVE_STATE.notifications) || !LIVE_STATE.notifications.length) {
-      loadNotifications({ silent: true }).catch(err => {
-        console.error("toggleTopNotifDropdown loadNotifications error:", err);
-      });
-    }
+    rerenderNotificationsFromState();
+    loadNotifications({ silent: true }).catch(err => {
+      console.error("toggleTopNotifDropdown loadNotifications error:", err);
+    });
   }
 
   let NOTIF_UNREAD_BUTTON_REFS = null;
@@ -6580,8 +6556,11 @@ async function getTodayReports(fecha = "", force = false) {
       dayBadge.textContent = label;
       
       const tone = getComplianceBadgeTone(pct);
-      container.classList.add(tone);
       
+      // Forzar limpieza y aplicación de tono
+      container.classList.remove("good", "ok", "warn", "bad");
+      container.classList.add(tone);
+      container.setAttribute("data-tone", tone);
       // Update icon background for premium look if colored
       if (iconBg && ["good", "warn", "bad"].includes(tone)) {
         iconBg.style.backgroundColor = "rgba(255, 255, 255, 0.25)";
@@ -7812,6 +7791,7 @@ async function getTodayReports(fecha = "", force = false) {
     });
 
     $("who").textContent = `${user.clues || "—"} — ${user.unidad || "—"}`;
+    if ($("userNameFull")) $("userNameFull").textContent = user.nombre || user.usuario || "Usuario";
     // ✅ SALUDO DINÁMICO (Cargando...)
     // ✅ SALUDO DINÁMICO INTELIGENTE (Procesando...)
     $("rolTxt").textContent = (user.rol || "UNIDAD").replace(/^Perfil:\s*/i, "");
@@ -7865,30 +7845,8 @@ async function getTodayReports(fecha = "", force = false) {
       $("tabOPS_NOTIFS").onclick = () => activateMain("NOTIFS");
     }
 
-    const hora = new Date().getHours();
-    if (hora < 12) { 
-      title = "¡Buenos días!"; emoji = "☀️"; 
-      subtitle = "Qué bueno verte por aquí, iniciamos con éxito.";
-    } else if (hora < 19) { 
-      title = "¡Buenas tardes!"; emoji = "🌤️"; 
-      subtitle = "Todo listo para continuar con la gestión.";
-    } else { 
-      title = "¡Buenas noches!"; emoji = "🌙"; 
-      subtitle = "Seguimos trabajando con compromiso.";
-    }
+    updateDynamicGreeting();
 
-    if (STATUS && STATUS.isExtraordinary) {
-      subtitle = "⚠️ Captura extraordinaria activa.";
-    }
-
-    if ($("welcome")) {
-      $("welcome").innerHTML = `
-        <div class="flex flex-col leading-tight">
-          <span class="text-primary">${title} ${emoji}</span>
-          <span class="text-base sm:text-lg font-medium text-primary/40 mt-1 block">${subtitle}</span>
-        </div>
-      `;
-    }
 
     if (STATUS) {
       $("dayTxt").textContent = formatDayBadgeMx(STATUS.today);
@@ -7997,6 +7955,47 @@ async function getTodayReports(fecha = "", force = false) {
     }
 
     runPostLoginInit(user);
+  }
+
+  function updateDynamicGreeting(timeGreeting = null, customSubtitle = null) {
+    const welcomeEl = $("welcome");
+    if (!welcomeEl) return;
+
+    let title = timeGreeting;
+    let subtitle = customSubtitle;
+
+    if (!title) {
+      const hora = new Date().getHours();
+      if (hora < 12) { 
+        title = "¡Buenos días!"; 
+        subtitle = "Qué bueno verte por aquí, iniciamos con éxito.";
+      } else if (hora < 19) { 
+        title = "¡Buenas tardes!"; 
+        subtitle = "Todo listo para continuar con la gestión.";
+      } else { 
+        title = "¡Buenas noches!"; 
+        subtitle = "Seguimos trabajando con compromiso.";
+      }
+      
+      if (typeof STATUS !== "undefined" && STATUS && STATUS.isExtraordinary) {
+        subtitle = "⚠️ Captura extraordinaria activa.";
+      }
+    }
+
+    const weatherEmoji = CURRENT_WEATHER.emoji || "";
+    const weatherTemp = CURRENT_WEATHER.temp !== null ? `${CURRENT_WEATHER.temp}°C` : "";
+
+    welcomeEl.innerHTML = `
+      <div class="flex flex-col leading-tight">
+        <span class="text-primary flex items-baseline gap-3">
+          ${title}
+          <span class="text-[16px] sm:text-[22px] font-bold text-primary/40 flex items-center gap-1.5">
+            ${weatherEmoji} ${weatherTemp}
+          </span>
+        </span>
+        <span class="text-base sm:text-lg font-medium text-primary/40 mt-1 block">${subtitle}</span>
+      </div>
+    `;
   }
 
   async function runPostLoginInit(user) {
@@ -8187,7 +8186,7 @@ async function getTodayReports(fecha = "", force = false) {
     if ($("panelCAP")) $("panelCAP").style.display = (panel === "CAP") ? "block" : "none";
     
     if ($("panelAdminOpsTabs")) {
-      const isVisible = (panel === "CAP" || panel === "ADMIN") && isOps;
+      const isVisible = (panel === "CAP" || panel === "ADMIN" || panel === "NOTIFS") && isOps;
       $("panelAdminOpsTabs").style.display = isVisible ? "block" : "none";
     }
 
@@ -10795,38 +10794,50 @@ $("btnSaveSR").onclick = async () => {
    * Se ejecuta al cargar y se re-lanza cada 15 min.
    */
   async function initWeather() {
-    const hdr1 = $("hdrClima");
-    const hdr2 = $("hdrClima2");
-    if (!hdr1 && !hdr2) return;
-
     try {
-      if (hdr1) hdr1.textContent = "Obteniendo...";
-      if (hdr2) hdr2.textContent = "Obteniendo...";
-
-      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=20.5881&longitude=-100.3899&current=temperature_2m`);
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=20.5881&longitude=-100.3899&current=temperature_2m,weather_code`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
       if (data && data.current) {
         const temp = Math.round(data.current.temperature_2m);
+        const code = data.current.weather_code;
+        const emoji = getWeatherEmoji(code);
+
+        CURRENT_WEATHER = { temp, emoji, code };
+
+        // Update legacy headers if they exist
+        const hdr1 = $("hdrClima");
         if (hdr1) hdr1.textContent = `Qro ${temp}°C`;
+        
+        const hdr2 = $("hdrClima2");
         if (hdr2) hdr2.textContent = `${temp}°C`;
 
-        const bcl1 = $("bClima");
-        const bcl2 = $("bClima2");
-        if (bcl1) {
-          // Weather coloring managed by CSS/Tailwind for MD3 consistency
-        }
-        if (bcl2) {
-          bcl2.style.background = "var(--md-sys-color-secondary-container)";
-          bcl2.style.color = "var(--md-sys-color-on-secondary-container)";
+        // Update greeting in real time
+        if (USER) {
+          updateDynamicGreeting();
         }
       }
     } catch (e) {
       console.warn("initWeather failed:", e);
-      if (hdr1) hdr1.textContent = "Qro 24°C";
-      if (hdr2) hdr2.textContent = "24°C";
+      CURRENT_WEATHER = { temp: 24, emoji: "🌤️", code: 1 };
+      if (USER) updateDynamicGreeting();
     }
+  }
+
+  function getWeatherEmoji(code) {
+    if (code === null) return "🌡️";
+    // Open-Meteo WMO Weather interpretation codes (WW)
+    if (code === 0) return "☀️"; // Clear sky
+    if ([1, 2].includes(code)) return "🌤️"; // Mainly clear, partly cloudy
+    if (code === 3) return "☁️"; // Overcast
+    if ([45, 48].includes(code)) return "🌫️"; // Fog and depositing rime fog
+    if ([51, 53, 55].includes(code)) return "🌦️"; // Drizzle: Light, moderate, and dense intensity
+    if ([61, 63, 65].includes(code)) return "🌧️"; // Rain: Slight, moderate and heavy intensity
+    if ([71, 73, 75].includes(code)) return "❄️"; // Snow fall: Slight, moderate, and heavy intensity
+    if ([80, 81, 82].includes(code)) return "🌦️"; // Rain showers: Slight, moderate, and violent
+    if ([95, 96, 99].includes(code)) return "⛈️"; // Thunderstorm: Slight or moderate
+    return "🌤️";
   }
 
   // Esperar a que el DOM esté listo antes de arrancar
@@ -11096,6 +11107,9 @@ $("btnSaveSR").onclick = async () => {
      if (!overlay || !tbody) return;
 
      try {
+       /* Semaforización de Cumplimiento (Bulletproof) */
+       /* CSS handled externally: #bCumplimiento.good, #bCumplimiento[data-tone="good"] { ... } */
+       
        // 1. Mostrar modal inmediatamente con estado de carga
        overlay.classList.add("show");
        overlay.style.display = "flex";
@@ -11790,4 +11804,22 @@ $("btnSaveSR").onclick = async () => {
       end.setDate(end.getDate() + 1);
     }
     return { start, target, end };
+  }
+
+  // Profile Dropdown Toggle Logic
+  function initProfileDropdown() {
+    const btn = document.getElementById("btnProfileToggle");
+    const dropdown = document.getElementById("profileDropdown");
+    if (!btn || !dropdown) return;
+
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      dropdown.classList.toggle("hidden");
+    };
+
+    document.addEventListener("click", (e) => {
+      if (dropdown && !dropdown.classList.contains("hidden") && !dropdown.contains(e.target)) {
+        dropdown.classList.add("hidden");
+      }
+    });
   }

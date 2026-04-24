@@ -1,17 +1,4 @@
 :root {
-  /* 🚀 WORKBENCH 2.0 DESIGN TOKENS */
-  --wb-radius-panel: 32px;
-  --wb-radius-btn: 20px;
-  --wb-radius-input: 16px;
-  
-  /* 💎 COLORES INSTITUCIONALES SÓLIDOS (Los que te gustaron) */
-  --wb-color-save-1: #001b3d; --wb-color-save-2: #003366;
-  --wb-color-action-1: #002855; --wb-color-action-2: #004080;
-  --wb-color-danger-1: #991b1b; --wb-color-danger-2: #7f1d1d;
-  
-  --wb-shadow-soft: 0 4px 20px rgba(0, 30, 60, 0.05);
-  --wb-shadow-premium: 0 12px 40px rgba(0, 30, 60, 0.15);
-  --wb-border: 1px solid rgba(0, 51, 102, 0.12);
   /* ðŸ›ï¸ MD3 FINAL TOKENS (Solid Opaque System) */
   --md-sys-color-primary: #003366; 
   --md-sys-color-on-primary: #ffffff;
@@ -65,107 +52,6 @@
 
 * {
   box-sizing: border-box;
-}
-
-/* 🏛️ WORKBENCH 2.0: MASTER COMPONENTS */
-
-.panel-workbench {
-  background: rgba(255, 255, 255, 0.95);
-  border: var(--wb-border);
-  border-radius: var(--wb-radius-panel);
-  box-shadow: var(--wb-shadow-soft);
-  padding: 32px;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.panel-workbench:hover {
-  box-shadow: var(--wb-shadow-premium);
-  transform: translateY(-2px);
-}
-
-/* BOTONES PREMIUM UNIFICADOS */
-.btn-premium {
-  background: rgba(0, 27, 61, 0.92) !important; /* Translúcido institucional */
-  background: linear-gradient(180deg, rgba(0, 40, 85, 0.88) 0%, rgba(0, 27, 61, 0.96) 100%) !important;
-  color: #ffffff !important;
-  border-radius: 16px !important;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  font-family: 'Inter', sans-serif !important;
-  cursor: pointer !important;
-  padding: 0 24px !important;
-  height: 48px !important;
-  font-size: 14px !important;
-  font-weight: 700 !important;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  backdrop-filter: blur(6px) !important; /* Efecto cristalino solicitado */
-  -webkit-backdrop-filter: blur(6px) !important;
-}
-
-.btn-premium:hover {
-  background: linear-gradient(180deg, rgba(0, 51, 102, 0.9) 0%, rgba(0, 40, 85, 0.98) 100%) !important;
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
-}
-
-.btn-premium:active {
-  transform: translateY(0);
-  filter: brightness(0.9);
-}
-
-.btn-premium-danger {
-  background: rgba(153, 27, 27, 0.92) !important;
-  background: linear-gradient(180deg, rgba(185, 28, 28, 0.88) 0%, rgba(153, 27, 27, 0.96) 100%) !important;
-  box-shadow: 0 4px 15px rgba(153, 27, 27, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
-}
-
-.btn-premium-danger:hover {
-  background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%) !important;
-  box-shadow: 0 6px 16px rgba(153, 27, 27, 0.3) !important;
-}
-
-/* INPUTS PREMIUM */
-.input-premium {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: var(--wb-radius-input);
-  padding: 12px 16px;
-  font-size: 14px;
-  color: #1e293b;
-  transition: all 0.3s;
-  width: 100%;
-}
-
-.input-premium:focus {
-  outline: none;
-  border-color: var(--wb-color-action-1);
-  background: white;
-  box-shadow: 0 0 0 4px rgba(30, 136, 229, 0.1);
-}
-
-/* CHIPS PREMIUM (ESTRUCTURA UNIFICADA) */
-.chip-premium {
-  border-radius: 100px;
-  padding: 6px 16px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 10px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  transition: all 0.3s;
-}
-
-.chip-premium:hover {
-  transform: translateY(-1.5px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.1);
 }
 
 body {
@@ -820,7 +706,7 @@ textarea:focus {
 }
 
 button {
-  border-radius: 16px; /* 🎯 Restaurado a Rounded 2XL profesional */
+  border-radius: 100px; /* MD3 Pill shape for buttons */
   min-height: 52px;
   padding: 12px 32px;
   font-size: 15px;
@@ -1529,9 +1415,35 @@ body.mobile-mode #btnTopNotifications {
   transform: translateX(4px);
 }
 
-/* ✅ HEADER ACTIONS UNIFIED */
-#btnLogout, #btnExport, #btnOpenUpload, #btnViewArchivos, #btnTopNotifications {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+#btnLogout {
+  background: linear-gradient(135deg, rgba(239, 68, 68, .14), rgba(0, 0, 0, .05));
+  border-color: rgba(239, 68, 68, .24);
+  color: #b91c1c !important;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#btnLogout:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, .20), rgba(0, 0, 0, .07));
+  border-color: rgba(239, 68, 68, .34);
+  color: #991b1b !important;
+  transform: translateX(4px);
+}
+
+#btnTopNotifications {
+  position: relative;
+  background: linear-gradient(135deg, rgba(236, 72, 153, .16), rgba(0, 0, 0, .05));
+  border-color: rgba(236, 72, 153, .24);
+}
+
+body.mobile-mode #btnTopNotifications {
+  justify-content: center;
+  align-items: center;
+}
+
+body.mobile-mode #btnTopNotifRefresh {
+  font-size: 14px !important;
+  line-height: 1.02;
+  padding: 5px 5px !important;
 }
 
 body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
@@ -4596,7 +4508,7 @@ body.mobile-mode .topNotifCard {
   height: 30px;
   padding: 0 12px;
   border-radius: 999px;
-  display: inline-flex;
+  display: inline-flex !important;
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(120, 170, 255, .24);
@@ -4860,9 +4772,6 @@ body.mobile-mode .topNotifCard {
 
 .notifMiniBtn span { font-size: 16px; }
 
-#topNotifBadge {
-  display: none; /* JS will toggle this with !important */
-}
 
 .notifBody.snippet {
   margin-top: 4px;
@@ -5102,10 +5011,39 @@ body.mobile-mode .topNotifCard {
   font-size: 18px;
 }
 
-/* Solo bCumplimiento tiene semÃ¡foro */
-#bCumplimiento.good { background: #DCFCE7; color: #166534; border-color: #BBF7D0; }
-#bCumplimiento.warn { background: #FEF3C7; color: #92400E; border-color: #FDE68A; }
-#bCumplimiento.bad { background: #FEE2E2; color: #991B1B; border-color: #FECACA; }
+/* Semaforización de Cumplimiento (Senior UX Gradients) */
+#bCumplimiento.good, #bCumplimiento[data-tone="good"] { 
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important; 
+  color: white !important; 
+  border-color: rgba(255,255,255,0.2) !important;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2) !important;
+}
+#bCumplimiento.ok, #bCumplimiento[data-tone="ok"] { 
+  background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%) !important; 
+  color: white !important; 
+  border-color: rgba(255,255,255,0.2) !important;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2) !important;
+}
+#bCumplimiento.warn, #bCumplimiento[data-tone="warn"] { 
+  background: linear-gradient(135deg, #d97706 0%, #fbbf24 100%) !important; 
+  color: white !important; 
+  border-color: rgba(255,255,255,0.2) !important;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.2) !important;
+}
+#bCumplimiento.bad, #bCumplimiento[data-tone="bad"] { 
+  background: linear-gradient(135deg, #dc2626 0%, #f87171 100%) !important; 
+  color: white !important; 
+  border-color: rgba(255,255,255,0.2) !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2) !important;
+}
+
+#bCumplimiento[data-tone] span, #bCumplimiento.good span, #bCumplimiento.ok span, #bCumplimiento.warn span, #bCumplimiento.bad span {
+  color: white !important;
+  opacity: 1 !important;
+}
+#bCumplimiento[data-tone] .opacity-50, #bCumplimiento.good .opacity-50, #bCumplimiento.warn .opacity-50, #bCumplimiento.bad .opacity-50 {
+  opacity: 0.8 !important;
+}
 
 /* Otros badges son neutros institucionales */
 .badge.secondary, .badge.info, .badge.weather-badge {
@@ -7928,42 +7866,6 @@ body.bioConfirmOpen {
   font-weight: 700;
 }
 
-/* ? PREMIUM STATUS CHIPS (Semaforización Pro) */
-#bCumplimiento.good {
-  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
-  color: white !important;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
-  border: none !important;
-}
-
-#bCumplimiento.warn {
-  background: linear-gradient(135deg, #d97706 0%, #fbbf24 100%) !important;
-  color: white !important;
-  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.3) !important;
-  border: none !important;
-}
-
-#bCumplimiento.bad {
-  background: linear-gradient(135deg, #dc2626 0%, #f87171 100%) !important;
-  color: white !important;
-  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3) !important;
-  border: none !important;
-}
-
-#bCumplimiento.good #bCumplimientoIconBg,
-#bCumplimiento.warn #bCumplimientoIconBg,
-#bCumplimiento.bad #bCumplimientoIconBg {
-  background: rgba(255, 255, 255, 0.25) !important;
-  color: white !important;
-}
-
-#bCumplimiento.good span, #bCumplimiento.warn span, #bCumplimiento.bad span {
-  color: white !important;
-}
-
-#bCumplimiento.good span, #bCumplimiento.warn span, #bCumplimiento.bad span {
-  color: white !important;
-}
 
 #bCumplimiento.good .opacity-50, #bCumplimiento.warn .opacity-50, #bCumplimiento.bad .opacity-50 {
   opacity: 0.7 !important;
@@ -8307,7 +8209,7 @@ input, textarea, select, [contenteditable] {
 .btn-premium-action {
   background: linear-gradient(180deg, #001b3d 0%, #003366 100%) !important;
   color: #ffffff !important;
-  border-radius: 16px !important;
+  border-radius: 100px !important;
   box-shadow: 0 4px 15px rgba(0, 51, 102, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
@@ -8868,6 +8770,30 @@ body.mobile-mode .tab-btn span:not(.material-symbols-rounded) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ✨ PROFILE DROPDOWN ANIMATIONS */
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-dropdownIn {
+  animation: dropdownIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+#profileDropdown.hidden {
+  display: none !important;
+}
+
+#profileDropdown:not(.hidden) {
+  display: block !important;
 }
 
 

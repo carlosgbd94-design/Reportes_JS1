@@ -143,15 +143,59 @@
             <span id="hdrFecha">—</span>
           </span>
 
-          <span class="flex items-center gap-2 bg-white text-secondary rounded-full px-3 py-1.5 sm:px-5 sm:py-2.5 text-[10px] sm:text-[11px] font-black shadow-lg shadow-secondary/5 transition-transform hover:scale-105 cursor-default whitespace-nowrap flex-shrink-0 border border-outline-variant/30" id="bHora">
-            <span class="material-symbols-rounded text-[19px]">schedule</span>
-            <span id="hdrHora">—</span>
-          </span>
+          <!-- Profile Button (Moved from main area) -->
+          <div class="relative flex-none" id="profileDropdownContainer">
+            <button id="btnProfileToggle" class="h-[40px] sm:h-[52px] px-3 sm:px-6 bg-gradient-to-br from-primary to-[#004d99] text-white rounded-[18px] sm:rounded-[22px] flex items-center gap-2 sm:gap-3 shadow-[0_8px_20px_-6px_rgba(0,51,102,0.4)] transition-all hover:scale-[1.02] active:scale-95 border-none cursor-pointer">
+              <div class="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm border border-white/20">
+                <span class="material-symbols-rounded text-[18px] sm:text-[22px]">account_circle</span>
+              </div>
+              <div class="flex flex-col items-start leading-none">
+                <span class="text-[8px] sm:text-[10px] font-black uppercase tracking-widest opacity-70 mb-0.5 sm:mb-1">Mi Perfil</span>
+                <span class="text-[11px] sm:text-[14px] font-extrabold" id="rolTxt">Cargando...</span>
+              </div>
+              <span class="material-symbols-rounded text-[16px] sm:text-[20px] opacity-60 ml-0.5 sm:ml-1">expand_more</span>
+            </button>
 
-          <span class="flex items-center gap-2 bg-gradient-to-br from-blue-600 to-primary !text-white rounded-full px-3 py-1.5 sm:px-5 sm:py-2.5 text-[10px] sm:text-[11px] font-black shadow-lg shadow-primary/20 transition-transform hover:scale-105 cursor-default whitespace-nowrap flex-shrink-0" id="bClima">
-            <span class="material-symbols-rounded text-[19px] !text-white">wb_sunny</span>
-            <span id="hdrClima" class="!text-white">Qro —</span>
-          </span>
+            <!-- Dropdown Menu (Glassmorphism) -->
+            <div id="profileDropdown" class="hidden absolute right-0 mt-4 w-[280px] sm:w-[320px] bg-white/95 backdrop-blur-xl border border-outline-variant/40 rounded-[24px] sm:rounded-[32px] shadow-[0_25px_50px_-12px_rgba(0,51,102,0.15)] z-[5000] overflow-hidden transform origin-top-right transition-all animate-dropdownIn">
+              <div class="p-5 sm:p-6 border-b border-outline-variant/20 bg-primary/5">
+                <div class="flex items-center gap-3 sm:gap-4 mb-4">
+                  <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg">
+                    <span class="material-symbols-rounded text-[28px] sm:text-[32px]">person</span>
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="text-[10px] sm:text-[11px] font-black text-primary/40 uppercase tracking-widest mb-0.5">Usuario Activo</span>
+                    <div id="userNameFull" class="text-[15px] sm:text-[17px] font-black text-primary leading-tight">Cargando...</div>
+                  </div>
+                </div>
+                
+                <div class="space-y-2.5 sm:space-y-3">
+                  <div class="flex items-center gap-3 p-2.5 sm:p-3 bg-white rounded-xl sm:rounded-2xl border border-outline-variant/30 shadow-sm">
+                    <span class="material-symbols-rounded text-primary/40 text-[18px] sm:text-[20px]">apartment</span>
+                    <div class="flex flex-col">
+                      <span class="text-[8px] sm:text-[9px] font-black text-primary/30 uppercase tracking-wider">Unidad / CLUES</span>
+                      <span id="who" class="text-[11px] sm:text-[12px] font-bold text-primary leading-tight">Cargando...</span>
+                    </div>
+                  </div>
+                  
+                  <div class="flex items-center gap-3 p-2.5 sm:p-3 bg-white rounded-xl sm:rounded-2xl border border-outline-variant/30 shadow-sm">
+                    <span class="material-symbols-rounded text-orange-400 text-[18px] sm:text-[20px]">location_on</span>
+                    <div class="flex flex-col">
+                      <span class="text-[8px] sm:text-[9px] font-black text-orange-400/40 uppercase tracking-wider">Municipio Asignado</span>
+                      <span id="munTxt" class="text-[11px] sm:text-[12px] font-bold text-primary leading-tight">Cargando...</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="p-3">
+                <button id="btnLogout" class="w-full h-[48px] sm:h-[52px] rounded-xl sm:rounded-2xl bg-status-error/10 text-status-error hover:bg-status-error hover:text-white transition-all flex items-center justify-center gap-3 font-black text-[12px] sm:text-[13px] uppercase tracking-widest border-none cursor-pointer">
+                  <span class="material-symbols-rounded text-[18px] sm:text-[20px]">logout</span>
+                  Cerrar Sesión
+                </button>
+              </div>
+            </div>
+          </div>
 
           <span class="bg-status-success text-white rounded-full px-3 py-2 sm:px-5 sm:py-2.5 text-[10px] font-black flex items-center gap-2 shadow-lg shadow-status-success/20 animate-in fade-in flex-shrink-0 ml-2" id="bGuardado" style="display:none">
             <span class="material-symbols-rounded text-[16px]">sync</span>
@@ -228,36 +272,30 @@
           <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10">
             
             <div class="flex flex-wrap gap-2.5 justify-start">
-              <!-- 1. Salir -->
-              <button class="btn-premium btn-premium-danger" id="btnLogout" title="Cerrar sesión">
-                <span class="material-symbols-rounded">logout</span> Salir
-              </button>
+              <!-- Los botones de acción se mantienen aquí, pero Salir se mueve al Perfil -->
 
               <!-- 2. Exportar reportes -->
-              <button class="btn-premium" id="btnExport" title="Exportar reporte seleccionado" style="display:none">
-                <span class="material-symbols-rounded">download</span> Exportar Reportes
+              <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm hover:scale-[1.02] active:scale-95" id="btnExport" title="Exportar reporte seleccionado" style="display:none">
+                <span class="material-symbols-rounded text-[20px]">download</span> Exportar Reportes
               </button>
 
               <!-- 3. Subir archivos -->
-              <button class="btn-premium" id="btnOpenUpload" title="Subir evidencias al servidor" style="display:none">
-                <span class="material-symbols-rounded">cloud_upload</span> Subir archivos
+              <button class="bg-surface-variant/50 text-surface-on rounded-2xl h-[48px] px-5 font-semibold text-sm transition-all hover:bg-primary hover:text-white flex items-center justify-center gap-2.5 cursor-pointer border-none hover:shadow-md3-1" id="btnOpenUpload" title="Subir evidencias al servidor" style="display:none">
+                <span class="material-symbols-rounded text-[20px]">cloud_upload</span> Subir archivos
               </button>
 
               <!-- 4. Explorador -->
-              <button class="btn-premium" id="btnViewArchivos" title="Ver evidencias" style="display:none">
-                <span class="material-symbols-rounded">folder_open</span> Explorador
+              <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm hover:scale-[1.02] active:scale-95" id="btnViewArchivos" title="Ver evidencias" style="display:none">
+                <span class="material-symbols-rounded text-[20px]">folder_open</span> Explorador
               </button>
 
               <!-- 5. Notificaciones -->
-              <button class="btn-premium relative" id="btnTopNotifications" type="button" style="display:none">
-                <span class="material-symbols-rounded">notifications</span>
+              <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm relative text-surface-on hover:scale-[1.02] active:scale-95" id="btnTopNotifications" type="button" style="display:none">
+                <div class="flex items-center justify-center relative">
+                  <span class="material-symbols-rounded text-[20px]">notifications</span>
+                  <span id="topNotifBadge"></span>
+                </div>
                 Notificaciones
-                <span id="topNotifBadge" class="absolute -top-1 -right-1 bg-white text-primary text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md border border-primary/20" style="display:none">00</span>
-              </button>
-
-              <!-- 6. Limpiar Actividad (Auxiliar) -->
-              <button class="btn-premium" id="btnClearLiveFeed" title="Limpiar actividad reciente" style="display:none">
-                <span class="material-symbols-rounded">notifications_paused</span> Limpiar actividad
               </button>
             </div>
 
@@ -398,50 +436,22 @@
         <div class="w-full space-y-8">
           <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] transition-shadow hover:shadow-[0_16px_32px_rgba(0,51,102,0.08)] overflow-hidden" id="cardApp">
                 <!-- 👤 RELOCATED PREMIUM WELCOME HUB -->
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 lg:gap-8 mb-10 pb-8 border-b border-outline-variant/30">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-8 border-b border-outline-variant/30 relative">
                   <!-- Welcome & Info (Fluid Width) -->
                   <div class="flex flex-col leading-tight min-w-[200px] flex-1">
-                    <h2 class="text-2xl sm:text-3xl font-black text-primary m-0 tracking-tight" id="welcome">
-                      Hola
-                    </h2>
-                    <div class="inline-flex items-center gap-2 mt-2 px-4 py-1.5 bg-primary/5 rounded-2xl border border-primary/10 w-fit">
-                      <span class="material-symbols-rounded text-[16px] text-primary opacity-50">apartment</span>
-                      <span class="text-[11px] text-primary font-black uppercase tracking-[0.15em]" id="who"></span>
-                    </div>
+                    <h2 class="text-2xl sm:text-4xl font-black text-primary m-0 tracking-tight" id="welcome">Hola</h2>
                   </div>
 
-                  <!-- Integrated Premium Status Chips -->
-                  <div class="flex flex-wrap md:flex-nowrap gap-2 lg:gap-4 w-full md:w-auto">
-                    <!-- Perfil Premium -->
-                    <div class="flex-1 min-w-[130px] md:min-w-[150px] max-w-[300px] bg-white border border-outline-variant/20 rounded-[22px] px-3 md:px-5 py-3.5 flex items-center gap-3 lg:gap-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all hover:shadow-md3-1">
-                      <div class="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                        <span class="material-symbols-rounded text-[24px] text-primary">verified_user</span>
+                  <!-- Consolidated Profile Hub -->
+                  <div class="flex items-center gap-3 md:gap-5 w-full md:w-auto">
+                    <!-- Progress (KPI Principal, se mantiene visible) -->
+                    <div id="bCumplimiento" data-tone="bad" class="flex-1 md:flex-none h-[58px] min-w-[110px] rounded-[20px] px-4 flex items-center gap-3 shadow-[0_4px_12px_rgba(0,0,0,0.03)] transition-all hover:shadow-md cursor-help group border">
+                      <div class="w-10 h-10 rounded-xl bg-current/10 flex items-center justify-center shrink-0" id="bCumplimientoIconBg">
+                        <span class="material-symbols-rounded text-[22px]">trending_up</span>
                       </div>
                       <div class="flex flex-col leading-none">
-                        <span class="text-[9px] font-black uppercase tracking-wider text-primary/40 mb-1.5">Rol de Acceso</span>
-                        <span id="rolTxt" class="text-[15px] font-bold text-primary tracking-tight whitespace-nowrap">—</span>
-                      </div>
-                    </div>
-
-                    <!-- Municipio Premium -->
-                    <div class="flex-1 min-w-[130px] md:min-w-[150px] max-w-[300px] bg-white border border-outline-variant/20 rounded-[22px] px-3 md:px-5 py-3.5 flex items-center gap-3 lg:gap-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all hover:shadow-md3-1">
-                      <div class="w-11 h-11 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0">
-                        <span class="material-symbols-rounded text-[24px] text-orange-600">location_on</span>
-                      </div>
-                      <div class="flex flex-col leading-none">
-                        <span class="text-[9px] font-black uppercase tracking-wider text-orange-400/50 mb-1.5">Municipio</span>
-                        <span id="munTxt" class="text-[15px] font-bold text-primary tracking-tight whitespace-nowrap">—</span>
-                      </div>
-                    </div>
-
-                    <!-- Progreso Premium -->
-                    <div id="bCumplimiento" class="flex-1 min-w-[130px] md:min-w-[150px] max-w-[300px] border border-outline-variant/20 rounded-[22px] px-3 md:px-5 py-3.5 flex items-center gap-3 lg:gap-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)] transition-all hover:shadow-md3-1 cursor-help">
-                      <div class="w-11 h-11 rounded-xl bg-current/10 flex items-center justify-center shrink-0" id="bCumplimientoIconBg">
-                        <span class="material-symbols-rounded text-[24px]">trending_up</span>
-                      </div>
-                      <div class="flex flex-col leading-none">
-                        <span class="text-[9px] font-black uppercase tracking-wider opacity-50 mb-1.5">Cumplimiento</span>
-                        <span id="dayTxt" class="text-[16px] font-black tracking-tight">0%</span>
+                        <span class="text-[9px] font-black uppercase tracking-wider opacity-50 mb-1">Cumplimiento</span>
+                        <span id="dayTxt" class="text-[15px] font-black tracking-tight">0%</span>
                       </div>
                     </div>
                   </div>
@@ -500,7 +510,7 @@
                     <label class="text-[11px] font-black text-primary uppercase tracking-[0.2em] block mb-4 ml-1">Nombre del responsable de la existencia diaria</label>
                     <div class="modern-input-group">
                       <span class="input-icon material-symbols-rounded">person</span>
-                      <input id="nombreSR" placeholder="Nombre completo" class="input-premium !h-[58px] !rounded-2xl !pr-6 font-bold shadow-md">
+                      <input id="nombreSR" placeholder="Nombre completo" class="w-full h-[58px] rounded-2xl pr-6 text-[15px] font-bold outline-none shadow-md">
                     </div>
                   </div>
                 </div>
@@ -523,13 +533,13 @@
                   </table>
                 </div>
 
-                <button class="btn-premium btn-premium-action w-full mt-4" id="btnAddSRRow">
-                  <span class="material-symbols-rounded">add_circle</span> Agregar otro lote/biológico
+                <button class="bg-primary/10 text-primary border-none rounded-xl h-[46px] font-semibold text-[14px] flex items-center justify-center gap-2.5 transition-all hover:bg-primary/20 cursor-pointer w-full mt-4" id="btnAddSRRow">
+                  <span class="material-symbols-rounded text-[20px]">add_circle</span> Agregar otro lote/biológico
                 </button>
 
                 <div class="h-[1px] bg-outline-variant/40 w-full my-6"></div>
 
-                <button class="btn-premium btn-save-animate w-full" id="btnSaveSR">Guardar existencia</button>
+                <button class="btn-premium-action btn-save-animate w-full" id="btnSaveSR">Guardar existencia</button>
 
                 <div class="flex flex-wrap gap-2 mt-4 justify-end">
                   <button class="bg-transparent text-primary border border-primary/20 rounded-xl px-4 h-[42px] font-semibold text-[13px] flex items-center gap-2 transition-all hover:bg-primary hover:text-white cursor-pointer" id="btnEditSR" style="display:none" title="Editar la existencia de hoy">
@@ -609,7 +619,7 @@
 
                 <!-- Botones Acción Pro -->
                 <div class="flex flex-col sm:flex-row gap-6 items-center">
-                  <button class="btn-premium btn-save-animate !py-5 flex-1 w-full text-[15px] tracking-widest uppercase" id="btnSaveCONS">
+                  <button class="btn-premium-action btn-save-animate !py-5 flex-1 w-full text-[15px] tracking-widest uppercase" id="btnSaveCONS">
                     <span class="material-symbols-rounded">save</span>
                     Guardar Reporte de Consumibles
                   </button>
@@ -634,7 +644,7 @@
                       <label class="text-[11px] font-black text-primary uppercase tracking-[0.2em] block mb-4 ml-1">Nombre de quien captura el pedido</label>
                       <div class="modern-input-group">
                         <span class="input-icon material-symbols-rounded">person</span>
-                        <input id="nombreBIO" placeholder="Nombre completo" class="input-premium !h-[58px] !rounded-2xl !pr-6 font-bold shadow-md">
+                        <input id="nombreBIO" placeholder="Nombre completo" class="w-full h-[58px] rounded-2xl pr-6 text-[15px] font-bold outline-none shadow-md">
                       </div>
                     </div>
 
@@ -718,7 +728,7 @@
                 </div>
 
                 <!-- BOTÓN DE GUARDADO BLINDADO (REDISEÑO INSTITUCIONAL) -->
-                <button class="btn-premium btn-save-animate w-full" id="btnSaveBIO" data-alert="" data-blocked="">
+                <button class="btn-premium-action btn-save-animate w-full" id="btnSaveBIO" data-alert="" data-blocked="">
                   Guardar pedido de biológico
                 </button>
 
@@ -757,8 +767,8 @@
                     <button class="bg-transparent text-primary hover:bg-primary/5 px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer" id="btnBioConfirmCancel" type="button">
                       <span class="material-symbols-rounded text-[20px]">close</span> Corregir
                     </button>
-                    <button class="btn-premium" id="btnBioConfirmAccept" type="button">
-                      <span class="material-symbols-rounded">done_all</span> Confirmar y Guardar
+                    <button class="bg-[#d97706] text-white hover:bg-[#b45309] hover:-translate-y-0.5 px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all shadow-md3-1 border-none cursor-pointer" id="btnBioConfirmAccept" type="button">
+                      <span class="material-symbols-rounded text-[20px]">done_all</span> Confirmar y Guardar
                     </button>
                   </div>
                 </div>
@@ -827,7 +837,7 @@
               </div>
 
               <!-- TABS ADMINISTRACIÓN -->
-              <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mt-8 mb-8" id="panelAdminOpsTabs" style="display:none">
+              <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mt-4 mb-6" id="panelAdminOpsTabs" style="display:none">
                 <div class="flex flex-wrap gap-2 mb-2 p-1.5 bg-surface-variant/50 rounded-[20px] w-fit">
                   <button class="tab-btn tab-active flex items-center gap-2.5 h-[46px] px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px]" id="tabOPS_CAPTURE">
                     <span class="material-symbols-rounded text-[20px]">dashboard</span>
@@ -861,45 +871,54 @@
 
               <!-- NOTIFICACIONES -->
               <!-- NOTIFICACIONES -->
-              <div class="bg-white rounded-[32px] overflow-hidden shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8 border border-outline-variant/30" id="panelNOTIFS" style="display:none">
-                <div class="bg-primary text-white p-8 relative flex flex-col xl:flex-row justify-between gap-8 h-auto break-words bg-gradient-to-br from-primary to-primary-container/80">
-                  <div class="z-10">
-                    <div class="text-[28px] font-extrabold tracking-tight m-0">Centro de notificaciones</div>
-                    <div class="text-[15px] max-w-[500px] mt-2 opacity-90 leading-relaxed font-medium">
-                      Consulta tu bandeja, revisa actividad reciente y envía avisos internos a municipios o unidades.
+              <!-- NOTIFICACIONES (REDISEÑO GLASSMORPHISM) -->
+              <div class="bg-white rounded-[28px] overflow-hidden shadow-[0_8px_30px_rgba(0,51,102,0.06)] mb-6 border border-outline-variant/20" id="panelNOTIFS" style="display:none">
+                <div class="bg-primary text-white px-6 py-4 md:px-8 md:py-5 relative flex flex-row items-center justify-between gap-6 h-auto bg-gradient-to-r from-[#002a52] to-[#0052a3]">
+                  <!-- Decoración de fondo -->
+                  <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none"></div>
+
+                  <div class="z-10 flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-md">
+                      <span class="material-symbols-rounded text-[20px]">notifications_active</span>
                     </div>
+                    <h2 class="text-[18px] md:text-[22px] font-black tracking-tight m-0 leading-none">Centro de notificaciones</h2>
                   </div>
 
-                  <div class="flex gap-4 sm:gap-6 z-10 flex-wrap">
-                    <div class="bg-white border border-slate-200 p-4 rounded-2xl min-w-[100px] flex-1">
-                      <div class="text-[11px] font-bold uppercase tracking-[0.1em] opacity-80 mb-1 leading-tight">No leídas</div>
-                      <div class="text-[26px] font-black leading-none" id="notifUnreadKpi">0</div>
+                  <div class="flex gap-2.5 z-10 items-center">
+                    <!-- KPI: No Leídas -->
+                    <div class="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-xl flex flex-col items-center min-w-[80px]">
+                      <span class="text-[8px] font-black uppercase tracking-widest opacity-60 leading-none mb-1">No leídas</span>
+                      <div class="text-[18px] font-black leading-none" id="notifUnreadKpi">0</div>
                     </div>
-                    <div class="bg-white border border-slate-200 p-4 rounded-2xl min-w-[100px] flex-1">
-                      <div class="text-[11px] font-bold uppercase tracking-[0.1em] opacity-80 mb-1 leading-tight">Visibles</div>
-                      <div class="text-[26px] font-black leading-none" id="notifTotalKpi">0</div>
+
+                    <!-- KPI: Visibles -->
+                    <div class="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-xl flex flex-col items-center min-w-[80px]">
+                      <span class="text-[8px] font-black uppercase tracking-widest opacity-60 leading-none mb-1">En bandeja</span>
+                      <div class="text-[18px] font-black leading-none" id="notifTotalKpi">0</div>
                     </div>
-                    <div class="bg-white border border-slate-200 p-4 rounded-2xl min-w-[100px] flex-1 hidden sm:block">
-                      <div class="text-[11px] font-bold uppercase tracking-[0.1em] opacity-80 mb-1 leading-tight">Perfil</div>
-                      <div class="text-[26px] font-black leading-none break-all text-ellipsis overflow-hidden max-w-[110px]" id="notifRoleKpi">—</div>
+
+                    <!-- KPI: Perfil -->
+                    <div class="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-xl hidden sm:flex flex-col items-center min-w-[100px]">
+                      <span class="text-[8px] font-black uppercase tracking-widest opacity-60 leading-none mb-1">Usuario</span>
+                      <div class="text-[12px] font-bold leading-none truncate max-w-[90px] opacity-90" id="notifRoleKpi">—</div>
                     </div>
                   </div>
                 </div>
 
-                <div class="p-8">
+                <div class="p-6 bg-slate-50/50">
                   <!-- COMPOSER DE NOTIFICACIONES (EXPANDIDO) -->
-                  <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_8px_32px_rgba(0,51,102,0.04)] flex flex-col max-w-4xl mx-auto" id="notifComposerPane">
-                    <div class="flex items-center justify-between pb-6 border-b border-outline-variant/30 mb-8">
-                      <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                          <span class="material-symbols-rounded text-[28px]">campaign</span>
+                  <div class="bg-white rounded-[32px] p-6 md:p-8 border border-outline-variant/30 shadow-[0_15px_40px_rgba(0,51,102,0.06)] flex flex-col max-w-5xl mx-auto" id="notifComposerPane">
+                    <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-6">
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                          <span class="material-symbols-rounded text-[24px]">campaign</span>
                         </div>
                         <div>
-                          <h3 class="text-xl font-black text-primary m-0 tracking-tight">Emisor de Notificaciones</h3>
-                          <p class="text-[12px] font-bold text-surface-onVariant/60 m-0 mt-0.5 uppercase tracking-wider">Centro de avisos institucionales</p>
+                          <h3 class="text-lg font-black text-primary m-0 tracking-tight">Emisor de Notificaciones</h3>
+                          <p class="text-[11px] font-bold text-surface-onVariant/60 m-0 mt-0.5 uppercase tracking-wider">Centro de avisos institucionales</p>
                         </div>
                       </div>
-                      <span class="bg-primary/10 text-primary px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest border border-primary/20" id="notifBadgeRole">CARGANDO...</span>
+                      <span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-primary/20" id="notifBadgeRole">CARGANDO...</span>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
