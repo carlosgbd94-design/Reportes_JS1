@@ -85,13 +85,13 @@
 
 /* BOTONES PREMIUM UNIFICADOS */
 .btn-premium {
-  background: #001b3d !important; /* Base sólida */
-  background: linear-gradient(180deg, #002855 0%, #001b3d 100%) !important;
+  background: rgba(0, 27, 61, 0.92) !important; /* Translúcido institucional */
+  background: linear-gradient(180deg, rgba(0, 40, 85, 0.88) 0%, rgba(0, 27, 61, 0.96) 100%) !important;
   color: #ffffff !important;
-  border-radius: 16px !important; /* Shape que prefieres */
-  box-shadow: 0 2px 8px rgba(0, 30, 60, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
   font-family: 'Inter', sans-serif !important;
   cursor: pointer !important;
   padding: 0 24px !important;
@@ -102,13 +102,14 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  text-decoration: none !important;
+  backdrop-filter: blur(6px) !important; /* Efecto cristalino solicitado */
+  -webkit-backdrop-filter: blur(6px) !important;
 }
 
 .btn-premium:hover {
-  background: linear-gradient(180deg, #003366 0%, #002855 100%) !important;
+  background: linear-gradient(180deg, rgba(0, 51, 102, 0.9) 0%, rgba(0, 40, 85, 0.98) 100%) !important;
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(0, 30, 60, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
 }
 
 .btn-premium:active {
@@ -117,9 +118,9 @@
 }
 
 .btn-premium-danger {
-  background: #991b1b !important;
-  background: linear-gradient(180deg, #b91c1c 0%, #991b1b 100%) !important;
-  box-shadow: 0 2px 8px rgba(153, 27, 27, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+  background: rgba(153, 27, 27, 0.92) !important;
+  background: linear-gradient(180deg, rgba(185, 28, 28, 0.88) 0%, rgba(153, 27, 27, 0.96) 100%) !important;
+  box-shadow: 0 4px 15px rgba(153, 27, 27, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
 }
 
 .btn-premium-danger:hover {
@@ -7929,22 +7930,35 @@ body.bioConfirmOpen {
 
 /* ? PREMIUM STATUS CHIPS (Semaforización Pro) */
 #bCumplimiento.good {
-  background: linear-gradient(135deg, #006b54 0%, #00a484 100%) !important;
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important;
   color: white !important;
-  box-shadow: 0 4px 14px rgba(0, 107, 84, 0.25) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
+  border: none !important;
 }
+
 #bCumplimiento.warn {
-  background: linear-gradient(135deg, #7d5700 0%, #d49a00 100%) !important;
+  background: linear-gradient(135deg, #d97706 0%, #fbbf24 100%) !important;
   color: white !important;
-  box-shadow: 0 4px 14px rgba(125, 87, 0, 0.25) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.3) !important;
+  border: none !important;
 }
+
 #bCumplimiento.bad {
-  background: linear-gradient(135deg, #ba1a1a 0%, #ff4d4d 100%) !important;
+  background: linear-gradient(135deg, #dc2626 0%, #f87171 100%) !important;
   color: white !important;
-  box-shadow: 0 4px 14px rgba(186, 26, 26, 0.25) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3) !important;
+  border: none !important;
+}
+
+#bCumplimiento.good #bCumplimientoIconBg,
+#bCumplimiento.warn #bCumplimientoIconBg,
+#bCumplimiento.bad #bCumplimientoIconBg {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: white !important;
+}
+
+#bCumplimiento.good span, #bCumplimiento.warn span, #bCumplimiento.bad span {
+  color: white !important;
 }
 
 #bCumplimiento.good span, #bCumplimiento.warn span, #bCumplimiento.bad span {
