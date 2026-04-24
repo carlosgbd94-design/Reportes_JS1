@@ -138,17 +138,17 @@
 
         <!-- Badges unificadas: Cápsulas Independientes de Alta Gama -->
         <div class="flex items-center gap-3">
-          <span class="hidden md:flex items-center gap-2 bg-white text-primary rounded-full px-5 py-2.5 text-[11px] font-black shadow-lg shadow-primary/5 transition-transform hover:scale-105 cursor-default whitespace-nowrap flex-shrink-0 border border-outline-variant/30" id="bFecha">
+          <span class="flex items-center gap-2 bg-white text-primary rounded-full px-3 py-1.5 sm:px-5 sm:py-2.5 text-[10px] sm:text-[11px] font-black shadow-lg shadow-primary/5 transition-transform hover:scale-105 cursor-default whitespace-nowrap flex-shrink-0 border border-outline-variant/30" id="bFecha">
             <span class="material-symbols-rounded text-[19px]">calendar_month</span>
             <span id="hdrFecha">—</span>
           </span>
 
-          <span class="hidden sm:flex items-center gap-2 bg-white text-secondary rounded-full px-5 py-2.5 text-[11px] font-black shadow-lg shadow-secondary/5 transition-transform hover:scale-105 cursor-default whitespace-nowrap flex-shrink-0 border border-outline-variant/30" id="bHora">
+          <span class="flex items-center gap-2 bg-white text-secondary rounded-full px-3 py-1.5 sm:px-5 sm:py-2.5 text-[10px] sm:text-[11px] font-black shadow-lg shadow-secondary/5 transition-transform hover:scale-105 cursor-default whitespace-nowrap flex-shrink-0 border border-outline-variant/30" id="bHora">
             <span class="material-symbols-rounded text-[19px]">schedule</span>
             <span id="hdrHora">—</span>
           </span>
 
-          <span class="hidden sm:flex items-center gap-2 bg-gradient-to-br from-blue-600 to-primary !text-white rounded-full px-5 py-2.5 text-[11px] font-black shadow-lg shadow-primary/20 transition-transform hover:scale-105 cursor-default whitespace-nowrap flex-shrink-0" id="bClima">
+          <span class="flex items-center gap-2 bg-gradient-to-br from-blue-600 to-primary !text-white rounded-full px-3 py-1.5 sm:px-5 sm:py-2.5 text-[10px] sm:text-[11px] font-black shadow-lg shadow-primary/20 transition-transform hover:scale-105 cursor-default whitespace-nowrap flex-shrink-0" id="bClima">
             <span class="material-symbols-rounded text-[19px] !text-white">wb_sunny</span>
             <span id="hdrClima" class="!text-white">Qro —</span>
           </span>
@@ -403,7 +403,7 @@
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 lg:gap-8 mb-10 pb-8 border-b border-outline-variant/30">
                   <!-- Welcome & Info (Fluid Width) -->
                   <div class="flex flex-col leading-tight min-w-[200px] flex-1">
-                    <h2 class="text-3xl font-black text-primary m-0 tracking-tight" id="welcome">
+                    <h2 class="text-2xl sm:text-3xl font-black text-primary m-0 tracking-tight" id="welcome">
                       Hola
                     </h2>
                     <div class="inline-flex items-center gap-2 mt-2 px-4 py-1.5 bg-primary/5 rounded-2xl border border-primary/10 w-fit">
@@ -460,19 +460,19 @@
 
                     <!-- Redesigned & Scaled Tabs -->
                     <div class="flex flex-wrap gap-3 p-2 bg-surface-variant rounded-[26px] w-full lg:w-auto border border-outline-variant shadow-inner">
-                      <button class="tab-btn tab-active flex-1 md:flex-none items-center gap-3.5 h-[52px] px-6 min-w-[140px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[14px]" id="tabSR" onclick="activateCapture('SR')">
+                      <button class="tab-btn tab-active flex-1 md:flex-none items-center gap-2.5 h-[48px] sm:h-[52px] px-3 sm:px-6 min-w-[120px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[12px] sm:text-[14px]" id="tabSR" onclick="activateCapture('SR')">
                         <span class="material-symbols-rounded text-[22px]">vaccines</span>
                         <span>Biológicos</span>
                       </button>
-                      <button class="tab-btn tab-inactive flex-1 md:flex-none items-center gap-3.5 h-[52px] px-6 min-w-[140px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[14px]" id="tabCONS" onclick="activateCapture('CONS')">
+                      <button class="tab-btn tab-inactive flex-1 md:flex-none items-center gap-2.5 h-[48px] sm:h-[52px] px-3 sm:px-6 min-w-[120px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[12px] sm:text-[14px]" id="tabCONS" onclick="activateCapture('CONS')">
                         <span class="material-symbols-rounded text-[22px]">medical_services</span>
                         <span>Consumibles</span>
                       </button>
-                      <button class="tab-btn tab-inactive flex-1 md:flex-none items-center gap-3.5 h-[52px] px-6 min-w-[140px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[14px]" id="tabBIO" style="display:none" onclick="activateCapture('BIO')">
+                      <button class="tab-btn tab-inactive flex-1 md:flex-none items-center gap-2.5 h-[48px] sm:h-[52px] px-3 sm:px-6 min-w-[120px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[12px] sm:text-[14px]" id="tabBIO" style="display:none" onclick="activateCapture('BIO')">
                         <span class="material-symbols-rounded text-[22px]">science</span>
                         <span>Pedido</span>
                       </button>
-                      <button class="tab-btn tab-inactive flex-1 md:flex-none items-center gap-3.5 h-[52px] px-6 min-w-[140px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[14px]" id="tabPINOL" style="display:none" onclick="activateCapture('PINOL')">
+                      <button class="tab-btn tab-inactive flex-1 md:flex-none items-center gap-2.5 h-[48px] sm:h-[52px] px-3 sm:px-6 min-w-[120px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[12px] sm:text-[14px]" id="tabPINOL" style="display:none" onclick="activateCapture('PINOL')">
                         <span class="material-symbols-rounded text-[22px]">inventory_2</span>
                         <span>Pinol</span>
                       </button>
@@ -1510,7 +1510,7 @@
                          <span class="material-symbols-rounded text-primary opacity-60">vaccines</span>
                          <h4 class="text-[13px] font-black text-primary m-0 uppercase tracking-widest">Apertura: Biológicos (Mensual)</h4>
                        </div>
-                       <div class="grid grid-cols-2 gap-4">
+                       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div class="flex flex-col gap-1.5">
                             <label class="text-[10px] font-black text-primary/60 uppercase ml-1">Mes Objetivo</label>
                             <input type="month" id="bioOverrideMonth" class="bg-white border-2 border-outline-variant/30 rounded-xl px-4 h-11 text-[13px] font-bold text-primary outline-none">
@@ -1597,7 +1597,7 @@
                                  </button>
                               </div>
 
-                              <div id="bioBulkVaccinesList" class="grid grid-cols-2 gap-3 h-[241px] overflow-y-auto p-5 bg-white/50 rounded-2xl border border-outline-variant/20 custom-scroll">
+                              <div id="bioBulkVaccinesList" class="grid grid-cols-1 md:grid-cols-2 gap-3 h-[241px] overflow-y-auto p-5 bg-white/50 rounded-2xl border border-outline-variant/20 custom-scroll">
                                  <!-- JS populate -->
                               </div>
                            </div>

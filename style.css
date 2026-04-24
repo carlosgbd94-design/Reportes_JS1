@@ -6784,38 +6784,98 @@ body.mobile-mode #formBIO .tableWrap {
   contain: layout paint;
 }
 
-body.mobile-mode table {
-  min-width: 100%;
-}
-
+/* 📱 SENIOR UX MOBILE AUDIT: CARD TABLE TRANSFORMATION */
+body.mobile-mode #panelCAP table,
+body.mobile-mode #formSR table,
+body.mobile-mode #formBIO table,
 body.mobile-mode #panelCaptureSummary table,
-body.mobile-mode .summaryTable {
-  min-width: 100% !important; /* Allow the table to fit the container */
-}
-
-body.mobile-mode #formBIO .tableWrap {
-  margin-top: 10px;
-  border-radius: 16px;
-  max-height: none !important;
-  overflow-x: auto !important;
-  overflow-y: visible !important;
-  padding: 6px 6px 8px;
-  border: 1px solid rgba(0, 0, 0, .08);
-}
-
-body.mobile-mode #formBIO table {
-  min-width: 100% !important;
+body.mobile-mode .capture-table {
+  display: block !important;
   width: 100% !important;
-  table-layout: fixed;
-  border-collapse: separate;
-  border-spacing: 0 8px;
+  border: none !important;
+  background: transparent !important;
 }
 
-body.mobile-mode #formBIO th {
-  font-size: 10px !important;
-  padding: 9px 6px !important;
-  white-space: normal !important;
-  text-align: center;
+body.mobile-mode #panelCAP thead,
+body.mobile-mode #formSR thead,
+body.mobile-mode #formBIO thead,
+body.mobile-mode #panelCaptureSummary thead {
+  display: none !important;
+}
+
+body.mobile-mode #panelCAP tr,
+body.mobile-mode #formSR tr,
+body.mobile-mode #formBIO tr,
+body.mobile-mode #panelCaptureSummary tr {
+  display: flex !important;
+  flex-direction: column !important;
+  background: white !important;
+  border: 1px solid rgba(0,0,0,0.08) !important;
+  border-radius: 20px !important;
+  padding: 16px !important;
+  margin-bottom: 20px !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
+  gap: 4px !important;
+}
+
+body.mobile-mode #panelCAP td,
+body.mobile-mode #formSR td,
+body.mobile-mode #formBIO td,
+body.mobile-mode #panelCaptureSummary td {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+  padding: 10px 0 !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(0,0,0,0.04) !important;
+  text-align: right !important;
+  min-height: 44px;
+}
+
+body.mobile-mode #panelCAP td:last-child,
+body.mobile-mode #formSR td:last-child,
+body.mobile-mode #formBIO td:last-child,
+body.mobile-mode #panelCaptureSummary td:last-child {
+  border-bottom: none !important;
+}
+
+/* Pseudo-labels para identificación de datos */
+body.mobile-mode #formSR td:nth-child(1)::before { content: "Biológico"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
+body.mobile-mode #formSR td:nth-child(2)::before { content: "Lote"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
+body.mobile-mode #formSR td:nth-child(3)::before { content: "Caducidad"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
+body.mobile-mode #formSR td:nth-child(4)::before { content: "Recepción"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
+body.mobile-mode #formSR td:nth-child(5)::before { content: "Cantidad"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
+
+body.mobile-mode #formBIO td:nth-child(1)::before { content: "Biológico"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
+body.mobile-mode #formBIO td:nth-child(2)::before { content: "Existencia"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
+body.mobile-mode #formBIO td:nth-child(3)::before { content: "Pedido"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
+body.mobile-mode #formBIO td:nth-child(4)::before { content: "Validación"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
+body.mobile-mode #formBIO td:nth-child(5)::before { content: "Promedio"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
+body.mobile-mode #formBIO td:nth-child(6)::before { content: "Máx (dosis)"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
+body.mobile-mode #formBIO td:nth-child(7)::before { content: "Mín (dosis)"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
+
+body.mobile-mode #formSR td:nth-child(6)::before { content: "Acción"; font-weight: 800; color: #64748b; font-size: 10px; text-transform: uppercase; }
+
+/* Highlight del título de la tarjeta */
+body.mobile-mode #formSR td:first-child,
+body.mobile-mode #formBIO td:first-child {
+  background: #f1f5f9 !important;
+  margin: -16px -16px 12px -16px !important;
+  padding: 14px 16px !important;
+  border-radius: 20px 20px 0 0 !important;
+  border-bottom: 2px solid rgba(0,0,0,0.06) !important;
+  justify-content: center !important;
+}
+
+body.mobile-mode #formSR td:first-child::before,
+body.mobile-mode #formBIO td:first-child::before {
+  display: none !important;
+}
+
+body.mobile-mode #formSR .bioInput,
+body.mobile-mode #formBIO .bioInput {
+  max-width: 140px !important;
 }
 
 body.mobile-mode #formBIO td {
@@ -8393,7 +8453,7 @@ body.mobile-mode #mainHeader .flex-shrink-0 {
 
 body.mobile-mode .wrap {
   padding-top: 80px !important;
-  padding-bottom: 110px !important;
+  padding-bottom: 160px !important;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -8405,9 +8465,32 @@ body.mobile-mode #cardApp {
 }
 
 body.mobile-mode #welcome {
-  font-size: 1.5rem !important;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+  font-size: 1.15rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+/* RESTAURACIÓN DE BADGES HEADER (Solicitud Usuario) */
+body.mobile-mode #bFecha,
+body.mobile-mode #bHora,
+body.mobile-mode #bClima {
+  display: flex !important;
+  scale: 0.75;
+  transform-origin: right center;
+  padding: 6px 10px !important;
+  gap: 4px !important;
+  box-shadow: none !important;
+  margin-left: -15px; /* Compensa la escala */
+}
+
+body.mobile-mode #bClima {
+  display: none !important; /* Mantenemos clima oculto para evitar saturación, solo fecha/hora */
+}
+
+body.mobile-mode #bFecha .material-symbols-rounded,
+body.mobile-mode #bHora .material-symbols-rounded {
+  font-size: 16px !important;
 }
 
 /* 📱 OPTIMIZACIÓN DE ESPACIO INTERNO (MOBILE PRECEDENCE) */
@@ -8429,6 +8512,23 @@ body.mobile-mode .material-symbols-rounded {
 body.mobile-mode #mobileBottomNav {
   height: 72px;
   padding-bottom: 8px;
+}
+
+/* FIX MODULE BUTTONS (Imagen 3) */
+body.mobile-mode .tab-btn {
+  flex: 1 1 calc(50% - 8px) !important;
+  min-width: 0 !important;
+  padding: 0 10px !important;
+  height: 48px !important;
+  font-size: 12px !important;
+  gap: 6px !important;
+  justify-content: center !important;
+}
+
+body.mobile-mode .tab-btn span:not(.material-symbols-rounded) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 
