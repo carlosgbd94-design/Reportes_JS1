@@ -224,7 +224,7 @@
       <div class="w-full flex flex-col gap-8 hidden" id="rightColumn">
         
         <!-- 🚀 ACCIONES (HERO HEADER) -->
-        <div class="panel-workbench" id="cardSide">
+        <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all hover:shadow-md3-2" id="cardSide">
           <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10">
             
             <div class="flex flex-wrap gap-2.5 justify-start">
@@ -239,27 +239,25 @@
               </button>
 
               <!-- 3. Subir archivos -->
-              <button class="btn-premium btn-premium-action" id="btnOpenUpload" title="Subir evidencias al servidor" style="display:none">
+              <button class="btn-premium" id="btnOpenUpload" title="Subir evidencias al servidor" style="display:none">
                 <span class="material-symbols-rounded">cloud_upload</span> Subir archivos
               </button>
 
               <!-- 4. Explorador -->
-              <button class="btn-premium btn-premium-action" id="btnViewArchivos" title="Ver evidencias" style="display:none">
+              <button class="btn-premium" id="btnViewArchivos" title="Ver evidencias" style="display:none">
                 <span class="material-symbols-rounded">folder_open</span> Explorador
               </button>
 
               <!-- 5. Notificaciones -->
-              <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm relative text-surface-on hover:scale-[1.02] active:scale-95" id="btnTopNotifications" type="button" style="display:none">
-                <div class="flex items-center justify-center relative">
-                  <span class="material-symbols-rounded text-[20px]">notifications</span>
-                  <span id="topNotifBadge" style="display:none">00</span>
-                </div>
+              <button class="btn-premium relative" id="btnTopNotifications" type="button" style="display:none">
+                <span class="material-symbols-rounded">notifications</span>
                 Notificaciones
+                <span id="topNotifBadge" class="absolute -top-1 -right-1 bg-white text-primary text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md border border-primary/20" style="display:none">00</span>
               </button>
 
               <!-- 6. Limpiar Actividad (Auxiliar) -->
-              <button class="bg-surface-variant/50 text-surface-on rounded-2xl h-[48px] px-5 font-semibold text-sm transition-all hover:bg-primary hover:text-white flex items-center justify-center gap-2.5 cursor-pointer border-none hover:shadow-md3-1" id="btnClearLiveFeed" title="Limpiar actividad reciente" style="display:none">
-                <span class="material-symbols-rounded text-[20px]">notifications_paused</span> Limpiar actividad
+              <button class="btn-premium btn-premium-action" id="btnClearLiveFeed" title="Limpiar actividad reciente" style="display:none">
+                <span class="material-symbols-rounded">notifications_paused</span> Limpiar actividad
               </button>
             </div>
 
@@ -497,7 +495,7 @@
 
               <!-- SR (EXISTENCIA DE BIOLÓGICOS) -->
               <div id="formSR">
-                <div class="panel-workbench !p-6 mb-6 mt-4">
+                <div class="bg-white border-2 border-slate-200 rounded-[32px] p-6 shadow-sm mb-6 mt-4">
                   <div class="flex-1 w-full">
                     <label class="text-[11px] font-black text-primary uppercase tracking-[0.2em] block mb-4 ml-1">Nombre del responsable de la existencia diaria</label>
                     <div class="modern-input-group">
@@ -531,7 +529,7 @@
 
                 <div class="h-[1px] bg-outline-variant/40 w-full my-6"></div>
 
-                <button class="btn-premium btn-premium-save btn-save-animate w-full" id="btnSaveSR">Guardar existencia</button>
+                <button class="btn-premium btn-save-animate w-full" id="btnSaveSR">Guardar existencia</button>
 
                 <div class="flex flex-wrap gap-2 mt-4 justify-end">
                   <button class="bg-transparent text-primary border border-primary/20 rounded-xl px-4 h-[42px] font-semibold text-[13px] flex items-center gap-2 transition-all hover:bg-primary hover:text-white cursor-pointer" id="btnEditSR" style="display:none" title="Editar la existencia de hoy">
@@ -611,7 +609,7 @@
 
                 <!-- Botones Acción Pro -->
                 <div class="flex flex-col sm:flex-row gap-6 items-center">
-                  <button class="btn-premium btn-premium-save btn-save-animate !py-5 flex-1 w-full text-[15px] tracking-widest uppercase" id="btnSaveCONS">
+                  <button class="btn-premium btn-save-animate !py-5 flex-1 w-full text-[15px] tracking-widest uppercase" id="btnSaveCONS">
                     <span class="material-symbols-rounded">save</span>
                     Guardar Reporte de Consumibles
                   </button>
@@ -629,7 +627,7 @@
 
               <!-- PEDIDO DE BIOLÓGICO -->
               <div id="formBIO" style="display:none" class="flex flex-col gap-1">
-                <div class="panel-workbench !p-6 mb-6 mt-4">
+                <div class="bg-white border-2 border-slate-200 rounded-[32px] p-6 shadow-sm mb-6 mt-4">
                   <div class="flex flex-col lg:flex-row items-center gap-6">
                     <!-- Campo de Nombre Premium -->
                     <div class="flex-1 w-full">
@@ -720,7 +718,7 @@
                 </div>
 
                 <!-- BOTÓN DE GUARDADO BLINDADO (REDISEÑO INSTITUCIONAL) -->
-                <button class="btn-premium btn-premium-save btn-save-animate w-full" id="btnSaveBIO" data-alert="" data-blocked="">
+                <button class="btn-premium btn-save-animate w-full" id="btnSaveBIO" data-alert="" data-blocked="">
                   Guardar pedido de biológico
                 </button>
 
@@ -759,7 +757,7 @@
                     <button class="bg-transparent text-primary hover:bg-primary/5 px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer" id="btnBioConfirmCancel" type="button">
                       <span class="material-symbols-rounded text-[20px]">close</span> Corregir
                     </button>
-                    <button class="btn-premium btn-premium-save" id="btnBioConfirmAccept" type="button">
+                    <button class="btn-premium" id="btnBioConfirmAccept" type="button">
                       <span class="material-symbols-rounded">done_all</span> Confirmar y Guardar
                     </button>
                   </div>

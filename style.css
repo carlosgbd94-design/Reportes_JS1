@@ -1,16 +1,17 @@
 :root {
   /* 🚀 WORKBENCH 2.0 DESIGN TOKENS */
-  --wb-radius-panel: 28px;
-  --wb-radius-btn: 16px;
-  --wb-radius-input: 12px;
+  --wb-radius-panel: 32px;
+  --wb-radius-btn: 20px;
+  --wb-radius-input: 16px;
   
-  --wb-color-save-1: #00897b; --wb-color-save-2: #00695c;
-  --wb-color-action-1: #1e88e5; --wb-color-action-2: #1565c0;
-  --wb-color-danger-1: #e53935; --wb-color-danger-2: #c62828;
+  /* 💎 COLORES INSTITUCIONALES SÓLIDOS (Los que te gustaron) */
+  --wb-color-save-1: #001b3d; --wb-color-save-2: #003366;
+  --wb-color-action-1: #002855; --wb-color-action-2: #004080;
+  --wb-color-danger-1: #991b1b; --wb-color-danger-2: #7f1d1d;
   
-  --wb-shadow-soft: 0 4px 20px rgba(0, 51, 102, 0.05);
-  --wb-shadow-premium: 0 8px 32px rgba(0, 51, 102, 0.1);
-  --wb-border: 1px solid rgba(0, 51, 102, 0.08);
+  --wb-shadow-soft: 0 4px 20px rgba(0, 30, 60, 0.05);
+  --wb-shadow-premium: 0 12px 40px rgba(0, 30, 60, 0.15);
+  --wb-border: 1px solid rgba(0, 51, 102, 0.12);
   /* ðŸ›ï¸ MD3 FINAL TOKENS (Solid Opaque System) */
   --md-sys-color-primary: #003366; 
   --md-sys-color-on-primary: #ffffff;
@@ -84,53 +85,42 @@
 
 /* BOTONES PREMIUM UNIFICADOS */
 .btn-premium {
+  background: linear-gradient(180deg, #001b3d 0%, #003366 100%) !important;
+  color: #ffffff !important;
+  border-radius: 100px !important;
+  box-shadow: 0 4px 15px rgba(0, 51, 102, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  font-family: 'Poppins', 'Inter', sans-serif !important;
+  cursor: pointer !important;
+  padding: 12px 24px !important;
+  height: 52px !important;
+  text-transform: none !important;
+  letter-spacing: 0.02em !important;
+  font-weight: 700 !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border-radius: var(--wb-radius-btn);
-  border: none;
-  font-weight: 800;
-  color: white;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-premium::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: linear-gradient(rgba(255,255,255,0.1), transparent);
-  opacity: 0; transition: opacity 0.3s;
+  gap: 10px;
 }
 
 .btn-premium:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  transform: translateY(-2.5px) scale(1.01) !important;
+  box-shadow: 0 12px 25px rgba(0, 51, 102, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  filter: brightness(1.15) !important;
 }
 
-.btn-premium:hover::after { opacity: 1; }
-
-.btn-premium:active { transform: translateY(0) scale(0.98); }
-
-/* VARIANTES SEMÁNTICAS */
-.btn-premium-save {
-  background: linear-gradient(135deg, var(--wb-color-save-1), var(--wb-color-save-2)) !important;
-}
-
-.btn-premium-action {
-  background: linear-gradient(135deg, var(--wb-color-action-1), var(--wb-color-action-2)) !important;
+.btn-premium:active {
+  transform: translateY(0) scale(0.97) !important;
 }
 
 .btn-premium-danger {
-  background: linear-gradient(135deg, var(--wb-color-danger-1), var(--wb-color-danger-2)) !important;
+  background: linear-gradient(180deg, #991b1b 0%, #7f1d1d 100%) !important;
+  box-shadow: 0 4px 15px rgba(153, 27, 27, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+.btn-premium-danger:hover {
+  box-shadow: 0 12px 25px rgba(153, 27, 27, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
 
 /* INPUTS PREMIUM */
