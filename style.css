@@ -3099,9 +3099,6 @@ body.mobile-mode .notifActionRow .miniBtn {
 }
 
 #cardApp, #panelCAP, #panelCaptureSummary, #panelADMIN, #panelPINOLADMIN {
-  /* Common block properties inherited from .card/.panel */
-  width: 100%;
-}
   width: 100%;
   min-width: 0;
 }
@@ -6389,6 +6386,8 @@ body.mobile-mode #panelADMIN,
 body.mobile-mode #panelPINOLADMIN,
 body.mobile-mode #panelHISTORY,
 body.mobile-mode #panelEDITLOG,
+body.mobile-mode #panelLOTES,
+body.mobile-mode #panelArchivos,
 body.mobile-mode #panelNOTIFS {
   width: 100%;
   min-width: 0;
@@ -8382,22 +8381,54 @@ body.mobile-mode .wrap {
 body.mobile-mode #mainHeader {
   background: rgba(255, 255, 255, 0.98) !important;
   backdrop-filter: blur(24px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.08) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
   height: auto !important;
-  min-height: 64px;
-  padding: 10px 0;
+  min-height: 56px;
+  padding: 6px 0;
 }
 
 body.mobile-mode #mainHeader .flex-shrink-0 {
-  gap: 8px !important;
+  gap: 6px !important;
 }
 
 body.mobile-mode .wrap {
-  padding-top: 110px !important;
-  padding-bottom: 140px !important;
+  padding-top: 80px !important;
+  padding-bottom: 110px !important;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
+}
+
+body.mobile-mode #cardApp {
+  padding: 16px !important;
+  border-radius: 24px !important;
+}
+
+body.mobile-mode #welcome {
+  font-size: 1.5rem !important;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+/* 📱 OPTIMIZACIÓN DE ESPACIO INTERNO (MOBILE PRECEDENCE) */
+body.mobile-mode .capture-section,
+body.mobile-mode .card,
+body.mobile-mode .bg-white.rounded-\[32px\] {
+  padding: 14px !important;
+  border-radius: 20px !important;
+}
+
+body.mobile-mode .material-symbols-rounded {
+  font-size: 22px !important;
+}
+
+#mobileBottomNav .nav-item .icon-box .material-symbols-rounded {
+  font-size: 24px !important;
+}
+
+body.mobile-mode #mobileBottomNav {
+  height: 72px;
+  padding-bottom: 8px;
 }
 
 

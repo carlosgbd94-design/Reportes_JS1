@@ -7810,7 +7810,8 @@ async function getTodayReports(fecha = "", force = false) {
     });
 
     $("who").textContent = `${user.clues || "—"} — ${user.unidad || "—"}`;
-    $("welcome").textContent = `Hola, ${user.usuario}`;
+    // ✅ REINTEGRACIÓN SOLICITADA: Saludo de bienvenida institucional
+    if ($("welcome")) $("welcome").textContent = `Hola, ${user.usuario}`;
     $("rolTxt").textContent = (user.rol || "UNIDAD").replace(/^Perfil:\s*/i, "");
     
     const capTab = $("btnTabCAP");
@@ -7877,7 +7878,10 @@ async function getTodayReports(fecha = "", force = false) {
         saludo = "Buenas noches 🌙 Seguimos trabajando";
       }
 
-      if ($("welcome")) $("welcome").textContent = saludo;
+      if ($("welcome")) {
+        // Combinación de Saludo Nominal + Temporal (Premium Senior UX)
+        $("welcome").textContent = `Hola, ${USER.usuario}. ${saludo}`;
+      }
       paintStatusChips(STATUS);
     }
 
@@ -8100,8 +8104,14 @@ async function getTodayReports(fecha = "", force = false) {
   }
 
   function activateMain(panel, forceSubTab) {
-    if (panel === "NOTIFS" && USER && USER.rol === "UNIDAD") {
-      closeTopNotifDropdown();
+    // --- SEGURIDAD DE ROLES (PRO-UX GUARD) ---
+    const role = String((USER && USER.rol) || "").trim().toUpperCase();
+    if (panel === "ADMIN" && role !== "ADMIN") {
+        console.warn("Intento de acceso no autorizado a ADMIN bloqueado.");
+        return;
+    }
+
+    if (panel === "NOTIFS" && role === "UNIDAD") {
       openTopNotifDropdown();
       loadNotifications({ silent: true }).catch(err => {
         console.error("activateMain NOTIFS unidad error:", err);
@@ -8117,7 +8127,6 @@ async function getTodayReports(fecha = "", force = false) {
     if (panel === "NOTIFS") clearTabAttention("tabNOTIFS");
     if (panel === "ADMIN") clearTabAttention("tabADMIN");
 
-    const role = String((USER && USER.rol) || "").trim().toUpperCase();
     const isUnidad = role === "UNIDAD";
     const isAdmin = role === "ADMIN";
     const isMunicipal = role === "MUNICIPAL";
