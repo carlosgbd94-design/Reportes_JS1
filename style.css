@@ -8456,9 +8456,6 @@ body.mobile-mode #mainHeader {
   background: rgba(255, 255, 255, 0.98) !important;
   backdrop-filter: blur(24px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
-  height: auto !important;
-  min-height: 56px;
-  padding: 6px 0;
 }
 
 body.mobile-mode #mainHeader .flex-shrink-0 {
@@ -8466,7 +8463,7 @@ body.mobile-mode #mainHeader .flex-shrink-0 {
 }
 
 body.mobile-mode .wrap {
-  padding-top: 80px !important;
+  padding-top: 120px !important;
   padding-bottom: 160px !important;
   display: flex;
   flex-direction: column;
@@ -8479,22 +8476,24 @@ body.mobile-mode #cardApp {
 }
 
 body.mobile-mode #welcome {
-  font-size: 0.95rem !important;
+  font-size: 1rem !important;
   font-weight: 900 !important;
-  letter-spacing: -0.01em;
-  margin-bottom: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 200px;
+  white-space: normal !important; /* Permitir wrap */
+  overflow: visible !important;
+  text-overflow: clip !important;
+  max-width: 100% !important;
+  line-height: 1.2 !important;
+  display: block !important;
 }
 
+/* 📱 HEADER MULTI-TIER (Solución Definitiva a Traslape - Imagen 1) */
 body.mobile-mode #mainHeader {
-  height: 64px !important;
-  padding: 0 12px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
+  height: auto !important;
+  min-height: 100px !important;
+  padding: 12px 16px !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: center !important;
   gap: 12px !important;
 }
 
@@ -8585,7 +8584,7 @@ body.mobile-mode .md-delete-btn:active .trash-lid {
 
 /* 📱 DISEÑO DE PANELES FULL-WIDTH (Imagen 2) */
 body.mobile-mode .wrap {
-  padding: 0 12px 180px !important; /* Margen lateral consistente */
+  padding: 120px 12px 180px !important; /* Mayor padding top por header doble */
 }
 
 body.mobile-mode .container {
