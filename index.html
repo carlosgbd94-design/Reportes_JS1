@@ -224,28 +224,28 @@
       <div class="w-full flex flex-col gap-8 hidden" id="rightColumn">
         
         <!-- 🚀 ACCIONES (HERO HEADER) -->
-        <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all hover:shadow-md3-2" id="cardSide">
+        <div class="panel-workbench" id="cardSide">
           <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10">
             
             <div class="flex flex-wrap gap-2.5 justify-start">
               <!-- 1. Salir -->
-              <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm hover:scale-[1.02] active:scale-95" id="btnLogout" title="Cerrar sesión">
-                <span class="material-symbols-rounded text-[20px]">logout</span> Salir
+              <button class="btn-premium btn-premium-danger" id="btnLogout" title="Cerrar sesión">
+                <span class="material-symbols-rounded">logout</span> Salir
               </button>
 
               <!-- 2. Exportar reportes -->
-              <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm hover:scale-[1.02] active:scale-95" id="btnExport" title="Exportar reporte seleccionado" style="display:none">
-                <span class="material-symbols-rounded text-[20px]">download</span> Exportar Reportes
+              <button class="btn-premium btn-premium-action" id="btnExport" title="Exportar reporte seleccionado" style="display:none">
+                <span class="material-symbols-rounded">download</span> Exportar Reportes
               </button>
 
               <!-- 3. Subir archivos -->
-              <button class="bg-surface-variant/50 text-surface-on rounded-2xl h-[48px] px-5 font-semibold text-sm transition-all hover:bg-primary hover:text-white flex items-center justify-center gap-2.5 cursor-pointer border-none hover:shadow-md3-1" id="btnOpenUpload" title="Subir evidencias al servidor" style="display:none">
-                <span class="material-symbols-rounded text-[20px]">cloud_upload</span> Subir archivos
+              <button class="btn-premium btn-premium-action" id="btnOpenUpload" title="Subir evidencias al servidor" style="display:none">
+                <span class="material-symbols-rounded">cloud_upload</span> Subir archivos
               </button>
 
               <!-- 4. Explorador -->
-              <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm hover:scale-[1.02] active:scale-95" id="btnViewArchivos" title="Ver evidencias" style="display:none">
-                <span class="material-symbols-rounded text-[20px]">folder_open</span> Explorador
+              <button class="btn-premium btn-premium-action" id="btnViewArchivos" title="Ver evidencias" style="display:none">
+                <span class="material-symbols-rounded">folder_open</span> Explorador
               </button>
 
               <!-- 5. Notificaciones -->
@@ -497,12 +497,12 @@
 
               <!-- SR (EXISTENCIA DE BIOLÓGICOS) -->
               <div id="formSR">
-                <div class="bg-white border-2 border-slate-200 rounded-[32px] p-6 shadow-sm mb-6 mt-4">
+                <div class="panel-workbench !p-6 mb-6 mt-4">
                   <div class="flex-1 w-full">
                     <label class="text-[11px] font-black text-primary uppercase tracking-[0.2em] block mb-4 ml-1">Nombre del responsable de la existencia diaria</label>
                     <div class="modern-input-group">
                       <span class="input-icon material-symbols-rounded">person</span>
-                      <input id="nombreSR" placeholder="Nombre completo" class="w-full h-[58px] rounded-2xl pr-6 text-[15px] font-bold outline-none shadow-md">
+                      <input id="nombreSR" placeholder="Nombre completo" class="input-premium !h-[58px] !rounded-2xl !pr-6 font-bold shadow-md">
                     </div>
                   </div>
                 </div>
@@ -525,13 +525,13 @@
                   </table>
                 </div>
 
-                <button class="bg-primary/10 text-primary border-none rounded-xl h-[46px] font-semibold text-[14px] flex items-center justify-center gap-2.5 transition-all hover:bg-primary/20 cursor-pointer w-full mt-4" id="btnAddSRRow">
-                  <span class="material-symbols-rounded text-[20px]">add_circle</span> Agregar otro lote/biológico
+                <button class="btn-premium btn-premium-action w-full mt-4" id="btnAddSRRow">
+                  <span class="material-symbols-rounded">add_circle</span> Agregar otro lote/biológico
                 </button>
 
                 <div class="h-[1px] bg-outline-variant/40 w-full my-6"></div>
 
-                <button class="btn-premium-action btn-save-animate w-full" id="btnSaveSR">Guardar existencia</button>
+                <button class="btn-premium btn-premium-save btn-save-animate w-full" id="btnSaveSR">Guardar existencia</button>
 
                 <div class="flex flex-wrap gap-2 mt-4 justify-end">
                   <button class="bg-transparent text-primary border border-primary/20 rounded-xl px-4 h-[42px] font-semibold text-[13px] flex items-center gap-2 transition-all hover:bg-primary hover:text-white cursor-pointer" id="btnEditSR" style="display:none" title="Editar la existencia de hoy">
@@ -611,7 +611,7 @@
 
                 <!-- Botones Acción Pro -->
                 <div class="flex flex-col sm:flex-row gap-6 items-center">
-                  <button class="btn-premium-action btn-save-animate !py-5 flex-1 w-full text-[15px] tracking-widest uppercase" id="btnSaveCONS">
+                  <button class="btn-premium btn-premium-save btn-save-animate !py-5 flex-1 w-full text-[15px] tracking-widest uppercase" id="btnSaveCONS">
                     <span class="material-symbols-rounded">save</span>
                     Guardar Reporte de Consumibles
                   </button>
@@ -629,14 +629,14 @@
 
               <!-- PEDIDO DE BIOLÓGICO -->
               <div id="formBIO" style="display:none" class="flex flex-col gap-1">
-                <div class="bg-white border-2 border-slate-200 rounded-[32px] p-6 shadow-sm mb-6 mt-4">
+                <div class="panel-workbench !p-6 mb-6 mt-4">
                   <div class="flex flex-col lg:flex-row items-center gap-6">
                     <!-- Campo de Nombre Premium -->
                     <div class="flex-1 w-full">
                       <label class="text-[11px] font-black text-primary uppercase tracking-[0.2em] block mb-4 ml-1">Nombre de quien captura el pedido</label>
                       <div class="modern-input-group">
                         <span class="input-icon material-symbols-rounded">person</span>
-                        <input id="nombreBIO" placeholder="Nombre completo" class="w-full h-[58px] rounded-2xl pr-6 text-[15px] font-bold outline-none shadow-md">
+                        <input id="nombreBIO" placeholder="Nombre completo" class="input-premium !h-[58px] !rounded-2xl !pr-6 font-bold shadow-md">
                       </div>
                     </div>
 
@@ -720,7 +720,7 @@
                 </div>
 
                 <!-- BOTÓN DE GUARDADO BLINDADO (REDISEÑO INSTITUCIONAL) -->
-                <button class="btn-premium-action btn-save-animate w-full" id="btnSaveBIO" data-alert="" data-blocked="">
+                <button class="btn-premium btn-premium-save btn-save-animate w-full" id="btnSaveBIO" data-alert="" data-blocked="">
                   Guardar pedido de biológico
                 </button>
 
@@ -759,8 +759,8 @@
                     <button class="bg-transparent text-primary hover:bg-primary/5 px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer" id="btnBioConfirmCancel" type="button">
                       <span class="material-symbols-rounded text-[20px]">close</span> Corregir
                     </button>
-                    <button class="bg-[#d97706] text-white hover:bg-[#b45309] hover:-translate-y-0.5 px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all shadow-md3-1 border-none cursor-pointer" id="btnBioConfirmAccept" type="button">
-                      <span class="material-symbols-rounded text-[20px]">done_all</span> Confirmar y Guardar
+                    <button class="btn-premium btn-premium-save" id="btnBioConfirmAccept" type="button">
+                      <span class="material-symbols-rounded">done_all</span> Confirmar y Guardar
                     </button>
                   </div>
                 </div>
