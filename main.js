@@ -7812,7 +7812,7 @@ async function getTodayReports(fecha = "", force = false) {
     });
 
     $("who").textContent = `${user.clues || "—"} — ${user.unidad || "—"}`;
-    // ✅ REINTEGRACIÓN SOLICITADA: Saludo de bienvenida institucional
+    // ✅ SALUDO DINÁMICO (Cargando...)
     if ($("welcome")) $("welcome").textContent = `Hola, ${user.usuario}`;
     $("rolTxt").textContent = (user.rol || "UNIDAD").replace(/^Perfil:\s*/i, "");
     
@@ -7882,7 +7882,7 @@ async function getTodayReports(fecha = "", force = false) {
 
       if ($("welcome")) {
         // Combinación de Saludo Nominal + Temporal (Premium Senior UX)
-        $("welcome").textContent = `Hola, ${USER.usuario}. ${saludo}`;
+        $("welcome").textContent = `${saludo}, ${USER.usuario}`;
       }
       paintStatusChips(STATUS);
     }
