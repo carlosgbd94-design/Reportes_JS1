@@ -496,7 +496,27 @@ body.mobile-mode.lowperf {
   color: var(--md-sys-color-primary);
   margin: 24px 0 8px 4px;
   text-align: left;
+}/* 💎 GLOBAL PREMIUM INPUTS & DROPDOWNS (Base styles) */
+input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not(.notifSearchInput), 
+select, 
+textarea {
+  border: 2px solid rgba(0, 51, 102, 0.12) !important;
+  border-radius: 14px !important;
+  padding: 12px 18px; /* No !important here to let icon groups work */
+  font-weight: 700 !important;
+  background-color: #ffffff !important;
+  transition: all 0.2s ease !important;
+  outline: none !important;
 }
+
+input:focus, 
+select:focus, 
+textarea:focus {
+  border-color: #003366 !important;
+  box-shadow: 0 0 0 4px rgba(0, 51, 102, 0.05) !important;
+}
+
+
 
 #cardLogin input,
 #cardLogin .passField input {
@@ -1473,37 +1493,32 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   z-index: 100;
 }
 
+
+
 .topNotifDropdown {
   position: absolute;
   top: 0;
   left: 0;
   right: auto;
+  z-index: 10000;
   width: min(475px, calc(100vw - 20px));
-  min-height: 400px;
   max-height: calc(100vh - 40px);
-  margin-top: 0;
-  z-index: 2000000;
-  contain: layout paint;
-  background: none !important;
-  box-shadow: none !important;
-  border: none !important;
-  outline: none !important;
   padding: 0;
 }
+
+
 
 .topNotifCard {
   width: 100%;
   min-height: 360px;
   max-height: calc(100vh - 24px);
-  border: 1px solid rgba(0, 0, 0, .08);
-  border-radius: 32px; /* More rounded premium feel */
+  border: 1px solid rgba(0, 0, 0, .1);
+  border-radius: 20px;
   background: #ffffff;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, .2),
-    inset 0 1px 0 rgba(255, 255, 255, .8);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .1);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  contain: layout paint;
 }
 
 .topNotifCardHead {
@@ -1512,11 +1527,12 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   align-items: stretch;
   justify-content: flex-start;
   gap: 12px;
-  padding: 16px;
+  padding: 18px;
   border-bottom: 1px solid rgba(0, 0, 0, .05);
-  background: linear-gradient(180deg, #f8fafc, #ffffff);
+  background: #ffffff;
   flex: 0 0 auto;
 }
+
 
 .topNotifHeaderTop {
   display: flex;
@@ -4652,12 +4668,16 @@ body.mobile-mode .topNotifCard {
 
 .notifSearchInput {
   border: none !important;
+  background-color: transparent !important;
   background: transparent !important;
   padding: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
   box-shadow: none !important;
+  width: 100%;
 }
 
 
@@ -5012,38 +5032,43 @@ body.mobile-mode .topNotifCard {
 }
 
 /* Semaforización de Cumplimiento (Senior UX Gradients) */
-#bCumplimiento.good, #bCumplimiento[data-tone="good"] { 
+/* Semaforización de Cumplimiento (Premium Dashboard Style) */
+#bCumplimiento[data-tone="good"] { 
   background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important; 
   color: white !important; 
   border-color: rgba(255,255,255,0.2) !important;
-  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2) !important;
+  box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.3) !important;
 }
-#bCumplimiento.ok, #bCumplimiento[data-tone="ok"] { 
+#bCumplimiento[data-tone="ok"] { 
   background: linear-gradient(135deg, #0284c7 0%, #38bdf8 100%) !important; 
   color: white !important; 
   border-color: rgba(255,255,255,0.2) !important;
-  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2) !important;
+  box-shadow: 0 10px 25px -5px rgba(2, 132, 199, 0.3) !important;
 }
-#bCumplimiento.warn, #bCumplimiento[data-tone="warn"] { 
+#bCumplimiento[data-tone="warn"] { 
   background: linear-gradient(135deg, #d97706 0%, #fbbf24 100%) !important; 
   color: white !important; 
   border-color: rgba(255,255,255,0.2) !important;
-  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.2) !important;
+  box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.3) !important;
 }
-#bCumplimiento.bad, #bCumplimiento[data-tone="bad"] { 
+#bCumplimiento[data-tone="bad"] { 
   background: linear-gradient(135deg, #dc2626 0%, #f87171 100%) !important; 
   color: white !important; 
   border-color: rgba(255,255,255,0.2) !important;
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2) !important;
+  box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.3) !important;
 }
 
-#bCumplimiento[data-tone] span, #bCumplimiento.good span, #bCumplimiento.ok span, #bCumplimiento.warn span, #bCumplimiento.bad span {
+#bCumplimiento[data-tone] #dayTxt,
+#bCumplimiento[data-tone] span {
   color: white !important;
-  opacity: 1 !important;
 }
-#bCumplimiento[data-tone] .opacity-50, #bCumplimiento.good .opacity-50, #bCumplimiento.warn .opacity-50, #bCumplimiento.bad .opacity-50 {
+
+#bCumplimiento[data-tone] .opacity-40,
+#bCumplimiento[data-tone] .opacity-30 {
+  color: white !important;
   opacity: 0.8 !important;
 }
+
 
 /* Otros badges son neutros institucionales */
 .badge.secondary, .badge.info, .badge.weather-badge {
@@ -7340,7 +7365,7 @@ body.lowperf .table-responsive {
   position: fixed;
   inset: 0;
   z-index: 100000;
-  background: rgba(255, 255, 255, 0.98); /* Premium clean solid */
+  background: rgba(0, 0, 0, 0.4); /* Standard semi-transparent dark backdrop */
   display: flex !important;
   align-items: center;
   justify-content: center;
@@ -7348,6 +7373,13 @@ body.lowperf .table-responsive {
   pointer-events: none;
   transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+
+/* Specific for functional modals to ensure they don't look like loading screens */
+#uploadFilesOverlay, #exportOverlay, #passwordOverlay, #forgotOverlay {
+  background: rgba(3, 8, 18, 0.4) !important;
+}
+
 
 .overlay.show {
   opacity: 1;
@@ -8205,6 +8237,9 @@ input, textarea, select, [contenteditable] {
   color: #001b3d !important;
 }
 
+
+
+
 /* 💎 PREMIUM ACTION BUTTONS (Institutional Gradient) */
 .btn-premium-action {
   background: linear-gradient(180deg, #001b3d 0%, #003366 100%) !important;
@@ -8494,9 +8529,15 @@ body.mobile-mode #welcome {
 }
 
 #cardApp {
-  padding: 16px !important;
-  border-radius: 24px !important;
+  padding: 32px !important;
+  border-radius: 32px !important;
+  margin-top: 24px !important;
 }
+
+
+
+
+
 
 body.mobile-mode #welcome {
   font-size: 1rem !important;
@@ -8815,8 +8856,9 @@ body.mobile-mode .tab-btn span:not(.material-symbols-rounded) {
   /* Performance Boost: GPU Isolation */
   will-change: transform !important; /* Avoid will-change: backdrop-filter for better stability */
   transform: translateZ(0) !important;
-  contain: layout paint !important;
+  /* Removed contain: paint to prevent clipping of absolute dropdowns */
 }
+
 
 /* Optimized Specular Sheen */
 #mainHeader::after {
@@ -8927,3 +8969,139 @@ body.mobile-mode .tab-btn span:not(.material-symbols-rounded) {
 
 
 
+/* ============================================
+   ROLE-BASED VISIBILITY (ENFORCED)
+   ============================================ */
+
+/* UNIDAD: No Exportar */
+body[data-user-role="UNIDAD"] #btnExport,
+body[data-user-role="UNIDAD"] #btnExportBIO {
+  display: none !important;
+}
+
+
+/* 🚀 HARMONIZED MD3 HEADER ACTIONS (Perfect Profile Compatibility) */
+.header-action-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 51, 102, 0.06); 
+  border: 1.5px solid rgba(0, 51, 102, 0.1);
+  color: #003366 !important; 
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  outline: none;
+}
+
+.header-action-btn .material-symbols-rounded {
+  font-size: 22px;
+  color: inherit !important;
+}
+
+.header-action-btn:hover {
+  background: linear-gradient(135deg, #003366 0%, #004d99 100%); 
+  color: white !important;
+  border-color: transparent;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px -5px rgba(0, 51, 102, 0.4); 
+}
+
+/* Specific Accent Marker (MD3 Style) */
+.header-action-btn:hover::after {
+    content: '';
+    position: absolute;
+    bottom: 5px;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: white;
+    opacity: 0.8;
+}
+
+#btnExport:hover::after { background: #60a5fa; box-shadow: 0 0 8px #60a5fa; }
+#btnOpenUpload:hover::after { background: #2dd4bf; box-shadow: 0 0 8px #2dd4bf; }
+#btnViewArchivos:hover::after { background: #4ade80; box-shadow: 0 0 8px #4ade80; }
+#btnTopNotifications:hover::after { background: #f87171; box-shadow: 0 0 8px #f87171; }
+
+.header-action-btn:active {
+  transform: scale(0.9);
+}
+
+/* 🏷️ GLOBAL PREMIUM TOOLTIP (Unified Header Style) */
+[data-tooltip]::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  background: #001b3d; 
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  z-index: 10001;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Custom Badge for Header Notification Icon */
+#btnTopNotifications #topNotifBadge {
+  position: absolute !important;
+  top: -4px !important;
+  right: -4px !important;
+  background: #ef4444 !important;
+  color: white !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  min-width: 18px !important;
+  height: 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 99px !important;
+  border: 2px solid #ffffff !important; 
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4) !important;
+  z-index: 20 !important;
+}
+
+/* 🚀 HEADER ACTIONS LAYOUT REFINEMENT (Unified Cluster) */
+#userControlsGroup {
+    background: rgba(255, 255, 255, 0.04);
+    padding: 6px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+#headerActions {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Ensure HIDDEN buttons don't take space in flex */
+.header-action-btn[style*="display:none"],
+.header-action-btn[style*="display: none"] {
+    display: none !important;
+}

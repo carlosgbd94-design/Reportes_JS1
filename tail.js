@@ -7119,7 +7119,7 @@ $("btnSaveSR").onclick = async () => {
     };
 
     const curIcon = tagIconMap[f.tag] || f.icon || "syringe";
-    tagEl.innerHTML = `<span class="material-symbols-rounded" style="font-size:12px; margin-right:4px;">${curIcon}</span>` + (f.tag || "");
+    tagEl.innerHTML = `<span class="material-symbols-rounded" style="font-size:18px; margin-right:8px;">${curIcon}</span>` + (f.tag || "");
     titleEl.textContent = f.title || "";
     bodyEl.textContent = f.body || "";
     iconEl.textContent = f.icon || "syringe";

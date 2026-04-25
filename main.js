@@ -277,7 +277,31 @@ document.addEventListener("DOMContentLoaded", () => {
     $("navLogout")?.addEventListener("click", () => {
       $("btnLogout")?.click();
     });
+
+    // ✅ TECLA ESCAPE: Cerrar modales activos (Senior Logic)
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        // Orden de prioridad para cerrar
+        if ($("uploadFilesOverlay")?.classList.contains("show")) {
+          closeUploadFilesModal();
+        } else if ($("exportOverlay")?.classList.contains("show")) {
+          if (typeof closeExportModal === "function") closeExportModal();
+          else $("exportOverlay").classList.remove("show");
+        } else if ($("pinolEntregaModal")?.classList.contains("show")) {
+          $("pinolEntregaModal").classList.remove("show");
+        } else if ($("liveViewOverlay")?.classList.contains("show")) {
+          $("liveViewOverlay").classList.remove("show");
+        } else if ($("passwordOverlay")?.classList.contains("show")) {
+          // passwordOverlay usually shouldn't be closed if mandatory, 
+          // but we follow user request for "modals"
+          $("passwordOverlay").classList.remove("show");
+        } else if ($("forgotOverlay")?.classList.contains("show")) {
+          $("forgotOverlay").classList.remove("show");
+        }
+      }
+    });
 });
+
 
   const overlay = $("overlay");
   const overlayMsg = $("overlayMsg");
@@ -2027,36 +2051,34 @@ document.addEventListener("DOMContentLoaded", () => {
     const refs = getTopNotifDropdownRefs();
     const box = refs.box;
     const btn = refs.btn;
-    const host = refs.host;
 
-    if (!box || !btn || !host) return;
+    if (!box || !btn) return;
 
-    const hostRect = host.getBoundingClientRect();
     const btnRect = btn.getBoundingClientRect();
     const boxWidth = box.offsetWidth;
-    const hostWidth = host.clientWidth;
+    const padding = 12;
 
-    let top = (btnRect.bottom - hostRect.top) + 4;
-    let left = (btnRect.right - hostRect.left) - boxWidth;
+    // Calculate absolute position relative to viewport (as it's fixed now in CSS or calculated)
+    let top = btnRect.bottom + 12;
+    let left = btnRect.right - boxWidth;
 
-    if (left < 12) left = 12;
+    // Boundary checks
+    if (left < padding) left = padding;
+    if (left + boxWidth > window.innerWidth - padding) {
+      left = window.innerWidth - boxWidth - padding;
+    }
 
-    const maxLeft = Math.max(12, hostWidth - boxWidth - 12);
-    if (left > maxLeft) left = maxLeft;
+    const availableHeight = window.innerHeight - top - padding;
 
-    const availableHeight = Math.max(360, window.innerHeight - btnRect.bottom - 16);
-
-    const nextTop = top + "px";
-    const nextLeft = left + "px";
-    const nextMaxHeight = availableHeight + "px";
-
-    if (box.style.top !== nextTop) box.style.top = nextTop;
-    if (box.style.left !== nextLeft) box.style.left = nextLeft;
-    if (box.style.maxHeight !== nextMaxHeight) box.style.maxHeight = nextMaxHeight;
+    box.style.position = "fixed";
+    box.style.top = top + "px";
+    box.style.left = left + "px";
+    box.style.maxHeight = availableHeight + "px";
+    box.style.zIndex = "10000";
 
     const card = box.querySelector(".topNotifCard");
-    if (card && card.style.maxHeight !== nextMaxHeight) {
-      card.style.maxHeight = nextMaxHeight;
+    if (card) {
+      card.style.maxHeight = availableHeight + "px";
     }
   }
 
@@ -7168,8 +7190,9 @@ async function getTodayReports(fecha = "", force = false) {
     
     const hoyYmd = todayYmdLocal();
 
-    const canCaptureLocal = true; // Siempre permitir captura (Mensual o Extraordinaria)
     const isInsideWindow = hoyYmd >= windowStartYmd && hoyYmd <= windowEndYmd;
+    const isExtraordinary = !!(STATUS && STATUS.isExtraordinary);
+    const canCaptureLocal = isInsideWindow || isExtraordinary;
     const isCaptureDayLocal = hoyYmd === windowTargetYmd;
 
     let windowStatus = "EXTRAORDINARY";
@@ -7179,7 +7202,7 @@ async function getTodayReports(fecha = "", force = false) {
       rows: r.data.rows || [], 
       isCaptureDay: isCaptureDayLocal,
       isInsideWindow: isInsideWindow,
-      canCapture: true,
+      canCapture: canCaptureLocal,
       fechaPedidoProgramada: windowTargetYmd,
       fechaPedidoFriendly: windowTargetFriendly, 
       captureWindowStart: windowStartFriendly, 
@@ -7187,6 +7210,8 @@ async function getTodayReports(fecha = "", force = false) {
       captureWindowStatus: windowStatus,
       diffDays: 0 
     };
+
+
 
     HAS_SAVED_BIO = !!r.data.hasSavedBio;
     EDIT_BIO = false;
@@ -7774,9 +7799,8 @@ async function getTodayReports(fecha = "", force = false) {
       }
     }
 
-    if ($("btnOpenUpload")) {
-      $("btnOpenUpload").style.display = (user.rol === "UNIDAD") ? "inline-flex" : "none";
-    }
+
+
 
     if (user.rol === "ADMIN") {
       if ($("munTxt")) $("munTxt").textContent = "Todos";
@@ -7790,10 +7814,16 @@ async function getTodayReports(fecha = "", force = false) {
       $("munTxt").textContent = (user.municipio || "—").replace(/^Municipio:\s*/i, "");
     }
 
-    const isAdmin = user.rol?.toUpperCase() === "ADMIN";
-    const isJurisdiccional = user.rol?.toUpperCase() === "JURISDICCIONAL";
-    const isMunicipal = user.rol?.toUpperCase() === "MUNICIPAL";
-    const isUnidad = user.rol?.toUpperCase() === "UNIDAD";
+    // 🛡️ Hierarchy & Role Detection (Senior implementation)
+    const role = (user.rol || "UNIDAD").trim().toUpperCase();
+    document.body.setAttribute('data-user-role', role);
+
+    const isAdmin = role === "ADMIN";
+    const isJurisdiccional = role === "JURISDICCIONAL";
+    const isMunicipal = role === "MUNICIPAL";
+    const isUnidad = role === "UNIDAD";
+
+
 
     // --- BOTTOM NAV PERMISSIONS ---
     const isMobile = window.innerWidth <= 768;
@@ -7819,14 +7849,20 @@ async function getTodayReports(fecha = "", force = false) {
       paintStatusChips(STATUS);
     }
 
+    // --- Role-Based Button Access (JS Fallback, CSS handles main enforcement) ---
     const canExport = isAdmin || isJurisdiccional || isMunicipal;
-
+    const canUpload = isUnidad || isMunicipal;
 
     if ($("btnExport")) $("btnExport").style.display = canExport ? "inline-flex" : "none";
     if ($("btnExportBIO")) $("btnExportBIO").style.display = canExport ? "inline-flex" : "none";
+    if ($("btnOpenUpload")) $("btnOpenUpload").style.display = canUpload ? "inline-flex" : "none";
+    
     if ($("tabADMIN")) $("tabADMIN").style.display = isAdmin ? "block" : "none";
     if ($("tabNOTIFS")) $("tabNOTIFS").style.display = (isUnidad || isAdmin || isJurisdiccional || isMunicipal) ? "block" : "none";
     if ($("btnTopNotifications")) $("btnTopNotifications").style.display = (isUnidad || isAdmin || isJurisdiccional || isMunicipal) ? "inline-flex" : "none";
+
+ 
+
 
     // ✅ EXPLORADOR REFUEZO (HEADER ONLY)
     if ($("btnViewArchivos")) {
@@ -7930,17 +7966,31 @@ async function getTodayReports(fecha = "", force = false) {
     let title = timeGreeting;
     let subtitle = customSubtitle;
 
+    // Helper for long Spanish date
+    const getLongDateSpanish = () => {
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        let dateStr = new Date().toLocaleDateString('es-ES', options);
+        // Capitalize first letter
+        return dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+    };
+
     if (!title) {
       const hora = new Date().getHours();
       if (hora < 12) { 
         title = "¡Buenos días!"; 
-        subtitle = "Qué bueno verte por aquí, iniciamos con éxito.";
       } else if (hora < 19) { 
         title = "¡Buenas tardes!"; 
-        subtitle = "Todo listo para continuar con la gestión.";
       } else { 
         title = "¡Buenas noches!"; 
-        subtitle = "Seguimos trabajando con compromiso.";
+      }
+      
+      const longDate = getLongDateSpanish();
+      title += ` <span class="text-[0.45em] opacity-40 font-medium tracking-tight ml-4 hidden sm:inline-block">hoy es ${longDate}</span>`;
+
+      if (!subtitle) {
+          if (hora < 12) subtitle = "Qué bueno verte por aquí, iniciamos con éxito.";
+          else if (hora < 19) subtitle = "Todo listo para continuar con la gestión.";
+          else subtitle = "Seguimos trabajando con compromiso.";
       }
       
       if (typeof STATUS !== "undefined" && STATUS && STATUS.isExtraordinary) {
@@ -7952,14 +8002,17 @@ async function getTodayReports(fecha = "", force = false) {
     const weatherTemp = CURRENT_WEATHER.temp !== null ? `${CURRENT_WEATHER.temp}°C` : "";
 
     welcomeEl.innerHTML = `
-      <div class="flex flex-col leading-tight">
-        <span class="text-primary flex items-baseline gap-3">
-          ${title}
-          <span class="text-[16px] sm:text-[22px] font-bold text-primary/40 flex items-center gap-1.5">
+      <div class="flex flex-col leading-none">
+        <div class="flex items-center gap-4 flex-wrap">
+          <span class="text-primary font-black tracking-tighter">
+            ${title}
+          </span>
+          <div class="h-8 w-px bg-outline-variant/30 hidden sm:block"></div>
+          <span class="text-[18px] sm:text-[24px] font-black text-primary/30 flex items-center gap-2">
             ${weatherEmoji} ${weatherTemp}
           </span>
-        </span>
-        <span class="text-base sm:text-lg font-medium text-primary/40 mt-1 block">${subtitle}</span>
+        </div>
+        <span class="text-[13px] sm:text-[15px] font-bold text-primary/40 mt-3 block tracking-tight">${subtitle}</span>
       </div>
     `;
   }
@@ -9694,7 +9747,7 @@ $("btnSaveSR").onclick = async () => {
     };
 
     const curIcon = tagIconMap[f.tag] || f.icon || "syringe";
-    tagEl.innerHTML = `<span class="material-symbols-rounded" style="font-size:12px; margin-right:4px;">${curIcon}</span>` + (f.tag || "");
+    tagEl.innerHTML = `<span class="material-symbols-rounded" style="font-size:18px; margin-right:8px;">${curIcon}</span>` + (f.tag || "");
     titleEl.textContent = f.title || "";
     bodyEl.textContent = f.body || "";
     iconEl.textContent = f.icon || "syringe";
@@ -11055,26 +11108,31 @@ $("btnSaveSR").onclick = async () => {
 
   function positionArchivosDropdown() {
     const refs = getArchivosDropdownRefs();
-    if (!refs.box || !refs.host || !refs.btn) return;
+    const box = refs.box;
+    const btn = refs.btn;
+    if (!box || !btn) return;
 
-    const hostRect = refs.host.getBoundingClientRect();
-    const btnRect = refs.btn.getBoundingClientRect();
-    const boxWidth = refs.box.offsetWidth;
-    const hostWidth = refs.host.clientWidth;
+    const btnRect = btn.getBoundingClientRect();
+    const boxWidth = box.offsetWidth;
+    const padding = 12;
 
-    let top = (btnRect.bottom - hostRect.top) + 8;
-    let left = (btnRect.right - hostRect.left) - boxWidth;
+    let top = btnRect.bottom + 12;
+    let left = btnRect.right - boxWidth;
 
-    if (left < 12) left = 12;
-    const maxLeft = Math.max(12, hostWidth - boxWidth - 12);
-    if (left > maxLeft) left = maxLeft;
+    if (left < padding) left = padding;
+    if (left + boxWidth > window.innerWidth - padding) {
+      left = window.innerWidth - boxWidth - padding;
+    }
 
-    const availableHeight = Math.max(380, window.innerHeight - btnRect.bottom - 24);
+    const availableHeight = window.innerHeight - top - padding;
 
-    refs.box.style.top = top + "px";
-    refs.box.style.left = left + "px";
-    refs.box.style.maxHeight = availableHeight + "px";
+    box.style.position = "fixed";
+    box.style.top = top + "px";
+    box.style.left = left + "px";
+    box.style.maxHeight = availableHeight + "px";
+    box.style.zIndex = "10000";
   }
+
 
   function toggleArchivosDropdown() {
     const box = $("archivosDropdown");
@@ -11203,9 +11261,9 @@ $("btnSaveSR").onclick = async () => {
        const cluesUnidad = parts[1];
        const dObj = new Date(f.created_at);
 
-       return `<div class="bg-surface-variant/20 border border-outline-variant/30 rounded-xl p-3 flex items-center gap-3 transition-all hover:bg-surface-variant/50 group">
-                  <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20">
-                     <span class="material-symbols-rounded text-primary text-[22px]">description</span>
+       return `<div class="bg-surface-variant/10 border border-outline-variant/20 rounded-md p-3 flex items-center gap-3 transition-all hover:bg-surface-variant/30 group">
+                  <div class="w-10 h-10 rounded bg-primary/5 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/10">
+                     <span class="material-symbols-rounded text-primary text-[20px]">description</span>
                   </div>
                   <div class="flex-1 min-w-0">
                      <p class="font-bold text-[12px] text-primary truncate leading-tight" title="${fileName}">${fileName}</p>
@@ -11215,10 +11273,11 @@ $("btnSaveSR").onclick = async () => {
                         <span class="text-[9px] text-outline font-medium">${dObj.toLocaleDateString()}</span>
                      </div>
                   </div>
-                  <a href="${url}" target="_blank" class="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center transition-all hover:scale-110 shadow-sm" title="Ver archivo">
+                  <a href="${url}" target="_blank" class="flex-shrink-0 w-8 h-8 rounded bg-primary text-white flex items-center justify-center transition-all hover:scale-110" title="Ver archivo">
                     <span class="material-symbols-rounded text-[18px]">visibility</span>
                   </a>
                </div>`;
+
     }).join("");
   }
 
@@ -11500,11 +11559,22 @@ $("btnSaveSR").onclick = async () => {
     btn.onclick = (e) => {
       e.stopPropagation();
       dropdown.classList.toggle("hidden");
+      btn.classList.toggle("btn-active", !dropdown.classList.contains("hidden"));
     };
 
     document.addEventListener("click", (e) => {
-      if (dropdown && !dropdown.classList.contains("hidden") && !dropdown.contains(e.target)) {
+      if (!dropdown.classList.contains("hidden") && !dropdown.contains(e.target) && !btn.contains(e.target)) {
         dropdown.classList.add("hidden");
+        btn.classList.remove("btn-active");
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !dropdown.classList.contains("hidden")) {
+        dropdown.classList.add("hidden");
+        btn.classList.remove("btn-active");
       }
     });
   }
+
+
