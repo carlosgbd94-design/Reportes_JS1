@@ -1,63 +1,135 @@
 // ============================================
-// JS1 REPORTES — BACKEND: GOOGLE APPS SCRIPT
+// JS1 REPORTES — ARQUITECTURA EXPERTA (V2026)
 // ============================================
-// Toda la lógica de datos pasa por doPost() de GAS.
-// Firebase ha sido completamente eliminado.
+// Firebase & GAS completamente eliminados.
+// Arquitectura basada en Servicios (Service Layer) y Estado Reactivo (AppState).
 
-// GAS Bridge URL (Nuevo)
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyV5NGNP6_6goMa2rRxtIsS9AMp05yIVXR7BkP9DQHsN3aFgls9yKKA5ADVQ3KaPOSGxw/exec";
-
-// SUPABASE CONFIG
+// SUPABASE CONFIG (CORE SERVICE)
 const SUPABASE_URL = "https://utclfqjietlxzlorxhrs.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Y2xmcWppZXRseHpsb3J4aHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNTYyNTQsImV4cCI6MjA5MTkzMjI1NH0.EgDK7xkSZHZyUlGF5m2C7bZjrfkx1M8cBXzxIFedDa4";
 window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Estado de sesión y UI
-let BIO_IS_ENABLED = false;
-let CON_IS_ENABLED = false;
-let USER = null;
-let TOKEN = null;
+// GLOBALS
+let CURRENT_WEATHER = { temp: null, emoji: "", code: null };
+let BATCH_FILTER = "all";
+let BATCH_SEARCH_QUERY = "";
+let BATCH_CATALOG = [];
 let UNIT_BATCHES = [];
 
-let BATCH_CATALOG = [];
-let BATCH_FILTER = "all"; 
-let BATCH_SEARCH_QUERY = "";
-let CONFIG_BIOLOGICOS_CATALOG = [];
-let FULL_BIO_CATALOG = [];
-let CURRENT_WEATHER = { temp: null, emoji: null, code: null };
+// 🏆 GLOBAL ERROR BOUNDARY (Senior Safety Net)
+window.addEventListener('error', (event) => {
+    console.error(' [Fatal Error] ', event.error);
+    if (typeof showToast === 'function') showToast("Error inesperado en la interfaz", false, "bad");
+});
+window.addEventListener('unhandledrejection', (event) => {
+    console.error(' [Async Error] ', event.reason);
+});
 
-// Estado reactivo de la UI — debe declararse aquí para que showToast funcione pre-login
-const LIVE_STATE = {
-  pinolPendientes: null,
-  summaryCapturadas: null,
-  summaryFaltantes: null,
-  todayExistenciaCaptured: null,
-  todayConsCaptured: null,
-  lastHistoryRows: null,
-  summaryKey: null,
-  notifCount: 0,
-  notifWarnCount: 0,
-  notifGoodCount: 0,
-  lastToastKey: "",
-  lastEventKey: "",
-  mutedUntil: 0,
-  lastEventTs: 0,
-  eventCooldownMs: 2200,
-  eventHistory: {},
-  pinolWatching: false,
-  summaryWatching: false,
-  unidadWatching: false,
-  historyWatching: false,
-  toastMeta: { key: "", ts: 0 }
+/**
+ * 💎 APP_STATE: Reactive Core (Senior UX Architecture)
+ */
+const _InternalState = {
+    user: null, token: null, isLoggedIn: false, notifCount: 0,
+    unitBatches: [], biologicosCatalog: [], weather: { temp: null, emoji: null, code: null },
+    ui: { isBusy: false, activeTab: 'SR', mainPanel: 'CAP', opsTab: 'SUMMARY' },
+    // Legacy LIVE_STATE & APP_STATE keys
+    pinolPendientes: null, summaryCapturadas: null, summaryFaltantes: null,
+    todayExistenciaCaptured: null, todayConsCaptured: null, lastHistoryRows: null,
+    lastToastKey: "", lastEventKey: "", mutedUntil: 0, lastEventTs: 0,
+    todayCache: null, isMobile: false, isLowPerf: false, lastLoginUser: "", initialized: false
 };
 
-// --- OPTIMIZACIÓN DE API (BATCHING) ---
-let API_BATCH_QUEUE = [];
-let API_BATCH_TIMER = null;
-const CACHEABLE_ACTIONS = {
-  "getLotesByMunicipio": 3600000,    // 1 hora
-  "unitCatalog": 3600000,            // 1 hora
-  "notificationUserCatalog": 3600000 // 1 hora
+const AppState = new Proxy(_InternalState, {
+    set(target, prop, value) {
+        if (target[prop] === value) return true; // 🛡️ Evitar bucles infinitos (Senior Guard)
+        target[prop] = value;
+        if (prop === 'notifCount') syncMainNotifBadge(value);
+        if (prop === 'isLoggedIn' && !value) clearSession();
+        return true;
+    }
+});
+
+// 🏆 LEGACY ALIASES
+Object.defineProperty(window, 'USER', { get: () => AppState.user, set: (v) => AppState.user = v, configurable: true });
+Object.defineProperty(window, 'TOKEN', { get: () => AppState.token, set: (v) => AppState.token = v, configurable: true });
+Object.defineProperty(window, 'STATUS', { get: () => AppState.status, set: (v) => AppState.status = v, configurable: true });
+const LIVE_STATE = AppState;
+const APP_STATE = AppState;
+window.apiCall = (action, payload) => AppService.call(action, payload);
+const $ = (id) => DOM.get(id);
+window.$ = $; // Alias global experto
+
+/**
+ * 🚀 APP_SERVICE: Centralized API & Logic Layer
+ */
+const AppService = {
+    async call(actionOrPayload, payload = {}) {
+        const action = (typeof actionOrPayload === "string" ? actionOrPayload : actionOrPayload?.action) || "unknown";
+        const finalPayload = typeof actionOrPayload === "object" ? actionOrPayload : payload;
+        const body = { ...finalPayload, action: action.toLowerCase(), token: AppState.token };
+        try {
+            return await supabaseRequest(body.action, body);
+        } catch (error) {
+            console.error(`[AppService Error] ${action}:`, error);
+            showToast(error.message || "Error de comunicación", false, "bad");
+            throw error;
+        }
+    },
+    
+    /**
+     * 🛡️ runCapture: Ejecutor de captura premium.
+     * Centraliza: busy state, overlays, toasts, eventos y mutación de caché.
+     */
+    async runCapture(config) {
+        const { btnId, title, msg, successMsg, eventTitle, eventMsg, mutation, action } = config;
+        if (isBtnBusy(btnId)) return;
+        
+        setBtnBusy(btnId, true, title + "…");
+        showOverlay(msg, title);
+        
+        try {
+            const res = await action();
+            if (!res || !res.ok) throw new Error(res?.error || "Error al procesar la solicitud");
+            
+            muteRealtimeFor(12000);
+            showToast(successMsg, true, "good");
+            pushLiveEvent(eventTitle, eventMsg, "good");
+            setSavedStamp();
+            
+            if (mutation) await refreshAfterMutation(mutation);
+            return res;
+        } catch (error) {
+            showToast(error.message, false, "bad");
+            console.error(`[Capture Error] ${btnId}:`, error);
+        } finally {
+            setBtnBusy(btnId, false);
+            hideOverlay();
+        }
+    }
+};
+
+/**
+ * 📦 DOM_CACHE: Performance optimization
+ */
+const DOM = {
+    get(id) {
+        if (!this._cache) this._cache = {};
+        if (!this._cache[id]) this._cache[id] = document.getElementById(id);
+        return this._cache[id];
+    },
+    clearCache() { this._cache = {}; }
+};
+
+
+const CACHE_TTL = { 
+    LOTES: 3600000, 
+    UNIDADES: 3600000, 
+    NOTIFS: 60000,
+    TODAY_REPORTS: 60000,
+    CAPTURE_OVERVIEW: 120000,
+    HISTORY_METRICS: 180000,
+    UNIT_CATALOG: 1800000,
+    PINOL_LIST: 30000
 };
 
 // --- LOGÍSTICA DE CAPTURA (VENTANAS INTELIGENTES) ---
@@ -206,7 +278,7 @@ document.addEventListener("DOMContentLoaded", () => {
       $("btnLogout")?.click();
     });
 });
-  const $ = (id) => document.getElementById(id);
+
   const overlay = $("overlay");
   const overlayMsg = $("overlayMsg");
   const toastContainer = $("toast-container");
@@ -1119,11 +1191,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnTopNotifications = $("btnTopNotifications");
     const nextText = String(n);
 
-    // Sync state for local logic
-    if (typeof LIVE_STATE !== "undefined") {
-      LIVE_STATE.notifCount = n;
-    }
-
     if (badge) {
       if (n > 0) {
         if (badge.style.display !== "inline-flex") badge.style.display = "inline-flex";
@@ -1162,10 +1229,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // Sync state for local logic
-    if (typeof LIVE_STATE !== "undefined") {
-      LIVE_STATE.notifCount = n;
-    }
+    // 🛡️ El estado ya se maneja vía AppState Proxy, eliminamos asignación cíclica.
+
 
     const deskBadge = $("notifBadgeDesktop");
     if (deskBadge) {
@@ -3006,64 +3071,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // Toda la lógica de datos pasa por doPost() de GAS.
   // El frontend NUNCA accede a la base de datos directamente.
 
+  /**
+   * INTERCEPTOR DE API UNIFICADO
+   * Sustituye el antiguo apiCall que usaba GAS por una llamada directa a AppService.
+   */
   async function apiCall(actionOrPayload, payload = {}, options = {}) {
-    const { immediate = false, noCache = false } = options;
-    let body = {};
-    let action = "";
+    const action = typeof actionOrPayload === "string" ? actionOrPayload : actionOrPayload.action;
+    const finalPayload = typeof actionOrPayload === "object" ? actionOrPayload : payload;
 
-    if (typeof actionOrPayload === "string") {
-      action = actionOrPayload;
-      body = Object.assign({}, payload, { action, token: payload.token || TOKEN });
-    } else {
-      body = Object.assign({}, actionOrPayload, { token: actionOrPayload.token || TOKEN });
-      action = body.action;
-    }
-
-    // --- ENRUTADO SUPABASE (MIGRACIÓN) ---
-    const SUPABASE_ACTIONS = [
-      "login", "whoami", "savesr", "saveconsumibles", "savebio", 
-      "gettodayreports", "admincaptureoverview", "historymetrics",
-      "listmynotifications", "marknotificationread", "deletenotification",
-      "biogetform", "biogetdatesformonth", "unitstatus", "unitcatalog", 
-      "pinolsolicitud", "listpinol", "markpinoldelivered", "confirmpinolreceipt",
-      "sendnotification", "getlotesbymunicipio", "savelotes", "uploadfile", "listfiles",
-      "export", "bioexportmatrix", "biogetexportoptions", "admingetunitdetail", "requestpasswordreset",
-      "adminlistusers", "admincreateuser", "admintoggleuser", "adminresetpassword", "admindeleteuser", 
-      "adminsetbiooverride", "admintogglebioparam", "adminsetconsumiblesoverride", "admingetconsumiblesoverride"
-    ];
-
-    if (SUPABASE_ACTIONS.includes(action.toLowerCase())) {
-      return supabaseRequest(action.toLowerCase(), body);
-    }
-
-    // --- ACCIONES LEGADAS (DRIVE / GAS) ---
-    // (Removido uploadfile legacy)
-
-    // --- FALLBACK BATCHING LEGADO ---
-    // 1. Verificar Caché (Si no es inmediata o batch)
-    if (!noCache && CACHEABLE_ACTIONS[action]) {
-      try {
-        const cached = localStorage.getItem(`GAS_CACHE_${action}`);
-        if (cached) {
-          const { data, ts } = JSON.parse(cached);
-          if (Date.now() - ts < CACHEABLE_ACTIONS[action]) return { ok: true, data };
-        }
-      } catch(e) {}
-    }
-
-    // 2. Acciones que SIEMPRE son inmediatas
-    const CRITICAL = ["unitStatus"];
-    if (immediate || CRITICAL.includes(action)) {
-      return _rawApiCall(body);
-    }
-
-    // 3. Encolar para Batching
-    return new Promise((resolve, reject) => {
-      API_BATCH_QUEUE.push({ body, resolve, reject });
-      if (!API_BATCH_TIMER) {
-        API_BATCH_TIMER = setTimeout(_dispatchBatch, 50);
-      }
-    });
+    // ⚡ Redirección directa al servicio Supabase (Eliminando GAS)
+    return AppService.call(action, finalPayload, options);
   }
 
   // --- SEGURIDAD ---
@@ -3081,8 +3098,8 @@ document.addEventListener("DOMContentLoaded", () => {
    * INTERCEPTOR SUPABASE
    * Reemplaza la lógica de GAS por llamadas directas a Supabase.
    */
-  async function supabaseRequest(action, payload) {
-    const actionLower = action.toLowerCase();
+  async function supabaseRequest(action = "", payload) {
+    const actionLower = String(action || "").toLowerCase();
     console.log(`[Supabase] Action: ${actionLower}`, payload);
     
     try {
@@ -3426,7 +3443,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 multiplo: p.multiplo,
                 min_dosis: p.min_dosis,
                 max_dosis: p.max_dosis,
-                promedio_frascos: p.promedio_frascos,
+              promedio_frascos: p.promedio_frascos,
                 existencia_actual_frascos: null,
                 pedido_frascos: null
               })),
@@ -3965,6 +3982,8 @@ document.addEventListener("DOMContentLoaded", () => {
           if (catUpper.includes("CAPACITACI")) tipo = "CAPACITACIÓN";
           else if (catUpper.includes("CAMPA")) tipo = "CAMPAÑA";
           else if (catUpper.includes("SUPERVISI")) tipo = "SUPERVISIÓN";
+          
+          const cleanCat = normalizePath(category).replace(/[\s\/]/g, '_');
 
           // Formatter para la fecha: YYYY-MM-DD
           const now = new Date();
@@ -3973,13 +3992,16 @@ document.addEventListener("DOMContentLoaded", () => {
           const dd = String(now.getDate()).padStart(2, '0');
           const dateSlug = `${yyyy}-${mm}-${dd}`;
 
-          // Nomenclatura oficial: YYYY-MM-DD-EVIDENCIA-TIPO-CLUES_UNIDAD.ext
-          const extension = file.name.split('.').pop();
-          const cleanUnidad = normalizePath(targetUnidad).replace(/[\s\/]/g, '_');
-          const officialName = `${dateSlug}-EVIDENCIA-${tipo}-${targetClues}_${cleanUnidad}.${extension}`;
+          // Sanitización agresiva para Storage (Senior Standards)
+          const safeClues = normalizePath(targetClues || "SIN_CLUES").replace(/[\s\/]/g, '_');
+          const safeUnidad = normalizePath(targetUnidad || "SIN_UNIDAD").replace(/[\s\/]/g, '_');
+          const safeTipo = normalizePath(tipo).replace(/[\s\/]/g, '_');
+          
+          const extension = file.name.split('.').pop().toLowerCase();
+          const officialName = `${dateSlug}-EVIDENCIA-${safeTipo}-${safeClues}_${safeUnidad}.${extension}`;
           
           // Ruta final: Categoria / CLUES_Unidad / Nombre_Oficial
-          const folderPath = `${cleanCat}/${targetClues}_${cleanUnidad}/${officialName}`;
+          const folderPath = `${cleanCat}/${safeClues}_${safeUnidad}/${officialName}`.replace(/\/\//g, '/');
           
           const { error } = await supabase.storage.from('evidencias').upload(folderPath, file, {
             cacheControl: '3600',
@@ -3993,6 +4015,27 @@ document.addEventListener("DOMContentLoaded", () => {
           const { data: filesData, error: filesErr } = await supabase.rpc('get_evidences_list');
           if (filesErr) throw filesErr;
           return { ok: true, data: filesData || [] };
+        }
+
+        case "notificationusercatalog": {
+          const { data, error } = await supabase
+            .from('usuarios_legacy')
+            .select('usuario, municipio, clues, unidad, rol')
+            .eq('activo', 'SI')
+            .order('usuario', { ascending: true });
+          if (error) throw error;
+          return { ok: true, data: data || [] };
+        }
+
+        case "silentadminreminders": {
+          // No-op for now, or implement a simple check for pending tasks
+          return { ok: true, data: [] };
+        }
+
+        case "batch": {
+          const requests = payload.requests || [];
+          const results = await Promise.all(requests.map(r => supabaseRequest(String(r.action || "").toLowerCase(), r)));
+          return { ok: true, data: results };
         }
 
         case "adminresetpassword": {
@@ -4257,37 +4300,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  async function _rawApiCall(body) {
-    const action = body.action;
-    try {
-      const res = await fetch(GAS_API_URL, {
-        method: "POST",
-        body: JSON.stringify(body),
-        headers: { "Content-Type": "text/plain;charset=utf-8" }
-      });
-
-      const text = await res.text();
-      let json;
-      try {
-        json = JSON.parse(text);
-      } catch (e) {
-        console.error("Respuesta inválida:", text);
-        return { ok: false, error: "Error en formato de respuesta." };
-      }
-
-      // Guardar en caché si aplica
-      if (json.ok && CACHEABLE_ACTIONS[action]) {
-        try {
-          localStorage.setItem(`GAS_CACHE_${action}`, JSON.stringify({ data: json.data, ts: Date.now() }));
-        } catch(e) {}
-      }
-
-      return json;
-    } catch (err) {
-      console.error(`Error en _rawApiCall (${action}):`, err);
-      return { ok: false, error: "Error de conexión: " + err.message };
-    }
-  }
+  // 🛑 _rawApiCall y lógica de GAS eliminados por obsolescencia.
+  // Toda la comunicación ahora es 1:1 con Supabase vía AppService.
 
 
   // ==========================================
@@ -4399,13 +4413,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const CLIENT_CACHE_PREFIX = "JS1_CACHE::";
 
-  const CACHE_TTL = {
-    TODAY_REPORTS: 1000 * 60 * 1,        // 1 min
-    CAPTURE_OVERVIEW: 1000 * 60 * 2,     // 2 min
-    HISTORY_METRICS: 1000 * 60 * 3,      // 3 min
-    UNIT_CATALOG: 1000 * 60 * 30,        // 30 min
-    PINOL_LIST: 1000 * 30                // 30 seg
-  };
+  // 🛑 CACHE_TTL consolidado en la cabecera del archivo.
 
   function buildCacheKey(scope, extra = "") {
     const userKey = USER && USER.usuario ? USER.usuario : "anon";
@@ -4992,7 +5000,7 @@ document.addEventListener("DOMContentLoaded", () => {
     bindCaptureUtilityEvents();
     runBootUiSetup();
 
-    syncAppState({
+    Object.assign(AppState, {
       isMobile: document.body.classList.contains("mobile-mode"),
       isLowPerf: document.body.classList.contains("lowperf"),
       initialized: true
@@ -5060,8 +5068,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  BATCH_CATALOG = []; // Catálogo completo (ADMIN)
-  UNIT_BATCHES = [];  // Catálogo filtrado por municipio (UNIDAD)
+
+
 
   async function hydrateSessionUi(user, status, opts = {}) {
     exposeAppFns();
@@ -5073,6 +5081,8 @@ document.addEventListener("DOMContentLoaded", () => {
     } = opts;
 
     setLoggedInUI(user, status);
+    showRightColumn(true);
+    hideOverlay();
     window.MUST_CHANGE_PASSWORD = !!mustChangePassword;
 
     if (window.MUST_CHANGE_PASSWORD && typeof openPasswordModal === "function") {
@@ -5511,27 +5521,19 @@ async function loadBatchesForSession(user) {
   }
 
 $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
-    setBtnBusy("btnSaveLotesAdmin", true, "Guardando…");
-    showOverlay("Actualizando catálogo de lotes…", "Administración");
-    
-    try {
-        const r = await apiCall("saveLotes", { lotes: BATCH_CATALOG });
-        
-        if (!r || !r.ok) {
-            throw new Error((r && r.error) || "Error al guardar lotes.");
-        }
+  const lotes = BATCH_CATALOG || [];
+  if (!lotes.length) return showToast("No hay lotes para guardar", false, "warn");
 
-        showToast("Catálogo de lotes actualizado correctamente", true, "good");
-        // Invalidar caché de lotes
-        try { localStorage.removeItem("GAS_CACHE_getLotesByMunicipio"); } catch(e){}
-        await loadBatchesForSession(USER); 
-    } catch (e) {
-        console.error("Error al guardar lotes:", e);
-        showToast("Error al guardar en la base de datos: " + e.message, false);
-    } finally {
-        setBtnBusy("btnSaveLotesAdmin", false);
-        hideOverlay();
-    }
+  await AppService.runCapture({
+    btnId: "btnSaveLotesAdmin",
+    title: "Guardando",
+    msg: "Sincronizando catálogo de lotes...",
+    successMsg: "Catálogo guardado correctamente",
+    eventTitle: "Administración de Lotes",
+    eventMsg: "Catálogo actualizado globalmente.",
+    mutation: { touchToday: true }, 
+    action: () => AppService.call("saveLotes", { lotes })
+  });
 });
 
   // ==========================================
@@ -5826,43 +5828,8 @@ window.handleSRLoteChange = function(selectEl) {
     }
   });
 
-  const APP_STATE = {
-    user: null,
-    status: null,
-    token: "",
-    todayCache: null,
-    mainPanel: "CAP",
-    captureTab: "SR",
-    opsTab: "SUMMARY",
-    isMobile: false,
-    isLowPerf: false,
-    lastLoginUser: "",
-    initialized: false
-  };
+  // 🛑 syncAppState y APP_STATE heredado eliminados. AppState (Proxy) ahora es el único gestor.
 
-  function syncAppState(partial = {}) {
-    Object.assign(APP_STATE, partial);
-    return APP_STATE;
-  }
-
-  function syncAppStateFromGlobals() {
-    syncAppState({
-      user: (typeof USER !== "undefined") ? USER : null,
-      status: (typeof STATUS !== "undefined") ? STATUS : null,
-      token: (typeof TOKEN !== "undefined") ? TOKEN : "",
-      todayCache: (typeof TODAY_CACHE !== "undefined") ? TODAY_CACHE : null,
-      isMobile: document.body.classList.contains("mobile-mode"),
-      isLowPerf: document.body.classList.contains("lowperf")
-    });
-    return APP_STATE;
-  }
-
-  function syncGlobalsFromAppState() {
-    if (typeof USER !== "undefined") USER = APP_STATE.user;
-    if (typeof STATUS !== "undefined") STATUS = APP_STATE.status;
-    if (typeof TOKEN !== "undefined") TOKEN = APP_STATE.token;
-    if (typeof TODAY_CACHE !== "undefined") TODAY_CACHE = APP_STATE.todayCache;
-  }
 
   function isMobileMode() {
     return document.body.classList.contains("mobile-mode");
@@ -7781,7 +7748,7 @@ async function getTodayReports(fecha = "", force = false) {
     USER = user;
     STATUS = (status && status.data) ? status.data : (status || null);
 
-    syncAppState({
+    Object.assign(AppState, {
       user: USER,
       status: STATUS,
       token: (typeof TOKEN !== "undefined") ? TOKEN : "",
@@ -7808,8 +7775,7 @@ async function getTodayReports(fecha = "", force = false) {
     }
 
     if ($("btnOpenUpload")) {
-      const isOpsAdmin = user.rol === "ADMIN" || user.rol === "JURISDICCIONAL";
-      $("btnOpenUpload").style.display = isOpsAdmin ? "none" : "inline-flex";
+      $("btnOpenUpload").style.display = (user.rol === "UNIDAD") ? "inline-flex" : "none";
     }
 
     if (user.rol === "ADMIN") {
@@ -7932,13 +7898,13 @@ async function getTodayReports(fecha = "", force = false) {
     }
 
     if (isUnidad) {
-      syncAppState({ mainPanel: "CAP", captureTab: "SR" });
+      Object.assign(AppState, { mainPanel: "CAP", captureTab: "SR" });
       activateDefaultMainForRole();
       loadBioForm().catch(err => console.error("loadBioForm error:", err));
       reloadTodayState();
       schedulePanelScroll("panelCAP", 120, false);
     } else {
-      syncAppState({ mainPanel: "CAP" });
+      Object.assign(AppState, { mainPanel: "CAP" });
       activateMain("CAP");
       refreshPinolBadgeOnly();
     }
@@ -8008,69 +7974,8 @@ async function getTodayReports(fecha = "", force = false) {
     ]);
   }
 
-  async function hydrateSessionUi(user, status, opts = {}) {
-    exposeAppFns();
-    assertCriticalFns();
+  // 🛑 Duplicado de hydrateSessionUi eliminado.
 
-    const {
-      showSuccessToast = false,
-      mustChangePassword = false
-    } = opts;
-
-    setLoggedInUI(user, status);
-    showRightColumn(true); 
-    hideOverlay(); // Resolve mobile stuck-at-overlay issue
-
-    window.MUST_CHANGE_PASSWORD = !!mustChangePassword;
-
-    // Inicializar catálogos de lotes
-    try {
-      if (user.rol === "ADMIN" || user.rol === "JURISDICCIONAL") {
-        toggleEl("tabLOTES", true, "flex");
-      } else {
-        toggleEl("tabLOTES", false);
-        toggleEl("panelLOTES", false);
-      }
-      await loadBatchesForSession(user);
-    } catch (e) {
-      console.warn("Error cargando lotes:", e);
-    }
-
-    const today = await smartLoader(
-      () => getTodayReports(todayYmdLocal(), true),
-      {
-        message: "Cargando información del día…",
-        title: "Inicializando"
-      }
-    );
-
-    hydrateTodayForms(today);
-
-    const isOps = user && (user.rol === "ADMIN" || user.rol === "MUNICIPAL" || user.rol === "JURISDICCIONAL");
-    if (isOps) {
-      const fechaHoy = todayYmdLocal();
-      if ($("summaryFecha")) $("summaryFecha").value = fechaHoy;
-      if ($("summaryTipo")) $("summaryTipo").value = "SR";
-      if ($("histFechaInicio")) $("histFechaInicio").value = fechaHoy;
-      if ($("histFechaFin")) $("histFechaFin").value = fechaHoy;
-
-      const [summary] = await Promise.all([
-        getCaptureOverview(fechaHoy, "SR"),
-        refreshPinolBadgeOnly()
-      ]);
-
-      if (summary) renderCaptureSummary(summary);
-    }
-
-    if (showSuccessToast) {
-      showToast("Sesión iniciada correctamente");
-    }
-
-    requestAnimationFrame(async () => {
-      await loadNotifications({ silent: true });
-      startNotificationsAutoRefresh();
-    });
-  }
 
   function setLoggedOutUI() {
     USER = null;
@@ -8080,7 +7985,7 @@ async function getTodayReports(fecha = "", force = false) {
 
     stopRealtimeUX();
 
-    syncAppState({
+    Object.assign(AppState, {
       user: null,
       status: null,
       token: "",
@@ -8130,7 +8035,7 @@ async function getTodayReports(fecha = "", force = false) {
     const currentPanel = APP_STATE.mainPanel || "CAP";
     const samePanel = currentPanel === panel;
 
-    syncAppState({ mainPanel: panel });
+    Object.assign(AppState, { mainPanel: panel });
 
     if (panel === "CAP") clearTabAttention("tabCAP");
     if (panel === "NOTIFS") clearTabAttention("tabNOTIFS");
@@ -8197,7 +8102,7 @@ async function getTodayReports(fecha = "", force = false) {
     if (panel === "CAP" && isOps) {
       const targetSub = forceSubTab || APP_STATE.opsTab || "CAPTURE";
       if (!samePanel || APP_STATE.opsTab !== targetSub) {
-        syncAppState({ opsTab: targetSub });
+        Object.assign(AppState, { opsTab: targetSub });
         activateOpsTab(targetSub);
       }
       refreshPinolBadgeOnly().catch(() => { });
@@ -8256,7 +8161,7 @@ async function getTodayReports(fecha = "", force = false) {
     const currentTab = APP_STATE.captureTab || "SR";
     const sameTab = currentTab === tab;
 
-    syncAppState({ captureTab: tab });
+    Object.assign(AppState, { captureTab: tab });
 
     if (tab === "SR") {
       clearTabAttention("tabSR");
@@ -8325,7 +8230,7 @@ async function getTodayReports(fecha = "", force = false) {
     const currentOpsTab = APP_STATE.opsTab || "CAPTURE";
     const sameTab = currentOpsTab === tab;
 
-    syncAppState({ opsTab: tab });
+    Object.assign(AppState, { opsTab: tab });
 
     if (tab === "CAPTURE") clearTabAttention("tabOPS_CAPTURE");
     if (tab === "PINOL") clearTabAttention("tabOPS_PINOL");
@@ -8510,95 +8415,47 @@ async function getTodayReports(fecha = "", force = false) {
 
 
 $("btnSaveSR").onclick = async () => {
-  if (isBtnBusy("btnSaveSR")) return;
-
-  const nombre = $("nombreSR") ? $("nombreSR").value.trim() : "";
-  if (!nombre) {
-    showToast("Por favor, ingresa el nombre del responsable", false, "warn");
-    return;
-  }
+  const nombre = $("nombreSR")?.value.trim() || "";
+  if (!nombre) return showToast("Ingresa el nombre del responsable", false, "warn");
 
   const items = [];
   let hasInvalid = false;
   document.querySelectorAll("#srCaptureTbody tr").forEach(tr => {
-    const cache = tr._cache || {};
-    const bioSelect = cache.bioSelect || tr.querySelector(".sr-bio-select");
-    const loteSelect = cache.loteSelect || tr.querySelector(".sr-lote-select");
-    const cantidadInput = cache.cantidadInput || tr.querySelector(".sr-cantidad-input");
-    const recepcionInput = cache.recepcionInput || tr.querySelector(".sr-recepcion-input");
+    const row = tr._cache || {};
+    const bio = (row.bioSelect || tr.querySelector(".sr-bio-select"))?.value;
+    const lote = (row.loteSelect || tr.querySelector(".sr-lote-select"))?.value;
+    const cant = (row.cantidadInput || tr.querySelector(".sr-cantidad-input"))?.value;
+    const recep = (row.recepcionInput || tr.querySelector(".sr-recepcion-input"))?.value;
 
-    const bio = bioSelect.value;
-    const lote = loteSelect.value;
-    const cantidad = cantidadInput.value;
-    const recepcion = recepcionInput.value;
-
-    if (!bio && !lote && !cantidad) return; // Fila vacía, ignorar
-
-    if (!bio || !lote || cantidad === "" || Number(cantidad) < 0) {
+    if (!bio && !lote && !cant) return;
+    if (!bio || !lote || cant === "" || Number(cant) < 0) {
       hasInvalid = true;
       tr.style.background = "rgba(239, 68, 68, 0.1)";
     } else {
       tr.style.background = "";
-      items.push({
-        biologico: bio,
-        lote: lote,
-        cantidad: Number(cantidad),
-        fecha_recepcion: recepcion
-      });
+      items.push({ biologico: bio, lote, cantidad: Number(cant), fecha_recepcion: recep });
     }
   });
 
-  if (hasInvalid) {
-    showToast("Corrige las filas en rojo (biológico, lote y cantidad)", false, "warn");
-    return;
-  }
+  if (hasInvalid) return showToast("Corrige las filas en rojo", false, "warn");
+  if (!items.length) return showToast("Captura al menos un biológico", false, "warn");
+  if (HAS_TODAY_SR && !EDIT_SR) return showToast("Ya existe una captura de hoy", false, "warn");
 
-  if (items.length === 0) {
-    showToast("Captura al menos un biológico con lote y cantidad", false, "warn");
-    return;
-  }
-
-  setBtnBusy("btnSaveSR", true, EDIT_SR ? "Actualizando…" : "Guardando…");
-  showOverlay(
-    EDIT_SR ? "Actualizando existencia…" : "Guardando existencia…",
-    EDIT_SR ? "Actualizando" : "Guardando"
-  );
-
-  try {
-    saveUxValue(UX_KEYS.existenciaName, nombre);
-
-    if (HAS_TODAY_SR && !EDIT_SR) {
-      showToast("Ya existe una captura de hoy. Usa el botón Editar.", false, "warn");
-      return;
-    }
-
-    // === GUARDADO EN FIRESTORE ===
-    const res = await apiCall({
-      action: "saveSR",
-      fecha: todayYmdLocal(),
-      nombre: nombre,
-      items: items,
-      editado: EDIT_SR ? "SI" : "NO"
-    });
-
-    if (!res.ok) throw new Error(res.error || "Error en apiCall");
-
-    muteRealtimeFor(12000);
-    showToast(EDIT_SR ? "Existencia actualizada" : "Existencia guardada", true, "good");
-    pushLiveEvent("Existencia de biológicos", EDIT_SR ? "Actualizada correctamente." : "Guardada correctamente.", "good");
-
-    flashElement("formSR");
-    setSavedStamp();
-
-    await refreshAfterMutation({ touchToday: true, touchCaptureSummary: true, touchHistory: true });
-
-  } catch (e) {
-    console.error("btnSaveSR error:", e);
-    showToast("Error de conexión al guardar", false);
-  } finally {
-    setBtnBusy("btnSaveSR", false);
-    hideOverlay();
-  }
+  await AppService.runCapture({
+    btnId: "btnSaveSR",
+    title: EDIT_SR ? "Actualizando" : "Guardando",
+    msg: "Procesando existencia de biológicos...",
+    successMsg: EDIT_SR ? "Existencia actualizada" : "Existencia guardada",
+    eventTitle: "Existencia de biológicos",
+    eventMsg: EDIT_SR ? "Actualizada correctamente." : "Guardada correctamente.",
+    mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true },
+    action: () => AppService.call("saveSR", {
+        fecha: todayYmdLocal(),
+        nombre,
+        items,
+        editado: EDIT_SR ? "SI" : "NO"
+    })
+  });
 };
 
   $("btnExportSelectAll").onclick = () => {
@@ -8614,246 +8471,89 @@ $("btnSaveSR").onclick = async () => {
   refreshExportSplitUi();
 
   $("btnSaveCONS").onclick = async () => {
-    if (isBtnBusy("btnSaveCONS")) return;
-    setBtnBusy("btnSaveCONS", true, EDIT_CONS ? "Actualizando…" : "Guardando…");
-    showOverlay(
-      EDIT_CONS ? "Estamos actualizando el reporte de consumibles…" : "Estamos guardando el reporte de consumibles…",
-      EDIT_CONS ? "Actualizando consumibles" : "Guardando consumibles"
-    );
+    const nombre = $("nombreCONS")?.value.trim() || "";
+    if (!nombre) return showToast("Ingresa el nombre del responsable", false, "warn");
 
-    try {
-      const nombre = $("nombreCONS") ? $("nombreCONS").value.trim() : "";
-      saveUxValue(UX_KEYS.consName, nombre);
-      syncAguja();
-
-      if (!nombre) {
-        showToast("Por favor, ingresa el nombre del responsable", false, "warn");
-        return;
+    const numFields = ["srp_dosis", "sr_dosis", "jeringa_reconst_5ml_0605500438", "jeringa_aplic_05ml_0605502657"];
+    for (const f of numFields) {
+      const val = $(f)?.value;
+      if (val !== "" && (isNaN(val) || Number(val) < 0)) {
+        flashElement(f);
+        return showToast("Valores numéricos inválidos", false, "warn");
       }
-
-      // Validar numéricos
-      const numFields = ["srp_dosis", "sr_dosis", "jeringa_reconst_5ml_0605500438", "jeringa_aplic_05ml_0605502657"];
-      for (const f of numFields) {
-        const val = $(f)?.value;
-        if (val !== "" && (isNaN(val) || Number(val) < 0)) {
-          showToast("Ingresa valores numéricos válidos (0 o más)", false, "warn");
-          flashElement(f);
-          return;
-        }
-      }
-
-      if (HAS_TODAY_CONS && !EDIT_CONS) {
-        showToast("Ya existe un reporte de hoy. Usa el botón Editar reporte de hoy.", false, "warn");
-        return;
-      }
-
-      if (EDIT_CONS && !hasCONSNumericChanges()) {
-        showToast("No hiciste cambios en los valores numéricos de consumibles", false, "warn");
-        return;
-      }
-
-      const safeNum = (id) => {
-        const el = $(id);
-        return Number(el && el.value !== "" ? el.value : 0);
-      };
-
-      const action = EDIT_CONS ? "updateConsumibles" : "saveConsumibles";
-
-      const r = await apiCall({
-        action,
-        token: TOKEN,
-        nombre,
-        srp_dosis: safeNum("srp_dosis"),
-        sr_dosis: safeNum("sr_dosis"),
-        jeringa_reconst_5ml_0605500438: safeNum("jeringa_reconst_5ml_0605500438"),
-        jeringa_aplic_05ml_0605502657: safeNum("jeringa_aplic_05ml_0605502657"),
-        aguja_0600403711: safeNum("aguja_0600403711")
-      });
-
-      if (!r || !r.ok) {
-        const msg = (r && r.error) ? r.error : "No se pudo guardar";
-
-        if (msg.toLowerCase().includes("ya existe un reporte") || msg.toLowerCase().includes("editar")) {
-          invalidateTodayCache();
-          const today = await getTodayReports(todayYmdLocal());
-          hydrateTodayForms(today);
-          showToast(msg, false, "warn");
-          return;
-        }
-
-        showToast(msg, false);
-        return;
-      }
-      muteRealtimeFor(12000);
-      showToast(EDIT_CONS ? "Reporte de consumibles actualizado correctamente" : "Reporte de consumibles guardado correctamente");
-      pushLiveEvent(
-        "Consumibles",
-        EDIT_CONS ? "El reporte de consumibles fue actualizado correctamente." : "El reporte de consumibles fue guardado correctamente.",
-        "good"
-      );
-      flashElement("formCONS");
-      setSavedStamp();
-
-      await refreshAfterMutation({
-        touchToday: true,
-        touchCaptureSummary: true,
-        touchHistory: true
-      });
-
-    } catch (e) {
-      console.error("btnSaveCONS error:", e);
-      showToast("Error al guardar", false);
-    } finally {
-      setBtnBusy("btnSaveCONS", false);
-      hideOverlay();
     }
+
+    if (HAS_TODAY_CONS && !EDIT_CONS) return showToast("Ya existe un reporte de hoy", false, "warn");
+    if (EDIT_CONS && !hasCONSNumericChanges()) return showToast("No hay cambios numéricos", false, "warn");
+
+    const safeNum = (id) => Number($(id)?.value || 0);
+
+    await AppService.runCapture({
+      btnId: "btnSaveCONS",
+      title: EDIT_CONS ? "Actualizando" : "Guardando",
+      msg: "Procesando consumibles...",
+      successMsg: EDIT_CONS ? "Reporte actualizado" : "Reporte guardado",
+      eventTitle: "Consumibles",
+      eventMsg: EDIT_CONS ? "Actualizado correctamente." : "Guardado correctamente.",
+      mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true },
+      action: () => AppService.call(EDIT_CONS ? "updateConsumibles" : "saveConsumibles", {
+          nombre,
+          srp_dosis: safeNum("srp_dosis"),
+          sr_dosis: safeNum("sr_dosis"),
+          jeringa_reconst_5ml_0605500438: safeNum("jeringa_reconst_5ml_0605500438"),
+          jeringa_aplic_05ml_0605502657: safeNum("jeringa_aplic_05ml_0605502657"),
+          aguja_0600403711: safeNum("aguja_0600403711")
+      })
+    });
   };
 
   $("btnSaveBIO").onclick = async () => {
-    if (isBtnBusy("btnSaveBIO")) return;
+    if (!BIO_STATE.canCapture) return showToast("Ventana de captura cerrada", false, "warn");
+    if (HAS_SAVED_BIO && !EDIT_BIO) return showToast("Pedido ya capturado", false, "warn");
 
     const bioValidation = refreshBioAlerts(true);
+    if (bioValidation?.hasBlockingError) return showToast("Corrige los errores antes de guardar", false, "warn");
 
-    if (!BIO_STATE.canCapture) {
-      showToast(
-        `La captura de pedido biológico está habilitada del ${BIO_STATE.captureWindowStart || "—"} al ${BIO_STATE.captureWindowEnd || "—"}.`,
-        false,
-        "warn"
-      );
-      return;
-    }
-
-    if (HAS_SAVED_BIO && !EDIT_BIO) {
-      showToast("Este pedido ya fue capturado. Usa el botón Editar pedido actual.", false, "warn");
-      return;
-    }
-
-    if (bioValidation && bioValidation.hasBlockingError) {
-      showToast("Corrige los biológicos con error antes de guardar. La única restricción bloqueante es el múltiplo configurado.", false, "warn");
-      return;
-    }
-
-    const nombre = $("nombreBIO") ? $("nombreBIO").value.trim() : "";
-    saveUxValue(UX_KEYS.bioName, nombre);
-
+    const nombre = $("nombreBIO")?.value.trim() || "";
     const items = collectBioItems();
+    
+    // Validaciones pro-activas de stock
     const warningRows = [];
+    const bioStateByKey = Object.fromEntries((BIO_STATE.rows || []).map(r => [String(r.biologico).toUpperCase(), r]));
+    
+    items.forEach(item => {
+      const key = String(item.biologico).toUpperCase();
+      const r = bioStateByKey[key];
+      if (!r) return;
+      if (["INFLUENZA","COVID-19","VPH","VARICELA"].some(k => key.includes(k))) return;
 
-    const bioStateByKey = {};
-    (BIO_STATE.rows || []).forEach(r => {
-      const key = String(r && r.biologico || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim()
-        .toUpperCase();
-
-      if (!key) return;
-      bioStateByKey[key] = r;
-    });
-
-    items.forEach((item) => {
-      const itemKey = String(item && item.biologico || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim()
-        .toUpperCase();
-
-      const r = bioStateByKey[itemKey] || {};
-      const bioKey = itemKey;
-
-      const sinValidacionOperativa = [
-        "INFLUENZA",
-        "COVID-19",
-        "COVID 19",
-        "VPH",
-        "HEPATITIS A",
-        "VARICELA"
-      ].includes(bioKey);
-
-      const omitirAdvertenciaPorCaravana =
-        isCurrentUnitCaravana() && bioKey === "BCG";
-
-      if (sinValidacionOperativa || omitirAdvertenciaPorCaravana) return;
-
-      const existencia = Number(item.existencia_actual_frascos || 0);
-      const pedido = Number(item.pedido_frascos || 0);
-      const promedio = Number(r.promedio_frascos || 0);
-      const totalDisponible = existencia + pedido;
-
-      if (promedio > 0 && totalDisponible < promedio) {
-        warningRows.push(
-          `• ${r.biologico || item.biologico}: existencia ${existencia} + pedido ${pedido} = ${totalDisponible}; promedio ${promedio}.`
-        );
+      const total = Number(item.existencia_actual_frascos || 0) + Number(item.pedido_frascos || 0);
+      if (r.promedio_frascos > 0 && total < r.promedio_frascos) {
+        warningRows.push(`• ${r.biologico}: stock insuficiente vs promedio.`);
       }
     });
 
-    if (warningRows.length) {
-      const ok = await openBioConfirm(warningRows);
-      if (!ok) return;
-    }
+    if (warningRows.length && !(await openBioConfirm(warningRows))) return;
 
-    setBtnBusy("btnSaveBIO", true, EDIT_BIO ? "Actualizando…" : "Guardando…");
-    showOverlay(
-      EDIT_BIO ? "Estamos actualizando el pedido biológico…" : "Estamos guardando el pedido biológico…",
-      EDIT_BIO ? "Actualizando pedido" : "Guardando pedido"
-    );
-
-    try {
-      const r = await apiCall({
-        action: "saveBio",
-        token: TOKEN,
-        nombre,
-        items,
-        tipo_pedido: BIO_STATE.isInsideWindow ? "MENSUAL" : "EXTRAORDINARIO",
-        sin_pedido: $("chkNoPedido") ? $("chkNoPedido").checked : false
-      });
-
-      if (!r || !r.ok) {
-        showToast((r && r.error) ? r.error : "No se pudo guardar el pedido de biológico", false);
-        return;
+    await AppService.runCapture({
+      btnId: "btnSaveBIO",
+      title: EDIT_BIO ? "Actualizando" : "Guardando",
+      msg: "Procesando pedido biológico...",
+      successMsg: EDIT_BIO ? "Pedido actualizado" : "Pedido guardado",
+      eventTitle: "Pedido de biológico",
+      eventMsg: EDIT_BIO ? "Actualizado correctamente." : "Guardado correctamente.",
+      mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true, touchBio: true },
+      action: async () => {
+        const res = await AppService.call("saveBio", {
+          nombre,
+          items,
+          tipo_pedido: BIO_STATE.isInsideWindow ? "MENSUAL" : "EXTRAORDINARIO",
+          sin_pedido: $("chkNoPedido")?.checked || false
+        });
+        if (res.ok) await loadBioForm(true);
+        return res;
       }
-
-      muteRealtimeFor(12000);
-
-      const insertedCount = Number((r && r.insertedCount) || 0);
-      const updatedCount = Number((r && r.updatedCount) || 0);
-      const fechaProgramada = (r && r.fecha_pedido_programada) ? r.fecha_pedido_programada : "—";
-
-      const msgOk =
-        `Pedido ${EDIT_BIO ? "actualizado" : "guardado"}. Fecha programada: ${fechaProgramada}. Insertados: ${insertedCount}. Actualizados: ${updatedCount}.`;
-
-      showToast(msgOk, true, "good");
-
-      pushLiveEvent(
-        "Pedido de biológico",
-        msgOk,
-        "good"
-      );
-
-      flashElement("formBIO");
-      setSavedStamp();
-
-      if (r) {
-        console.log("saveBio spreadsheet_url:", r.spreadsheet_url);
-        console.log("saveBio spreadsheet_id:", r.spreadsheet_id);
-        console.log("saveBio spreadsheet_name:", r.spreadsheet_name);
-        console.log("saveBio sheet_name:", r.sheet_name);
-      }
-
-      await refreshAfterMutation({
-        touchToday: true,
-        touchCaptureSummary: true,
-        touchHistory: true
-      });
-
-      await loadBioForm(true);
-    } catch (e) {
-      console.error("btnSaveBIO error:", e);
-      showToast("Error al guardar pedido de biológico", false);
-    } finally {
-      setBtnBusy("btnSaveBIO", false);
-      hideOverlay();
-    }
+    });
   };
 
   if ($("btnBioConfirmCancel")) {
@@ -8878,48 +8578,33 @@ $("btnSaveSR").onclick = async () => {
   });
 
   $("btnSavePINOL").onclick = async () => {
-    if (isBtnBusy("btnSavePINOL")) return;
-    setBtnBusy("btnSavePINOL", true, "Guardando…");
-    showOverlay("Guardando solicitud de pinol…");
-    try {
-      const nombrePINOL = $("nombrePINOL").value.trim();
-      saveUxValue(UX_KEYS.pinolName, nombrePINOL);
+    const nombre = $("nombrePINOL")?.value.trim() || "";
+    if (!nombre) return showToast("Ingresa el nombre del responsable", false, "warn");
 
-      const r = await apiCall({
-        action: "savePinol",
-        token: TOKEN,
-        nombre: nombrePINOL,
-        existencia_actual_botellas: $("pinol_existencia").value,
-        solicitud_botellas: $("pinol_solicitud").value,
-        observaciones: $("pinol_observaciones").value.trim()
-      });
-
-      if (!r || !r.ok) {
-        showToast((r && r.error) ? r.error : "No se pudo guardar la solicitud", false);
-        return;
+    await AppService.runCapture({
+      btnId: "btnSavePINOL",
+      title: "Guardando",
+      msg: "Enviando solicitud de pinol...",
+      successMsg: "Solicitud de pinol guardada",
+      eventTitle: "Pinol",
+      eventMsg: "Tu solicitud fue enviada correctamente.",
+      mutation: { touchPinol: true },
+      action: async () => {
+        const res = await AppService.call("savePinol", {
+            nombre,
+            existencia_actual_botellas: $("pinol_existencia")?.value,
+            solicitud_botellas: $("pinol_solicitud")?.value,
+            observaciones: $("pinol_observaciones")?.value.trim()
+        });
+        if (res.ok) {
+            $("nombrePINOL").value = "";
+            $("pinol_existencia").value = "";
+            $("pinol_solicitud").value = "";
+            $("pinol_observaciones").value = "";
+        }
+        return res;
       }
-
-      muteRealtimeFor(12000);
-      showToast("Solicitud de pinol guardada");
-      pushLiveEvent("Pinol", "Tu solicitud fue enviada correctamente.", "good");
-      flashElement("formPINOL");
-      setSavedStamp();
-
-      $("nombrePINOL").value = "";
-      $("pinol_existencia").value = "";
-      $("pinol_solicitud").value = "";
-      $("pinol_observaciones").value = "";
-
-      await refreshAfterMutation({
-        touchPinol: true
-      });
-
-    } catch (e) {
-      showToast("Error al guardar solicitud de pinol", false);
-    } finally {
-      setBtnBusy("btnSavePINOL", false);
-      hideOverlay();
-    }
+    });
   };
 
   $("btnEditSR").onclick = () => {

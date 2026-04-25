@@ -3,10 +3,6 @@
    * han sido consolidadas en main.js para evitar redundancias y conflictos. 
    **/
 
-    if (btnClear && btnClear.style.display !== "none") {
-      btnClear.style.display = "none";
-    }
-  }
 
   function incrementNotifCounter(type = "good") {
     LIVE_STATE.notifCount = Number(LIVE_STATE.notifCount || 0) + 1;
@@ -599,62 +595,8 @@
 
     return NOTIF_BADGE_REFS;
   }
+  // 🛑 Lógica de notificaciones redundante eliminada (Consolidado en main.js)
 
-    const n = Number(unread || 0);
-    const badge = $("notifBadgeMain");
-    const topBadge = $("topNotifBadge");
-    const navBadge = $("notifBadgeNav"); 
-    const tabNOTIFS = $("tabNOTIFS");
-    const btnTopNotifications = $("btnTopNotifications");
-    const nextText = String(n);
-
-    // Sync state for main.js logic
-    if (typeof LIVE_STATE !== "undefined") {
-      LIVE_STATE.notifCount = n;
-    }
-
-    if (badge) {
-      if (n > 0) {
-        if (badge.style.display !== "inline-flex") badge.style.display = "inline-flex";
-        if (badge.textContent !== nextText) badge.textContent = nextText;
-        tabNOTIFS?.classList.add("liveAccent");
-      } else {
-        if (badge.style.display !== "none") badge.style.display = "none";
-        if (badge.textContent !== "0") badge.textContent = "0";
-        tabNOTIFS?.classList.remove("liveAccent", "notifHot");
-      }
-    }
-
-    if (topBadge) {
-      if (n > 0) {
-        if (topBadge.style.display !== "inline-flex") topBadge.style.display = "inline-flex";
-        if (topBadge.textContent !== nextText) topBadge.textContent = nextText;
-        btnTopNotifications?.classList.add("liveAccent", "notifHot");
-      } else {
-        if (topBadge.style.display !== "none") topBadge.style.display = "none";
-        if (topBadge.textContent !== "0") topBadge.textContent = "0";
-        btnTopNotifications?.classList.remove("liveAccent", "notifHot");
-      }
-    }
-
-    // Modern Nav Badge (Bottom Nav Mobile)
-    if (navBadge) {
-      if (n > 0) {
-        navBadge.textContent = n > 99 ? "99+" : n;
-        navBadge.style.display = "flex";
-        navBadge.classList.add("badge-pulse");
-      } else {
-        navBadge.textContent = "0";
-        navBadge.style.display = "none";
-        navBadge.classList.remove("badge-pulse");
-      }
-    }
-
-    // Call global update if exists
-    if (typeof updateNotifBadge === "function") {
-      updateNotifBadge();
-    }
-  }
 
   async function loadNotifications(options = {}) {
     const { silent = true } = options || {};
@@ -2363,77 +2305,15 @@
   // El frontend NUNCA accede a la base de datos directamente.
 
   async function apiCallLegacy(actionOrPayload, payload = {}) {
-    let body = {};
-
-    if (typeof actionOrPayload === "string") {
-      body = Object.assign({}, payload, {
-        action: actionOrPayload,
-        token: payload.token || TOKEN
-      });
-    } else if (actionOrPayload && typeof actionOrPayload === "object") {
-      body = Object.assign({}, actionOrPayload);
-      if (!body.token) body.token = TOKEN;
-    } else {
-      return { ok: false, error: "ParÃ¡metros invÃ¡lidos para apiCall" };
+    // ⚡ Redirección experta al sistema unificado de main.js
+    if (typeof apiCall === "function") {
+      return apiCall(actionOrPayload, payload);
     }
-
-    const action = body.action;
-
-    // --- CACHÃ‰ DIFERIDA (localStorage) para catÃ¡logos ---
-    const CACHEABLE_ACTIONS = {
-      "getLotesByMunicipio": 3600000,    // 1 hora
-      "unitCatalog": 3600000,            // 1 hora
-      "notificationUserCatalog": 3600000 // 1 hora
-    };
-
-    if (CACHEABLE_ACTIONS[action]) {
-      try {
-        const cacheKey = `GAS_CACHE_${action}`;
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-          const { data, ts } = JSON.parse(cached);
-          if (Date.now() - ts < CACHEABLE_ACTIONS[action]) {
-            return { ok: true, data };
-          }
-        }
-      } catch(e) {}
-    }
-
-    // --- ENVÃO AL BACKEND GAS ---
-    try {
-      // MÃ©todo ultra-robusto: raw JSON disfrazado de text/plain para evitar OPTIONS guard
-      const res = await fetch(GAS_API_URL, {
-        method: "POST",
-        body: JSON.stringify(body),
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8"
-        }
-      });
-
-      // Leemos como texto primero (tÃ©cnica anti-CORS de Google)
-      const text = await res.text();
-      let json;
-      try {
-        json = JSON.parse(text);
-      } catch (e) {
-        console.error("Respuesta del servidor no es JSON:", text);
-        return { ok: false, error: "Error en formato de respuesta del servidor." };
-      }
-
-      // Actualizar cachÃ© si aplica
-      if (json.ok && CACHEABLE_ACTIONS[action]) {
-        try {
-          localStorage.setItem(`GAS_CACHE_${action}`, JSON.stringify({ data: json.data, ts: Date.now() }));
-        } catch(e) {}
-      }
-
-      return json;
-
-    } catch (err) {
-      console.error(`Error en apiCall (${action}):`, err);
-      return { ok: false, error: "Error de conexiÃ³n con el servidor: " + err.message };
-    }
+    console.error("Critical: Global apiCall not found.");
+    return { ok: false, error: "Sistema de comunicación no disponible" };
   }
+  // 🛑 Fin de apiCallLegacy (Lógica GAS eliminada)
+
 
 
   // ==========================================

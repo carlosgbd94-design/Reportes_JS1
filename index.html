@@ -110,16 +110,22 @@
   </script>
 </head>
 
-<body>
-  <div class="wrap bg-surface-container min-h-screen">
+<body class="bg-surface-container min-h-screen">  <!-- 💎 HIGH-PERFORMANCE HEADER LIQUID GLASS -->
+  <svg style="position: absolute; width: 0; height: 0; pointer-events: none;" aria-hidden="true">
+    <!-- 💎 CLEAN LIQUID GLASS REFRACTION (Apple 2026 Optimized) -->
+    <!-- We avoid feDisplacementMap to maintain 60fps scrolling as per Rule 32 -->
+    <filter id="header-liquid-refraction">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="0" /> <!-- Placeholder for future optimizations -->
+    </filter>
+  </svg>
 
     <!-- ✅ MODERN FLOATING HEADER (Miniaturized on Mobile) -->
-    <div class="fixed top-0 sm:top-4 inset-x-0 sm:inset-x-8 h-[64px] sm:h-[85px] z-[1000] bg-white sm:border border-b sm:border-outline-variant sm:rounded-3xl flex items-center justify-center shadow-md sm:shadow-[0_8px_32px_rgba(0,51,102,0.08)] transition-all duration-500" id="mainHeader">
-      <div class="w-full max-w-[1600px] px-4 sm:px-6 flex items-center justify-between">
+    <div class="fixed top-0 sm:top-4 inset-x-0 sm:inset-x-8 h-[64px] sm:h-[85px] z-[1000] sm:border border-b sm:border-outline-variant sm:rounded-3xl flex items-center justify-center transition-all duration-500" id="mainHeader">
+      <div class="w-full max-w-[1600px] px-4 sm:px-6 flex items-center justify-between relative z-10">
         <div class="flex items-center gap-6">
 
-          <!-- Logos con estilo neumórfico sutil -->
-          <div class="bg-surface-container-low px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-2xl sm:rounded-[22px] border border-outline-variant/20 flex gap-3 sm:gap-5 shadow-sm" aria-label="Logos institucionales">
+          <!-- Logos con estilo neumórfico sutil (Liquid Glass Layer) -->
+          <div class="bg-white/10 px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-2xl sm:rounded-[22px] border border-white/20 flex gap-3 sm:gap-5 shadow-sm" aria-label="Logos institucionales">
             <img id="logoA" class="h-[32px] sm:h-[44px] w-auto drop-shadow-sm sm:drop-shadow-md" src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/Seseq_vertical_2025.png" alt="SESEQ">
             <div class="w-[1px] h-6 sm:h-10 bg-outline-variant/30 self-center"></div>
             <img id="logoB" class="h-[32px] sm:h-[44px] w-auto drop-shadow-sm sm:drop-shadow-md" src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/logo_Q.png" alt="Gobierno de Querétaro">
@@ -138,7 +144,7 @@
 
         <!-- Badges unificadas: Cápsulas Independientes de Alta Gama -->
         <div class="flex items-center gap-3">
-          <span class="flex items-center gap-2 bg-white text-primary rounded-full px-3 py-1.5 sm:px-5 sm:py-2.5 text-[10px] sm:text-[11px] font-black shadow-lg shadow-primary/5 transition-transform hover:scale-105 cursor-default whitespace-nowrap flex-shrink-0 border border-outline-variant/30" id="bFecha">
+          <span class="flex items-center gap-2 bg-white/10 text-primary rounded-full px-3 py-1.5 sm:px-5 sm:py-2.5 text-[10px] sm:text-[11px] font-black shadow-lg shadow-primary/5 transition-transform hover:scale-105 cursor-default whitespace-nowrap flex-shrink-0 border border-white/30" id="bFecha">
             <span class="material-symbols-rounded text-[19px]">calendar_month</span>
             <span id="hdrFecha">—</span>
           </span>
@@ -271,65 +277,64 @@
         <div class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all hover:shadow-md3-2" id="cardSide">
           <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10">
             
-            <div class="flex flex-wrap gap-2.5 justify-start">
-              <!-- Los botones de acción se mantienen aquí, pero Salir se mueve al Perfil -->
+            <div class="flex flex-wrap gap-3 justify-start relative z-10">
+                <!-- 2. Exportar reportes -->
+                <button class="btn-action-md3" id="btnExport" title="Exportar reporte seleccionado" style="display:none">
+                  <span class="material-symbols-rounded">download</span> Exportar Reportes
+                </button>
 
-              <!-- 2. Exportar reportes -->
-              <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm hover:scale-[1.02] active:scale-95" id="btnExport" title="Exportar reporte seleccionado" style="display:none">
-                <span class="material-symbols-rounded text-[20px]">download</span> Exportar Reportes
-              </button>
+                <!-- 3. Subir archivos -->
+                <button class="btn-action-md3" id="btnOpenUpload" title="Subir evidencias al servidor" style="display:none">
+                  <span class="material-symbols-rounded">cloud_upload</span> Subir archivos
+                </button>
 
-              <!-- 3. Subir archivos -->
-              <button class="bg-surface-variant/50 text-surface-on rounded-2xl h-[48px] px-5 font-semibold text-sm transition-all hover:bg-primary hover:text-white flex items-center justify-center gap-2.5 cursor-pointer border-none hover:shadow-md3-1" id="btnOpenUpload" title="Subir evidencias al servidor" style="display:none">
-                <span class="material-symbols-rounded text-[20px]">cloud_upload</span> Subir archivos
-              </button>
+                <!-- 4. Explorador -->
+                <button class="btn-action-md3" id="btnViewArchivos" title="Ver evidencias" style="display:none">
+                  <span class="material-symbols-rounded">folder_open</span> Explorador
+                </button>
 
-              <!-- 4. Explorador -->
-              <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm hover:scale-[1.02] active:scale-95" id="btnViewArchivos" title="Ver evidencias" style="display:none">
-                <span class="material-symbols-rounded text-[20px]">folder_open</span> Explorador
-              </button>
-
-              <!-- 5. Notificaciones -->
-              <button class="rounded-2xl h-[48px] px-5 font-bold text-sm transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-transparent shadow-sm relative text-surface-on hover:scale-[1.02] active:scale-95" id="btnTopNotifications" type="button" style="display:none">
-                <div class="flex items-center justify-center relative">
-                  <span class="material-symbols-rounded text-[20px]">notifications</span>
-                  <span id="topNotifBadge"></span>
-                </div>
-                Notificaciones
-              </button>
+                <!-- 5. Notificaciones -->
+                <button class="btn-action-md3" id="btnTopNotifications" type="button" style="display:none">
+                  <div class="flex items-center justify-center relative">
+                    <span class="material-symbols-rounded">notifications</span>
+                    <span id="topNotifBadge"></span>
+                  </div>
+                  Notificaciones
+                </button>
             </div>
 
-              <!-- 💡 INSIGHT CAPSULE: DATO CURIOSO (Senior UX - Luminescent Refinement) -->
-              <div class="flex-1 max-w-[750px] h-[52px] bg-white/80 backdrop-blur-md border-none rounded-2xl shadow-[0_12px_45px_-8px_rgba(0,0,0,0.08),0_4px_12px_-2px_rgba(0,0,0,0.03)] overflow-hidden flex items-center group transition-all hover:bg-white hover:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.12),0_0_20px_rgba(245,158,11,0.1)] cursor-help" title="Tip dinámico del programa">
-                <!-- Visual Accent: Faded Gradient -->
-                <div class="w-1.5 h-full bg-gradient-to-b from-orange-400 to-orange-600 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity"></div>
-                
-                <!-- Icon Highlight: Glass Core -->
-                <div class="w-12 h-full flex items-center justify-center bg-orange-400/5 border-r border-white/20 shrink-0 relative overflow-hidden">
-                  <div class="absolute inset-0 bg-gradient-to-br from-orange-400/10 to-transparent blur-lg group-hover:scale-150 transition-transform duration-700"></div>
-                  <span class="material-symbols-rounded text-[22px] text-orange-600 transition-all group-hover:scale-110 relative z-10" id="factIcon">tips_and_updates</span>
-                </div>
-                
-                <!-- Advanced Typography Area -->
-                <div class="flex-1 min-w-0 px-4 py-2 flex flex-col justify-center gap-0.5">
-                  <div class="flex items-center gap-2">
-                    <span class="text-[8px] font-black uppercase tracking-[0.18em] text-orange-600/50 leading-none">Insight del Sistema</span>
-                    <div id="factTag" class="bg-primary/10 text-primary px-2 py-0.5 rounded-md text-[7px] font-black uppercase tracking-tight flex items-center border border-primary/5">
-                      TAG
-                    </div>
-                  </div>
-                  <div class="flex flex-col leading-tight">
-                    <span id="factTitle" class="text-[12px] font-black text-primary/90 tracking-tight truncate">—</span>
-                    <span id="factBody" class="text-[10px] text-primary/50 font-bold truncate">—</span>
+            <!-- 💡 INSIGHT CAPSULE: DATO CURIOSO (Senior UX - Luminescent Refinement) -->
+            <div class="flex-1 max-w-[750px] h-[52px] bg-white/80 backdrop-blur-md border-none rounded-2xl shadow-[0_12px_45px_-8px_rgba(0,0,0,0.08),0_4px_12px_-2px_rgba(0,0,0,0.03)] overflow-hidden flex items-center group transition-all hover:bg-white hover:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.12),0_0_20px_rgba(245,158,11,0.1)] cursor-help" title="Tip dinámico del programa">
+              <!-- Visual Accent: Faded Gradient -->
+              <div class="w-1.5 h-full bg-gradient-to-b from-orange-400 to-orange-600 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity"></div>
+              
+              <!-- Icon Highlight: Glass Core -->
+              <div class="w-12 h-full flex items-center justify-center bg-orange-400/5 border-r border-white/20 shrink-0 relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-orange-400/10 to-transparent blur-lg group-hover:scale-150 transition-transform duration-700"></div>
+                <span class="material-symbols-rounded text-[22px] text-orange-600 transition-all group-hover:scale-110 relative z-10" id="factIcon">tips_and_updates</span>
+              </div>
+              
+              <!-- Advanced Typography Area -->
+              <div class="flex-1 min-w-0 px-4 py-2 flex flex-col justify-center gap-0.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-[8px] font-black uppercase tracking-[0.18em] text-orange-600/50 leading-none">Insight del Sistema</span>
+                  <div id="factTag" class="bg-primary/10 text-primary px-2 py-0.5 rounded-md text-[7px] font-black uppercase tracking-tight flex items-center border border-primary/5">
+                    TAG
                   </div>
                 </div>
-
-                <!-- Decorative Elements -->
-                <div class="pr-4 opacity-10 group-hover:opacity-30 transition-all group-hover:translate-x-1">
-                  <span class="material-symbols-rounded text-[18px] text-primary">auto_awesome</span>
+                <div class="flex flex-col leading-tight">
+                  <span id="factTitle" class="text-[12px] font-black text-primary/90 tracking-tight truncate">—</span>
+                  <span id="factBody" class="text-[10px] text-primary/50 font-bold truncate">—</span>
                 </div>
               </div>
+
+              <!-- Decorative Elements -->
+              <div class="pr-4 opacity-10 group-hover:opacity-30 transition-all group-hover:translate-x-1">
+                <span class="material-symbols-rounded text-[18px] text-primary">auto_awesome</span>
+              </div>
             </div>
+          </div>
+        </div>
 
             <div id="topNotifDropdown" class="topNotifDropdown" style="display:none">
               <div class="topNotifCard">
