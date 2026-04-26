@@ -103,7 +103,7 @@ body.logged-in #rightColumn { display: block !important; }
   right: 0;
   height: var(--header-height);
   z-index: 1000;
-  background: #ffffff !important;
+  background: transparent !important;
   border-bottom: 1px solid var(--md-sys-color-outline-variant);
   padding: 0 32px !important;
   display: flex !important;

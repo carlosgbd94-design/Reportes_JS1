@@ -1,8 +1,8 @@
 :root {
   /* ðŸ›ï¸ MD3 FINAL TOKENS (Solid Opaque System) */
-  --md-sys-color-primary: #003366; 
+  --md-sys-color-primary: #0052cc; 
   --md-sys-color-on-primary: #ffffff;
-  --md-sys-color-secondary: #006b54; 
+  --md-sys-color-secondary: #00c853; 
   --md-sys-color-on-secondary: #ffffff;
 
   --md-sys-color-surface: #ffffff;
@@ -57,17 +57,76 @@
 body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #f1f5f9; /* Contrast background for blocks */
+  background-color: #f8fafc;
   color: var(--md-sys-color-on-surface);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   letter-spacing: -0.01em;
   overflow-x: hidden;
+  position: relative;
 }
 
-body.mobile-mode,
-body.mobile-mode.lowperf {
-  background: var(--bg);
+/* 🎨 DYNAMIC AURA SYSTEM (High Performance) */
+.AuraContainer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: #f8fafc;
+  contain: strict; /* ⚡ Prevents layout recalc for background */
+}
+
+.AuraBlob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.4;
+  will-change: transform;
+  transform: translate3d(0,0,0); /* 🚀 Hardware Acceleration */
+  pointer-events: none;
+  contain: paint layout; /* ⚡ Isolates blobs from layout engine */
+}
+
+.Blob-1 {
+  width: 600px;
+  height: 600px;
+  background: hsla(217, 91%, 60%, 0.6);
+  top: -10%;
+  left: -10%;
+  animation: auraOrbit 25s ease-in-out infinite alternate;
+}
+
+.Blob-2 {
+  width: 500px;
+  height: 500px;
+  background: hsla(280, 80%, 65%, 0.5);
+  bottom: -10%;
+  right: -5%;
+  animation: auraOrbit 30s ease-in-out infinite alternate-reverse;
+}
+
+.Blob-3 {
+  width: 400px;
+  height: 400px;
+  background: hsla(180, 84%, 55%, 0.5);
+  top: 40%;
+  right: 10%;
+  animation: auraOrbit 20s ease-in-out infinite alternate;
+}
+
+@keyframes auraOrbit {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50% { transform: translate3d(10%, 5%, 0) rotate(10deg); }
+  100% { transform: translate3d(-5%, 10%, 0) rotate(-5deg); }
+}
+
+body.mobile-mode .AuraContainer {
+  display: none;
+}
+
+body.mobile-mode {
+  background: #f1f5f9;
   background-image: none;
 }
 
@@ -2008,7 +2067,7 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
 .summaryTable {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
+  table-layout: auto;
   background-color: white;
 }
 
@@ -2064,13 +2123,14 @@ body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   box-shadow: none !important;
 }
 
-/* Anchos Pro para Logística 2.0 (Forzado en th y td) */
-.summaryTable :is(th, td):nth-child(1) { width: 18%; } /* Bio y Registro */
-.summaryTable :is(th, td):nth-child(2) { width: 12%; } /* Lote */
-.summaryTable :is(th, td):nth-child(3) { width: 14%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } /* Vigencia */
-.summaryTable :is(th, td):nth-child(4) { width: 35%; } /* Estatus Logístico */
-.summaryTable :is(th, td):nth-child(5) { width: 13%; } /* Municipio */
-.summaryTable :is(th, td):nth-child(6) { width: 8%; text-align: center; }  /* Acción (Centrado) */
+/* Anchos Pro para Logística 2.0 (Específicos para tabla de lotes) */
+#lotesTableWrap .summaryTable { table-layout: fixed; }
+#lotesTableWrap .summaryTable :is(th, td):nth-child(1) { width: 18%; } /* Bio y Registro */
+#lotesTableWrap .summaryTable :is(th, td):nth-child(2) { width: 12%; } /* Lote */
+#lotesTableWrap .summaryTable :is(th, td):nth-child(3) { width: 14%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } /* Vigencia */
+#lotesTableWrap .summaryTable :is(th, td):nth-child(4) { width: 35%; } /* Estatus Logístico */
+#lotesTableWrap .summaryTable :is(th, td):nth-child(5) { width: 13%; } /* Municipio */
+#lotesTableWrap .summaryTable :is(th, td):nth-child(6) { width: 8%; text-align: center; }  /* Acción (Centrado) */
 
 .summaryTable :is(th, td):last-child {
   padding-right: 16px !important;
@@ -8500,15 +8560,7 @@ body.mobile-mode .wrap {
   padding-bottom: 120px !important;
 }
 
-body.mobile-mode #mainHeader {
-  background: rgba(255, 255, 255, 0.98) !important;
-  backdrop-filter: blur(24px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
-}
-
-body.mobile-mode #mainHeader .flex-shrink-0 {
-  gap: 6px !important;
-}
+/* Removed legacy mobile header background */
 
 body.mobile-mode .wrap {
   padding-top: 120px !important;
@@ -8549,19 +8601,7 @@ body.mobile-mode #welcome {
 }
 
 /* 📱 HEADER MULTI-TIER (CORRECCIÓN ESTRUCTURAL - Imagen 1) */
-body.mobile-mode #mainHeader {
-  height: auto !important;
-  min-height: 110px !important;
-  padding: 10px 0 !important;
-}
-
-body.mobile-mode #mainHeader > div {
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 10px !important;
-  width: 100% !important;
-}
+/* Removed structural mobile header overrides */
 
 body.mobile-mode #mainHeaderLeft {
   width: 100% !important;
@@ -8618,21 +8658,7 @@ body.mobile-mode #bHora .material-symbols-rounded {
 }
 
 /* 🌐 ADAPTIVE HEADER (WEB/DESKTOP) */
-#mainHeader {
-  background: rgba(255, 255, 255, 0.8) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-}
-
-#mainHeader > div {
-  gap: clamp(10px, 2vw, 40px) !important;
-  justify-content: space-between !important;
-}
-
-#mainHeader > div > div {
-  flex-shrink: 1 !important;
-  min-width: 0 !important;
-}
+/* Removed legacy desktop header styles */
 
 #logoA, #logoB {
   height: clamp(30px, 4.5vw, 44px) !important;
@@ -8838,51 +8864,7 @@ body.mobile-mode .tab-btn span:not(.material-symbols-rounded) {
 }
 
 /* 🏛️ HEADER LIQUID GLASS - APPLE 2026 STANDARD (V2) */
-#mainHeader {
-  /* Rule 1: High-Performance Ultra-Clear Glass */
-  background: rgba(255, 255, 255, 0.05) !important;
-  
-  /* ⚡ OPTIMIZED REFRACTION: High blur + high saturation for "Liquid" look */
-  backdrop-filter: blur(25px) saturate(210%) brightness(1.08) !important;
-  -webkit-backdrop-filter: blur(25px) saturate(210%) brightness(1.08) !important;
-  
-  /* Rule 15-17: Triple-Bevel Physicality */
-  border: 1px solid rgba(255, 255, 255, 0.4) !important;
-  box-shadow: 
-    inset 0 1px 1px rgba(255, 255, 255, 0.3),  /* Upper specular highlight */
-    inset 0 -1px 1px rgba(0, 0, 0, 0.05),      /* Lower contact shadow */
-    0 8px 32px rgba(0, 0, 0, 0.04) !important;
-
-  /* Performance Boost: GPU Isolation */
-  will-change: transform !important; /* Avoid will-change: backdrop-filter for better stability */
-  transform: translateZ(0) !important;
-  /* Removed contain: paint to prevent clipping of absolute dropdowns */
-}
-
-
-/* Optimized Specular Sheen */
-#mainHeader::after {
-  content: "" !important;
-  position: absolute !important;
-  inset: 0 !important;
-  background: linear-gradient(125deg, 
-    rgba(255, 255, 255, 0.1) 0%, 
-    rgba(255, 255, 255, 0) 60%) !important;
-  pointer-events: none !important;
-  border-radius: inherit !important;
-}
-
-/* "Dithered" Glass Texture (Simulates blur through noise) */
-#mainHeader::before {
-  content: "" !important;
-  position: absolute !important;
-  inset: 0 !important;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='1' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E") !important;
-  opacity: 0.04 !important; /* Stronger dither for visual texture */
-  pointer-events: none !important;
-  border-radius: inherit !important;
-  z-index: -1 !important;
-}
+/* Removed legacy global Liquid Glass for header */
 
 /* 🎨 MATERIAL DESIGN 3 - MODERN ACTION BUTTONS */
 
@@ -8980,55 +8962,31 @@ body[data-user-role="UNIDAD"] #btnExportBIO {
 }
 
 
-/* 🚀 HARMONIZED MD3 HEADER ACTIONS (Perfect Profile Compatibility) */
+/* 🚀 LIQUID GLASS OPTIMIZED HEADER ACTIONS (Pure Refraction Design) */
 .header-action-btn {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px; 
+  width: 48px;
+  height: 48px;
+  border-radius: 16px; 
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 51, 102, 0.06); 
-  border: 1.5px solid rgba(0, 51, 102, 0.1);
-  color: #003366 !important; 
+  background: transparent !important; 
+  border: none !important;
+  color: var(--glass-icon-color, #003366) !important; 
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
   position: relative;
   outline: none;
-}
-
-.header-action-btn .material-symbols-rounded {
-  font-size: 22px;
-  color: inherit !important;
+  box-shadow: none !important;
 }
 
 .header-action-btn:hover {
-  background: linear-gradient(135deg, #003366 0%, #004d99 100%); 
-  color: white !important;
-  border-color: transparent;
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px -5px rgba(0, 51, 102, 0.4); 
+  transform: none !important;
+  color: var(--glass-icon-hover, #001b3d) !important;
 }
-
-/* Specific Accent Marker (MD3 Style) */
-.header-action-btn:hover::after {
-    content: '';
-    position: absolute;
-    bottom: 5px;
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: white;
-    opacity: 0.8;
-}
-
-#btnExport:hover::after { background: #60a5fa; box-shadow: 0 0 8px #60a5fa; }
-#btnOpenUpload:hover::after { background: #2dd4bf; box-shadow: 0 0 8px #2dd4bf; }
-#btnViewArchivos:hover::after { background: #4ade80; box-shadow: 0 0 8px #4ade80; }
-#btnTopNotifications:hover::after { background: #f87171; box-shadow: 0 0 8px #f87171; }
 
 .header-action-btn:active {
-  transform: scale(0.9);
+  transform: scale(0.95);
 }
 
 /* 🏷️ GLOBAL PREMIUM TOOLTIP (Unified Header Style) */
@@ -9056,6 +9014,7 @@ body[data-user-role="UNIDAD"] #btnExportBIO {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+
 [data-tooltip]:hover::before {
   opacity: 1;
   visibility: visible;
@@ -9082,7 +9041,7 @@ body[data-user-role="UNIDAD"] #btnExportBIO {
   z-index: 20 !important;
 }
 
-/* 🚀 HEADER ACTIONS LAYOUT REFINEMENT (Unified Cluster) */
+/* ?? HEADER ACTIONS LAYOUT REFINEMENT (Unified Cluster) */
 #userControlsGroup {
     background: rgba(255, 255, 255, 0.04);
     padding: 6px;
@@ -9104,4 +9063,466 @@ body[data-user-role="UNIDAD"] #btnExportBIO {
 .header-action-btn[style*="display:none"],
 .header-action-btn[style*="display: none"] {
     display: none !important;
+}
+
+/* Ensure GlassContainer hides if the inner button is hidden by JS */
+.GlassContainer:has(button[style*="display: none"]),
+.GlassContainer:has(button[style*="display:none"]) {
+    display: none !important;
+}
+
+/* ?? ABSOLUTE LIQUID GLASS ARCHITECTURE - STABILIZED VERSION */
+.GlassContainer {
+    --corner-radius: 24px;
+    --glass-blur: 20px;
+    --glass-saturate: 280%;
+    --glass-brightness: 1.05;
+    --glass-contrast: 1.15;
+    
+    position: relative;
+    overflow: visible;
+    display: inline-block;
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+    z-index: 10;
+    transform: translate3d(0, 0, 0);
+    perspective: 1000px;
+}
+
+.GlassContainer:hover {
+    transform: translateY(-6px) scale(1.06) translate3d(0, 0, 0);
+    z-index: 20;
+}
+
+.GlassContent {
+    position: relative;
+    display: block;
+    z-index: 100;
+    overflow: hidden;
+    border-radius: var(--corner-radius);
+    pointer-events: auto;
+    
+    /* ?? OPTIMIZED LIQUIDGL REFRACTION (High Performance) */
+    background: transparent !important; 
+    
+    /* Hardware Acceleration for smooth animations */
+    will-change: transform, backdrop-filter;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+
+    backdrop-filter: blur(24px) saturate(220%);
+    -webkit-backdrop-filter: blur(24px) saturate(220%);
+
+    /* ?? PHYSICAL BEVEL (The Specular Rim) */
+    border: 0.5px solid rgba(255, 255, 255, 0.6) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+    
+    box-shadow: 
+        inset 0 1px 2px rgba(255, 255, 255, 0.4), 
+        inset 0 -1px 2px rgba(0, 0, 0, 0.05),
+        0 12px 40px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* ?? LIQUID MATERIAL LAYERS */
+.GlassMaterial {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    border-radius: var(--corner-radius);
+}
+
+/* Sub-refraction for 'Liquid' depth */
+.GlassMaterial .GlassRefraction {
+    display: block !important;
+    position: absolute;
+    inset: 4px;
+    border-radius: inherit;
+    backdrop-filter: url(#liquid-refraction) blur(10px) saturate(280%) contrast(1.1);
+    -webkit-backdrop-filter: url(#liquid-refraction) blur(10px) saturate(280%) contrast(1.1);
+    opacity: 0.4;
+    z-index: 5;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+}
+
+.GlassMaterial .GlassEdgeReflection {
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    z-index: 10;
+    background: linear-gradient(135deg, 
+        rgba(255,255,255,0.5) 0%, 
+        transparent 50%, 
+        rgba(255,255,255,0.02) 100%);
+    opacity: 0.2;
+}
+
+.GlassMaterial .Highlight {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    z-index: 15;
+    background: linear-gradient(155deg, 
+        rgba(255,255,255,0.4) 0%, 
+        transparent 40%) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+}
+
+/* Simulated Noise/Grain for realistic material */
+.GlassContent::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+}
+
+/* ? PREMIUM INSIGHT HUB ANIMATIONS */
+@keyframes floatingInsight {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-4px) scale(1.005); }
+}
+
+#factCard {
+  animation: floatingInsight 6s ease-in-out infinite;
+  transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+}
+
+#factCard:hover {
+  animation-play-state: paused;
+}
+
+#factCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(79, 70, 229, 0.15), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
+}
+
+#factCard:hover::before {
+  opacity: 1;
+}
+
+/* ?? INTEGRATED HINTS (Compact & Contextual) */
+.IntegratedHint {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 22px;
+  border-width: 1px;
+  transition: all 0.3s;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  position: relative;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+}
+
+.IntegratedHint::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.IntegratedHint.tone-ok { background-color: #f0fdf4; border-color: #dcfce7; color: #064e3b; }
+.IntegratedHint.tone-warn { background-color: #fff7ed; border-color: #ffedd5; color: #7c2d12; }
+.IntegratedHint.tone-bad { background-color: #fff1f2; border-color: #ffe4e6; color: #881337; }
+
+.IntegratedHint .hint-icon-bg {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-width: 1px;
+  transition: all 0.3s;
+}
+
+.IntegratedHint.tone-ok .hint-icon-bg { background-color: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); color: #059669; }
+.IntegratedHint.tone-warn .hint-icon-bg { background-color: rgba(249, 115, 22, 0.1); border-color: rgba(249, 115, 22, 0.2); color: #d97706; }
+.IntegratedHint.tone-bad .hint-icon-bg { background-color: rgba(244, 63, 94, 0.1); border-color: rgba(244, 63, 94, 0.2); color: #e11d48; }
+
+.IntegratedHint .hint-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.IntegratedHint .hint-eyebrow {
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  opacity: 0.5;
+  margin-bottom: 2px;
+}
+
+.IntegratedHint .hint-message {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+/* ?? GLOBAL MODERN FORM ELEMENTS (Premium High-Density) */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="password"],
+input[type="email"],
+select,
+textarea {
+    width: 100%;
+    height: 54px;
+    padding: 0 20px;
+    background: #ffffff;
+    border: 1.5px solid var(--md-sys-color-outline-variant);
+    border-radius: 18px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--md-sys-color-on-surface);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    font-family: inherit;
+}
+
+/* Specific for select (Premium Arrow Icon) */
+select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23003366'%3E%3Cpath d='M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 24px;
+    padding-right: 48px;
+    cursor: pointer;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--md-sys-color-primary);
+    background-color: #fff;
+    box-shadow: 0 0 0 4px rgba(0, 51, 102, 0.08), 0 8px 16px -4px rgba(0, 51, 102, 0.05);
+    transform: translateY(-1px);
+}
+
+textarea {
+    height: auto;
+    min-height: 120px;
+    padding: 18px 20px;
+}
+
+/* Label Refinement */
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--md-sys-color-primary);
+    opacity: 0.8;
+    margin-left: 4px;
+}
+
+/* 📱 RESPONSIVE DESIGN: MOBILE CARD LAYOUTS */
+@media (max-width: 850px) {
+  /* Tables to Cards Transformation */
+  #srCaptureTable, 
+  #srCaptureTable thead, 
+  #srCaptureTable tbody, 
+  #srCaptureTable th, 
+  #srCaptureTable td, 
+  #srCaptureTable tr,
+  #capturadasTbody,
+  #capturadasTbody tr,
+  #capturadasTbody td {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  #srCaptureTable thead, 
+  #capturadasTbody:parent thead {
+    display: none !important;
+  }
+
+  #srCaptureTable tr,
+  #capturadasTbody tr {
+    margin-bottom: 24px;
+    background: #ffffff;
+    border: 2px solid var(--md-sys-color-outline-variant);
+    border-radius: 28px;
+    padding: 20px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+    position: relative;
+  }
+
+  #srCaptureTable td,
+  #capturadasTbody td {
+    border: none !important;
+    position: relative;
+    padding: 8px 0 8px 45% !important;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    text-align: right;
+    justify-content: flex-end;
+  }
+
+  #srCaptureTable td:before,
+  #capturadasTbody td:before {
+    position: absolute;
+    left: 0;
+    width: 40%;
+    padding-right: 10px;
+    white-space: nowrap;
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 10px;
+    color: var(--md-sys-color-primary);
+    content: attr(data-label);
+    text-align: left;
+    opacity: 0.7;
+  }
+
+  /* Specific tweaks for inputs in mobile cards */
+  #srCaptureTable td select, 
+  #srCaptureTable td input {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .md-delete-btn {
+    width: 100%;
+    justify-content: center;
+    background: #fee2e2;
+    border-radius: 12px;
+    margin-top: 8px;
+  }
+}
+
+/* Summary Mobile Cards (Custom UI) */
+.mobile-summary-card {
+  background: white;
+  border-radius: 24px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--md-shadow-1);
+}
+
+.mobile-summary-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.mobile-summary-card .unit-name {
+  font-weight: 900;
+  color: var(--md-sys-color-primary);
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.mobile-summary-card .info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.mobile-summary-card .lbl {
+  font-weight: 800;
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 0.6;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.mobile-summary-card .val {
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface);
+}
+
+.mobile-summary-card .card-footer {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed #f1f5f9;
+}
+
+.btn-live-view {
+  width: 100%;
+  height: 44px;
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-primary);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 14px;
+  font-weight: 800;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.btn-live-view:active {
+  transform: scale(0.98);
+  background: var(--md-sys-color-outline-variant);
+}
+
+/* Status Pills */
+.status-pill {
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.status-pill.ok { background: #dcfce7; color: #166534; }
+.status-pill.warn { background: #fef3c7; color: #92400e; }
+
+/* Desktop vs Mobile display toggles */
+@media (max-width: 850px) {
+  .tableWrap { display: none !important; }
+  .mobileCardsWrap { display: block !important; }
+}
+@media (min-width: 851px) {
+  .mobileCardsWrap { display: none !important; }
+  .tableWrap { display: block !important; }
+}
+
+.Blob-4 {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.4;
+  will-change: transform;
+  transform: translate3d(0,0,0);
+  pointer-events: none;
+  width: 450px;
+  height: 450px;
+  background: hsla(330, 85%, 65%, 0.4);
+  bottom: 20%;
+  left: 10%;
+  animation: auraOrbit 22s ease-in-out infinite alternate-reverse;
 }

@@ -3498,19 +3498,20 @@ document.addEventListener("DOMContentLoaded", () => {
           const currentMonth = fecha.substring(0, 7); // YYYY-MM
 
           const [resSR, resCons, resBio, resUnits, resCalendar] = await Promise.all([
-            supabase.from('biologicos_existencia').select('clues').eq('fecha', fecha),
-            supabase.from('consumibles').select('clues').in('fecha', consDates),
-            supabase.from('biologicos_pedido').select('clues').eq('fecha_captura', fecha),
+            supabase.from('biologicos_existencia').select('clues, capturado_por').eq('fecha', fecha),
+            supabase.from('consumibles').select('clues, capturado_por').in('fecha', consDates),
+            supabase.from('biologicos_pedido').select('clues, capturado_por, tipo_pedido').eq('fecha_captura', fecha),
             supabase.from('unidades').select('*').eq('activo', 'SI'),
             supabase.from('calendario_pedidos').select('*').eq('anio_mes', currentMonth).eq('activo', 'SI').maybeSingle()
           ]);
 
           let capturedClues = [];
-          if (tipo === "SR") capturedClues = [...new Set((resSR.data || []).map(x => x.clues || x.CLUES))];
-          else if (tipo === "CONS") capturedClues = [...new Set((resCons.data || []).map(x => x.clues || x.CLUES))];
-          else if (tipo === "BIO") {
-            capturedClues = [...new Set((resBio.data || []).map(x => x.clues || x.CLUES))];
-          }
+          let captureRecords = [];
+          if (tipo === "SR") captureRecords = resSR.data || [];
+          else if (tipo === "CONS") captureRecords = resCons.data || [];
+          else if (tipo === "BIO") captureRecords = resBio.data || [];
+
+          capturedClues = [...new Set(captureRecords.map(x => x.clues || x.CLUES))];
 
           const allUnits = resUnits.data || [];
           const capturadas = allUnits.filter(u => capturedClues.includes(u.clues || u.CLUES));
@@ -3526,9 +3527,19 @@ document.addEventListener("DOMContentLoaded", () => {
               total_faltantes: faltantes.length,
               calendar_override: resCalendar.data || null,
               capturadas: capturadas.map(u => {
-                let metadata = { municipio: u.municipio || u.MUNICIPIO, clues: u.clues || u.CLUES, unidad: u.unidad || u.UNIDAD, capturo: "SI", estatus: "OK" };
+                const cClues = u.clues || u.CLUES;
+                const record = captureRecords.find(r => (r.clues || r.CLUES) === cClues);
+                
+                let metadata = { 
+                  municipio: u.municipio || u.MUNICIPIO, 
+                  clues: cClues, 
+                  unidad: u.unidad || u.UNIDAD, 
+                  capturado_por: record?.capturado_por || record?.usuario || "SISTEMA",
+                  capturo: "SI", 
+                  estatus: "OK" 
+                };
+
                 if (tipo === "BIO") {
-                  const record = (resBio.data || []).find(r => r.clues === (u.clues || u.CLUES));
                   metadata.tipo_pedido = record?.tipo_pedido || "MENSUAL";
                 }
                 return metadata;
@@ -3664,6 +3675,8 @@ document.addEventListener("DOMContentLoaded", () => {
         case "unitstatus": {
           const today = todayYmdLocal();
           const clues = USER.clues;
+          const role = (USER.rol || "UNIDAD").trim().toUpperCase();
+          const municipio = USER.municipio;
           
           // 1. Verificar Apertura Manual (Consumibles)
           const { data: consOverride, error: consErr } = await supabase
@@ -3673,11 +3686,10 @@ document.addEventListener("DOMContentLoaded", () => {
             .eq('activo', 'SI')
             .maybeSingle();
           
-          if (consErr) console.warn("[Supabase] Fallo al consultar aperturas_consumibles (posiblemente tabla inexistente):", consErr);
+          if (consErr) console.warn("[Supabase] Fallo al consultar aperturas_consumibles:", consErr);
 
           // 2. Verificar Apertura Manual (Biológicos - Calendario Pedidos)
-          // (Este usa el mes actual y busca si hoy cae en ventana habilitada)
-          const currentMonth = today.substring(0, 7); // YYYY-MM
+          const currentMonth = today.substring(0, 7);
           const { data: bioOverride } = await supabase
             .from('calendario_pedidos')
             .select('*')
@@ -3687,16 +3699,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
           // 3. Lógica Inteligente (Días festivos / Fines de semana)
           const consIntelligent = await getConsumiblesStatus(today, clues);
-          
-          // Bio pedidos: Jueves y Viernes por estándar
           const dow = new Date().getDay();
           const canCaptureExistenciaBioStandard = (dow === 4 || dow === 5);
           
-          // Pedido mensual (Ventana inteligente)
           const bioWindow = calculateBioIntelligentWindow(new Date().getFullYear(), new Date().getMonth());
           const isBioWindowOpen = today >= dateToLocalYmd(bioWindow.start) && today <= dateToLocalYmd(bioWindow.end);
 
-          // 4. Consolidar Respuestas
+          // 4. Consolidar Respuestas de Apertura
           let canCons = consIntelligent.canCaptureConsumibles;
           let consReason = consIntelligent.consumiblesReason || "Disponible solo jueves";
           
@@ -3716,6 +3725,80 @@ document.addEventListener("DOMContentLoaded", () => {
             }
           }
 
+          // 5. CÁLCULO DE CUMPLIMIENTO MENSUAL (v6.1 High Performance)
+          let compliance_pct = 0;
+          let municipal_avg = 0;
+          let global_avg = 0;
+
+          try {
+            // Calcular días esperados del mes hasta hoy
+            const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+            const dateIter = new Date(startOfMonth);
+            const endIter = new Date();
+            const monthStartStr = dateToLocalYmd(startOfMonth);
+            
+            let expectedSR = 0;
+            let expectedCons = 0;
+            
+            while (dateIter <= endIter) {
+              if (isBusinessDay(dateIter)) expectedSR++;
+              if (dateIter.getDay() === 4) expectedCons++; // Jueves
+              dateIter.setDate(dateIter.getDate() + 1);
+            }
+            
+            const totalExpectedPerUnit = expectedSR + expectedCons;
+
+            if (role === "UNIDAD") {
+              const [resSR, resCons] = await Promise.all([
+                supabase.from('biologicos_existencia').select('clues', { count: 'exact', head: true }).eq('clues', clues).gte('fecha', monthStartStr).lte('fecha', today),
+                supabase.from('consumibles').select('clues', { count: 'exact', head: true }).eq('clues', clues).gte('fecha', monthStartStr).lte('fecha', today)
+              ]);
+              
+              const actualSR = resSR.count || 0;
+              const actualCons = resCons.count || 0;
+              const totalActual = actualSR + actualCons;
+              
+              compliance_pct = totalExpectedPerUnit > 0 ? Math.round((totalActual / totalExpectedPerUnit) * 100) : 0;
+              if (compliance_pct > 100) compliance_pct = 100;
+
+            } else {
+              // Cálculos Agregados para otros roles (Aproximación por masa de reportes)
+              const [resTotalUnits, resSRCount, resConsCount] = await Promise.all([
+                supabase.from('unidades').select('clues', { count: 'exact', head: true }).eq('activo', 'SI'),
+                supabase.from('biologicos_existencia').select('clues', { count: 'exact', head: true }).gte('fecha', monthStartStr).lte('fecha', today),
+                supabase.from('consumibles').select('clues', { count: 'exact', head: true }).gte('fecha', monthStartStr).lte('fecha', today)
+              ]);
+
+              const totalActiveUnitsGlobal = resTotalUnits.count || 0;
+              const totalExpectedGlobal = totalActiveUnitsGlobal * totalExpectedPerUnit;
+              const totalCapturedGlobal = (resSRCount.count || 0) + (resConsCount.count || 0);
+              
+              global_avg = totalExpectedGlobal > 0 ? Math.round((totalCapturedGlobal / totalExpectedGlobal) * 100) : 0;
+              if (global_avg > 100) global_avg = 100;
+
+              if (role === "MUNICIPAL" || role === "ADMIN" || role === "JURISDICCIONAL") {
+                const muniFilter = (role === "MUNICIPAL") ? municipio : null;
+                if (muniFilter) {
+                   const [resMuniUnits, resMuniSR, resMuniCons] = await Promise.all([
+                     supabase.from('unidades').select('clues', { count: 'exact', head: true }).eq('activo', 'SI').eq('municipio', muniFilter),
+                     supabase.from('biologicos_existencia').select('clues', { count: 'exact', head: true }).gte('fecha', monthStartStr).lte('fecha', today).eq('municipio', muniFilter),
+                     supabase.from('consumibles').select('clues', { count: 'exact', head: true }).gte('fecha', monthStartStr).lte('fecha', today).eq('municipio', muniFilter)
+                   ]);
+                   const totalUnitsMuni = resMuniUnits.count || 0;
+                   const totalExpectedMuni = totalUnitsMuni * totalExpectedPerUnit;
+                   const totalCapturedMuni = (resMuniSR.count || 0) + (resMuniCons.count || 0);
+                   municipal_avg = totalExpectedMuni > 0 ? Math.round((totalCapturedMuni / totalExpectedMuni) * 100) : 0;
+                   if (municipal_avg > 100) municipal_avg = 100;
+                } else {
+                   municipal_avg = global_avg;
+                }
+              }
+              compliance_pct = (role === "MUNICIPAL") ? municipal_avg : global_avg;
+            }
+          } catch (e) {
+            console.error("[unitstatus] Error calculando cumplimiento mensual:", e);
+          }
+
           return {
             ok: true,
             data: {
@@ -3726,7 +3809,10 @@ document.addEventListener("DOMContentLoaded", () => {
               consumiblesManualOverride: !!consOverride,
               canCaptureBio: canBio,
               bioReason: bioReason,
-              isExtraordinary: !!(consOverride || (bioOverride && today >= bioOverride.habilitar_desde && today <= bioOverride.habilitar_hasta))
+              isExtraordinary: !!(consOverride || (bioOverride && today >= bioOverride.habilitar_desde && today <= bioOverride.habilitar_hasta)),
+              compliance_pct,
+              municipal_avg,
+              global_avg
             }
           };
         }
@@ -3779,7 +3865,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const table = tipo === "SR" ? "biologicos_existencia" : "consumibles";
           let query = supabase
             .from(table)
-            .select('*')
+            .select('*, unidades(*)')
             .gte('fecha', payload.fechaInicio)
             .lte('fecha', payload.fechaFin);
 
@@ -3797,10 +3883,10 @@ document.addEventListener("DOMContentLoaded", () => {
         case "bioexportmatrix": {
           let query = supabase
             .from('biologicos_pedido')
-            .select('*');
+            .select('*, unidades(*)');
           
           if (payload.fechaInicio) {
-             query = query.eq('fecha_objetivo', payload.fechaInicio);
+             query = query.eq('fecha_pedido_programada', payload.fechaInicio);
           }
 
           const { data, error } = await query;
@@ -5605,33 +5691,33 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
     const bioOptions = biotics.map(b => `<option value="${b}" ${data?.biologico === b ? 'selected' : ''}>${b}</option>`).join("");
     
     tr.innerHTML = `
-      <td class="p-4 py-3">
+      <td class="p-4 py-3" data-label="Biológico">
         <select class="sr-bio-select w-full bg-slate-50 border-2 border-slate-400 rounded-xl px-3 py-2.5 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" onchange="handleSRBioChange(this)">
           <option value="">Selecciona…</option>
           ${bioOptions}
         </select>
       </td>
-      <td class="p-4 py-3">
+      <td class="p-4 py-3" data-label="Lote">
         <select class="sr-lote-select w-full bg-slate-50 border-2 border-slate-400 rounded-xl px-3 py-2.5 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" onchange="handleSRLoteChange(this)">
           <option value="">—</option>
         </select>
       </td>
-      <td class="sr-cad-cell p-4 py-3 font-black text-[13px] text-slate-900/60">—</td>
-      <td class="p-4 py-3">
-        <div class="relative group">
+      <td class="sr-cad-cell p-4 py-3 font-black text-[13px] text-slate-900/60" data-label="Caducidad">—</td>
+      <td class="p-4 py-3" data-label="Recepción">
+        <div class="relative group w-full">
           <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-rounded text-slate-400 text-[18px] pointer-events-none transition-colors group-focus-within:text-primary">calendar_month</span>
           <input type="date" style="padding-left: 38px !important;" class="sr-recepcion-input w-full bg-slate-50 border-2 border-slate-400 rounded-xl pr-3 py-2 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" value="${data?.fecha_recepcion || ""}">
         </div>
         <div class="sr-permanencia-hint" style="display: none;"></div>
       </td>
-      <td class="p-4 py-3">
-        <div class="relative group">
+      <td class="p-4 py-3" data-label="Frascos">
+        <div class="relative group w-full">
           <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-rounded text-slate-400 text-[18px] pointer-events-none transition-colors group-focus-within:text-primary">inventory_2</span>
           <input type="number" style="padding-left: 38px !important;" class="sr-cantidad-input w-full bg-slate-50 border-2 border-slate-400 rounded-xl pr-3 py-2.5 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" min="0" step="1" value="${data?.cantidad || ""}" placeholder="0">
         </div>
       </td>
-      <td class="p-4 py-3 text-center">
-        <div class="flex justify-center items-center">
+      <td class="p-4 py-3 text-center" data-label="Acción">
+        <div class="flex justify-center items-center w-full">
           <button type="button" class="md-delete-btn group" title="Eliminar este lote" onclick="this.closest('tr').remove();">
             <svg viewBox="0 0 24 24" class="w-6 h-6">
               <path class="trash-lid transition-transform duration-200 group-hover:-translate-y-1" fill="currentColor" d="M15 4V3H9v1H4v2h16V4h-5z" />
@@ -6576,19 +6662,20 @@ async function getTodayReports(fecha = "", force = false) {
 
     const setTone = (tone, icon, title, msg) => {
       box.classList.remove("hidden");
-      const config = {
-        ok: { bg: "bg-emerald-100", border: "border-emerald-200", iconBg: "bg-emerald-500/10", iconBorder: "border-emerald-500/20", iconColor: "text-emerald-600", textColor: "text-emerald-900", accent: "text-emerald-600/70" },
-        warn: { bg: "bg-orange-100", border: "border-orange-200", iconBg: "bg-orange-500/10", iconBorder: "border-orange-500/20", iconColor: "text-orange-600", textColor: "text-orange-900", accent: "text-orange-600/70" },
-        bad: { bg: "bg-rose-100", border: "border-rose-200", iconBg: "bg-rose-500/10", iconBorder: "border-rose-500/20", iconColor: "text-rose-600", textColor: "text-rose-900", accent: "text-rose-600/70" }
-      }[tone];
+      
+      // Move box to active panel container if it exists
+      const targetContainer = $(`form${activeTab}`) || $(`panel${activeTab}`) || $("captureContentArea");
+      if (targetContainer && box.parentElement !== targetContainer) {
+        targetContainer.prepend(box);
+      }
 
-      container.className = `flex items-center gap-5 bg-white border p-5 rounded-[22px] transition-all shadow-sm ${config.bg} ${config.border}`;
-      iconBg.className = `w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border transition-all ${config.iconBg} ${config.iconBorder}`;
-      iconEl.className = `material-symbols-rounded text-[26px] ${config.iconColor} ${tone !== "ok" ? "animate-pulse" : ""}`;
+      container.className = `IntegratedHint tone-${tone}`;
+      iconBg.className = `hint-icon-bg`;
+      iconEl.className = `material-symbols-rounded text-[22px] ${tone !== "ok" ? "animate-pulse" : ""}`;
       iconEl.textContent = icon;
-      eyebrow.className = `text-[10px] font-black uppercase tracking-[0.15em] leading-none mb-1 ${config.accent}`;
+      eyebrow.className = `hint-eyebrow`;
       eyebrow.textContent = title;
-      textEl.className = `text-[14px] font-bold leading-snug ${config.textColor}`;
+      textEl.className = `hint-message`;
       textEl.innerHTML = msg;
     };
 
@@ -7638,64 +7725,25 @@ async function getTodayReports(fecha = "", force = false) {
       const tbodyCap = $("capturadasTbody");
       const cardsCap = $("capturadasCards");
       if (!list.length) {
-        tbodyCap.innerHTML = `<tr><td colspan="5" class="muted">No hay capturas con este filtro</td></tr>`;
-        if (cardsCap) cardsCap.innerHTML = `<div class="muted">No hay capturas</div>`;
-        return;
-      }
-      tbodyCap.innerHTML = list.map(r => `
-        <tr>
-          <td>${escapeHtml(r.municipio || "")}</td>
-          <td>${escapeHtml(r.clues || "")}</td>
-          <td>${escapeHtml(r.unidad || "")}</td>
-          <td>${escapeHtml(r.capturado_por || "")} <br><small class="opacity-60 font-bold">${r.tipo_pedido || "MENSUAL"}</small></td>
-          <td>
-            <div style="display:flex; align-items:center; gap:8px">
-              <span class="statusOk">${r.editado === "SI" ? "Capturado / editado" : "Capturado"}</span>
-              <button class="miniBtn ghostBtn" onclick="openLiveView('${r.clues}','${escapeHtml(r.unidad)}','${escapeHtml(r.municipio)}')" title="Ver inventario en vivo">
-                 <span class="material-symbols-rounded" style="font-size:18px">visibility</span>
-              </button>
-            </div>
-          </td>
-        </tr>
-      `).join("");
-      // ... cards update omitted for brevity in this replace call, will unify below
-    }
-
-    $("capturadasCount").textContent = `${capturadas.length}`;
-    $("faltantesCount").textContent = `${faltantes.length}`;
-
-    // Semáforo automático
-    if ($("kpiCardFaltantes")) {
-      $("kpiCardFaltantes").className = "kpiCard " + (faltantes.length > 0 ? "warn" : "ok");
-    }
-
-
-    const finalMsg = extraInfo || `Consulta cargada: ${tipo === "CONS" ? "Consumibles" : (tipo === "BIO" ? "Pedido" : "Existencia")} del ${fecha || "—"}`;
-    $("summaryMsg").innerHTML = finalMsg;
-
-    function renderCapturadasOnly(list) {
-      const tbodyCap = $("capturadasTbody");
-      const cardsCap = $("capturadasCards");
-      if (!list.length) {
-        const msg = `No hay capturas registradas para esa consulta`;
+        const msg = "No hay capturas registradas";
         tbodyCap.innerHTML = `<tr><td colspan="5" class="muted">${msg}</td></tr>`;
         if (cardsCap) cardsCap.innerHTML = `<div class="muted">${msg}</div>`;
         return;
       }
       tbodyCap.innerHTML = list.map(r => `
         <tr>
-          <td>${escapeHtml(r.municipio || "")}</td>
-          <td>${escapeHtml(r.clues || "")}</td>
-          <td>${escapeHtml(r.unidad || "")}</td>
-          <td>
-            ${escapeHtml(r.capturado_por || "")}
-            ${r.tipo_pedido ? `<br><small class="text-primary font-black uppercase tracking-tighter opacity-70">${r.tipo_pedido}</small>` : ""}
+          <td data-label="Municipio">${escapeHtml(r.municipio || "")}</td>
+          <td data-label="CLUES">${escapeHtml(r.clues || "")}</td>
+          <td data-label="Unidad">${escapeHtml(r.unidad || "")}</td>
+          <td data-label="Capturó">
+            ${escapeHtml(r.capturado_por || "SISTEMA")}
+            ${r.tipo_pedido ? `<br><small class="opacity-60 font-black uppercase text-[10px] tracking-tighter">${r.tipo_pedido}</small>` : ""}
           </td>
-          <td>
-            <div style="display:flex; align-items:center; gap:8px">
-              <span class="statusOk">${r.editado === "SI" ? "Capturado / editado" : "Capturado"}</span>
-              <button class="miniBtn ghostBtn" onclick="openLiveView('${r.clues}','${escapeHtml(r.unidad)}','${escapeHtml(r.municipio)}')" title="Ver inventario en vivo">
-                 <span class="material-symbols-rounded" style="font-size:18px">visibility</span>
+          <td data-label="Estatus">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; min-width:140px">
+              <span class="statusOk" style="font-size:13px">${r.editado === "SI" ? "Editado" : "Capturado"}</span>
+              <button class="miniBtn ghostBtn" style="padding:6px; border-radius:12px; background:white; border:1px solid var(--md-sys-color-outline-variant); box-shadow:var(--md-shadow-1)" onclick="openLiveView('${r.clues}','${escapeHtml(r.unidad)}','${escapeHtml(r.municipio)}')" title="Ver inventario en vivo">
+                 <span class="material-symbols-rounded" style="font-size:18px; color:var(--md-sys-color-primary)">visibility</span>
               </button>
             </div>
           </td>
@@ -7704,69 +7752,62 @@ async function getTodayReports(fecha = "", force = false) {
 
       if (cardsCap) {
         cardsCap.innerHTML = list.map(r => `
-        <div class="captureMobileCard">
-          <div class="captureMobileHead">
-            <div class="captureMobileTitle">${escapeHtml(r.unidad || "Unidad sin nombre")}</div>
-            <div class="captureMobileStatus ok">${r.editado === "SI" ? "Capturado / editado" : "Capturado"}</div>
-          </div>
-          <div class="captureMobileFields">
-            <div class="captureMobileField">
-              <div class="captureMobileLabel">Municipio / CLUES</div>
-              <div class="captureMobileValue">${escapeHtml(r.municipio || "")} (${escapeHtml(r.clues || "")})</div>
+          <div class="mobile-summary-card">
+            <div class="card-header">
+               <span class="unit-name">${escapeHtml(r.unidad || "UNIDAD")}</span>
+               <span class="status-pill ${r.editado === 'SI' ? 'warn' : 'ok'}">${r.editado === 'SI' ? 'Editado' : 'Capturado'}</span>
             </div>
-            <div class="captureMobileField">
-              <div class="captureMobileLabel">Capturó ${r.tipo_pedido ? `(${r.tipo_pedido})` : ""}</div>
-              <div class="captureMobileValue">${escapeHtml(r.capturado_por || "")}</div>
+            <div class="card-body">
+               <div class="info-row"><span class="lbl">Municipio</span> <span class="val">${escapeHtml(r.municipio)}</span></div>
+               <div class="info-row"><span class="lbl">CLUES</span> <span class="val">${escapeHtml(r.clues)}</span></div>
+               <div class="info-row"><span class="lbl">Responsable</span> <span class="val">${escapeHtml(r.capturado_por || "SISTEMA")}</span></div>
+            </div>
+            <div class="card-footer">
+               <button class="btn-live-view" onclick="openLiveView('${r.clues}','${escapeHtml(r.unidad)}','${escapeHtml(r.municipio)}')">
+                  <span class="material-symbols-rounded">visibility</span> Ver Inventario en Vivo
+               </button>
             </div>
           </div>
-        </div>
+        `).join("");
+      }
+    }
+
+    function renderFaltantesOnly(list) {
+      const tbodyFal = $("faltantesTbody");
+      const cardsFal = $("faltantesCards");
+      if (!list.length) {
+        const msg = "No hay pendientes";
+        tbodyFal.innerHTML = `<tr><td colspan="4" class="muted">${msg}</td></tr>`;
+        if (cardsFal) cardsFal.innerHTML = `<div class="muted">${msg}</div>`;
+        return;
+      }
+      tbodyFal.innerHTML = list.map(r => `
+        <tr>
+          <td data-label="Municipio">${escapeHtml(r.municipio || "")}</td>
+          <td data-label="CLUES">${escapeHtml(r.clues || "")}</td>
+          <td data-label="Unidad">${escapeHtml(r.unidad || "")}</td>
+          <td data-label="Estatus"><span class="statusPending">Pendiente</span></td>
+        </tr>
       `).join("");
+
+      if (cardsFal) {
+        cardsFal.innerHTML = list.map(r => `
+          <div class="mobile-summary-card" style="border-left: 4px solid var(--md-sys-color-error);">
+            <div class="card-header">
+               <span class="unit-name">${escapeHtml(r.unidad || "UNIDAD")}</span>
+               <span class="status-pill warn">Pendiente</span>
+            </div>
+            <div class="card-body">
+               <div class="info-row"><span class="lbl">Municipio</span> <span class="val">${escapeHtml(r.municipio)}</span></div>
+               <div class="info-row"><span class="lbl">CLUES</span> <span class="val">${escapeHtml(r.clues)}</span></div>
+            </div>
+          </div>
+        `).join("");
       }
     }
 
     renderCapturadasOnly(capturadas);
-
-    const tbodyFal = $("faltantesTbody");
-    const cardsFal = $("faltantesCards");
-
-    if (!faltantes.length) {
-      tbodyFal.innerHTML = `<tr><td colspan="4" class="muted">No hay pendientes</td></tr>`;
-      if (cardsFal) {
-        cardsFal.innerHTML = `<div class="muted">No hay pendientes</div>`;
-      }
-    } else {
-      tbodyFal.innerHTML = faltantes.map(r => `
-      <tr>
-        <td>${escapeHtml(r.municipio || "")}</td>
-        <td>${escapeHtml(r.clues || "")}</td>
-        <td>${escapeHtml(r.unidad || "")}</td>
-        <td><span class="statusPending">Pendiente</span></td>
-      </tr>
-    `).join("");
-
-      if (cardsFal) {
-        cardsFal.innerHTML = faltantes.map(r => `
-        <div class="captureMobileCard">
-          <div class="captureMobileHead">
-            <div class="captureMobileTitle">${escapeHtml(r.unidad || "Unidad sin nombre")}</div>
-            <div class="captureMobileStatus pending">Pendiente</div>
-          </div>
-
-          <div class="captureMobileFields">
-            <div class="captureMobileField">
-              <div class="captureMobileLabel">Municipio</div>
-              <div class="captureMobileValue">${escapeHtml(r.municipio || "")}</div>
-            </div>
-
-            <div class="captureMobileField">
-              <div class="captureMobileLabel">CLUES</div>
-              <div class="captureMobileValue">${escapeHtml(r.clues || "")}</div>
-            </div>
-          </div>
-        </div>
-      `).join("");
-      }
-    }
+    renderFaltantesOnly(faltantes);
   }
 
   function setLoggedInUI(user, status) {
@@ -8783,23 +8824,23 @@ $("btnSaveSR").onclick = async () => {
       ];
     } else {
       insumos = [
-        { key: "BCG", label: "BCG", color: "4A86E8" },
-        { key: "HEPATITIS 10", label: "HEPATITIS 10", color: "CC0000" },
-        { key: "HEXAVALENTE", label: "HEXAVALENTE", color: "93C47D" },
-        { key: "DPT", label: "DPT", color: "F1C232" },
-        { key: "ROTAVIRUS", label: "ROTAVIRUS", color: "3D85C6" },
-        { key: "NEUMOCOCO 13", label: "NEUMOCOCO 13", color: "1155CC" },
-        { key: "NEUMOCOCO 23", label: "NEUMOCOCO 23", color: "0B5394" },
-        { key: "SRP", label: "SRP", color: "A64D79" },
-        { key: "SR", label: "SR", color: "741B47" },
-        { key: "VPH", label: "VPH", color: "76A5AF" },
-        { key: "VARICELA", label: "VARICELA", color: "45818E" },
-        { key: "HEPATITIS 20", label: "HEPATITIS 20", color: "8E7CC3" },
-        { key: "TD", label: "TD", color: "999999" },
-        { key: "TDPA", label: "TDPA", color: "E69138" },
-        { key: "INFLUENZA", label: "INFLUENZA", color: "B6D7A8" },
-        { key: "RABIA", label: "RABIA", color: "C90076" },
-        { key: "FAVI", label: "FAVI", color: "A61D2B" }
+        { key: "bcg", label: "BCG", color: "4A86E8" },
+        { key: "hepatitis_b", label: "HEPATITIS B", color: "CC0000" },
+        { key: "hexavalente", label: "HEXAVALENTE", color: "93C47D" },
+        { key: "dpt", label: "DPT", color: "F1C232" },
+        { key: "rotavirus", label: "ROTAVIRUS", color: "3D85C6" },
+        { key: "neumococica_13", label: "NEUMOCÓCICA 13", color: "1155CC" },
+        { key: "neumococica_20", label: "NEUMOCÓCICA 20", color: "0B5394" },
+        { key: "srp", label: "SRP", color: "A64D79" },
+        { key: "sr", label: "SR", color: "741B47" },
+        { key: "vph", label: "VPH", color: "76A5AF" },
+        { key: "varicela", label: "VARICELA", color: "45818E" },
+        { key: "hepatitis_a", label: "HEPATITIS A", color: "8E7CC3" },
+        { key: "td", label: "TD", color: "999999" },
+        { key: "tdpa", label: "TDPA", color: "E69138" },
+        { key: "covid_19", label: "COVID-19", color: "B6D7A8" },
+        { key: "influenza", label: "INFLUENZA", color: "20B2AA" },
+        { key: "vsr", label: "VSR", color: "C90076" }
       ];
     }
 
@@ -8900,11 +8941,12 @@ $("btnSaveSR").onclick = async () => {
         if (tipo === "CONS") {
           matchingRecords.forEach(d => { val += Number(d[insumo.key] || 0); });
         } else if (tipo === "SR") {
-          matchingRecords.filter(d => String(d.biologico).toUpperCase() === String(insumo.label).toUpperCase())
-            .forEach(d => { val += Number(d.cantidad_frascos || 0); });
+          // Acceso directo a la columna del biológico en la tabla ancha (biologicos_existencia)
+          matchingRecords.forEach(d => { val += Number(d[insumo.key] || 0); });
         } else {
+          // Filtrado por nombre en la tabla larga (biologicos_pedido)
           matchingRecords.filter(d => String(d.biologico).toUpperCase() === String(insumo.label).toUpperCase())
-            .forEach(d => { val += Number(d.pedido_frascos || 0); });
+            .forEach(d => { val += Number(d.frascos || d.solicitud || 0); });
         }
 
         rowTotal += val;

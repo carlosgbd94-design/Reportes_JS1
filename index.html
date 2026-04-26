@@ -34,6 +34,10 @@
         padding: 32px !important;
         border-radius: 32px !important;
         margin-top: 24px !important;
+        background: rgba(255, 255, 255, 0.4) !important;
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
       }
     }
 
@@ -113,131 +117,176 @@
   </script>
 </head>
 
-<body class="bg-surface-container min-h-screen">
+<body class="bg-surface-container min-h-screen relative overflow-x-hidden">
+  <!-- 🎨 DYNAMIC BACKGROUND ENGINE (High Performance Aura) -->
+  <div class="AuraContainer">
+    <div class="AuraBlob Blob-1"></div>
+    <div class="AuraBlob Blob-2"></div>
+    <div class="AuraBlob Blob-3"></div>
+    <div class="AuraBlob Blob-4"></div>
+  </div>
   <!-- 💎 HIGH-PERFORMANCE HEADER LIQUID GLASS -->
   <svg style="position: absolute; width: 0; height: 0; pointer-events: none;" aria-hidden="true">
-
-    <!-- 💎 CLEAN LIQUID GLASS REFRACTION (Apple 2026 Optimized) -->
-    <!-- We avoid feDisplacementMap to maintain 60fps scrolling as per Rule 32 -->
-    <filter id="header-liquid-refraction">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="0" /> <!-- Placeholder for future optimizations -->
+    <filter id="liquid-refraction" x="-50%" y="-50%" width="200%" height="200%" filterUnits="objectBoundingBox" color-interpolation-filters="sRGB">
+      <!-- 🌊 Optimized Refraction Core (1 Octave = High Perf) -->
+      <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves="1" seed="1" result="noise" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="25" xChannelSelector="R" yChannelSelector="G" />
     </filter>
   </svg>
 
-  <!-- ✅ MODERN FLOATING HEADER (Miniaturized on Mobile) -->
+  <!-- ✅ MODERN FLOATING HEADER: DECENTRALIZED LIQUID GLASS (Senior UX) -->
   <div
-    class="fixed top-0 sm:top-4 inset-x-0 sm:inset-x-8 h-[64px] sm:h-[85px] z-[1000] sm:border border-b sm:border-outline-variant sm:rounded-3xl flex items-center justify-center transition-all duration-500"
+    class="fixed top-0 sm:top-6 inset-x-0 sm:inset-x-10 z-[1000] flex items-center justify-center pointer-events-none"
     id="mainHeader">
-    <div class="w-full max-w-[1600px] px-4 sm:px-6 flex items-center justify-between relative z-10">
-      <div class="flex items-center gap-6">
-
-        <!-- Logos con estilo neumórfico sutil (Liquid Glass Layer) -->
-        <div
-          class="bg-white/10 px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-2xl sm:rounded-[22px] border border-white/20 flex gap-3 sm:gap-5 shadow-sm"
-          aria-label="Logos institucionales">
-          <img id="logoA" class="h-[32px] sm:h-[44px] w-auto drop-shadow-sm sm:drop-shadow-md"
+    <div class="w-full max-w-[1700px] px-4 sm:px-6 flex items-center justify-between pointer-events-auto">
+      
+      <!-- 💎 BRANDING CLUSTER (Pure Spectral Glass) -->
+      <div class="GlassContainer flex-none" id="logoCluster" style="display: flex !important; width: fit-content !important;">
+        <div class="GlassContent px-8 py-3 flex items-center flex-row flex-nowrap gap-8 bg-transparent! whitespace-nowrap overflow-visible" style="display: flex !important; flex-direction: row !important; align-items: center !important;">
+          <!-- Logo SESEQ -->
+          <img id="logoA" class="h-[40px] w-auto object-contain flex-none" style="height: 40px !important; width: auto !important;"
             src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/Seseq_vertical_2025.png" alt="SESEQ">
-          <div class="w-[1px] h-6 sm:h-10 bg-outline-variant/30 self-center"></div>
-          <img id="logoB" class="h-[32px] sm:h-[44px] w-auto drop-shadow-sm sm:drop-shadow-md"
+          
+          <div class="w-[1px] h-8 bg-primary/20 flex-none mx-2"></div>
+          
+          <!-- Logo Q -->
+          <img id="logoB" class="h-[40px] w-auto object-contain flex-none" style="height: 40px !important; width: auto !important;"
             src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/logo_Q.png"
             alt="Gobierno de Querétaro">
-        </div>
 
-        <div class="hidden lg:flex flex-col">
-          <h1 class="text-2xl font-black text-primary m-0 tracking-tight flex items-center gap-2">
-            JS1 <span class="text-secondary font-medium tracking-normal opacity-50">Reportes</span>
-          </h1>
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-status-success animate-pulse"></span>
-            <p class="text-[10px] text-surface-onVariant/60 m-0 font-bold uppercase tracking-widest leading-none">
-              Plataforma Institucional de Gestión</p>
+          <div class="w-[1px] h-8 bg-primary/20 flex-none mx-2"></div>
+
+          <!-- JS1 Branding Text -->
+          <div class="flex flex-col flex-none justify-center">
+            <h1 class="text-xl sm:text-2xl font-black text-primary m-0 leading-none flex items-center gap-2">
+              JS1 <span class="font-medium opacity-50">Reportes</span>
+            </h1>
+            <p class="text-[9px] text-primary/60 m-0 mt-1 font-black uppercase tracking-widest leading-none">
+              Plataforma Institucional</p>
           </div>
+        </div>
+        <div class="GlassMaterial">
+          <div class="GlassRefraction"></div> <!-- SVG Warp Engine -->
+          <div class="GlassEdgeReflection"></div> <!-- The Physical Bevel -->
         </div>
       </div>
 
-      <div class="flex items-center gap-2 ml-auto" id="userControlsGroup">
-        <div class="flex items-center gap-2" id="headerActions">
-          <!-- 2. Exportar reportes -->
-          <button class="header-action-btn" id="btnExport" data-tooltip="Exportar reportes" style="display:none">
-            <span class="material-symbols-rounded">download</span>
-          </button>
-
-          <!-- 3. Subir archivos -->
-          <button class="header-action-btn" id="btnOpenUpload" data-tooltip="Subir archivos" style="display:none">
-            <span class="material-symbols-rounded">cloud_upload</span>
-          </button>
-
-          <!-- 4. Explorador -->
-          <button class="header-action-btn" id="btnViewArchivos" data-tooltip="Explorador de evidencias" style="display:none">
-            <span class="material-symbols-rounded">folder_open</span>
-          </button>
-
-          <!-- 5. Notificaciones -->
-          <button class="header-action-btn" id="btnTopNotifications" data-tooltip="Notificaciones" style="display:none">
-            <div class="flex items-center justify-center relative !overflow-visible">
-              <span class="material-symbols-rounded">notifications</span>
-              <span id="topNotifBadge"></span>
+      <!-- 💎 ACTION BUTTONS CLUSTER (Individually Floating Circles) -->
+      <div class="flex items-center gap-6 sm:gap-8" id="userControlsGroup">
+        <div class="flex items-center gap-6" id="headerActions">
+          
+          <div class="GlassContainer" id="glassBtnExport" style="--glass-icon-color: #003366; --corner-radius: 100px;">
+            <div class="GlassContent">
+              <button class="header-action-btn" id="btnExport" data-tooltip="Exportar reportes" style="display:none;">
+                <span class="material-symbols-rounded">download</span>
+              </button>
             </div>
-          </button>
+            <div class="GlassMaterial">
+              <div class="GlassRefraction"></div>
+              <div class="GlassEdgeReflection"></div>
+            </div>
+          </div>
+
+          <div class="GlassContainer" id="glassBtnUpload" style="--glass-icon-color: #005bb5; --corner-radius: 100px;">
+            <div class="GlassContent">
+              <button class="header-action-btn" id="btnOpenUpload" data-tooltip="Subir archivos" style="display:none;">
+                <span class="material-symbols-rounded">cloud_upload</span>
+              </button>
+            </div>
+            <div class="GlassMaterial">
+              <div class="GlassRefraction"></div>
+              <div class="GlassEdgeReflection"></div>
+            </div>
+          </div>
+
+          <div class="GlassContainer" id="glassBtnExplorer" style="--glass-icon-color: #00695c; --corner-radius: 100px;">
+            <div class="GlassContent">
+              <button class="header-action-btn" id="btnViewArchivos" data-tooltip="Explorador de evidencias" style="display:none;">
+                <span class="material-symbols-rounded">folder_open</span>
+              </button>
+            </div>
+            <div class="GlassMaterial">
+              <div class="GlassRefraction"></div>
+              <div class="GlassEdgeReflection"></div>
+            </div>
+          </div>
+
+          <div class="GlassContainer" id="glassBtnNotifs" style="--glass-icon-color: #c41e3a; --corner-radius: 100px;">
+            <div class="GlassContent">
+              <button class="header-action-btn" id="btnTopNotifications" data-tooltip="Notificaciones" style="display:none;">
+                <div class="flex items-center justify-center relative !overflow-visible">
+                  <span class="material-symbols-rounded">notifications</span>
+                  <span id="topNotifBadge"></span>
+                </div>
+              </button>
+            </div>
+            <div class="GlassMaterial">
+              <div class="GlassRefraction"></div>
+              <div class="GlassEdgeReflection"></div>
+            </div>
+          </div>
         </div>
 
-        <!-- Profile Button (Moved from main area) -->
+        <!-- 💎 PROFILE BUTTON (Pure Spectral Glass) -->
         <div class="relative flex-none" id="profileDropdownContainer">
-          <button id="btnProfileToggle" data-tooltip="Mi Perfil / Ajustes"
-            class="h-[40px] sm:h-[52px] px-3 sm:px-6 bg-gradient-to-br from-primary to-[#004d99] text-white rounded-[18px] sm:rounded-[22px] flex items-center gap-2 sm:gap-3 shadow-[0_8px_20px_-6px_rgba(0,51,102,0.4)] transition-all hover:scale-[1.02] active:scale-95 border-none cursor-pointer">
-            <div
-              class="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm border border-white/20">
-              <span class="material-symbols-rounded text-[18px] sm:text-[22px]">account_circle</span>
+          <div class="GlassContainer" style="--corner-radius: 28px;">
+            <div class="GlassContent">
+              <button id="btnProfileToggle" data-tooltip="Mi Perfil / Ajustes"
+                class="h-[46px] sm:h-[56px] px-4 sm:px-8 text-primary rounded-[22px] sm:rounded-[28px] flex items-center gap-3 sm:gap-4 border-none cursor-pointer shadow-none">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/10">
+                  <span class="material-symbols-rounded text-[20px] sm:text-[24px] text-primary">account_circle</span>
+                </div>
+                <div class="flex flex-col items-start leading-none">
+                  <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-primary/60 mb-1">Mi Perfil</span>
+                  <span class="text-[12px] sm:text-[15px] font-black text-primary" id="rolTxt">Cargando...</span>
+                </div>
+                <span class="material-symbols-rounded text-[18px] sm:text-[22px] text-primary/40 ml-1">expand_more</span>
+              </button>
             </div>
-            <div class="flex flex-col items-start leading-none">
-              <span class="text-[8px] sm:text-[10px] font-black uppercase tracking-widest opacity-70 mb-0.5 sm:mb-1">Mi
-                Perfil</span>
-              <span class="text-[11px] sm:text-[14px] font-extrabold" id="rolTxt">Cargando...</span>
+            <div class="GlassMaterial">
+              <div class="GlassRefraction"></div>
+              <div class="GlassEdgeReflection"></div>
             </div>
-            <span
-              class="material-symbols-rounded text-[16px] sm:text-[20px] opacity-60 ml-0.5 sm:ml-1">expand_more</span>
-          </button>
+          </div>
 
           <!-- Dropdown Menu (Glassmorphism) -->
           <div id="profileDropdown"
-            class="hidden absolute right-0 mt-4 w-[280px] sm:w-[320px] bg-white/95 backdrop-blur-xl border border-outline-variant/40 rounded-[24px] sm:rounded-[32px] shadow-[0_25px_50px_-12px_rgba(0,51,102,0.15)] z-[5000] overflow-hidden transform origin-top-right transition-all animate-dropdownIn">
-            <div class="p-5 sm:p-6 border-b border-outline-variant/20 bg-primary/5">
-              <div class="flex items-center gap-3 sm:gap-4 mb-4">
-                <div
-                  class="w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg">
-                  <span class="material-symbols-rounded text-[28px] sm:text-[32px]">person</span>
+            class="hidden absolute right-0 mt-4 w-[300px] sm:w-[360px] bg-white/95 backdrop-blur-xl border border-outline-variant/40 rounded-[32px] shadow-[0_32px_64px_-12px_rgba(0,51,102,0.2)] z-[5000] overflow-hidden transform origin-top-right transition-all animate-dropdownIn">
+            
+            <!-- 👤 PREMIUM IDENTITY HUB -->
+            <div class="p-6 sm:p-8 flex flex-col items-center text-center bg-gradient-to-b from-primary/[0.03] to-transparent border-b border-outline-variant/10">
+              <div class="relative mb-4">
+                <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary to-[#005bb5] text-white flex items-center justify-center shadow-[0_12px_24px_rgba(0,51,102,0.3)] ring-4 ring-white relative z-10">
+                  <span class="material-symbols-rounded text-[32px] sm:text-[40px]">person</span>
                 </div>
-                <div class="flex flex-col">
-                  <span
-                    class="text-[10px] sm:text-[11px] font-black text-primary/40 uppercase tracking-widest mb-0.5">Usuario
-                    Activo</span>
-                  <div id="userNameFull" class="text-[15px] sm:text-[17px] font-black text-primary leading-tight">
-                    Cargando...</div>
+                <div class="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-110 opacity-30"></div>
+              </div>
+
+              <span class="text-[10px] font-black text-primary/40 uppercase tracking-[0.25em] mb-2">Usuario Activo</span>
+              <div id="userNameFull" class="text-[16px] sm:text-[18px] font-black text-primary leading-tight break-words w-full px-2" style="text-wrap: balance;">
+                Cargando...
+              </div>
+            </div>
+
+            <div class="p-5 sm:p-6 space-y-3 sm:space-y-4">
+              <!-- DATA BLOCKS (Adaptive & Clean) -->
+              <div class="flex items-center gap-4 p-4 bg-white rounded-2xl border border-outline-variant/30 shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all hover:border-primary/20 group">
+                <div class="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
+                  <span class="material-symbols-rounded text-primary/60 text-[20px]">apartment</span>
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <span class="text-[9px] font-black text-primary/30 uppercase tracking-widest mb-0.5">Unidad / CLUES</span>
+                  <span id="who" class="text-[12px] font-bold text-primary leading-tight break-words">Cargando...</span>
                 </div>
               </div>
 
-              <div class="space-y-2.5 sm:space-y-3">
-                <div
-                  class="flex items-center gap-3 p-2.5 sm:p-3 bg-white rounded-xl sm:rounded-2xl border border-outline-variant/30 shadow-sm">
-                  <span class="material-symbols-rounded text-primary/40 text-[18px] sm:text-[20px]">apartment</span>
-                  <div class="flex flex-col">
-                    <span class="text-[8px] sm:text-[9px] font-black text-primary/30 uppercase tracking-wider">Unidad /
-                      CLUES</span>
-                    <span id="who"
-                      class="text-[11px] sm:text-[12px] font-bold text-primary leading-tight">Cargando...</span>
-                  </div>
+              <div class="flex items-center gap-4 p-4 bg-white rounded-2xl border border-outline-variant/30 shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all hover:border-orange-200 group">
+                <div class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0 group-hover:bg-orange-100 transition-colors">
+                  <span class="material-symbols-rounded text-orange-400 text-[20px]">location_on</span>
                 </div>
-
-                <div
-                  class="flex items-center gap-3 p-2.5 sm:p-3 bg-white rounded-xl sm:rounded-2xl border border-outline-variant/30 shadow-sm">
-                  <span class="material-symbols-rounded text-orange-400 text-[18px] sm:text-[20px]">location_on</span>
-                  <div class="flex flex-col">
-                    <span
-                      class="text-[8px] sm:text-[9px] font-black text-orange-400/40 uppercase tracking-wider">Municipio
-                      Asignado</span>
-                    <span id="munTxt"
-                      class="text-[11px] sm:text-[12px] font-bold text-primary leading-tight">Cargando...</span>
-                  </div>
+                <div class="flex flex-col min-w-0">
+                  <span class="text-[9px] font-black text-orange-400/40 uppercase tracking-widest mb-0.5">Municipio Asignado</span>
+                  <span id="munTxt" class="text-[12px] font-bold text-primary leading-tight">Cargando...</span>
                 </div>
               </div>
             </div>
@@ -341,46 +390,6 @@
     <div class="w-full flex flex-col gap-6 hidden" id="rightColumn">
 
       <!-- 🚀 ACCIONES (HERO HEADER) -->
-      <!-- 🚀 PREMIUM INSIGHT HUB: DATO CURIOSO (Senior UX - Adaptive Full-Width Design) -->
-      <div class="w-full mb-4 relative" id="cardSide">
-        <div class="flex justify-center items-center w-full">
-          
-          <div
-            class="w-full h-[76px] bg-white border border-orange-400/30 rounded-[28px] shadow-[0_12px_40px_-12px_rgba(245,158,11,0.08)] overflow-hidden flex items-center group transition-all hover:scale-[1.002] hover:shadow-[0_20px_50px_-12px_rgba(245,158,11,0.15)] cursor-help relative"
-            id="factCard" title="Tip dinámico del programa">
-            
-            <!-- Animated Gradient Border Glow -->
-            <div class="absolute inset-0 border-[1.5px] border-transparent bg-gradient-to-r from-orange-400/40 via-transparent to-orange-400/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded-[28px]"></div>
-
-            <!-- Visual Accent: Intense Gradient Sidebar -->
-            <div class="w-2.5 h-full bg-gradient-to-b from-orange-500 via-orange-400 to-orange-600 shrink-0 shadow-[4px_0_15px_rgba(245,158,11,0.2)]"></div>
-
-            <!-- Icon Highlight: Crystalline Core -->
-            <div class="w-20 h-full flex items-center justify-center bg-orange-400/5 border-r border-orange-400/10 shrink-0 relative overflow-hidden">
-              <div class="absolute inset-0 bg-gradient-to-br from-orange-400/30 to-transparent blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
-              <div class="w-11 h-11 rounded-2xl bg-white/80 shadow-sm flex items-center justify-center group-hover:rotate-[15deg] transition-transform duration-500">
-                <span class="material-symbols-rounded text-[28px] text-orange-600" id="factIcon">tips_and_updates</span>
-              </div>
-            </div>
-
-            <!-- Content Area: Focused Typography -->
-            <div class="flex-1 min-w-0 px-8 py-2 flex flex-col justify-center">
-              <div class="flex flex-col gap-0.5">
-                <span id="factTitle" class="text-[16px] font-black text-primary tracking-tight truncate group-hover:text-orange-950 transition-colors">—</span>
-                <span id="factBody" class="text-[12px] text-primary/50 font-bold truncate group-hover:text-primary/80 transition-colors tracking-tight">—</span>
-              </div>
-            </div>
-
-            <!-- Dynamic Category Tag: Positioned on the Right (Action Chip Style) -->
-            <div class="pr-8">
-              <div id="factTag" class="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center shadow-lg shadow-orange-500/25 gap-2 transition-transform group-hover:scale-105">
-                <span class="material-symbols-rounded text-[16px]">auto_awesome</span>
-                TAG
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
       <!-- DROPDOWNS (INSIDE POSITIONED HOST) -->
       <div id="topNotifDropdown" class="topNotifDropdown" style="display:none">
         <div class="topNotifCard">
@@ -468,14 +477,16 @@
 
 
 
-    <!-- ✅ MAIN CONTENT (GREETING & MODULES) -->
-    <div class="w-full space-y-12">
+    <!-- ✅ MAIN CONTENT (Restored Block-Based Architecture) -->
+    <div class="w-full space-y-6 sm:space-y-8">
+      
+      <!-- 🧱 BLOCK 1: WELCOME & KPI HUB -->
       <div
         class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] transition-shadow hover:shadow-[0_16px_32px_rgba(0,51,102,0.08)] overflow-hidden"
-        id="cardApp">
+        id="welcomeBlock">
         <!-- 👤 PREMIUM WELCOME HUB (Balanced & Harmonious) -->
         <div
-          class="flex flex-col md:flex-row justify-start items-center gap-8 md:gap-12 mb-10 pb-8 border-b border-outline-variant/30 relative">
+          class="flex flex-col md:flex-row justify-start items-center gap-8 md:gap-12 relative">
           
           <!-- Welcome Area -->
           <div class="flex flex-col text-center md:text-left">
@@ -487,41 +498,72 @@
           <div class="hidden md:block w-px h-12 bg-outline-variant/40"></div>
 
           <!-- Compliance KPI (Redesigned) -->
-          <div id="bCumplimiento" data-tone="bad"
-            class="flex items-center gap-4 px-6 h-[64px] rounded-2xl bg-white border border-outline-variant/50 shadow-sm transition-all hover:shadow-md group cursor-help relative overflow-hidden">
-            
-            <!-- Progress Icon with Pulse Background -->
-            <div class="w-11 h-11 rounded-xl bg-primary/5 flex items-center justify-center shrink-0 relative z-10" id="bCumplimientoIconBg">
-              <span class="material-symbols-rounded text-[24px]">analytics</span>
-            </div>
-
-            <div class="flex flex-col leading-none relative z-10">
-              <span class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1.5">Cumplimiento</span>
-              <div class="flex items-baseline gap-1">
-                <span id="dayTxt" class="text-2xl font-black tracking-tighter text-primary">0%</span>
+          <div class="flex items-center gap-4 flex-wrap w-full min-h-[92px]">
+            <div id="bCumplimiento" data-tone="bad"
+              class="flex items-center gap-6 px-8 h-[92px] w-full md:w-auto min-w-[280px] rounded-2xl bg-white border border-outline-variant/50 shadow-sm transition-all hover:shadow-md group cursor-help relative overflow-hidden">
+              
+              <!-- Progress Icon with Pulse Background -->
+              <div class="w-14 h-14 rounded-xl bg-primary/5 flex items-center justify-center shrink-0 relative z-10" id="bCumplimientoIconBg">
+                <span class="material-symbols-rounded text-[28px]">analytics</span>
               </div>
+
+              <div class="flex flex-col leading-tight relative z-10">
+                <span class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1.5">Cumplimiento</span>
+                <div class="flex items-baseline gap-1">
+                  <span id="dayTxt" class="text-3xl font-black tracking-tighter text-primary">0%</span>
+                </div>
+              </div>
+
+              <!-- Glass Reflection Effect -->
+              <div class="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
             </div>
 
-            <!-- Glass Reflection Effect -->
-            <div class="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+            <!-- 💡 CRYSTALLINE INSIGHT HUB (Dato Curioso - Premium Redesign) -->
+            <div id="factCard" class="flex items-center gap-6 px-8 h-[92px] rounded-[32px] bg-indigo-600/5 border border-indigo-500/20 shadow-[0_20px_40px_-12px_rgba(79,70,229,0.1)] transition-all hover:shadow-[0_30px_60px_-12px_rgba(79,70,229,0.2)] hover:scale-[1.01] group cursor-help relative overflow-hidden flex-1 max-w-[600px] min-w-[320px] contain-layout">
+              
+              <!-- Nebula Background Effect -->
+              <div class="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/10 blur-[60px] rounded-full group-hover:bg-indigo-500/20 transition-all duration-700"></div>
+              <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-blue-500/10 blur-[60px] rounded-full group-hover:bg-blue-500/20 transition-all duration-700"></div>
+
+              <!-- Crystalline Icon Hub -->
+              <div class="w-14 h-14 rounded-2xl bg-white shadow-[0_8px_20px_-4px_rgba(79,70,229,0.2)] flex items-center justify-center shrink-0 relative z-10 border border-indigo-100 overflow-hidden group-hover:rotate-[8deg] transition-transform duration-500">
+                <div class="absolute inset-0 bg-gradient-to-br from-indigo-50 to-transparent opacity-50"></div>
+                <span class="material-symbols-rounded text-[30px] text-indigo-600 drop-shadow-sm" id="factIcon">auto_awesome</span>
+              </div>
+
+              <div class="flex flex-col leading-tight relative z-10 overflow-hidden">
+                <div class="flex items-center gap-2 mb-1">
+                  <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+                  <span class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600/50" id="factTitle">Cargando...</span>
+                </div>
+                <span id="factBody" class="text-[14px] font-black text-indigo-950 pr-4 leading-snug">—</span>
+              </div>
+
+              <!-- Hidden Tag/ID compatibility -->
+              <div id="factTag" class="hidden"></div>
+
+              <!-- Specular Rim Highlight -->
+              <div class="absolute inset-0 rounded-[32px] border border-white/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+            </div>
           </div>
         </div>
+      </div>
 
-
-        <!-- 🚀 UNIFIED CAPTURE ACTION BAR -->
-        <div id="sectionCapturaUnidad" style="display:none" class="mb-10">
-          <div
-            class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 pb-6 border-b border-outline-variant/20">
-            <!-- Title Badge -->
+      <!-- 🧱 BLOCK 2: PANEL SELECTOR & CAPTURE TABS -->
+      <div id="sectionCapturaUnidad" style="display:none; content-visibility: auto; contain-intrinsic-size: 80px;" 
+        class="w-full contain-layout">
+        <div
+          class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
+            <!-- 🏝️ TITLE ISLAND -->
             <div
-              class="flex items-center gap-4 bg-primary-container/20 text-primary border border-primary/10 px-6 py-3.5 rounded-2xl w-fit shadow-[0_4px_12px_rgba(0,51,102,0.03)]">
+              class="flex items-center gap-4 bg-white/60 backdrop-blur-md text-primary border border-white/40 px-6 py-3.5 rounded-2xl w-fit shadow-[0_8px_20px_rgba(0,51,102,0.05)] transition-all hover:shadow-[0_12px_24px_rgba(0,51,102,0.08)]">
               <span class="material-symbols-rounded text-[24px]">assignment</span>
-              <span class="text-base font-black uppercase tracking-[0.15em]">Captura de Reportes</span>
+              <span class="text-base font-black uppercase tracking-[0.2em]">Captura de Reportes</span>
             </div>
 
-            <!-- Redesigned & Scaled Tabs -->
+            <!-- 🏝️ TABS ISLAND -->
             <div
-              class="flex flex-wrap gap-3 p-2 bg-surface-variant rounded-[26px] w-full lg:w-auto border border-outline-variant shadow-inner">
+              class="flex flex-wrap gap-3 p-2 bg-white/40 backdrop-blur-md rounded-[26px] w-full lg:w-auto border border-white/40 shadow-[0_8px_20px_rgba(0,51,102,0.05)]">
               <button
                 class="tab-btn tab-active flex-1 md:flex-none items-center gap-2.5 h-[48px] sm:h-[52px] px-3 sm:px-6 min-w-[120px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[12px] sm:text-[14px]"
                 id="tabSR" onclick="activateCapture('SR')">
@@ -550,23 +592,21 @@
           </div>
 
           <!-- 🔔 PREMIUM CAPTURE STATUS ALERT (Integrated with Panels) -->
-          <div id="captureStateBox" class="hidden my-8 group px-2">
-            <div id="captureStateContainer"
-              class="flex items-center gap-5 bg-white border p-6 rounded-[24px] transition-all shadow-sm">
-              <div id="captureStateIconBg"
-                class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border transition-all">
-                <span id="captureStateIcon" class="material-symbols-rounded text-[26px]">info</span>
+          <div id="captureStateBox" class="hidden mb-4 group">
+            <div id="captureStateContainer" class="IntegratedHint">
+              <div id="captureStateIconBg" class="hint-icon-bg">
+                <span id="captureStateIcon" class="material-symbols-rounded text-[22px]">info</span>
               </div>
-              <div class="flex flex-col gap-0.5">
-                <span class="text-[10px] font-black uppercase tracking-[0.15em] opacity-60 leading-none mb-1"
-                  id="captureStateEyebrow">Estatus del Reporte</span>
-                <div class="text-[15px] font-bold leading-snug" id="captureStateText">
-                  —
-                </div>
+              <div class="hint-content">
+                <span class="hint-eyebrow" id="captureStateEyebrow">Estatus del Reporte</span>
+                <div class="hint-message" id="captureStateText">—</div>
               </div>
             </div>
           </div>
         </div>
+
+      <!-- 🧱 BLOCK 3: DYNAMIC CAPTURE PANELS -->
+      <div id="captureContentArea" class="space-y-6">
 
         <!-- SR (EXISTENCIA DE BIOLÓGICOS) -->
         <div id="formSR">
@@ -797,15 +837,13 @@
           </div>
 
           <!-- FICHA LOGÍSTICA DETALLADA (Solo se muestra cuando hay errores/ventanas terminadas) -->
-          <div id="bioDayAlert"
-            class="mb-4 p-4 rounded-xl border flex items-center gap-3 transition-all duration-500 shadow-sm bg-white border-rose-100 hidden">
-            <div class="bioDayIcon w-9 h-9 rounded-lg flex items-center justify-center shrink-0">
+          <div id="bioDayAlert" class="IntegratedHint tone-bad mb-4 hidden">
+            <div class="hint-icon-bg bioDayIcon">
               <span class="material-symbols-rounded text-[20px]">warning</span>
             </div>
-            <div class="flex-1">
-              <div class="bioDayTitle text-[10px] font-black uppercase tracking-[0.1em] opacity-60 mb-0.5">Estatus de
-                Ventana</div>
-              <div class="bioDayMsg text-[12px] font-bold text-surface-on/90 leading-snug">Cargando...</div>
+            <div class="hint-content">
+              <div class="hint-eyebrow bioDayTitle">Estatus de Ventana</div>
+              <div class="hint-message bioDayMsg">Cargando...</div>
             </div>
           </div>
 
@@ -989,56 +1027,54 @@
           <button class="btn-premium-action btn-save-animate w-full mt-4" id="btnSavePINOL">
             Enviar solicitud de pinol
           </button>
-        </div>
+      </div>
 
-        <!-- TABS ADMINISTRACIÓN -->
-        <div
-          class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mt-4 mb-6"
-          id="panelAdminOpsTabs" style="display:none">
-          <div class="flex flex-wrap gap-2 mb-2 p-1.5 bg-surface-variant/50 rounded-[20px] w-fit">
-            <button
-              class="tab-btn tab-active flex items-center gap-2.5 h-[46px] px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px]"
-              id="tabOPS_CAPTURE">
-              <span class="material-symbols-rounded text-[20px]">dashboard</span>
-              <span>Resumen de captura</span>
-            </button>
-            <button
-              class="tab-btn tab-inactive flex items-center gap-2.5 h-[46px] px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px]"
-              id="tabOPS_HISTORY">
-              <span class="material-symbols-rounded text-[20px]">query_stats</span>
-              <span>Métricas históricas</span>
-            </button>
-            <button
-              class="tab-btn tab-inactive flex items-center gap-2.5 h-[46px] px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px] relative"
-              id="tabOPS_PINOL">
-              <div class="relative flex items-center justify-center">
-                <span class="material-symbols-rounded text-[20px]">inventory</span>
-                <span id="pinolBadgeTab"
-                  class="absolute -top-1.5 -right-2 bg-status-error text-white text-[9px] font-black px-1.5 py-0.5 rounded-full"
-                  style="display:none">0</span>
-              </div>
-              <span>Solicitudes de pinol</span>
-            </button>
-            <button
-              class="tab-btn tab-inactive flex items-center gap-2.5 h-[46px] px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px]"
-              id="tabLOTES" style="display:none">
-              <span class="material-symbols-rounded text-[20px]">inventory_2</span>
-              <span>Carga de lotes</span>
-            </button>
-            <button
-              class="tab-btn tab-inactive flex items-center gap-2.5 h-[46px] px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px]"
-              id="tabOPS_NOTIFS">
-              <span class="material-symbols-rounded text-[20px]">campaign</span>
-              <span>Notificaciones</span>
-            </button>
-            <button
-              class="tab-btn tab-inactive flex items-center gap-2.5 h-[46px] px-6 rounded-2xl font-bold tracking-[0.02em] text-[13px]"
-              id="tabOPS_ADMIN">
-              <span class="material-symbols-rounded text-[20px]">admin_panel_settings</span>
-              <span>Administración</span>
-            </button>
-          </div>
+      <!-- 🧱 BLOCK 4: ADMINISTRATION TABS (Floating Islands) -->
+      <div id="panelAdminOpsTabs" style="display:none" class="w-full contain-layout mb-8">
+        <div class="flex flex-wrap gap-3 p-2 bg-white/40 backdrop-blur-md rounded-[26px] w-fit border border-white/40 shadow-[0_8px_20px_rgba(0,51,102,0.05)]">
+          <button
+            class="tab-btn tab-active flex items-center gap-2.5 h-[48px] px-6 rounded-[22px] font-bold tracking-wide text-[13px]"
+            id="tabOPS_CAPTURE">
+            <span class="material-symbols-rounded text-[22px]">dashboard</span>
+            <span>Resumen de captura</span>
+          </button>
+          <button
+            class="tab-btn tab-inactive flex items-center gap-2.5 h-[48px] px-6 rounded-[22px] font-bold tracking-wide text-[13px]"
+            id="tabOPS_HISTORY">
+            <span class="material-symbols-rounded text-[20px]">query_stats</span>
+            <span>Métricas históricas</span>
+          </button>
+          <button
+            class="tab-btn tab-inactive flex items-center gap-2.5 h-[48px] px-6 rounded-[22px] font-bold tracking-wide text-[13px] relative"
+            id="tabOPS_PINOL">
+            <div class="relative flex items-center justify-center">
+              <span class="material-symbols-rounded text-[22px]">inventory</span>
+              <span id="pinolBadgeTab"
+                class="absolute -top-1.5 -right-2 bg-status-error text-white text-[9px] font-black px-1.5 py-0.5 rounded-full"
+                style="display:none">0</span>
+            </div>
+            <span>Solicitudes de pinol</span>
+          </button>
+          <button
+            class="tab-btn tab-inactive flex items-center gap-2.5 h-[48px] px-6 rounded-[22px] font-bold tracking-wide text-[13px]"
+            id="tabLOTES" style="display:none">
+            <span class="material-symbols-rounded text-[22px]">inventory_2</span>
+            <span>Carga de lotes</span>
+          </button>
+          <button
+            class="tab-btn tab-inactive flex items-center gap-2.5 h-[48px] px-6 rounded-[22px] font-bold tracking-wide text-[13px]"
+            id="tabOPS_NOTIFS">
+            <span class="material-symbols-rounded text-[22px]">campaign</span>
+            <span>Notificaciones</span>
+          </button>
+          <button
+            class="tab-btn tab-inactive flex items-center gap-2.5 h-[48px] px-6 rounded-[22px] font-bold tracking-wide text-[13px]"
+            id="tabOPS_ADMIN">
+            <span class="material-symbols-rounded text-[22px]">admin_panel_settings</span>
+            <span>Administración</span>
+          </button>
         </div>
+      </div>
 
         <!-- NOTIFICACIONES -->
         <!-- NOTIFICACIONES -->
@@ -1559,12 +1595,14 @@
           </div>
         </div>
 
-        <!-- CARGA DE LOTES -->
-        <div class="card" id="panelLOTES" style="display:none">
-          <div class="sectionTitle">
-            <h3>Carga de lotes por municipio</h3>
-            <button class="miniBtn" id="btnRefreshLotesAdmin" title="Actualizar lotes">
-              <span class="material-symbols-rounded">refresh</span> Actualizar
+        <!-- CARGA DE LOTES (Premium Card Design) -->
+        <div id="panelLOTES" style="display:none"
+          class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8">
+          
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-black text-primary uppercase tracking-tighter">Carga de lotes por municipio</h3>
+            <button class="flex items-center gap-2 bg-primary/5 text-primary px-4 py-2 rounded-xl border border-primary/10 font-bold text-sm hover:bg-primary/10 transition-colors" id="btnRefreshLotesAdmin">
+              <span class="material-symbols-rounded text-[20px]">refresh</span> Actualizar
             </button>
           </div>
 
