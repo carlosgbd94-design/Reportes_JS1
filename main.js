@@ -3874,11 +3874,9 @@ document.addEventListener("DOMContentLoaded", () => {
           if (error) throw error;
           let uniqueMunis = [...new Set(data.map(u => u.municipio))].sort();
           
-          // 🛡️ MUNICIPAL solo ve su propio municipio
-          if (USER && USER.rol === "MUNICIPAL" && USER.municipio) {
-            uniqueMunis = uniqueMunis.filter(m => 
-              String(m).trim().toUpperCase() === String(USER.municipio).trim().toUpperCase()
-            );
+          // 🛡️ MUNICIPAL solo ve sus municipios permitidos
+          if (USER && USER.rol === "MUNICIPAL") {
+            uniqueMunis = uniqueMunis.filter(m => canSeeMunicipio_(USER, m));
           }
           
           return { ok: true, data: { municipios: uniqueMunis } };
@@ -6479,7 +6477,8 @@ function buildUserFromPerfil(uid, email, perfil) {
     if (rol === "ADMIN" || rol === "JURISDICCIONAL") {
         municipiosAllowed = ["*"]; // Acceso total
     } else if (rol === "MUNICIPAL") {
-        municipiosAllowed = municipio ? [municipio] : [];
+        // Soporte para múltiples municipios (separados por coma)
+        municipiosAllowed = municipio ? municipio.split(",").map(x => x.trim()).filter(Boolean) : [];
     }
     // UNIDAD no necesita municipiosAllowed
 
@@ -11330,13 +11329,13 @@ $("btnSaveSR").onclick = async () => {
     const isMunicipal = role === "MUNICIPAL";
     const isAdmin = role === "ADMIN" || role === "JURISDICCIONAL";
 
-    // 🛡️ Para MUNICIPAL: construir set de CLUES permitidas basándose en su municipio
+    // 🛡️ Para MUNICIPAL: construir set de CLUES permitidas basándose en sus municipios autorizados
     let allowedCluesSet = null;
-    if (isMunicipal && myMunicipio) {
+    if (isMunicipal) {
       allowedCluesSet = new Set();
       const catalog = Array.isArray(UNIT_CATALOG) ? UNIT_CATALOG : [];
       catalog.forEach(u => {
-        if (String(u.municipio || "").trim().toUpperCase() === myMunicipio.trim().toUpperCase()) {
+        if (canSeeMunicipio_(USER, u.municipio)) {
           allowedCluesSet.add(String(u.clues || "").trim().toUpperCase());
         }
       });
