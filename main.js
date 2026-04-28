@@ -160,7 +160,22 @@ function clearSession() {
   try {
     localStorage.removeItem("JS1_TOKEN");
     localStorage.removeItem("JS1_USER");
-  } catch(e) {}
+    
+    // 🛡️ Limpieza agresiva de llaves de Supabase (Senior UX Security)
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.includes("supabase.auth.token") || key.startsWith("sb-"))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    
+    // También limpiar sessionStorage para evitar persistencia temporal
+    sessionStorage.clear();
+  } catch(e) {
+    console.error("Error en limpieza de sesión:", e);
+  }
 }
 
 // 📌 CONFIGURACIÓN DE ROTACIÓN DE DATOS (FACTS)
@@ -3857,7 +3872,15 @@ document.addEventListener("DOMContentLoaded", () => {
         case "biogetexportoptions": {
           const { data, error } = await supabase.from('unidades').select('municipio');
           if (error) throw error;
-          const uniqueMunis = [...new Set(data.map(u => u.municipio))].sort();
+          let uniqueMunis = [...new Set(data.map(u => u.municipio))].sort();
+          
+          // 🛡️ MUNICIPAL solo ve su propio municipio
+          if (USER && USER.rol === "MUNICIPAL" && USER.municipio) {
+            uniqueMunis = uniqueMunis.filter(m => 
+              String(m).trim().toUpperCase() === String(USER.municipio).trim().toUpperCase()
+            );
+          }
+          
           return { ok: true, data: { municipios: uniqueMunis } };
         }
 
@@ -6384,15 +6407,22 @@ window.handleSRLoteChange = function(selectEl) {
  */
 async function whoami() {
     try {
-        // 1. Verificar que existe una sesión activa en Supabase Auth
-        const { data: { session }, error: sessionError } = await window.supabase.auth.getSession();
-        if (sessionError || !session) {
-            console.warn("[whoami] No hay sesión Auth activa");
+        // 1. Verificar que existe un usuario autenticado de forma real (vía getUser para mayor seguridad)
+        const { data: { user }, error: userError } = await window.supabase.auth.getUser();
+        
+        if (userError || !user) {
+            console.warn("[whoami] No hay usuario Auth activo o token inválido");
             clearSession();
             return null;
         }
 
-        // 2. Actualizar TOKEN con el access_token fresco
+        // 2. Recuperar la sesión para obtener el access_token fresco
+        const { data: { session } } = await window.supabase.auth.getSession();
+        if (!session) {
+            clearSession();
+            return null;
+        }
+
         TOKEN = session.access_token;
 
         // 3. Consultar perfil fresco desde la DB (respeta RLS)
@@ -11266,6 +11296,12 @@ $("btnSaveSR").onclick = async () => {
   async function renderArchivosView() {
     try {
       showOverlay("Cargando evidencias...", "Leyendo desde Supabase");
+
+      // 🛡️ Garantizar que el catálogo de unidades esté cargado (crítico para filtro MUNICIPAL)
+      if (!UNIT_CATALOG || UNIT_CATALOG.length === 0) {
+        await loadUnitCatalog();
+      }
+
       const res = await apiCall({ action: "listfiles" });
       if (res && res.ok) {
         ARCHIVOS_DATA = res.data;
@@ -11289,21 +11325,45 @@ $("btnSaveSR").onclick = async () => {
     const txtFilt = ($("archivosSearch")?.value || "").toLowerCase();
     const role = String((typeof USER !== "undefined" && USER && USER.rol) ? USER.rol : "").toUpperCase();
     const myClues = (typeof USER !== "undefined" && USER && USER.clues) ? USER.clues : "";
+    const myMunicipio = (typeof USER !== "undefined" && USER && USER.municipio) ? USER.municipio : "";
     const isUnidad = role === "UNIDAD";
+    const isMunicipal = role === "MUNICIPAL";
+    const isAdmin = role === "ADMIN" || role === "JURISDICCIONAL";
+
+    // 🛡️ Para MUNICIPAL: construir set de CLUES permitidas basándose en su municipio
+    let allowedCluesSet = null;
+    if (isMunicipal && myMunicipio) {
+      allowedCluesSet = new Set();
+      const catalog = Array.isArray(UNIT_CATALOG) ? UNIT_CATALOG : [];
+      catalog.forEach(u => {
+        if (String(u.municipio || "").trim().toUpperCase() === myMunicipio.trim().toUpperCase()) {
+          allowedCluesSet.add(String(u.clues || "").trim().toUpperCase());
+        }
+      });
+    }
 
     let filtered = ARCHIVOS_DATA.filter(f => {
        const pathParts = (f.name||"").split("/");
        if (pathParts.length < 3) return false;
        
         const category = (pathParts[0] || "").toLowerCase();
-        const cluMun = (pathParts[1] || "").toLowerCase();
-        const myCluesClean = String(myClues).trim().toLowerCase();
+        const cluMun = (pathParts[1] || "").toUpperCase();
 
-        // ✅ REGLA: UNIDAD solo ve 'Supervisión'
+        // ✅ REGLA: UNIDAD solo ve 'Supervisión' de su CLUES
         if (isUnidad) {
+           const myCluesClean = String(myClues).trim().toUpperCase();
            if (!category.includes("supervisi")) return false;
            if (!cluMun.includes(myCluesClean)) return false;
         }
+
+        // ✅ REGLA: MUNICIPAL solo ve archivos de CLUES de su municipio
+        if (isMunicipal && allowedCluesSet) {
+          // Extraer CLUES del path (formato: CLUES_NombreUnidad)
+          const cluesFromPath = cluMun.split("_")[0];
+          if (!allowedCluesSet.has(cluesFromPath)) return false;
+        }
+
+        // ADMIN y JURISDICCIONAL ven todo
         return true;
     });
 

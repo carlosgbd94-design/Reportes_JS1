@@ -931,7 +931,7 @@ input[type="date"]::-webkit-datetime-edit {
 .modalGlass {
   background: rgba(255, 255, 255, 0.84);
   /* Removed backdrop-filter for performance */
-  -webkit-/* Removed backdrop-filter for performance */
+  /* Removed backdrop-filter for performance */
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: var(--md-shadow-5);
   border-radius: 32px;
@@ -4912,6 +4912,7 @@ body.mobile-mode .topNotifCard {
   color: #64748b;
   display: -webkit-box;
   -webkit-line-clamp: 3; /* Increased to show formatted info */
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4919,6 +4920,7 @@ body.mobile-mode .topNotifCard {
 
 .notifCard:hover .notifBody.snippet {
   -webkit-line-clamp: unset;
+  line-clamp: unset;
   color: #1e293b;
 }
 
@@ -5121,8 +5123,6 @@ body.mobile-mode .topNotifCard {
   background: #FEE2E2;
   color: #7F1D1D;
   border-color: #FECACA;
-}
-  border-color: rgba(0, 0, 0, 0.05);
 }
 
 .badge {
@@ -6547,11 +6547,6 @@ body.mobile-mode .resetWindow {
   box-shadow: none !important;
 }
 
-body.mobile-mode .row,
-body.mobile-mode .captureSummaryGrid,
-body.mobile-mode .rightLayout {
-  /* grid-template-columns: 1fr !important; -- Eliminado para permitir grid moderno */
-}
 
 body.mobile-mode #panelCAP,
 body.mobile-mode #panelCaptureSummary,
@@ -6918,8 +6913,6 @@ body.mobile-mode .sideCard,
 body.mobile-mode #panelADMIN {
   width: 100%;
   padding: 16px !important;
-}
-  touch-action: auto;
 }
 
 body.mobile-mode .top,
