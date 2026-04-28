@@ -26,98 +26,21 @@
   <script src="https://unpkg.com/exceljs/dist/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <!-- Tailwind CSS Play CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style type="text/tailwindcss">
-    @layer base {
-      #cardApp {
-        padding: 32px !important;
-        border-radius: 32px !important;
-        margin-top: 24px !important;
-        background: rgba(255, 255, 255, 0.4) !important;
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-      }
-    }
-
-    @layer components {
-      .tab-btn {
-        @apply transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] border-none outline-none cursor-pointer flex items-center justify-center select-none;
-      }
-      .tab-active {
-        @apply bg-gradient-to-br from-primary to-[#004d99] text-white scale-[1.05] shadow-[0_12px_24px_-8px_rgba(0,51,102,0.4)] z-10 ring-1 ring-inset ring-white/20;
-      }
-      .tab-inactive {
-        @apply bg-white text-surface-on hover:bg-white hover:text-primary opacity-100 scale-100 shadow-none hover:shadow-[0_8px_20px_rgba(0,51,102,0.1)] border border-outline-variant hover:border-primary/20;
-      }
-      /* --- Admin Sub-Tabs --- */
-      .nav-tab-admin {
-        @apply px-5 py-2.5 rounded-[18px] text-[10px] font-black uppercase tracking-widest flex items-center gap-2.5 transition-all duration-300 select-none border border-transparent;
-      }
-      .nav-tab-admin.active {
-        @apply bg-primary text-white shadow-[0_8px_20px_-4px_rgba(0,51,102,0.3)] scale-[1.05];
-      }
-      .nav-tab-admin:not(.active) {
-        @apply bg-surface hover:bg-primary/5 text-primary/60 hover:text-primary border-outline-variant/30;
-      }
-      .admin-sub-panel.hide {
-        @apply hidden;
-      }
-      .custom-scroll::-webkit-scrollbar {
-        width: 6px;
-      }
-      .custom-scroll::-webkit-scrollbar-track {
-        @apply bg-transparent;
-      }
-      .custom-scroll::-webkit-scrollbar-thumb {
-        @apply bg-outline-variant/50 rounded-full hover:bg-primary/30;
-      }
-    }
-  </style>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: {
-              DEFAULT: '#003366',
-              container: '#d6e3ff',
-              on: '#ffffff',
-              onContainer: '#001b3d',
-            },
-            secondary: {
-              DEFAULT: '#535f70',
-              container: '#d7e3f7',
-              on: '#ffffff',
-              onContainer: '#101c2b',
-            },
-            surface: {
-              DEFAULT: '#fdfcff',
-              on: '#1a1c20',
-              variant: '#f1f5f9',
-              onVariant: '#43474e',
-            },
-            outline: {
-              DEFAULT: '#73777f',
-              variant: '#c3c7cf',
-            },
-          },
-          boxShadow: {
-            'md3-1': '0 1px 2px 0 rgba(0,0,0,0.05), 0 1px 3px 1px rgba(0,0,0,0.02)',
-            'md3-2': '0 4px 6px -1px rgba(0,0,0,0.12), 0 2px 4px -2px rgba(0,0,0,0.08)',
-            'md3-3': '0 12px 24px -4px rgba(0,0,0,0.12), 0 8px 16px -4px rgba(0,0,0,0.08)',
-          },
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
+  <!-- Tailwind CSS Compiled -->
+  <link rel="stylesheet" href="tailwind_compiled.css">
 </head>
 
 <body class="bg-surface-container min-h-screen relative overflow-x-hidden">
+  
+  <!-- 🧪 SENIOR UX REFRACTION ENGINE (Pure Liquid Refraction) -->
+  <svg width="0" height="0" style="position: absolute; pointer-events: none;">
+    <filter id="liquid-glass-refraction" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="2" result="noise" />
+      <feGaussianBlur in="noise" stdDeviation="2" result="smoothNoise" />
+      <feDisplacementMap in="SourceGraphic" in2="smoothNoise" scale="40" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+  </svg>
+
   <!-- 🎨 DYNAMIC BACKGROUND ENGINE (High Performance Aura) -->
   <div class="AuraContainer">
     <div class="AuraBlob Blob-1"></div>
@@ -126,13 +49,7 @@
     <div class="AuraBlob Blob-4"></div>
   </div>
   <!-- 💎 HIGH-PERFORMANCE HEADER LIQUID GLASS -->
-  <svg style="position: absolute; width: 0; height: 0; pointer-events: none;" aria-hidden="true">
-    <filter id="liquid-refraction" x="-50%" y="-50%" width="200%" height="200%" filterUnits="objectBoundingBox" color-interpolation-filters="sRGB">
-      <!-- 🌊 Optimized Refraction Core (1 Octave = High Perf) -->
-      <feTurbulence type="turbulence" baseFrequency="0.02" numOctaves="1" seed="1" result="noise" />
-      <feDisplacementMap in="SourceGraphic" in2="noise" scale="25" xChannelSelector="R" yChannelSelector="G" />
-    </filter>
-  </svg>
+  
 
   <!-- ✅ MODERN FLOATING HEADER: DECENTRALIZED LIQUID GLASS (Senior UX) -->
   <div
@@ -142,7 +59,7 @@
       
       <!-- 💎 BRANDING CLUSTER (Pure Spectral Glass) -->
       <div class="GlassContainer flex-none" id="logoCluster" style="display: flex !important; width: fit-content !important;">
-        <div class="GlassContent px-8 py-3 flex items-center flex-row flex-nowrap gap-8 bg-transparent! whitespace-nowrap overflow-visible" style="display: flex !important; flex-direction: row !important; align-items: center !important;">
+        <div class="GlassContent liquidGL px-8 py-3 flex items-center flex-row flex-nowrap gap-8 bg-transparent! whitespace-nowrap overflow-visible" style="display: flex !important; flex-direction: row !important; align-items: center !important;">
           <!-- Logo SESEQ -->
           <img id="logoA" class="h-[40px] w-auto object-contain flex-none" style="height: 40px !important; width: auto !important;"
             src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/Seseq_vertical_2025.png" alt="SESEQ">
@@ -165,10 +82,6 @@
               Plataforma Institucional</p>
           </div>
         </div>
-        <div class="GlassMaterial">
-          <div class="GlassRefraction"></div> <!-- SVG Warp Engine -->
-          <div class="GlassEdgeReflection"></div> <!-- The Physical Bevel -->
-        </div>
       </div>
 
       <!-- 💎 ACTION BUTTONS CLUSTER (Individually Floating Circles) -->
@@ -176,43 +89,31 @@
         <div class="flex items-center gap-6" id="headerActions">
           
           <div class="GlassContainer" id="glassBtnExport" style="--glass-icon-color: #003366; --corner-radius: 100px;">
-            <div class="GlassContent">
+            <div class="GlassContent liquidGL">
               <button class="header-action-btn" id="btnExport" data-tooltip="Exportar reportes" style="display:none;">
                 <span class="material-symbols-rounded">download</span>
               </button>
             </div>
-            <div class="GlassMaterial">
-              <div class="GlassRefraction"></div>
-              <div class="GlassEdgeReflection"></div>
-            </div>
           </div>
 
           <div class="GlassContainer" id="glassBtnUpload" style="--glass-icon-color: #005bb5; --corner-radius: 100px;">
-            <div class="GlassContent">
+            <div class="GlassContent liquidGL">
               <button class="header-action-btn" id="btnOpenUpload" data-tooltip="Subir archivos" style="display:none;">
                 <span class="material-symbols-rounded">cloud_upload</span>
               </button>
             </div>
-            <div class="GlassMaterial">
-              <div class="GlassRefraction"></div>
-              <div class="GlassEdgeReflection"></div>
-            </div>
           </div>
 
           <div class="GlassContainer" id="glassBtnExplorer" style="--glass-icon-color: #00695c; --corner-radius: 100px;">
-            <div class="GlassContent">
+            <div class="GlassContent liquidGL">
               <button class="header-action-btn" id="btnViewArchivos" data-tooltip="Explorador de evidencias" style="display:none;">
                 <span class="material-symbols-rounded">folder_open</span>
               </button>
             </div>
-            <div class="GlassMaterial">
-              <div class="GlassRefraction"></div>
-              <div class="GlassEdgeReflection"></div>
-            </div>
           </div>
 
           <div class="GlassContainer" id="glassBtnNotifs" style="--glass-icon-color: #c41e3a; --corner-radius: 100px;">
-            <div class="GlassContent">
+            <div class="GlassContent liquidGL">
               <button class="header-action-btn" id="btnTopNotifications" data-tooltip="Notificaciones" style="display:none;">
                 <div class="flex items-center justify-center relative !overflow-visible">
                   <span class="material-symbols-rounded">notifications</span>
@@ -220,17 +121,13 @@
                 </div>
               </button>
             </div>
-            <div class="GlassMaterial">
-              <div class="GlassRefraction"></div>
-              <div class="GlassEdgeReflection"></div>
-            </div>
           </div>
         </div>
 
         <!-- 💎 PROFILE BUTTON (Pure Spectral Glass) -->
         <div class="relative flex-none" id="profileDropdownContainer">
           <div class="GlassContainer" style="--corner-radius: 28px;">
-            <div class="GlassContent">
+            <div class="GlassContent liquidGL">
               <button id="btnProfileToggle" data-tooltip="Mi Perfil / Ajustes"
                 class="h-[46px] sm:h-[56px] px-4 sm:px-8 text-primary rounded-[22px] sm:rounded-[28px] flex items-center gap-3 sm:gap-4 border-none cursor-pointer shadow-none">
                 <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/10">
@@ -243,15 +140,11 @@
                 <span class="material-symbols-rounded text-[18px] sm:text-[22px] text-primary/40 ml-1">expand_more</span>
               </button>
             </div>
-            <div class="GlassMaterial">
-              <div class="GlassRefraction"></div>
-              <div class="GlassEdgeReflection"></div>
-            </div>
           </div>
 
           <!-- Dropdown Menu (Glassmorphism) -->
           <div id="profileDropdown"
-            class="hidden absolute right-0 mt-4 w-[300px] sm:w-[360px] bg-white/95 backdrop-blur-xl border border-outline-variant/40 rounded-[32px] shadow-[0_32px_64px_-12px_rgba(0,51,102,0.2)] z-[5000] overflow-hidden transform origin-top-right transition-all animate-dropdownIn">
+            class="hidden absolute right-0 mt-4 w-[300px] sm:w-[360px] bg-white border border-outline-variant/40 rounded-[32px] shadow-[0_32px_64px_-12px_rgba(0,51,102,0.2)] z-[5000] overflow-hidden transform origin-top-right transition-all animate-dropdownIn gpu-accelerated">
             
             <!-- 👤 PREMIUM IDENTITY HUB -->
             <div class="p-6 sm:p-8 flex flex-col items-center text-center bg-gradient-to-b from-primary/[0.03] to-transparent border-b border-outline-variant/10">
@@ -486,10 +379,10 @@
         id="welcomeBlock">
         <!-- 👤 PREMIUM WELCOME HUB (Balanced & Harmonious) -->
         <div
-          class="flex flex-col md:flex-row justify-start items-center gap-8 md:gap-12 relative">
+          class="flex flex-col md:flex-row justify-center items-center gap-8 md:gap-12 relative">
           
           <!-- Welcome Area -->
-          <div class="flex flex-col text-center md:text-left">
+          <div class="flex flex-col text-center">
             <span class="text-primary/40 text-[9px] font-black uppercase tracking-[0.2em] mb-1.5 block">Resumen Operativo</span>
             <h2 class="text-3xl sm:text-5xl font-black text-primary m-0 tracking-tighter leading-tight" id="welcome">Hola</h2>
           </div>
@@ -498,7 +391,7 @@
           <div class="hidden md:block w-px h-12 bg-outline-variant/40"></div>
 
           <!-- Compliance KPI (Redesigned) -->
-          <div class="flex items-center gap-4 flex-wrap w-full min-h-[92px]">
+          <div class="flex items-center justify-center gap-4 flex-wrap w-full md:w-auto min-h-[92px]">
             <div id="bCumplimiento" data-tone="bad"
               class="flex items-center gap-6 px-8 h-[92px] w-full md:w-auto min-w-[280px] rounded-2xl bg-white border border-outline-variant/50 shadow-sm transition-all hover:shadow-md group cursor-help relative overflow-hidden">
               
@@ -518,32 +411,24 @@
               <div class="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
             </div>
 
-            <!-- 💡 CRYSTALLINE INSIGHT HUB (Dato Curioso - Premium Redesign) -->
-            <div id="factCard" class="flex items-center gap-6 px-8 h-[92px] rounded-[32px] bg-indigo-600/5 border border-indigo-500/20 shadow-[0_20px_40px_-12px_rgba(79,70,229,0.1)] transition-all hover:shadow-[0_30px_60px_-12px_rgba(79,70,229,0.2)] hover:scale-[1.01] group cursor-help relative overflow-hidden flex-1 max-w-[600px] min-w-[320px] contain-layout">
+            <!-- 💡 CRYSTALLINE INSIGHT HUB (Dato Curioso - Simplified for Perf) -->
+            <div id="factCard" class="flex items-center gap-5 px-6 h-[92px] rounded-2xl bg-indigo-50 border border-indigo-100 transition-transform hover:scale-[1.01] group cursor-help relative overflow-hidden flex-1 max-w-[600px] min-w-[320px] contain-layout">
               
-              <!-- Nebula Background Effect -->
-              <div class="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/10 blur-[60px] rounded-full group-hover:bg-indigo-500/20 transition-all duration-700"></div>
-              <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-blue-500/10 blur-[60px] rounded-full group-hover:bg-blue-500/20 transition-all duration-700"></div>
-
-              <!-- Crystalline Icon Hub -->
-              <div class="w-14 h-14 rounded-2xl bg-white shadow-[0_8px_20px_-4px_rgba(79,70,229,0.2)] flex items-center justify-center shrink-0 relative z-10 border border-indigo-100 overflow-hidden group-hover:rotate-[8deg] transition-transform duration-500">
-                <div class="absolute inset-0 bg-gradient-to-br from-indigo-50 to-transparent opacity-50"></div>
-                <span class="material-symbols-rounded text-[30px] text-indigo-600 drop-shadow-sm" id="factIcon">auto_awesome</span>
+              <!-- Crystalline Icon Hub (Simplified) -->
+              <div class="w-12 h-12 rounded-xl bg-white border border-indigo-100 flex items-center justify-center shrink-0 relative z-10 shadow-sm">
+                <span class="material-symbols-rounded text-[24px] text-indigo-600" id="factIcon">auto_awesome</span>
               </div>
 
               <div class="flex flex-col leading-tight relative z-10 overflow-hidden">
                 <div class="flex items-center gap-2 mb-1">
-                  <div class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+                  <div class="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
                   <span class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600/50" id="factTitle">Cargando...</span>
                 </div>
-                <span id="factBody" class="text-[14px] font-black text-indigo-950 pr-4 leading-snug">—</span>
+                <span id="factBody" class="text-[13px] font-bold text-indigo-950 pr-4 leading-snug">—</span>
               </div>
 
               <!-- Hidden Tag/ID compatibility -->
               <div id="factTag" class="hidden"></div>
-
-              <!-- Specular Rim Highlight -->
-              <div class="absolute inset-0 rounded-[32px] border border-white/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
             </div>
           </div>
         </div>
@@ -556,14 +441,14 @@
           class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
             <!-- 🏝️ TITLE ISLAND -->
             <div
-              class="flex items-center gap-4 bg-white/60 backdrop-blur-md text-primary border border-white/40 px-6 py-3.5 rounded-2xl w-fit shadow-[0_8px_20px_rgba(0,51,102,0.05)] transition-all hover:shadow-[0_12px_24px_rgba(0,51,102,0.08)]">
+              class="flex items-center gap-4 bg-white text-primary border border-primary/10 px-6 py-3.5 rounded-2xl w-fit shadow-sm transition-all hover:shadow-md">
               <span class="material-symbols-rounded text-[24px]">assignment</span>
               <span class="text-base font-black uppercase tracking-[0.2em]">Captura de Reportes</span>
             </div>
 
             <!-- 🏝️ TABS ISLAND -->
             <div
-              class="flex flex-wrap gap-3 p-2 bg-white/40 backdrop-blur-md rounded-[26px] w-full lg:w-auto border border-white/40 shadow-[0_8px_20px_rgba(0,51,102,0.05)]">
+              class="flex flex-wrap gap-3 p-2 bg-white/80 rounded-[26px] w-full lg:w-auto border border-primary/5 shadow-sm">
               <button
                 class="tab-btn tab-active flex-1 md:flex-none items-center gap-2.5 h-[48px] sm:h-[52px] px-3 sm:px-6 min-w-[120px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[12px] sm:text-[14px]"
                 id="tabSR" onclick="activateCapture('SR')">
@@ -640,6 +525,18 @@
                 <!-- Dynamic rows here -->
               </tbody>
             </table>
+          </div>
+
+          <div class="flex items-center gap-4 mt-2 px-1 opacity-50 hover:opacity-100 transition-opacity cursor-default">
+            <span class="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">Semaforización de permanencia:</span>
+            <div class="flex items-center gap-1.5 text-[9px] font-bold text-slate-500">
+              <div class="w-1.5 h-1.5 rounded-full bg-[#fde68a] border border-[#92400e]/20"></div>
+              Próximo (>2 meses)
+            </div>
+            <div class="flex items-center gap-1.5 text-[9px] font-bold text-slate-500">
+              <div class="w-1.5 h-1.5 rounded-full bg-[#fecaca] border border-[#991b1b]/20 animate-pulse"></div>
+              Excedido (>3 meses)
+            </div>
           </div>
 
           <button
@@ -1154,18 +1051,20 @@
                     <label for="notifTargetScope"
                       class="text-[12px] font-black text-primary/40 uppercase tracking-widest block mb-2.5 ml-1">1.
                       Definir Alcance</label>
-                    <select id="notifTargetScope"
-                      class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-white focus:border-primary outline-none transition-all shadow-sm">
-                      <!-- Se puebla dinámicamente según ROL -->
-                    </select>
+                    <div class="modern-input-group">
+                      <span class="input-icon material-symbols-rounded">groups</span>
+                      <select id="notifTargetScope"></select>
+                    </div>
                   </div>
 
                   <div id="notifMunicipioBox" style="display:none">
                     <label for="notifTargetMunicipio"
                       class="text-[12px] font-black text-primary/40 uppercase tracking-widest block mb-2.5 ml-1">2.
                       Municipio Destino</label>
-                    <select id="notifTargetMunicipio"
-                      class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-white focus:border-primary outline-none transition-all shadow-sm"></select>
+                    <div class="modern-input-group">
+                      <span class="input-icon material-symbols-rounded">location_city</span>
+                      <select id="notifTargetMunicipio"></select>
+                    </div>
                   </div>
 
                   <div id="notifUnidadBox" style="display:none">
@@ -1188,13 +1087,15 @@
                     <label for="notifType"
                       class="text-[12px] font-black text-primary/40 uppercase tracking-widest block mb-2.5 ml-1">Tipo de
                       Prioridad</label>
-                    <select id="notifType"
-                      class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-white focus:border-primary outline-none transition-all shadow-sm">
-                      <option value="INFO">💡 Información General</option>
-                      <option value="SUCCESS">✅ Operación Exitosa</option>
-                      <option value="WARN">⚠️ Alerta Operativa</option>
-                      <option value="ERROR">🚨 Bloqueo / Urgente</option>
-                    </select>
+                    <div class="modern-input-group">
+                      <span class="input-icon material-symbols-rounded">priority_high</span>
+                      <select id="notifType">
+                        <option value="INFO">💡 Información General</option>
+                        <option value="SUCCESS">✅ Operación Exitosa</option>
+                        <option value="WARN">⚠️ Alerta Operativa</option>
+                        <option value="ERROR">🚨 Bloqueo / Urgente</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -1260,12 +1161,14 @@
               <label for="summaryTipo"
                 class="text-[11px] font-black text-primary/50 uppercase tracking-widest block mb-2 ml-1">Tipo de
                 consulta</label>
-              <select id="summaryTipo"
-                class="w-full bg-white border border-outline-variant/40 rounded-xl px-4 h-[52px] text-[15px] font-bold text-primary focus:border-primary outline-none transition-all shadow-sm">
-                <option value="SR">Existencia de biológicos</option>
-                <option value="CONS">Consumibles</option>
-                <option value="BIO">Pedido de biológico</option>
-              </select>
+              <div class="modern-input-group">
+                <span class="input-icon material-symbols-rounded">manage_search</span>
+                <select id="summaryTipo">
+                  <option value="SR">Existencia de biológicos</option>
+                  <option value="CONS">Consumibles</option>
+                  <option value="BIO">Pedido de biológico</option>
+                </select>
+              </div>
             </div>
 
             <div class="flex-1 w-full md:max-w-[280px]">
@@ -1273,8 +1176,8 @@
                 class="text-[11px] font-black text-primary/50 uppercase tracking-widest block mb-2 ml-1">Fecha a
                 consultar</label>
               <div class="modern-input-group">
-                <span class="input-icon material-symbols-rounded !text-primary/40">calendar_today</span>
-                <input type="date" id="summaryFecha" class="rounded-xl h-[52px] text-[15px] font-bold">
+                <span class="input-icon material-symbols-rounded">calendar_month</span>
+                <input type="date" id="summaryFecha">
               </div>
             </div>
           </div>
@@ -1283,19 +1186,31 @@
 
           <div class="dashboardKpis">
             <div class="kpiCard info">
-              <div class="kpiCardLabel">Fecha</div>
+              <div class="kpiHeader">
+                <div class="kpiCardLabel">Fecha del reporte</div>
+                <div class="kpiIcon"><span class="material-symbols-rounded">calendar_today</span></div>
+              </div>
               <div class="kpiCardValue" id="sumFecha">—</div>
             </div>
-            <div class="kpiCard">
-              <div class="kpiCardLabel">Total unidades</div>
+            <div class="kpiCard info">
+              <div class="kpiHeader">
+                <div class="kpiCardLabel">Total unidades</div>
+                <div class="kpiIcon"><span class="material-symbols-rounded">inventory_2</span></div>
+              </div>
               <div class="kpiCardValue" id="sumTotal">0</div>
             </div>
             <div class="kpiCard ok" id="kpiCardCapturadas">
-              <div class="kpiCardLabel">Capturadas</div>
+              <div class="kpiHeader">
+                <div class="kpiCardLabel">Capturadas</div>
+                <div class="kpiIcon"><span class="material-symbols-rounded">check_circle</span></div>
+              </div>
               <div class="kpiCardValue" id="sumCapturadas">0</div>
             </div>
             <div class="kpiCard warn" id="kpiCardFaltantes">
-              <div class="kpiCardLabel">Faltantes</div>
+              <div class="kpiHeader">
+                <div class="kpiCardLabel">Faltantes</div>
+                <div class="kpiIcon"><span class="material-symbols-rounded">pending</span></div>
+              </div>
               <div class="kpiCardValue" id="sumFaltantes">0</div>
             </div>
           </div>
@@ -1388,28 +1303,44 @@
             Consulta cumplimiento histórico operativo por unidad, considerando pedido de biológico y consumibles.
           </div>
 
-          <div class="row" style="margin-top:10px">
-            <div>
-              <label>Fecha inicial</label>
-              <input type="date" id="histFechaInicio">
+          <div class="flex flex-col sm:flex-row items-center gap-4 mt-6 bg-slate-50/50 p-6 rounded-[24px] border border-slate-200/60 shadow-sm">
+            <div class="flex-1 w-full">
+              <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block px-2">Fecha inicial</label>
+              <div class="modern-input-group">
+                <span class="input-icon material-symbols-rounded">calendar_month</span>
+                <input type="date" id="histFechaInicio">
+              </div>
             </div>
-            <div>
-              <label>Fecha final</label>
-              <input type="date" id="histFechaFin">
+            <div class="w-8 h-[1px] sm:w-[1px] sm:h-12 bg-slate-200 hidden sm:block"></div>
+            <div class="flex-1 w-full">
+              <label class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 block px-2">Fecha final</label>
+              <div class="modern-input-group">
+                <span class="input-icon material-symbols-rounded">calendar_month</span>
+                <input type="date" id="histFechaFin">
+              </div>
             </div>
           </div>
 
           <div class="dashboardKpis">
             <div class="kpiCard info">
-              <div class="kpiCardLabel">Unidades evaluadas</div>
+              <div class="kpiHeader">
+                <div class="kpiCardLabel">Unidades evaluadas</div>
+                <div class="kpiIcon"><span class="material-symbols-rounded">domain</span></div>
+              </div>
               <div class="kpiCardValue" id="histTotalUnidades">0</div>
             </div>
-            <div class="kpiCard" id="kpiCardHistSR">
-              <div class="kpiCardLabel">Promedio biológico</div>
+            <div class="kpiCard info" id="kpiCardHistSR">
+              <div class="kpiHeader">
+                <div class="kpiCardLabel">Promedio biológico</div>
+                <div class="kpiIcon"><span class="material-symbols-rounded">vaccines</span></div>
+              </div>
               <div class="kpiCardValue" id="histPromSR">0%</div>
             </div>
-            <div class="kpiCard" id="kpiCardHistCONS">
-              <div class="kpiCardLabel">Promedio consumibles</div>
+            <div class="kpiCard info" id="kpiCardHistCONS">
+              <div class="kpiHeader">
+                <div class="kpiCardLabel">Promedio consumibles</div>
+                <div class="kpiIcon"><span class="material-symbols-rounded">medical_services</span></div>
+              </div>
               <div class="kpiCardValue" id="histPromCONS">0%</div>
             </div>
           </div>
@@ -1468,22 +1399,34 @@
 
           <div class="dashboardKpis" style="margin-top:16px;">
             <div class="kpiCard info">
-              <div class="kpiCardLabel">Total solicitudes</div>
+              <div class="kpiHeader">
+                <div class="kpiCardLabel">Total solicitudes</div>
+                <div class="kpiIcon"><span class="material-symbols-rounded">description</span></div>
+              </div>
               <div class="kpiCardValue" id="pinolTotal">0</div>
             </div>
 
-            <div class="kpiCard" id="kpiCardPinolPendientes">
-              <div class="kpiCardLabel">Pendientes</div>
+            <div class="kpiCard info" id="kpiCardPinolPendientes">
+              <div class="kpiHeader">
+                <div class="kpiCardLabel">Pendientes</div>
+                <div class="kpiIcon"><span class="material-symbols-rounded">hourglass_empty</span></div>
+              </div>
               <div class="kpiCardValue" id="pinolPendientes">0</div>
             </div>
 
             <div class="kpiCard warn">
-              <div class="kpiCardLabel">Entregadas sin acuse</div>
+              <div class="kpiHeader">
+                <div class="kpiCardLabel">Entregadas sin acuse</div>
+                <div class="kpiIcon"><span class="material-symbols-rounded">local_shipping</span></div>
+              </div>
               <div class="kpiCardValue" id="pinolEntregadas">0</div>
             </div>
 
             <div class="kpiCard ok">
-              <div class="kpiCardLabel">Recibidas</div>
+              <div class="kpiHeader">
+                <div class="kpiCardLabel">Recibidas</div>
+                <div class="kpiIcon"><span class="material-symbols-rounded">task_alt</span></div>
+              </div>
               <div class="kpiCardValue" id="pinolRecibidas">0</div>
             </div>
           </div>
@@ -1611,39 +1554,48 @@
             cuadrícula inferior.
           </div>
 
-          <div style="max-width: 1000px; margin: 0 auto;">
-            <div class="loteEntryRow"
-              style="background: rgba(0, 51, 102, 0.02); padding: 24px; border-radius: 24px; border: 1px solid var(--md-outline-variant); margin-top:20px;">
-              <div class="row" style="grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
-                <div>
-                  <label
-                    style="display:block; margin-bottom:8px; font-weight:800; font-size:12px; color:var(--md-sys-color-primary);">BIOLÓGICO</label>
-                  <select id="loteBio" style="width:100%"></select>
-                </div>
-                <div>
-                  <label
-                    style="display:block; margin-bottom:8px; font-weight:800; font-size:12px; color:var(--md-sys-color-primary);">LOTE</label>
-                  <input id="loteTxt" placeholder="EJ: 12345" style="width:100%">
-                </div>
-                <div>
-                  <label
-                    style="display:block; margin-bottom:8px; font-weight:800; font-size:12px; color:var(--md-sys-color-primary);">CADUCIDAD</label>
-                  <input id="loteCad" placeholder="MMM-AA (EJ: JUL-27)" style="width:100%">
+          <div style="max-width: 1100px; margin: 0 auto;">
+            <div class="loteEntryRow bg-slate-50/50 p-6 rounded-[28px] border border-slate-200/60 shadow-sm mt-6">
+              <!-- Fila 1: Biológico -->
+              <div class="mb-5">
+                <label class="text-[10px] font-black text-primary/50 uppercase tracking-widest block mb-2 px-2">Biológico</label>
+                <div class="modern-input-group">
+                  <span class="input-icon material-symbols-rounded">vaccines</span>
+                  <select id="loteBio" class="h-[50px] text-[14px] font-bold"></select>
                 </div>
               </div>
 
-              <div class="row" style="margin-top:20px; grid-template-columns: 1fr 2fr; gap: 20px;">
-                <div>
-                  <label
-                    style="display:block; margin-bottom:8px; font-weight:800; font-size:12px; color:var(--md-sys-color-primary);">FECHA
-                    RECEPCIÓN</label>
-                  <input type="date" id="loteRec" style="width:100%">
+              <!-- Fila 2: Lote, Caducidad y Recepción (FORZADO HORIZONTAL) -->
+              <div style="display: flex; gap: 20px; width: 100%;">
+                <div style="flex: 1;">
+                  <label class="text-[10px] font-black text-primary/50 uppercase tracking-widest block mb-2 px-2">Lote</label>
+                  <div class="modern-input-group">
+                    <span class="input-icon material-symbols-rounded">label</span>
+                    <input id="loteTxt" placeholder="EJ: 12345" class="h-[50px] text-[14px] font-bold">
+                  </div>
                 </div>
-                <div
-                  style="display:flex; align-items:flex-end; opacity: 0.6; font-size: 11px; font-weight: 600; padding-bottom: 12px;">
-                  <span class="material-symbols-rounded" style="font-size:16px; margin-right:6px;">info</span>
+                <div style="flex: 1;">
+                  <label class="text-[10px] font-black text-primary/50 uppercase tracking-widest block mb-2 px-2">Caducidad</label>
+                  <div class="modern-input-group">
+                    <span class="input-icon material-symbols-rounded">event</span>
+                    <input id="loteCad" placeholder="MMM-AA (EJ: JUL-27)" class="h-[50px] text-[14px] font-bold">
+                  </div>
+                </div>
+                <div style="flex: 1;">
+                  <label class="text-[10px] font-black text-primary/50 uppercase tracking-widest block mb-2 px-2">Fecha Recepción</label>
+                  <div class="modern-input-group">
+                    <span class="input-icon material-symbols-rounded">calendar_month</span>
+                    <input type="date" id="loteRec" class="h-[50px]">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Info Box -->
+              <div class="flex items-center gap-3 bg-white/40 p-3 rounded-2xl border border-slate-100 mt-5">
+                <span class="material-symbols-rounded text-primary/30 text-[18px]">info</span>
+                <p class="text-[11px] font-bold text-primary/50 m-0 leading-tight italic">
                   Completa los datos del biológico antes de asignar municipios.
-                </div>
+                </p>
               </div>
 
               <div style="margin-top:24px;">
@@ -2690,7 +2642,7 @@
 
   <!-- ✅ PREMIUM FLOATING BOTTOM NAVIGATION (Mobile Only) -->
   <nav
-    class="fixed bottom-6 inset-x-6 h-[76px] z-[2000] bg-white/80 backdrop-blur-2xl border border-outline-variant/30 rounded-[32px] flex items-center justify-around px-4 shadow-[0_20px_50px_rgba(0,51,102,0.15)] md:hidden transition-all duration-500"
+    class="fixed bottom-6 inset-x-6 h-[76px] z-[2000] bg-white/95 border border-outline-variant/40 rounded-[32px] flex items-center justify-around px-4 shadow-lg md:hidden transition-all duration-500"
     id="mobileBottomNav" style="display:none">
     <button
       class="flex flex-col items-center justify-center gap-1.5 w-16 h-16 rounded-2xl transition-all duration-300 nav-item active"
@@ -2738,8 +2690,11 @@
   <div id="toast-container" class="toast-stack-container" aria-live="polite"></div>
 
 
+  <!-- 🧪 LIQUID GLASS ENGINE (Defunct WebGL - Replaced by SVG) -->
+  <script>
+    console.log("Refractive Engine Active: SVG Displacement Map");
+  </script>
   <script defer src="main.js"></script>
-
 </body>
 
 </html>

@@ -242,12 +242,23 @@ document.addEventListener("DOMContentLoaded", () => {
                     console.warn("[Auth] No se pudo recuperar perfil extendido:", perfilError);
                 }
 
+                // 🛡️ VERIFICACIÓN DE CAMBIO OBLIGATORIO (Migración Supabase)
+                const mustChange = !!data.user.user_metadata?.force_password_change;
+
                 if (!data.session) throw new Error("No se pudo establecer la sesión.");
                 TOKEN = data.session.access_token;
                 USER = buildUserFromPerfil(data.user.id, data.user.email, perfil);
+                
+                if (mustChange) {
+                   USER.mustChange = true;
+                   window.MUST_CHANGE_PASSWORD = true;
+                }
 
                 saveSession(TOKEN, USER);
-                await hydrateSessionUi(USER, null, { showSuccessToast: true });
+                await hydrateSessionUi(USER, null, { 
+                    showSuccessToast: !mustChange,
+                    mustChangePassword: mustChange
+                });
                     
                 if (USER?.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(USER.rol)) {
                     apiCall("silentAdminReminders").catch(()=>{});
@@ -2916,71 +2927,61 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function closePasswordModal() {
     if (FORCE_PASSWORD_CHANGE) return;
-
     const ov = $("passwordOverlay");
     if (ov) ov.classList.remove("show");
   }
 
   async function saveMyPasswordFlow() {
-    const currentPassword = $("pwdCurrent") ? $("pwdCurrent").value.trim() : "";
     const newPassword = $("pwdNew") ? $("pwdNew").value.trim() : "";
     const confirmPassword = $("pwdConfirm") ? $("pwdConfirm").value.trim() : "";
-    const email = $("myEmail") ? $("myEmail").value.trim() : "";
 
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      showToast("Completa todos los campos de contraseña", false);
+    if (!newPassword || !confirmPassword) {
+      showToast("Completa los campos de nueva contraseña", false, "warn");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      showToast("La nueva contraseña y la confirmación no coinciden", false);
+      showToast("La nueva contraseña y la confirmación no coinciden", false, "bad");
       return;
     }
 
-    if (!email) {
-      showToast("Debes capturar un correo electrónico", false);
+    if (newPassword.length < 6) {
+      showToast("La contraseña debe tener al menos 6 caracteres", false, "warn");
       return;
     }
 
-    showOverlay("Estamos actualizando tu contraseña y guardando tu correo…", "Actualizando seguridad");
-    closePasswordModal();
+    showOverlay("Actualizando seguridad...", "Cifrando");
 
     try {
-      const r = await apiCall({
-        action: "changeMyPassword",
-        token: TOKEN,
-        currentPassword,
-        newPassword,
-        confirmPassword
+      // 🔐 ACTUALIZACIÓN NATIVA SUPABASE
+      const { error } = await window.supabase.auth.updateUser({
+          password: newPassword,
+          data: { force_password_change: false }
       });
 
-      if (!r || !r.ok) {
-        showToast((r && r.error) ? r.error : "No se pudo actualizar la contraseña", false);
-        return;
-      }
+      if (error) throw error;
 
-      const rEmail = await apiCall({
-        action: "saveMyEmail",
-        token: TOKEN,
-        email
-      });
-
-      if (!rEmail || !rEmail.ok) {
-        showToast((rEmail && rEmail.error) ? rEmail.error : "La contraseña cambió, pero no se pudo guardar el correo", false);
-        return;
-      }
-
+      showToast("Contraseña actualizada con éxito", true, "good");
+      
+      const wasForced = FORCE_PASSWORD_CHANGE;
       FORCE_PASSWORD_CHANGE = false;
       window.MUST_CHANGE_PASSWORD = false;
 
       if (USER) {
-        USER.email = email;
+        USER.mustChange = false;
+        saveSession(TOKEN, USER);
       }
 
-      showToast("Contraseña y correo guardados correctamente");
-    } catch (e) {
-      console.error(e);
-      showToast("Error al guardar la información", false);
+      closePasswordModal();
+      
+      if (wasForced) {
+          showToast("Sesión validada. Reiniciando...", true, "good");
+          setTimeout(() => window.location.reload(), 1500);
+      }
+
+    } catch (error) {
+      console.error("Error al actualizar contraseña:", error);
+      showToast(error.message || "No se pudo actualizar la contraseña", false, "bad");
     } finally {
       hideOverlay();
     }
@@ -5707,8 +5708,8 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
         <div class="relative group w-full">
           <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-rounded text-slate-400 text-[18px] pointer-events-none transition-colors group-focus-within:text-primary">calendar_month</span>
           <input type="date" style="padding-left: 38px !important;" class="sr-recepcion-input w-full bg-slate-50 border-2 border-slate-400 rounded-xl pr-3 py-2 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" value="${data?.fecha_recepcion || ""}">
+          <div class="sr-permanencia-hint" style="display: none;"></div>
         </div>
-        <div class="sr-permanencia-hint" style="display: none;"></div>
       </td>
       <td class="p-4 py-3" data-label="Frascos">
         <div class="relative group w-full">
@@ -5745,6 +5746,7 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
     
     if (data) {
       window.handleSRBioChange(tr._cache.bioSelect, data.lote);
+      window.updatePermanenciaHint(tr);
     }
 }
 
@@ -5760,18 +5762,33 @@ window.updatePermanenciaHint = function(tr) {
 
     const dRec = new Date(recInput.value);
     const now = new Date();
+    dRec.setHours(0,0,0,0);
+    now.setHours(0,0,0,0);
+    
     const diffDays = Math.floor((now - dRec) / (1000 * 60 * 60 * 24));
+    const limit = 90;
+    const daysLeft = limit - diffDays;
 
     hint.classList.remove("hint-warn", "hint-bad");
 
-    if (diffDays > 90) {
-        hint.style.display = "flex";
+    const formatTime = (totalDays) => {
+        const d = Math.abs(totalDays);
+        const m = Math.floor(d / 30);
+        const rd = d % 30;
+        let p = [];
+        if (m > 0) p.push(`${m} ${m === 1 ? 'mes' : 'meses'}`);
+        if (rd > 0) p.push(`${rd} ${rd === 1 ? 'día' : 'días'}`);
+        return p.join(' ') || '0 días';
+    };
+
+    if (diffDays > limit) {
+        hint.style.display = "inline-flex";
         hint.classList.add("hint-bad");
-        hint.innerHTML = `<span class="material-symbols-rounded" style="font-size:14px">history_toggle_off</span> Límite excedido (> 3 meses)`;
+        hint.innerHTML = `<span class="material-symbols-rounded" style="font-size:12px">history_toggle_off</span> Excedido por ${formatTime(diffDays - limit)}`;
     } else if (diffDays >= 60) {
-        hint.style.display = "flex";
+        hint.style.display = "inline-flex";
         hint.classList.add("hint-warn");
-        hint.innerHTML = `<span class="material-symbols-rounded" style="font-size:14px">warning</span> Próximo a límite (90 días)`;
+        hint.innerHTML = `<span class="material-symbols-rounded" style="font-size:12px">warning</span> Límite en ${formatTime(daysLeft)}`;
     } else {
         hint.style.display = "none";
     }
@@ -6394,6 +6411,12 @@ async function whoami() {
 
         // 5. Construir USER de forma canónica y persistir
         USER = buildUserFromPerfil(session.user.id, session.user.email, perfil);
+        
+        // 🛡️ Verificar cambio obligatorio desde metadata de Auth
+        if (session.user.user_metadata?.force_password_change) {
+            USER.mustChange = true;
+        }
+
         saveSession(TOKEN, USER);
 
         console.log("[whoami] Sesión validada:", USER.email, "Rol:", USER.rol);
