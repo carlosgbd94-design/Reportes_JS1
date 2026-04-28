@@ -2163,8 +2163,8 @@
           Seguridad de la cuenta
         </div>
         <div class="modalTitle" style="font-weight:900; margin-bottom:8px;">Cambio de contraseña</div>
-        <div class="modalSub" style="color:var(--md-sys-color-on-surface-variant); line-height:1.5;">
-          Debes actualizar tu contraseña para continuar. Registra también tu correo de recuperación institucional.
+        <div class="modalSub" style="color:var(--md-sys-color-on-surface-variant); line-height:1.5; font-size: 14px; opacity: 0.8;">
+          Debes actualizar tu contraseña por seguridad para continuar con el acceso a la plataforma.
         </div>
       </div>
 
@@ -2173,81 +2173,46 @@
 
           <div class="fieldCard" style="background:transparent; border:none; padding:0;">
             <label
-              style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:8px; display:block;">CONTRASEÑA
-              ACTUAL</label>
+              style="color:var(--md-sys-color-primary); font-weight:800; font-size:11px; margin-bottom:8px; display:block; opacity: 0.6; letter-spacing: 0.05em;">CONTRASEÑA ACTUAL</label>
             <div class="modern-input-group">
               <span class="input-icon material-symbols-rounded">lock_open</span>
-              <input id="pwdCurrent" type="password" placeholder="Contraseña actual" class="rounded-xl h-12">
-              <button type="button" class="pwdToggle" data-target="pwdCurrent"
-                style="position:absolute; right:10px; z-index:10; background:none; border:none; color:var(--md-sys-color-primary);">
-                <span class="material-symbols-rounded">visibility</span>
-              </button>
+              <input id="pwdCurrent" type="password" placeholder="Contraseña actual">
+              <button type="button" class="pwdToggle material-symbols-rounded" data-target="pwdCurrent">visibility</button>
             </div>
           </div>
 
           <div class="fieldCard" style="background:transparent; border:none; padding:0;">
             <label
-              style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:8px; display:block;">NUEVA
-              CONTRASEÑA</label>
+              style="color:var(--md-sys-color-primary); font-weight:800; font-size:11px; margin-bottom:8px; display:block; opacity: 0.6; letter-spacing: 0.05em;">NUEVA CONTRASEÑA</label>
             <div class="modern-input-group">
               <span class="input-icon material-symbols-rounded">lock</span>
-              <input id="pwdNew" type="password" placeholder="Nueva contraseña" class="rounded-xl h-12">
-              <button type="button" class="pwdToggle" data-target="pwdNew"
-                style="position:absolute; right:10px; z-index:10; background:none; border:none; color:var(--md-sys-color-primary);">
-                <span class="material-symbols-rounded">visibility</span>
-              </button>
+              <input id="pwdNew" type="password" placeholder="Mínimo 6 caracteres">
+              <button type="button" class="pwdToggle material-symbols-rounded" data-target="pwdNew">visibility</button>
             </div>
           </div>
 
           <div class="fieldCard" style="background:transparent; border:none; padding:0;">
             <label
-              style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:8px; display:block;">CONFIRMAR
-              NUEVA</label>
+              style="color:var(--md-sys-color-primary); font-weight:800; font-size:11px; margin-bottom:8px; display:block; opacity: 0.6; letter-spacing: 0.05em;">CONFIRMAR NUEVA</label>
             <div class="modern-input-group">
               <span class="input-icon material-symbols-rounded">gpp_maybe</span>
-              <input id="pwdConfirm" type="password" placeholder="Confirmar nueva contraseña" class="rounded-xl h-12">
-              <button type="button" class="pwdToggle" data-target="pwdConfirm"
-                style="position:absolute; right:10px; z-index:10; background:none; border:none; color:var(--md-sys-color-primary);">
-                <span class="material-symbols-rounded">visibility</span>
-              </button>
+              <input id="pwdConfirm" type="password" placeholder="Repite la nueva contraseña">
+              <button type="button" class="pwdToggle material-symbols-rounded" data-target="pwdConfirm">visibility</button>
             </div>
           </div>
-
-          <div class="fieldCard" style="background:transparent; border:none; padding:0;">
-            <label
-              style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:8px; display:block;">CORREO
-              DE RECUPERACIÓN</label>
-            <div class="modern-input-group">
-              <span class="input-icon material-symbols-rounded">alternate_email</span>
-              <input id="myEmail" type="email" placeholder="nombre@correo.com" class="rounded-xl h-12">
-            </div>
-          </div>
-
         </div>
+      </div>
 
-        <div class="modalNote"
-          style="font-size:13px; color:var(--md-sys-color-secondary); margin:20px 0; background:var(--md-sys-color-surface-container-low); padding:12px; border-radius:12px; border-left:4px solid var(--md-sys-color-primary);">
-          Usa un correo al que sí tengas acceso. Ahí se enviará tu enlace de recuperación si olvidas la contraseña.
-        </div>
+      <div class="modalFooter" style="display:flex; justify-content:flex-end; gap:12px; padding-top: 10px;">
+        <button class="ghostBtn" id="btnPwdClose" type="button"
+          style="display:none; border:none; background:transparent; font-weight:700;">
+          <span class="material-symbols-rounded">close</span> Cerrar
+        </button>
 
-        <div class="modalFooter" style="display:flex; justify-content:flex-end; gap:12px;">
-          <button class="ghostBtn" id="btnPwdClose" type="button"
-            style="display:none; border:none; background:transparent; font-weight:700;">
-            <span class="material-symbols-rounded">close</span> Cerrar
-          </button>
-
-          <button class="btn" id="btnPwdSave" type="button" style="
-                background: linear-gradient(135deg, #001B3D 0%, #003366 100%);
-                color: #ffffff;
-                padding: 12px 24px;
-                border: none;
-                border-radius: 12px;
-                font-weight: 800;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-              ">
-            Guardar y Continuar
-          </button>
-        </div>
+        <button class="btn btn-premium-action" id="btnSaveMyPassword" type="button" style="width: 100%; height: 56px; border-radius: 100px;">
+          Guardar y Continuar
+        </button>
+      </div>
       </div>
     </div>
   </div>

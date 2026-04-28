@@ -1700,7 +1700,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const select = $("notifTargetClues");
     if (!select || !mun) return;
     try {
-      const { data } = await supabase.from('unidades').select('clues, unidad').eq('municipio', mun).order('unidad');
+      const { data } = await supabase.from('unidades').select('clues, unidad').eq('municipio', mun).order('clues');
       select.innerHTML = `<option value="">Seleccionar unidad...</option>` + 
         data.map(u => `<option value="${escapeAttr(u.clues)}">${escapeHtml(u.unidad)}</option>`).join("");
     } catch(e) { select.innerHTML = "<option>Error</option>"; }
@@ -3849,7 +3849,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         case "unitcatalog": {
-          const { data, error } = await supabase.from('unidades').select('*').eq('activo', 'SI');
+          const { data, error } = await supabase.from('unidades').select('*').eq('activo', 'SI').order('municipio').order('clues');
           if (error) throw error;
           return { ok: true, data };
         }
@@ -4285,8 +4285,10 @@ document.addEventListener("DOMContentLoaded", () => {
           const { data: unitsInfo } = await supabase
             .from('unidades')
             .select('clues, unidad, municipio')
-            .in('clues', cluesList);
-          
+            .in('clues', cluesList)
+            .order('municipio')
+            .order('clues');
+
           const unitMap = {};
           if (unitsInfo) {
             unitsInfo.forEach(u => unitMap[u.clues] = u);
@@ -4930,8 +4932,13 @@ document.addEventListener("DOMContentLoaded", () => {
     $("tabBIO")?.addEventListener("click", () => activateCapture("BIO"));
     $("tabPINOL")?.addEventListener("click", () => activateCapture("PINOL"));
 
-    $("btnLogout")?.addEventListener("click", () => {
+    $("btnLogout")?.addEventListener("click", async () => {
       showOverlay("Cerrando sesión...", "Desconectando");
+      try {
+        await window.supabase.auth.signOut();
+      } catch (err) {
+        console.warn("Error al cerrar sesión en Supabase:", err);
+      }
       stopNotificationsAutoRefresh();
       clearSessionCaches();
       resetOpsPrewarmFlags();
