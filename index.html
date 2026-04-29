@@ -48,129 +48,41 @@
     <div class="AuraBlob Blob-4"></div>
   </div>
   <!-- 💎 HIGH-PERFORMANCE HEADER LIQUID GLASS -->
-
-
-  <!-- 📱 NATIVE MOBILE HEADER (Solo visible en < 768px) -->
-  <div class="fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-6 z-[2000] md:hidden pointer-events-none" id="mobileTopBar">
-    <div class="flex items-center gap-3 pointer-events-auto">
+  <div class="fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-6 z-[2000] md:hidden" id="mobileTopBar">
+    <div class="flex items-center gap-3">
       <img src="https://i.ibb.co/S7m3p5P/JS1-LOGO-WHITE.png" class="h-8 w-auto filter invert brightness-0" alt="JS1">
       <div class="flex flex-col">
         <span class="text-primary font-black text-sm leading-none">JS1</span>
         <span class="text-primary/40 font-bold text-[10px] tracking-tighter uppercase">Reportes</span>
       </div>
     </div>
-    <button id="btnMobileProfile" class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-primary pointer-events-auto shadow-sm">
+    <button id="btnMobileProfile" class="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-primary shadow-sm pointer-events-auto">
       <span class="material-symbols-rounded text-2xl">account_circle</span>
     </button>
   </div>
 
+
   <!-- 🖥️ DESKTOP HEADER (Oculto en móvil) -->
-  <div
-    class="hidden md:flex fixed top-6 inset-x-10 z-[1000] items-center justify-center pointer-events-none"
-    id="mainHeader">
-          style="display: flex !important; flex-direction: row !important; align-items: center !important;">
-          <!-- Logo SESEQ -->
-          <img id="logoA" class="h-[40px] w-auto object-contain flex-none"
-            style="height: 40px !important; width: auto !important;"
-            src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/Seseq_vertical_2025.png"
-            alt="SESEQ">
-
-          <div class="w-[1px] h-8 bg-primary/20 flex-none mx-2"></div>
-
-          <!-- Logo Q -->
-          <img id="logoB" class="h-[40px] w-auto object-contain flex-none"
-            style="height: 40px !important; width: auto !important;"
-            src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png"
-            alt="Gobierno de Querétaro">
-
-          <div class="w-[1px] h-8 bg-primary/20 flex-none mx-2"></div>
-
-          <!-- JS1 Branding Text -->
-          <div class="flex flex-col flex-none justify-center">
-            <h1 class="text-xl sm:text-2xl font-black text-primary m-0 leading-none flex items-center gap-2">
-              JS1 <span class="font-medium opacity-50">Reportes</span>
-            </h1>
-            <p class="text-[9px] text-primary/60 m-0 mt-1 font-black uppercase tracking-widest leading-none">
-              Plataforma Institucional</p>
+  <header id="mainHeader" class="hidden md:flex fixed top-6 inset-x-10 z-[1000] items-center justify-center pointer-events-none">
+    <div class="w-full max-w-[1700px] px-6 flex items-center justify-between pointer-events-auto">
+      <div class="GlassContainer p-1 rounded-full border border-white/20 shadow-lg" id="logoCluster">
+        <div class="GlassContent liquidGL px-8 py-3 rounded-full flex items-center gap-4">
+          <img src="https://i.ibb.co/S7m3p5P/JS1-LOGO-WHITE.png" class="h-9 w-auto filter invert brightness-0" alt="JS1">
+          <div class="h-8 w-[1.5px] bg-primary/10 rounded-full"></div>
+          <div class="flex flex-col">
+            <h1 class="text-2xl font-black text-primary tracking-tight leading-none">JS1 <span class="font-light opacity-40">Reportes</span></h1>
+            <p class="text-[10px] font-bold text-primary/30 uppercase tracking-[0.2em]">Plataforma Institucional</p>
           </div>
         </div>
       </div>
-
-      <!-- 💎 ACTION BUTTONS CLUSTER (Individually Floating Circles) -->
-      <div class="flex items-center gap-6 sm:gap-8" id="userControlsGroup">
-        <div class="flex items-center gap-6" id="headerActions">
-
-          <div class="GlassContainer" id="glassBtnExport" style="--glass-icon-color: #003366; --corner-radius: 100px;">
-            <div class="GlassContent liquidGL">
-              <button class="header-action-btn" id="btnExport" data-tooltip="Exportar reportes" style="display:none;">
-                <span class="material-symbols-rounded">download</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="GlassContainer" id="glassBtnUpload" style="--glass-icon-color: #005bb5; --corner-radius: 100px;">
-            <div class="GlassContent liquidGL">
-              <button class="header-action-btn" id="btnOpenUpload" data-tooltip="Subir archivos" style="display:none;">
-                <span class="material-symbols-rounded">cloud_upload</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="GlassContainer" id="glassBtnExplorer"
-            style="--glass-icon-color: #00695c; --corner-radius: 100px;">
-            <div class="GlassContent liquidGL">
-              <button class="header-action-btn" id="btnViewArchivos" data-tooltip="Explorador de evidencias"
-                style="display:none;">
-                <span class="material-symbols-rounded">folder_open</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="GlassContainer" id="glassBtnNotifs" style="--glass-icon-color: #c41e3a; --corner-radius: 100px;">
-            <div class="GlassContent liquidGL">
-              <button class="header-action-btn" id="btnTopNotifications" data-tooltip="Notificaciones"
-                style="display:none;">
-                <div class="flex items-center justify-center relative !overflow-visible">
-                  <span class="material-symbols-rounded">notifications</span>
-                  <span id="topNotifBadge"></span>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 💎 PROFILE BUTTON (Pure Spectral Glass) -->
-        <div class="relative flex-none" id="profileDropdownContainer">
-          <div class="GlassContainer" style="--corner-radius: 28px;">
-            <div class="GlassContent liquidGL">
-              <button id="btnProfileToggle" data-tooltip="Mi Perfil / Ajustes"
-                class="h-[46px] sm:h-[56px] px-2 sm:px-8 text-primary rounded-full sm:rounded-[28px] flex items-center gap-3 sm:gap-4 border-none cursor-pointer shadow-none">
-                <div
-                  class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary/20 transition-all">
-                  <span class="material-symbols-rounded text-[20px] sm:text-[24px]">person</span>
-                </div>
-                <div class="hidden sm:flex flex-col items-start text-left">
-                  <span class="text-[9px] font-black opacity-40 uppercase tracking-tighter">Mi Perfil</span>
-                  <span id="rolTxt" class="text-[12px] font-black uppercase tracking-tight">Cargando...</span>
-                </div>
-                <span
-                  class="material-symbols-rounded text-[18px] sm:text-[22px] text-primary/40 ml-1 hidden sm:block">expand_more</span>
-              </button>
-            </div>
-          </div>
-
-        </div>
+      <div class="flex items-center gap-4">
+        <button class="GlassContainer p-1 rounded-2xl border border-white/20" id="glassBtnUpload"><div class="GlassContent liquidGL w-14 h-14 flex items-center justify-center rounded-2xl text-primary/60"><span class="material-symbols-rounded text-3xl">cloud_upload</span></div></button>
+        <button class="GlassContainer p-1 rounded-2xl border border-white/20" id="glassBtnExplorer"><div class="GlassContent liquidGL w-14 h-14 flex items-center justify-center rounded-2xl text-primary/60"><span class="material-symbols-rounded text-3xl">folder_open</span></div></button>
+        <button class="GlassContainer p-1 rounded-2xl border border-white/20 relative" id="glassBtnNotifs"><div class="GlassContent liquidGL w-14 h-14 flex items-center justify-center rounded-2xl text-primary/60"><span class="material-symbols-rounded text-3xl">notifications</span></div></button>
+        <button class="GlassContainer p-1 rounded-full border border-white/20" id="btnProfileToggle"><div class="GlassContent liquidGL w-14 h-14 flex items-center justify-center rounded-full text-primary/60"><span class="material-symbols-rounded text-3xl">account_circle</span></div></button>
       </div>
-
-
-      <span
-        class="bg-status-success text-white rounded-full px-3 py-2 sm:px-5 sm:py-2.5 text-[10px] font-black flex items-center gap-2 shadow-lg shadow-status-success/20 animate-in fade-in flex-shrink-0 ml-2"
-        id="bGuardado" style="display:none">
-        <span class="material-symbols-rounded text-[16px]">sync</span>
-        <span id="hdrGuardado" class="hidden sm:inline">Actualizado</span>
-      </span>
     </div>
-  </div>
+  </header>
   </div>
 
 
