@@ -7987,7 +7987,7 @@ function setLoggedInUI(user, status) {
 
   // --- Role-Based Button Access (Blindaje Senior) ---
   const canExport = (isAdmin || isJurisdiccional || isMunicipal);
-  const canUpload = (isUnidad || isMunicipal);
+  const canUpload = (isUnidad || isMunicipal) && !isAdmin && !isJurisdiccional;
 
   const toggleHeaderBtn = (btnId, containerId, show) => {
     const btn = $(btnId);
@@ -10794,20 +10794,23 @@ async function openUploadFilesModal() {
   cluesView.style.display = "none";
 
   if (role === "MUNICIPAL") {
-    // 1. Only Supervision
+    // REGLA: SÓLO MUNICIPAL SUBE SUPERVISIONES
     categorySelect.innerHTML = '<option value="Supervisión" selected>Supervisión</option>';
     categorySelect.disabled = true;
-
-    // 2. Load Unit Catalog
     await loadMunicipalUploadContext();
-  } else {
-    // Role UNIDAD or fallback
+  } else if (role === "UNIDAD") {
+    // REGLA: SÓLO UNIDAD SUBE EVIDENCIAS
     categorySelect.innerHTML = `
         <option value="Evidencia de capacitaciones" selected>Evidencia de capacitaciones</option>
         <option value="Evidencias de campaña">Evidencias de campaña</option>
         <option value="Otros reportes">Otros reportes</option>
       `;
     categorySelect.disabled = false;
+  } else {
+    // ADMIN / JURISDICCIONAL: NO SUBEN NADA
+    modal.classList.remove("show");
+    showToast("Acceso denegado: Tu perfil no tiene permisos para subir archivos.", false);
+    return;
   }
 }
 
