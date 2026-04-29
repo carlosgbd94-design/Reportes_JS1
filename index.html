@@ -50,17 +50,24 @@
   <!-- 💎 HIGH-PERFORMANCE HEADER LIQUID GLASS -->
 
 
-  <!-- ✅ MODERN FLOATING HEADER: DECENTRALIZED LIQUID GLASS (Senior UX) -->
-  <div
-    class="fixed top-0 sm:top-6 inset-x-0 sm:inset-x-10 z-[1000] flex items-center justify-center pointer-events-none"
-    id="mainHeader">
-    <div class="w-full max-w-[1700px] px-4 sm:px-6 flex items-center justify-between pointer-events-auto">
+  <!-- 📱 NATIVE MOBILE HEADER (Solo visible en < 768px) -->
+  <div class="fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-6 z-[2000] md:hidden pointer-events-none" id="mobileTopBar">
+    <div class="flex items-center gap-3 pointer-events-auto">
+      <img src="https://i.ibb.co/S7m3p5P/JS1-LOGO-WHITE.png" class="h-8 w-auto filter invert brightness-0" alt="JS1">
+      <div class="flex flex-col">
+        <span class="text-primary font-black text-sm leading-none">JS1</span>
+        <span class="text-primary/40 font-bold text-[10px] tracking-tighter uppercase">Reportes</span>
+      </div>
+    </div>
+    <button id="btnMobileProfile" class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-primary pointer-events-auto shadow-sm">
+      <span class="material-symbols-rounded text-2xl">account_circle</span>
+    </button>
+  </div>
 
-      <!-- 💎 BRANDING CLUSTER (Pure Spectral Glass) -->
-      <div class="GlassContainer flex-none" id="logoCluster"
-        style="display: flex !important; width: fit-content !important;">
-        <div
-          class="GlassContent liquidGL px-8 py-3 flex items-center flex-row flex-nowrap gap-8 bg-transparent! whitespace-nowrap overflow-visible"
+  <!-- 🖥️ DESKTOP HEADER (Oculto en móvil) -->
+  <div
+    class="hidden md:flex fixed top-6 inset-x-10 z-[1000] items-center justify-center pointer-events-none"
+    id="mainHeader">
           style="display: flex !important; flex-direction: row !important; align-items: center !important;">
           <!-- Logo SESEQ -->
           <img id="logoA" class="h-[40px] w-auto object-contain flex-none"
@@ -2676,49 +2683,42 @@
       setInterval(checkRole, 1000); // Check again just in case
     })();
 
-    // 🛠️ JS Reference Fix (REMAP TO ACTUAL PANEL IDs)
-    function toggleNotifCenter() {
-      const panel = document.getElementById('topNotifDropdown');
-      if (panel) {
-        const isHidden = (panel.style.display === 'none' || panel.classList.contains('hidden'));
-        panel.style.display = isHidden ? 'block' : 'none';
-        panel.classList.remove('hidden');
-        panel.style.zIndex = "100000";
-        panel.style.opacity = "1";
-        panel.style.visibility = "visible";
-      }
-    }
-    function openExplorer() {
-      const panel = document.getElementById('archivosDropdown');
-      if (panel) {
-        const isHidden = (panel.style.display === 'none' || panel.classList.contains('hidden'));
-        panel.style.display = isHidden ? 'block' : 'none';
-        panel.classList.remove('hidden');
-        panel.style.zIndex = "100000";
-        panel.style.opacity = "1";
-        panel.style.visibility = "visible";
-      }
-    }
-    // Profile Fix for Mobile (FORCE CLICK)
+    // 📱 NATIVE MOBILE UI CONTROLLER v5.0
+    const toggleMobilePanel = (id) => {
+      const panels = ['topNotifDropdown', 'archivosDropdown', 'profileDropdown'];
+      panels.forEach(pId => {
+        const p = document.getElementById(pId);
+        if (p) {
+          if (pId === id) {
+            const isHidden = (p.style.display === 'none' || p.classList.contains('hidden'));
+            p.style.display = isHidden ? 'block' : 'none';
+            p.classList.remove('hidden');
+            p.style.zIndex = "500000";
+          } else {
+            p.style.display = 'none';
+          }
+        }
+      });
+    };
+
+    function toggleNotifCenter() { toggleMobilePanel('topNotifDropdown'); }
+    function openExplorer() { toggleMobilePanel('archivosDropdown'); }
+
+    // Global Listeners for Mobile Buttons
     window.addEventListener('click', (e) => {
-      const btn = e.target.closest('#btnProfileToggle');
-      if (btn) {
+      const profileBtn = e.target.closest('#btnMobileProfile') || e.target.closest('#btnProfileToggle');
+      if (profileBtn) {
         e.preventDefault();
         e.stopPropagation();
-        const drop = document.getElementById('profileDropdown');
-        if (drop) {
-          const isHidden = (drop.style.display === 'none' || drop.classList.contains('hidden'));
-          drop.style.display = isHidden ? 'block' : 'none';
-          drop.classList.remove('hidden');
-          drop.style.zIndex = "110000";
-        }
+        toggleMobilePanel('profileDropdown');
       }
     }, true);
   </script>
+  
   <!-- Dropdown Menu (Glassmorphism) - MOVED TO BODY LEVEL -->
   <div id="profileDropdown"
-    class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-[400px] bg-white border border-outline-variant/40 rounded-[40px] shadow-[0_40px_100px_rgba(0,0,0,0.6)] z-[200000] overflow-hidden transition-all gpu-accelerated">
-    <!-- Contenido del perfil (Sigue igual) -->
+    class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-[400px] bg-white border border-outline-variant/40 rounded-[40px] shadow-[0_40px_100px_rgba(0,0,0,0.6)] z-[600000] overflow-hidden transition-all gpu-accelerated">
+    <!-- Contenido del perfil -->
     <div class="p-8 flex flex-col items-center text-center bg-gradient-to-b from-primary/[0.03] to-transparent border-b border-outline-variant/10">
       <div class="relative mb-4">
         <div class="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-[#005bb5] text-white flex items-center justify-center shadow-lg relative z-10">
