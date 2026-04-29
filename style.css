@@ -9134,3 +9134,579 @@ body.mobile-mode #bHora .material-symbols-rounded {
 }
 
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   📱 MOBILE APP ARCHITECTURE v2.0 — PRODUCTION GRADE
+   ═══════════════════════════════════════════════════════════════════════════
+   This block provides a comprehensive mobile experience.
+   All rules are scoped under body.mobile-mode (set by JS via applyAdaptiveModes).
+   Desktop design is NEVER affected by these rules.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── 1. COMPACT MOBILE HEADER ───────────────────────────────────────────── */
+/* Hide the floating glass header and replace with a compact sticky bar */
+body.mobile-mode #mainHeader {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  inset-x: 0 !important;
+  padding: 0 !important;
+  z-index: 1100 !important;
+}
+
+body.mobile-mode #mainHeader > div {
+  max-width: 100% !important;
+  padding: 0 12px !important;
+  gap: 8px !important;
+}
+
+/* Simplify logo cluster for mobile: compact pill */
+body.mobile-mode #logoCluster {
+  max-width: 50vw !important;
+  overflow: hidden !important;
+}
+
+body.mobile-mode #logoCluster .GlassContent {
+  padding: 8px 14px !important;
+  gap: 10px !important;
+}
+
+/* Hide logos on small screens, keep just the text */
+body.mobile-mode #logoA,
+body.mobile-mode #logoB {
+  display: none !important;
+}
+
+body.mobile-mode #logoCluster .GlassContent > div[class*="w-[1px]"] {
+  display: none !important;
+}
+
+/* Compact profile button */
+body.mobile-mode #btnProfileToggle {
+  height: 44px !important;
+  padding: 0 12px !important;
+  gap: 8px !important;
+}
+
+body.mobile-mode #btnProfileToggle > div:first-child {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+/* Make header action buttons smaller */
+body.mobile-mode .header-action-btn {
+  width: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 !important;
+}
+
+body.mobile-mode #headerActions {
+  gap: 6px !important;
+}
+
+body.mobile-mode #userControlsGroup {
+  gap: 6px !important;
+}
+
+/* ─── 2. CONTENT LAYOUT ──────────────────────────────────────────────────── */
+/* Proper spacing: header above, bottom nav below */
+body.mobile-mode .wrap {
+  width: 100% !important;
+  padding-top: 72px !important;
+  padding-bottom: 100px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+/* Cards: full width, compact padding */
+body.mobile-mode .card,
+body.mobile-mode .panel {
+  border-radius: 16px !important;
+  padding: 16px !important;
+  margin-bottom: 12px !important;
+}
+
+body.mobile-mode .grid {
+  padding: 0 8px !important;
+  gap: 12px !important;
+}
+
+/* Right layout (sidebar + main) → stack vertically */
+body.mobile-mode .rightLayout {
+  grid-template-columns: 1fr !important;
+  gap: 12px !important;
+}
+
+/* Side fact panel → full width */
+body.mobile-mode .sideFactWrap {
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 12px !important;
+}
+
+/* ─── 3. BOTTOM-SHEET MODALS ─────────────────────────────────────────────── */
+/* Transform desktop centered modals into mobile bottom sheets */
+body.mobile-mode .overlay,
+body.mobile-mode .modalOverlay {
+  align-items: flex-end !important;
+  padding: 0 !important;
+}
+
+body.mobile-mode .overlay .modalGlass,
+body.mobile-mode .modalOverlay .modalGlass {
+  width: 100% !important;
+  max-width: 100% !important;
+  max-height: 92vh !important;
+  margin: 0 !important;
+  border-radius: 24px 24px 0 0 !important;
+  animation: mobileSheetUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) !important;
+}
+
+/* Bottom sheet slide-up animation */
+@keyframes mobileSheetUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Modal body scroll area */
+body.mobile-mode .modalBody {
+  padding: 16px !important;
+  max-height: 70vh !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Modal footer: full-width stacked buttons */
+body.mobile-mode .modalFooter {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  padding: 12px 16px !important;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+}
+
+body.mobile-mode .modalFooter button,
+body.mobile-mode .modalFooter .btn,
+body.mobile-mode .modalFooter .ghostBtn {
+  width: 100% !important;
+  min-height: 48px !important;
+  justify-content: center !important;
+}
+
+/* Specific overlays: Export */
+body.mobile-mode #exportOverlay .modalGlass {
+  max-width: 100% !important;
+  border-radius: 24px 24px 0 0 !important;
+}
+
+body.mobile-mode #exportOverlay .modalHead {
+  padding: 18px 16px !important;
+}
+
+body.mobile-mode #exportOverlay .modalBody {
+  padding: 16px !important;
+}
+
+body.mobile-mode .exportMuniList {
+  grid-template-columns: 1fr !important;
+  max-height: 40vh !important;
+  padding: 10px !important;
+}
+
+/* Upload overlay */
+body.mobile-mode #uploadFilesOverlay .modalGlass {
+  max-width: 100% !important;
+  border-radius: 24px 24px 0 0 !important;
+}
+
+/* Password overlay */
+body.mobile-mode #passwordOverlay .modalGlass,
+body.mobile-mode #forgotOverlay .modalGlass {
+  max-width: 100% !important;
+  border-radius: 24px 24px 0 0 !important;
+}
+
+/* Profile dropdown → full-width bottom sheet */
+body.mobile-mode #profileDropdown {
+  position: fixed !important;
+  top: auto !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  border-radius: 24px 24px 0 0 !important;
+  max-height: 80vh !important;
+  z-index: 9998 !important;
+  animation: mobileSheetUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) !important;
+}
+
+/* Top notification dropdown → full-width bottom sheet */
+body.mobile-mode .topNotifDropdown,
+body.mobile-mode #topNotifDropdown {
+  position: fixed !important;
+  top: auto !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  border-radius: 24px 24px 0 0 !important;
+  max-height: 85vh !important;
+  z-index: 9997 !important;
+  animation: mobileSheetUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* File explorer panel → full-width sheet */
+body.mobile-mode .topExplorerDropdown,
+body.mobile-mode #topExplorerDropdown {
+  position: fixed !important;
+  top: auto !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  border-radius: 24px 24px 0 0 !important;
+  max-height: 85vh !important;
+  z-index: 9997 !important;
+  animation: mobileSheetUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) !important;
+}
+
+/* ─── 4. TOUCH-FRIENDLY FORMS & INPUTS ───────────────────────────────────── */
+body.mobile-mode input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]),
+body.mobile-mode select,
+body.mobile-mode textarea {
+  min-height: 48px !important;
+  font-size: 16px !important; /* Prevents iOS zoom on focus */
+  border-radius: 12px !important;
+}
+
+body.mobile-mode button {
+  min-height: 48px !important;
+  font-size: 14px !important;
+  padding: 12px 20px !important;
+}
+
+body.mobile-mode .iconbtn,
+body.mobile-mode .md-btn-icon {
+  min-height: 44px !important;
+  min-width: 44px !important;
+  padding: 8px !important;
+}
+
+/* Bio input fields: larger touch targets */
+body.mobile-mode .bioInput {
+  min-height: 44px !important;
+  font-size: 16px !important;
+  text-align: center !important;
+}
+
+/* ─── 5. TABS & NAVIGATION ───────────────────────────────────────────────── */
+/* Top operations tabs: horizontal scrollable */
+body.mobile-mode .tabs,
+body.mobile-mode #panelAdminOpsTabs {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+  gap: 4px !important;
+  padding: 0 4px !important;
+}
+
+body.mobile-mode .tabs::-webkit-scrollbar,
+body.mobile-mode #panelAdminOpsTabs::-webkit-scrollbar {
+  display: none !important;
+}
+
+body.mobile-mode .tab,
+body.mobile-mode [id^="tabOPS_"],
+body.mobile-mode [id^="tabCAP"],
+body.mobile-mode [id^="tabNOTIFS"],
+body.mobile-mode [id^="tabADMIN"],
+body.mobile-mode [id^="tabLOTES"] {
+  flex-shrink: 0 !important;
+  padding: 10px 14px !important;
+  font-size: 12px !important;
+  min-height: 40px !important;
+  white-space: nowrap !important;
+}
+
+/* ─── 6. TABLES → RESPONSIVE CARDS ───────────────────────────────────────── */
+body.mobile-mode table {
+  display: block !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  font-size: 12px !important;
+}
+
+body.mobile-mode table th,
+body.mobile-mode table td {
+  padding: 8px 6px !important;
+  white-space: nowrap !important;
+  font-size: 11px !important;
+}
+
+/* Mobile info cards (already exist) */
+body.mobile-mode .mobileInfoCard {
+  border-radius: 16px !important;
+  padding: 14px !important;
+  margin-bottom: 8px !important;
+}
+
+body.mobile-mode .mobileInfoFields {
+  gap: 6px !important;
+}
+
+body.mobile-mode .mobileInfoField {
+  padding: 8px 10px !important;
+}
+
+/* ─── 7. BOTTOM NAV POLISH ───────────────────────────────────────────────── */
+body.mobile-mode #mobileBottomNav {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: auto !important;
+  min-height: 64px !important;
+  z-index: 10000 !important;
+  border-radius: 20px 20px 0 0 !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08) !important;
+  padding: 8px 12px !important;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-around !important;
+  gap: 0 !important;
+}
+
+body.mobile-mode #mobileBottomNav .nav-item,
+body.mobile-mode #mobileBottomNav > button {
+  flex: 1 1 0% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  min-height: 52px !important;
+  padding: 4px 0 !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+}
+
+body.mobile-mode #mobileBottomNav .nav-item .icon-box,
+body.mobile-mode #mobileBottomNav > button > div:first-child {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+body.mobile-mode #mobileBottomNav .nav-item .label,
+body.mobile-mode #mobileBottomNav > button > span:last-child {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+  opacity: 0.5 !important;
+  transition: all 0.3s ease !important;
+}
+
+body.mobile-mode #mobileBottomNav .nav-item.active .icon-box {
+  background: var(--md-sys-color-primary) !important;
+  color: white !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25) !important;
+}
+
+body.mobile-mode #mobileBottomNav .nav-item.active .label {
+  opacity: 1 !important;
+  color: var(--md-sys-color-primary) !important;
+  font-weight: 900 !important;
+}
+
+/* ─── 8. NOTIFICATION CARDS MOBILE ───────────────────────────────────────── */
+body.mobile-mode .notifCard {
+  border-radius: 14px !important;
+  padding: 14px !important;
+  margin-bottom: 8px !important;
+}
+
+body.mobile-mode .notifCardHead {
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+body.mobile-mode .notifBody {
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+body.mobile-mode .notifActions {
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+
+/* ─── 9. LOGIN CARD MOBILE ───────────────────────────────────────────────── */
+body.mobile-mode .loginWrap {
+  padding: 20px 12px !important;
+  min-height: 100vh !important;
+  align-items: flex-start !important;
+  padding-top: 60px !important;
+}
+
+body.mobile-mode #cardLogin {
+  max-width: 100% !important;
+  border-radius: 24px !important;
+  padding: 32px 20px !important;
+}
+
+/* ─── 10. SAFE AREAS (iPhone Notch, Android Gesture Bar) ─────────────────── */
+@supports (padding-top: env(safe-area-inset-top)) {
+  body.mobile-mode {
+    padding-top: env(safe-area-inset-top) !important;
+  }
+
+  body.mobile-mode #mainHeader {
+    padding-top: env(safe-area-inset-top) !important;
+  }
+
+  body.mobile-mode .wrap {
+    padding-top: calc(72px + env(safe-area-inset-top)) !important;
+    padding-bottom: calc(100px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* ─── 11. SCROLLBAR HIDE (Cleaner mobile look) ───────────────────────────── */
+body.mobile-mode ::-webkit-scrollbar {
+  width: 0px !important;
+  height: 0px !important;
+  display: none !important;
+}
+
+body.mobile-mode * {
+  scrollbar-width: none !important;
+}
+
+/* ─── 12. PINOL ENTREGA MODAL MOBILE ─────────────────────────────────────── */
+body.mobile-mode #pinolEntregaModal .modalGlass {
+  max-width: 100% !important;
+  border-radius: 24px 24px 0 0 !important;
+}
+
+/* ─── 13. LIVE VIEW OVERLAY MOBILE ───────────────────────────────────────── */
+body.mobile-mode #liveViewOverlay .modalGlass {
+  max-width: 100% !important;
+  max-height: 95vh !important;
+  border-radius: 24px 24px 0 0 !important;
+}
+
+/* ─── 14. SECTION TITLES COMPACT ─────────────────────────────────────────── */
+body.mobile-mode .title h2 {
+  font-size: 16px !important;
+}
+
+body.mobile-mode .title {
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+/* ─── 15. CHART CONTAINERS RESPONSIVE ────────────────────────────────────── */
+body.mobile-mode canvas {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+body.mobile-mode .chartWrap {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* ─── 16. TOAST POSITIONING MOBILE ───────────────────────────────────────── */
+body.mobile-mode .toast-stack-container {
+  top: auto !important;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+  left: 12px !important;
+  right: 12px !important;
+  max-width: 100% !important;
+}
+
+/* ─── 17. PREVENT HORIZONTAL OVERFLOW ────────────────────────────────────── */
+body.mobile-mode,
+body.mobile-mode #appWrap,
+body.mobile-mode .mainStack {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
+/* ─── 18. BIO PROGRAM BOX MOBILE ─────────────────────────────────────────── */
+body.mobile-mode .bioProgramBox {
+  padding: 12px !important;
+  border-radius: 14px !important;
+}
+
+body.mobile-mode .bioGrid {
+  gap: 6px !important;
+}
+
+/* ─── 19. ADMIN PANEL MOBILE ─────────────────────────────────────────────── */
+body.mobile-mode .adminSection {
+  padding: 14px !important;
+}
+
+body.mobile-mode .adminGrid {
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+}
+
+/* ─── 20. STATUS BADGES COMPACT ──────────────────────────────────────────── */
+body.mobile-mode .statusbarPublic {
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+  gap: 6px !important;
+}
+
+body.mobile-mode .statusbarPublic::-webkit-scrollbar {
+  display: none !important;
+}
+
+body.mobile-mode .sessionTile {
+  min-width: 160px !important;
+  flex-shrink: 0 !important;
+  padding: 10px 14px !important;
+}
+
+body.mobile-mode .sessionInfoRow {
+  overflow-x: auto !important;
+  flex-wrap: nowrap !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+  padding-bottom: 4px !important;
+}
+
+body.mobile-mode .sessionInfoRow::-webkit-scrollbar {
+  display: none !important;
+}
+

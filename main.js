@@ -483,9 +483,9 @@ function fixUtf8Text_(v) {
   if (!s) return s;
   s = s.trim();
   const fixes = {
-    "QUERÉTARO": "QUERÉTARO", "QUERETARO": "QUERÉTARO",
-    "EL MARQUÉS": "EL MARQUÉS", "EL MARQUES": "EL MARQUÉS",
-    "BIOLÓGICO": "BIOLÓGICO", "BIOLÓGICOS": "BIOLÓGICOS"
+    "QUERÃ‰TARO": "QUERÉTARO", "QUERETARO": "QUERÉTARO",
+    "EL MARQUÃ‰S": "EL MARQUÉS", "EL MARQUES": "EL MARQUÉS",
+    "BIOLÃ“GICO": "BIOLÓGICO", "BIOLÃ“GICOS": "BIOLÓGICOS"
   };
   if (fixes[s]) return fixes[s];
   return s
