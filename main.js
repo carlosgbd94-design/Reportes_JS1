@@ -11757,6 +11757,8 @@ function initMobileNavigation() {
     'navExplorer': 'Archivos'
   };
 
+  applyRoleVisibilityToMobileNav();
+
   Object.entries(navMap).forEach(([id, panelId]) => {
     const btn = document.getElementById(id);
     if (btn) {
@@ -11767,6 +11769,16 @@ function initMobileNavigation() {
       };
     }
   });
+}
+
+function applyRoleVisibilityToMobileNav() {
+  const role = String((USER && USER.rol) || "").trim().toUpperCase();
+  const isUnidad = role === "UNIDAD";
+  
+  const navLotes = document.getElementById("navLotes");
+  if (navLotes && isUnidad) {
+    navLotes.style.display = "none";
+  }
 }
 
 // Iniciar componentes al cargar
