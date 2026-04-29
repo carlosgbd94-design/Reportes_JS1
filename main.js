@@ -483,9 +483,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!s) return s;
     s = s.trim();
     const fixes = {
-      "QUERÃ‰TARO": "QUERÉTARO", "QUERETARO": "QUERÉTARO",
-      "EL MARQUÃ‰S": "EL MARQUÉS", "EL MARQUES": "EL MARQUÉS",
-      "BIOLÃ“GICO": "BIOLÓGICO", "BIOLÃ“GICOS": "BIOLÓGICOS"
+      "QUERÉTARO": "QUERÉTARO",
+      "EL MARQUÉS": "EL MARQUÉS",
+      "BIOLÓGICO": "BIOLÓGICO", "BIOLÓGICOS": "BIOLÓGICOS"
     };
     if (fixes[s]) return fixes[s];
     return s
