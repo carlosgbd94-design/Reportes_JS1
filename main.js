@@ -11850,6 +11850,11 @@ function applyRoleVisibilityToMobileNav() {
 document.addEventListener("DOMContentLoaded", () => {
   initProfileDropdown();
   initMobileNavigation();
+  // Aplicar rol al body si ya existe USER
+  if (USER && USER.rol) {
+    document.body.setAttribute('data-user-role', USER.rol.toUpperCase());
+    applyRoleVisibilityToMobileNav();
+  }
 });
 
 

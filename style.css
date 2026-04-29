@@ -9395,4 +9395,21 @@ body[data-user-role="JURISDICCIONAL"] #btnOpenUpload {
   .sessionTile {
     min-width: 85% !important;
   }
+
+  /* 🚫 BLINDAJE ATÓMICO: UNIDAD NO VE LOTES */
+  body[data-user-role="UNIDAD"] #navLotes {
+    display: none !important;
+  }
+
+  /* 👤 Perfil Dropdown Mobile Fix */
+  #profileDropdown {
+    position: fixed !important;
+    top: 70px !important;
+    right: 16px !important;
+    width: calc(100vw - 32px) !important;
+    max-width: 360px !important;
+    margin: 0 !important;
+    transform-origin: top right !important;
+    z-index: 9999 !important;
+  }
 }
