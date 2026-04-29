@@ -9326,3 +9326,17 @@ body.mobile-mode .sessionInfoRow::-webkit-scrollbar {
   display: none !important;
 }
 
+/* 🛡️ BLINDAJE TOTAL POR ROLES (CSS) */
+body[data-user-role="UNIDAD"] #glassBtnExport,
+body[data-user-role="UNIDAD"] #btnExport,
+body[data-user-role="UNIDAD"] #btnExportBIO {
+  display: none !important;
+}
+
+body[data-user-role="ADMIN"] #glassBtnUpload,
+body[data-user-role="ADMIN"] #btnOpenUpload,
+body[data-user-role="JURISDICCIONAL"] #glassBtnUpload,
+body[data-user-role="JURISDICCIONAL"] #btnOpenUpload {
+  display: none !important;
+}
+
