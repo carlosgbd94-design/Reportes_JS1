@@ -7989,9 +7989,16 @@ function setLoggedInUI(user, status) {
   const canExport = (isAdmin || isJurisdiccional || isMunicipal);
   const canUpload = (isUnidad || isMunicipal);
 
-  if ($("btnExport")) $("btnExport").style.display = canExport ? "inline-flex" : "none";
+  const toggleHeaderBtn = (btnId, containerId, show) => {
+    const btn = $(btnId);
+    const glass = $(containerId);
+    if (btn) btn.style.display = show ? "inline-flex" : "none";
+    if (glass) glass.style.display = show ? "block" : "none";
+  };
+
+  toggleHeaderBtn("btnExport", "glassBtnExport", canExport);
   if ($("btnExportBIO")) $("btnExportBIO").style.display = canExport ? "inline-flex" : "none";
-  if ($("btnOpenUpload")) $("btnOpenUpload").style.display = canUpload ? "inline-flex" : "none";
+  toggleHeaderBtn("btnOpenUpload", "glassBtnUpload", canUpload);
 
   // Sincronizar Visibilidad Móvil (Ahora que USER está cargado)
   if (typeof applyRoleVisibilityToMobileNav === 'function') {
@@ -11818,8 +11825,10 @@ function applyRoleVisibilityToMobileNav() {
     });
 
     // Ocultar exportación en header
-    const btnExport = document.getElementById("btnExportData") || document.getElementById("btnTopExport");
+    const btnExport = document.getElementById("btnExport");
     if (btnExport) btnExport.classList.add("nav-hidden");
+    const glassExport = document.getElementById("glassBtnExport");
+    if (glassExport) glassExport.classList.add("nav-hidden");
   }
 
   // REGLA: LOTES SÓLO PARA ADMIN Y JURISDICCIONAL
