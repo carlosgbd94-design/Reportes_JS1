@@ -3244,7 +3244,7 @@ const overlayTitle = overlayTitle;
     const assetB = String(`<?= LOGO_B ?>` || "").trim();
 
     const fallbackA = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/Seseq_vertical_2025.png";
-    const fallbackB = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/logo_Q.png";
+    const fallbackB = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png";
 
     const safeA = assetA.startsWith("data:image/") ? assetA : fallbackA;
     const safeB = assetB.startsWith("data:image/") ? assetB : fallbackB;

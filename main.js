@@ -1628,42 +1628,47 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // === CENTRO DE NOTIFICACIONES: LGICA DE ENVIO HIERÁRQUICO ===
+  // === CENTRO DE NOTIFICACIONES: LÓGICA DE ENVÍO HIERÁRQUICO ===
   window.initNotificationCenter = async function() {
-    const scopeSelect = $("notifTargetScope");
     const roleBadge = $("notifBadgeRole");
-    if (!scopeSelect || !USER) return;
+    if (roleBadge && USER) {
+      roleBadge.textContent = USER.rol || "PERFIL";
+    }
+    renderNotifComposer();
+  };
 
-    roleBadge.textContent = USER.rol || "PERFIL";
-    
-    // 1. Poblar alcances permitidos según ROL
+  function renderNotifComposer() {
+    const scopeSelect = $("notifTargetScope");
+    if (!scopeSelect) return;
+
     const role = USER.rol?.toUpperCase();
-    let options = "";
+    let options = `<option value="">Seleccionar alcance...</option>`;
 
     if (role === "ADMIN") {
-      options = `
-        <option value="">Seleccionar alcance...</option>
+      options += `
         <option value="GLOBAL">🌎 Global (Todos)</option>
-        <option value="MUNICIPIO">🏙️ Personal Municipal (Staff)</option>
+        <option value="MUNICIPAL_USERS_ALL">👥 Todos los Municipales (Staff)</option>
+        <option value="MUNICIPIO">🏙️ Personal de un Municipio (Staff)</option>
         <option value="CLUES">🏥 Unidad Específica (CLUES)</option>
         <option value="USUARIO">👤 Usuario Específico</option>
       `;
     } else if (role === "JURISDICCIONAL") {
-      options = `
-        <option value="">Seleccionar alcance...</option>
-        <option value="MUNICIPAL_USERS_ALL">👥 Todos los Municipales</option>
+      options += `
+        <option value="MUNICIPAL_USERS_ALL">👥 Todos los Municipales (Staff)</option>
+        <option value="MUNICIPIO">🏙️ Personal de un Municipio (Staff)</option>
         <option value="USUARIO">👤 Usuario Municipal Específico</option>
       `;
     } else if (role === "MUNICIPAL") {
-      options = `
-        <option value="">Seleccionar alcance...</option>
+      options += `
         <option value="ALL_MY_UNITS">📋 Todas mis Unidades</option>
-        <option value="CLUES">🏥 Unidad Específica</option>
+        <option value="CLUES">🏥 Unidad Específica (CLUES)</option>
       `;
     } else {
       options = `<option value="">Sin permisos de envío</option>`;
-      $("btnSendNotification").disabled = true;
-      $("btnSendNotification").style.opacity = "0.5";
+      if ($("btnSendNotification")) {
+         $("btnSendNotification").disabled = true;
+         $("btnSendNotification").style.opacity = "0.5";
+      }
     }
 
     scopeSelect.innerHTML = options;
@@ -1671,17 +1676,24 @@ document.addEventListener("DOMContentLoaded", () => {
     // 2. Manejar cambios de alcance para mostrar/ocultar selectores extra
     scopeSelect.onchange = async () => {
       const scope = scopeSelect.value;
-      $("notifMunicipioBox").style.display = (scope === "MUNICIPIO" || (scope === "CLUES" && role === "ADMIN")) ? "block" : "none";
-      $("notifUnidadBox").style.display = (scope === "CLUES") ? "block" : "none";
-      $("notifUserBox").style.display = (scope === "USUARIO" || scope === "MUNICIPAL_USER_SPECIFIC") ? "block" : "none";
+      const role = USER.rol?.toUpperCase();
+
+      // Mostrar selector de MUNICIPIO si:
+      // - Es ADMIN/JURISDICCIONAL y elige MUNICIPIO o CLUES
+      // - Es MUNICIPAL y tiene varios municipios (para filtrar sus CLUES)
+      const isMuniStaffTarget = (scope === "MUNICIPIO");
+      const isCluesTarget = (scope === "CLUES");
+
+      $("notifMunicipioBox").style.display = (isMuniStaffTarget || isCluesTarget) ? "block" : "none";
+      $("notifUnidadBox").style.display = (isCluesTarget) ? "block" : "none";
+      $("notifUserBox").style.display = (scope === "USUARIO") ? "block" : "none";
 
       // Resetear dropdowns
       if ($("notifTargetMunicipio")) $("notifTargetMunicipio").innerHTML = "<option value=''>Cargando...</option>";
       if ($("notifTargetClues")) $("notifTargetClues").innerHTML = "<option value=''>Cargando...</option>";
       if ($("notifTargetUser")) $("notifTargetUser").innerHTML = "<option value=''>Cargando...</option>";
 
-      // Lógica de carga dinámica
-      if (scope === "MUNICIPIO" || (scope === "CLUES" && role === "ADMIN")) {
+      if (isMuniStaffTarget || isCluesTarget) {
         await populateMunicipiosNotif();
       } else if (scope === "CLUES" && role === "MUNICIPAL") {
         await populateCluesNotif(USER.municipio);
@@ -1705,7 +1717,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!select) return;
     try {
       const { data } = await supabase.from('unidades').select('municipio').order('municipio');
-      const unique = [...new Set(data.map(i => i.municipio))];
+      let unique = [...new Set(data.map(i => i.municipio))];
+
+      // 🛡️ Filtrar para MUNICIPAL: solo ve sus municipios a cargo
+      if (USER.rol === "MUNICIPAL") {
+        unique = unique.filter(m => canSeeMunicipio_(USER, m));
+      }
+
       select.innerHTML = `<option value="">Seleccionar municipio...</option>` + 
         unique.map(m => `<option value="${escapeAttr(m)}">${escapeHtml(m)}</option>`).join("");
     } catch(e) { select.innerHTML = "<option>Error</option>"; }
@@ -1760,20 +1778,27 @@ document.addEventListener("DOMContentLoaded", () => {
       if (scope === "MUNICIPIO" && !payload.target_municipio) throw new Error("Selecciona un municipio destino");
       if (scope === "USUARIO" && !payload.target_usuario) throw new Error("Selecciona un usuario destino");
 
-      // Auto-completar municipio para el rol MUNICIPAL
+      // Auto-completar para MUNICIPAL: Se dirige a sus unidades
       if (USER.rol === "MUNICIPAL") {
         if (scope === "ALL_MY_UNITS") {
-           payload.target_scope = "MUNICIPIO_UNITS"; // Nuevo scope interno para diferenciar de MUNICIPIO (Staff)
-           payload.target_municipio = USER.municipio;
+           payload.target_scope = "MUNICIPIO_UNITS";
+           // Si tiene varios, enviamos a todos sus municipios (el backend debería manejarlo, 
+           // pero por ahora usamos el principal o el seleccionado en notifTargetMunicipio si existiera)
+           payload.target_municipio = $("notifTargetMunicipio")?.value || USER.municipio;
         } else if (scope === "CLUES") {
-           payload.target_municipio = USER.municipio;
+           // MUNICIPAL enviando a CLUES específica: ya tiene target_clues del selector
         }
       }
 
-      // Jurisdiccional a todos los municipales
-      if (USER.rol === "JURISDICCIONAL" && scope === "MUNICIPAL_USERS_ALL") {
-         payload.target_scope = "ROLE";
-         payload.target_usuario = "MUNICIPAL"; // Usamos target_usuario para el rol destino en este caso especial
+      // JURISDICCIONAL: Solo a MUNICIPALES
+      if (USER.rol === "JURISDICCIONAL") {
+         if (scope === "MUNICIPAL_USERS_ALL") {
+            payload.target_scope = "ROLE";
+            payload.target_usuario = "MUNICIPAL";
+         } else if (scope === "MUNICIPIO") {
+            // Ya tiene target_scope="MUNICIPIO" y target_municipio del selector.
+            // Los filtros de recepción garantizan que solo lo vea el staff municipal.
+         }
       }
 
       setBtnBusy("btnSendNotification", true, "Emitiendo...");
@@ -3370,7 +3395,8 @@ document.addEventListener("DOMContentLoaded", () => {
         case "listmynotifications": {
           const role = String(USER?.rol || "").toUpperCase();
           const clues = String(USER?.clues || "").trim();
-          const municipio = String(USER?.municipio || "").trim();
+          const myMunis = Array.isArray(USER?.municipiosAllowed) ? USER.municipiosAllowed : [];
+          const myMuniSingle = String(USER?.municipio || "").trim();
           const usuario = String(USER?.usuario || "").trim();
 
           let query = supabase.from('notificaciones')
@@ -3381,21 +3407,34 @@ document.addEventListener("DOMContentLoaded", () => {
           if (role === 'UNIDAD') {
             // UNIDADES: Solo ven Global, lo dirigido a su CLUES específica, o a su Municipio (como grupo de UNIDADES).
             const filters = ['target_scope.eq.GLOBAL'];
-            if (clues)     filters.push(`and(target_scope.eq.CLUES,target_clues.eq."${clues}")`);
-            if (municipio) filters.push(`and(target_scope.eq.MUNICIPIO_UNITS,target_municipio.eq."${municipio}")`);
-            if (usuario)   filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq."${usuario}")`);
+            if (clues)        filters.push(`and(target_scope.eq.CLUES,target_clues.eq."${clues}")`);
+            if (myMuniSingle) filters.push(`and(target_scope.eq.MUNICIPIO_UNITS,target_municipio.eq."${myMuniSingle}")`);
+            if (usuario)      filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq."${usuario}")`);
             query = query.or(filters.join(','));
           } 
           else if (role === 'MUNICIPAL') {
-            // MUNICIPAL: Ve Global, lo dirigido a su Municipio (Staff), lo dirigido a su ROL, o a su Usuario.
-            const filters = ['target_scope.eq.GLOBAL'];
-            filters.push('and(target_scope.eq.ROLE,target_usuario.eq.MUNICIPAL)');
-            if (municipio) filters.push(`and(target_scope.eq.MUNICIPIO,target_municipio.eq."${municipio}")`);
-            if (usuario)   filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq."${usuario}")`);
+            // MUNICIPAL: Ve Global, lo dirigido a Municipales, su Usuario, Y TODAS las CLUES de sus municipios a cargo.
+            const filters = [
+              'target_scope.eq.GLOBAL',
+              'and(target_scope.eq.ROLE,target_usuario.eq.MUNICIPAL)'
+            ];
+            if (usuario) filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq."${usuario}")`);
+            
+            // Agregar filtros para todos los municipios a su cargo (Staff, Unidades y CLUES específicas)
+            const activeMunis = myMunis.length > 0 ? myMunis : (myMuniSingle ? [myMuniSingle] : []);
+            activeMunis.forEach(m => {
+              if (!m) return;
+              filters.push(`and(target_scope.eq.MUNICIPIO,target_municipio.eq."${m}")`);
+              filters.push(`and(target_scope.eq.MUNICIPIO_UNITS,target_municipio.eq."${m}")`);
+              filters.push(`and(target_scope.eq.CLUES,target_municipio.eq."${m}")`);
+            });
+            
             query = query.or(filters.join(','));
           }
           else if (role === 'ADMIN' || role === 'JURISDICCIONAL') {
-             // ADMIN y JURISDICCIONAL: Ven todo (Global y cualquier otro que haya sido enviado o sea relevante)
+             // ADMIN y JURISDICCIONAL: Ven absolutamente todo.
+             // No aplicamos filtros restrictivos para que puedan auditar todo el sistema.
+             // (La query base sin filtros ya trae todo, pero limitamos a los scopes existentes por orden)
              const filters = ['target_scope.eq.GLOBAL', 'target_scope.eq.MUNICIPIO', 'target_scope.eq.CLUES', 'target_scope.eq.USUARIO', 'target_scope.eq.MUNICIPIO_UNITS', 'target_scope.eq.ROLE'];
              query = query.or(filters.join(','));
           }
@@ -4872,8 +4911,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const assetA = String(`<?= LOGO_A ?>` || "").trim();
     const assetB = String(`<?= LOGO_B ?>` || "").trim();
 
-    const fallbackA = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/Seseq_vertical_2025.png";
-    const fallbackB = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/main/logo_Q.png";
+    const fallbackA = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/Seseq_vertical_2025.png";
+    const fallbackB = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png";
 
     const safeA = assetA.startsWith("data:image/") ? assetA : fallbackA;
     const safeB = assetB.startsWith("data:image/") ? assetB : fallbackB;
