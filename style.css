@@ -9361,7 +9361,7 @@ body[data-user-role="JURISDICCIONAL"] #btnOpenUpload {
   #archivosDropdown,
   #panelArchivos,
   .mobile-panel-card {
-    display: none; /* Se controla por JS */
+    display: none;
     position: fixed !important;
     width: 100vw !important;
     max-width: 100vw !important;
@@ -9372,10 +9372,11 @@ body[data-user-role="JURISDICCIONAL"] #btnOpenUpload {
     bottom: 0 !important;
     top: auto !important;
     height: 85vh !important;
-    z-index: 50000 !important; /* Por encima de todo menos el perfil */
+    z-index: 150000 !important; 
     box-shadow: 0 -10px 40px rgba(0,0,0,0.3) !important;
-    background: white !important; /* Los paneles sí tienen fondo */
-    overflow: hidden !important;
+    background: white !important;
+    overflow-y: auto !important; /* Permitir scroll aquí */
+    -webkit-overflow-scrolling: touch !important;
   }
 
   /* 3. Perfil (Modal Centrado Supremo) */
@@ -9408,5 +9409,18 @@ body[data-user-role="JURISDICCIONAL"] #btnOpenUpload {
   body[data-user-role="UNIDAD"] #btnExport,
   body[data-user-role="UNIDAD"] #btnExportBIO {
     display: none !important;
+  }
+
+  /* 6. Barra Navegación Superior (Z-Index Fix) */
+  #mobileBottomNav {
+    z-index: 200000 !important;
+    pointer-events: auto !important;
+  }
+
+  /* 7. Eliminar franja blanca del Logo (JS1 Pill) */
+  #logoCluster, .GlassContent.liquidGL {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
   }
 }
