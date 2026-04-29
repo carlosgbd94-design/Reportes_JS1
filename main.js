@@ -4136,34 +4136,31 @@ async function supabaseRequest(action = "", payload) {
 
       case "uploadfile": {
         const file = payload.file;
-        const { category, targetClues, targetUnidad } = payload;
+        const { category, targetClues, targetUnidad, targetMunicipio } = payload;
+        const role = String((USER && USER.rol) || "").trim().toUpperCase();
 
-        // Mapear categoría a TIPO para la nomenclatura oficial
-        let tipo = "REPORTE";
-        const catUpper = category.toUpperCase();
-        if (catUpper.includes("CAPACITACI")) tipo = "CAPACITACIÓN";
-        else if (catUpper.includes("CAMPA")) tipo = "CAMPAÑA";
-        else if (catUpper.includes("SUPERVISI")) tipo = "SUPERVISIÓN";
-
-        const cleanCat = normalizePath(category).replace(/[\s\/]/g, '_');
-
-        // Formatter para la fecha: YYYY-MM-DD
+        let folderName = "";
+        let fileName = "";
         const now = new Date();
-        const yyyy = now.getFullYear();
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
-        const dd = String(now.getDate()).padStart(2, '0');
-        const dateSlug = `${yyyy}-${mm}-${dd}`;
-
-        // Sanitización agresiva para Storage (Senior Standards)
-        const safeClues = normalizePath(targetClues || "SIN_CLUES").replace(/[\s\/]/g, '_');
-        const safeUnidad = normalizePath(targetUnidad || "SIN_UNIDAD").replace(/[\s\/]/g, '_');
-        const safeTipo = normalizePath(tipo).replace(/[\s\/]/g, '_');
-
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         const extension = file.name.split('.').pop().toLowerCase();
-        const officialName = `${dateSlug}-EVIDENCIA-${safeTipo}-${safeClues}_${safeUnidad}.${extension}`;
+        const cleanOriginalName = normalizePath(file.name.split('.').shift()).replace(/[\s\/]/g, '_');
 
-        // Ruta final: Categoria / CLUES_Unidad / Nombre_Oficial
-        const folderPath = `${cleanCat}/${safeClues}_${safeUnidad}/${officialName}`.replace(/\/\//g, '/');
+        if (category.toUpperCase().includes("SUPERVISI")) {
+          // REGLA: SÓLO MUNICIPAL SUBE SUPERVISIONES
+          if (role !== "MUNICIPAL" && role !== "ADMIN") throw new Error("Acceso denegado: Solo usuarios Municipales pueden subir supervisiones.");
+          
+          folderName = normalizePath(targetMunicipio || "SIN_MUNICIPIO").replace(/[\s\/]/g, '_');
+          fileName = `SUPERVISION_${dateStr}_${cleanOriginalName}.${extension}`;
+        } else {
+          // REGLA: SÓLO UNIDAD SUBE EVIDENCIAS/CAPACITACIONES
+          if (role !== "UNIDAD" && role !== "ADMIN") throw new Error("Acceso denegado: Solo Unidades pueden subir evidencias.");
+          
+          folderName = normalizePath(category).replace(/[\s\/]/g, '_');
+          fileName = `${dateStr}-EVIDENCIA-${normalizePath(category).replace(/[\s\/]/g, '_')}-${targetClues}.${extension}`;
+        }
+
+        const folderPath = `${folderName}/${fileName}`.replace(/\/\//g, '/');
 
         const { error } = await supabase.storage.from('evidencias').upload(folderPath, file, {
           cacheControl: '3600',
@@ -4174,8 +4171,29 @@ async function supabaseRequest(action = "", payload) {
       }
 
       case "listfiles": {
-        const { data: filesData, error: filesErr } = await supabase.rpc('get_evidences_list');
+        const role = String((USER && USER.rol) || "").trim().toUpperCase();
+        const userClues = String(USER?.clues || "");
+        const userMunicipios = (USER?.municipio || "").split(",").map(m => m.trim().toUpperCase());
+
+        let { data: filesData, error: filesErr } = await supabase.rpc('get_evidences_list');
         if (filesErr) throw filesErr;
+
+        // --- FILTRADO DE SEGURIDAD (Strict Rules) ---
+        if (role === "ADMIN" || role === "JURISDICCIONAL") {
+          // Ven TODO
+        } else if (role === "MUNICIPAL") {
+          // Ven archivos de sus municipios
+          filesData = filesData.filter(f => {
+            const folderUpper = String(f.folder || "").toUpperCase();
+            const municipioMatch = userMunicipios.some(m => folderUpper.includes(m));
+            // También ven evidencias de unidades de sus municipios (necesitaríamos metadata, pero por ahora filtramos por carpeta de municipio)
+            return municipioMatch;
+          });
+        } else if (role === "UNIDAD") {
+          // Sólo ven lo de su CLUES
+          filesData = filesData.filter(f => String(f.name || "").includes(userClues));
+        }
+
         return { ok: true, data: filesData || [] };
       }
 
@@ -7299,13 +7317,14 @@ async function loadExportOptions() {
     return;
   }
 
-  const municipios = r.data.municipios || [];
+  let municipios = r.data.municipios || [];
   wrap.innerHTML = "";
 
-  if (!municipios.length) {
-    wrap.innerHTML = `<div class="muted">No hay municipios disponibles para exportar.</div>`;
-    box.style.display = "block";
-    return;
+  // --- FILTRADO DE MUNICIPIOS PARA EXPORTACIÓN (Strict Rules) ---
+  const role = String(USER.rol).toUpperCase();
+  if (role === "MUNICIPAL") {
+    const userMuns = String(USER.municipio || "").split(",").map(m => m.trim().toUpperCase());
+    municipios = municipios.filter(m => userMuns.includes(m.toUpperCase()));
   }
 
   const grid = document.createElement("div");
@@ -7966,6 +7985,23 @@ function setLoggedInUI(user, status) {
     if ($("navAdmin")) $("navAdmin").style.display = isAdmin ? "flex" : "none";
   }
 
+  // --- Role-Based Button Access (Blindaje Senior) ---
+  const canExport = (isAdmin || isJurisdiccional || isMunicipal);
+  const canUpload = (isUnidad || isMunicipal);
+
+  if ($("btnExport")) $("btnExport").style.display = canExport ? "inline-flex" : "none";
+  if ($("btnExportBIO")) $("btnExportBIO").style.display = canExport ? "inline-flex" : "none";
+  if ($("btnOpenUpload")) $("btnOpenUpload").style.display = canUpload ? "inline-flex" : "none";
+
+  // Sincronizar Visibilidad Móvil (Ahora que USER está cargado)
+  if (typeof applyRoleVisibilityToMobileNav === 'function') {
+    applyRoleVisibilityToMobileNav();
+  }
+
+  if ($("tabADMIN")) $("tabADMIN").style.display = isAdmin ? "block" : "none";
+  if ($("tabNOTIFS")) $("tabNOTIFS").style.display = (isUnidad || isAdmin || isJurisdiccional || isMunicipal) ? "block" : "none";
+  if ($("btnTopNotifications")) $("btnTopNotifications").style.display = (isUnidad || isAdmin || isJurisdiccional || isMunicipal) ? "inline-flex" : "none";
+
   if ($("tabOPS_ADMIN")) {
     $("tabOPS_ADMIN").onclick = () => activateMain("ADMIN");
   }
@@ -7980,19 +8016,6 @@ function setLoggedInUI(user, status) {
     $("dayTxt").textContent = formatDayBadgeMx(STATUS.today);
     paintStatusChips(STATUS);
   }
-
-  // --- Role-Based Button Access (JS Fallback, CSS handles main enforcement) ---
-  const canExport = isAdmin || isJurisdiccional || isMunicipal;
-  const canUpload = isUnidad || isMunicipal;
-
-  if ($("btnExport")) $("btnExport").style.display = canExport ? "inline-flex" : "none";
-  if ($("btnExportBIO")) $("btnExportBIO").style.display = canExport ? "inline-flex" : "none";
-  if ($("btnOpenUpload")) $("btnOpenUpload").style.display = canUpload ? "inline-flex" : "none";
-
-  if ($("tabADMIN")) $("tabADMIN").style.display = isAdmin ? "block" : "none";
-  if ($("tabNOTIFS")) $("tabNOTIFS").style.display = (isUnidad || isAdmin || isJurisdiccional || isMunicipal) ? "block" : "none";
-  if ($("btnTopNotifications")) $("btnTopNotifications").style.display = (isUnidad || isAdmin || isJurisdiccional || isMunicipal) ? "inline-flex" : "none";
-
 
 
 
@@ -10743,12 +10766,10 @@ async function openUploadFilesModal() {
   const modal = $("uploadFilesOverlay");
   if (!modal) return;
 
-  // UI Initial State
   modal.classList.add("show");
   resetUploadForm();
 
-
-  const role = USER?.rol || "UNIDAD";
+  const role = String(USER?.rol || "UNIDAD").toUpperCase();
   const categorySelect = $("uploadCategory");
   const muniWrap = $("uploadMunicipalMuniWrap");
   const unitWrap = $("uploadMunicipalUnitWrap");
@@ -11776,12 +11797,21 @@ function applyRoleVisibilityToMobileNav() {
   const isUnidad = role === "UNIDAD";
   
   if (isUnidad) {
-    // Para Unidades, solo permitimos Captura (Home)
+    // 1. Barra Inferior: Solo Captura
     const toHide = ["navLotes", "navHistory", "navExplorer"];
     toHide.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.add("nav-hidden");
     });
+
+    // 2. Header: Quitar botón de Exportación (Descarga)
+    // Buscamos el botón de descarga en el header (icono de la flecha abajo)
+    const headerExport = document.querySelector("#headerActions .header-action-btn .material-symbols-rounded[text='download']")?.closest(".header-action-btn");
+    if (headerExport) headerExport.classList.add("nav-hidden");
+    
+    // Si tiene un ID específico (como suele ser el caso)
+    const btnExport = document.getElementById("btnExportData") || document.getElementById("btnTopExport");
+    if (btnExport) btnExport.classList.add("nav-hidden");
   }
 }
 
