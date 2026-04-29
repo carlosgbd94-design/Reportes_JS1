@@ -2670,22 +2670,22 @@
 
 
   <!-- ✅ PREMIUM FLOATING BOTTOM NAVIGATION (Mobile Only) -->
+  <!-- ✅ TRUE MOBILE ARCHITECTURE v3.0 -->
   <nav
     class="fixed bottom-6 inset-x-6 h-[76px] z-[2000] bg-white/95 border border-outline-variant/40 rounded-[32px] flex items-center justify-around px-4 shadow-lg md:hidden transition-all duration-500"
     id="mobileBottomNav" style="display:none">
 
-    <button
-      class="flex flex-col items-center justify-center gap-1.5 w-16 h-16 rounded-2xl transition-all duration-300 nav-item active"
+    <!-- CAPTURA -->
+    <button class="flex flex-col items-center justify-center gap-1 w-16 h-16 rounded-2xl transition-all duration-300 nav-item active"
       data-tab="tabCAP" id="navHome">
-      <div
-        class="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/5 text-primary/40 group-active:scale-90 transition-all icon-box">
+      <div class="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/5 text-primary/40 icon-box">
         <span class="material-symbols-rounded text-[26px]">home</span>
       </div>
       <span class="text-[9px] font-black uppercase tracking-tighter opacity-40 label">Captura</span>
     </button>
 
-    <button
-      class="flex flex-col items-center justify-center gap-1.5 w-16 h-16 rounded-2xl transition-all duration-300 nav-item"
+    <!-- LOTES (Solo Admin/Juris) -->
+    <button class="flex flex-col items-center justify-center gap-1 w-16 h-16 rounded-2xl transition-all duration-300 nav-item"
       data-tab="tabLOTES" id="navLotes">
       <div class="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/5 text-primary/40 icon-box">
         <span class="material-symbols-rounded text-[26px]">inventory_2</span>
@@ -2693,22 +2693,23 @@
       <span class="text-[9px] font-black uppercase tracking-tighter opacity-40 label">Lotes</span>
     </button>
 
-    <button
-      class="flex flex-col items-center justify-center gap-1.5 w-16 h-16 rounded-2xl transition-all duration-300 nav-item"
-      data-tab="tabHISTORY" id="navHistory">
-      <div class="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/5 text-primary/40 icon-box">
-        <span class="material-symbols-rounded text-[26px]">history</span>
-      </div>
-      <span class="text-[9px] font-black uppercase tracking-tighter opacity-40 label">Historial</span>
-    </button>
-
-    <button
-      class="flex flex-col items-center justify-center gap-1.5 w-16 h-16 rounded-2xl transition-all duration-300 nav-item"
+    <!-- ARCHIVOS (Centralizado aquí) -->
+    <button class="flex flex-col items-center justify-center gap-1 w-16 h-16 rounded-2xl transition-all duration-300 nav-item"
       data-tab="tabArchivos" id="navExplorer">
       <div class="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/5 text-primary/40 icon-box">
         <span class="material-symbols-rounded text-[26px]">folder_open</span>
       </div>
       <span class="text-[9px] font-black uppercase tracking-tighter opacity-40 label">Archivos</span>
+    </button>
+
+    <!-- NOTIFICACIONES (Centralizado aquí) -->
+    <button class="flex flex-col items-center justify-center gap-1 w-16 h-16 rounded-2xl transition-all duration-300 nav-item"
+      data-tab="tabNOTIFS" id="navNotifs">
+      <div class="w-10 h-10 flex items-center justify-center relative !overflow-visible bg-primary/5 text-primary/40 rounded-xl icon-box">
+        <span class="material-symbols-rounded text-[26px]">notifications</span>
+        <span id="mobileNotifBadge" class="absolute top-0 right-0 w-2.5 h-2.5 bg-status-error rounded-full border-2 border-white hidden"></span>
+      </div>
+      <span class="text-[9px] font-black uppercase tracking-tighter opacity-40 label">Avisos</span>
     </button>
   </nav>
 

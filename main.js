@@ -11800,23 +11800,29 @@ function initProfileDropdown() {
   });
 }
 
-// Mobile Navigation v2.0
+// Mobile Navigation v3.0 (Native Experience)
 function initMobileNavigation() {
   const navMap = {
-    'navHome': 'CAP',
-    'navLotes': 'LOTES',
-    'navHistory': 'HISTORY',
-    'navExplorer': 'Archivos'
+    'navHome': () => activateMain('CAP'),
+    'navLotes': () => activateMain('LOTES'),
+    'navExplorer': () => openExplorer(),
+    'navNotifs': () => toggleNotifCenter()
   };
 
   applyRoleVisibilityToMobileNav();
 
-  Object.entries(navMap).forEach(([id, panelId]) => {
+  Object.entries(navMap).forEach(([id, action]) => {
     const btn = document.getElementById(id);
     if (btn) {
       btn.onclick = (e) => {
         e.preventDefault();
-        activateMain(panelId);
+        
+        // Quitar active de todos
+        document.querySelectorAll("#mobileBottomNav .nav-item").forEach(i => i.classList.remove("active"));
+        // Poner active al actual si es una pestaña (Home/Lotes)
+        if (id === "navHome" || id === "navLotes") btn.classList.add("active");
+        
+        action();
         if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(5);
       };
     }
@@ -11828,29 +11834,16 @@ function applyRoleVisibilityToMobileNav() {
   const isUnidad = role === "UNIDAD";
   const isAdmin = role === "ADMIN";
   const isJurisdiccional = role === "JURISDICCIONAL";
-  const isMunicipal = role === "MUNICIPAL";
   
-  if (isUnidad) {
-    // REGLA: UNIDAD SÓLO VE CAPTURA
-    const toHide = ["navLotes", "navHistory", "navExplorer"];
-    toHide.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.classList.add("nav-hidden");
-    });
-
-    // Ocultar exportación en header
-    const btnExport = document.getElementById("btnExport");
-    if (btnExport) btnExport.classList.add("nav-hidden");
-    const glassExport = document.getElementById("glassBtnExport");
-    if (glassExport) glassExport.classList.add("nav-hidden");
-  }
-
-  // REGLA: LOTES SÓLO PARA ADMIN Y JURISDICCIONAL
+  // 1. REGLA LOTES: Solo Admin/Juris
   const canSeeLotes = (isAdmin || isJurisdiccional);
   const navLotes = document.getElementById("navLotes");
-  if (navLotes && !canSeeLotes) {
-    navLotes.classList.add("nav-hidden");
+  if (navLotes) {
+    navLotes.style.display = canSeeLotes ? "flex" : "none";
   }
+
+  // 2. REGLA ARCHIVOS/NOTIFS: Todo el mundo puede verlos en el Bottom Nav móvil (ya que los quitamos del header)
+  // Pero blindamos el contenido internamente en cada función.
 }
 
 // Iniciar componentes al cargar
