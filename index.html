@@ -67,7 +67,7 @@
     <div class="w-full max-w-[1700px] px-6 flex items-center justify-between pointer-events-auto">
       <div class="GlassContainer p-1 rounded-full border border-white/20 shadow-lg" id="logoCluster">
         <div class="GlassContent liquidGL px-8 py-3 rounded-full flex items-center gap-4">
-          <img src="https://i.ibb.co/S7m3p5P/JS1-LOGO-WHITE.png" class="h-9 w-auto filter invert brightness-0" alt="JS1">
+          <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/Seseq_vertical_2025.png" class="h-9 w-auto filter invert brightness-0" alt="JS1">
           <div class="h-8 w-[1.5px] bg-primary/10 rounded-full"></div>
           <div class="flex flex-col">
             <h1 class="text-2xl font-black text-primary tracking-tight leading-none">JS1 <span class="font-light opacity-40">Reportes</span></h1>
@@ -76,9 +76,16 @@
         </div>
       </div>
       <div class="flex items-center gap-4">
+        <!-- IDs críticos para main.js -->
+        <span id="rolTxt" class="hidden"></span>
         <button class="GlassContainer p-1 rounded-2xl border border-white/20" id="glassBtnUpload"><div class="GlassContent liquidGL w-14 h-14 flex items-center justify-center rounded-2xl text-primary/60"><span class="material-symbols-rounded text-3xl">cloud_upload</span></div></button>
         <button class="GlassContainer p-1 rounded-2xl border border-white/20" id="glassBtnExplorer"><div class="GlassContent liquidGL w-14 h-14 flex items-center justify-center rounded-2xl text-primary/60"><span class="material-symbols-rounded text-3xl">folder_open</span></div></button>
-        <button class="GlassContainer p-1 rounded-2xl border border-white/20 relative" id="glassBtnNotifs"><div class="GlassContent liquidGL w-14 h-14 flex items-center justify-center rounded-2xl text-primary/60"><span class="material-symbols-rounded text-3xl">notifications</span></div></button>
+        <button class="GlassContainer p-1 rounded-2xl border border-white/20 relative" id="glassBtnNotifs">
+          <div class="GlassContent liquidGL w-14 h-14 flex items-center justify-center rounded-2xl text-primary/60">
+            <span class="material-symbols-rounded text-3xl">notifications</span>
+            <span id="topNotifBadge"></span>
+          </div>
+        </button>
         <button class="GlassContainer p-1 rounded-full border border-white/20" id="btnProfileToggle"><div class="GlassContent liquidGL w-14 h-14 flex items-center justify-center rounded-full text-primary/60"><span class="material-symbols-rounded text-3xl">account_circle</span></div></button>
       </div>
     </div>
