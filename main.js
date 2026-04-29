@@ -3394,15 +3394,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (usuario)   filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq."${usuario}")`);
             query = query.or(filters.join(','));
           }
-          else if (role === 'JURISDICCIONAL') {
-            // JURISDICCIONAL: Ve Global o dirigido a su Usuario.
-            const filters = ['target_scope.eq.GLOBAL'];
-            if (usuario)   filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq."${usuario}")`);
-            query = query.or(filters.join(','));
-          }
-          else if (role === 'ADMIN') {
-             // ADMIN: Ve todo (Global y cualquier otro que haya sido enviado o sea relevante)
-             // Para que el Admin pueda auditar el sistema
+          else if (role === 'ADMIN' || role === 'JURISDICCIONAL') {
+             // ADMIN y JURISDICCIONAL: Ven todo (Global y cualquier otro que haya sido enviado o sea relevante)
              const filters = ['target_scope.eq.GLOBAL', 'target_scope.eq.MUNICIPIO', 'target_scope.eq.CLUES', 'target_scope.eq.USUARIO', 'target_scope.eq.MUNICIPIO_UNITS', 'target_scope.eq.ROLE'];
              query = query.or(filters.join(','));
           }
