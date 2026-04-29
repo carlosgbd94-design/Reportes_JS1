@@ -4182,12 +4182,23 @@ async function supabaseRequest(action = "", payload) {
         if (role === "ADMIN" || role === "JURISDICCIONAL") {
           // Ven TODO
         } else if (role === "MUNICIPAL") {
-          // Ven archivos de sus municipios
+          // 1. Obtener CLUES de los municipios del usuario para filtrar evidencias
+          const { data: units } = await supabase
+            .from('unidades')
+            .select('clues')
+            .in('municipio', userMunicipios);
+          
+          const allowedClues = (units || []).map(u => u.clues);
+
+          // 2. Filtrar archivos: Carpeta de municipio (supervisiones) O CLUES en el nombre (evidencias)
           filesData = filesData.filter(f => {
             const folderUpper = String(f.folder || "").toUpperCase();
-            const municipioMatch = userMunicipios.some(m => folderUpper.includes(m));
-            // También ven evidencias de unidades de sus municipios (necesitaríamos metadata, pero por ahora filtramos por carpeta de municipio)
-            return municipioMatch;
+            const nameUpper = String(f.name || "").toUpperCase();
+            
+            const isMuniFolder = userMunicipios.some(m => folderUpper.includes(m));
+            const isUnitFile = allowedClues.some(clues => nameUpper.includes(clues));
+            
+            return isMuniFolder || isUnitFile;
           });
         } else if (role === "UNIDAD") {
           // Sólo ven lo de su CLUES
