@@ -9348,11 +9348,18 @@ body[data-user-role="JURISDICCIONAL"] #btnOpenUpload {
   }
   
   /* 1. Header & Profile (Mobile Minimalist) */
-  header {
-    background: transparent !important; /* Volver a transparente */
+  header, #mainHeader, #logoCluster, .GlassContainer, .GlassContent {
+    background: transparent !important;
+    background-color: transparent !important;
     box-shadow: none !important;
+    border: none !important;
   }
-  #notifCenterPanel, 
+  
+  /* Mantener el cristal solo donde debe estar */
+  .GlassContent.liquidGL {
+    background: rgba(255, 255, 255, 0.01) !important;
+    backdrop-filter: blur(10px) !important;
+  }
   #explorerPanel,
   #panelArchivos,
   .mobile-panel-card {

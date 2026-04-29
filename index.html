@@ -2719,27 +2719,38 @@
 
   <!-- 🧪 LIQUID GLASS ENGINE (Defunct WebGL - Replaced by SVG) -->
   <script>
-    // 🛡️ ATOMIC UI SHIELD (v3.3) - Runs immediately
+    // 🛡️ ATOMIC UI SHIELD (v3.4) - Runs immediately
     (function() {
       const checkRole = () => {
-        const user = JSON.parse(localStorage.getItem('user_reportes_js1') || '{}');
-        const role = String(user.rol || "").toUpperCase();
-        if (role === "UNIDAD") {
-          const navLotes = document.getElementById('navLotes');
-          if (navLotes) navLotes.remove(); // Eliminar físicamente del DOM
-          document.body.setAttribute('data-user-role', 'UNIDAD');
-        }
+        try {
+          const user = JSON.parse(localStorage.getItem('JS1_USER') || '{}');
+          const role = String(user.rol || "").toUpperCase();
+          if (role === "UNIDAD") {
+            const navLotes = document.getElementById('navLotes');
+            if (navLotes) navLotes.remove(); 
+            document.body.setAttribute('data-user-role', 'UNIDAD');
+          }
+        } catch(e) {}
       };
       checkRole();
-      window.addEventListener('DOMContentLoaded', checkRole);
+      window.addEventListener('load', checkRole);
+      setInterval(checkRole, 1000); // Check again just in case
     })();
 
-    // 🛠️ JS Reference Fix (REMAP TO ACTUAL FUNCTIONS)
+    // 🛠️ JS Reference Fix (REMAP TO ACTUAL PANEL IDs)
     function toggleNotifCenter() {
-      if (typeof toggleTopNotifications === 'function') toggleTopNotifications();
+      const panel = document.getElementById('topNotifDropdown');
+      if (panel) {
+        const isHidden = panel.style.display === 'none';
+        panel.style.display = isHidden ? 'block' : 'none';
+      }
     }
     function openExplorer() {
-      if (typeof toggleArchivosDropdown === 'function') toggleArchivosDropdown();
+      const panel = document.getElementById('archivosDropdown');
+      if (panel) {
+        const isHidden = panel.style.display === 'none';
+        panel.style.display = isHidden ? 'block' : 'none';
+      }
     }
   </script>
   <script defer src="main.js"></script>
