@@ -9387,13 +9387,15 @@ body[data-user-role="JURISDICCIONAL"] #btnOpenUpload {
     width: 90vw !important;
     max-width: 400px !important;
     height: auto !important;
-    max-height: 80vh !important;
+    max-height: 75vh !important; /* Más corto para evitar choques */
     margin: 0 !important;
-    z-index: 100000 !important;
+    z-index: 300000 !important; /* Por encima de la barra inferior */
     box-shadow: 0 40px 100px rgba(0,0,0,0.6) !important;
     border-radius: 40px !important;
     display: none; 
-    transform: none !important; /* Quitar cualquier transform que lo mueva */
+    transform: none !important;
+    overflow-y: auto !important; /* Habilitar scroll interno */
+    -webkit-overflow-scrolling: touch !important;
   }
 
   /* 3.1 Force horizontal center if max-width is hit */
