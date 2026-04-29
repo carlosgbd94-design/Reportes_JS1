@@ -152,67 +152,6 @@
             </div>
           </div>
 
-          <!-- Dropdown Menu (Glassmorphism) -->
-          <div id="profileDropdown"
-            class="hidden absolute right-0 mt-4 w-[300px] sm:w-[360px] bg-white border border-outline-variant/40 rounded-[32px] shadow-[0_32px_64px_-12px_rgba(0,51,102,0.2)] z-[5000] overflow-hidden transform origin-top-right transition-all animate-dropdownIn gpu-accelerated">
-
-            <!-- 👤 PREMIUM IDENTITY HUB -->
-            <div
-              class="p-6 sm:p-8 flex flex-col items-center text-center bg-gradient-to-b from-primary/[0.03] to-transparent border-b border-outline-variant/10">
-              <div class="relative mb-4">
-                <div
-                  class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary to-[#005bb5] text-white flex items-center justify-center shadow-[0_12px_24px_rgba(0,51,102,0.3)] ring-4 ring-white relative z-10">
-                  <span class="material-symbols-rounded text-[32px] sm:text-[40px]">person</span>
-                </div>
-                <div class="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-110 opacity-30"></div>
-              </div>
-
-              <span class="text-[10px] font-black text-primary/40 uppercase tracking-[0.25em] mb-2">Usuario
-                Activo</span>
-              <div id="userNameFull"
-                class="text-[16px] sm:text-[18px] font-black text-primary leading-tight break-words w-full px-2"
-                style="text-wrap: balance;">
-                Cargando...
-              </div>
-            </div>
-
-            <div class="p-5 sm:p-6 space-y-3 sm:space-y-4">
-              <!-- DATA BLOCKS (Adaptive & Clean) -->
-              <div
-                class="flex items-center gap-4 p-4 bg-white rounded-2xl border border-outline-variant/30 shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all hover:border-primary/20 group">
-                <div
-                  class="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
-                  <span class="material-symbols-rounded text-primary/60 text-[20px]">apartment</span>
-                </div>
-                <div class="flex flex-col min-w-0">
-                  <span class="text-[9px] font-black text-primary/30 uppercase tracking-widest mb-0.5">Unidad /
-                    CLUES</span>
-                  <span id="who" class="text-[12px] font-bold text-primary leading-tight break-words">Cargando...</span>
-                </div>
-              </div>
-
-              <div
-                class="flex items-center gap-4 p-4 bg-white rounded-2xl border border-outline-variant/30 shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all hover:border-orange-200 group">
-                <div
-                  class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0 group-hover:bg-orange-100 transition-colors">
-                  <span class="material-symbols-rounded text-orange-400 text-[20px]">location_on</span>
-                </div>
-                <div class="flex flex-col min-w-0">
-                  <span class="text-[9px] font-black text-orange-400/40 uppercase tracking-widest mb-0.5">Municipio
-                    Asignado</span>
-                  <span id="munTxt" class="text-[12px] font-bold text-primary leading-tight">Cargando...</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="p-3">
-              <button id="btnLogout"
-                class="w-full h-[48px] sm:h-[52px] rounded-xl sm:rounded-2xl bg-status-error/10 text-status-error hover:bg-status-error hover:text-white transition-all flex items-center justify-center gap-3 font-black text-[12px] sm:text-[13px] uppercase tracking-widest border-none cursor-pointer">
-                <span class="material-symbols-rounded text-[18px] sm:text-[20px]">logout</span>
-                Cerrar Sesión
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -2776,6 +2715,46 @@
       }
     }, true);
   </script>
+  <!-- Dropdown Menu (Glassmorphism) - MOVED TO BODY LEVEL -->
+  <div id="profileDropdown"
+    class="hidden fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-[400px] bg-white border border-outline-variant/40 rounded-[40px] shadow-[0_40px_100px_rgba(0,0,0,0.6)] z-[200000] overflow-hidden transition-all gpu-accelerated">
+    <!-- Contenido del perfil (Sigue igual) -->
+    <div class="p-8 flex flex-col items-center text-center bg-gradient-to-b from-primary/[0.03] to-transparent border-b border-outline-variant/10">
+      <div class="relative mb-4">
+        <div class="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-[#005bb5] text-white flex items-center justify-center shadow-lg relative z-10">
+          <span class="material-symbols-rounded text-[40px]">person</span>
+        </div>
+      </div>
+      <span class="text-[10px] font-black text-primary/40 uppercase tracking-widest mb-2">Usuario Activo</span>
+      <div id="userNameFull" class="text-[18px] font-black text-primary leading-tight">Cargando...</div>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="flex items-center gap-4 p-4 bg-white rounded-2xl border border-outline-variant/30">
+        <div class="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center shrink-0">
+          <span class="material-symbols-rounded text-primary/60">apartment</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-[9px] font-black text-primary/30 uppercase tracking-widest">Unidad / CLUES</span>
+          <span id="who" class="text-[12px] font-bold text-primary">Cargando...</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-4 p-4 bg-white rounded-2xl border border-outline-variant/30">
+        <div class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
+          <span class="material-symbols-rounded text-orange-400">location_on</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-[9px] font-black text-orange-400/40 uppercase tracking-widest">Municipio Asignado</span>
+          <span id="munTxt" class="text-[12px] font-bold text-primary">Cargando...</span>
+        </div>
+      </div>
+    </div>
+    <div class="p-3">
+      <button id="btnLogout" class="w-full h-[52px] rounded-2xl bg-status-error/10 text-status-error font-black uppercase tracking-widest border-none cursor-pointer">
+        <span class="material-symbols-rounded mr-2">logout</span> Cerrar Sesión
+      </button>
+    </div>
+  </div>
+
   <script defer src="main.js"></script>
 </body>
 
