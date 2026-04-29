@@ -2719,7 +2719,27 @@
 
   <!-- 🧪 LIQUID GLASS ENGINE (Defunct WebGL - Replaced by SVG) -->
   <script>
-    console.log("Refractive Engine Active: SVG Displacement Map");
+    // 🛡️ ATOMIC UI SHIELD (v3.2) - Runs immediately
+    (function() {
+      const checkRole = () => {
+        const user = JSON.parse(localStorage.getItem('user_reportes_js1') || '{}');
+        const role = String(user.rol || "").toUpperCase();
+        if (role === "UNIDAD") {
+          const navLotes = document.getElementById('navLotes');
+          if (navLotes) navLotes.remove(); // Eliminar físicamente del DOM
+          document.body.setAttribute('data-user-role', 'UNIDAD');
+        }
+      };
+      checkRole();
+      window.addEventListener('DOMContentLoaded', checkRole);
+    })();
+
+    // 🛠️ JS Reference Fix
+    function toggleNotifCenter() {
+      const panel = document.getElementById('notifCenterPanel');
+      if (panel) panel.classList.toggle('active');
+      else if (typeof openNotificationCenter === 'function') openNotificationCenter();
+    }
   </script>
   <script defer src="main.js"></script>
 </body>
