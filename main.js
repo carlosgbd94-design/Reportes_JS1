@@ -11775,9 +11775,13 @@ function applyRoleVisibilityToMobileNav() {
   const role = String((USER && USER.rol) || "").trim().toUpperCase();
   const isUnidad = role === "UNIDAD";
   
-  const navLotes = document.getElementById("navLotes");
-  if (navLotes && isUnidad) {
-    navLotes.style.display = "none";
+  if (isUnidad) {
+    // Para Unidades, solo permitimos Captura (Home)
+    const toHide = ["navLotes", "navHistory", "navExplorer"];
+    toHide.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add("nav-hidden");
+    });
   }
 }
 

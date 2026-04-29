@@ -9321,3 +9321,8 @@ body.mobile-mode .sessionInfoRow::-webkit-scrollbar {
   display: none !important;
 }
 
+/* Force hide navigation items for role-based restrictions */
+.nav-hidden {
+  display: none !important;
+}
+
