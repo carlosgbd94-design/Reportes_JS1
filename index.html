@@ -2694,7 +2694,7 @@
 
     <!-- ARCHIVOS (Centralizado aquí) -->
     <button class="flex flex-col items-center justify-center gap-1 w-16 h-16 rounded-2xl transition-all duration-300 nav-item"
-      data-tab="tabArchivos" id="navExplorer">
+      data-tab="tabArchivos" id="navExplorer" onclick="openExplorer()">
       <div class="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/5 text-primary/40 icon-box">
         <span class="material-symbols-rounded text-[26px]">folder_open</span>
       </div>
@@ -2703,7 +2703,7 @@
 
     <!-- NOTIFICACIONES (Centralizado aquí) -->
     <button class="flex flex-col items-center justify-center gap-1 w-16 h-16 rounded-2xl transition-all duration-300 nav-item"
-      data-tab="tabNOTIFS" id="navNotifs">
+      data-tab="tabNOTIFS" id="navNotifs" onclick="toggleNotifCenter()">
       <div class="w-10 h-10 flex items-center justify-center relative !overflow-visible bg-primary/5 text-primary/40 rounded-xl icon-box">
         <span class="material-symbols-rounded text-[26px]">notifications</span>
         <span id="mobileNotifBadge" class="absolute top-0 right-0 w-2.5 h-2.5 bg-status-error rounded-full border-2 border-white hidden"></span>
@@ -2741,31 +2741,40 @@
     function toggleNotifCenter() {
       const panel = document.getElementById('topNotifDropdown');
       if (panel) {
+        const isHidden = (panel.style.display === 'none' || panel.classList.contains('hidden'));
+        panel.style.display = isHidden ? 'block' : 'none';
         panel.classList.remove('hidden');
-        panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
-        panel.style.zIndex = "10000";
+        panel.style.zIndex = "100000";
+        panel.style.opacity = "1";
+        panel.style.visibility = "visible";
       }
     }
     function openExplorer() {
       const panel = document.getElementById('archivosDropdown');
       if (panel) {
+        const isHidden = (panel.style.display === 'none' || panel.classList.contains('hidden'));
+        panel.style.display = isHidden ? 'block' : 'none';
         panel.classList.remove('hidden');
-        panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
-        panel.style.zIndex = "10000";
+        panel.style.zIndex = "100000";
+        panel.style.opacity = "1";
+        panel.style.visibility = "visible";
       }
     }
-    // Profile Fix for Mobile
-    document.addEventListener('click', (e) => {
+    // Profile Fix for Mobile (FORCE CLICK)
+    window.addEventListener('click', (e) => {
       const btn = e.target.closest('#btnProfileToggle');
       if (btn) {
+        e.preventDefault();
+        e.stopPropagation();
         const drop = document.getElementById('profileDropdown');
         if (drop) {
-          drop.classList.toggle('hidden');
-          drop.style.display = drop.classList.contains('hidden') ? 'none' : 'block';
-          drop.style.zIndex = "20000";
+          const isHidden = (drop.style.display === 'none' || drop.classList.contains('hidden'));
+          drop.style.display = isHidden ? 'block' : 'none';
+          drop.classList.remove('hidden');
+          drop.style.zIndex = "110000";
         }
       }
-    });
+    }, true);
   </script>
   <script defer src="main.js"></script>
 </body>

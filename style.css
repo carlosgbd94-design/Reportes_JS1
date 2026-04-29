@@ -9348,16 +9348,17 @@ body[data-user-role="JURISDICCIONAL"] #btnOpenUpload {
   }
   
   /* 1. Header & Profile (Mobile Minimalist) */
-  #mainHeader, #logoCluster, .GlassContainer, .GlassContent, header {
+  #mainHeader, #logoCluster, .GlassContainer, .GlassContent, header, #mainHeader > div {
     background: transparent !important;
     background-color: transparent !important;
     box-shadow: none !important;
     border: none !important;
   }
   
-  /* Eliminar posible fondo del contenedor padre */
-  div.fixed.top-0 {
+  /* Eliminar posible fondo de CUALQUIER elemento fijo en el top móvil */
+  div[class*="fixed"][class*="top-0"] {
     background: transparent !important;
+    box-shadow: none !important;
   }
   
   /* Mantener el cristal solo donde debe estar */
