@@ -9347,20 +9347,11 @@ body[data-user-role="JURISDICCIONAL"] #btnOpenUpload {
     display: none !important; /* Limpiar header en móvil */
   }
   
+  /* 1. Header & Profile (Mobile Minimalist) */
   header {
-    height: 64px !important;
-    padding: 0 16px !important;
+    background: transparent !important; /* Volver a transparente */
+    box-shadow: none !important;
   }
-
-  #headerMain {
-    max-width: 70% !important;
-  }
-  
-  #profileDropdownContainer {
-    margin-left: auto !important;
-  }
-
-  /* 2. Responsive Panels (Full Width) */
   #notifCenterPanel, 
   #explorerPanel,
   #panelArchivos,
