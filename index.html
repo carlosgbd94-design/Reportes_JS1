@@ -2684,32 +2684,40 @@
     </button>
 
     <button
-      class="flex flex-col items-center justify-center gap-1.5 w-16 h-16 rounded-2xl transition-all duration-300 nav-item"
-      data-tab="tabNOTIFS" id="navNotifs">
-      <div class="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/5 text-primary/40 relative icon-box">
-        <span class="material-symbols-rounded text-[26px]">notifications</span>
-        <span id="notifBadgeNav"
-          class="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-white"
-          style="display:none">0</span>
+      class="flex flex-col items-center justify-center gap-1.5 w-16 h-16 rounded-2xl transition-all duration-300 nav-item active"
+      data-tab="tabCAP" id="navHome">
+      <div
+        class="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/5 text-primary/40 group-active:scale-90 transition-all icon-box">
+        <span class="material-symbols-rounded text-[26px]">home</span>
       </div>
-      <span class="text-[9px] font-black uppercase tracking-tighter opacity-40 label">Centro</span>
+      <span class="text-[9px] font-black uppercase tracking-tighter opacity-40 label">Captura</span>
     </button>
 
     <button
       class="flex flex-col items-center justify-center gap-1.5 w-16 h-16 rounded-2xl transition-all duration-300 nav-item"
-      data-tab="tabADMIN" id="navAdmin">
+      data-tab="tabLOTES" id="navLotes">
       <div class="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/5 text-primary/40 icon-box">
-        <span class="material-symbols-rounded text-[26px]">admin_panel_settings</span>
+        <span class="material-symbols-rounded text-[26px]">inventory_2</span>
       </div>
-      <span class="text-[9px] font-black uppercase tracking-tighter opacity-40 label">Admin</span>
+      <span class="text-[9px] font-black uppercase tracking-tighter opacity-40 label">Lotes</span>
     </button>
 
-    <button class="flex flex-col items-center justify-center gap-1.5 w-16 h-16 rounded-2xl transition-all duration-300"
-      id="navLogout">
-      <div class="w-10 h-10 flex items-center justify-center rounded-xl bg-red-50 text-red-500/40 icon-box">
-        <span class="material-symbols-rounded text-[26px]">power_settings_new</span>
+    <button
+      class="flex flex-col items-center justify-center gap-1.5 w-16 h-16 rounded-2xl transition-all duration-300 nav-item"
+      data-tab="tabHISTORY" id="navHistory">
+      <div class="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/5 text-primary/40 icon-box">
+        <span class="material-symbols-rounded text-[26px]">history</span>
       </div>
-      <span class="text-[9px] font-black uppercase tracking-tighter opacity-40 label">Salir</span>
+      <span class="text-[9px] font-black uppercase tracking-tighter opacity-40 label">Historial</span>
+    </button>
+
+    <button
+      class="flex flex-col items-center justify-center gap-1.5 w-16 h-16 rounded-2xl transition-all duration-300 nav-item"
+      data-tab="tabArchivos" id="navExplorer">
+      <div class="w-10 h-10 flex items-center justify-center rounded-xl bg-primary/5 text-primary/40 icon-box">
+        <span class="material-symbols-rounded text-[26px]">folder_open</span>
+      </div>
+      <span class="text-[9px] font-black uppercase tracking-tighter opacity-40 label">Archivos</span>
     </button>
   </nav>
 

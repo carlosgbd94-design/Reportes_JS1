@@ -8256,10 +8256,17 @@ function activateMain(panel, forceSubTab) {
     updateTabClass("tabLOTES", false);
   }
 
-  // Sincronizar Bottom Nav
+  // Sincronizar Bottom Nav (v2.0 Architecture)
+  const navMap = {
+    'navHome': 'CAP',
+    'navLotes': 'LOTES',
+    'navHistory': 'HISTORY',
+    'navExplorer': 'Archivos'
+  };
+
   document.querySelectorAll(".nav-item").forEach(el => {
-    const target = el.getAttribute("data-tab");
-    el.classList.toggle("active", target === `tab${panel}`);
+    const target = el.getAttribute("data-tab")?.replace("tab", "");
+    el.classList.toggle("active", target === panel);
   });
 
 
@@ -11714,6 +11721,7 @@ function getBioCaptureWindow(year, month) {
 }
 
 // Profile Dropdown Toggle Logic
+// Profile Dropdown Toggle Logic
 function initProfileDropdown() {
   const btn = document.getElementById("btnProfileToggle");
   const dropdown = document.getElementById("profileDropdown");
@@ -11739,5 +11747,32 @@ function initProfileDropdown() {
     }
   });
 }
+
+// Mobile Navigation v2.0
+function initMobileNavigation() {
+  const navMap = {
+    'navHome': 'CAP',
+    'navLotes': 'LOTES',
+    'navHistory': 'HISTORY',
+    'navExplorer': 'Archivos'
+  };
+
+  Object.entries(navMap).forEach(([id, panelId]) => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        activateMain(panelId);
+        if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(5);
+      };
+    }
+  });
+}
+
+// Iniciar componentes al cargar
+document.addEventListener("DOMContentLoaded", () => {
+  initProfileDropdown();
+  initMobileNavigation();
+});
 
 
