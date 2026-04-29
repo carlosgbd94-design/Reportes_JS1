@@ -8047,10 +8047,16 @@ function setLoggedInUI(user, status) {
 
   if ($("sectionCapturaUnidad")) $("sectionCapturaUnidad").style.display = isUnidad ? "block" : "none";
   if ($("panelCAP")) $("panelCAP").style.display = isUnidad ? "block" : "none";
+  const canSeeLotes = (isAdmin || isJurisdiccional);
+  const canSeeAdminCenter = isAdmin;
+  const canSeeNotifsCenter = (isAdmin || isJurisdiccional || isMunicipal);
+  const canSeePinol = (isAdmin || isMunicipal);
+
   if ($("panelAdminOpsTabs")) $("panelAdminOpsTabs").style.display = (isAdmin || isJurisdiccional || isMunicipal) ? "block" : "none";
-  if ($("tabOPS_PINOL")) $("tabOPS_PINOL").style.display = (isAdmin || isMunicipal) ? "block" : "none";
-  if ($("tabOPS_NOTIFS")) $("tabOPS_NOTIFS").style.display = (isAdmin || isJurisdiccional || isMunicipal) ? "block" : "none";
-  if ($("tabOPS_ADMIN")) $("tabOPS_ADMIN").style.display = isAdmin ? "flex" : "none";
+  if ($("tabLOTES")) $("tabLOTES").style.display = canSeeLotes ? "flex" : "none";
+  if ($("tabOPS_PINOL")) $("tabOPS_PINOL").style.display = canSeePinol ? "flex" : "none";
+  if ($("tabOPS_NOTIFS")) $("tabOPS_NOTIFS").style.display = canSeeNotifsCenter ? "flex" : "none";
+  if ($("tabOPS_ADMIN")) $("tabOPS_ADMIN").style.display = canSeeAdminCenter ? "flex" : "none";
 
 
 
@@ -10926,6 +10932,7 @@ async function handleFileUploadFlow() {
 
   let targetClues = USER.clues;
   let targetUnidad = USER.unidad;
+  let targetMunicipio = USER.municipio; // Valor por defecto del usuario
 
   if (USER.rol === "MUNICIPAL") {
     const unitSelect = $("uploadUnitSelect");
@@ -10936,6 +10943,8 @@ async function handleFileUploadFlow() {
     }
     const option = unitSelect.options[unitSelect.selectedIndex];
     targetUnidad = option.getAttribute("data-name") || "";
+    // REGLA: Detectar municipio de la unidad para crear la carpeta correcta
+    targetMunicipio = option.getAttribute("data-muni") || "";
   }
 
   try {
@@ -10947,7 +10956,8 @@ async function handleFileUploadFlow() {
       file: file,
       category: category,
       targetClues: targetClues,
-      targetUnidad: targetUnidad
+      targetUnidad: targetUnidad,
+      targetMunicipio: targetMunicipio
     });
 
     if (res && res.ok) {
@@ -11795,23 +11805,28 @@ function initMobileNavigation() {
 function applyRoleVisibilityToMobileNav() {
   const role = String((USER && USER.rol) || "").trim().toUpperCase();
   const isUnidad = role === "UNIDAD";
+  const isAdmin = role === "ADMIN";
+  const isJurisdiccional = role === "JURISDICCIONAL";
+  const isMunicipal = role === "MUNICIPAL";
   
   if (isUnidad) {
-    // 1. Barra Inferior: Solo Captura
+    // REGLA: UNIDAD SÓLO VE CAPTURA
     const toHide = ["navLotes", "navHistory", "navExplorer"];
     toHide.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.classList.add("nav-hidden");
     });
 
-    // 2. Header: Quitar botón de Exportación (Descarga)
-    // Buscamos el botón de descarga en el header (icono de la flecha abajo)
-    const headerExport = document.querySelector("#headerActions .header-action-btn .material-symbols-rounded[text='download']")?.closest(".header-action-btn");
-    if (headerExport) headerExport.classList.add("nav-hidden");
-    
-    // Si tiene un ID específico (como suele ser el caso)
+    // Ocultar exportación en header
     const btnExport = document.getElementById("btnExportData") || document.getElementById("btnTopExport");
     if (btnExport) btnExport.classList.add("nav-hidden");
+  }
+
+  // REGLA: LOTES SÓLO PARA ADMIN Y JURISDICCIONAL
+  const canSeeLotes = (isAdmin || isJurisdiccional);
+  const navLotes = document.getElementById("navLotes");
+  if (navLotes && !canSeeLotes) {
+    navLotes.classList.add("nav-hidden");
   }
 }
 
