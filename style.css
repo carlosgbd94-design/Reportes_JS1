@@ -9340,36 +9340,28 @@ body[data-user-role="JURISDICCIONAL"] #btnOpenUpload {
   display: none !important;
 }
 
-/* 📱 TRUE NATIVE MOBILE ARCHITECTURE v3.0 */
+/* 📱 TRUE NATIVE MOBILE ARCHITECTURE v4.0 (Final Consolidation) */
 @media (max-width: 768px) {
-  /* 1. Header Cleanup: Solo Brand y Perfil */
-  #headerActions, #glassBtnExport, #glassBtnUpload, #glassBtnExplorer, #glassBtnNotifs {
-    display: none !important; /* Limpiar header en móvil */
-  }
-  
-  /* 1. Header & Profile (Mobile Minimalist) */
-  #mainHeader, #logoCluster, .GlassContainer, .GlassContent, header, #mainHeader > div {
+  /* 1. Header & Brand Cleanup (Aniquilar franja blanca) */
+  #mainHeader, #logoCluster, .GlassContainer, .GlassContent, header, #mainHeader > div,
+  .top, .topInner {
     background: transparent !important;
     background-color: transparent !important;
     box-shadow: none !important;
     border: none !important;
   }
   
-  /* Eliminar posible fondo de CUALQUIER elemento fijo en el top móvil */
-  div[class*="fixed"][class*="top-0"] {
+  /* Forzar transparencia en cualquier contenedor de brand */
+  .brandCenter, .brandMain, .brandText {
     background: transparent !important;
-    box-shadow: none !important;
   }
-  
-  /* Mantener el cristal solo donde debe estar */
-  .GlassContent.liquidGL {
-    background: rgba(255, 255, 255, 0.01) !important;
-    backdrop-filter: blur(10px) !important;
-  }
+
+  /* 2. Panels (Notifs & Archivos) */
   #topNotifDropdown, 
   #archivosDropdown,
   #panelArchivos,
   .mobile-panel-card {
+    display: none; /* Se controla por JS */
     position: fixed !important;
     width: 100vw !important;
     max-width: 100vw !important;
@@ -9380,46 +9372,41 @@ body[data-user-role="JURISDICCIONAL"] #btnOpenUpload {
     bottom: 0 !important;
     top: auto !important;
     height: 85vh !important;
-    z-index: 5000 !important;
-    box-shadow: 0 -10px 40px rgba(0,0,0,0.2) !important;
+    z-index: 50000 !important; /* Por encima de todo menos el perfil */
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.3) !important;
+    background: white !important; /* Los paneles sí tienen fondo */
+    overflow: hidden !important;
   }
 
-  /* 3. Internal Scroll Fix */
-  .notif-list-container,
-  #archivosGrid,
-  #notifInboxList,
-  .scrollable-content-mobile {
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    -webkit-overflow-scrolling: touch !important;
-    height: calc(85vh - 80px) !important;
-    padding-bottom: 120px !important;
-  }
-
-  /* Ajuste de Cards de captura */
-  .sessionTile {
-    min-width: 85% !important;
-  }
-
-  /* 🚫 BLINDAJE ATÓMICO: UNIDAD NO VE LOTES */
-  body[data-user-role="UNIDAD"] #navLotes {
-    display: none !important;
-  }
-
-  /* 👤 Perfil Dropdown Mobile Fix (Centered Modal) */
+  /* 3. Perfil (Modal Centrado Supremo) */
   #profileDropdown {
     position: fixed !important;
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;
     width: 90vw !important;
-    max-width: 380px !important;
+    max-width: 400px !important;
     height: auto !important;
     max-height: 80vh !important;
     margin: 0 !important;
-    z-index: 10000 !important;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5) !important;
-    border-radius: 32px !important;
+    z-index: 100000 !important;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.6) !important;
+    border-radius: 40px !important;
+    display: none; /* Se controla por JS */
+  }
+
+  /* 4. Scroll Interno */
+  .topNotifBody, #archivosContainer, .notifList {
     overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    height: calc(85vh - 100px) !important;
+    padding-bottom: 40px !important;
+  }
+
+  /* 5. Blindaje Unidad */
+  body[data-user-role="UNIDAD"] #navLotes,
+  body[data-user-role="UNIDAD"] #btnExport,
+  body[data-user-role="UNIDAD"] #btnExportBIO {
+    display: none !important;
   }
 }
