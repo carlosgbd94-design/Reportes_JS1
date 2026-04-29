@@ -8684,71 +8684,140 @@ body.mobile-mode #bHora .material-symbols-rounded {
    Desktop design is NEVER affected by these rules.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ─── 1. COMPACT MOBILE HEADER ───────────────────────────────────────────── */
-/* Hide the floating glass header and replace with a compact sticky bar */
+/* ─── 1. MODERN "INSTA-STYLE" MOBILE HEADER ──────────────────────────────── */
 body.mobile-mode #mainHeader {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
-  inset-x: 0 !important;
-  padding: 0 !important;
-  z-index: 1100 !important;
+  width: 100% !important;
+  height: 64px !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 16px !important;
+  z-index: 2000 !important;
+  box-shadow: none !important;
 }
 
 body.mobile-mode #mainHeader > div {
-  max-width: 100% !important;
-  padding: 0 12px !important;
-  gap: 8px !important;
+  width: 100% !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 0 !important;
+  gap: 0 !important;
 }
 
-/* Simplify logo cluster for mobile: compact pill */
+/* Branding Estilo Insta */
 body.mobile-mode #logoCluster {
-  max-width: 50vw !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+body.mobile-mode #logoCluster::before,
+body.mobile-mode #logoCluster::after {
+  display: none !important;
+}
+
+body.mobile-mode .brandText h1 {
+  font-size: 22px !important;
+  font-weight: 900 !important;
+  letter-spacing: -1px !important;
+  color: #0f172a !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+body.mobile-mode .brandText h1 span:first-child {
+  color: var(--md-sys-color-primary) !important;
+}
+
+body.mobile-mode .brandText p {
+  font-size: 8px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1.5px !important;
+  color: #64748b !important;
+  margin-top: -2px !important;
+}
+
+/* Actions Estilo App Moderna */
+body.mobile-mode #headerActions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+body.mobile-mode .header-action-btn,
+body.mobile-mode #btnProfileToggle {
+  width: 42px !important;
+  height: 42px !important;
+  background: transparent !important;
+  border: none !important;
+  color: #1e293b !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  position: relative !important;
+  box-shadow: none !important;
+}
+
+body.mobile-mode .header-action-btn:active {
+  transform: scale(0.9) !important;
+  opacity: 0.7 !important;
+}
+
+body.mobile-mode .header-action-btn .material-symbols-rounded {
+  font-size: 26px !important;
+  font-variation-settings: 'FILL' 0, 'wght' 400 !important;
+}
+
+/* Notificacin Estilo Dot */
+body.mobile-mode #btnTopNotifications {
+  position: relative !important;
+}
+
+body.mobile-mode #btnTopNotifications::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  width: 8px !important;
+  height: 8px !important;
+  background: #ef4444 !important;
+  border: 2px solid #ffffff !important;
+  border-radius: 50% !important;
+  display: block !important;
+}
+
+/* Profile Image Circle en Header */
+body.mobile-mode #btnProfileToggle > div:first-child {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 50% !important;
+  border: 2px solid var(--md-sys-color-primary) !important;
   overflow: hidden !important;
 }
 
-body.mobile-mode #logoCluster .GlassContent {
-  padding: 8px 14px !important;
-  gap: 10px !important;
-}
-
-/* Hide logos on small screens, keep just the text */
+/* Ocultar elementos innecesarios */
 body.mobile-mode #logoA,
-body.mobile-mode #logoB {
+body.mobile-mode #logoB,
+body.mobile-mode #logoCluster .GlassContent > div[class*="w-[1px]"],
+body.mobile-mode .header-action-btn span:not(.material-symbols-rounded) {
   display: none !important;
-}
-
-body.mobile-mode #logoCluster .GlassContent > div[class*="w-[1px]"] {
-  display: none !important;
-}
-
-/* Compact profile button */
-body.mobile-mode #btnProfileToggle {
-  height: 44px !important;
-  padding: 0 12px !important;
-  gap: 8px !important;
-}
-
-body.mobile-mode #btnProfileToggle > div:first-child {
-  width: 32px !important;
-  height: 32px !important;
-}
-
-/* Make header action buttons smaller */
-body.mobile-mode .header-action-btn {
-  width: 40px !important;
-  height: 40px !important;
-  min-height: 40px !important;
-  padding: 0 !important;
-}
-
-body.mobile-mode #headerActions {
-  gap: 6px !important;
-}
-
-body.mobile-mode #userControlsGroup {
-  gap: 6px !important;
 }
 
 /* ─── 2. CONTENT LAYOUT ──────────────────────────────────────────────────── */
