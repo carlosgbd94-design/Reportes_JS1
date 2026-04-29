@@ -2741,17 +2741,31 @@
     function toggleNotifCenter() {
       const panel = document.getElementById('topNotifDropdown');
       if (panel) {
-        const isHidden = panel.style.display === 'none';
-        panel.style.display = isHidden ? 'block' : 'none';
+        panel.classList.remove('hidden');
+        panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+        panel.style.zIndex = "10000";
       }
     }
     function openExplorer() {
       const panel = document.getElementById('archivosDropdown');
       if (panel) {
-        const isHidden = panel.style.display === 'none';
-        panel.style.display = isHidden ? 'block' : 'none';
+        panel.classList.remove('hidden');
+        panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+        panel.style.zIndex = "10000";
       }
     }
+    // Profile Fix for Mobile
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('#btnProfileToggle');
+      if (btn) {
+        const drop = document.getElementById('profileDropdown');
+        if (drop) {
+          drop.classList.toggle('hidden');
+          drop.style.display = drop.classList.contains('hidden') ? 'none' : 'block';
+          drop.style.zIndex = "20000";
+        }
+      }
+    });
   </script>
   <script defer src="main.js"></script>
 </body>

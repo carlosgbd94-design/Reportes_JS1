@@ -9348,11 +9348,16 @@ body[data-user-role="JURISDICCIONAL"] #btnOpenUpload {
   }
   
   /* 1. Header & Profile (Mobile Minimalist) */
-  header, #mainHeader, #logoCluster, .GlassContainer, .GlassContent {
+  #mainHeader, #logoCluster, .GlassContainer, .GlassContent, header {
     background: transparent !important;
     background-color: transparent !important;
     box-shadow: none !important;
     border: none !important;
+  }
+  
+  /* Eliminar posible fondo del contenedor padre */
+  div.fixed.top-0 {
+    background: transparent !important;
   }
   
   /* Mantener el cristal solo donde debe estar */
@@ -9360,7 +9365,8 @@ body[data-user-role="JURISDICCIONAL"] #btnOpenUpload {
     background: rgba(255, 255, 255, 0.01) !important;
     backdrop-filter: blur(10px) !important;
   }
-  #explorerPanel,
+  #topNotifDropdown, 
+  #archivosDropdown,
   #panelArchivos,
   .mobile-panel-card {
     position: fixed !important;
