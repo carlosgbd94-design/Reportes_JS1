@@ -104,13 +104,11 @@ body {
   100% { transform: translate3d(2%, 2%, 0); }
 }
 
-body.mobile-mode .AuraContainer {
-  display: none;
-}
 
-body.mobile-mode {
-  background: #f1f5f9;
-  background-image: none;
+
+.lowperf .AuraContainer,
+.lowperf .AuraBlob {
+  display: none !important;
 }
 
 /* */
@@ -1406,7 +1404,6 @@ label,
   min-width: 0;
 }
 
-body.mobile-mode .actions {
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
@@ -1432,7 +1429,6 @@ body.mobile-mode .actions {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-body.mobile-mode .iconbtn {
   width: 100%;
   min-height: 48px;
   justify-content: center;
@@ -1442,7 +1438,6 @@ body.mobile-mode .iconbtn {
   text-align: center;
 }
 
-body.mobile-mode .iconbtn .material-symbols-rounded {
   flex: 0 0 auto;
   font-size: 19px;
 }
@@ -1464,11 +1459,6 @@ body.mobile-mode .iconbtn .material-symbols-rounded {
   color: var(--md-sys-color-primary);
 }
 
-body.mobile-mode #btnExport,
-body.mobile-mode #btnExportBIO,
-body.mobile-mode #btnClearLiveFeed,
-body.mobile-mode #btnLogout,
-body.mobile-mode #btnTopNotifications {
   width: 100%;
 }
 
@@ -1531,18 +1521,15 @@ body.mobile-mode #btnTopNotifications {
   border-color: rgba(236, 72, 153, .24);
 }
 
-body.mobile-mode #btnTopNotifications {
   justify-content: center;
   align-items: center;
 }
 
-body.mobile-mode #btnTopNotifRefresh {
   font-size: 14px !important;
   line-height: 1.02;
   padding: 5px 5px !important;
 }
 
-body.mobile-mode #btnTopNotifRefresh .material-symbols-rounded {
   font-size: 16px !important;
 }
 
@@ -2944,10 +2931,6 @@ tr.lote-row-bad.imminent {
   color: #93c5fd;
 }
 
-body.mobile-mode .tab .material-symbols-rounded,
-body.mobile-mode .iconbtn .material-symbols-rounded,
-body.mobile-mode .ghostBtn .material-symbols-rounded,
-body.mobile-mode .miniBtn .material-symbols-rounded {
   width: 20px;
   height: 20px;
   font-size: 15px;
@@ -3168,16 +3151,12 @@ body.mobile-mode .miniBtn .material-symbols-rounded {
 }
 
 /* ===== MOBILE EXTRA ===== */
-body.mobile-mode .mobileInfoCard {
   border-radius: 18px;
 }
 
-body.mobile-mode .notifItem {
   border-radius: 15px;
 }
 
-body.mobile-mode .notifActionRow .ghostBtn,
-body.mobile-mode .notifActionRow .miniBtn {
   width: 100%;
   justify-content: center;
 }
@@ -3233,14 +3212,9 @@ body.mobile-mode .notifActionRow .miniBtn {
   display: block !important;
 }
 
-body.mobile-mode .captureTableDesktop,
-body.mobile-mode .pinolTableDesktop,
-body.mobile-mode .usersTableDesktop {
   display: none !important;
 }
 
-body.mobile-mode .mobileCardsWrap,
-body.mobile-mode .captureCardsMobile {
   display: block !important;
 }
 
@@ -4221,8 +4195,6 @@ input[disabled] {
   contain: layout paint;
 }
 
-body.mobile-mode .topNotifDropdown,
-body.mobile-mode .topNotifCard {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
@@ -5986,11 +5958,9 @@ body.mobile-mode .topNotifCard {
   word-break: break-word;
 }
 
-body.mobile-mode .captureTableDesktop {
   display: none !important;
 }
 
-body.mobile-mode .captureCardsMobile {
   display: block !important;
 }
 
@@ -6169,343 +6139,10 @@ body {
 
 /* [CLEANUP] All legacy mobile-mode overrides removed to prevent class clashing with v2.0 */
 
-body.mobile-mode #panelAdminOpsTabs .tabs {
-  display: flex !important;
-  flex-wrap: nowrap;
-  gap: 8px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  scroll-snap-type: x proximity;
-  overscroll-behavior-x: contain;
-  overscroll-behavior-y: none;
-  touch-action: pan-x pinch-zoom;
-  scrollbar-width: none;
-  padding-bottom: 2px;
-  contain: layout paint;
-}
-
-@media (max-width: 420px) {
-
-  body.mobile-mode .tabs,
-  body.mobile-mode #panelCAP>.tabs,
-  body.mobile-mode #panelAdminOpsTabs .tabs {
-    gap: 8px;
-  }
-}
-
-@media (max-width: 420px) {
-  body.mobile-mode #panelCAP>.tabs {
-    grid-template-columns: 1fr;
-  }
-
-  body.mobile-mode #cardApp>.tabs #tabCAP {
-    min-width: 100%;
-  }
-}
-
-body.mobile-mode .tab {
-  min-width: 80px;
-  min-height: 48px;
-  /* Standard MD3 touch target */
-  padding: 12px 20px;
-  font-size: 14px;
-  font-weight: 700;
-  border-radius: 24px;
-  /* Fully rounded chips for mobile */
-  text-align: center;
-  white-space: nowrap;
-  scroll-snap-align: start;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--md-surface-container-high);
-  color: var(--md-sys-color-on-surface-variant);
-}
-
-body.mobile-mode .tab.active {
-  background: var(--md-sys-color-primary);
-  color: #ffffff;
-}
-
-body.mobile-mode #panelCAP>.tabs .tab {
-  flex: 1 1 auto;
-  width: 100%;
-  min-width: 0;
-  white-space: normal;
-  text-wrap: balance;
-  justify-content: center;
-}
-
-body.mobile-mode .tabs::-webkit-scrollbar,
-body.mobile-mode #panelCAP>.tabs::-webkit-scrollbar,
-body.mobile-mode #panelAdminOpsTabs .tabs::-webkit-scrollbar {
-  display: none;
-}
-
-body.mobile-mode input,
-body.mobile-mode select,
-body.mobile-mode textarea,
-body.mobile-mode button {
-  font-size: 16px !important;
-}
-
-body.mobile-mode input,
-body.mobile-mode select,
-body.mobile-mode textarea {
-  min-height: 30px;
-  border-radius: 12px;
-  -webkit-appearance: none;
-  appearance: none;
-  padding: 10px 14px;
-  touch-action: manipulation;
-}
-
-body.mobile-mode .btn,
-body.mobile-mode .ghostBtn,
-body.mobile-mode .iconbtn,
-body.mobile-mode .miniBtn {
-  min-height: 46px;
-}
-
-body.mobile-mode .btn {
-  min-height: 50px;
-  padding: 12px 16px;
-  font-size: 15px;
-  font-weight: 900;
-  line-height: 1.2;
-}
-
-body.mobile-mode #btnSaveSR,
-body.mobile-mode #btnSaveCONS,
-body.mobile-mode #btnSaveBIO,
-body.mobile-mode #btnSavePINOL {
-  margin-top: 14px;
-}
-
-body.mobile-mode .actions,
-body.mobile-mode .subActions {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-}
-
-body.mobile-mode .iconbtn,
-body.mobile-mode .ghostBtn,
-body.mobile-mode .miniBtn {
-  width: 100%;
-  justify-content: center;
-  align-items: center;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 800;
-  padding: 12px 14px;
-  gap: 10px;
-}
-
-body.mobile-mode .notifToolbarActionsRow,
-body.mobile-mode .topNotifToolbarActionsRow {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-}
-
-body.mobile-mode .notifToolbarActionsRow .ghostBtn,
-body.mobile-mode .topNotifToolbarActionsRow .ghostBtn,
-body.mobile-mode .notifToolbarActionsRow .miniBtn,
-body.mobile-mode .topNotifToolbarActionsRow .miniBtn {
-  width: 100%;
-  min-width: 0;
-  min-height: 40px;
-  padding: 8px 8px;
-  font-size: 12px !important;
-  line-height: 1.1;
-  border-radius: 12px;
-  justify-content: center;
-}
-
-body.mobile-mode .notifToolbarActionsRow .ghostBtn .material-symbols-rounded,
-body.mobile-mode .topNotifToolbarActionsRow .ghostBtn .material-symbols-rounded,
-body.mobile-mode .notifToolbarActionsRow .miniBtn .material-symbols-rounded,
-body.mobile-mode .topNotifToolbarActionsRow .miniBtn .material-symbols-rounded {
-  font-size: 15px !important;
-}
-
-body.mobile-mode .iconbtn .material-symbols-rounded,
-body.mobile-mode .ghostBtn .material-symbols-rounded,
-body.mobile-mode .miniBtn .material-symbols-rounded {
-  font-size: 18px;
-  flex: 0 0 auto;
-}
-
-body.mobile-mode #panelCAP>.sectionTitle,
-body.mobile-mode #panelCAP>.tabs,
-body.mobile-mode #panelCAP>.hr,
-body.mobile-mode #panelCAP>#formSR,
-body.mobile-mode #panelCAP>#formCONS,
-body.mobile-mode #panelCAP>#formBIO,
-body.mobile-mode #panelCAP>#formPINOL {
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-body.mobile-mode #panelCAP {
-  padding: 16px !important;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-body.mobile-mode #panelCAP>.hr {
-  margin: 10px 0;
-}
-
-body.mobile-mode #panelCAP .hint {
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-body.mobile-mode #formBIO .hint {
-  padding: 11px 12px;
-  font-size: 12px;
-  line-height: 1.42;
-}
-
-body.mobile-mode #panelCAP label {
-  font-size: 12px;
-  margin: 8px 0 5px;
-}
-
-body.mobile-mode #formSR,
-body.mobile-mode #formCONS,
-body.mobile-mode #formBIO,
-body.mobile-mode #formPINOL {
-  margin: 0 !important;
-}
-
-body.mobile-mode #formSR input[type="number"] {
-  text-align: -webkit center;
-}
-
-body.mobile-mode #formPINOL .row {
-  /* grid-template-columns: 1fr !important; -- Nuked to prevent dashboard squash */
-  gap: 10px;
-}
-
-body.mobile-mode .kpiRow {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-@media (max-width: 520px) {
-  body.mobile-mode .kpiRow {
-    grid-template-columns: 1fr;
-  }
-}
-
-body.mobile-mode .kpi {
-  min-width: 0;
-}
-
-body.mobile-mode .tableWrap {
-  max-width: 100%;
-  overflow-x: auto !important;
-  overflow-y: visible;
-  -webkit-overflow-scrolling: touch;
-  touch-action: auto;
-}
-
-/* ===== UX REAL PARA ZOOM / GESTOS ===== */
-html,
-body {
-  touch-action: auto;
-}
-
-body.mobile-mode,
-body.mobile-mode * {
-  -webkit-tap-highlight-color: transparent;
-}
-
-body.mobile-mode button,
-body.mobile-mode .btn,
-body.mobile-mode .ghostBtn,
-body.mobile-mode .iconbtn,
-body.mobile-mode .miniBtn,
-body.mobile-mode .tab {
-  -webkit-touch-callout: none;
-}
-
-body.mobile-mode .wrap,
-body.mobile-mode .grid,
-body.mobile-mode .rightLayout,
-body.mobile-mode .mainStack,
-body.mobile-mode .card,
-body.mobile-mode .sideCard,
-body.mobile-mode #panelADMIN {
-  width: 100%;
-  padding: 16px !important;
-}
-
-body.mobile-mode .top,
-body.mobile-mode .topInner,
-body.mobile-mode .brandCenter,
-body.mobile-mode .brandText,
-body.mobile-mode .statusbar,
-body.mobile-mode .logoBadge {
-  touch-action: auto;
-}
-
-body.mobile-mode input,
-body.mobile-mode select,
-body.mobile-mode textarea {
-  touch-action: auto;
-}
-
-body.mobile-mode button,
-body.mobile-mode .btn,
-body.mobile-mode .ghostBtn,
-body.mobile-mode .iconbtn,
-body.mobile-mode .miniBtn,
-body.mobile-mode .tab,
-body.mobile-mode .liveBadge,
-body.mobile-mode .softBadge {
-  touch-action: manipulation;
-  -webkit-user-select: none;
-  user-select: none;
-}
-
-body.mobile-mode .tableWrap,
-body.mobile-mode #formBIO .tableWrap {
-  touch-action: pan-x pan-y;
-  overscroll-behavior: contain;
-  contain: layout paint;
-}
-
-/* */
-body.mobile-mode #panelCAP table,
-body.mobile-mode #formSR table,
-body.mobile-mode #formBIO table,
-body.mobile-mode #panelCaptureSummary table,
-body.mobile-mode .capture-table {
-  display: block !important;
-  width: 100% !important;
-  border: none !important;
-  background: transparent !important;
-}
-
-body.mobile-mode #panelCAP thead,
-body.mobile-mode #formSR thead,
-body.mobile-mode #formBIO thead,
-body.mobile-mode #panelCaptureSummary thead {
   display: none !important;
 }
 
 /* */
-body.mobile-mode #panelCAP tr,
-body.mobile-mode #formSR tr,
-body.mobile-mode #formBIO tr,
-body.mobile-mode #panelCaptureSummary tr {
   display: flex !important;
   flex-direction: column !important;
   background: white !important;
@@ -6516,10 +6153,6 @@ body.mobile-mode #panelCaptureSummary tr {
   box-shadow: 0 2px 10px rgba(0,0,0,0.02) !important;
 }
 
-body.mobile-mode #panelCAP td,
-body.mobile-mode #formSR td,
-body.mobile-mode #formBIO td,
-body.mobile-mode #panelCaptureSummary td {
   display: flex !important;
   justify-content: space-between !important;
   align-items: center !important;
@@ -6531,26 +6164,11 @@ body.mobile-mode #panelCaptureSummary td {
 }
 
 /* Pseudo-labels para el patron */
-body.mobile-mode #formSR td:nth-child(2)::before { content: "Lote"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
-body.mobile-mode #formSR td:nth-child(3)::before { content: "Caducidad"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
-body.mobile-mode #formSR td:nth-child(4)::before { content: "Recepcion"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
-body.mobile-mode #formSR td:nth-child(5)::before { content: "Cantidad"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
-body.mobile-mode #formSR td:nth-child(6)::before { content: "Accion"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
 
-body.mobile-mode #formBIO td:nth-child(2)::before { content: "Existencia"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
-body.mobile-mode #formBIO td:nth-child(3)::before { content: "Pedido"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
-body.mobile-mode #formBIO td:nth-child(4)::before { content: "Validacion"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
-body.mobile-mode #formBIO td:nth-child(5)::before { content: "Promedio"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
-body.mobile-mode #formBIO td:nth-child(6)::before { content: "Max (dosis)"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
-body.mobile-mode #formBIO td:nth-child(7)::before { content: "Min (dosis)"; font-weight: 700; color: #64748b; font-size: 11px; text-transform: uppercase; justify-self: start; }
 
-body.mobile-mode #formSR td input,
-body.mobile-mode #formBIO td input {
   justify-self: end;
 }
 
-body.mobile-mode #formSR td:first-child,
-body.mobile-mode #formBIO td:first-child {
   background: #f8fafc !important;
   margin: -10px -10px 8px -10px !important;
   padding: 10px !important;
@@ -6562,35 +6180,27 @@ body.mobile-mode #formBIO td:first-child {
   justify-content: center !important;
 }
 
-body.mobile-mode #formSR td:first-child::before,
-body.mobile-mode #formBIO td:first-child::before {
   display: none !important;
 }
 
-body.mobile-mode #formSR .bioInput,
-body.mobile-mode #formBIO .bioInput {
   max-width: 110px !important;
   height: 38px !important;
   font-size: 14px !important;
 }
 
 /* Condensaci*/
-body.mobile-mode .bg-slate-50.border-2.rounded-\[24px\] {
   padding: 10px 14px !important;
   border-radius: 16px !important;
   gap: 10px !important;
   border-width: 1px !important;
 }
 
-body.mobile-mode .bg-slate-50 .text-\[19px\] {
   font-size: 15px !important;
 }
 
-body.mobile-mode .bg-slate-50 .text-\[10px\] {
   font-size: 9px !important;
 }
 
-body.mobile-mode #formBIO td {
   font-size: 11px !important;
   padding: 10px 6px !important;
   white-space: normal !important;
@@ -6603,14 +6213,9 @@ body.mobile-mode #formBIO td {
   display: block !important;
 }
 
-body.mobile-mode .captureTableDesktop,
-body.mobile-mode .pinolTableDesktop,
-body.mobile-mode .usersTableDesktop {
   display: none !important;
 }
 
-body.mobile-mode .captureCardsMobile,
-body.mobile-mode .mobileCardsWrap {
   display: block !important;
 }
 
@@ -6626,32 +6231,25 @@ body.mobile-mode .mobileCardsWrap {
   justify-content: center;
 }
 
-body.mobile-mode .captureMobileField,
-body.mobile-mode .mobileInfoField {
   padding: 10px 12px;
 }
 
-body.mobile-mode .loader {
   width: min(94vw, 420px);
   padding: 24px 18px 20px;
   border-radius: 26px;
 }
 
-body.mobile-mode .loaderTitle {
   font-size: 20px;
 }
 
-body.mobile-mode .loaderText {
   font-size: 15px;
 }
 
-body.mobile-mode .loaderCircle {
   width: 48px;
   height: 48px;
   margin-bottom: 16px;
 }
 
-body.mobile-mode .toast {
   top: max(12px, env(safe-area-inset-top));
   right: 12px;
   left: 12px;
@@ -6664,12 +6262,10 @@ body.mobile-mode .toast {
   gap: 12px;
 }
 
-body.mobile-mode .toast .msg {
   font-size: 14.5px;
   color: #ffffff !important;
 }
 
-body.mobile-mode .liveFeed {
   right: 10px;
   left: 10px;
   width: auto;
@@ -6677,52 +6273,31 @@ body.mobile-mode .liveFeed {
   top: auto;
 }
 
-body.mobile-mode .liveFeedItem {
   border-radius: 14px;
   padding: 10px 12px;
 }
 
-body.mobile-mode .modalGlass,
-body.mobile-mode .resetWindow {
   width: 100%;
   border-radius: 18px;
 }
 
-body.mobile-mode .modalHead,
-body.mobile-mode .resetWindowHead {
   padding: 16px 14px 12px;
 }
 
-body.mobile-mode .modalBody,
-body.mobile-mode .resetWindowBody {
   padding: 14px;
 }
 
-body.mobile-mode .modalFooter {
   display: grid;
   grid-template-columns: 1fr;
 }
 
-body.mobile-mode .modalFooter .btn,
-body.mobile-mode .modalFooter .ghostBtn {
   width: 100%;
   justify-content: center;
 }
 
-body.mobile-mode .badge:hover,
-body.mobile-mode .miniBtn:hover,
-body.mobile-mode .ghostBtn:hover,
-body.mobile-mode .iconbtn:hover,
-body.mobile-mode .btn:hover {
   transform: none !important;
 }
 
-body.mobile-mode .badge:active,
-body.mobile-mode .miniBtn:active,
-body.mobile-mode .ghostBtn:active,
-body.mobile-mode .iconbtn:active,
-body.mobile-mode .btn:active,
-body.mobile-mode .tab:active {
   transform: scale(.985);
 }
 
@@ -8257,191 +7832,6 @@ input, textarea, select, [contenteditable] {
   }
 }
 
-body.mobile-mode #cardSide {
-  display: none !important; /* Hide bulky action bar on mobile */
-}
-
-body.mobile-mode .wrap {
-  padding-top: 100px !important;
-  padding-bottom: 120px !important;
-}
-
-/* Removed legacy mobile header background */
-
-body.mobile-mode .wrap {
-  padding-top: 120px !important;
-  padding-bottom: 160px !important;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-body.mobile-mode #welcome {
-  min-width: 0 !important;
-  flex: 1 1 auto !important;
-  font-size: clamp(1.2rem, 2.5vw, 1.8rem) !important;
-  line-height: 1.2 !important;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-right: 16px;
-}
-
-#cardApp {
-  padding: 32px !important;
-  border-radius: 32px !important;
-  margin-top: 24px !important;
-}
-
-
-
-
-
-
-body.mobile-mode #welcome {
-  font-size: 1rem !important;
-  font-weight: 900 !important;
-  white-space: normal !important;
-  line-height: 1.3 !important;
-  display: block !important;
-  margin-bottom: 8px !important;
-}
-
-/* */
-/* Removed structural mobile header overrides */
-
-body.mobile-mode #mainHeaderLeft {
-  width: 100% !important;
-  justify-content: center !important;
-  gap: 12px !important;
-  padding: 0 !important;
-  background: transparent !important;
-  border: none !important;
-}
-
-body.mobile-mode #logoA, 
-body.mobile-mode #logoB {
-  height: 32px !important;
-}
-
-/* Badges adaptativas fluidas (Imagen 1) */
-body.mobile-mode #bFecha, 
-body.mobile-mode #bHora,
-body.mobile-mode #weatherBadge {
-  flex: 1 1 0% !important;
-  min-width: 0 !important;
-  padding: 6px 8px !important;
-  background: white !important;
-  border: 1px solid rgba(0,0,0,0.06) !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.03) !important;
-  justify-content: center !important;
-  border-radius: 12px !important;
-}
-
-body.mobile-mode #bFecha span, 
-body.mobile-mode #bHora span {
-  font-size: 9.5px !important;
-  font-weight: 900 !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-}
-
-/* Ocultar prefijos est*/
-body.mobile-mode #bFecha span:not(.material-symbols-rounded),
-body.mobile-mode #bHora span:not(.material-symbols-rounded) {
-  display: inline-block !important;
-}
-
-body.mobile-mode #hdrFecha::before,
-body.mobile-mode #hdrHora::before {
-  content: "" !important; /* Eliminamos el texto redundante de Fecha: / Hora: */
-}
-
-body.mobile-mode #bFecha .material-symbols-rounded, 
-body.mobile-mode #bHora .material-symbols-rounded {
-  font-size: 15px !important;
-  margin-right: -2px !important;
-}
-
-/* /DESKTOP) */
-/* Removed legacy desktop header styles */
-
-#logoA, #logoB {
-  height: clamp(30px, 4.5vw, 44px) !important;
-  transition: height 0.3s ease;
-}
-
-/* Ocultar etiquetas Fecha/Hora en pantallas medianas para evitar traslape */
-@media (max-width: 1280px) {
-  #hdrFecha::before,
-  #hdrHora::before {
-    display: none !important;
-  }
-  
-  #bFecha, #bHora, #weatherBadge {
-    padding: 6px 12px !important;
-    gap: 6px !important;
-  }
-}
-
-@media (max-width: 1024px) {
-  #mainHeader > div {
-    gap: 12px !important;
-  }
-  #bFecha span, #bHora span {
-    font-size: 10px !important;
-  }
-}
-
-#hdrFecha::before { content: "Fecha: "; }
-#hdrHora::before { content: "Hora: "; }
-
-/* --- 1. MOBILE UX OPTIMIZATIONS (Balanced Layout) --- */
-@media (max-width: 768px) {
-  body.mobile-mode #panelCAP td,
-  body.mobile-mode #formSR td,
-  body.mobile-mode #formBIO td,
-  body.mobile-mode #panelCaptureSummary td {
-    display: flex !important;
-    justify-content: space-between !important;
-    gap: 12px !important;
-    padding: 12px 0 !important;
-  }
-
-  body.mobile-mode #formSR td::before,
-  body.mobile-mode #formBIO td::before {
-    flex: 1 !important;
-    text-align: left !important;
-    white-space: nowrap !important;
-    font-size: 11px !important;
-  }
-
-  body.mobile-mode #formSR .bioInput,
-  body.mobile-mode #formBIO .bioInput {
-    flex: 0 0 120px !important;
-    height: 38px !important;
-    font-size: 14px !important;
-  }
-
-  body.mobile-mode #bCumplimiento {
-    justify-content: center !important;
-    flex-direction: row !important;
-    gap: 12px !important;
-    padding: 16px !important;
-    min-height: 80px !important;
-  }
-
-  body.mobile-mode .wrap {
-    padding: 120px 12px 180px !important;
-  }
-
-  body.mobile-mode .tab-btn {
-    flex: 1 1 calc(50% - 8px) !important;
-    height: 48px !important;
-    font-size: 12px !important;
-    justify-content: center !important;
-  }
-}
 
 /* --- 2. PROFILE DROPDOWN ANIMATIONS --- */
 @keyframes dropdownIn {
@@ -8676,770 +8066,474 @@ body.mobile-mode #bHora .material-symbols-rounded {
 }
 
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   📱 MOBILE APP ARCHITECTURE v2.0 — PRODUCTION GRADE
-   ═══════════════════════════════════════════════════════════════════════════
-   This block provides a comprehensive mobile experience.
-   All rules are scoped under body.mobile-mode (set by JS via applyAdaptiveModes).
-   Desktop design is NEVER affected by these rules.
-   ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ─── 1. MODERN "INSTA-STYLE" MOBILE HEADER ──────────────────────────────── */
-body.mobile-mode #mainHeader {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  width: 100% !important;
-  height: 64px !important;
-  background: rgba(255, 255, 255, 0.8) !important;
-  backdrop-filter: blur(20px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
-  display: flex !important;
-  align-items: center !important;
-  padding: 0 16px !important;
-  z-index: 2000 !important;
-  box-shadow: none !important;
-}
-
-body.mobile-mode #mainHeader > div {
-  width: 100% !important;
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  padding: 0 !important;
-  gap: 0 !important;
-}
-
-/* Branding Estilo Insta */
-body.mobile-mode #logoCluster {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-start !important;
-  gap: 0 !important;
-  background: transparent !important;
-  border: none !important;
-  padding: 0 !important;
-  box-shadow: none !important;
-}
-
-body.mobile-mode #logoCluster::before,
-body.mobile-mode #logoCluster::after {
-  display: none !important;
-}
-
-body.mobile-mode .brandText h1 {
-  font-size: 22px !important;
-  font-weight: 900 !important;
-  letter-spacing: -1px !important;
-  color: #0f172a !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 4px !important;
-}
-
-body.mobile-mode .brandText h1 span:first-child {
-  color: var(--md-sys-color-primary) !important;
-}
-
-body.mobile-mode .brandText p {
-  font-size: 8px !important;
-  font-weight: 800 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 1.5px !important;
-  color: #64748b !important;
-  margin-top: -2px !important;
-}
-
-/* Actions Estilo App Moderna */
-body.mobile-mode #headerActions {
-  display: flex !important;
-  align-items: center !important;
-  gap: 4px !important;
-}
-
-body.mobile-mode .header-action-btn,
-body.mobile-mode #btnProfileToggle {
-  width: 42px !important;
-  height: 42px !important;
-  background: transparent !important;
-  border: none !important;
-  color: #1e293b !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 0 !important;
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-  position: relative !important;
-  box-shadow: none !important;
-}
-
-body.mobile-mode .header-action-btn:active {
-  transform: scale(0.9) !important;
-  opacity: 0.7 !important;
-}
-
-body.mobile-mode .header-action-btn .material-symbols-rounded {
-  font-size: 26px !important;
-  font-variation-settings: 'FILL' 0, 'wght' 400 !important;
-}
-
-/* Notificacin Estilo Dot */
-body.mobile-mode #btnTopNotifications {
-  position: relative !important;
-}
-
-body.mobile-mode #btnTopNotifications::after {
-  content: "" !important;
-  position: absolute !important;
-  top: 10px !important;
-  right: 10px !important;
-  width: 8px !important;
-  height: 8px !important;
-  background: #ef4444 !important;
-  border: 2px solid #ffffff !important;
-  border-radius: 50% !important;
-  display: block !important;
-}
-
-/* Profile Image Circle en Header */
-body.mobile-mode #btnProfileToggle > div:first-child {
-  width: 30px !important;
-  height: 30px !important;
-  border-radius: 50% !important;
-  border: 2px solid var(--md-sys-color-primary) !important;
+/* ==========================================================================
+   📱 MOBILE SPA ARCHITECTURE v2.0 (MODERN INJECTED)
+   ========================================================================== */
+body.mobile-spa-active {
+  background: #f8fafc !important;
+  font-family: 'Poppins', sans-serif;
   overflow: hidden !important;
-}
-
-/* Ocultar elementos innecesarios */
-body.mobile-mode #logoA,
-body.mobile-mode #logoB,
-body.mobile-mode #logoCluster .GlassContent > div[class*="w-[1px]"],
-body.mobile-mode .header-action-btn span:not(.material-symbols-rounded) {
-  display: none !important;
-}
-
-/* ─── 2. CONTENT LAYOUT ──────────────────────────────────────────────────── */
-/* Proper spacing: header above, bottom nav below */
-body.mobile-mode .wrap {
-  width: 100% !important;
-  padding-top: 72px !important;
-  padding-bottom: 100px !important;
-  padding-left: 6px !important;
-  padding-right: 6px !important;
-}
-
-/* Cards: full width, compact padding */
-body.mobile-mode .card,
-body.mobile-mode .panel {
-  border-radius: 16px !important;
-  padding: 16px !important;
-  margin-bottom: 12px !important;
-}
-
-body.mobile-mode .grid {
-  padding: 0 8px !important;
-  gap: 12px !important;
-}
-
-/* Right layout (sidebar + main) → stack vertically */
-body.mobile-mode .rightLayout {
-  grid-template-columns: 1fr !important;
-  gap: 12px !important;
-}
-
-/* Side fact panel → full width */
-body.mobile-mode .sideFactWrap {
-  width: 100% !important;
-  min-width: 0 !important;
-  padding: 12px !important;
-}
-
-/* ─── 3. BOTTOM-SHEET MODALS ─────────────────────────────────────────────── */
-/* Transform desktop centered modals into mobile bottom sheets */
-body.mobile-mode .overlay,
-body.mobile-mode .modalOverlay {
-  align-items: flex-end !important;
-  padding: 0 !important;
-}
-
-body.mobile-mode .overlay .modalGlass,
-body.mobile-mode .modalOverlay .modalGlass {
-  width: 100% !important;
-  max-width: 100% !important;
-  max-height: 92vh !important;
-  margin: 0 !important;
-  border-radius: 24px 24px 0 0 !important;
-  animation: mobileSheetUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) !important;
-}
-
-/* Bottom sheet slide-up animation */
-@keyframes mobileSheetUp {
-  from {
-    transform: translateY(100%);
-    opacity: 0.5;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-/* Modal body scroll area */
-body.mobile-mode .modalBody {
-  padding: 16px !important;
-  max-height: 70vh !important;
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch !important;
-}
-
-/* Modal footer: full-width stacked buttons */
-body.mobile-mode .modalFooter {
+  width: 100vw !important;
+  height: 100vh !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 8px !important;
-  padding: 12px 16px !important;
-  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-body.mobile-mode .modalFooter button,
-body.mobile-mode .modalFooter .btn,
-body.mobile-mode .modalFooter .ghostBtn {
-  width: 100% !important;
-  min-height: 48px !important;
-  justify-content: center !important;
+.mobile-spa-container {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 99999;
+  background: radial-gradient(circle at top right, #f1f5f9, #e2e8f0);
 }
 
-/* Specific overlays: Export */
-body.mobile-mode #exportOverlay .modalGlass {
-  max-width: 100% !important;
-  border-radius: 24px 24px 0 0 !important;
+.mobile-view {
+  display: none;
+  flex: 1;
+  width: 100%;
+  padding: 24px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-body.mobile-mode #exportOverlay .modalHead {
-  padding: 18px 16px !important;
+.mobile-view.active {
+  display: flex;
+  flex-direction: column;
 }
 
-body.mobile-mode #exportOverlay .modalBody {
-  padding: 16px !important;
+/* Aura Background Effects */
+.AuraContainer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
 }
 
-body.mobile-mode .exportMuniList {
-  grid-template-columns: 1fr !important;
-  max-height: 40vh !important;
-  padding: 10px !important;
+.AuraBlob {
+  position: absolute;
+  width: 350px;
+  height: 350px;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.35;
+  animation: auraFloat 25s infinite alternate ease-in-out;
 }
 
-/* Upload overlay */
-body.mobile-mode #uploadFilesOverlay .modalGlass {
-  max-width: 100% !important;
-  border-radius: 24px 24px 0 0 !important;
+.Blob-1 { background: var(--md-sys-color-primary); top: -120px; right: -120px; }
+.Blob-2 { background: var(--md-sys-color-secondary); bottom: -120px; left: -120px; animation-delay: -7s; }
+
+@keyframes auraFloat {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  100% { transform: translate(60px, 80px) scale(1.3) rotate(15deg); }
 }
 
-/* Password overlay */
-body.mobile-mode #passwordOverlay .modalGlass,
-body.mobile-mode #forgotOverlay .modalGlass {
-  max-width: 100% !important;
-  border-radius: 24px 24px 0 0 !important;
+/* Premium Login Card */
+.m-login-card {
+  margin: auto;
+  width: 100%;
+  max-width: 420px;
+  animation: mSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Profile dropdown → full-width bottom sheet */
-body.mobile-mode #profileDropdown {
-  position: fixed !important;
-  top: auto !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  border-radius: 24px 24px 0 0 !important;
-  max-height: 80vh !important;
-  z-index: 9998 !important;
-  animation: mobileSheetUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) !important;
+@keyframes mSlideUp {
+  from { opacity: 0; transform: translateY(60px) scale(0.92); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Top notification dropdown → full-width bottom sheet */
-body.mobile-mode .topNotifDropdown,
-body.mobile-mode #topNotifDropdown {
-  position: fixed !important;
-  top: auto !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  border-radius: 24px 24px 0 0 !important;
-  max-height: 85vh !important;
-  z-index: 9997 !important;
-  animation: mobileSheetUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) !important;
-  overflow-y: auto !important;
-  -webkit-overflow-scrolling: touch !important;
-}
-
-/* File explorer panel → full-width sheet */
-body.mobile-mode .topExplorerDropdown,
-body.mobile-mode #topExplorerDropdown {
-  position: fixed !important;
-  top: auto !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  border-radius: 24px 24px 0 0 !important;
-  max-height: 85vh !important;
-  z-index: 9997 !important;
-  animation: mobileSheetUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) !important;
-}
-
-/* ─── 4. TOUCH-FRIENDLY FORMS & INPUTS ───────────────────────────────────── */
-body.mobile-mode input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]),
-body.mobile-mode select,
-body.mobile-mode textarea {
-  min-height: 48px !important;
-  font-size: 16px !important; /* Prevents iOS zoom on focus */
-  border-radius: 12px !important;
-}
-
-body.mobile-mode button {
-  min-height: 48px !important;
-  font-size: 14px !important;
-  padding: 12px 20px !important;
-}
-
-body.mobile-mode .iconbtn,
-body.mobile-mode .md-btn-icon {
-  min-height: 44px !important;
-  min-width: 44px !important;
-  padding: 8px !important;
-}
-
-/* Bio input fields: larger touch targets */
-body.mobile-mode .bioInput {
-  min-height: 44px !important;
-  font-size: 16px !important;
-  text-align: center !important;
-}
-
-/* ─── 5. TABS & NAVIGATION ───────────────────────────────────────────────── */
-/* Top operations tabs: horizontal scrollable */
-body.mobile-mode .tabs,
-body.mobile-mode #panelAdminOpsTabs {
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch !important;
-  scrollbar-width: none !important;
-  flex-wrap: nowrap !important;
-  white-space: nowrap !important;
-  gap: 4px !important;
-  padding: 0 4px !important;
-}
-
-body.mobile-mode .tabs::-webkit-scrollbar,
-body.mobile-mode #panelAdminOpsTabs::-webkit-scrollbar {
-  display: none !important;
-}
-
-body.mobile-mode .tab,
-body.mobile-mode [id^="tabOPS_"],
-body.mobile-mode [id^="tabCAP"],
-body.mobile-mode [id^="tabNOTIFS"],
-body.mobile-mode [id^="tabADMIN"],
-body.mobile-mode [id^="tabLOTES"] {
-  flex-shrink: 0 !important;
-  padding: 10px 14px !important;
-  font-size: 12px !important;
-  min-height: 40px !important;
-  white-space: nowrap !important;
-}
-
-/* ─── 6. TABLES → RESPONSIVE CARDS ───────────────────────────────────────── */
-body.mobile-mode table {
-  display: block !important;
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch !important;
-  font-size: 12px !important;
-}
-
-body.mobile-mode table th,
-body.mobile-mode table td {
-  padding: 8px 6px !important;
-  white-space: nowrap !important;
-  font-size: 11px !important;
-}
-
-/* Mobile info cards (already exist) */
-body.mobile-mode .mobileInfoCard {
-  border-radius: 16px !important;
-  padding: 14px !important;
-  margin-bottom: 8px !important;
-}
-
-body.mobile-mode .mobileInfoFields {
-  gap: 6px !important;
-}
-
-body.mobile-mode .mobileInfoField {
-  padding: 8px 10px !important;
-}
-
-/* ─── 7. BOTTOM NAV POLISH ───────────────────────────────────────────────── */
-body.mobile-mode #mobileBottomNav {
-  position: fixed !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  height: auto !important;
-  min-height: 64px !important;
-  z-index: 10000 !important;
-  border-radius: 20px 20px 0 0 !important;
-  background: rgba(255, 255, 255, 0.97) !important;
-  border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
-  border-left: none !important;
-  border-right: none !important;
-  border-bottom: none !important;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08) !important;
-  padding: 8px 12px !important;
-  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+/* Modern Input Groups (Liquid Glass Ready) */
+.m-input-fix {
+  background: rgba(255, 255, 255, 0.45) !important;
+  backdrop-filter: blur(12px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  border-radius: 22px !important;
+  padding: 4px 18px !important;
   display: flex !important;
   align-items: center !important;
-  justify-content: space-around !important;
-  gap: 0 !important;
+  gap: 14px !important;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    inset 0 2px 4px rgba(255, 255, 255, 0.5) !important;
+  transition: all 0.3s ease;
 }
 
-body.mobile-mode #mobileBottomNav .nav-item,
-body.mobile-mode #mobileBottomNav > button {
-  flex: 1 1 0% !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 2px !important;
-  min-height: 52px !important;
-  padding: 4px 0 !important;
-  border-radius: 12px !important;
+.m-input-fix:focus-within {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-color: var(--md-sys-color-primary) !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05) !important;
+}
+
+.m-input-fix input {
   background: transparent !important;
   border: none !important;
-  cursor: pointer !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  padding: 16px 0 !important;
+  width: 100% !important;
+  outline: none !important;
 }
 
-body.mobile-mode #mobileBottomNav .nav-item .icon-box,
-body.mobile-mode #mobileBottomNav > button > div:first-child {
-  width: 36px !important;
-  height: 36px !important;
-  border-radius: 10px !important;
+.m-input-fix .input-icon {
+  color: var(--md-sys-color-primary) !important;
+  opacity: 0.6;
+  font-size: 24px;
+}
+
+/* Dashboard Action Cards */
+.m-action-row {
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease !important;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.m-action-row:active {
+  transform: scale(0.96) !important;
+  opacity: 0.8 !important;
+}
+
+.m-action-row .GlassContent {
+  background: rgba(255, 255, 255, 0.25) !important;
+  backdrop-filter: blur(8px) saturate(150%) !important;
+}
+
+/* UI Transitions */
+.mobile-view:not(.active) {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.98);
+  position: absolute;
+    background: #fffbeb !important; /* Amber 50 */
+    border-color: #fde68a !important; /* Amber 200 */
+    color: #92400e !important; /* Amber 900 */
+}
+
+.IntegratedHint.tone-bad {
+    background: #fef2f2 !important; /* Red 50 */
+    border-color: #fecaca !important; /* Red 200 */
+    color: #991b1b !important; /* Red 900 */
+}
+
+.IntegratedHint.tone-ok {
+    background: #f0fdf4 !important; /* Green 50 */
+    border-color: #bbf7d0 !important; /* Green 200 */
+    color: #166534 !important; /* Green 900 */
+}
+
+.hint-icon-bg {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(0, 0, 0, 0.04) !important;
+    flex-shrink: 0 !important;
+}
+
+.IntegratedHint.tone-warn .hint-icon-bg { background: rgba(245, 158, 11, 0.1) !important; }
+.IntegratedHint.tone-bad .hint-icon-bg { background: rgba(239, 68, 68, 0.1) !important; }
+.IntegratedHint.tone-ok .hint-icon-bg { background: rgba(16, 185, 129, 0.1) !important; }
+
+.hint-eyebrow {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    margin-bottom: 2px !important;
+    display: block !important;
+    opacity: 0.8;
+}
+
+.hint-message {
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 1.4 !important;
+}
+
+.hint-message b {
+    font-weight: 700 !important;
+}
+
+
+
+/* ==========================================================================
+   📱 MOBILE SPA ARCHITECTURE v2.0 (MODERN INJECTED)
+   ========================================================================== */
+body.mobile-spa-active {
+  background: #f8fafc !important;
+  font-family: 'Poppins', sans-serif;
+  overflow: hidden !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-spa-container {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 99999;
+  background: radial-gradient(circle at top right, #f1f5f9, #e2e8f0);
+}
+
+.mobile-view {
+  display: none;
+  flex: 1;
+  width: 100%;
+  padding: 24px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-view.active {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Aura Background Effects */
+.AuraContainer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.AuraBlob {
+  position: absolute;
+  width: 350px;
+  height: 350px;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.35;
+  animation: auraFloat 25s infinite alternate ease-in-out;
+}
+
+.Blob-1 { background: var(--md-sys-color-primary); top: -120px; right: -120px; }
+.Blob-2 { background: var(--md-sys-color-secondary); bottom: -120px; left: -120px; animation-delay: -7s; }
+
+@keyframes auraFloat {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  100% { transform: translate(60px, 80px) scale(1.3) rotate(15deg); }
+}
+
+/* Premium Login Card */
+.m-login-card {
+  margin: auto;
+  width: 100%;
+  max-width: 420px;
+  animation: mSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes mSlideUp {
+  from { opacity: 0; transform: translateY(60px) scale(0.92); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Modern Input Groups (Liquid Glass Ready) */
+.m-input-fix {
+  background: rgba(255, 255, 255, 0.45) !important;
+  backdrop-filter: blur(12px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  border-radius: 22px !important;
+  padding: 4px 18px !important;
   display: flex !important;
   align-items: center !important;
-  justify-content: center !important;
-  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  gap: 14px !important;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.05),
+    inset 0 2px 4px rgba(255, 255, 255, 0.5) !important;
+  transition: all 0.3s ease;
 }
 
-body.mobile-mode #mobileBottomNav .nav-item .label,
-body.mobile-mode #mobileBottomNav > button > span:last-child {
-  font-size: 10px !important;
+.m-input-fix:focus-within {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-color: var(--md-sys-color-primary) !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05) !important;
+}
+
+.m-input-fix input {
+  background: transparent !important;
+  border: none !important;
+  font-size: 16px !important;
   font-weight: 700 !important;
-  letter-spacing: 0.02em !important;
-  opacity: 0.5 !important;
-  transition: all 0.3s ease !important;
+  color: #0f172a !important;
+  padding: 16px 0 !important;
+  width: 100% !important;
+  outline: none !important;
 }
 
-body.mobile-mode #mobileBottomNav .nav-item.active .icon-box {
-  background: var(--md-sys-color-primary) !important;
-  color: white !important;
-  transform: scale(1.05) !important;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25) !important;
-}
-
-body.mobile-mode #mobileBottomNav .nav-item.active .label {
-  opacity: 1 !important;
+.m-input-fix .input-icon {
   color: var(--md-sys-color-primary) !important;
-  font-weight: 900 !important;
+  opacity: 0.6;
+  font-size: 24px;
 }
 
-/* ─── 8. NOTIFICATION CARDS MOBILE ───────────────────────────────────────── */
-body.mobile-mode .notifCard {
-  border-radius: 14px !important;
-  padding: 14px !important;
-  margin-bottom: 8px !important;
+/* Dashboard Action Cards */
+.m-action-row {
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s ease !important;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
-body.mobile-mode .notifCardHead {
-  flex-direction: column !important;
-  gap: 6px !important;
+.m-action-row:active {
+  transform: scale(0.96) !important;
+  opacity: 0.8 !important;
 }
 
-body.mobile-mode .notifBody {
-  font-size: 13px !important;
-  line-height: 1.5 !important;
+.m-action-row .GlassContent {
+  background: rgba(255, 255, 255, 0.25) !important;
+  backdrop-filter: blur(8px) saturate(150%) !important;
 }
 
-body.mobile-mode .notifActions {
-  flex-wrap: wrap !important;
-  gap: 6px !important;
+/* UI Transitions */
+.mobile-view:not(.active) {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.98);
+  position: absolute;
 }
 
-/* ─── 9. LOGIN CARD MOBILE ───────────────────────────────────────────────── */
-body.mobile-mode .loginWrap {
-  padding: 20px 12px !important;
-  min-height: 100vh !important;
-  align-items: flex-start !important;
-  padding-top: 60px !important;
+/* ??? PERMISSION ENGINE FALLBACK (Highest Specificity) */
+/* 📱 Mobile Form Enhancements */
+.mobile-spa-active .m-capture-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
-body.mobile-mode #cardLogin {
-  max-width: 100% !important;
-  border-radius: 24px !important;
-  padding: 32px 20px !important;
+.mobile-spa-active .m-capture-card {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  cursor: pointer;
 }
 
-/* ─── 10. SAFE AREAS (iPhone Notch, Android Gesture Bar) ─────────────────── */
-@supports (padding-top: env(safe-area-inset-top)) {
-  body.mobile-mode {
-    padding-top: env(safe-area-inset-top) !important;
-  }
-
-  body.mobile-mode #mainHeader {
-    padding-top: env(safe-area-inset-top) !important;
-  }
-
-  body.mobile-mode .wrap {
-    padding-top: calc(72px + env(safe-area-inset-top)) !important;
-    padding-bottom: calc(100px + env(safe-area-inset-bottom)) !important;
-  }
+.mobile-spa-active .m-capture-card.active {
+  background: var(--md-sys-color-primary);
+  color: white;
+  box-shadow: 0 8px 20px rgba(0, 51, 102, 0.2);
 }
 
-/* ─── 11. SCROLLBAR HIDE (Cleaner mobile look) ───────────────────────────── */
-body.mobile-mode ::-webkit-scrollbar {
-  width: 0px !important;
-  height: 0px !important;
+.mobile-spa-active .m-capture-card .icon {
+  font-size: 28px;
+}
+
+.mobile-spa-active .m-capture-card .label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Hardening the injected desktop forms for mobile */
+.mobile-spa-active #panelCAP, 
+.mobile-spa-active #panelArchivos {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.mobile-spa-active #desktopCaptureTitle,
+.mobile-spa-active #desktopCaptureTabs {
   display: none !important;
 }
 
-body.mobile-mode * {
-  scrollbar-width: none !important;
+.mobile-spa-active .modern-form-container {
+  background: white !important;
+  border-radius: 28px !important;
+  padding: 20px !important;
+  margin-bottom: 20px !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important;
 }
 
-/* ─── 12. PINOL ENTREGA MODAL MOBILE ─────────────────────────────────────── */
-body.mobile-mode #pinolEntregaModal .modalGlass {
-  max-width: 100% !important;
-  border-radius: 24px 24px 0 0 !important;
-}
-
-/* ─── 13. LIVE VIEW OVERLAY MOBILE ───────────────────────────────────────── */
-body.mobile-mode #liveViewOverlay .modalGlass {
-  max-width: 100% !important;
-  max-height: 95vh !important;
-  border-radius: 24px 24px 0 0 !important;
-}
-
-/* ─── 14. SECTION TITLES COMPACT ─────────────────────────────────────────── */
-body.mobile-mode .title h2 {
+.mobile-spa-active input[type="number"],
+.mobile-spa-active input[type="text"],
+.mobile-spa-active select {
+  height: 54px !important;
+  border-radius: 16px !important;
   font-size: 16px !important;
 }
 
-body.mobile-mode .title {
-  flex-direction: column !important;
-  gap: 6px !important;
+.mobile-spa-active .btn-save-premium {
+  height: 60px !important;
+  border-radius: 20px !important;
+  font-size: 16px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  width: 100% !important;
 }
 
-/* ─── 15. CHART CONTAINERS RESPONSIVE ────────────────────────────────────── */
-body.mobile-mode canvas {
-  max-width: 100% !important;
-  height: auto !important;
+/* 🧭 Bottom Nav Styling */
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-body.mobile-mode .chartWrap {
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch !important;
+.m-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  color: rgba(0, 51, 102, 0.4);
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 8px 16px;
+  cursor: pointer;
 }
 
-/* ─── 16. TOAST POSITIONING MOBILE ───────────────────────────────────────── */
-body.mobile-mode .toast-stack-container {
-  top: auto !important;
-  bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
-  left: 12px !important;
-  right: 12px !important;
-  max-width: 100% !important;
+.m-nav-item span.material-symbols-rounded {
+  font-size: 26px;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  transition: all 0.3s ease;
 }
 
-/* ─── 17. PREVENT HORIZONTAL OVERFLOW ────────────────────────────────────── */
-body.mobile-mode,
-body.mobile-mode #appWrap,
-body.mobile-mode .mainStack {
-  overflow-x: hidden !important;
-  max-width: 100vw !important;
+.m-nav-item.active {
+  color: #003366;
 }
 
-/* ─── 18. BIO PROGRAM BOX MOBILE ─────────────────────────────────────────── */
-body.mobile-mode .bioProgramBox {
-  padding: 12px !important;
-  border-radius: 14px !important;
+.m-nav-item.active span.material-symbols-rounded {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  transform: translateY(-4px);
 }
 
-body.mobile-mode .bioGrid {
-  gap: 6px !important;
+.m-nav-item.text-bad {
+  color: rgba(220, 38, 38, 0.5);
 }
 
-/* ─── 19. ADMIN PANEL MOBILE ─────────────────────────────────────────────── */
-body.mobile-mode .adminSection {
-  padding: 14px !important;
-}
-
-body.mobile-mode .adminGrid {
-  grid-template-columns: 1fr !important;
-  gap: 8px !important;
-}
-
-/* ─── 20. STATUS BADGES COMPACT ──────────────────────────────────────────── */
-body.mobile-mode .statusbarPublic {
-  flex-wrap: nowrap !important;
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch !important;
-  scrollbar-width: none !important;
-  gap: 6px !important;
-}
-
-body.mobile-mode .statusbarPublic::-webkit-scrollbar {
-  display: none !important;
-}
-
-body.mobile-mode .sessionTile {
-  min-width: 160px !important;
-  flex-shrink: 0 !important;
-  padding: 10px 14px !important;
-}
-
-body.mobile-mode .sessionInfoRow {
-  overflow-x: auto !important;
-  flex-wrap: nowrap !important;
-  -webkit-overflow-scrolling: touch !important;
-  scrollbar-width: none !important;
-  padding-bottom: 4px !important;
-}
-
-body.mobile-mode .sessionInfoRow::-webkit-scrollbar {
-  display: none !important;
-}
-
-/* Force hide navigation items for role-based restrictions */
-.nav-hidden {
-  display: none !important;
-}
-
-/* 🛡️ BLINDAJE TOTAL POR ROLES (CSS) */
-body[data-user-role="UNIDAD"] #glassBtnExport,
-body[data-user-role="UNIDAD"] #btnExport,
-body[data-user-role="UNIDAD"] #btnExportBIO {
-  display: none !important;
-}
-
-body[data-user-role="ADMIN"] #glassBtnUpload,
-body[data-user-role="ADMIN"] #btnOpenUpload,
-body[data-user-role="JURISDICCIONAL"] #glassBtnUpload,
-body[data-user-role="JURISDICCIONAL"] #btnOpenUpload {
-  display: none !important;
-}
-
-/* 📱 TRUE NATIVE MOBILE ARCHITECTURE v4.0 (Final Consolidation) */
-@media (max-width: 768px) {
-  /* 1. Header & Brand Cleanup (Aniquilar franja blanca) */
-  #mainHeader, #logoCluster, .GlassContainer, .GlassContent, header, #mainHeader > div,
-  .top, .topInner {
-    background: transparent !important;
-    background-color: transparent !important;
-    box-shadow: none !important;
-    border: none !important;
-  }
-  
-  /* Forzar transparencia en cualquier contenedor de brand */
-  .brandCenter, .brandMain, .brandText {
-    background: transparent !important;
-  }
-
-  /* 2. Panels (Notifs & Archivos) */
-  #topNotifDropdown, 
-  #archivosDropdown,
-  #panelArchivos,
-  .mobile-panel-card {
-    display: none;
-    position: fixed !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
-    left: 0 !important;
-    right: 0 !important;
-    margin: 0 !important;
-    border-radius: 32px 32px 0 0 !important;
-    bottom: 0 !important;
-    top: auto !important;
-    height: 85vh !important;
-    z-index: 150000 !important; 
-    box-shadow: 0 -10px 40px rgba(0,0,0,0.3) !important;
-    background: white !important;
-    overflow-y: auto !important; /* Permitir scroll aquí */
-    -webkit-overflow-scrolling: touch !important;
-  }
-
-  /* 3. Perfil (Modal Centrado Supremo) */
-  #profileDropdown {
-    position: fixed !important;
-    top: 5vh !important; /* Un poco más arriba para dar aire */
-    left: 5vw !important;
-    width: 90vw !important;
-    max-width: 400px !important;
-    height: auto !important;
-    max-height: 85vh !important; 
-    margin: 0 !important;
-    z-index: 400000 !important; /* Más alto aún */
-    box-shadow: 0 40px 100px rgba(0,0,0,0.6) !important;
-    border-radius: 40px !important;
-    display: none; 
-    transform: none !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    touch-action: pan-y !important; /* Habilitar gestos de scroll */
-    pointer-events: auto !important;
-    padding-bottom: 60px !important; /* Espacio extra al final */
-    background: white !important;
-  }
-
-  /* 3.1 Force horizontal center if max-width is hit */
-  @media (min-width: 445px) {
-    #profileDropdown {
-      left: calc(50% - 200px) !important;
-    }
-  }
-
-  /* 4. Kill Blur in mobile header */
-  .GlassContent.liquidGL, .GlassContainer, #mainHeader * {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-
-  /* 4. Scroll Interno */
-  .topNotifBody, #archivosContainer, .notifList {
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    height: calc(85vh - 100px) !important;
-    padding-bottom: 40px !important;
-  }
-
-  /* 5. Blindaje Unidad */
-  body[data-user-role="UNIDAD"] #navLotes,
-  body[data-user-role="UNIDAD"] #btnExport,
-  body[data-user-role="UNIDAD"] #btnExportBIO {
-    display: none !important;
-  }
-
-  /* 6. Barra Navegación Superior (Z-Index Fix) */
-  #mobileBottomNav {
-    z-index: 200000 !important;
-    pointer-events: auto !important;
-  }
-
-  /* 7. Eliminar franja blanca del Logo (JS1 Pill) */
-  #logoCluster, .GlassContent.liquidGL {
-    background: transparent !important;
-    background-color: transparent !important;
-    box-shadow: none !important;
-  }
+.m-nav-item.text-bad:hover {
+  color: #dc2626;
 }

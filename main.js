@@ -9,6 +9,290 @@ const SUPABASE_URL = "https://utclfqjietlxzlorxhrs.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Y2xmcWppZXRseHpsb3J4aHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNTYyNTQsImV4cCI6MjA5MTkzMjI1NH0.EgDK7xkSZHZyUlGF5m2C7bZjrfkx1M8cBXzxIFedDa4";
 window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// 📱 MOBILE SPA ARCHITECTURE (Senior Injection Engine)
+const MOBILE_DOM_TEMPLATE = `
+  <div id="mobileSPA" class="mobile-spa-container">
+    <div class="AuraContainer">
+      <div class="AuraBlob Blob-1"></div>
+      <div class="AuraBlob Blob-2"></div>
+    </div>
+    
+    <!-- View: Login -->
+    <div id="mViewLogin" class="mobile-view active">
+      <div class="m-login-card GlassContainer" style="--corner-radius: 40px; width: 100%;">
+        <div class="GlassContent liquidGL p-10 flex flex-col items-center text-center">
+          <div class="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mb-6 shadow-xl border border-white/30 backdrop-blur-md">
+            <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" class="h-12 w-auto">
+          </div>
+          <h1 class="text-3xl font-black text-primary m-0 tracking-tighter">JS1 <span class="opacity-40 font-medium">Reportes</span></h1>
+          <p class="text-[10px] font-black uppercase tracking-[0.2em] mt-2 mb-8 opacity-60">Plataforma Móvil Institucional</p>
+          
+          <form id="mobileLoginForm" class="w-full space-y-4">
+            <div class="modern-input-group m-input-fix">
+              <span class="input-icon material-symbols-rounded">person</span>
+              <input id="mUsuario" type="email" placeholder="Usuario" class="h-14 rounded-2xl w-full" required>
+            </div>
+            <div class="modern-input-group m-input-fix">
+              <span class="input-icon material-symbols-rounded">lock</span>
+              <input id="mPassword" type="password" placeholder="Contraseña" class="h-14 rounded-2xl w-full" required>
+            </div>
+            <button type="submit" class="btn-premium-action w-full mt-6 h-16 text-base tracking-widest">
+              ENTRAR
+              <span class="material-symbols-rounded ml-2">login</span>
+            </button>
+            <button type="button" id="mBtnForgotPassword" class="mt-8 text-[11px] font-black uppercase tracking-[0.2em] text-primary/40 hover:text-primary transition-all w-full text-center">
+              ¿Olvidaste tu contraseña?
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- View: Dashboard (Dynamic) -->
+    <div id="mViewDashboard" class="mobile-view">
+      <div id="mDashboardContent" class="w-full max-w-md pb-24"></div>
+    </div>
+
+    <!-- View: Capture -->
+    <div id="mViewCapture" class="mobile-view p-4 pb-24">
+      <div class="m-view-header mb-6">
+        <h2 class="text-2xl font-black text-primary m-0">Captura</h2>
+        <p class="text-[10px] opacity-40 font-black uppercase tracking-widest mt-1">Selecciona el tipo de reporte</p>
+      </div>
+      
+      <div class="m-capture-grid">
+        <div id="mSubTabSR" class="m-capture-card active" onclick="activateCapture('SR')">
+          <span class="material-symbols-rounded icon">medical_services</span>
+          <span class="label">Biológicos</span>
+        </div>
+        <div id="mSubTabCONS" class="m-capture-card" onclick="activateCapture('CONS')">
+          <span class="material-symbols-rounded icon">inventory_2</span>
+          <span class="label">Consumibles</span>
+        </div>
+        <div id="mSubTabBIO" class="m-capture-card" onclick="activateCapture('BIO')">
+          <span class="material-symbols-rounded icon">receipt_long</span>
+          <span class="label">Pedido</span>
+        </div>
+        <div id="mSubTabPINOL" class="m-capture-card" onclick="activateCapture('PINOL')">
+          <span class="material-symbols-rounded icon">cleaning_services</span>
+          <span class="label">Pinol</span>
+        </div>
+      </div>
+
+      <div id="mCaptureContent" class="w-full"></div>
+    </div>
+
+    <!-- View: Files (Archivos) -->
+    <div id="mViewArchivos" class="mobile-view p-4 pb-24">
+       <div class="m-view-header mb-6">
+        <h2 class="text-2xl font-black text-primary m-0">Mis Archivos</h2>
+        <p class="text-[10px] opacity-40 font-black uppercase tracking-widest mt-1">Consulta de Comprobantes</p>
+      </div>
+      <div id="mArchivosContent" class="w-full"></div>
+    </div>
+
+    <!-- 🧭 Mobile Bottom Nav -->
+    <nav id="mBottomNav" class="mobile-bottom-nav GlassContainer hidden" style="--corner-radius: 0px;">
+      <div class="GlassContent liquidGL flex justify-around items-center h-20">
+        <button id="mNavHome" class="m-nav-item active">
+          <span class="material-symbols-rounded">dashboard</span>
+          <span>Inicio</span>
+        </button>
+        <button id="mNavCapture" class="m-nav-item">
+          <span class="material-symbols-rounded">add_circle</span>
+          <span>Captura</span>
+        </button>
+        <button id="mNavArchivos" class="m-nav-item">
+          <span class="material-symbols-rounded">folder_open</span>
+          <span>Archivos</span>
+        </button>
+        <button id="mNavLogout" class="m-nav-item text-bad">
+          <span class="material-symbols-rounded">logout</span>
+          <span>Salir</span>
+        </button>
+      </div>
+    </nav>
+  </div>
+  
+  <!-- Liquid Glass Refraction Engine (Persistent) -->
+  <svg width="0" height="0" style="position: absolute; pointer-events: none;">
+    <filter id="liquid-glass-refraction" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="2" result="noise" />
+      <feGaussianBlur in="noise" stdDeviation="2" result="smoothNoise" />
+      <feDisplacementMap in="SourceGraphic" in2="smoothNoise" scale="40" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+  </svg>
+`;
+
+function isMobileEnvironment() {
+  const ua = navigator.userAgent || navigator.vendor || window.opera;
+  const isMobileUA = /android|iphone|kindle|ipad|playbook|silk/i.test(ua);
+  const isSmallScreen = window.innerWidth <= 850;
+  return isMobileUA || isSmallScreen;
+}
+
+function initMobileArchitecture() {
+  if (!isMobileEnvironment()) return false;
+  
+  console.log("🚀 JS1: Mobile Architecture Detected. Injecting SPA...");
+  
+  // 🛡️ Pre-capture critical desktop panels before wiping the DOM
+  const capturePanel = document.getElementById("panelCAP");
+  const formSR = document.getElementById("formSR");
+  const formCONS = document.getElementById("formCONS");
+  const formBIO = document.getElementById("formBIO");
+  const formPINOL = document.getElementById("formPINOL");
+  const archivosPanel = document.getElementById("panelArchivos");
+
+  document.body.innerHTML = MOBILE_DOM_TEMPLATE;
+  document.body.classList.add("mobile-spa-active");
+  
+  // 💉 Re-inject captured panels into mobile views
+  const targetCapture = document.getElementById("mCaptureContent");
+  if (targetCapture) {
+    if (capturePanel) targetCapture.appendChild(capturePanel);
+    if (formSR) targetCapture.appendChild(formSR);
+    if (formCONS) targetCapture.appendChild(formCONS);
+    if (formBIO) targetCapture.appendChild(formBIO);
+    if (formPINOL) targetCapture.appendChild(formPINOL);
+    
+    // Forzar visibilidad inicial del contenedor padre
+    if (capturePanel) capturePanel.style.display = "block";
+  }
+
+  if (archivosPanel) {
+    const target = document.getElementById("mArchivosContent");
+    if (target) {
+      archivosPanel.style.display = "block";
+      archivosPanel.classList.remove("hidden");
+      target.appendChild(archivosPanel);
+    }
+  }
+  
+  connectMobileListeners();
+  return true;
+}
+
+function switchMobileView(viewId) {
+  console.log("📱 Switching to mobile view:", viewId);
+  document.querySelectorAll(".mobile-view").forEach(v => v.classList.remove("active"));
+  document.getElementById(viewId)?.classList.add("active");
+  
+  // Mostrar/Ocultar el bottom nav según la vista
+  const nav = document.getElementById("mBottomNav");
+  if (nav) {
+    if (viewId === "mViewLogin") nav.classList.add("hidden");
+    else nav.classList.remove("hidden");
+  }
+
+  // Sincronizar iconos activos en el nav
+  document.querySelectorAll(".m-nav-item").forEach(item => item.classList.remove("active"));
+  if (viewId === "mViewDashboard") document.getElementById("mNavHome")?.classList.add("active");
+  if (viewId === "mViewCapture") document.getElementById("mNavCapture")?.classList.add("active");
+  if (viewId === "mViewArchivos") document.getElementById("mNavArchivos")?.classList.add("active");
+}
+
+function connectMobileListeners() {
+  const mForm = document.getElementById("mobileLoginForm");
+  if (mForm) {
+    mForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("mUsuario")?.value;
+      const pass = document.getElementById("mPassword")?.value;
+      if (!email || !pass) return alert("Completa los datos");
+      
+      showOverlay("Iniciando sesión móvil...");
+      await handleLoginFlow(email, pass);
+      hideOverlay();
+    };
+  }
+
+  const mForgot = document.getElementById("mBtnForgotPassword");
+  if (mForgot) {
+    mForgot.onclick = (e) => {
+      e.preventDefault();
+      if (typeof openForgotModal === "function") openForgotModal();
+      else showToast("Opción no disponible momentáneamente", false, "info");
+    };
+  }
+
+  // Navigation listeners
+  document.getElementById("mNavHome")?.addEventListener("click", () => switchMobileView("mViewDashboard"));
+  document.getElementById("mNavCapture")?.addEventListener("click", () => switchMobileView("mViewCapture"));
+  document.getElementById("mNavArchivos")?.addEventListener("click", () => {
+    switchMobileView("mViewArchivos");
+    if (typeof renderArchivosView === "function") renderArchivosView();
+  });
+  document.getElementById("mNavLogout")?.addEventListener("click", () => {
+    clearSession();
+    location.reload();
+  });
+}
+
+/**
+ * 🔐 handleLoginFlow: Unified Authentication Bridge
+ * Used by both desktop and mobile SPA views.
+ */
+async function handleLoginFlow(email, password) {
+  if (!email || !password) {
+    showToast("Ingresa credenciales", false, "warn");
+    return;
+  }
+
+  showOverlay("Iniciando sesión...", "Conectando");
+
+  try {
+    const { data, error } = await window.supabase.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
+
+    if (error) throw new Error("Credenciales incorrectas.");
+
+    const { data: perfil, error: perfilError } = await window.supabase
+      .from('perfiles')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+
+    if (perfilError) console.warn("[Auth] Error en perfil:", perfilError);
+
+    const mustChange = !!data.user.user_metadata?.force_password_change;
+    if (!data.session) throw new Error("No se pudo establecer la sesión.");
+
+    TOKEN = data.session.access_token;
+    USER = buildUserFromPerfil(data.user.id, data.user.email, perfil);
+
+    if (mustChange) {
+      USER.mustChange = true;
+      window.MUST_CHANGE_PASSWORD = true;
+    }
+
+    saveSession(TOKEN, USER);
+    await hydrateSessionUi(USER, null, {
+      showSuccessToast: !mustChange,
+      mustChangePassword: mustChange
+    });
+
+    if (USER?.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(USER.rol)) {
+      apiCall("silentAdminReminders").catch(() => { });
+    }
+    
+    // Mobile-specific UI transition
+    if (isMobileEnvironment()) {
+      document.getElementById("mViewLogin").classList.remove("active");
+      document.getElementById("mViewDashboard").classList.add("active");
+    }
+
+  } catch (error) {
+    console.error("Error en login:", error);
+    showToast(error.message || "Error al iniciar sesión", false, "bad");
+  } finally {
+    hideOverlay();
+  }
+}
+
+
 // GLOBALS
 let CURRENT_WEATHER = { temp: null, emoji: "", code: null };
 let BATCH_FILTER = "all";
@@ -156,6 +440,79 @@ function loadSession() {
   return null;
 }
 
+function renderMobileDashboard(user, status) {
+  const container = document.getElementById("mDashboardContent");
+  if (!container) return;
+  
+  const unit = status?.unidad || user?.unidad || "Unidad Institucional";
+  const clu = user?.clues || "MÉXICO v2.0";
+  
+  container.innerHTML = `
+    <div class="m-card GlassContainer mb-8" style="--corner-radius: 32px; width: 100%;">
+      <div class="GlassContent liquidGL p-8">
+        <div class="flex justify-between items-start mb-6">
+          <div class="flex-1 min-width-0 mr-4">
+            <h2 class="text-2xl font-black text-primary m-0 truncate leading-tight">${unit}</h2>
+            <div class="flex items-center gap-2 mt-2">
+              <span class="w-2 h-2 rounded-full bg-good animate-pulse"></span>
+              <p class="text-[10px] font-black opacity-40 uppercase tracking-[0.15em] m-0">${clu}</p>
+            </div>
+          </div>
+          <div class="bg-primary/10 w-12 h-12 rounded-2xl flex items-center justify-center text-primary border border-primary/20">
+            <span class="material-symbols-rounded text-2xl">medical_services</span>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div class="m-stat bg-white/10 rounded-3xl p-5 border border-white/20 backdrop-blur-sm">
+            <span class="text-[9px] font-black uppercase tracking-wider opacity-40 block mb-1">Existencia</span>
+            <div class="text-2xl font-black text-primary">--</div>
+          </div>
+          <div class="m-stat bg-white/10 rounded-3xl p-5 border border-white/20 backdrop-blur-sm">
+            <span class="text-[9px] font-black uppercase tracking-wider opacity-40 block mb-1">Pedido</span>
+            <div class="text-2xl font-black text-secondary">--</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="grid grid-cols-1 gap-4">
+      <button id="mDashboardBtnCapture" class="m-action-row GlassContainer w-full" style="--corner-radius: 24px;">
+        <div class="GlassContent liquidGL p-6 flex items-center justify-between">
+          <div class="flex items-center gap-5">
+            <div class="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-sm border border-primary/10">
+              <span class="material-symbols-rounded text-2xl">add_circle</span>
+            </div>
+            <div class="text-left">
+              <div class="font-black text-base text-slate-800">Nueva Captura</div>
+              <div class="text-[11px] opacity-40 font-bold uppercase tracking-wide">Reporte Diario</div>
+            </div>
+          </div>
+          <div class="bg-slate-500/10 p-2 rounded-full">
+            <span class="material-symbols-rounded text-slate-400">chevron_right</span>
+          </div>
+        </div>
+      </button>
+
+      <button id="mBtnLogout" class="m-action-row GlassContainer w-full mt-6" style="--corner-radius: 24px;">
+        <div class="GlassContent liquidGL p-6 flex items-center justify-center gap-4 text-bad">
+          <div class="w-14 h-14 rounded-2xl bg-bad/10 flex items-center justify-center border border-bad/10">
+            <span class="material-symbols-rounded text-2xl">logout</span>
+          </div>
+          <span class="font-black text-base uppercase tracking-widest">Cerrar Sesión</span>
+        </div>
+      </button>
+    </div>
+  `;
+  
+  document.getElementById("mDashboardBtnCapture")?.addEventListener("click", () => switchMobileView("mViewCapture"));
+  
+  document.getElementById("mBtnLogout")?.addEventListener("click", () => {
+    clearSession();
+    location.reload(); 
+  });
+}
+
 function clearSession() {
   try {
     localStorage.removeItem("JS1_TOKEN");
@@ -186,11 +543,24 @@ document.addEventListener("DOMContentLoaded", () => {
   (async () => {
     showOverlay("Cargando JS1 Reportes…", "Inicializando");
     try {
+      // 📱 INYECCIÓN DE ARQUITECTURA MÓVIL (FASE 2)
+      if (initMobileArchitecture()) {
+        console.log("JS1: Mobile SPA initialized successfully.");
+        // If mobile, we stop here and let the SPA handle the rest.
+        // We still need to check session for mobile.
+        const u = await whoami();
+        if (u) {
+          await hydrateSessionUi(u, null, { showSuccessToast: false });
+          switchMobileView("mViewDashboard");
+        } else {
+          switchMobileView("mViewLogin");
+        }
+        return; 
+      }
+
       initProfileDropdown();
-      // whoami verifica la sesión y recupera USER/TOKEN automáticamente
       const u = await whoami();
       if (u) {
-        // Una sola llamada de hidratación que agrupará todo en el Batcher
         await hydrateSessionUi(u, null, {
           showSuccessToast: false,
           mustChangePassword: !!u.mustChange
@@ -227,63 +597,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ev.preventDefault();
       const email = document.getElementById("usuario").value.trim();
       const password = document.getElementById("password").value.trim();
-
-      if (!email || !password) {
-        showToast("Ingresa credenciales", false, "warn");
-        return;
-      }
-
-      showOverlay("Iniciando sesión...", "Conectando");
-
-      try {
-        // Autenticación Nativa Supabase
-        const { data, error } = await window.supabase.auth.signInWithPassword({
-          email: email,
-          password: password
-        });
-
-        if (error) {
-          throw new Error("Credenciales incorrectas.");
-        }
-
-        // Extrayendo el Perfil atado por el Trigger SQL
-        const { data: perfil, error: perfilError } = await window.supabase
-          .from('perfiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-
-        if (perfilError) {
-          console.warn("[Auth] No se pudo recuperar perfil extendido:", perfilError);
-        }
-
-        // 🛡️ VERIFICACIÓN DE CAMBIO OBLIGATORIO (Migración Supabase)
-        const mustChange = !!data.user.user_metadata?.force_password_change;
-
-        if (!data.session) throw new Error("No se pudo establecer la sesión.");
-        TOKEN = data.session.access_token;
-        USER = buildUserFromPerfil(data.user.id, data.user.email, perfil);
-
-        if (mustChange) {
-          USER.mustChange = true;
-          window.MUST_CHANGE_PASSWORD = true;
-        }
-
-        saveSession(TOKEN, USER);
-        await hydrateSessionUi(USER, null, {
-          showSuccessToast: !mustChange,
-          mustChangePassword: mustChange
-        });
-
-        if (USER?.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(USER.rol)) {
-          apiCall("silentAdminReminders").catch(() => { });
-        }
-      } catch (error) {
-        console.error("Error en login:", error);
-        showToast(error.message || "Error al iniciar sesión", false, "bad");
-      } finally {
-        hideOverlay();
-      }
+      await handleLoginFlow(email, password);
     });
   }
 
@@ -291,14 +605,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const footerYear = document.getElementById("footerYear");
   if (footerYear) footerYear.textContent = new Date().getFullYear();
 
-  // 📱 LISTENERS DE NAVEGACIÓN MÓVIL (BOTTOM NAV)
-  document.querySelectorAll(".nav-item[data-tab]").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const tab = btn.getAttribute("data-tab");
-      const panel = tab.replace("tab", "");
-      activateMain(panel);
-    });
-  });
+
 
   $("navLogout")?.addEventListener("click", () => {
     $("btnLogout")?.click();
@@ -1983,6 +2290,7 @@ function bindNotificationsUiEvents() {
   const btnNotifMarkVisibleRead = $("btnNotifMarkVisibleRead");
   const btnTopNotifMarkVisibleRead = $("btnTopNotifMarkVisibleRead");
   const btnTopNotifClose = $("btnTopNotifClose");
+  const btnTopNotifOnlyUnread = $("btnTopNotifOnlyUnread");
 
   const notifSearchHandler = debounce((ev) => {
     handleNotifSearchInput(ev?.target?.value || "");
@@ -3476,11 +3784,16 @@ async function supabaseRequest(action = "", payload) {
 
         console.log(`[Supabase DEBUG] biogetform for ${clues} (Role: ${role})`);
 
-        const [resParams, resSaved, resCalendar] = await Promise.all([
-          query,
-          supabase.from('biologicos_pedido').select('*').ilike('clues', clues).eq('fecha_captura', todayYmdLocal()),
-          supabase.from('calendario_pedidos').select('*').eq('anio_mes', todayYmdLocal().substring(0, 7)).eq('activo', 'SI')
-        ]);
+        try {
+          const [resParams, resSaved, resCalendar] = await Promise.all([
+            query,
+            supabase.from('biologicos_pedido').select('*').eq('clues', clues || 'NOT_FOUND').eq('fecha_captura', todayYmdLocal()),
+            supabase.from('calendario_pedidos').select('*').eq('anio_mes', todayYmdLocal().substring(0, 7)).eq('activo', 'SI')
+          ]);
+
+          if (resParams.error) console.error("[Supabase ERROR] biogetform params:", resParams.error);
+          if (resSaved.error) console.error("[Supabase ERROR] biogetform saved:", resSaved.error);
+          if (resCalendar.error) console.error("[Supabase ERROR] biogetform calendar:", resCalendar.error);
 
         // Lógica de ventana: Primero calendario, luego inteligente
         const now = new Date();
@@ -3525,7 +3838,11 @@ async function supabaseRequest(action = "", payload) {
             windowSource: windowSource
           }
         };
+      } catch (err) {
+        console.error("[Supabase CRITICAL] biogetform crash:", err);
+        return { ok: false, error: "Error de conexión con parámetros de biológicos" };
       }
+    }
 
       case "admincaptureoverview": {
         const { fecha, tipo } = payload;
@@ -4182,23 +4499,12 @@ async function supabaseRequest(action = "", payload) {
         if (role === "ADMIN" || role === "JURISDICCIONAL") {
           // Ven TODO
         } else if (role === "MUNICIPAL") {
-          // 1. Obtener CLUES de los municipios del usuario para filtrar evidencias
-          const { data: units } = await supabase
-            .from('unidades')
-            .select('clues')
-            .in('municipio', userMunicipios);
-          
-          const allowedClues = (units || []).map(u => u.clues);
-
-          // 2. Filtrar archivos: Carpeta de municipio (supervisiones) O CLUES en el nombre (evidencias)
+          // Ven archivos de sus municipios
           filesData = filesData.filter(f => {
             const folderUpper = String(f.folder || "").toUpperCase();
-            const nameUpper = String(f.name || "").toUpperCase();
-            
-            const isMuniFolder = userMunicipios.some(m => folderUpper.includes(m));
-            const isUnitFile = allowedClues.some(clues => nameUpper.includes(clues));
-            
-            return isMuniFolder || isUnitFile;
+            const municipioMatch = userMunicipios.some(m => folderUpper.includes(m));
+            // También ven evidencias de unidades de sus municipios (necesitaríamos metadata, pero por ahora filtramos por carpeta de municipio)
+            return municipioMatch;
           });
         } else if (role === "UNIDAD") {
           // Sólo ven lo de su CLUES
@@ -5199,7 +5505,7 @@ function initAppShell() {
   runBootUiSetup();
 
   Object.assign(AppState, {
-    isMobile: document.body.classList.contains("mobile-mode"),
+    isMobile: false,
     isLowPerf: document.body.classList.contains("lowperf"),
     initialized: true
   });
@@ -5307,6 +5613,11 @@ async function hydrateSessionUi(user, status, opts = {}) {
 
     if (finalStatus) setLoggedInUI(user, finalStatus); // Refrescar si no venía
     if (today) hydrateTodayForms(today);
+
+    // 📱 MOBILE DASHBOARD RENDER (SPA)
+    if (isMobileEnvironment()) {
+      renderMobileDashboard(user, finalStatus || status);
+    }
 
     if (isOps) {
       const fechaHoy = todayYmdLocal();
@@ -6046,7 +6357,7 @@ document.addEventListener("visibilitychange", () => {
 
 
 function isMobileMode() {
-  return document.body.classList.contains("mobile-mode");
+  return false;
 }
 
 let PANEL_SCROLL_TIMER = null;
@@ -6891,6 +7202,7 @@ let BIO_STATE = {
 function renderBioRows(rows) {
   BIO_STATE.rows = rows || [];
   const tbody = $("bioTbody");
+  if (!tbody) return;
 
   if (!rows || !rows.length) {
     tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay configuración para esta unidad</td></tr>`;
@@ -7378,7 +7690,9 @@ async function loadBioForm() {
 
   const r = await apiCall({ action: "bioGetForm", token: TOKEN });
   if (!r || !r.ok) {
-    $("bioTbody").innerHTML = `<tr><td colspan="7" class="muted">${escapeHtml((r && r.error) ? r.error : "No se pudo cargar")}</td></tr>`;
+    if ($("bioTbody")) {
+      $("bioTbody").innerHTML = `<tr><td colspan="7" class="muted">${escapeHtml((r && r.error) ? r.error : "No se pudo cargar")}</td></tr>`;
+    }
     return;
   }
 
@@ -7424,8 +7738,8 @@ async function loadBioForm() {
   HAS_SAVED_BIO = !!r.data.hasSavedBio;
   EDIT_BIO = false;
 
-  $("fechaPedidoBIO").value = BIO_STATE.fechaPedidoProgramada || "";
-  $("fechaPedidoBIOBox").textContent = BIO_STATE.fechaPedidoFriendly || "—";
+  if ($("fechaPedidoBIO")) $("fechaPedidoBIO").value = BIO_STATE.fechaPedidoProgramada || "";
+  if ($("fechaPedidoBIOBox")) $("fechaPedidoBIOBox").textContent = BIO_STATE.fechaPedidoFriendly || "—";
 
   // Resetear toggle de "No hacer pedido"
   if ($("chkNoPedido")) $("chkNoPedido").checked = false;
@@ -7433,25 +7747,33 @@ async function loadBioForm() {
   const bioHint = $("bioHint");
   const bioDayAlert = $("bioDayAlert");
 
-  bioDayAlert.className = "bioDayAlert show";
+  if (bioDayAlert) {
+    bioDayAlert.className = "bioDayAlert show";
 
-  if (BIO_STATE.isInsideWindow) {
-    if (BIO_STATE.isCaptureDay) {
-      bioHint.textContent = "Día objetivo de pedido mensual.";
-      bioDayAlert.className = "bioDayAlert show border-emerald-500/30 bg-emerald-50/50";
-      bioDayAlert.querySelector(".bioDayIcon").className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600";
-      bioDayAlert.querySelector(".bioDayMsg").innerHTML = `<b>PEDIDO MENSUAL:</b> captura habilitada hoy (fecha objetivo). Ventana: ${BIO_STATE.captureWindowStart} al ${BIO_STATE.captureWindowEnd}.`;
+    if (BIO_STATE.isInsideWindow) {
+      if (BIO_STATE.isCaptureDay) {
+        if (bioHint) bioHint.textContent = "Día objetivo de pedido mensual.";
+        bioDayAlert.className = "bioDayAlert show border-emerald-500/30 bg-emerald-50/50";
+        const icon = bioDayAlert.querySelector(".bioDayIcon");
+        if (icon) icon.className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600";
+        const msg = bioDayAlert.querySelector(".bioDayMsg");
+        if (msg) msg.innerHTML = `<b>PEDIDO MENSUAL:</b> captura habilitada hoy (fecha objetivo). Ventana: ${BIO_STATE.captureWindowStart} al ${BIO_STATE.captureWindowEnd}.`;
+      } else {
+        if (bioHint) bioHint.textContent = "Captura de pedido mensual habilitada.";
+        bioDayAlert.className = "bioDayAlert show border-emerald-500/30 bg-emerald-50/50";
+        const icon = bioDayAlert.querySelector(".bioDayIcon");
+        if (icon) icon.className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600";
+        const msg = bioDayAlert.querySelector(".bioDayMsg");
+        if (msg) msg.innerHTML = `<b>PEDIDO MENSUAL:</b> te encuentras dentro de la ventana operativa (${BIO_STATE.captureWindowStart} al ${BIO_STATE.captureWindowEnd}).`;
+      }
     } else {
-      bioHint.textContent = "Captura de pedido mensual habilitada.";
-      bioDayAlert.className = "bioDayAlert show border-emerald-500/30 bg-emerald-50/50";
-      bioDayAlert.querySelector(".bioDayIcon").className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600";
-      bioDayAlert.querySelector(".bioDayMsg").innerHTML = `<b>PEDIDO MENSUAL:</b> te encuentras dentro de la ventana operativa (${BIO_STATE.captureWindowStart} al ${BIO_STATE.captureWindowEnd}).`;
+      if (bioHint) bioHint.textContent = "Fuera de ventana oficial.";
+      bioDayAlert.className = "bioDayAlert show border-amber-500/30 bg-amber-50/50";
+      const icon = bioDayAlert.querySelector(".bioDayIcon");
+      if (icon) icon.className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-500/10 text-amber-600";
+      const msg = bioDayAlert.querySelector(".bioDayMsg");
+      if (msg) msg.innerHTML = `<b>PEDIDO EXTRAORDINARIO:</b> hoy te encuentras fuera de la ventana oficial (${BIO_STATE.captureWindowStart} al ${BIO_STATE.captureWindowEnd}).`;
     }
-  } else {
-    bioHint.textContent = "Fuera de ventana oficial.";
-    bioDayAlert.className = "bioDayAlert show border-amber-500/30 bg-amber-50/50";
-    bioDayAlert.querySelector(".bioDayIcon").className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-500/10 text-amber-600";
-    bioDayAlert.querySelector(".bioDayMsg").innerHTML = `<b>PEDIDO EXTRAORDINARIO:</b> hoy te encuentras fuera de la ventana oficial (${BIO_STATE.captureWindowStart} al ${BIO_STATE.captureWindowEnd}).`;
   }
 
   renderBioRows(BIO_STATE.rows || []);
@@ -7532,7 +7854,7 @@ function applyCaptureLockState() {
   setFormLocked("formBIO", bioLocked);
 
   if ($("btnSaveBIO")) {
-    $("btnSaveBIO").disabled = bioLocked || !BIO_STATE.canCapture;
+    $("btnSaveBIO").disabled = bioLocked || (typeof BIO_STATE !== "undefined" && !BIO_STATE.canCapture);
     // Usamos la clase blindada en style.css para evitar que el botón desaparezca
     $("btnSaveBIO").className = "btn-save-premium";
     $("btnSaveBIO").textContent = EDIT_BIO ? "Actualizar pedido de biológico" : "Guardar pedido de biológico";
@@ -7939,16 +8261,16 @@ function setLoggedInUI(user, status) {
     user: USER,
     status: STATUS,
     token: (typeof TOKEN !== "undefined") ? TOKEN : "",
-    isMobile: document.body.classList.contains("mobile-mode"),
+    isMobile: false,
     isLowPerf: document.body.classList.contains("lowperf"),
     mainPanel: "CAP"
   });
 
-  $("who").textContent = `${user.clues || "—"} — ${user.unidad || "—"}`;
+  if ($("who")) $("who").textContent = `${user.clues || "—"} — ${user.unidad || "—"}`;
   if ($("userNameFull")) $("userNameFull").textContent = user.nombre || user.usuario || "Usuario";
   // ✅ SALUDO DINÁMICO (Cargando...)
   // ✅ SALUDO DINÁMICO INTELIGENTE (Procesando...)
-  $("rolTxt").textContent = (user.rol || "UNIDAD").replace(/^Perfil:\s*/i, "");
+  if ($("rolTxt")) $("rolTxt").textContent = (user.rol || "UNIDAD").replace(/^Perfil:\s*/i, "");
 
   const capTab = $("btnTabCAP");
   if (capTab) {
@@ -7971,9 +8293,9 @@ function setLoggedInUI(user, status) {
   } else if (user.rol === "JURISDICCIONAL") {
     if ($("munTxt")) $("munTxt").textContent = "Todos";
   } else if (user.rol === "MUNICIPAL") {
-    $("munTxt").textContent = (user.municipio || "—").replace(/^Municipio\(s\):\s*/i, "").replace(/^Municipio:\s*/i, "");
+    if ($("munTxt")) $("munTxt").textContent = (user.municipio || "—").replace(/^Municipio\(s\):\s*/i, "").replace(/^Municipio:\s*/i, "");
   } else {
-    $("munTxt").textContent = (user.municipio || "—").replace(/^Municipio:\s*/i, "");
+    if ($("munTxt")) $("munTxt").textContent = (user.municipio || "—").replace(/^Municipio:\s*/i, "");
   }
 
   // 🛡️ Hierarchy & Role Detection (Senior implementation)
@@ -7996,29 +8318,13 @@ function setLoggedInUI(user, status) {
     if ($("navAdmin")) $("navAdmin").style.display = isAdmin ? "flex" : "none";
   }
 
-  // --- Role-Based Button Access (Blindaje Senior) ---
-  const canExport = (isAdmin || isJurisdiccional || isMunicipal);
-  const canUpload = (isUnidad || isMunicipal) && !isAdmin && !isJurisdiccional;
-
-  const toggleHeaderBtn = (btnId, containerId, show) => {
-    const btn = $(btnId);
-    const glass = $(containerId);
-    if (btn) btn.style.display = show ? "inline-flex" : "none";
-    if (glass) glass.style.display = show ? "block" : "none";
-  };
-
-  toggleHeaderBtn("btnExport", "glassBtnExport", canExport);
-  if ($("btnExportBIO")) $("btnExportBIO").style.display = canExport ? "inline-flex" : "none";
-  toggleHeaderBtn("btnOpenUpload", "glassBtnUpload", canUpload);
-
   // Sincronizar Visibilidad Móvil (Ahora que USER está cargado)
   if (typeof applyRoleVisibilityToMobileNav === 'function') {
     applyRoleVisibilityToMobileNav();
   }
 
   if ($("tabADMIN")) $("tabADMIN").style.display = isAdmin ? "block" : "none";
-  if ($("tabNOTIFS")) $("tabNOTIFS").style.display = (isUnidad || isAdmin || isJurisdiccional || isMunicipal) ? "block" : "none";
-  if ($("btnTopNotifications")) $("btnTopNotifications").style.display = (isUnidad || isAdmin || isJurisdiccional || isMunicipal) ? "inline-flex" : "none";
+  // Tabs y botones de acceso rápido ahora se gestionan vía data-role-gate en applyRolePermissions
 
   if ($("tabOPS_ADMIN")) {
     $("tabOPS_ADMIN").onclick = () => activateMain("ADMIN");
@@ -8028,47 +8334,22 @@ function setLoggedInUI(user, status) {
   }
 
   updateDynamicGreeting();
+  applyRolePermissions(role);
 
 
   if (STATUS) {
-    $("dayTxt").textContent = formatDayBadgeMx(STATUS.today);
+    if ($("dayTxt")) $("dayTxt").textContent = formatDayBadgeMx(STATUS.today);
     paintStatusChips(STATUS);
   }
 
 
 
-  // ✅ EXPLORADOR REFUEZO (HEADER ONLY)
-  if ($("btnViewArchivos")) {
-    $("btnViewArchivos").style.display = "flex";
-  }
-
-  // Role-based tailoring for Explorer UI
-  if (isUnidad) {
-    if ($("archivosSearch")) $("archivosSearch").placeholder = "Buscar por fecha...";
-    if ($("archivosCategoria")) $("archivosCategoria").style.display = "none";
-  } else {
-    if ($("archivosSearch")) $("archivosSearch").placeholder = "Buscar por Clues o Unidad...";
-    if ($("archivosCategoria")) $("archivosCategoria").style.display = "block";
-  }
-
-  if ($("topNotifRoleKpi")) $("topNotifRoleKpi").textContent = user.rol || "—";
-
-  if ($("tabSR")) $("tabSR").style.display = isUnidad ? "block" : "none";
-  if ($("tabCONS")) $("tabCONS").style.display = isUnidad ? "block" : "none";
-  if ($("tabBIO")) $("tabBIO").style.display = isUnidad ? "block" : "none";
-  if ($("tabPINOL")) $("tabPINOL").style.display = isUnidad ? "block" : "none";
-
-  if ($("formSR")) $("formSR").style.display = isUnidad ? "block" : "none";
-  if ($("formCONS")) $("formCONS").style.display = "none";
-  if ($("formBIO")) $("formBIO").style.display = "none";
-  if ($("formPINOL")) $("formPINOL").style.display = "none";
-
-  if ($("sectionCapturaUnidad")) $("sectionCapturaUnidad").style.display = isUnidad ? "block" : "none";
   if ($("panelCAP")) $("panelCAP").style.display = isUnidad ? "block" : "none";
   const canSeeLotes = (isAdmin || isJurisdiccional);
   const canSeeAdminCenter = isAdmin;
   const canSeeNotifsCenter = (isAdmin || isJurisdiccional || isMunicipal);
   const canSeePinol = (isAdmin || isMunicipal);
+  const canExport = (isAdmin || isJurisdiccional || isMunicipal);
 
   if ($("panelAdminOpsTabs")) $("panelAdminOpsTabs").style.display = (isAdmin || isJurisdiccional || isMunicipal) ? "block" : "none";
   if ($("tabLOTES")) $("tabLOTES").style.display = canSeeLotes ? "flex" : "none";
@@ -8131,8 +8412,8 @@ function setLoggedInUI(user, status) {
     if ($("exportFechaInicio")) $("exportFechaInicio").value = hoy;
     if ($("exportFechaFin")) $("exportFechaFin").value = hoy;
 
-    updateExportFechaHint();
-    loadExportOptions().catch(() => { });
+    if (typeof updateExportFechaHint === "function") updateExportFechaHint();
+    if (typeof loadExportOptions === "function") loadExportOptions().catch(() => { });
   }
 
   runPostLoginInit(user);
@@ -8317,7 +8598,12 @@ function activateMain(panel, forceSubTab) {
   });
 
 
-  // --- Panel Isolation Guard (Crucial for Mobile UX) ---
+  // 📱 Mobile View Synchronization (SPA mode)
+  if (document.body.classList.contains("mobile-spa-active")) {
+    if (panel === "CAP" && isUnidad) switchMobileView("mViewCapture");
+    if (panel === "Archivos") switchMobileView("mViewArchivos");
+  }
+
   const allPanels = [
     "panelCAP", "panelNOTIFS", "panelADMIN", "panelCaptureSummary",
     "panelPINOLADMIN", "panelHISTORY", "panelEDITLOG", "panelLOTES", "panelArchivos"
@@ -8327,7 +8613,7 @@ function activateMain(panel, forceSubTab) {
     if (p) p.style.display = "none";
   });
 
-  if ($("panelCAP")) $("panelCAP").style.display = (panel === "CAP") ? "block" : "none";
+  if ($("panelCAP")) $("panelCAP").style.display = (panel === "CAP" && isUnidad) ? "block" : "none";
 
   if ($("panelAdminOpsTabs")) {
     const isVisible = (panel === "CAP" || panel === "ADMIN" || panel === "NOTIFS") && isOps;
@@ -8374,6 +8660,12 @@ function activateMain(panel, forceSubTab) {
 
 function activateCapture(tab) {
   const role = String((USER && USER.rol) || "").trim().toUpperCase();
+
+  // 📱 Mobile Card Sync
+  if (document.body.classList.contains("mobile-spa-active")) {
+    document.querySelectorAll(".m-capture-card").forEach(c => c.classList.remove("active"));
+    document.getElementById(`mSubTab${tab}`)?.classList.add("active");
+  }
 
   const updateTabClass = (id, cond) => {
     const el = $(id);
@@ -8423,30 +8715,30 @@ function activateCapture(tab) {
   updateTabClass("tabBIO", tab === "BIO");
   updateTabClass("tabPINOL", tab === "PINOL");
 
-  $("formSR").style.display = "none";
-  $("formCONS").style.display = "none";
-  $("formBIO").style.display = "none";
-  $("formPINOL").style.display = "none";
+  if ($("formSR")) $("formSR").style.display = "none";
+  if ($("formCONS")) $("formCONS").style.display = "none";
+  if ($("formBIO")) $("formBIO").style.display = "none";
+  if ($("formPINOL")) $("formPINOL").style.display = "none";
 
   let targetId = "formSR";
 
   if (tab === "SR") {
-    $("formSR").style.display = "block";
+    if ($("formSR")) $("formSR").style.display = "block";
     targetId = "formSR";
   }
 
   if (tab === "CONS") {
-    $("formCONS").style.display = "block";
+    if ($("formCONS")) $("formCONS").style.display = "block";
     targetId = "formCONS";
   }
 
   if (tab === "BIO") {
-    $("formBIO").style.display = "block";
+    if ($("formBIO")) $("formBIO").style.display = "block";
     targetId = "formBIO";
   }
 
   if (tab === "PINOL") {
-    $("formPINOL").style.display = "block";
+    if ($("formPINOL")) $("formPINOL").style.display = "block";
     targetId = "formPINOL";
   }
 
@@ -10281,7 +10573,7 @@ function softenMobileFocusZoom() {
   if (window.__softenMobileFocusZoomBound) return;
   window.__softenMobileFocusZoomBound = true;
 
-  const isMobile = () => document.body.classList.contains("mobile-mode");
+  const isMobile = () => false;
   let blurTimer = null;
 
   const syncFocusedField = (el) => {
@@ -10351,7 +10643,7 @@ function setupMobileViewportGuards() {
   window.__mobileViewportGuardsBound = true;
 
   const syncToastPosition = () => {
-    if (!document.body.classList.contains("mobile-mode")) return;
+    return;
     if (!toast) return;
 
     const vv = window.visualViewport;
@@ -11800,29 +12092,23 @@ function initProfileDropdown() {
   });
 }
 
-// Mobile Navigation v3.0 (Native Experience)
+// Mobile Navigation v2.0
 function initMobileNavigation() {
   const navMap = {
-    'navHome': () => activateMain('CAP'),
-    'navLotes': () => activateMain('LOTES'),
-    'navExplorer': () => openExplorer(),
-    'navNotifs': () => toggleNotifCenter()
+    'navHome': 'CAP',
+    'navLotes': 'LOTES',
+    'navHistory': 'HISTORY',
+    'navExplorer': 'Archivos'
   };
 
   applyRoleVisibilityToMobileNav();
 
-  Object.entries(navMap).forEach(([id, action]) => {
+  Object.entries(navMap).forEach(([id, panelId]) => {
     const btn = document.getElementById(id);
     if (btn) {
       btn.onclick = (e) => {
         e.preventDefault();
-        
-        // Quitar active de todos
-        document.querySelectorAll("#mobileBottomNav .nav-item").forEach(i => i.classList.remove("active"));
-        // Poner active al actual si es una pestaña (Home/Lotes)
-        if (id === "navHome" || id === "navLotes") btn.classList.add("active");
-        
-        action();
+        activateMain(panelId);
         if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(5);
       };
     }
@@ -11831,30 +12117,44 @@ function initMobileNavigation() {
 
 function applyRoleVisibilityToMobileNav() {
   const role = String((USER && USER.rol) || "").trim().toUpperCase();
-  const isUnidad = role === "UNIDAD";
-  const isAdmin = role === "ADMIN";
-  const isJurisdiccional = role === "JURISDICCIONAL";
-  
-  // 1. REGLA LOTES: Solo Admin/Juris
-  const canSeeLotes = (isAdmin || isJurisdiccional);
-  const navLotes = document.getElementById("navLotes");
-  if (navLotes) {
-    navLotes.style.display = canSeeLotes ? "flex" : "none";
-  }
+  applyRolePermissions(role);
+}
 
-  // 2. REGLA ARCHIVOS/NOTIFS: Todo el mundo puede verlos en el Bottom Nav móvil (ya que los quitamos del header)
-  // Pero blindamos el contenido internamente en cada función.
+/**
+ * 🛡️ CENTRALIZED PERMISSION ENGINE (Attribute-Based)
+ * Scans the DOM for [data-role-gate] and toggles visibility based on role.
+ */
+function applyRolePermissions(role) {
+  const normalizedRole = String(role || "UNIDAD").trim().toUpperCase();
+  console.log("🛡️ Applying permissions for role:", normalizedRole);
+
+  document.querySelectorAll("[data-role-gate]").forEach(el => {
+    const allowedRoles = el.getAttribute("data-role-gate").split(",").map(r => r.trim().toUpperCase());
+    const isAllowed = allowedRoles.includes(normalizedRole);
+
+    if (isAllowed) {
+      el.classList.remove("nav-hidden");
+      el.style.removeProperty("display"); 
+    } else {
+      el.classList.add("nav-hidden");
+      el.style.setProperty("display", "none", "important");
+    }
+  });
+
+  // Especial: Ajustes de UI que no son solo ocultar (placeholders, etc)
+  const isUnidad = normalizedRole === "UNIDAD";
+  if ($("archivosSearch")) {
+    $("archivosSearch").placeholder = isUnidad ? "Buscar por fecha..." : "Buscar por Clues o Unidad...";
+  }
+  if ($("archivosCategoria")) {
+    $("archivosCategoria").style.display = isUnidad ? "none" : "block";
+  }
 }
 
 // Iniciar componentes al cargar
 document.addEventListener("DOMContentLoaded", () => {
   initProfileDropdown();
   initMobileNavigation();
-  // Aplicar rol al body si ya existe USER
-  if (USER && USER.rol) {
-    document.body.setAttribute('data-user-role', USER.rol.toUpperCase());
-    applyRoleVisibilityToMobileNav();
-  }
 });
 
 
