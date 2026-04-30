@@ -83,6 +83,11 @@ body {
   contain: strict;
 }
 
+@keyframes auraOrbit {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(2%, 2%, 0); }
+}
+
 .AuraBlob {
   position: absolute;
   width: 50vw;
@@ -92,17 +97,17 @@ body {
   border-radius: 50%;
   z-index: -1;
   pointer-events: none;
+  /* 🚀 GPU FORCED */
+  transform: translate3d(0,0,0);
+  will-change: transform;
+  backface-visibility: hidden;
+  animation: auraOrbit 10s infinite alternate ease-in-out;
 }
 
 .Blob-1 { top: -10%; left: -10%; }
-.Blob-2 { top: -10%; right: -10%; background: radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, transparent 70%); }
-.Blob-3 { bottom: -10%; left: -10%; background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 70%); }
-.Blob-4 { bottom: -10%; right: -10%; }
-
-@keyframes auraOrbit {
-  0% { transform: translate3d(0, 0, 0); }
-  100% { transform: translate3d(2%, 2%, 0); }
-}
+.Blob-2 { top: -10%; right: -10%; background: radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, transparent 70%); animation-delay: -5s; }
+.Blob-3 { bottom: -10%; left: -10%; background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 70%); animation-delay: -2s; }
+.Blob-4 { bottom: -10%; right: -10%; animation-delay: -7s; }
 
 
 
