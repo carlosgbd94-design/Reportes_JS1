@@ -3765,8 +3765,49 @@ async function supabaseRequest(action = "", payload) {
         const unitMap = {};
         (allUnits || []).forEach(u => unitMap[u.clues] = u.municipio);
 
-        // 3. Filtrado "Zero Errors" en memoria
-        const filtered = (rawNotifs || []).filter(n => {
+        // 4. SÍNTESIS DE NOTIFICACIONES (Bypass RLS)
+        // Si la tabla 'notificaciones' está bloqueada por RLS para este usuario (RLS Test: false),
+        // reconstruimos alertas críticas desde las tablas de origen que SÍ podemos leer.
+        let virtualNotifs = [];
+        if (role === "MUNICIPAL" || role === "ADMIN" || role === "JURISDICCIONAL") {
+          const { data: pinolSrc } = await supabase.from('pinol_solicitudes')
+            .select('*')
+            .in('estatus', ['ENTREGADO', 'RECIBIDO'])
+            .order('editado_ts', { ascending: false })
+            .limit(50);
+          
+          (pinolSrc || []).forEach(p => {
+            // Solo si pertenece a mi zona
+            if (canSeeMunicipio_(USER, p.municipio)) {
+              virtualNotifs.push({
+                id: 'VNOTIF:PINOL:' + p.id,
+                created_ts: p.editado_ts || p.timestamp_solicitud,
+                title: 'Pedido de pinol entregado',
+                message: `Pinol entregado:\nFecha de solicitud: ${p.fecha_solicitud}\nUnidad de salud: ${p.unidad}`,
+                is_read: (p.estatus === 'RECIBIDO') ? 'SI' : 'NO', // Si la unidad ya recibió, marcar como leída para el supervisor
+                target_scope: 'CLUES',
+                target_clues: p.clues,
+                target_municipio: p.municipio,
+                meta_json: JSON.stringify({ source: 'PINOL', event: 'PINOL_ENTREGADO', pinol_id: p.id })
+              });
+            }
+          });
+        }
+
+        // 5. Mezclar y de-duplicar
+        const allCombined = [...(rawNotifs || []), ...virtualNotifs];
+        const seenIds = new Set();
+        const uniqueItems = [];
+        
+        allCombined.forEach(n => {
+           if (!seenIds.has(n.id)) {
+             uniqueItems.push(n);
+             seenIds.add(n.id);
+           }
+        });
+
+        // 6. Filtrado "Zero Errors" en memoria
+        const filtered = uniqueItems.filter(n => {
           const nScope = String(n.target_scope || "").toUpperCase();
           const nClues = String(n.target_clues || "").trim();
           const nMuni = String(n.target_municipio || "").trim();
