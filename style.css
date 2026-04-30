@@ -97,17 +97,23 @@ body {
   border-radius: 50%;
   z-index: -1;
   pointer-events: none;
-  /* 🚀 GPU FORCED */
+.AuraBlob {
+  position: absolute;
+  width: 40vw;
+  height: 40vw;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.04) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+  /* 🚀 ULTRA-LIGHT: No will-change, no continuous animation by default */
   transform: translate3d(0,0,0);
-  will-change: transform;
   backface-visibility: hidden;
-  animation: auraOrbit 10s infinite alternate ease-in-out;
 }
 
-.Blob-1 { top: -10%; left: -10%; }
-.Blob-2 { top: -10%; right: -10%; background: radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, transparent 70%); animation-delay: -5s; }
-.Blob-3 { bottom: -10%; left: -10%; background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 70%); animation-delay: -2s; }
-.Blob-4 { bottom: -10%; right: -10%; animation-delay: -7s; }
+.Blob-1 { top: -15%; left: -15%; }
+.Blob-2 { top: -15%; right: -15%; background: radial-gradient(circle, rgba(99, 102, 241, 0.04) 0%, transparent 70%); }
+.Blob-3 { bottom: -15%; left: -15%; background: radial-gradient(circle, rgba(99, 102, 241, 0.03) 0%, transparent 70%); }
+.Blob-4 { bottom: -15%; right: -15%; }
 
 
 
@@ -7966,8 +7972,6 @@ input, textarea, select, [contenteditable] {
 .gpu-accelerated, .GlassContent, .btn-premium-action, .btn-action-md3 {
     transform: translateZ(0);
     backface-visibility: hidden;
-    perspective: 1000px;
-    will-change: transform, opacity, backdrop-filter;
 }
 
 .header-action-btn {
