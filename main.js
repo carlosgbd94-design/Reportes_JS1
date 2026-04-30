@@ -8675,17 +8675,17 @@ function updateDynamicGreeting(timeGreeting = null, customSubtitle = null) {
   const weatherTemp = CURRENT_WEATHER.temp !== null ? `${CURRENT_WEATHER.temp}°C` : "";
 
   welcomeEl.innerHTML = `
-      <div class="flex flex-col leading-none">
+      <div class="flex flex-col leading-none items-start text-left">
         <div class="flex items-center gap-4 flex-wrap">
           <span class="text-primary font-black tracking-tighter">
             ${title}
           </span>
-          <div class="h-8 w-px bg-outline-variant/30 hidden sm:block"></div>
-          <span class="text-[18px] sm:text-[24px] font-black text-primary/30 flex items-center gap-2">
+          <div class="h-8 w-px bg-outline-variant/40 hidden sm:block"></div>
+          <span class="text-[18px] sm:text-[24px] font-black text-primary/70 flex items-center gap-2">
             ${weatherEmoji} ${weatherTemp}
           </span>
         </div>
-        <span class="text-[13px] sm:text-[15px] font-bold text-primary/40 mt-3 block tracking-tight">${subtitle}</span>
+        <span class="text-[13px] sm:text-[15px] font-bold text-primary/70 mt-3 block tracking-tight">${subtitle}</span>
       </div>
     `;
 }
