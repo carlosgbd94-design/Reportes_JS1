@@ -3742,15 +3742,25 @@ async function supabaseRequest(action = "", payload) {
         const clues = String(USER?.clues || "").trim();
         const usuario = String(USER?.usuario || "").trim();
 
-        // 1. Obtener masa crítica de notificaciones
+        console.log(`[Notif DEBUG] Starting fetch for ${usuario} (${role})`);
+
+        // 1. Test de existencia/RLS: ¿Vemos algo en la tabla?
+        const { data: testData } = await supabase.from('notificaciones').select('id').limit(1);
+        console.log(`[Notif DEBUG] RLS Test (can see any id?):`, !!testData && testData.length > 0);
+
+        // 2. Obtener masa bruta (Sin orden ni filtros complejos de DB para evitar 400)
         const { data: rawNotifs, error: notifErr } = await supabase.from('notificaciones')
           .select('*')
-          .order('created_ts', { ascending: false })
-          .limit(200);
+          .limit(300); // Traemos más para asegurar volumen
 
-        if (notifErr) throw notifErr;
+        if (notifErr) {
+          console.error(`[Notif DEBUG] Fetch error:`, notifErr);
+          throw notifErr;
+        }
 
-        // 2. Obtener catálogo de unidades para mapeo CLUES -> Municipio (Jerarquía)
+        console.log(`[Notif DEBUG] Raw items fetched:`, rawNotifs?.length || 0);
+
+        // 3. Obtener catálogo de unidades para mapeo (Jerarquía)
         const { data: allUnits } = await supabase.from('unidades').select('clues, municipio').eq('activo', 'SI');
         const unitMap = {};
         (allUnits || []).forEach(u => unitMap[u.clues] = u.municipio);
@@ -3793,13 +3803,20 @@ async function supabaseRequest(action = "", payload) {
           return false;
         });
 
-        console.log(`[Notif DEBUG] Final filtered list for ${role}:`, filtered.length, "of", rawNotifs.length);
+        // 4. Ordenar en memoria por fecha (descendente)
+        const sorted = (filtered || []).sort((a, b) => {
+          const da = new Date(a.created_ts || 0);
+          const db = new Date(b.created_ts || 0);
+          return db - da;
+        });
 
-        const unreadCount = filtered.filter(n => String(n.is_read).toUpperCase() === 'NO').length;
+        const unreadCount = sorted.filter(n => String(n.is_read).toUpperCase() === 'NO').length;
+        console.log(`[Notif DEBUG] Final filtered list:`, sorted.length);
+
         return {
           ok: true,
           data: {
-            items: filtered,
+            items: sorted,
             unread: unreadCount
           }
         };
@@ -3808,38 +3825,25 @@ async function supabaseRequest(action = "", payload) {
       case "biogetform": {
         const role = String(USER?.rol || "").toUpperCase();
         const clues = String(USER?.clues || "").trim();
+        const today = todayYmdLocal();
 
-        // 🛡️ Filtro Crítico: Solo traer parámetros de la unidad actual y que estén activos
-        // Si no hay CLUES (caso raro en Admin), intentamos traer un set global (*)
-        let query = supabase.from('biologicos_params')
-          .select('*')
-          .eq('activo', 'SI');
-
-        if (clues && clues !== "") {
-          // 🛡️ Seguridad: Si es MUNICIPAL, verificar que la CLUES le pertenezca
-          if (role === "MUNICIPAL") {
-            const { data: u } = await supabase.from('unidades').select('municipio').eq('clues', clues).maybeSingle();
-            if (u && !canSeeMunicipio_(USER, u.municipio)) {
-              throw new Error("No tienes permiso para acceder a esta unidad.");
-            }
-          }
-          query = query.ilike('clues', clues);
+        let query = supabase.from('biologicos_params').select('*').eq('activo', 'SI');
+        if (clues && clues !== "QTSSA012154") {
+           query = query.eq('clues', clues);
         } else {
-          query = query.eq('clues', '*');
+           query = query.eq('clues', '*');
         }
-
-        console.log(`[Supabase DEBUG] biogetform for ${clues} (Role: ${role})`);
 
         try {
           const [resParams, resSaved, resCalendar] = await Promise.all([
             query,
-            supabase.from('biologicos_pedido').select('*').eq('clues', clues || 'NOT_FOUND').eq('fecha_captura', todayYmdLocal()),
-            supabase.from('calendario_pedidos').select('*').eq('anio_mes', todayYmdLocal().substring(0, 7)).eq('activo', 'SI')
+            supabase.from('biologicos_pedido').select('*').eq('clues', clues || 'NOT_FOUND').eq('fecha_captura', today),
+            supabase.from('calendario_pedidos').select('*').eq('anio_mes', today.substring(0, 7)).eq('activo', 'SI')
           ]);
 
-          if (resParams.error) console.error("[Supabase ERROR] biogetform params:", resParams.error);
-          if (resSaved.error) console.error("[Supabase ERROR] biogetform saved:", resSaved.error);
-          if (resCalendar.error) console.error("[Supabase ERROR] biogetform calendar:", resCalendar.error);
+          if (resParams.error) console.warn("[biogetform] params warning:", resParams.error);
+          if (resSaved.error) console.warn("[biogetform] saved warning:", resSaved.error);
+          if (resCalendar.error) console.warn("[biogetform] calendar warning:", resCalendar.error);
 
         // Lógica de ventana: Primero calendario, luego inteligente
         const now = new Date();
