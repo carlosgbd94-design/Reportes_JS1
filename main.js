@@ -3741,53 +3741,57 @@ async function supabaseRequest(action = "", payload) {
         const role = String(USER?.rol || "").toUpperCase();
         const clues = String(USER?.clues || "").trim();
         const usuario = String(USER?.usuario || "").trim();
-        const muniList = Array.isArray(USER?.municipiosAllowed) ? USER.municipiosAllowed : [];
 
-        let query = supabase.from('notificaciones')
+        // 1. Obtener masa crítica de notificaciones
+        const { data: rawNotifs, error: notifErr } = await supabase.from('notificaciones')
           .select('*')
           .order('created_ts', { ascending: false })
-          .limit(100);
+          .limit(200);
 
-        // 🛡️ REGLA DE ORO: Visibilidad Jerárquica Total
-        let filters = ['target_scope.eq.GLOBAL'];
-        
-        // 1. Dirigidas a mi usuario o mi rol
-        if (usuario) filters.push(`target_usuario.eq."${usuario}"`);
-        filters.push(`and(target_scope.eq.ROLE,target_usuario.eq."${role}")`);
+        if (notifErr) throw notifErr;
 
-        // 2. Dirigidas a mi CLUES personal (si soy UNIDAD)
-        if (role === "UNIDAD" && clues) {
-          filters.push(`target_clues.eq."${clues}"`);
-        }
+        // 2. Obtener catálogo de unidades para mapeo CLUES -> Municipio (Jerarquía)
+        const { data: allUnits } = await supabase.from('unidades').select('clues, municipio').eq('activo', 'SI');
+        const unitMap = {};
+        (allUnits || []).forEach(u => unitMap[u.clues] = u.municipio);
 
-        // 3. Jerarquía de Supervisión (MUNICIPAL / ADMIN)
-        if (role === "MUNICIPAL" || role === "ADMIN" || role === "JURISDICCIONAL") {
-          // Obtener CLUES de mi zona para ver alertas de mis unidades
-          const { data: muniUnits } = await supabase.from('unidades').select('clues, municipio').eq('activo', 'SI');
-          const allowedClues = (muniUnits || [])
-            .filter(u => canSeeMunicipio_(USER, u.municipio))
-            .map(u => u.clues);
-          
-          if (allowedClues.length > 0) {
-            const cluesListStr = allowedClues.map(c => `"${c}"`).join(',');
-            filters.push(`target_clues.in.(${cluesListStr})`);
+        // 3. Filtrado "Zero Errors" en memoria
+        const filtered = (rawNotifs || []).filter(n => {
+          const nScope = String(n.target_scope || "").toUpperCase();
+          const nClues = String(n.target_clues || "").trim();
+          const nMuni = String(n.target_municipio || "").trim();
+          const nUser = String(n.target_usuario || "").trim();
+
+          // A. Notificaciones Globales
+          if (nScope === "GLOBAL") return true;
+
+          // B. Dirigidas a mi usuario específico
+          if (nUser === usuario && nUser !== "") return true;
+
+          // C. Dirigidas a mi Rol (Broadcast)
+          if (nScope === "ROLE" && nUser === role) return true;
+
+          // D. Dirigidas a mi CLUES (Unidad)
+          if (nClues === clues && clues !== "") return true;
+
+          // E. JERARQUÍA: Si soy Supervisor (Municipal/Admin)
+          if (role === "MUNICIPAL" || role === "ADMIN" || role === "JURISDICCIONAL") {
+            // i. Por municipio explícito
+            if (nMuni && canSeeMunicipio_(USER, nMuni)) return true;
+
+            // ii. Por CLUES (derivar municipio si no viene en la notif)
+            const derivedMuni = unitMap[nClues];
+            if (derivedMuni && canSeeMunicipio_(USER, derivedMuni)) return true;
           }
 
-          if (muniList.length > 0) {
-            const muniListStr = muniList.map(m => `"${m}"`).join(',');
-            filters.push(`target_municipio.in.(${muniListStr})`);
-          }
-        }
+          return false;
+        });
 
-        query = query.or(filters.join(','));
-        const { data, error } = await query;
-        if (error) throw error;
-
-        const unreadCount = (data || []).filter(n => String(n.is_read).toUpperCase() === 'NO').length;
+        const unreadCount = filtered.filter(n => String(n.is_read).toUpperCase() === 'NO').length;
         return {
           ok: true,
           data: {
-            items: data || [],
+            items: filtered,
             unread: unreadCount
           }
         };
