@@ -299,7 +299,7 @@
         </div>
       </div>
 
-      <button class="btn" id="btnUpdate">
+      <button class="btn" id="btnUpdate" onclick="handleUpdate()" type="button">
         Actualizar contraseña
         <span class="material-symbols-rounded">arrow_forward</span>
       </button>
@@ -316,20 +316,45 @@
 
   <div class="overlay" id="overlay">
     <div class="spinner"></div>
-    <div style="font-weight: 800; font-size: 14px; letter-spacing: 0.05em; text-transform: uppercase;">Procesando...</div>
+    <div id="overlayText" style="font-weight: 800; font-size: 14px; letter-spacing: 0.05em; text-transform: uppercase;">Procesando...</div>
   </div>
 
   <div class="toast" id="toast"></div>
 
   <script>
-    // SUPABASE CONFIG (Matching main.js)
+    // SUPABASE CONFIG
     const SUPABASE_URL = "https://utclfqjietlxzlorxhrs.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Y2xmcWppZXRseHpsb3J4aHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNTYyNTQsImV4cCI6MjA5MTkzMjI1NH0.EgDK7xkSZHZyUlGF5m2C7bZjrfkx1M8cBXzxIFedDa4";
     
-    // Evitar error de referencia al inicializar: usar un nombre distinto para el cliente
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
+    let supabaseClient;
     const $ = id => document.getElementById(id);
+
+    // Inicialización segura
+    try {
+      if (typeof supabase === 'undefined') {
+        setTimeout(initSupabase, 500); 
+      } else {
+        initSupabase();
+      }
+    } catch(e) {
+      console.error("Error inicial:", e);
+    }
+
+    function initSupabase() {
+      if (typeof supabase !== 'undefined' && !supabaseClient) {
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        checkSession();
+      }
+    }
+
+    function checkSession() {
+      if (!supabaseClient) return;
+      supabaseClient.auth.getSession().then(({ data: { session } }) => {
+        if (!session) {
+          showToast("No se detectó sesión de recuperación. Por favor, usa el link de tu correo nuevamente.");
+        }
+      }).catch(err => console.error("Error verificando sesión:", err));
+    }
 
     function togglePass(id, btn) {
       const input = $(id);
@@ -341,58 +366,53 @@
 
     function showToast(msg) {
       const t = $('toast');
+      if (!t) return;
       t.textContent = msg;
       t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 3000);
+      setTimeout(() => t.classList.remove('show'), 4000);
     }
 
     async function handleUpdate() {
       const p1 = $('pass1').value.trim();
       const p2 = $('pass2').value.trim();
 
-      if (p1.length < 8) return showToast("La contraseña debe tener al menos 8 caracteres.");
+      if (!p1 || p1.length < 8) return showToast("La contraseña debe tener al menos 8 caracteres.");
       if (p1 !== p2) return showToast("Las contraseñas no coinciden.");
+
+      if (!supabaseClient) {
+        showToast("Error: No se pudo conectar con el servidor. Reintenta en un momento.");
+        initSupabase();
+        return;
+      }
 
       $('overlay').classList.add('show');
       $('btnUpdate').disabled = true;
 
       try {
-        // Usar supabaseClient en lugar de la variable que colisionaba
         const { error } = await supabaseClient.auth.updateUser({ password: p1 });
 
         if (error) {
-          showToast("Error: " + error.message);
+          showToast("No se pudo actualizar: " + error.message);
+          console.error("Update error:", error);
           return;
         }
 
-        // Éxito
+        // Éxito: Mostrar estado de éxito
         $('formState').style.display = 'none';
         $('successState').style.display = 'block';
 
         setTimeout(() => {
           window.location.href = "https://carlosgbd94-design.github.io/Reportes_JS1/";
-        }, 3500);
+        }, 3000);
 
       } catch (err) {
-        showToast("Error de conexión");
-        console.error(err);
+        showToast("Error de comunicación. Verifica tu conexión.");
+        console.error("Crash:", err);
       } finally {
         $('overlay').classList.remove('show');
         $('btnUpdate').disabled = false;
       }
     }
-
-    window.addEventListener('load', () => {
-      $('btnUpdate').onclick = handleUpdate;
-      
-      // Verificar sesión de recuperación
-      supabaseClient.auth.getSession().then(({ data: { session } }) => {
-        if (!session) {
-          showToast("No se detectó sesión de recuperación. Inicia el proceso nuevamente.");
-        }
-      });
-    });
   </script>
 </body>
-
 </html>
