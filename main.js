@@ -3740,66 +3740,50 @@ async function supabaseRequest(action = "", payload) {
       case "listmynotifications": {
         const role = String(USER?.rol || "").toUpperCase();
         const clues = String(USER?.clues || "").trim();
-        const myMunis = Array.isArray(USER?.municipiosAllowed) ? USER.municipiosAllowed : [];
-        const myMuniSingle = String(USER?.municipio || "").trim();
         const usuario = String(USER?.usuario || "").trim();
+        const muniList = Array.isArray(USER?.municipiosAllowed) ? USER.municipiosAllowed : [];
 
         let query = supabase.from('notificaciones')
           .select('*')
           .order('created_ts', { ascending: false })
-          .limit(50);
+          .limit(100);
 
-        if (role === 'UNIDAD') {
-          const filters = ['target_scope.eq.GLOBAL'];
-          // Nota: PostgREST requiere comillas dobles para valores con espacios. 
-          // Las CLUES no tienen espacios, pero los Municipios sí.
-          if (clues) filters.push(`and(target_scope.eq.CLUES,target_clues.eq.${clues})`);
-          if (myMuniSingle) filters.push(`and(target_scope.eq.MUNICIPIO_UNITS,target_municipio.eq."${myMuniSingle}")`);
-          if (usuario) filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq.${usuario})`);
-          query = query.or(filters.join(','));
-        }
-        else if (role === 'MUNICIPAL') {
-          const activeMunis = Array.isArray(USER?.municipiosAllowed) ? USER.municipiosAllowed : [USER?.municipio].filter(Boolean);
-          const muniListStr = activeMunis.map(m => `"${m}"`).join(',');
+        // 🛡️ REGLA DE ORO: Visibilidad Jerárquica
+        let filters = ['target_scope.eq.GLOBAL'];
+        
+        // 1. Notificaciones directas al usuario
+        if (usuario) filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq."${usuario}")`);
 
-          const filters = [
-            'target_scope.eq.GLOBAL',
-            'and(target_scope.eq.ROLE,target_usuario.eq.MUNICIPAL)'
-          ];
+        // 2. Notificaciones por Rol (Broadcast)
+        filters.push(`and(target_scope.eq.ROLE,target_usuario.eq."${role}")`);
+
+        // 3. Notificaciones por Unidad (CLUES)
+        if (role === "UNIDAD") {
+          if (clues) filters.push(`and(target_scope.eq.CLUES,target_clues.eq."${clues}")`);
+        } else if (role === "MUNICIPAL" || role === "ADMIN" || role === "JURISDICCIONAL") {
+          // Si es supervisor, puede ver lo de sus CLUES permitidas
+          const { data: muniUnits } = await supabase.from('unidades').select('clues, municipio').eq('activo', 'SI');
+          const allowedClues = (muniUnits || [])
+            .filter(u => canSeeMunicipio_(USER, u.municipio))
+            .map(u => u.clues);
           
-          if (usuario) {
-            filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq.${usuario})`);
+          if (allowedClues.length > 0) {
+            const cluesListStr = allowedClues.map(c => `"${c}"`).join(',');
+            filters.push(`and(target_scope.eq.CLUES,target_clues.in.(${cluesListStr}))`);
           }
 
-          // Jerarquía: Ver cualquier cosa etiquetada con sus municipios autorizados
-          if (activeMunis.length > 0) {
-            filters.push(`target_municipio.in.(${muniListStr})`);
+          // Y lo que venga por Municipio (si aplica)
+          if (muniList.length > 0) {
+            const muniListStr = muniList.map(m => `"${m}"`).join(',');
+            filters.push(`and(target_scope.eq.MUNICIPIO_UNITS,target_municipio.in.(${muniListStr}))`);
           }
-
-          const orFilter = filters.join(',');
-          query = query.or(orFilter);
-        }
-        else if (role === 'ADMIN' || role === 'JURISDICCIONAL') {
-          const filters = [
-            'target_scope.eq.GLOBAL', 
-            'target_scope.eq.MUNICIPIO', 
-            'target_scope.eq.CLUES', 
-            'target_scope.eq.USUARIO', 
-            'target_scope.eq.MUNICIPIO_UNITS', 
-            'target_scope.eq.ROLE'
-          ];
-          query = query.or(filters.join(','));
         }
 
+        query = query.or(filters.join(','));
         const { data, error } = await query;
-        if (error) {
-          console.error(`[Supabase ERROR] listMyNotifications:`, error);
-          throw error;
-        }
+        if (error) throw error;
 
         const unreadCount = (data || []).filter(n => String(n.is_read).toUpperCase() === 'NO').length;
-        console.log(`[Supabase DEBUG] listMyNotifications for ${role}:`, { items: data?.length, unread: unreadCount });
-
         return {
           ok: true,
           data: {
@@ -4604,11 +4588,23 @@ async function supabaseRequest(action = "", payload) {
         } else if (role === "UNIDAD") {
           // Sólo ven lo de su CLUES
           filesData = filesData.filter(f => String(f.name || "").includes(userClues));
-        } else {
+        } else if (role === "MUNICIPAL") {
+          // 🛡️ Lógica de Visibilidad MUNICIPAL: Folder matching O CLUES matching
+          // 1. Obtener CLUES permitidas para este supervisor
+          const { data: allUnits } = await supabase.from('unidades').select('clues, municipio').eq('activo', 'SI');
+          const allowedClues = (allUnits || [])
+            .filter(u => canSeeMunicipio_(USER, u.municipio))
+            .map(u => u.clues);
+
           filesData = filesData.filter(f => {
-            const folderMuni = normalizeText(f.folder || "");
-            // Si el archivo está en una carpeta que coincide con mis municipios autorizados, lo veo
-            return canSeeMunicipio_(USER, folderMuni);
+            const folderName = normalizeText(f.folder || "");
+            const fileName = String(f.name || "");
+
+            // Caso A: Carpeta coincide con municipio asignado (ej: Supervisiones)
+            if (canSeeMunicipio_(USER, folderName)) return true;
+
+            // Caso B: El nombre del archivo contiene una CLUES de mi municipio (ej: Evidencias de Unidades)
+            return allowedClues.some(c => fileName.includes(c));
           });
         }
 
@@ -6970,15 +6966,17 @@ function buildUserFromPerfil(uid, email, perfil) {
     const rawMuni = (perfil && (perfil.municipio || perfil.municipios_allowed)) || "";
     municipiosAllowed = String(rawMuni)
       .split(/[;,]/)
-      .map(x => x.trim().toUpperCase())
+      .map(x => normalizeText(x))
       .filter(Boolean);
   }
 
-  // 🛡️ Regla de CLUES para Administrativos: Si no tienen CLUES, se les asigna la de la Jurisdicción
+  // 🛡️ Regla de CLUES para Administrativos: Si no tienen CLUES o tienen placeholders, se les asigna la de la Jurisdicción
   let userClues = (perfil && perfil.clues) || "";
   let userUnidad = (perfil && perfil.unidad) || "";
 
-  if (rol !== "UNIDAD" && !userClues) {
+  const isPlaceholderClues = !userClues || userClues.toUpperCase().includes("SIN") || userClues.toUpperCase().includes("N/A");
+
+  if (rol !== "UNIDAD" && isPlaceholderClues) {
     userClues = DEFAULT_ADMIN_CLUES;
     userUnidad = DEFAULT_ADMIN_UNIDAD;
   }
