@@ -509,35 +509,31 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 80vh;
-  padding: 40px 20px;
-  background: radial-gradient(circle at top right, #d6e3ff, transparent 60%),
-              radial-gradient(circle at bottom left, #d2e8d1, transparent 60%);
+  min-height: 100vh;
+  padding: 40px 24px;
+  background: #f8fafc;
+  overflow: hidden;
 }
 
+/* Redefiniendo el card para Senior UX */
 #cardLogin {
   width: 100%;
   max-width: 440px;
-  background-color: #ffffff !important;
-  border-radius: 40px;
-  padding: 48px;
-  box-shadow: 0 25px 60px -15px rgba(0, 51, 102, 0.15), 0 0 1px rgba(0,0,0,0.1);
+  background: transparent !important;
   border: none !important;
-  animation: none;
-  text-align: center;
-  position: relative;
-  z-index: 2;
+  box-shadow: none !important;
+  z-index: 10;
 }
 
 #cardLogin label {
   display: block;
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
   color: var(--md-sys-color-primary);
-  margin: 24px 0 8px 4px;
-  text-align: left;
+  margin: 0 0 10px 4px;
+  opacity: 0.5;
 }/* */
 input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not(.notifSearchInput), 
 select, 
@@ -963,14 +959,26 @@ body:has(#loginWrapper:not(.hidden)) {
   visibility: hidden !important;
 }
 
-/* SLEEK MESH FOR V5 */
+/* SLEEK MESH FOR V5 - Apegado a la estética de la página */
 .login-bg {
-  background: radial-gradient(at 0% 0%, hsla(210,100%,98%,1) 0, transparent 50%), 
-              radial-gradient(at 100% 0%, hsla(160,100%,98%,1) 0, transparent 50%),
-              radial-gradient(at 100% 100%, hsla(220,100%,98%,1) 0, transparent 50%),
-              radial-gradient(at 0% 100%, hsla(210,100%,98%,1) 0, transparent 50%),
-              #f8fafc;
-  opacity: 1;
+  background: 
+    radial-gradient(at 0% 0%, hsla(210,100%,94%,1) 0, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(160,100%,94%,1) 0, transparent 50%),
+    radial-gradient(at 100% 100%, hsla(220,100%,94%,1) 0, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(210,100%,94%,1) 0, transparent 50%);
+  opacity: 0.6;
+}
+
+.liquidGL {
+    background: rgba(255, 255, 255, 0.45) !important;
+    backdrop-filter: url(#liquid-glass-refraction) blur(15px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(15px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.6) !important;
+    box-shadow: 
+        inset 1.5px 1.5px 1px rgba(255, 255, 255, 0.8),
+        inset -1.5px -1.5px 2px rgba(0, 0, 0, 0.05),
+        0 32px 64px -12px rgba(0, 51, 102, 0.15) !important;
+    border-radius: var(--corner-radius, 40px) !important;
 }
 
 #cardLogin {
