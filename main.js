@@ -7213,10 +7213,12 @@ window.getHistoryMetrics = async function (fechaInicio, fechaFin, force = false)
 function showRightColumn(show) {
   const loginWrap = document.getElementById("loginWrapper");
   const cardLogin = document.getElementById("cardLogin");
+  const footer = document.querySelector(".appFooter");
 
   // 1. Dashboard visibility
   toggleEl("rightColumn", show, "flex");
   toggleEl("mainHeader", show, "flex");
+  if (footer) footer.style.display = show ? "block" : "none";
 
   // 2. Login Overlay transition
   if (loginWrap) {
