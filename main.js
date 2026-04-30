@@ -3779,19 +3779,22 @@ async function supabaseRequest(action = "", payload) {
 
             (pinolSrc || []).forEach(p => {
               if (canSeeMunicipio_(USER, p.municipio)) {
-              virtualNotifs.push({
-                id: 'VNOTIF:PINOL:' + p.id,
-                created_ts: p.editado_ts || p.timestamp_solicitud,
-                title: 'Pedido de pinol entregado',
-                message: `Pinol entregado:\nFecha de solicitud: ${p.fecha_solicitud}\nUnidad de salud: ${p.unidad}`,
-                is_read: (p.estatus === 'RECIBIDO') ? 'SI' : 'NO', // Si la unidad ya recibió, marcar como leída para el supervisor
-                target_scope: 'CLUES',
-                target_clues: p.clues,
-                target_municipio: p.municipio,
-                meta_json: JSON.stringify({ source: 'PINOL', event: 'PINOL_ENTREGADO', pinol_id: p.id })
-              });
-            }
-          });
+                virtualNotifs.push({
+                  id: 'VNOTIF:PINOL:' + p.id,
+                  created_ts: p.editado_ts || p.timestamp_solicitud,
+                  title: 'Pedido de pinol entregado',
+                  message: `Pinol entregado:\nFecha de solicitud: ${p.fecha_solicitud}\nUnidad de salud: ${p.unidad}`,
+                  is_read: (p.estatus === 'RECIBIDO') ? 'SI' : 'NO', // Si la unidad ya recibió, marcar como leída para el supervisor
+                  target_scope: 'CLUES',
+                  target_clues: p.clues,
+                  target_municipio: p.municipio,
+                  meta_json: JSON.stringify({ source: 'PINOL', event: 'PINOL_ENTREGADO', pinol_id: p.id })
+                });
+              }
+            });
+          }
+        } catch (e) {
+          console.error("[Notif DEBUG] Synthesis error:", e);
         }
 
         // 5. Mezclar y de-duplicar
