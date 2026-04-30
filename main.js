@@ -7216,6 +7216,7 @@ function showRightColumn(show) {
 
   // 1. Dashboard visibility
   toggleEl("rightColumn", show, "flex");
+  toggleEl("mainHeader", show, "flex");
 
   // 2. Login Overlay transition
   if (loginWrap) {
