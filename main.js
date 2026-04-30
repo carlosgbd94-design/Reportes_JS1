@@ -3523,14 +3523,22 @@ async function supabaseRequest(action = "", payload) {
               usuario: dataFromDb.usuario,
               municipio: dataFromDb.municipio,
               municipiosAllowed: (function() {
-                const raw = dataFromDb.municipios_allowed;
-                console.log("[Supabase Login] Raw municipios_allowed:", raw);
+                // Priorizar municipios_allowed, fallback a municipio
+                const raw = dataFromDb.municipios_allowed || dataFromDb.municipio;
                 if (!raw) return [];
                 if (Array.isArray(raw)) return raw;
-                return String(raw).split(",").map(x => x.trim()).filter(Boolean);
+                return String(raw).split(/[;,]/).map(x => x.trim().toUpperCase()).filter(Boolean);
               })(),
-              clues: dataFromDb.clues,
-              unidad: dataFromDb.unidad,
+              clues: (function() {
+                const c = dataFromDb.clues;
+                const r = String(dataFromDb.rol).toUpperCase();
+                return (r !== "UNIDAD" && !c) ? "QTSSA012154" : c;
+              })(),
+              unidad: (function() {
+                const u = dataFromDb.unidad;
+                const r = String(dataFromDb.rol).toUpperCase();
+                return (r !== "UNIDAD" && !u) ? "OFICINAS DE LA JURISDICCIÓN SANITARIA" : u;
+              })(),
               rol: dataFromDb.rol,
               email: dataFromDb.email || ""
             }
@@ -3562,12 +3570,18 @@ async function supabaseRequest(action = "", payload) {
           });
         }
 
-        // 2. Preparar Matriz Resumen (Wide Table - EXISTENCIA_BIOLOGICOS)
+        // 🛡️ Regla de Oro: Asegurar municipio correcto para jerarquía
+        let finalMuni = municipio || USER.municipio;
+        if (!finalMuni && clues) {
+          const { data: u } = await supabase.from('unidades').select('municipio').eq('clues', clues).maybeSingle();
+          if (u) finalMuni = u.municipio;
+        }
+
         const summaryRecord = {
           id: btoa(clues + ":" + fecha + ":" + Date.now()),
           timestamp: new Date().toISOString(),
           fecha,
-          municipio,
+          municipio: finalMuni,
           clues,
           unidad,
           capturado_por: USER.usuario
@@ -3621,12 +3635,20 @@ async function supabaseRequest(action = "", payload) {
       }
 
       case "saveconsumibles": {
+        // 🛡️ Regla de Oro: Asegurar municipio correcto para jerarquía
+        let finalMuni = payload.municipio || USER.municipio;
+        const finalClues = payload.clues || USER.clues;
+        if (!finalMuni && finalClues) {
+          const { data: u } = await supabase.from('unidades').select('municipio').eq('clues', finalClues).maybeSingle();
+          if (u) finalMuni = u.municipio;
+        }
+
         const record = {
-          id: btoa(USER.clues + ":" + (payload.fecha || todayYmdLocal())),
+          id: btoa(finalClues + ":" + (payload.fecha || todayYmdLocal())),
           timestamp: new Date().toISOString(),
           fecha: payload.fecha || todayYmdLocal(),
-          municipio: payload.municipio || USER.municipio,
-          clues: payload.clues || USER.clues,
+          municipio: finalMuni,
+          clues: finalClues,
           unidad: payload.unidad || USER.unidad,
           srp_dosis: Number(payload.srp_dosis || 0),
           sr_dosis: Number(payload.sr_dosis || 0),
@@ -3643,14 +3665,22 @@ async function supabaseRequest(action = "", payload) {
       }
 
       case "savebio": {
+        // 🛡️ Regla de Oro: Asegurar municipio correcto para jerarquía
+        let finalMuni = payload.municipio || USER.municipio;
+        const finalClues = payload.clues || USER.clues;
+        if (!finalMuni && finalClues) {
+          const { data: u } = await supabase.from('unidades').select('municipio').eq('clues', finalClues).maybeSingle();
+          if (u) finalMuni = u.municipio;
+        }
+
         const items = payload.items || [];
         const records = items.map(it => ({
-          id: btoa(USER.clues + ":" + it.biologico + ":" + Date.now()),
+          id: btoa(finalClues + ":" + it.biologico + ":" + Date.now()),
           timestamp: new Date().toISOString(),
           fecha_captura: payload.fecha || todayYmdLocal(),
           fecha_pedido_programada: payload.fechaPedidoProgramada || todayYmdLocal(),
-          municipio: payload.municipio || USER.municipio,
-          clues: payload.clues || USER.clues,
+          municipio: finalMuni,
+          clues: finalClues,
           unidad: payload.unidad || USER.unidad,
           biologico: it.biologico,
           max_dosis: Number(it.max_dosis || 0),
@@ -3729,17 +3759,8 @@ async function supabaseRequest(action = "", payload) {
           query = query.or(filters.join(','));
         }
         else if (role === 'MUNICIPAL') {
-          // Fallback para sesiones viejas que no tengan el array de municipiosAllowed
-          let activeMunis = Array.isArray(USER?.municipiosAllowed) ? USER.municipiosAllowed : [];
-          if (activeMunis.length === 0 && USER?.municipio) {
-            activeMunis = [USER.municipio];
-          }
-
-          console.log("[listMyNotifications] MUNICIPAL Context:", { 
-            activeMunis, 
-            rawAllowed: USER?.municipiosAllowed, 
-            mainMuni: USER?.municipio 
-          });
+          const activeMunis = Array.isArray(USER?.municipiosAllowed) ? USER.municipiosAllowed : [USER?.municipio].filter(Boolean);
+          const muniListStr = activeMunis.map(m => `"${m}"`).join(',');
 
           const filters = [
             'target_scope.eq.GLOBAL',
@@ -3750,14 +3771,12 @@ async function supabaseRequest(action = "", payload) {
             filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq.${usuario})`);
           }
 
-          // Ver cualquier cosa que esté etiquetada con sus municipios autorizados
-          activeMunis.forEach(m => {
-            if (!m) return;
-            filters.push(`target_municipio.eq."${m}"`);
-          });
+          // Jerarquía: Ver cualquier cosa etiquetada con sus municipios autorizados
+          if (activeMunis.length > 0) {
+            filters.push(`target_municipio.in.(${muniListStr})`);
+          }
 
           const orFilter = filters.join(',');
-          console.log("[listMyNotifications] OR Filter:", orFilter);
           query = query.or(orFilter);
         }
         else if (role === 'ADMIN' || role === 'JURISDICCIONAL') {
@@ -3801,6 +3820,13 @@ async function supabaseRequest(action = "", payload) {
           .eq('activo', 'SI');
 
         if (clues && clues !== "") {
+          // 🛡️ Seguridad: Si es MUNICIPAL, verificar que la CLUES le pertenezca
+          if (role === "MUNICIPAL") {
+            const { data: u } = await supabase.from('unidades').select('municipio').eq('clues', clues).maybeSingle();
+            if (u && !canSeeMunicipio_(USER, u.municipio)) {
+              throw new Error("No tienes permiso para acceder a esta unidad.");
+            }
+          }
           query = query.ilike('clues', clues);
         } else {
           query = query.eq('clues', '*');
@@ -3883,14 +3909,22 @@ async function supabaseRequest(action = "", payload) {
           }
         }
 
+        // 🛡️ Aplicar Jerarquía en el catálogo de unidades para el resumen
+        const role = String(USER?.rol || "").toUpperCase();
+        let unitsQuery = supabase.from('unidades').select('*').eq('activo', 'SI');
+        if (role === "MUNICIPAL") {
+          const allowed = USER.municipiosAllowed || [];
+          if (allowed.length > 0) unitsQuery = unitsQuery.in('municipio', allowed);
+        }
+
         // 🛡️ Logística de Ventanas: Traemos también el calendario por si hay apertura manual
         const currentMonth = fecha.substring(0, 7); // YYYY-MM
 
         const [resSR, resCons, resBio, resUnits, resCalendar] = await Promise.all([
-          supabase.from('biologicos_existencia').select('clues, capturado_por').eq('fecha', fecha),
-          supabase.from('consumibles').select('clues, capturado_por').in('fecha', consDates),
-          supabase.from('biologicos_pedido').select('clues, capturado_por, tipo_pedido').eq('fecha_captura', fecha),
-          supabase.from('unidades').select('*').eq('activo', 'SI'),
+          supabase.from('biologicos_existencia').select('clues, capturado_por, municipio').eq('fecha', fecha),
+          supabase.from('consumibles').select('clues, capturado_por, municipio').in('fecha', consDates),
+          supabase.from('biologicos_pedido').select('clues, capturado_por, tipo_pedido, municipio').eq('fecha_captura', fecha),
+          unitsQuery,
           supabase.from('calendario_pedidos').select('*').eq('anio_mes', currentMonth).eq('activo', 'SI').maybeSingle()
         ]);
 
@@ -3950,11 +3984,25 @@ async function supabaseRequest(action = "", payload) {
           return { ok: true, data: { rows: [] } };
         }
 
-        // 1. Consultas paralelas
+        // 🛡️ Aplicar Jerarquía
+        const role = String(USER?.rol || "").toUpperCase();
+        let unitsQuery = supabase.from('unidades').select('*').eq('activo', 'SI');
+        let bioQuery = supabase.from('biologicos_existencia').select('clues, fecha, municipio').gte('fecha', fechaInicio).lte('fecha', fechaFin);
+        let consQuery = supabase.from('consumibles').select('clues, fecha, municipio').gte('fecha', fechaInicio).lte('fecha', fechaFin);
+
+        if (role === "MUNICIPAL") {
+          const allowed = USER.municipiosAllowed || [];
+          if (allowed.length > 0) {
+            unitsQuery = unitsQuery.in('municipio', allowed);
+            bioQuery = bioQuery.in('municipio', allowed);
+            consQuery = consQuery.in('municipio', allowed);
+          }
+        }
+
         const [resBio, resCons, resUnits] = await Promise.all([
-          supabase.from('biologicos_existencia').select('clues, fecha').gte('fecha', fechaInicio).lte('fecha', fechaFin),
-          supabase.from('consumibles').select('clues, fecha').gte('fecha', fechaInicio).lte('fecha', fechaFin),
-          supabase.from('unidades').select('*').eq('activo', 'SI')
+          bioQuery,
+          consQuery,
+          unitsQuery
         ]);
 
         const rawBio = resBio.data || [];
@@ -4237,7 +4285,18 @@ async function supabaseRequest(action = "", payload) {
       }
 
       case "unitcatalog": {
-        const { data, error } = await supabase.from('unidades').select('*').eq('activo', 'SI').order('municipio').order('clues');
+        const role = String(USER?.rol || "").toUpperCase();
+        let query = supabase.from('unidades').select('*').eq('activo', 'SI').order('municipio').order('clues');
+        
+        // 🛡️ Aplicar Jerarquía
+        if (role === "MUNICIPAL") {
+          const allowed = USER.municipiosAllowed || [];
+          if (allowed.length > 0) query = query.in('municipio', allowed);
+        } else if (role === "UNIDAD") {
+          query = query.eq('clues', USER.clues);
+        }
+
+        const { data, error } = await query;
         if (error) throw error;
         return { ok: true, data };
       }
@@ -4245,17 +4304,16 @@ async function supabaseRequest(action = "", payload) {
       case "biogetexportoptions": {
         const { data, error } = await supabase.from('unidades').select('municipio');
         if (error) throw error;
-        let uniqueMunis = [...new Set(data.map(u => u.municipio))].sort();
+        let uniqueMunis = [...new Set(data.map(u => u.municipio))].filter(Boolean).sort();
 
-        // 🛡️ MUNICIPAL solo ve sus municipios permitidos
-        if (USER && USER.rol === "MUNICIPAL") {
-          uniqueMunis = uniqueMunis.filter(m => canSeeMunicipio_(USER, m));
-        }
+        // 🛡️ Aplicar Jerarquía
+        uniqueMunis = uniqueMunis.filter(m => canSeeMunicipio_(USER, m));
 
         return { ok: true, data: { municipios: uniqueMunis } };
       }
 
       case "export": {
+        const role = String(USER?.rol || "").toUpperCase();
         const tipo = (payload.tipo || "SR").toUpperCase();
         const table = tipo === "SR" ? "biologicos_existencia" : "consumibles";
         let query = supabase
@@ -4264,18 +4322,25 @@ async function supabaseRequest(action = "", payload) {
           .gte('fecha', payload.fechaInicio)
           .lte('fecha', payload.fechaFin);
 
+        // 🛡️ Aplicar Jerarquía
+        if (role === "MUNICIPAL") {
+          const allowed = USER.municipiosAllowed || [];
+          if (allowed.length > 0) query = query.in('municipio', allowed);
+        }
+
         const { data, error } = await query;
         if (error) throw error;
 
-        const municipios = payload.municipios || [];
-        const filtered = municipios.length > 0
-          ? data.filter(d => municipios.includes(d.unidades?.municipio || d.municipio))
+        const requestedMunis = payload.municipios || [];
+        const filtered = requestedMunis.length > 0
+          ? data.filter(d => requestedMunis.includes(d.unidades?.municipio || d.municipio))
           : data;
 
         return { ok: true, data: filtered };
       }
 
       case "bioexportmatrix": {
+        const role = String(USER?.rol || "").toUpperCase();
         let query = supabase
           .from('biologicos_pedido')
           .select('*, unidades(*)');
@@ -4284,12 +4349,18 @@ async function supabaseRequest(action = "", payload) {
           query = query.eq('fecha_pedido_programada', payload.fechaInicio);
         }
 
+        // 🛡️ Aplicar Jerarquía
+        if (role === "MUNICIPAL") {
+          const allowed = USER.municipiosAllowed || [];
+          if (allowed.length > 0) query = query.in('municipio', allowed);
+        }
+
         const { data, error } = await query;
         if (error) throw error;
 
-        const municipios = payload.municipios || [];
-        const filtered = municipios.length > 0
-          ? data.filter(d => municipios.includes(d.unidades?.municipio || d.municipio))
+        const requestedMunis = payload.municipios || [];
+        const filtered = requestedMunis.length > 0
+          ? data.filter(d => requestedMunis.includes(d.unidades?.municipio || d.municipio))
           : data;
 
         return { ok: true, data: filtered };
@@ -4389,7 +4460,7 @@ async function supabaseRequest(action = "", payload) {
 
       case "sendnotification": {
         const record = {
-          id: btoa(USER.usuario + ":" + Date.now()),
+          id: 'NOTIF:' + btoa((payload.clues || payload.usuario_destino || 'SYS') + ":" + Date.now()),
           created_ts: new Date().toISOString(),
           created_date: todayYmdLocal(),
           from_usuario: USER.usuario,
@@ -4403,11 +4474,12 @@ async function supabaseRequest(action = "", payload) {
           is_read: 'NO'
         };
 
-        // Si se dirige a CLUES pero no tiene Municipio, intentamos buscarlo para que el MUNICIPAL lo vea
+        // 🛡️ Regla de Oro: Si se dirige a CLUES, auto-poblar municipio para que el MUNICIPAL lo vea
         if (record.target_scope === 'CLUES' && record.target_clues && !record.target_municipio) {
           const { data: u } = await supabase.from('unidades').select('municipio').eq('clues', record.target_clues).maybeSingle();
           if (u) record.target_municipio = u.municipio;
         }
+        
         const { error } = await supabase.from('notificaciones').insert(record);
         if (error) throw error;
         return { ok: true };
@@ -4525,16 +4597,14 @@ async function supabaseRequest(action = "", payload) {
         let { data: filesData, error: filesErr } = await supabase.rpc('get_evidences_list');
         if (filesErr) throw filesErr;
 
-        // --- FILTRADO DE SEGURIDAD (Strict Rules) ---
+        // --- FILTRADO DE JERARQUÍA (Senior Logic) ---
         if (role === "ADMIN" || role === "JURISDICCIONAL") {
-          // Ven TODO
-        } else if (role === "MUNICIPAL") {
-          // Ven archivos de sus municipios
+          // Acceso total
+        } else {
           filesData = filesData.filter(f => {
-            const folderUpper = String(f.folder || "").toUpperCase();
-            const municipioMatch = userMunicipios.some(m => folderUpper.includes(m));
-            // También ven evidencias de unidades de sus municipios (necesitaríamos metadata, pero por ahora filtramos por carpeta de municipio)
-            return municipioMatch;
+            const folderMuni = String(f.folder || "").toUpperCase();
+            // Si el archivo está en una carpeta que coincide con mis municipios autorizados, lo veo
+            return canSeeMunicipio_(USER, folderMuni);
           });
         } else if (role === "UNIDAD") {
           // Sólo ven lo de su CLUES
@@ -6874,30 +6944,61 @@ async function whoami() {
 function buildUserFromPerfil(uid, email, perfil) {
   const rol = String((perfil && perfil.rol) || "UNIDAD").toUpperCase();
   const municipio = (perfil && perfil.municipio) || "";
+  
+  // 🏢 Constantes de la Jurisdicción Sanitaria 1
+  const DEFAULT_ADMIN_CLUES = "QTSSA012154";
+  const DEFAULT_ADMIN_UNIDAD = "OFICINAS DE LA JURISDICCIÓN SANITARIA";
 
   // Derivar municipiosAllowed basándose en el rol
   let municipiosAllowed = [];
   if (rol === "ADMIN" || rol === "JURISDICCIONAL") {
     municipiosAllowed = ["*"]; // Acceso total
   } else if (rol === "MUNICIPAL") {
-    // Soporte para múltiples municipios (separados por coma)
-    municipiosAllowed = municipio ? municipio.split(",").map(x => x.trim()).filter(Boolean) : [];
+    // Soporte para múltiples municipios (separados por coma o punto y coma)
+    const rawMuni = (perfil && (perfil.municipio || perfil.municipios_allowed)) || "";
+    municipiosAllowed = String(rawMuni)
+      .split(/[;,]/)
+      .map(x => x.trim().toUpperCase())
+      .filter(Boolean);
   }
-  // UNIDAD no necesita municipiosAllowed
+
+  // 🛡️ Regla de CLUES para Administrativos: Si no tienen CLUES, se les asigna la de la Jurisdicción
+  let userClues = (perfil && perfil.clues) || "";
+  let userUnidad = (perfil && perfil.unidad) || "";
+
+  if (rol !== "UNIDAD" && !userClues) {
+    userClues = DEFAULT_ADMIN_CLUES;
+    userUnidad = DEFAULT_ADMIN_UNIDAD;
+  }
 
   return {
     uid: uid,
     email: email,
     rol: rol,
     usuario: (perfil && perfil.usuario) || email,
-    clues: (perfil && perfil.clues) || "",
-    unidad: (perfil && perfil.unidad) || "",
+    clues: userClues,
+    unidad: userUnidad,
     municipio: municipio,
     municipiosAllowed: municipiosAllowed,
     activo: (perfil && perfil.activo) || "SI",
     must_change: !!(perfil && perfil.must_change),
     mustChange: !!(perfil && perfil.must_change)
   };
+}
+
+/**
+ * 🛡️ canSeeMunicipio_ — Validador de acceso a municipio basado en la jerarquía
+ */
+function canSeeMunicipio_(user, targetMuni) {
+  if (!user || !targetMuni) return false;
+  const role = String(user.rol).toUpperCase();
+  if (role === "ADMIN" || role === "JURISDICCIONAL") return true;
+  
+  const allowed = Array.isArray(user.municipiosAllowed) ? user.municipiosAllowed : [];
+  if (allowed.includes("*")) return true;
+  
+  const normalizedTarget = String(targetMuni).trim().toUpperCase();
+  return allowed.includes(normalizedTarget);
 }
 
 
