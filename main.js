@@ -4411,17 +4411,6 @@ async function supabaseRequest(action = "", payload) {
         return { ok: true, data: filtered };
       }
 
-        const { data, error } = await query;
-        if (error) throw error;
-
-        const requestedMunis = payload.municipios || [];
-        const filtered = requestedMunis.length > 0
-          ? data.filter(d => requestedMunis.includes(d.unidades?.municipio || d.municipio))
-          : data;
-
-        return { ok: true, data: filtered };
-      }
-
       case "listpinol": {
         let query = supabase
           .from('pinol_solicitudes')
