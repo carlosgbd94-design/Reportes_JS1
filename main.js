@@ -3524,6 +3524,7 @@ async function supabaseRequest(action = "", payload) {
               municipio: dataFromDb.municipio,
               municipiosAllowed: (function() {
                 const raw = dataFromDb.municipios_allowed;
+                console.log("[Supabase Login] Raw municipios_allowed:", raw);
                 if (!raw) return [];
                 if (Array.isArray(raw)) return raw;
                 return String(raw).split(",").map(x => x.trim()).filter(Boolean);
@@ -3728,21 +3729,36 @@ async function supabaseRequest(action = "", payload) {
           query = query.or(filters.join(','));
         }
         else if (role === 'MUNICIPAL') {
-          const activeMunis = myMunis.length > 0 ? myMunis : (myMuniSingle ? [myMuniSingle] : []);
-          const muniListStr = activeMunis.map(m => `"${m}"`).join(',');
+          // Fallback para sesiones viejas que no tengan el array de municipiosAllowed
+          let activeMunis = Array.isArray(USER?.municipiosAllowed) ? USER.municipiosAllowed : [];
+          if (activeMunis.length === 0 && USER?.municipio) {
+            activeMunis = [USER.municipio];
+          }
+
+          console.log("[listMyNotifications] MUNICIPAL Context:", { 
+            activeMunis, 
+            rawAllowed: USER?.municipiosAllowed, 
+            mainMuni: USER?.municipio 
+          });
 
           const filters = [
             'target_scope.eq.GLOBAL',
             'and(target_scope.eq.ROLE,target_usuario.eq.MUNICIPAL)'
           ];
-          if (usuario) filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq.${usuario})`);
-
-          if (activeMunis.length > 0) {
-            // Ver cualquier cosa dirigida a sus municipios (Staff, Unidades o CLUES específicas)
-            filters.push(`target_municipio.in.(${muniListStr})`);
+          
+          if (usuario) {
+            filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq.${usuario})`);
           }
 
-          query = query.or(filters.join(','));
+          // Ver cualquier cosa que esté etiquetada con sus municipios autorizados
+          activeMunis.forEach(m => {
+            if (!m) return;
+            filters.push(`target_municipio.eq."${m}"`);
+          });
+
+          const orFilter = filters.join(',');
+          console.log("[listMyNotifications] OR Filter:", orFilter);
+          query = query.or(orFilter);
         }
         else if (role === 'ADMIN' || role === 'JURISDICCIONAL') {
           const filters = [
