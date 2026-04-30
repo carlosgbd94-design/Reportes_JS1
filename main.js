@@ -3766,19 +3766,19 @@ async function supabaseRequest(action = "", payload) {
         (allUnits || []).forEach(u => unitMap[u.clues] = u.municipio);
 
         // 4. SÍNTESIS DE NOTIFICACIONES (Bypass RLS)
-        // Si la tabla 'notificaciones' está bloqueada por RLS para este usuario (RLS Test: false),
-        // reconstruimos alertas críticas desde las tablas de origen que SÍ podemos leer.
         let virtualNotifs = [];
-        if (role === "MUNICIPAL" || role === "ADMIN" || role === "JURISDICCIONAL") {
-          const { data: pinolSrc } = await supabase.from('pinol_solicitudes')
-            .select('*')
-            .in('estatus', ['ENTREGADO', 'RECIBIDO'])
-            .order('editado_ts', { ascending: false })
-            .limit(50);
-          
-          (pinolSrc || []).forEach(p => {
-            // Solo si pertenece a mi zona
-            if (canSeeMunicipio_(USER, p.municipio)) {
+        try {
+          if (role === "MUNICIPAL" || role === "ADMIN" || role === "JURISDICCIONAL") {
+            const { data: pinolSrc, error: pinolErr } = await supabase.from('pinol_solicitudes')
+              .select('*')
+              .in('estatus', ['ENTREGADO', 'RECIBIDO'])
+              .order('timestamp_solicitud', { ascending: false })
+              .limit(50);
+            
+            if (pinolErr) console.warn("[Notif DEBUG] Pinol Synthesis warning:", pinolErr);
+
+            (pinolSrc || []).forEach(p => {
+              if (canSeeMunicipio_(USER, p.municipio)) {
               virtualNotifs.push({
                 id: 'VNOTIF:PINOL:' + p.id,
                 created_ts: p.editado_ts || p.timestamp_solicitud,
