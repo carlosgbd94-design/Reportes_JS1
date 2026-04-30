@@ -325,7 +325,9 @@
     // SUPABASE CONFIG (Matching main.js)
     const SUPABASE_URL = "https://utclfqjietlxzlorxhrs.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Y2xmcWppZXRseHpsb3J4aHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNTYyNTQsImV4cCI6MjA5MTkzMjI1NH0.EgDK7xkSZHZyUlGF5m2C7bZjrfkx1M8cBXzxIFedDa4";
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    // Evitar error de referencia al inicializar: usar un nombre distinto para el cliente
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const $ = id => document.getElementById(id);
 
@@ -355,7 +357,8 @@
       $('btnUpdate').disabled = true;
 
       try {
-        const { error } = await supabase.auth.updateUser({ password: p1 });
+        // Usar supabaseClient en lugar de la variable que colisionaba
+        const { error } = await supabaseClient.auth.updateUser({ password: p1 });
 
         if (error) {
           showToast("Error: " + error.message);
@@ -372,6 +375,7 @@
 
       } catch (err) {
         showToast("Error de conexión");
+        console.error(err);
       } finally {
         $('overlay').classList.remove('show');
         $('btnUpdate').disabled = false;
@@ -379,12 +383,10 @@
     }
 
     window.addEventListener('load', () => {
-      // Supabase Auth link usually happens automatically if redirected to this page with the right params.
-      // If the user arrived here without a session, they might get an error when updating.
       $('btnUpdate').onclick = handleUpdate;
       
-      // Optional: Check if we have a recovery flow session
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      // Verificar sesión de recuperación
+      supabaseClient.auth.getSession().then(({ data: { session } }) => {
         if (!session) {
           showToast("No se detectó sesión de recuperación. Inicia el proceso nuevamente.");
         }
