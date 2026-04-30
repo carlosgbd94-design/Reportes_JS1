@@ -4845,28 +4845,39 @@ input[disabled] {
 }
 
 .notifMiniBtn {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  border: 1px solid transparent;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: #f1f5f9;
   color: #64748b;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.04);
 }
 
 .notifMiniBtn:hover {
-  transform: scale(1.1);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-.notifMiniBtn.primary { background: #e0f2fe; color: #0369a1; }
-.notifMiniBtn.good { background: #dcfce7; color: #15803d; }
-.notifMiniBtn.delete { background: #fee2e2; color: #b91c1c; }
+.notifMiniBtn.primary { 
+  background: #e0f2fe; color: #0369a1; border-color: rgba(3, 105, 161, 0.1); 
+}
+.notifMiniBtn.good { 
+  background: #dcfce7; color: #15803d; border-color: rgba(21, 128, 61, 0.1); 
+}
+.notifMiniBtn.delete { 
+  background: #fee2e2; color: #b91c1c; border-color: rgba(185, 28, 28, 0.1); 
+}
 
-.notifMiniBtn span { font-size: 16px; }
+.notifMiniBtn span { 
+  font-size: 18px; 
+  font-variation-settings: 'wght' 600;
+}
 
 
 .notifBody.snippet {
