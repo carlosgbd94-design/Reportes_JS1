@@ -3713,22 +3713,21 @@ async function supabaseRequest(action = "", payload) {
           .limit(50);
 
         if (role === 'UNIDAD') {
-          // UNIDADES: Solo ven Global, lo dirigido a su CLUES específica, o a su Municipio (como grupo de UNIDADES).
           const filters = ['target_scope.eq.GLOBAL'];
-          if (clues) filters.push(`and(target_scope.eq.CLUES,target_clues.eq."${clues}")`);
+          // Nota: PostgREST requiere comillas dobles para valores con espacios. 
+          // Las CLUES no tienen espacios, pero los Municipios sí.
+          if (clues) filters.push(`and(target_scope.eq.CLUES,target_clues.eq.${clues})`);
           if (myMuniSingle) filters.push(`and(target_scope.eq.MUNICIPIO_UNITS,target_municipio.eq."${myMuniSingle}")`);
-          if (usuario) filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq."${usuario}")`);
+          if (usuario) filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq.${usuario})`);
           query = query.or(filters.join(','));
         }
         else if (role === 'MUNICIPAL') {
-          // MUNICIPAL: Ve Global, lo dirigido a Municipales, su Usuario, Y TODAS las CLUES de sus municipios a cargo.
           const filters = [
             'target_scope.eq.GLOBAL',
             'and(target_scope.eq.ROLE,target_usuario.eq.MUNICIPAL)'
           ];
-          if (usuario) filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq."${usuario}")`);
+          if (usuario) filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq.${usuario})`);
 
-          // Agregar filtros para todos los municipios a su cargo (Staff, Unidades y CLUES específicas)
           const activeMunis = myMunis.length > 0 ? myMunis : (myMuniSingle ? [myMuniSingle] : []);
           activeMunis.forEach(m => {
             if (!m) return;
@@ -3740,23 +3739,26 @@ async function supabaseRequest(action = "", payload) {
           query = query.or(filters.join(','));
         }
         else if (role === 'ADMIN' || role === 'JURISDICCIONAL') {
-          // ADMIN y JURISDICCIONAL: Ven absolutamente todo.
-          // No aplicamos filtros restrictivos para que puedan auditar todo el sistema.
-          // (La query base sin filtros ya trae todo, pero limitamos a los scopes existentes por orden)
-          const filters = ['target_scope.eq.GLOBAL', 'target_scope.eq.MUNICIPIO', 'target_scope.eq.CLUES', 'target_scope.eq.USUARIO', 'target_scope.eq.MUNICIPIO_UNITS', 'target_scope.eq.ROLE'];
+          const filters = [
+            'target_scope.eq.GLOBAL', 
+            'target_scope.eq.MUNICIPIO', 
+            'target_scope.eq.CLUES', 
+            'target_scope.eq.USUARIO', 
+            'target_scope.eq.MUNICIPIO_UNITS', 
+            'target_scope.eq.ROLE'
+          ];
           query = query.or(filters.join(','));
         }
 
         const { data, error } = await query;
-        if (error) throw error;
+        if (error) {
+          console.error(`[Supabase ERROR] listMyNotifications:`, error);
+          throw error;
+        }
 
-        // Calcular unread localmente del set devuelto o con otra query si es necesario
-        // Por simplicidad y performance, calculamos sobre el set de los últimos 50
         const unreadCount = (data || []).filter(n => String(n.is_read).toUpperCase() === 'NO').length;
-
         console.log(`[Supabase DEBUG] listMyNotifications for ${role}:`, { items: data?.length, unread: unreadCount });
 
-        // IMPORTANTE: Mapeo compatible con loadNotifications() en main.js:1118
         return {
           ok: true,
           data: {
@@ -3776,7 +3778,7 @@ async function supabaseRequest(action = "", payload) {
           .select('*')
           .eq('activo', 'SI');
 
-        if (clues) {
+        if (clues && clues !== "") {
           query = query.ilike('clues', clues);
         } else {
           query = query.eq('clues', '*');
