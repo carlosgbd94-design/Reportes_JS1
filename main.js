@@ -4363,7 +4363,7 @@ async function supabaseRequest(action = "", payload) {
         const table = tipo === "SR" ? "biologicos_existencia" : "consumibles";
         let query = supabase
           .from(table)
-          .select('*, unidades(*)')
+          .select('*')
           .gte('fecha', payload.fechaInicio)
           .lte('fecha', payload.fechaFin);
 
@@ -4376,9 +4376,9 @@ async function supabaseRequest(action = "", payload) {
         const { data, error } = await query;
         if (error) throw error;
 
-        const requestedMunis = payload.municipios || [];
+        const requestedMunis = (payload.municipios || []).map(m => String(m).toUpperCase());
         const filtered = requestedMunis.length > 0
-          ? data.filter(d => requestedMunis.includes(d.unidades?.municipio || d.municipio))
+          ? (data || []).filter(d => requestedMunis.includes(String(d.municipio || "").toUpperCase()))
           : data;
 
         return { ok: true, data: filtered };
@@ -4388,7 +4388,7 @@ async function supabaseRequest(action = "", payload) {
         const role = String(USER?.rol || "").toUpperCase();
         let query = supabase
           .from('biologicos_pedido')
-          .select('*, unidades(*)');
+          .select('*');
 
         if (payload.fechaInicio) {
           query = query.eq('fecha_pedido_programada', payload.fechaInicio);
@@ -4399,6 +4399,17 @@ async function supabaseRequest(action = "", payload) {
           const allowed = USER.municipiosAllowed || [];
           if (allowed.length > 0) query = query.in('municipio', allowed);
         }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        const requestedMunis = (payload.municipios || []).map(m => String(m).toUpperCase());
+        const filtered = requestedMunis.length > 0
+          ? (data || []).filter(d => requestedMunis.includes(String(d.municipio || "").toUpperCase()))
+          : data;
+
+        return { ok: true, data: filtered };
+      }
 
         const { data, error } = await query;
         if (error) throw error;
@@ -4775,9 +4786,10 @@ async function supabaseRequest(action = "", payload) {
         const { month, year } = payload;
         if (!month || !year) throw new Error("Parámetros insuficientes");
 
-        // Buscamos capturas reales en biologicos_pedido para este mes
+        // 🛡️ Cálculo seguro del último día del mes (Evita April 31st error)
+        const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
         const start = `${year}-${month.padStart(2, '0')}-01`;
-        const end = `${year}-${month.padStart(2, '0')}-31`;
+        const end = `${year}-${month.padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
         const { data, error } = await supabase
           .from('biologicos_pedido')
