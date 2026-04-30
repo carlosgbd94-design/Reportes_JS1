@@ -4608,20 +4608,24 @@ async function supabaseRequest(action = "", payload) {
         const now = new Date();
         const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         const extension = file.name.split('.').pop().toLowerCase();
-        const cleanOriginalName = normalizePath(file.name.split('.').shift()).replace(/[\s\/]/g, '_');
+        
+        // 🧼 Normalización de Nombres para Rutas Seguras
+        const cleanUnit = normalizePath(targetUnidad || "SIN_UNIDAD").replace(/[\s\/]/g, '_');
+        const cleanCategory = normalizePath(category || "OTROS").replace(/[\s\/]/g, '_');
+        const clues = targetClues || USER.clues || "SIN_CLUES";
 
         if (category.toUpperCase().includes("SUPERVISI")) {
-          // REGLA: SÓLO MUNICIPAL SUBE SUPERVISIONES
+          // 🛡️ REGLA: SÓLO MUNICIPAL SUBE SUPERVISIONES
           if (role !== "MUNICIPAL" && role !== "ADMIN") throw new Error("Acceso denegado: Solo usuarios Municipales pueden subir supervisiones.");
           
-          folderName = normalizePath(targetMunicipio || "SIN_MUNICIPIO").replace(/[\s\/]/g, '_');
-          fileName = `SUPERVISION_${dateStr}_${cleanOriginalName}.${extension}`;
+          folderName = `Supervision/${clues}_${cleanUnit}`;
+          fileName = `${dateStr}-EVIDENCIA-SUPERVISION-${clues}_${cleanUnit}.${extension}`;
         } else {
-          // REGLA: SÓLO UNIDAD SUBE EVIDENCIAS/CAPACITACIONES
+          // 🛡️ REGLA: SÓLO UNIDAD SUBE EVIDENCIAS/CAPACITACIONES
           if (role !== "UNIDAD" && role !== "ADMIN") throw new Error("Acceso denegado: Solo Unidades pueden subir evidencias.");
           
-          folderName = normalizePath(category).replace(/[\s\/]/g, '_');
-          fileName = `${dateStr}-EVIDENCIA-${normalizePath(category).replace(/[\s\/]/g, '_')}-${targetClues}.${extension}`;
+          folderName = `${cleanCategory}/${clues}_${cleanUnit}`;
+          fileName = `${dateStr}-${cleanCategory}_${clues}_${cleanUnit}.${extension}`;
         }
 
         const folderPath = `${folderName}/${fileName}`.replace(/\/\//g, '/');
