@@ -3783,7 +3783,7 @@ async function supabaseRequest(action = "", payload) {
                   id: 'VNOTIF:PINOL:' + p.id,
                   created_ts: p.editado_ts || p.timestamp_solicitud,
                   title: 'Pedido de pinol entregado',
-                  message: `Pinol entregado:\nFecha de solicitud: ${p.fecha_solicitud}\nUnidad de salud: ${p.unidad}`,
+                  message: `Pinol entregado:\nFecha de solicitud: ${p.fecha_solicitud}\nUnidad: ${p.unidad || unitMap[p.clues] || 'Unidad Desconocida'}`,
                   is_read: (p.estatus === 'RECIBIDO') ? 'SI' : 'NO', // Si la unidad ya recibió, marcar como leída para el supervisor
                   target_scope: 'CLUES',
                   target_clues: p.clues,
