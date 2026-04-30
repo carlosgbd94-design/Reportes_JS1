@@ -3495,6 +3495,7 @@ async function supabaseRequest(action = "", payload) {
           usuario: userRaw.usuario || userRaw.USUARIO || "",
           password: userRaw.password || userRaw.PASSWORD || "",
           municipio: userRaw.municipio || userRaw.MUNICIPIO || "",
+          municipios_allowed: userRaw.municipios_allowed || userRaw.MUNICIPIOS_ALLOWED || null,
           clues: userRaw.clues || userRaw.CLUES || "",
           unidad: userRaw.unidad || userRaw.UNIDAD || "",
           rol: userRaw.rol || userRaw.ROL || "",
@@ -3521,7 +3522,12 @@ async function supabaseRequest(action = "", payload) {
             user: {
               usuario: dataFromDb.usuario,
               municipio: dataFromDb.municipio,
-              municipiosAllowed: dataFromDb.municipios_allowed || [],
+              municipiosAllowed: (function() {
+                const raw = dataFromDb.municipios_allowed;
+                if (!raw) return [];
+                if (Array.isArray(raw)) return raw;
+                return String(raw).split(",").map(x => x.trim()).filter(Boolean);
+              })(),
               clues: dataFromDb.clues,
               unidad: dataFromDb.unidad,
               rol: dataFromDb.rol,
@@ -3722,19 +3728,19 @@ async function supabaseRequest(action = "", payload) {
           query = query.or(filters.join(','));
         }
         else if (role === 'MUNICIPAL') {
+          const activeMunis = myMunis.length > 0 ? myMunis : (myMuniSingle ? [myMuniSingle] : []);
+          const muniListStr = activeMunis.map(m => `"${m}"`).join(',');
+
           const filters = [
             'target_scope.eq.GLOBAL',
             'and(target_scope.eq.ROLE,target_usuario.eq.MUNICIPAL)'
           ];
           if (usuario) filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq.${usuario})`);
 
-          const activeMunis = myMunis.length > 0 ? myMunis : (myMuniSingle ? [myMuniSingle] : []);
-          activeMunis.forEach(m => {
-            if (!m) return;
-            filters.push(`and(target_scope.eq.MUNICIPIO,target_municipio.eq."${m}")`);
-            filters.push(`and(target_scope.eq.MUNICIPIO_UNITS,target_municipio.eq."${m}")`);
-            filters.push(`and(target_scope.eq.CLUES,target_municipio.eq."${m}")`);
-          });
+          if (activeMunis.length > 0) {
+            // Ver cualquier cosa dirigida a sus municipios (Staff, Unidades o CLUES específicas)
+            filters.push(`target_municipio.in.(${muniListStr})`);
+          }
 
           query = query.or(filters.join(','));
         }
@@ -4380,6 +4386,12 @@ async function supabaseRequest(action = "", payload) {
           message: payload.message || "",
           is_read: 'NO'
         };
+
+        // Si se dirige a CLUES pero no tiene Municipio, intentamos buscarlo para que el MUNICIPAL lo vea
+        if (record.target_scope === 'CLUES' && record.target_clues && !record.target_municipio) {
+          const { data: u } = await supabase.from('unidades').select('municipio').eq('clues', record.target_clues).maybeSingle();
+          if (u) record.target_municipio = u.municipio;
+        }
         const { error } = await supabase.from('notificaciones').insert(record);
         if (error) throw error;
         return { ok: true };
@@ -4580,6 +4592,7 @@ async function supabaseRequest(action = "", payload) {
             from_rol: USER.rol,
             target_scope: 'CLUES',
             target_clues: sol.clues,
+            target_municipio: sol.municipio || null, // Importante para jerarquía municipal
             title: 'Pinol entregado',
             message: payload.comentario_notificacion || 'Tu solicitud de pinol ha sido marcada como entregada.',
             is_read: 'NO',
