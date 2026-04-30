@@ -754,7 +754,10 @@ function showToast(msg, ok = true, type = null, options = {}) {
       <div class="toast-content">
         <div class="toast-message">${cleanMsg}</div>
       </div>
+      <div class="toast-timer"></div>
     `;
+
+  toastEl.style.setProperty('--toast-duration', `${duration}ms`);
 
   container.appendChild(toastEl);
 
