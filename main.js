@@ -4605,7 +4605,7 @@ async function supabaseRequest(action = "", payload) {
           filesData = filesData.filter(f => String(f.name || "").includes(userClues));
         } else {
           filesData = filesData.filter(f => {
-            const folderMuni = String(f.folder || "").toUpperCase();
+            const folderMuni = normalizeText(f.folder || "");
             // Si el archivo está en una carpeta que coincide con mis municipios autorizados, lo veo
             return canSeeMunicipio_(USER, folderMuni);
           });
@@ -6617,6 +6617,17 @@ function capitalizeFirstLetter(text = "") {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
 }
 
+/**
+ * 🧹 normalizeText — Elimina acentos y normaliza a mayúsculas para comparaciones seguras
+ */
+function normalizeText(text = "") {
+  return String(text || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase();
+}
+
 function formatDayBadgeMx(ymd = "") {
   const d = ymd ? new Date(`${ymd}T00:00:00`) : new Date();
 
@@ -6997,8 +7008,9 @@ function canSeeMunicipio_(user, targetMuni) {
   const allowed = Array.isArray(user.municipiosAllowed) ? user.municipiosAllowed : [];
   if (allowed.includes("*")) return true;
   
-  const normalizedTarget = String(targetMuni).trim().toUpperCase();
-  return allowed.includes(normalizedTarget);
+  const normalizedTarget = normalizeText(targetMuni);
+  // Comparar contra la lista normalizada
+  return allowed.some(a => normalizeText(a) === normalizedTarget);
 }
 
 
