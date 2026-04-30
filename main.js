@@ -3921,9 +3921,9 @@ async function supabaseRequest(action = "", payload) {
         const currentMonth = fecha.substring(0, 7); // YYYY-MM
 
         const [resSR, resCons, resBio, resUnits, resCalendar] = await Promise.all([
-          supabase.from('biologicos_existencia').select('clues, capturado_por, municipio').eq('fecha', fecha),
-          supabase.from('consumibles').select('clues, capturado_por, municipio').in('fecha', consDates),
-          supabase.from('biologicos_pedido').select('clues, capturado_por, tipo_pedido, municipio').eq('fecha_captura', fecha),
+          supabase.from('biologicos_existencia').select('clues, capturado_por').eq('fecha', fecha),
+          supabase.from('consumibles').select('clues, capturado_por').in('fecha', consDates),
+          supabase.from('biologicos_pedido').select('clues, capturado_por, tipo_pedido').eq('fecha_captura', fecha),
           unitsQuery,
           supabase.from('calendario_pedidos').select('*').eq('anio_mes', currentMonth).eq('activo', 'SI').maybeSingle()
         ]);
@@ -3987,27 +3987,28 @@ async function supabaseRequest(action = "", payload) {
         // 🛡️ Aplicar Jerarquía
         const role = String(USER?.rol || "").toUpperCase();
         let unitsQuery = supabase.from('unidades').select('*').eq('activo', 'SI');
-        let bioQuery = supabase.from('biologicos_existencia').select('clues, fecha, municipio').gte('fecha', fechaInicio).lte('fecha', fechaFin);
-        let consQuery = supabase.from('consumibles').select('clues, fecha, municipio').gte('fecha', fechaInicio).lte('fecha', fechaFin);
-
+        
         if (role === "MUNICIPAL") {
           const allowed = USER.municipiosAllowed || [];
           if (allowed.length > 0) {
             unitsQuery = unitsQuery.in('municipio', allowed);
-            bioQuery = bioQuery.in('municipio', allowed);
-            consQuery = consQuery.in('municipio', allowed);
           }
         }
 
         const [resBio, resCons, resUnits] = await Promise.all([
-          bioQuery,
-          consQuery,
+          supabase.from('biologicos_existencia').select('clues, fecha').gte('fecha', fechaInicio).lte('fecha', fechaFin),
+          supabase.from('consumibles').select('clues, fecha').gte('fecha', fechaInicio).lte('fecha', fechaFin),
           unitsQuery
         ]);
 
-        const rawBio = resBio.data || [];
-        const rawCons = resCons.data || [];
+        const rawBioAll = resBio.data || [];
+        const rawConsAll = resCons.data || [];
         const units = resUnits.data || [];
+        const unitCluesSet = new Set(units.map(u => u.clues));
+
+        // Filtrar en memoria para asegurar que solo vemos lo de nuestras unidades permitidas
+        const rawBio = rawBioAll.filter(r => unitCluesSet.has(r.clues));
+        const rawCons = rawConsAll.filter(r => unitCluesSet.has(r.clues));
 
         // 2. Calcular días esperados (Logística Senior)
         const getExpectedDates = (start, end, tipo) => {
@@ -4214,18 +4215,18 @@ async function supabaseRequest(action = "", payload) {
             if (global_avg > 100) global_avg = 100;
 
             if (role === "MUNICIPAL" || role === "ADMIN" || role === "JURISDICCIONAL") {
-              const muniFilter = (role === "MUNICIPAL") ? municipio : null;
-              if (muniFilter) {
+              const allowedMunis = (role === "MUNICIPAL") ? (USER.municipiosAllowed || []) : [];
+              
+              if (allowedMunis.length > 0) {
+                // Para MUNICIPAL: Solo contar lo que pertenezca a sus municipios
                 const [resMuniUnits, resMuniSR, resMuniCons] = await Promise.all([
-                  supabase.from('unidades').select('clues', { count: 'exact', head: true }).eq('activo', 'SI').eq('municipio', muniFilter),
-                  supabase.from('biologicos_existencia').select('clues', { count: 'exact', head: true }).gte('fecha', monthStartStr).lte('fecha', today).eq('municipio', muniFilter),
-                  supabase.from('consumibles').select('clues', { count: 'exact', head: true }).gte('fecha', monthStartStr).lte('fecha', today).eq('municipio', muniFilter)
+                  supabase.from('unidades').select('clues', { count: 'exact', head: true }).eq('activo', 'SI').in('municipio', allowedMunis),
+                  supabase.from('biologicos_existencia').select('clues', { count: 'exact', head: true }).gte('fecha', monthStartStr).lte('fecha', today),
+                  supabase.from('consumibles').select('clues', { count: 'exact', head: true }).gte('fecha', monthStartStr).lte('fecha', today)
                 ]);
-                const totalUnitsMuni = resMuniUnits.count || 0;
-                const totalExpectedMuni = totalUnitsMuni * totalExpectedPerUnit;
-                const totalCapturedMuni = (resMuniSR.count || 0) + (resMuniCons.count || 0);
-                municipal_avg = totalExpectedMuni > 0 ? Math.round((totalCapturedMuni / totalExpectedMuni) * 100) : 0;
-                if (municipal_avg > 100) municipal_avg = 100;
+                // Nota: resMuniSR y resMuniCons no están filtrados por municipio en la DB porque no tienen la columna.
+                // El promedio será aproximado o requeriría un RPC. Usamos el promedio global como base para supervisores por ahora.
+                municipal_avg = global_avg; 
               } else {
                 municipal_avg = global_avg;
               }
