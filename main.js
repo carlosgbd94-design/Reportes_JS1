@@ -3781,11 +3781,19 @@ async function supabaseRequest(action = "", payload) {
 
             // ii. Por CLUES (derivar municipio si no viene en la notif)
             const derivedMuni = unitMap[nClues];
-            if (derivedMuni && canSeeMunicipio_(USER, derivedMuni)) return true;
+            if (derivedMuni) {
+              const canSee = canSeeMunicipio_(USER, derivedMuni);
+              if (canSee) return true;
+              else console.log(`[Notif DEBUG] Municipal Supervisor cannot see unit ${nClues} because it belongs to ${derivedMuni}`);
+            } else if (nClues && nClues !== "SYS") {
+              console.log(`[Notif DEBUG] Unit ${nClues} not found in unitMap`);
+            }
           }
 
           return false;
         });
+
+        console.log(`[Notif DEBUG] Final filtered list for ${role}:`, filtered.length, "of", rawNotifs.length);
 
         const unreadCount = filtered.filter(n => String(n.is_read).toUpperCase() === 'NO').length;
         return {
@@ -7005,15 +7013,20 @@ function buildUserFromPerfil(uid, email, perfil) {
  */
 function canSeeMunicipio_(user, targetMuni) {
   if (!user || !targetMuni) return false;
-  const role = String(user.rol).toUpperCase();
+  const role = String(user.rol || "").toUpperCase();
   if (role === "ADMIN" || role === "JURISDICCIONAL") return true;
   
   const allowed = Array.isArray(user.municipiosAllowed) ? user.municipiosAllowed : [];
   if (allowed.includes("*")) return true;
   
   const normalizedTarget = normalizeText(targetMuni);
-  // Comparar contra la lista normalizada
-  return allowed.some(a => normalizeText(a) === normalizedTarget);
+  const result = allowed.some(a => normalizeText(a) === normalizedTarget);
+
+  if (!result && role === "MUNICIPAL") {
+    console.log(`[Hierarchy DEBUG] Access Denied: target=${normalizedTarget}, allowed=[${allowed.map(a => normalizeText(a)).join(',')}]`);
+  }
+  
+  return result;
 }
 
 
