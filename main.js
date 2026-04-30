@@ -3748,20 +3748,21 @@ async function supabaseRequest(action = "", payload) {
           .order('created_ts', { ascending: false })
           .limit(100);
 
-        // 🛡️ REGLA DE ORO: Visibilidad Jerárquica
+        // 🛡️ REGLA DE ORO: Visibilidad Jerárquica Total
         let filters = ['target_scope.eq.GLOBAL'];
         
-        // 1. Notificaciones directas al usuario
-        if (usuario) filters.push(`and(target_scope.eq.USUARIO,target_usuario.eq."${usuario}")`);
-
-        // 2. Notificaciones por Rol (Broadcast)
+        // 1. Dirigidas a mi usuario o mi rol
+        if (usuario) filters.push(`target_usuario.eq."${usuario}"`);
         filters.push(`and(target_scope.eq.ROLE,target_usuario.eq."${role}")`);
 
-        // 3. Notificaciones por Unidad (CLUES)
-        if (role === "UNIDAD") {
-          if (clues) filters.push(`and(target_scope.eq.CLUES,target_clues.eq."${clues}")`);
-        } else if (role === "MUNICIPAL" || role === "ADMIN" || role === "JURISDICCIONAL") {
-          // Si es supervisor, puede ver lo de sus CLUES permitidas
+        // 2. Dirigidas a mi CLUES personal (si soy UNIDAD)
+        if (role === "UNIDAD" && clues) {
+          filters.push(`target_clues.eq."${clues}"`);
+        }
+
+        // 3. Jerarquía de Supervisión (MUNICIPAL / ADMIN)
+        if (role === "MUNICIPAL" || role === "ADMIN" || role === "JURISDICCIONAL") {
+          // Obtener CLUES de mi zona para ver alertas de mis unidades
           const { data: muniUnits } = await supabase.from('unidades').select('clues, municipio').eq('activo', 'SI');
           const allowedClues = (muniUnits || [])
             .filter(u => canSeeMunicipio_(USER, u.municipio))
@@ -3769,13 +3770,12 @@ async function supabaseRequest(action = "", payload) {
           
           if (allowedClues.length > 0) {
             const cluesListStr = allowedClues.map(c => `"${c}"`).join(',');
-            filters.push(`and(target_scope.eq.CLUES,target_clues.in.(${cluesListStr}))`);
+            filters.push(`target_clues.in.(${cluesListStr})`);
           }
 
-          // Y lo que venga por Municipio (si aplica)
           if (muniList.length > 0) {
             const muniListStr = muniList.map(m => `"${m}"`).join(',');
-            filters.push(`and(target_scope.eq.MUNICIPIO_UNITS,target_municipio.in.(${muniListStr}))`);
+            filters.push(`target_municipio.in.(${muniListStr})`);
           }
         }
 
