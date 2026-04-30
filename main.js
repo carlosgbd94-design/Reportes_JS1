@@ -4600,15 +4600,15 @@ async function supabaseRequest(action = "", payload) {
         // --- FILTRADO DE JERARQUÍA (Senior Logic) ---
         if (role === "ADMIN" || role === "JURISDICCIONAL") {
           // Acceso total
+        } else if (role === "UNIDAD") {
+          // Sólo ven lo de su CLUES
+          filesData = filesData.filter(f => String(f.name || "").includes(userClues));
         } else {
           filesData = filesData.filter(f => {
             const folderMuni = String(f.folder || "").toUpperCase();
             // Si el archivo está en una carpeta que coincide con mis municipios autorizados, lo veo
             return canSeeMunicipio_(USER, folderMuni);
           });
-        } else if (role === "UNIDAD") {
-          // Sólo ven lo de su CLUES
-          filesData = filesData.filter(f => String(f.name || "").includes(userClues));
         }
 
         return { ok: true, data: filesData || [] };
