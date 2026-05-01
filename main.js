@@ -17,9 +17,9 @@ const MOBILE_DOM_TEMPLATE = `
       <div class="AuraBlob Blob-2"></div>
     </div>
     
-    <!-- 🏗️ NEW MOBILE HEADER (Minimalist) -->
-    <header class="m-header GlassContainer" style="--corner-radius: 0 0 32px 32px;">
-      <div class="GlassContent liquidGL flex items-center justify-between px-6 h-20">
+    <!-- 🏗️ NEW MOBILE HEADER (Minimalist Full-Width) -->
+    <header class="m-header w-full overflow-hidden">
+      <div class="liquidGL flex items-center justify-between px-6 h-20" style="border-radius: 0 0 32px 32px; background: rgba(255,255,255,0.15) !important;">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center border border-white/30 backdrop-blur-md">
             <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" class="h-6 w-auto">
@@ -29,7 +29,7 @@ const MOBILE_DOM_TEMPLATE = `
             <p class="text-[8px] font-black uppercase tracking-widest opacity-40">Reportes</p>
           </div>
         </div>
-        <div id="mHeaderProfile" class="flex items-center gap-2">
+        <div id="mHeaderProfile" class="flex items-center gap-2" onclick="if(typeof toggleProfileDropdown === 'function') toggleProfileDropdown()">
             <div id="mBadgeNotify" class="w-2 h-2 bg-red-500 rounded-full animate-pulse hidden"></div>
             <span class="material-symbols-rounded text-primary opacity-60">account_circle</span>
         </div>
@@ -110,18 +110,14 @@ const MOBILE_DOM_TEMPLATE = `
       <div id="mArchivosContent" class="w-full"></div>
     </div>
 
-    <!-- 🧭 NEW MOBILE BOTTOM NAV (Action Hub) -->
-    <nav id="mBottomNav" class="mobile-bottom-nav GlassContainer hidden" style="--corner-radius: 32px 32px 0 0;">
-      <div class="GlassContent liquidGL flex justify-between items-center h-20 px-4">
-        <button id="mNavHome" class="m-nav-item active">
-          <span class="material-symbols-rounded">dashboard</span>
-          <span>Inicio</span>
-        </button>
+    <!-- 🧭 NEW MOBILE BOTTOM NAV (Action Hub Full-Width) -->
+    <nav id="mBottomNav" class="mobile-bottom-nav w-full hidden">
+      <div class="liquidGL flex justify-around items-center h-20 px-2" style="border-radius: 32px 32px 0 0; background: rgba(255,255,255,0.15) !important;">
         <button id="mNavNotify" class="m-nav-item">
           <span class="material-symbols-rounded">notifications</span>
           <span>Alertas</span>
         </button>
-        <button id="mNavCapture" class="m-nav-item">
+        <button id="mNavCapture" class="m-nav-item active">
           <div class="m-nav-fab bg-primary text-white shadow-lg shadow-primary/20">
             <span class="material-symbols-rounded">add</span>
           </div>
@@ -212,7 +208,7 @@ function switchMobileView(viewId) {
 
   // Sincronizar iconos activos en el nav
   document.querySelectorAll(".m-nav-item").forEach(item => item.classList.remove("active"));
-  if (viewId === "mViewDashboard") document.getElementById("mNavHome")?.classList.add("active");
+  if (viewId === "mViewDashboard") document.getElementById("mNavCapture")?.classList.add("active"); // Fallback to capture
   if (viewId === "mViewCapture") document.getElementById("mNavCapture")?.classList.add("active");
   if (viewId === "mViewArchivos") document.getElementById("mNavArchivos")?.classList.add("active");
   if (viewId === "mViewNotify") document.getElementById("mNavNotify")?.classList.add("active");
@@ -8939,6 +8935,13 @@ function activateCapture(tab) {
     if (!document.body.classList.contains("mobile-spa-active")) {
         if ($("panelCAP")) $("panelCAP").style.display = "none";
         return;
+    } else {
+        if ($("panelCAP")) $("panelCAP").style.display = "block";
+    }
+  } else {
+    // Si es UNIDAD y estamos en móvil, también aseguramos que el panel se vea
+    if (document.body.classList.contains("mobile-spa-active")) {
+        if ($("panelCAP")) $("panelCAP").style.display = "block";
     }
   }
 
