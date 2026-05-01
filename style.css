@@ -8410,6 +8410,7 @@ body.mobile-spa-active {
   width: 100% !important;
   z-index: 200000;
   padding-bottom: env(safe-area-inset-bottom);
+  border-radius: 32px 32px 0 0;
 }
 
 .m-nav-fab {
