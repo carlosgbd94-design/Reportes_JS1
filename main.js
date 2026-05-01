@@ -11,15 +11,14 @@ window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // 📱 MOBILE SPA ARCHITECTURE (Senior Injection Engine)
 const MOBILE_DOM_TEMPLATE = `
-  <div id="mobileSPA" class="mobile-spa-active mobile-spa-container">
     <div class="AuraContainer">
       <div class="AuraBlob Blob-1"></div>
       <div class="AuraBlob Blob-2"></div>
     </div>
     
-    <!-- 🏗️ NEW MOBILE HEADER (Minimalist Full-Width) -->
-    <header class="m-header w-full overflow-hidden">
-      <div class="liquidGL flex items-center justify-between px-6 h-20" style="border-radius: 0 0 32px 32px; background: rgba(255,255,255,0.15) !important;">
+    <!-- 🏗️ NEW MOBILE HEADER (Fixed Inset) -->
+    <header class="m-header fixed top-0 inset-x-0 z-[200001] h-20 overflow-hidden">
+      <div class="liquidGL flex items-center justify-between px-6 h-full" style="border-radius: 0 0 32px 32px; background: rgba(255,255,255,0.15) !important; border-bottom: 1px solid rgba(255,255,255,0.3) !important;">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center border border-white/30 backdrop-blur-md">
             <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" class="h-6 w-auto">
@@ -29,7 +28,7 @@ const MOBILE_DOM_TEMPLATE = `
             <p class="text-[8px] font-black uppercase tracking-widest opacity-40">Reportes</p>
           </div>
         </div>
-        <div id="mHeaderProfile" class="flex items-center gap-2" onclick="if(typeof toggleProfileDropdown === 'function') toggleProfileDropdown()">
+        <div id="mHeaderProfile" class="flex items-center gap-2 cursor-pointer" onclick="if(typeof toggleProfileDropdown === 'function') toggleProfileDropdown()">
             <div id="mBadgeNotify" class="w-2 h-2 bg-red-500 rounded-full animate-pulse hidden"></div>
             <span class="material-symbols-rounded text-primary opacity-60">account_circle</span>
         </div>
@@ -68,7 +67,15 @@ const MOBILE_DOM_TEMPLATE = `
     </div>
 
     <!-- View: Dashboard -->
-    <div id="mViewDashboard" class="mobile-view p-4">
+    <div id="mViewDashboard" class="mobile-view p-6">
+      <div class="m-welcome-card mb-8">
+        <h2 class="text-3xl font-black text-primary m-0 leading-tight">¡Hola!</h2>
+        <p class="text-sm font-bold text-slate-500 mt-1" id="mWelcomeUser"></p>
+        <div class="mt-6 p-4 bg-primary/5 border border-primary/10 rounded-2xl">
+            <p class="text-[10px] font-black uppercase tracking-widest opacity-40">Unidad de Gestión</p>
+            <p class="text-xs font-bold text-primary mt-1" id="mWelcomeUnidad"></p>
+        </div>
+      </div>
       <div id="mDashboardContent" class="w-full pb-32"></div>
     </div>
 
@@ -110,9 +117,13 @@ const MOBILE_DOM_TEMPLATE = `
       <div id="mArchivosContent" class="w-full"></div>
     </div>
 
-    <!-- 🧭 NEW MOBILE BOTTOM NAV (Action Hub Full-Width) -->
-    <nav id="mBottomNav" class="mobile-bottom-nav w-full hidden">
-      <div class="liquidGL flex justify-around items-center h-20 px-2" style="border-radius: 32px 32px 0 0; background: rgba(255,255,255,0.15) !important;">
+    <!-- 🧭 NEW MOBILE BOTTOM NAV (Fixed Inset) -->
+    <nav id="mBottomNav" class="mobile-bottom-nav fixed bottom-0 inset-x-0 z-[200001] hidden">
+      <div class="liquidGL flex justify-around items-center h-20 px-2" style="border-radius: 32px 32px 0 0; background: rgba(255,255,255,0.15) !important; border-top: 1px solid rgba(255,255,255,0.3) !important;">
+        <button id="mNavHome" class="m-nav-item">
+          <span class="material-symbols-rounded">dashboard</span>
+          <span>Inicio</span>
+        </button>
         <button id="mNavNotify" class="m-nav-item">
           <span class="material-symbols-rounded">notifications</span>
           <span>Alertas</span>
@@ -157,7 +168,7 @@ function initMobileArchitecture() {
   
   console.log("🚀 JS1: Mobile Architecture Detected. Injecting SPA...");
   
-  // 🛡️ Pre-capture critical desktop panels before wiping the DOM
+  // 🛡️ Pre-capture critical desktop panels before hiding
   const capturePanel = document.getElementById("panelCAP");
   const formSR = document.getElementById("formSR");
   const formCONS = document.getElementById("formCONS");
@@ -165,10 +176,25 @@ function initMobileArchitecture() {
   const formPINOL = document.getElementById("formPINOL");
   const archivosPanel = document.getElementById("panelArchivos");
 
-  document.body.innerHTML = MOBILE_DOM_TEMPLATE;
+  // Create or retrieve the mobile container
+  let mSpa = document.getElementById("mobileSPA");
+  if (!mSpa) {
+      mSpa = document.createElement("div");
+      mSpa.id = "mobileSPA";
+      mSpa.className = "mobile-spa-container";
+      mSpa.innerHTML = MOBILE_DOM_TEMPLATE;
+      document.body.appendChild(mSpa);
+  }
+  
   document.body.classList.add("mobile-spa-active");
   
-  // 💉 Re-inject captured panels into mobile views (ONLY the main panels to avoid duplication)
+  // Hide desktop wrappers without destroying them
+  const mainHeader = document.getElementById("mainHeader");
+  const rightColumn = document.getElementById("rightColumn");
+  if (mainHeader) mainHeader.style.display = "none";
+  if (rightColumn) rightColumn.style.display = "none";
+
+  // 💉 Re-inject captured panels into mobile views
   const targetCapture = document.getElementById("mCaptureContent");
   if (targetCapture && capturePanel) {
     targetCapture.appendChild(capturePanel);
@@ -184,13 +210,19 @@ function initMobileArchitecture() {
       target.appendChild(archivosPanel);
     }
   }
+
+  // Update Welcome Info
+  const mWelcomeUser = document.getElementById("mWelcomeUser");
+  const mWelcomeUnidad = document.getElementById("mWelcomeUnidad");
+  if (mWelcomeUser && USER) mWelcomeUser.innerText = USER.nombre || "Usuario";
+  if (mWelcomeUnidad && USER) mWelcomeUnidad.innerText = USER.unidad || "Unidad No Identificada";
   
   connectMobileListeners();
   return true;
 }
 
 function switchMobileView(viewId) {
-  console.log("📱 Switching to mobile view:", viewId);
+  console.log("📱 Switching Mobile View:", viewId);
   document.querySelectorAll(".mobile-view").forEach(v => v.classList.remove("active"));
   document.getElementById(viewId)?.classList.add("active");
   
@@ -208,10 +240,19 @@ function switchMobileView(viewId) {
 
   // Sincronizar iconos activos en el nav
   document.querySelectorAll(".m-nav-item").forEach(item => item.classList.remove("active"));
-  if (viewId === "mViewDashboard") document.getElementById("mNavCapture")?.classList.add("active"); // Fallback to capture
+  if (viewId === "mViewDashboard") document.getElementById("mNavHome")?.classList.add("active");
   if (viewId === "mViewCapture") document.getElementById("mNavCapture")?.classList.add("active");
   if (viewId === "mViewArchivos") document.getElementById("mNavArchivos")?.classList.add("active");
   if (viewId === "mViewNotify") document.getElementById("mNavNotify")?.classList.add("active");
+
+  // Si entramos a captura, forzamos visibilidad de #panelCAP
+  if (viewId === "mViewCapture") {
+      const p = document.getElementById("panelCAP");
+      if (p) {
+          p.style.display = "block";
+          p.classList.remove("hidden");
+      }
+  }
 }
 
 function connectMobileListeners() {
@@ -12408,9 +12449,27 @@ function applyRolePermissions(role) {
 }
 
 // Iniciar componentes al cargar
-document.addEventListener("DOMContentLoaded", () => {
-  initProfileDropdown();
-  initMobileNavigation();
-});
+function toggleProfileDropdown() {
+    const dropdown = document.getElementById("profileDropdown");
+    if (!dropdown) return;
+    
+    if (document.body.classList.contains("mobile-spa-active")) {
+        // En móvil, forzamos un estilo flotante centrado
+        dropdown.style.position = "fixed";
+        dropdown.style.top = "90px";
+        dropdown.style.left = "20px";
+        dropdown.style.right = "20px";
+        dropdown.style.width = "calc(100% - 40px)";
+        dropdown.style.zIndex = "300000";
+        dropdown.style.display = dropdown.classList.contains("hidden") ? "block" : "none";
+    }
+    
+    dropdown.classList.toggle("hidden");
+}
+
+function toggleNotifications() {
+    const btn = document.getElementById("btnTopNotifications");
+    if (btn) btn.click(); // Trigger the existing logic
+}
 
 
