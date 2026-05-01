@@ -11,12 +11,31 @@ window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // 📱 MOBILE SPA ARCHITECTURE (Senior Injection Engine)
 const MOBILE_DOM_TEMPLATE = `
-  <div id="mobileSPA" class="mobile-spa-container">
+  <div id="mobileSPA" class="mobile-spa-active mobile-spa-container">
     <div class="AuraContainer">
       <div class="AuraBlob Blob-1"></div>
       <div class="AuraBlob Blob-2"></div>
     </div>
     
+    <!-- 🏗️ NEW MOBILE HEADER (Minimalist) -->
+    <header class="m-header GlassContainer" style="--corner-radius: 0 0 32px 32px;">
+      <div class="GlassContent liquidGL flex items-center justify-between px-6 h-20">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center border border-white/30 backdrop-blur-md">
+            <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" class="h-6 w-auto">
+          </div>
+          <div>
+            <h1 class="text-lg font-black text-primary m-0 tracking-tighter leading-none">JS1</h1>
+            <p class="text-[8px] font-black uppercase tracking-widest opacity-40">Reportes</p>
+          </div>
+        </div>
+        <div id="mHeaderProfile" class="flex items-center gap-2">
+            <div id="mBadgeNotify" class="w-2 h-2 bg-red-500 rounded-full animate-pulse hidden"></div>
+            <span class="material-symbols-rounded text-primary opacity-60">account_circle</span>
+        </div>
+      </div>
+    </header>
+
     <!-- View: Login -->
     <div id="mViewLogin" class="mobile-view active">
       <div class="m-login-card GlassContainer" style="--corner-radius: 40px; width: 100%;">
@@ -48,13 +67,13 @@ const MOBILE_DOM_TEMPLATE = `
       </div>
     </div>
 
-    <!-- View: Dashboard (Dynamic) -->
-    <div id="mViewDashboard" class="mobile-view">
-      <div id="mDashboardContent" class="w-full max-w-md pb-24"></div>
+    <!-- View: Dashboard -->
+    <div id="mViewDashboard" class="mobile-view p-4">
+      <div id="mDashboardContent" class="w-full pb-32"></div>
     </div>
 
     <!-- View: Capture -->
-    <div id="mViewCapture" class="mobile-view p-4 pb-24">
+    <div id="mViewCapture" class="mobile-view p-4 pb-32">
       <div class="m-view-header mb-6">
         <h2 class="text-2xl font-black text-primary m-0">Captura</h2>
         <p class="text-[10px] opacity-40 font-black uppercase tracking-widest mt-1">Selecciona el tipo de reporte</p>
@@ -82,8 +101,8 @@ const MOBILE_DOM_TEMPLATE = `
       <div id="mCaptureContent" class="w-full"></div>
     </div>
 
-    <!-- View: Files (Archivos) -->
-    <div id="mViewArchivos" class="mobile-view p-4 pb-24">
+    <!-- View: Files -->
+    <div id="mViewArchivos" class="mobile-view p-4 pb-32">
        <div class="m-view-header mb-6">
         <h2 class="text-2xl font-black text-primary m-0">Mis Archivos</h2>
         <p class="text-[10px] opacity-40 font-black uppercase tracking-widest mt-1">Consulta de Comprobantes</p>
@@ -91,20 +110,26 @@ const MOBILE_DOM_TEMPLATE = `
       <div id="mArchivosContent" class="w-full"></div>
     </div>
 
-    <!-- 🧭 Mobile Bottom Nav -->
-    <nav id="mBottomNav" class="mobile-bottom-nav GlassContainer hidden" style="--corner-radius: 0px;">
-      <div class="GlassContent liquidGL flex justify-around items-center h-20">
+    <!-- 🧭 NEW MOBILE BOTTOM NAV (Action Hub) -->
+    <nav id="mBottomNav" class="mobile-bottom-nav GlassContainer hidden" style="--corner-radius: 32px 32px 0 0;">
+      <div class="GlassContent liquidGL flex justify-between items-center h-20 px-4">
         <button id="mNavHome" class="m-nav-item active">
           <span class="material-symbols-rounded">dashboard</span>
           <span>Inicio</span>
         </button>
+        <button id="mNavNotify" class="m-nav-item">
+          <span class="material-symbols-rounded">notifications</span>
+          <span>Alertas</span>
+        </button>
         <button id="mNavCapture" class="m-nav-item">
-          <span class="material-symbols-rounded">add_circle</span>
+          <div class="m-nav-fab bg-primary text-white shadow-lg shadow-primary/20">
+            <span class="material-symbols-rounded">add</span>
+          </div>
           <span>Captura</span>
         </button>
         <button id="mNavArchivos" class="m-nav-item">
-          <span class="material-symbols-rounded">folder_open</span>
-          <span>Archivos</span>
+          <span class="material-symbols-rounded">folder</span>
+          <span>Docs</span>
         </button>
         <button id="mNavLogout" class="m-nav-item text-bad">
           <span class="material-symbols-rounded">logout</span>
@@ -173,11 +198,16 @@ function switchMobileView(viewId) {
   document.querySelectorAll(".mobile-view").forEach(v => v.classList.remove("active"));
   document.getElementById(viewId)?.classList.add("active");
   
-  // Mostrar/Ocultar el bottom nav según la vista
+  // Mostrar/Ocultar el bottom nav y header según la vista
   const nav = document.getElementById("mBottomNav");
-  if (nav) {
-    if (viewId === "mViewLogin") nav.classList.add("hidden");
-    else nav.classList.remove("hidden");
+  const mHeader = document.querySelector(".m-header");
+  
+  if (viewId === "mViewLogin") {
+    if (nav) nav.classList.add("hidden");
+    if (mHeader) mHeader.style.display = "none";
+  } else {
+    if (nav) nav.classList.remove("hidden");
+    if (mHeader) mHeader.style.display = "block";
   }
 
   // Sincronizar iconos activos en el nav
@@ -185,6 +215,7 @@ function switchMobileView(viewId) {
   if (viewId === "mViewDashboard") document.getElementById("mNavHome")?.classList.add("active");
   if (viewId === "mViewCapture") document.getElementById("mNavCapture")?.classList.add("active");
   if (viewId === "mViewArchivos") document.getElementById("mNavArchivos")?.classList.add("active");
+  if (viewId === "mViewNotify") document.getElementById("mNavNotify")?.classList.add("active");
 }
 
 function connectMobileListeners() {
@@ -217,6 +248,10 @@ function connectMobileListeners() {
   document.getElementById("mNavArchivos")?.addEventListener("click", () => {
     switchMobileView("mViewArchivos");
     if (typeof renderArchivosView === "function") renderArchivosView();
+  });
+  document.getElementById("mNavNotify")?.addEventListener("click", () => {
+      // Logic for notifications (could open the desktop one or a mobile simplified version)
+      if (typeof toggleNotifications === "function") toggleNotifications();
   });
   document.getElementById("mNavLogout")?.addEventListener("click", () => {
     clearSession();
@@ -8899,8 +8934,12 @@ function activateCapture(tab) {
     if ($("formCONS")) $("formCONS").style.display = "none";
     if ($("formBIO")) $("formBIO").style.display = "none";
     if ($("formPINOL")) $("formPINOL").style.display = "none";
-    if ($("panelCAP")) $("panelCAP").style.display = "none";
-    return;
+    
+    // 📱 En móvil permitimos que el panel base se vea aunque no sea UNIDAD (vistas de consulta)
+    if (!document.body.classList.contains("mobile-spa-active")) {
+        if ($("panelCAP")) $("panelCAP").style.display = "none";
+        return;
+    }
   }
 
   const currentTab = APP_STATE.captureTab || "SR";
