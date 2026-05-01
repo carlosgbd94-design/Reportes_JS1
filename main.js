@@ -20,7 +20,7 @@ const MOBILE_DOM_TEMPLATE = `
     <!-- View: Login -->
     <div id="mViewLogin" class="mobile-view active">
       <div class="m-login-card GlassContainer" style="--corner-radius: 40px; width: 100%;">
-        <div class="GlassContent liquidGL p-10 flex flex-col items-center text-center">
+        <div class="GlassContent liquidGL p-10 flex flex-col items-center text-center" style="background: rgba(255,255,255,0.15) !important;">
           <div class="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mb-6 shadow-xl border border-white/30 backdrop-blur-md">
             <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" class="h-12 w-auto">
           </div>
@@ -147,17 +147,12 @@ function initMobileArchitecture() {
   document.body.innerHTML = MOBILE_DOM_TEMPLATE;
   document.body.classList.add("mobile-spa-active");
   
-  // 💉 Re-inject captured panels into mobile views
+  // 💉 Re-inject captured panels into mobile views (ONLY the main panels to avoid duplication)
   const targetCapture = document.getElementById("mCaptureContent");
-  if (targetCapture) {
-    if (capturePanel) targetCapture.appendChild(capturePanel);
-    if (formSR) targetCapture.appendChild(formSR);
-    if (formCONS) targetCapture.appendChild(formCONS);
-    if (formBIO) targetCapture.appendChild(formBIO);
-    if (formPINOL) targetCapture.appendChild(formPINOL);
-    
-    // Forzar visibilidad inicial del contenedor padre
-    if (capturePanel) capturePanel.style.display = "block";
+  if (targetCapture && capturePanel) {
+    targetCapture.appendChild(capturePanel);
+    capturePanel.style.display = "block";
+    capturePanel.classList.remove("hidden");
   }
 
   if (archivosPanel) {
