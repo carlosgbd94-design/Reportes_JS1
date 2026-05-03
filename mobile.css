@@ -40,15 +40,7 @@
     overflow-x: auto !important;
 }
 
-/* D. Sidebars / Overlays */
-.touch-ui #profileDropdown,
-.touch-ui .topNotifDropdown {
-    width: 90vw !important;
-    max-width: none !important;
-    right: 5vw !important;
-}
-
-/* E. Forms Spacing */
+/* D. Forms Spacing */
 .touch-ui .modern-input-group {
     margin-bottom: 1rem !important;
 }
@@ -140,55 +132,41 @@
     min-width: 120px !important;
 }
 
-/* Ensure actions are reachable */
-/* Fixed priority layout for actions */
-.touch-ui #srCaptureTable td:last-child {
-    min-width: 80px !important;
-    text-align: center !important;
+/* FASE: Unified Overlay System (Retrofit) */
+.touch-ui .overlay, 
+.touch-ui .modal-backdrop {
+    backdrop-filter: blur(8px) !important;
+    background: rgba(0, 0, 0, 0.4) !important;
 }
 
-/* FASE 7: Modales (Bottom Sheets) */
-.touch-ui #profileDropdown,
-.touch-ui .topNotifDropdown {
+/* TIPO A: Anchored Floating Cards (Notifications & Explorer) */
+.touch-ui #topNotifDropdown,
+.touch-ui #archivosDropdown {
     position: fixed !important;
-    bottom: 0 !important;
-    top: auto !important;
-    left: 0 !important;
-    right: 0 !important;
-    width: 100vw !important;
-    max-width: none !important;
-    margin: 0 !important;
-    border-radius: 32px 32px 0 0 !important;
-    box-shadow: 0 -20px 40px rgba(0,0,0,0.15) !important;
-    transform: translateY(0) !important;
-    z-index: 10000 !important;
-    height: auto !important;
-    max-height: 85vh !important;
-}
-
-.touch-ui .topNotifCard {
-    height: 100% !important;
-    border-radius: 32px 32px 0 0 !important;
-}
-
-/* Add a visual handle to bottom sheets */
-.touch-ui #profileDropdown::before,
-.touch-ui .topNotifDropdown::before {
-    content: "" !important;
-    width: 40px !important;
-    height: 4px !important;
-    background: rgba(0,0,0,0.1) !important;
-    border-radius: 2px !important;
-    position: absolute !important;
-    top: 12px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-}
-
-.touch-ui .topNotifBody {
-    max-height: 60vh !important;
+    border-radius: 20px !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    box-shadow: 0 12px 32px rgba(0, 51, 102, 0.25) !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(20px) !important;
+    z-index: 10005 !important;
+    max-height: calc(100dvh - 180px) !important;
     overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+    padding: 0 !important;
+}
+
+/* TIPO B: Floating Action Modals */
+.touch-ui #uploadFilesOverlay .modalContainer {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: clamp(300px, 90vw, 500px) !important;
+    max-height: 85dvh !important;
+    border-radius: 28px !important;
+    padding: 20px !important;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3) !important;
+    z-index: 10006 !important;
 }
 
 /* PATCH: Header Mobile Fix - Emergency Retrofit */
@@ -302,15 +280,52 @@
     position: fixed !important;
     bottom: 0 !important;
     left: 0 !important;
-    right: 0 !important;
-    z-index: 9999 !important;
-    padding: 12px 16px env(safe-area-inset-bottom, 16px) !important;
+    bottom: 20px !important;
+    left: 20px !important;
+    right: 20px !important;
+    height: 72px !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-radius: 24px !important;
     display: flex !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    padding: 0 10px !important;
+    box-shadow: 0 10px 30px rgba(0, 51, 102, 0.2) !important;
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    z-index: 9999 !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.touch-ui .dock-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
     justify-content: center !important;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease !important;
-    pointer-events: none !important;
-    contain: layout paint !important;
-    will-change: transform !important;
+    background: transparent !important;
+    border: none !important;
+    color: #003366 !important;
+    gap: 4px !important;
+    flex: 1 !important;
+    height: 100% !important;
+    transition: all 0.2s ease !important;
+    opacity: 0.6 !important;
+}
+
+.touch-ui .dock-item.active {
+    opacity: 1 !important;
+    color: #005bb5 !important;
+}
+
+.touch-ui .dock-item .material-symbols-rounded {
+    font-size: 24px !important;
+}
+
+.touch-ui .dock-item label {
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.5px !important;
 }
 
 .touch-ui .mobile-dock-inner {
@@ -374,4 +389,127 @@
     margin: 0 !important;
     padding: 0 !important;
     gap: 0 !important;
+}
+
+/* FASE: Ultra-Compact Profile Card (MOCS) */
+.touch-ui #profileDropdown {
+    display: flex !important;
+    flex-direction: column !important;
+    background: #ffffff !important;
+    border-radius: 20px !important;
+    border: 1px solid rgba(0,0,0,0.1) !important;
+    box-shadow: 0 12px 48px rgba(0, 51, 102, 0.3) !important;
+    width: 280px !important;
+    max-width: 280px !important;
+    height: auto !important;
+    max-height: 85dvh !important;
+    overflow: hidden !important;
+    padding: 12px !important;
+    z-index: 10005 !important;
+    position: fixed !important;
+    transform: none !important;
+    right: auto !important;
+    inset: auto !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.touch-ui #profileDropdown .GlassContent {
+    display: contents !important;
+}
+
+.touch-ui #profileDropdown .profile-header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 8px !important;
+    border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+}
+
+.touch-ui #profileDropdown .profile-avatar-container {
+    width: 36px !important;
+    height: 36px !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+}
+
+.touch-ui #profileDropdown #profileInfo {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.touch-ui #profileDropdown #profileInfo h3 {
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    line-height: 1.1 !important;
+    margin: 0 !important;
+}
+
+.touch-ui #profileDropdown #profileInfo p {
+    font-size: 9px !important;
+    opacity: 0.6 !important;
+    margin: 0 !important;
+}
+
+.touch-ui #profileDropdown .profile-body {
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+}
+
+.touch-ui #profileDropdown .fieldCard {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 2px 0 !important;
+    margin: 0 !important;
+    display: grid !important;
+    grid-template-columns: 18px 1fr !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+.touch-ui #profileDropdown .fieldCard label { display: none !important; }
+
+.touch-ui #profileDropdown .fieldCard div {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+
+.touch-ui #profileDropdown .fieldCard::before {
+    font-family: 'Material Symbols Rounded' !important;
+    font-size: 14px !important;
+    opacity: 0.5 !important;
+}
+
+.touch-ui #profileDropdown .fieldCard:nth-child(1)::before { content: "home_work"; }
+.touch-ui #profileDropdown .fieldCard:nth-child(2)::before { content: "pin_drop"; }
+.touch-ui #profileDropdown .fieldCard:nth-child(3)::before { content: "badge"; }
+
+.touch-ui #profileDropdown .profile-footer {
+    padding: 8px 0 0 0 !important;
+    margin-top: 8px !important;
+    border-top: 1px solid rgba(0,0,0,0.05) !important;
+}
+
+.touch-ui #profileDropdown .btn-premium-action {
+    min-height: 38px !important;
+    height: 38px !important;
+    font-size: 12px !important;
+    margin: 0 !important;
+    border-radius: 10px !important;
+}
+
+/* Final Cleanup of legacy mobile rules */
+.touch-ui .notifItem,
+.touch-ui .archivosItem,
+.touch-ui .profileItem {
+    padding: 8px 12px !important;
+    margin-bottom: 4px !important;
+    border-radius: 10px !important;
+    background: white !important;
+    border: 1px solid rgba(0,0,0,0.05) !important;
 }
