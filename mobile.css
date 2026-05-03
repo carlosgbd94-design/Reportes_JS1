@@ -1,0 +1,377 @@
+/**
+ * JS1 Reportes - Mobile Adaptation Layer (MAL)
+ * All rules must start with .touch-ui
+ */
+
+/* A. Touch targets - Minimum 44px-48px for interactive elements */
+.touch-ui button, 
+.touch-ui .header-action-btn,
+.touch-ui .tab-btn,
+.touch-ui select,
+.touch-ui input {
+    min-height: 48px !important;
+}
+
+/* B. Layout Stacking - Force 1 column on touch devices for main grids */
+.touch-ui .flex-col.lg\:flex-row {
+    flex-direction: column !important;
+}
+
+.touch-ui .grid {
+    grid-template-columns: 1fr !important;
+}
+
+/* Specific stacking for Welcome Hub */
+.touch-ui #welcomeBlock .flex-col.md\:flex-row {
+    flex-direction: column !important;
+    gap: 2rem !important;
+}
+
+/* C. Tables - Momentum scrolling and overflow */
+.touch-ui .overflow-x-auto {
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x proximity !important;
+    padding-bottom: 8px !important;
+}
+
+.touch-ui table {
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+}
+
+/* D. Sidebars / Overlays */
+.touch-ui #profileDropdown,
+.touch-ui .topNotifDropdown {
+    width: 90vw !important;
+    max-width: none !important;
+    right: 5vw !important;
+}
+
+/* E. Forms Spacing */
+.touch-ui .modern-input-group {
+    margin-bottom: 1rem !important;
+}
+
+.touch-ui .space-y-6 > * + * {
+    margin-top: 1.5rem !important;
+}
+
+/* FASE 4: Navegación */
+.touch-ui #mainHeader {
+    top: 0 !important;
+    inset-x: 0 !important;
+    padding: 0 !important;
+}
+
+.touch-ui #logoCluster {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+}
+
+.touch-ui #logoA, .touch-ui #logoB {
+    height: 32px !important;
+}
+
+.touch-ui #logoCluster .GlassContent {
+    padding: 8px 16px !important;
+    gap: 12px !important;
+}
+
+.touch-ui #userControlsGroup {
+    gap: 12px !important;
+}
+
+.touch-ui .header-action-btn {
+    width: 44px !important;
+    height: 44px !important;
+}
+
+.touch-ui #btnProfileToggle {
+    height: 44px !important;
+    padding: 0 12px !important;
+    border-radius: 16px !important;
+}
+
+.touch-ui #profileDropdownContainer .GlassContainer {
+    --corner-radius: 16px !important;
+}
+
+/* FASE 5: Formularios */
+.touch-ui .modern-input-group input {
+    height: 56px !important;
+    padding-left: 52px !important;
+    font-size: 16px !important; /* Prevent iOS zoom on focus */
+}
+
+.touch-ui .modern-input-group .input-icon {
+    left: 16px !important;
+}
+
+.touch-ui #captureContentArea > div {
+    gap: 2rem !important;
+}
+
+.touch-ui .btn-premium-action {
+    height: 60px !important;
+    font-size: 14px !important;
+}
+
+/* Stacking for Pedido form specifically */
+.touch-ui #formBIO .flex-col.lg\:flex-row {
+    gap: 1.5rem !important;
+}
+
+/* FASE 6: Tablas */
+.touch-ui .overflow-x-auto {
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important; /* Hide scrollbar for cleaner look on touch */
+}
+
+.touch-ui .overflow-x-auto::-webkit-scrollbar {
+    display: none !important;
+}
+
+.touch-ui table th, .touch-ui table td {
+    padding: 12px 16px !important;
+    min-width: 120px !important;
+}
+
+/* Ensure actions are reachable */
+/* Fixed priority layout for actions */
+.touch-ui #srCaptureTable td:last-child {
+    min-width: 80px !important;
+    text-align: center !important;
+}
+
+/* FASE 7: Modales (Bottom Sheets) */
+.touch-ui #profileDropdown,
+.touch-ui .topNotifDropdown {
+    position: fixed !important;
+    bottom: 0 !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100vw !important;
+    max-width: none !important;
+    margin: 0 !important;
+    border-radius: 32px 32px 0 0 !important;
+    box-shadow: 0 -20px 40px rgba(0,0,0,0.15) !important;
+    transform: translateY(0) !important;
+    z-index: 10000 !important;
+    height: auto !important;
+    max-height: 85vh !important;
+}
+
+.touch-ui .topNotifCard {
+    height: 100% !important;
+    border-radius: 32px 32px 0 0 !important;
+}
+
+/* Add a visual handle to bottom sheets */
+.touch-ui #profileDropdown::before,
+.touch-ui .topNotifDropdown::before {
+    content: "" !important;
+    width: 40px !important;
+    height: 4px !important;
+    background: rgba(0,0,0,0.1) !important;
+    border-radius: 2px !important;
+    position: absolute !important;
+    top: 12px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+}
+
+.touch-ui .topNotifBody {
+    max-height: 60vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+
+/* PATCH: Header Mobile Fix - Emergency Retrofit */
+.touch-ui #mainHeader > div {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    padding: 8px !important;
+}
+
+.touch-ui #logoCluster .GlassContent {
+    gap: 6px !important;
+    padding: 4px 10px !important;
+}
+
+.touch-ui #logoCluster h1 {
+    font-size: 14px !important;
+}
+
+.touch-ui #logoCluster p {
+    display: none !important;
+}
+
+.touch-ui #headerActions {
+    gap: 4px !important;
+}
+
+.touch-ui #userControlsGroup {
+    gap: 8px !important;
+}
+
+/* PATCH: Content Separation - Mobile Retrofit */
+.touch-ui #welcomeBlock {
+    margin-top: 24px !important;
+}
+
+/* PATCH: Vertical Rhythm Optimization - Mobile Retrofit */
+.touch-ui #rightColumn > div,
+.touch-ui #captureContentArea > div {
+    margin-bottom: 24px !important;
+}
+
+.touch-ui .modern-input-group {
+    margin-bottom: 20px !important;
+}
+
+.touch-ui .btn-premium-action {
+    margin-top: 32px !important;
+    margin-bottom: 16px !important;
+}
+
+.touch-ui #srCaptureTable, 
+.touch-ui #srCaptureTbody tr {
+    margin-bottom: 12px !important;
+}
+
+/* FASE: Captura Mobile Optimization */
+.touch-ui #srCaptureTbody tr, 
+.touch-ui #bioTbody tr {
+    border-bottom: 8px solid var(--md-sys-color-surface-container) !important;
+}
+
+.touch-ui #srCaptureTbody td, 
+.touch-ui #bioTbody td {
+    padding: 16px 12px !important;
+    vertical-align: middle !important;
+}
+
+/* FASE: Priority Columns Layout (No Sticky) */
+.touch-ui .bioNameCell, 
+.touch-ui #srCaptureTbody td:first-child {
+    min-width: 140px !important;
+    width: 140px !important;
+    font-weight: 900 !important;
+    white-space: normal !important;
+    word-break: keep-all !important;
+}
+
+.touch-ui .bioExistenciaCell,
+.touch-ui .bioPedidoCell,
+.touch-ui .bioMetricCell {
+    min-width: 100px !important;
+}
+
+/* Hit areas para inputs de cantidad */
+.touch-ui .sr-cantidad-input, 
+.touch-ui .bioInput {
+    height: 52px !important;
+    font-size: 16px !important;
+}
+
+.touch-ui .sr-bio-select, 
+.touch-ui .sr-lote-select {
+    height: 52px !important;
+}
+
+/* Headers legibilidad */
+.touch-ui thead th {
+    padding: 12px !important;
+    font-size: 11px !important;
+    letter-spacing: 0.02em !important;
+    white-space: nowrap !important;
+}
+
+.touch-ui .bioAlertWrap {
+    transform: scale(1.1) !important;
+}
+
+/* FASE: Thumb Zone Capture Dock */
+.touch-ui #mobileCaptureDock {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 9999 !important;
+    padding: 12px 16px env(safe-area-inset-bottom, 16px) !important;
+    display: flex !important;
+    justify-content: center !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease !important;
+    pointer-events: none !important;
+    contain: layout paint !important;
+    will-change: transform !important;
+}
+
+.touch-ui .mobile-dock-inner {
+    display: flex !important;
+    background: rgba(255, 255, 255, 0.7) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 24px !important;
+    padding: 8px !important;
+    gap: 8px !important;
+    box-shadow: 0 8px 32px rgba(0, 51, 102, 0.15) !important;
+    pointer-events: auto !important;
+    width: 100% !important;
+    max-width: 440px !important;
+}
+
+.touch-ui .dock-btn {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    padding: 10px 4px !important;
+    border-radius: 16px !important;
+    border: none !important;
+    background: transparent !important;
+    color: var(--md-sys-color-on-surface-variant) !important;
+    transition: all 0.2s ease !important;
+}
+
+.touch-ui .dock-btn .material-symbols-rounded {
+    font-size: 24px !important;
+    font-variation-settings: 'FILL' 0 !important;
+}
+
+.touch-ui .dock-btn span:not(.material-symbols-rounded) {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.02em !important;
+}
+
+.touch-ui .dock-btn.active {
+    background: var(--md-sys-color-primary) !important;
+    color: white !important;
+}
+
+.touch-ui .dock-btn.active .material-symbols-rounded {
+    font-variation-settings: 'FILL' 1 !important;
+}
+
+/* PATCH: Navigation Consolidation - Mobile Retrofit */
+.touch-ui #desktopCaptureTitle,
+.touch-ui #desktopCaptureTabs {
+    display: none !important;
+}
+
+.touch-ui #panelCAP > div:first-child {
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+}

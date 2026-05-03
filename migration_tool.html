@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>JS1 Migration Engine — Auth & Profiles</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f172a;
+            padding: 40px;
+            color: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 600px;
+            background: #1e293b;
+            padding: 40px;
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-weight: 900;
+            color: #38bdf8;
+            margin-top: 0;
+            font-size: 28px;
+            letter-spacing: -0.02em;
+        }
+
+        .input-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            color: #94a3b8;
+            letter-spacing: 0.1em;
+        }
+
+        input {
+            width: 100%;
+            padding: 16px;
+            background: #0f172a;
+            border: 2px solid #334155;
+            border-radius: 16px;
+            font-weight: 600;
+            color: white;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1);
+        }
+
+        button {
+            background: #38bdf8;
+            color: #0f172a;
+            border: none;
+            padding: 20px;
+            border-radius: 16px;
+            font-weight: 900;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        button:hover {
+            background: #7dd3fc;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(56, 189, 248, 0.2);
+        }
+
+        button:disabled {
+            background: #334155;
+            color: #64748b;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #log {
+            margin-top: 32px;
+            background: #020617;
+            color: #10b981;
+            padding: 24px;
+            border-radius: 20px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            height: 250px;
+            overflow-y: auto;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            line-height: 1.6;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #334155;
+            border-radius: 10px;
+            margin: 24px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #38bdf8;
+            width: 0%;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+        }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .status-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #38bdf8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>🚀 JS1 Migration Engine</h1>
+        <p style="color: #94a3b8; font-size: 14px; margin-bottom: 32px;">Convirtiendo <b>usuarios_legacy</b> a
+            <b>Supabase Auth</b> con cambio de contraseña obligatorio.</p>
+
+        <div class="input-group">
+            <label>Supabase URL</label>
+            <input type="text" id="url" value="https://utclfqjietlxzlorxhrs.supabase.co">
+        </div>
+
+        <div class="input-group">
+            <label>Service Role Key (Secret Key)</label>
+            <input type="password" id="key" placeholder="Pega aquí la clave 'service_role'">
+        </div>
+
+        <button id="btnStart">Iniciar Migración Masiva</button>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+        <div class="status-header">
+            <span class="status-label" id="statusTxt">Listo para iniciar</span>
+            <span id="counter" style="font-size: 12px; font-weight: 800;">0 / 0</span>
+        </div>
+        <div id="log">>> Engine inicializado. Esperando Service Role Key...</div>
+    </div>
+
+    <script>
+        const btn = document.getElementById('btnStart');
+        const logEl = document.getElementById('log');
+        const prog = document.getElementById('progress');
+        const statusTxt = document.getElementById('statusTxt');
+        const counter = document.getElementById('counter');
+
+        function log(msg, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            let color = type === 'error' ? '#ef4444' : (type === 'success' ? '#10b981' : '#38bdf8');
+            logEl.innerHTML += `<div style="color: ${color}">[${time}] ${msg}</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        btn.onclick = async () => {
+            const url = document.getElementById('url').value;
+            const key = document.getElementById('key').value;
+
+            if (!key) return alert("Por favor pega la Service Role Key");
+
+            btn.disabled = true;
+            log("Conectando con Supabase Admin Auth...");
+
+            const supabaseAdmin = supabase.createClient(url, key, {
+                auth: { autoRefreshToken: false, persistSession: false }
+            });
+
+            try {
+                log("Extrayendo base de usuarios legacy...");
+                const { data: legacyUsers, error: fetchErr } = await supabaseAdmin.from('usuarios_legacy').select('*');
+
+                if (fetchErr) throw fetchErr;
+                log(`Base de datos leída: ${legacyUsers.length} usuarios encontrados.`, 'success');
+                counter.innerText = `0 / ${legacyUsers.length}`;
+
+                let successCount = 0;
+
+                for (let i = 0; i < legacyUsers.length; i++) {
+                    const u = legacyUsers[i];
+                    // Si el usuario no tiene email real, generamos uno basado en su login
+                    const email = u.email && u.email.includes('@') ? u.email : `${u.usuario.toLowerCase().replace(/\s/g, '')}@js1.com`;
+                    const tempPass = "JS1-2026-Temp";
+
+                    statusTxt.innerText = `Migrando: ${u.usuario}`;
+                    log(`Procesando (${i + 1}/${legacyUsers.length}): ${u.usuario}...`);
+
+                    // 1. Crear en Auth (Usando Admin API para bypass de confirmación y fijar metadata)
+                    const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.createUser({
+                        email: email,
+                        password: tempPass,
+                        email_confirm: true,
+                        user_metadata: {
+                            force_password_change: true,
+                            original_username: u.usuario
+                        }
+                    });
+
+                    if (authErr) {
+                        log(`❌ Error Auth (${u.usuario}): ${authErr.message}`, 'error');
+                        // Si ya existe, intentamos recuperar el ID para actualizar el perfil
+                        if (authErr.message.includes("already registered")) {
+                            log(`ℹ️ Usuario ya existe en Auth, saltando creación...`);
+                        }
+                        continue;
+                    }
+
+                    const newUid = authData.user.id;
+
+                    // 2. Crear/Actualizar Perfil en la tabla 'perfiles' (vinculando con el nuevo UID)
+                    const { error: profileErr } = await supabaseAdmin.from('perfiles').upsert({
+                        id: newUid,
+                        usuario: u.usuario,
+                        rol: u.rol,
+                        municipio: u.municipio,
+                        clues: u.clues,
+                        unidad: u.unidad,
+                        activo: u.activo || 'SI'
+                    });
+
+                    if (profileErr) {
+                        log(`⚠️ Error al vincular Perfil (${u.usuario}): ${profileErr.message}`, 'error');
+                    } else {
+                        log(`✅ ${u.usuario} migrado con éxito.`, 'success');
+                        successCount++;
+                    }
+
+                    prog.style.width = `${((i + 1) / legacyUsers.length) * 100}%`;
+                    counter.innerText = `${i + 1} / ${legacyUsers.length}`;
+                }
+
+                statusTxt.innerText = "Migración Completada";
+                log(`--- REPORTE FINAL ---`, 'success');
+                log(`Usuarios procesados: ${legacyUsers.length}`);
+                log(`Migraciones exitosas: ${successCount}`);
+                log(`Errores: ${legacyUsers.length - successCount}`);
+
+            } catch (e) {
+                log(`🔴 ERROR CRÍTICO: ${e.message}`, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        };
+    </script>
+</body>
+
+</html>
