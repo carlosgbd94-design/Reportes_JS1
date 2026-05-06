@@ -2631,32 +2631,19 @@
   <div id="toast-container" class="toast-stack-container" aria-live="polite"></div>
 
 
-  <!-- 🧪 LIQUID GLASS ENGINE (Defunct WebGL - Replaced by SVG) -->
+  <!-- 🧪 LIQUID GLASS ENGINE (SVG Refraction) -->
+  <svg width="0" height="0" style="position: absolute; pointer-events: none;">
+    <filter id="liquid-glass-core" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="50" xChannelSelector="R" yChannelSelector="G" />
+      <feGaussianBlur stdDeviation="15" />
+    </filter>
+  </svg>
   <script>
     console.log("Refractive Engine Active: SVG Displacement Map");
   </script>
   <script defer src="main.js"></script>
-  <!-- 📱 THUMB ZONE CAPTURE DOCK (Mobile Adaptation Layer) -->
-  <div id="mobileCaptureDock" class="mobile-dock" style="display:none;">
-    <div class="mobile-dock-inner">
-      <button class="dock-btn" data-capture="SR">
-        <span class="material-symbols-rounded">vaccines</span>
-        <span>Biológicos</span>
-      </button>
-      <button class="dock-btn" data-capture="CONS">
-        <span class="material-symbols-rounded">medical_services</span>
-        <span>Consumibles</span>
-      </button>
-      <button class="dock-btn" data-capture="BIO">
-        <span class="material-symbols-rounded">science</span>
-        <span>Pedido</span>
-      </button>
-      <button class="dock-btn" data-capture="PINOL">
-        <span class="material-symbols-rounded">inventory_2</span>
-        <span>Pinol</span>
-      </button>
-    </div>
-  </div>
+
 
 </body>
 

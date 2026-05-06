@@ -14,7 +14,7 @@
             const dock = document.createElement('div');
             dock.id = 'mobileCaptureDock';
             dock.innerHTML = `
-                <button class="dock-item" data-capture="BIOL">
+                <button class="dock-item" data-capture="SR">
                     <span class="material-symbols-rounded">vaccines</span>
                     <label>BIOLÓGICOS</label>
                 </button>
@@ -22,11 +22,11 @@
                     <span class="material-symbols-rounded">add_business</span>
                     <label>CONSUMIBLES</label>
                 </button>
-                <button class="dock-item" data-capture="PEDI">
+                <button class="dock-item" data-capture="BIO">
                     <span class="material-symbols-rounded">science</span>
                     <label>PEDIDO</label>
                 </button>
-                <button class="dock-item" data-capture="PINO">
+                <button class="dock-item" data-capture="PINOL">
                     <span class="material-symbols-rounded">inventory_2</span>
                     <label>PINOL</label>
                 </button>
@@ -36,7 +36,7 @@
             dock.querySelectorAll('.dock-item').forEach(btn => {
                 btn.onclick = () => {
                     const captureCode = btn.dataset.capture;
-                    const desktopBtn = document.querySelector(`.capture-btn[onclick*="${captureCode}"]`);
+                    const desktopBtn = document.getElementById('tab' + captureCode);
                     if (desktopBtn) desktopBtn.click();
                 };
             });
@@ -48,13 +48,14 @@
         };
 
         const syncDockState = () => {
-            const activePanel = document.querySelector('.capture-panel:not(.hidden)');
-            if (activePanel) {
-                const captureCode = activePanel.id.substring(5, 9).toUpperCase();
-                document.querySelectorAll('.dock-item').forEach(b => {
-                    b.classList.toggle('active', b.dataset.capture === captureCode);
-                });
-            }
+            ['SR', 'CONS', 'BIO', 'PINOL'].forEach(code => {
+                const form = document.getElementById('form' + code);
+                const isActive = form && form.style.display !== 'none';
+                const dockBtn = document.querySelector(`.dock-item[data-capture="${code}"]`);
+                if (dockBtn) {
+                    dockBtn.classList.toggle('active', isActive);
+                }
+            });
         };
 
         const syncDockLifecycle = () => {
@@ -101,9 +102,10 @@
 
         const closeProfile = () => {
             const profile = document.getElementById('profileDropdown');
-            if (profile) {
+            const btn = document.getElementById('btnProfileToggle');
+            if (profile && !profile.classList.contains('hidden')) {
                 profile.classList.add('hidden');
-                profile.style.removeProperty('display');
+                if (btn) btn.classList.remove('btn-active');
             }
         };
 
