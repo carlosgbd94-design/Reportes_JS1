@@ -29,14 +29,7 @@
 
 <body class="bg-surface-container min-h-screen relative overflow-x-hidden">
 
-  <!-- 🧪 SENIOR UX REFRACTION ENGINE (Pure Liquid Refraction) -->
-  <svg width="0" height="0" style="position: absolute; pointer-events: none;">
-    <filter id="liquid-glass-refraction" x="-20%" y="-20%" width="140%" height="140%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="1" result="noise" />
-      <feGaussianBlur in="noise" stdDeviation="1.5" result="smoothNoise" />
-      <feDisplacementMap in="SourceGraphic" in2="smoothNoise" scale="15" xChannelSelector="R" yChannelSelector="G" />
-    </filter>
-  </svg>
+
 
   <!-- 🎨 DYNAMIC BACKGROUND ENGINE (High Performance Aura) -->
   <div class="AuraContainer">
@@ -2631,14 +2624,7 @@
   <div id="toast-container" class="toast-stack-container" aria-live="polite"></div>
 
 
-  <!-- 🧪 LIQUID GLASS ENGINE (SVG Refraction) -->
-  <svg width="0" height="0" style="position: absolute; pointer-events: none;">
-    <filter id="liquid-glass-core" color-interpolation-filters="sRGB">
-      <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise" />
-      <feDisplacementMap in="SourceGraphic" in2="noise" scale="50" xChannelSelector="R" yChannelSelector="G" />
-      <feGaussianBlur stdDeviation="15" />
-    </filter>
-  </svg>
+
   <script>
     console.log("Refractive Engine Active: SVG Displacement Map");
   </script>

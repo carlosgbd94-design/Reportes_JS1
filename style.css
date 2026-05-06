@@ -1311,14 +1311,18 @@ label,
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-  align-items: center;
-  padding: 12px 14px;
-  white-space: normal;
-  text-align: center;
-}
+@media (max-width: 640px) {
+  .iconbtn {
+    align-items: center;
+    padding: 12px 14px;
+    white-space: normal;
+    text-align: center;
+  }
 
-  flex: 0 0 auto;
-  font-size: 19px;
+  .iconbtn .material-symbols-rounded {
+    flex: 0 0 auto;
+    font-size: 19px;
+  }
 }
 
 .iconbtn:hover {
@@ -1338,8 +1342,9 @@ label,
   color: var(--md-sys-color-primary);
 }
 
-  width: 100%;
-}
+  .iconbtn span {
+    width: 100%;
+  }
 
 #btnExport {
   background: linear-gradient(135deg, rgba(79, 140, 255, .18), rgba(0, 0, 0, .05));
@@ -1400,17 +1405,20 @@ label,
   border-color: rgba(236, 72, 153, .24);
 }
 
-  justify-content: center;
-  align-items: center;
-}
+  #btnTopNotifications > div {
+    justify-content: center;
+    align-items: center;
+  }
 
-  font-size: 14px !important;
-  line-height: 1.02;
-  padding: 5px 5px !important;
-}
+  #topNotifBadge {
+    font-size: 14px !important;
+    line-height: 1.02;
+    padding: 5px 5px !important;
+  }
 
-  font-size: 16px !important;
-}
+  #btnTopNotifications span {
+    font-size: 16px !important;
+  }
 
 #btnTopNotifications:hover {
   background: linear-gradient(135deg, rgba(236, 72, 153, .24), rgba(0, 0, 0, .07));
@@ -2684,6 +2692,7 @@ tr.lote-row-bad.imminent {
   color: #93c5fd;
 }
 
+.crystalStatus .material-symbols-rounded {
   width: 20px;
   height: 20px;
   font-size: 15px;
@@ -3784,6 +3793,7 @@ input[disabled] {
   contain: layout paint;
 }
 
+.topNotifCard, .notifHero {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }

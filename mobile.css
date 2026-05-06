@@ -4,7 +4,7 @@
  */
 
 /* A. Touch targets - Minimum 44px-48px for interactive elements */
-.touch-ui button, 
+.touch-ui button,
 .touch-ui .header-action-btn,
 .touch-ui .tab-btn,
 .touch-ui select,
@@ -45,7 +45,7 @@
     margin-bottom: 1rem !important;
 }
 
-.touch-ui .space-y-6 > * + * {
+.touch-ui .space-y-6>*+* {
     margin-top: 1.5rem !important;
 }
 
@@ -61,7 +61,8 @@
     padding-right: 12px !important;
 }
 
-.touch-ui #logoA, .touch-ui #logoB {
+.touch-ui #logoA,
+.touch-ui #logoB {
     height: 32px !important;
 }
 
@@ -93,14 +94,15 @@
 .touch-ui .modern-input-group input {
     height: 56px !important;
     padding-left: 52px !important;
-    font-size: 16px !important; /* Prevent iOS zoom on focus */
+    font-size: 16px !important;
+    /* Prevent iOS zoom on focus */
 }
 
 .touch-ui .modern-input-group .input-icon {
     left: 16px !important;
 }
 
-.touch-ui #captureContentArea > div {
+.touch-ui #captureContentArea>div {
     gap: 2rem !important;
 }
 
@@ -120,20 +122,21 @@
     width: 100% !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
-    scrollbar-width: none !important; /* Hide scrollbar for cleaner look on touch */
+    scrollbar-width: none !important;
 }
 
 .touch-ui .overflow-x-auto::-webkit-scrollbar {
     display: none !important;
 }
 
-.touch-ui table th, .touch-ui table td {
+.touch-ui table th,
+.touch-ui table td {
     padding: 12px 16px !important;
     min-width: 120px !important;
 }
 
 /* FASE: Unified Overlay System (Retrofit) */
-.touch-ui .overlay, 
+.touch-ui .overlay,
 .touch-ui .modal-backdrop {
     backdrop-filter: blur(8px) !important;
     background: rgba(0, 0, 0, 0.4) !important;
@@ -149,10 +152,30 @@
     background: rgba(255, 255, 255, 0.95) !important;
     backdrop-filter: blur(20px) !important;
     z-index: 10005 !important;
-    max-height: calc(100dvh - 180px) !important;
+    max-height: calc(100dvh - 140px) !important;
     overflow-y: auto !important;
     overscroll-behavior: contain !important;
     padding: 0 !important;
+}
+
+/* Fix: Ensure archivos internals are visible on mobile */
+.touch-ui #archivosDropdown .topNotifCard {
+    max-height: none !important;
+    overflow: visible !important;
+    min-height: 0 !important;
+}
+
+.touch-ui #archivosDropdown .topNotifBody {
+    max-height: 50vh !important;
+    overflow-y: auto !important;
+    min-height: 100px !important;
+}
+
+.touch-ui #archivosDropdown #archivosContainer {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    min-height: 40px !important;
 }
 
 /* TIPO B: Floating Action Modals */
@@ -169,8 +192,8 @@
     z-index: 10006 !important;
 }
 
-/* PATCH: Header Mobile Fix - Emergency Retrofit */
-.touch-ui #mainHeader > div {
+/* PATCH: Header Mobile Fix */
+.touch-ui #mainHeader>div {
     flex-wrap: wrap !important;
     justify-content: center !important;
     gap: 8px !important;
@@ -198,14 +221,14 @@
     gap: 8px !important;
 }
 
-/* PATCH: Content Separation - Mobile Retrofit */
+/* PATCH: Content Separation */
 .touch-ui #welcomeBlock {
     margin-top: 24px !important;
 }
 
-/* PATCH: Vertical Rhythm Optimization - Mobile Retrofit */
-.touch-ui #rightColumn > div,
-.touch-ui #captureContentArea > div {
+/* PATCH: Vertical Rhythm */
+.touch-ui #rightColumn>div,
+.touch-ui #captureContentArea>div {
     margin-bottom: 24px !important;
 }
 
@@ -218,25 +241,25 @@
     margin-bottom: 16px !important;
 }
 
-.touch-ui #srCaptureTable, 
+.touch-ui #srCaptureTable,
 .touch-ui #srCaptureTbody tr {
     margin-bottom: 12px !important;
 }
 
 /* FASE: Captura Mobile Optimization */
-.touch-ui #srCaptureTbody tr, 
+.touch-ui #srCaptureTbody tr,
 .touch-ui #bioTbody tr {
     border-bottom: 8px solid var(--md-sys-color-surface-container) !important;
 }
 
-.touch-ui #srCaptureTbody td, 
+.touch-ui #srCaptureTbody td,
 .touch-ui #bioTbody td {
     padding: 16px 12px !important;
     vertical-align: middle !important;
 }
 
-/* FASE: Priority Columns Layout (No Sticky) */
-.touch-ui .bioNameCell, 
+/* FASE: Priority Columns Layout */
+.touch-ui .bioNameCell,
 .touch-ui #srCaptureTbody td:first-child {
     min-width: 140px !important;
     width: 140px !important;
@@ -251,19 +274,19 @@
     min-width: 100px !important;
 }
 
-/* Hit areas para inputs de cantidad */
-.touch-ui .sr-cantidad-input, 
+/* Hit areas for quantity inputs */
+.touch-ui .sr-cantidad-input,
 .touch-ui .bioInput {
     height: 52px !important;
     font-size: 16px !important;
 }
 
-.touch-ui .sr-bio-select, 
+.touch-ui .sr-bio-select,
 .touch-ui .sr-lote-select {
     height: 52px !important;
 }
 
-/* Headers legibilidad */
+/* Headers readability */
 .touch-ui thead th {
     padding: 12px !important;
     font-size: 11px !important;
@@ -275,46 +298,72 @@
     transform: scale(1.1) !important;
 }
 
-/* FASE: Thumb Zone Capture Dock */
+/* ═══════════════════════════════════════════════════════════════════════
+   LIQUID GLASS DOCK - Pebble & Void Architecture
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Dock Container: Dark translucent bar */
 .touch-ui #mobileCaptureDock {
     position: fixed !important;
-    bottom: 25px !important;
-    left: 15px !important;
-    right: 15px !important;
-    height: 70px !important;
-    border-radius: 35px !important;
-    backdrop-filter: url(#liquid-glass-core) !important;
-    -webkit-backdrop-filter: url(#liquid-glass-core) !important;
-    box-shadow: rgba(0, 0, 0, 0.3) 0px 15px 35px !important;
-    transform: translateZ(0px) !important;
-    background-color: rgba(255, 255, 255, 0.05) !important;
+    bottom: 20px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 92% !important;
+    max-width: 420px !important;
+    height: 72px !important;
+    background: rgba(133, 133, 133, 0.233) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 36px !important;
     display: flex !important;
-    flex-direction: row !important;
-    justify-content: space-evenly !important;
     align-items: center !important;
-    padding: 0 !important;
-    z-index: 9999 !important;
-    transition: all 0.4s ease !important;
-    overflow: visible !important;
+    justify-content: space-around !important;
+    z-index: 999999 !important;
+    box-shadow:
+        0 30px 60px rgba(0, 0, 0, 0.6),
+        inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+    padding: 0 8px !important;
+    touch-action: none !important;
+    user-select: none !important;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease !important;
 }
 
-.touch-ui #mobileCaptureDock::before {
-    content: "" !important;
+/* Glass Indicator Bubble - The refractive element */
+.touch-ui .dock-indicator {
+    position: absolute !important;
+    width: 80px !important;
+    height: 60px !important;
+    border-radius: 30px !important;
+    top: 6px !important;
+    pointer-events: none !important;
+    z-index: 2 !important;
+    will-change: transform, left !important;
+    transform-origin: center center !important;
+    transition: left 0.5s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.3s ease !important;
+    overflow: hidden !important;
+}
+
+/* Inner div: THIS is what receives backdrop-filter */
+.touch-ui .dock-indicator-inner {
     position: absolute !important;
     inset: 0 !important;
     border-radius: inherit !important;
-    padding: 1.5px !important;
-    background: linear-gradient(160deg, 
-        rgba(255,255,255,0.7) 0%, 
-        rgba(255,255,255,0) 40%, 
-        rgba(255,255,255,0) 60%, 
-        rgba(255,255,255,0.4) 100%) !important;
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0) !important;
-    -webkit-mask-composite: xor !important;
-    mask-composite: exclude !important;
+    z-index: 3 !important;
     pointer-events: none !important;
+
+    /* THE KEY: backdrop-filter with SVG URL reference */
+    backdrop-filter: url(#dockGlassFilter) !important;
+    -webkit-backdrop-filter: url(#dockGlassFilter) !important;
+
+    /* Physical Glass Treatment */
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.5),
+        inset 0 2px 5px rgba(255, 255, 255, 0.3),
+        inset 0 0 20px rgba(255, 255, 255, 0.1) !important;
 }
 
+/* Dock Items */
 .touch-ui .dock-item {
     display: flex !important;
     flex-direction: column !important;
@@ -322,34 +371,23 @@
     justify-content: center !important;
     background: transparent !important;
     border: none !important;
-    color: rgba(0, 51, 102, 0.7) !important;
+    color: rgb(165 165 165 / 44%) !important;
     flex: 1 !important;
-    height: 100% !important; /* Use container height */
+    height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     position: relative !important;
+    z-index: 10 !important;
     transition: all 0.3s ease !important;
     text-decoration: none !important;
+    gap: 4px !important;
+    cursor: pointer !important;
+    pointer-events: none !important;
+    /* Dock handles all pointer events */
 }
 
 .touch-ui .dock-item.active {
-    color: #003366 !important;
-}
-
-.touch-ui .dock-item.active::after {
-    content: "" !important;
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    width: 48px !important;
-    height: 48px !important;
-    background: rgba(255, 255, 255, 0.1) !important;
-    backdrop-filter: blur(5px) saturate(200%) !important;
-    border-radius: 14px !important;
-    z-index: -1 !important;
-    box-shadow: 
-        0 4px 10px rgba(0,0,0,0.1) !important;
+    color: #202020 !important;
 }
 
 .touch-ui .dock-item span,
@@ -359,49 +397,77 @@
     padding: 0 !important;
     line-height: 1 !important;
     display: block !important;
+    color: rgba(0, 51, 102, 0.45) !important;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease !important;
 }
 
 .touch-ui .dock-item label {
-    font-size: 8px !important;
-    font-weight: 900 !important;
-    margin: 4px 0 0 0 !important;
-    padding: 0 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.05em !important;
-    line-height: 1 !important;
+    color: rgba(0, 51, 102, 0.4) !important;
+}
+
+.touch-ui .dock-item.active span,
+.touch-ui .dock-item.active .material-symbols-rounded {
+    color: #003366 !important;
+    transform: scale(1.15) translateY(-2px) !important;
+    filter: drop-shadow(0 0 8px rgba(0, 51, 102, 0.25)) !important;
 }
 
 .touch-ui .dock-item label {
     font-size: 9px !important;
     font-weight: 800 !important;
-    letter-spacing: 0.5px !important;
+    letter-spacing: 0.05em !important;
+    text-transform: uppercase !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
-/* PATCH: Navigation Consolidation - Mobile Retrofit */
+.touch-ui .dock-item.active label {
+    color: #003366 !important;
+    transform: translateY(2px) !important;
+}
+
+/* Dock gradient border (premium edge highlight) */
+.touch-ui #mobileCaptureDock::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    border-radius: inherit !important;
+    padding: 1.5px !important;
+    background: linear-gradient(160deg,
+            rgba(255, 255, 255, 0.7) 0%,
+            rgba(255, 255, 255, 0) 40%,
+            rgba(255, 255, 255, 0) 60%,
+            rgba(255, 255, 255, 0.4) 100%) !important;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0) !important;
+    -webkit-mask-composite: xor !important;
+    mask-composite: exclude !important;
+    pointer-events: none !important;
+}
+
+/* Hide desktop capture tabs on mobile */
 .touch-ui #desktopCaptureTitle,
 .touch-ui #desktopCaptureTabs {
     display: none !important;
 }
 
-/* PATCH: Navigation Consolidation - Mobile Retrofit */
-.touch-ui #desktopCaptureTitle,
-.touch-ui #desktopCaptureTabs {
-    display: none !important;
-}
-
-.touch-ui #panelCAP > div:first-child {
+.touch-ui #panelCAP>div:first-child {
     margin: 0 !important;
     padding: 0 !important;
     gap: 0 !important;
 }
 
-/* FASE: Ultra-Compact Profile Card (MOCS) */
+/* ═══════════════════════════════════════════════════════════════════════
+   PROFILE CARD (Mobile Optimized)
+   ═══════════════════════════════════════════════════════════════════════ */
+
 .touch-ui #profileDropdown:not(.hidden) {
     display: flex !important;
     flex-direction: column !important;
     background: #ffffff !important;
     border-radius: 20px !important;
-    border: 1px solid rgba(0,0,0,0.1) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
     box-shadow: 0 12px 48px rgba(0, 51, 102, 0.3) !important;
     width: 280px !important;
     max-width: 280px !important;
@@ -429,7 +495,7 @@
     gap: 8px !important;
     padding-bottom: 8px !important;
     margin-bottom: 8px !important;
-    border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
 }
 
 .touch-ui #profileDropdown .profile-avatar-container {
@@ -476,7 +542,9 @@
     gap: 6px !important;
 }
 
-.touch-ui #profileDropdown .fieldCard label { display: none !important; }
+.touch-ui #profileDropdown .fieldCard label {
+    display: none !important;
+}
 
 .touch-ui #profileDropdown .fieldCard div {
     font-size: 11px !important;
@@ -489,14 +557,22 @@
     opacity: 0.5 !important;
 }
 
-.touch-ui #profileDropdown .fieldCard:nth-child(1)::before { content: "home_work"; }
-.touch-ui #profileDropdown .fieldCard:nth-child(2)::before { content: "pin_drop"; }
-.touch-ui #profileDropdown .fieldCard:nth-child(3)::before { content: "badge"; }
+.touch-ui #profileDropdown .fieldCard:nth-child(1)::before {
+    content: "home_work";
+}
+
+.touch-ui #profileDropdown .fieldCard:nth-child(2)::before {
+    content: "pin_drop";
+}
+
+.touch-ui #profileDropdown .fieldCard:nth-child(3)::before {
+    content: "badge";
+}
 
 .touch-ui #profileDropdown .profile-footer {
     padding: 8px 0 0 0 !important;
     margin-top: 8px !important;
-    border-top: 1px solid rgba(0,0,0,0.05) !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
 }
 
 .touch-ui #profileDropdown .btn-premium-action {
@@ -515,5 +591,5 @@
     margin-bottom: 4px !important;
     border-radius: 10px !important;
     background: white !important;
-    border: 1px solid rgba(0,0,0,0.05) !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
 }
