@@ -6199,6 +6199,19 @@ input[disabled] {
     opacity: 0.8;
 }
 
+/* ==========================================================================
+   HEADER LIQUID GLASS (Frosted Displacement)
+   ========================================================================== */
+.header-liquid-glass {
+    backdrop-filter: blur(10px) saturate(1.5) !important; /* fallback */
+    -webkit-backdrop-filter: blur(10px) saturate(1.5) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    box-shadow: 0 0 2px 1px rgba(255, 255, 255, 0.08) inset,
+                0 0 10px 4px rgba(255, 255, 255, 0.03) inset,
+                0 8px 24px rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.04) !important;
+}
+
 /* Interaction for Glass */
 .GlassContainer:hover .GlassContent {
     border-color: rgba(255, 255, 255, 0.6) !important;
@@ -7095,6 +7108,298 @@ input, textarea, select, [contenteditable] {
 
 .hint-message b {
     font-weight: 700 !important;
+}
+
+
+
+
+/* --- NAVEGACIÓN PREMIUM (LIQUID MIST OPTICS) --- */
+.nav-container {
+  display: flex;
+  background: #f8fafc; /* Fondo sutilmente grisáceo para contraste */
+  padding: 6px;
+  border-radius: 26px;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.04),
+    inset 0 2px 10px rgba(0, 0, 0, 0.01);
+  position: relative;
+  gap: 4px;
+  width: fit-content;
+  margin: 12px auto;
+  z-index: 10;
+}
+
+.nav-indicator.liquid-glass {
+  position: absolute;
+  top: 6px;
+  height: calc(100% - 12px);
+  background: transparent;
+  border-radius: 20px;
+  transition: all 0.7s cubic-bezier(0.5, 1.5, 0.5, 1);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.liquid-glass--bend {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  backdrop-filter: blur(8px); /* Mayor desenfoque para el efecto esmerilado */
+  -webkit-backdrop-filter: blur(8px);
+  filter: url(#glass-blur);
+  z-index: 1;
+}
+
+.liquid-glass--face {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.45); /* Efecto lechoso/esmerilado */
+  box-shadow: 
+    0 15px 35px rgba(0, 0, 0, 0.08),
+    inset 0 2px 10px rgba(255, 255, 255, 0.8),
+    inset 0 0 2px 1px rgba(0, 0, 0, 0.02);
+  z-index: 2;
+}
+
+.liquid-glass--edge {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 
+    inset 4px 4px 8px rgba(255, 255, 255, 1),
+    inset -4px -4px 8px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  z-index: 3;
+}
+
+.nav-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 24px;
+  height: 48px;
+  color: #64748b !important; /* Slate suave */
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  z-index: 10;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.nav-tab.active {
+  color: #0f172a !important; /* Casi negro para contraste */
+}
+
+.nav-tab .material-symbols-rounded {
+  font-size: 24px;
+  color: #94a3b8;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Acentos cromáticos para que la refracción se note sobre blanco */
+.nav-tab.active .material-symbols-rounded {
+  transform: scale(1.1);
+  font-variation-settings: 'FILL' 1;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+}
+
+/* Colores temáticos por icono para máxima refracción */
+.nav-tab.active[onclick*="'CAPTURE'"] .material-symbols-rounded { color: #0ea5e9; }      /* Cyan */
+.nav-tab.active[onclick*="'HISTORY'"] .material-symbols-rounded { color: #f43f5e; }      /* Rose */
+.nav-tab.active[onclick*="'PINOL'"] .material-symbols-rounded { color: #10b981; }        /* Emerald */
+.nav-tab.active[onclick*="'LOTES'"] .material-symbols-rounded { color: #f59e0b; }        /* Amber */
+.nav-tab.active[onclick*="'NOTIFICATIONS'"] .material-symbols-rounded { color: #8b5cf6; } /* Violet */
+.nav-tab.active[onclick*="'SECURITY'"] .material-symbols-rounded { color: #6366f1; }      /* Indigo */
+
+/* Colores para Perfil Unidad (Captura) */
+.nav-tab.active[onclick*="'SR'"] .material-symbols-rounded { color: #0284c7; }   /* Blue (Biológicos) */
+.nav-tab.active[onclick*="'CONS'"] .material-symbols-rounded { color: #059669; } /* Green (Consumibles) */
+.nav-tab.active[onclick*="'BIO'"] .material-symbols-rounded { color: #e11d48; }  /* Red (Pedido) */
+.nav-tab.active[onclick*="'PINOL'"] .material-symbols-rounded { color: #d97706; } /* Orange (Pinol) */
+
+/* ==========================================================================
+   COMMAND HUB & PREMIUM ACTION CHIPS
+   ========================================================================== */
+/* TRACKER STICKY (NUEVO) */
+.command-hub-tracker {
+  position: sticky;
+  top: 180px;
+  overflow: visible;
+  pointer-events: auto;
+}
+
+.command-hub {
+  position: relative;
+  width: max-content;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 900;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    0 20px 40px rgba(0, 51, 102, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.command-hub.visible {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+  right: 40px;
+}
+
+.save-chip-premium {
+  background: linear-gradient(135deg, #0061f2 0%, #003870 100%);
+  color: white !important;
+  border-radius: 30px;
+  padding: 14px 28px;
+  font-weight: 900;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: none;
+  box-shadow: 0 10px 20px rgba(0, 97, 242, 0.2);
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+}
+
+.save-chip-premium:hover {
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: 0 15px 30px rgba(0, 97, 242, 0.3);
+}
+
+.save-chip-premium:active {
+  transform: scale(0.95);
+}
+
+.edit-btn-premium {
+  background: #ffffff;
+  color: #003870 !important;
+  border-radius: 30px;
+  padding: 12px 24px;
+  font-weight: 800;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.edit-btn-premium:hover {
+  background: #f8fafc;
+  border-color: #0061f2;
+  color: #0061f2 !important;
+  transform: translateY(-1px);
+}
+
+.cancel-btn-premium {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444 !important;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 30px;
+  padding: 10px 20px;
+  font-weight: 700;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-btn-premium:hover {
+  background: #ef4444;
+  color: white !important;
+}
+
+@media (max-width: 1024px) {
+  .command-hub-tracker {
+    position: static;
+    transform: none;
+  }
+  .command-hub {
+    position: fixed;
+    z-index: 900;
+    right: 16px;
+    bottom: 32px;
+    top: auto;
+    transform: none;
+    flex-direction: row;
+    border-radius: 24px;
+    padding: 8px;
+  }
+  .command-hub.visible {
+    right: 16px;
+  }
+}
+
+/* STATUS CHIP V5 (Dentro del Hub) */
+.status-chip-v5 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.status-chip-v5 .status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.status-chip-v5.saved {
+  color: #16a34a;
+  border-color: #bcf0da;
+  background: #f0fdf4;
+}
+.status-chip-v5.saved .status-dot { background: #16a34a; }
+
+.status-chip-v5.pending {
+  color: #ea580c;
+  border-color: #fed7aa;
+  background: #fff7ed;
+  animation: pulse-soft 2s infinite;
+}
+.status-chip-v5.pending .status-dot { background: #ea580c; }
+
+@keyframes pulse-soft {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 

@@ -18,6 +18,9 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/exceljs/dist/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
   <!-- Tailwind CSS Compiled -->
   <link rel="stylesheet" href="tailwind_compiled.css">
@@ -51,41 +54,41 @@
       <div class="GlassContainer flex-none" id="logoCluster"
         style="display: flex !important; width: fit-content !important;">
         <div
-          class="GlassContent liquidGL px-8 py-3 flex items-center flex-row flex-nowrap gap-8 bg-transparent! whitespace-nowrap overflow-visible"
+          class="GlassContent liquidGL header-liquid-glass px-4 sm:px-8 py-2 sm:py-3 flex items-center flex-row flex-nowrap gap-3 sm:gap-8 bg-transparent! whitespace-nowrap overflow-visible transition-all duration-300"
           style="display: flex !important; flex-direction: row !important; align-items: center !important;">
           <!-- Logo SESEQ -->
-          <img id="logoA" class="h-[40px] w-auto object-contain flex-none"
+          <img id="logoA" class="object-contain flex-none transition-all duration-300"
             style="height: 40px !important; width: auto !important;"
             src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/Seseq_vertical_2025.png"
             alt="SESEQ">
 
-          <div class="w-[1px] h-8 bg-primary/20 flex-none mx-2"></div>
+          <div class="hidden sm:block w-[1px] h-8 bg-primary/20 flex-none mx-2"></div>
 
           <!-- Logo Q -->
-          <img id="logoB" class="h-[40px] w-auto object-contain flex-none"
+          <img id="logoB" class="hidden sm:block object-contain flex-none transition-all duration-300"
             style="height: 40px !important; width: auto !important;"
             src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png"
             alt="Gobierno de Querétaro">
 
-          <div class="w-[1px] h-8 bg-primary/20 flex-none mx-2"></div>
+          <div class="hidden sm:block w-[1px] h-8 bg-primary/20 flex-none mx-2"></div>
 
           <!-- JS1 Branding Text -->
-          <div class="flex flex-col flex-none justify-center">
-            <h1 class="text-xl sm:text-2xl font-black text-primary m-0 leading-none flex items-center gap-2">
-              JS1 <span class="font-medium opacity-50">Reportes</span>
+          <div class="flex flex-col flex-none justify-center transition-all duration-300">
+            <h1 class="text-lg sm:text-2xl font-black text-primary m-0 leading-none flex items-center gap-1 sm:gap-2">
+              JS1 <span class="font-medium opacity-50 hidden sm:inline">Reportes</span>
             </h1>
-            <p class="text-[9px] text-primary/60 m-0 mt-1 font-black uppercase tracking-widest leading-none">
+            <p class="hidden sm:block text-[9px] text-primary/60 m-0 mt-1 font-black uppercase tracking-widest leading-none">
               Plataforma Institucional</p>
           </div>
         </div>
       </div>
 
       <!-- 💎 ACTION BUTTONS CLUSTER (Individually Floating Circles) -->
-      <div class="flex items-center gap-6 sm:gap-8" id="userControlsGroup">
-        <div class="flex items-center gap-6" id="headerActions">
+      <div class="flex items-center gap-2 sm:gap-6 lg:gap-8" id="userControlsGroup">
+        <div class="flex items-center gap-2 sm:gap-4 lg:gap-6" id="headerActions">
 
           <div class="GlassContainer" id="glassBtnExport" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL" style="--glass-icon-color: #003366; --corner-radius: 100px;">
-            <div class="GlassContent liquidGL">
+            <div class="GlassContent liquidGL header-liquid-glass">
               <button class="header-action-btn" id="btnExport" data-tooltip="Exportar reportes" style="display:none;">
                 <span class="material-symbols-rounded">download</span>
               </button>
@@ -93,7 +96,7 @@
           </div>
 
           <div class="GlassContainer" id="glassBtnUpload" data-role-gate="UNIDAD,MUNICIPAL" style="--glass-icon-color: #005bb5; --corner-radius: 100px;">
-            <div class="GlassContent liquidGL">
+            <div class="GlassContent liquidGL header-liquid-glass">
               <button class="header-action-btn" id="btnOpenUpload" data-tooltip="Subir archivos" style="display:none;">
                 <span class="material-symbols-rounded">cloud_upload</span>
               </button>
@@ -102,7 +105,7 @@
 
           <div class="GlassContainer" id="glassBtnExplorer" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,UNIDAD"
             style="--glass-icon-color: #00695c; --corner-radius: 100px;">
-            <div class="GlassContent liquidGL">
+            <div class="GlassContent liquidGL header-liquid-glass">
               <button class="header-action-btn" id="btnViewArchivos" data-tooltip="Explorador de evidencias"
                 style="display:none;">
                 <span class="material-symbols-rounded">folder_open</span>
@@ -111,7 +114,7 @@
           </div>
 
           <div class="GlassContainer" id="glassBtnNotifs" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,UNIDAD" style="--glass-icon-color: #c41e3a; --corner-radius: 100px;">
-            <div class="GlassContent liquidGL">
+            <div class="GlassContent liquidGL header-liquid-glass">
               <button class="header-action-btn" id="btnTopNotifications" data-tooltip="Notificaciones"
                 style="display:none;">
                 <div class="flex items-center justify-center relative !overflow-visible">
@@ -121,25 +124,44 @@
               </button>
             </div>
           </div>
+
+          <!-- RDA 2026 DASHBOARD BUTTON -->
+          <div class="GlassContainer" id="glassBtnRdaDashboard" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,UNIDAD" style="--glass-icon-color: #0d9488; --corner-radius: 100px;">
+            <div class="GlassContent liquidGL header-liquid-glass">
+              <button class="header-action-btn" id="btnOpenRdaDashboard" data-tooltip="Dashboard RDA 2026" style="display:none;">
+                <span class="material-symbols-rounded">vaccines</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- CSV UPLOAD BUTTON (JURISDICCIONAL/ADMIN ONLY) -->
+          <div class="GlassContainer" id="glassBtnUploadRdaCsv" data-role-gate="ADMIN,JURISDICCIONAL" style="--glass-icon-color: #4338ca; --corner-radius: 100px;">
+            <div class="GlassContent liquidGL header-liquid-glass">
+              <button class="header-action-btn" id="btnUploadRdaCsv" data-tooltip="Subir Archivo SIS (CSV)" style="display:none;">
+                <span class="material-symbols-rounded">upload_file</span>
+              </button>
+            </div>
+          </div>
+
         </div>
 
         <!-- 💎 PROFILE BUTTON (Pure Spectral Glass) -->
         <div class="relative flex-none" id="profileDropdownContainer">
           <div class="GlassContainer" style="--corner-radius: 28px;">
-            <div class="GlassContent liquidGL">
+            <div class="GlassContent liquidGL header-liquid-glass">
               <button id="btnProfileToggle" data-tooltip="Mi Perfil / Ajustes"
-                class="h-[46px] sm:h-[56px] px-4 sm:px-8 text-primary rounded-[22px] sm:rounded-[28px] flex items-center gap-3 sm:gap-4 border-none cursor-pointer shadow-none">
+                class="h-[42px] sm:h-[56px] px-1 sm:px-6 lg:px-8 text-primary rounded-[21px] sm:rounded-[28px] flex items-center justify-center gap-0 sm:gap-3 lg:gap-4 border-none cursor-pointer shadow-none transition-all duration-300">
                 <div
-                  class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/10">
+                  class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/10 flex-none transition-all duration-300">
                   <span class="material-symbols-rounded text-[20px] sm:text-[24px] text-primary">account_circle</span>
                 </div>
-                <div class="flex flex-col items-start leading-none">
+                <div class="hidden md:flex flex-col items-start leading-none transition-all duration-300">
                   <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-primary/60 mb-1">Mi
                     Perfil</span>
                   <span class="text-[12px] sm:text-[15px] font-black text-primary" id="rolTxt">Cargando...</span>
                 </div>
                 <span
-                  class="material-symbols-rounded text-[18px] sm:text-[22px] text-primary/40 ml-1">expand_more</span>
+                  class="hidden md:block material-symbols-rounded text-[18px] sm:text-[22px] text-primary/40 ml-1 transition-all duration-300">expand_more</span>
               </button>
             </div>
           </div>
@@ -458,31 +480,32 @@
               <span class="text-base font-black uppercase tracking-[0.2em]">Captura de Reportes</span>
             </div>
 
-            <!-- 🏝️ TABS ISLAND -->
-            <div id="desktopCaptureTabs"
-              class="flex flex-wrap gap-3 p-2 bg-white/80 rounded-[26px] w-full lg:w-auto border border-primary/5 shadow-sm">
-              <button
-                class="tab-btn tab-active flex-1 md:flex-none items-center gap-2.5 h-[48px] sm:h-[52px] px-3 sm:px-6 min-w-[120px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[12px] sm:text-[14px]"
-                id="tabSR" data-role-gate="UNIDAD" onclick="activateCapture('SR')">
-                <span class="material-symbols-rounded text-[22px]">vaccines</span>
+            <!-- 🏝️ TABS ISLAND (Liquid Mist Style) -->
+            <div id="desktopCaptureTabs" class="nav-container">
+              <!-- Indicador de cristal líquido -->
+              <div id="captureTabIndicator" class="nav-indicator liquid-glass">
+                <div class="liquid-glass--bend"></div>
+                <div class="liquid-glass--face"></div>
+                <div class="liquid-glass--edge"></div>
+              </div>
+
+              <button class="nav-tab active" id="tabSR" data-role-gate="UNIDAD" onclick="activateCapture('SR')">
+                <span class="material-symbols-rounded">vaccines</span>
                 <span>Biológicos</span>
               </button>
-              <button
-                class="tab-btn tab-inactive flex-1 md:flex-none items-center gap-2.5 h-[48px] sm:h-[52px] px-3 sm:px-6 min-w-[120px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[12px] sm:text-[14px]"
-                id="tabCONS" data-role-gate="UNIDAD" onclick="activateCapture('CONS')">
-                <span class="material-symbols-rounded text-[22px]">medical_services</span>
+
+              <button class="nav-tab" id="tabCONS" data-role-gate="UNIDAD" onclick="activateCapture('CONS')">
+                <span class="material-symbols-rounded">medical_services</span>
                 <span>Consumibles</span>
               </button>
-              <button
-                class="tab-btn tab-inactive flex-1 md:flex-none items-center gap-2.5 h-[48px] sm:h-[52px] px-3 sm:px-6 min-w-[120px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[12px] sm:text-[14px]"
-                id="tabBIO" data-role-gate="UNIDAD" style="display:none" onclick="activateCapture('BIO')">
-                <span class="material-symbols-rounded text-[22px]">science</span>
+
+              <button class="nav-tab" id="tabBIO" data-role-gate="UNIDAD" style="display:none" onclick="activateCapture('BIO')">
+                <span class="material-symbols-rounded">science</span>
                 <span>Pedido</span>
               </button>
-              <button
-                class="tab-btn tab-inactive flex-1 md:flex-none items-center gap-2.5 h-[48px] sm:h-[52px] px-3 sm:px-6 min-w-[120px] md:min-w-[200px] rounded-[22px] font-bold tracking-wide text-[12px] sm:text-[14px]"
-                id="tabPINOL" data-role-gate="UNIDAD" style="display:none" onclick="activateCapture('PINOL')">
-                <span class="material-symbols-rounded text-[22px]">inventory_2</span>
+
+              <button class="nav-tab" id="tabPINOL" data-role-gate="UNIDAD" style="display:none" onclick="activateCapture('PINOL')">
+                <span class="material-symbols-rounded">inventory_2</span>
                 <span>Pinol</span>
               </button>
             </div>
@@ -502,8 +525,10 @@
           </div>
         </div>
 
-        <!-- 🧱 BLOCK 3: DYNAMIC CAPTURE PANELS -->
-        <div id="captureContentArea" class="space-y-6">
+        <!-- 🧱 BLOCK 3: DYNAMIC CAPTURE PANELS & HUB COLUMN -->
+        <div class="flex items-stretch justify-between w-full relative z-10 gap-4 lg:gap-8 xl:gap-12">
+          <!-- Columna Izquierda: Formularios -->
+          <div id="captureContentArea" class="flex-1 min-w-0 space-y-6">
 
           <!-- SR (EXISTENCIA DE BIOLÓGICOS) -->
           <div id="formSR" style="display:none">
@@ -561,20 +586,7 @@
 
             <div class="h-[1px] bg-outline-variant/40 w-full my-6"></div>
 
-            <button class="btn-premium-action btn-save-animate w-full" id="btnSaveSR">Guardar existencia</button>
-
-            <div class="flex flex-wrap gap-2 mt-4 justify-end">
-              <button
-                class="bg-transparent text-primary border border-primary/20 rounded-xl px-4 h-[42px] font-semibold text-[13px] flex items-center gap-2 transition-all hover:bg-primary hover:text-white cursor-pointer"
-                id="btnEditSR" style="display:none" title="Editar la existencia de hoy">
-                <span class="material-symbols-rounded text-[18px]">edit_square</span> Editar existencia de hoy
-              </button>
-              <button
-                class="bg-transparent text-status-error border border-status-error/20 rounded-xl px-4 h-[42px] font-semibold text-[13px] flex items-center gap-2 transition-all hover:bg-status-error hover:text-white cursor-pointer"
-                id="btnCancelEditSR" style="display:none" title="Cancelar edición">
-                <span class="material-symbols-rounded text-[18px]">close</span> Cancelar edición
-              </button>
-            </div>
+            <!-- Espacio reservado para flujo de captura -->
 
             <div class="text-[11px] opacity-60 text-center font-medium mt-4">Se permite 1 captura por día por unidad. Si
               hay error, usa “Editar”.</div>
@@ -665,28 +677,7 @@
               </div>
             </div>
 
-            <!-- Botones Acción Pro -->
-            <div class="flex flex-col sm:flex-row gap-6 items-center">
-              <button
-                class="btn-premium-action btn-save-animate !py-5 flex-1 w-full text-[15px] tracking-widest uppercase"
-                id="btnSaveCONS">
-                <span class="material-symbols-rounded">save</span>
-                Guardar Reporte de Consumibles
-              </button>
-
-              <div class="flex gap-3 w-full sm:w-auto">
-                <button
-                  class="flex-1 sm:flex-none bg-white text-primary border-2 border-primary/20 rounded-[22px] px-8 h-[64px] font-black text-[13px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-primary/5 transition-all shadow-md"
-                  id="btnEditCONS" style="display:none">
-                  <span class="material-symbols-rounded text-[26px]">edit</span>
-                </button>
-                <button
-                  class="flex-1 sm:flex-none bg-white text-status-error border-2 border-status-error/20 rounded-[22px] px-8 h-[64px] font-black text-[13px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-status-error/5 transition-all shadow-md"
-                  id="btnCancelEditCONS" style="display:none">
-                  <span class="material-symbols-rounded text-[26px]">close</span>
-                </button>
-              </div>
-            </div>
+            <!-- Espacio reservado para flujo de consumibles -->
           </div>
 
           <!-- PEDIDO DE BIOLÓGICO -->
@@ -805,23 +796,7 @@
               en frascos.
             </div>
 
-            <!-- BOTÓN DE GUARDADO BLINDADO (REDISEÑO INSTITUCIONAL) -->
-            <button class="btn-premium-action btn-save-animate w-full" id="btnSaveBIO" data-alert="" data-blocked="">
-              Guardar pedido de biológico
-            </button>
-
-            <div class="flex flex-wrap gap-2 mt-4 justify-end">
-              <button
-                class="bg-transparent text-primary border border-primary/20 rounded-xl px-4 h-[42px] font-semibold text-[13px] flex items-center gap-2 transition-all hover:bg-primary hover:text-white cursor-pointer"
-                id="btnEditBIO" style="display:none" title="Editar el pedido de biológico actual">
-                <span class="material-symbols-rounded text-[18px]">edit_square</span> Editar pedido actual
-              </button>
-              <button
-                class="bg-transparent text-status-error border border-status-error/20 rounded-xl px-4 h-[42px] font-semibold text-[13px] flex items-center gap-2 transition-all hover:bg-status-error hover:text-white cursor-pointer"
-                id="btnCancelEditBIO" style="display:none" title="Cancelar edición">
-                <span class="material-symbols-rounded text-[18px]">close</span> Cancelar edición
-              </button>
-            </div>
+            <!-- Espacio reservado para flujo de biológicos -->
           </div>
 
           <!-- ✅ CONFIRMACIÓN DE BIOLÓGICO (Migrado a Tailwind) -->
@@ -943,50 +918,77 @@
             </div>
 
             <!-- Botón Acción -->
-            <button class="btn-premium-action btn-save-animate w-full mt-4" id="btnSavePINOL">
+            <button class="btn-premium-action btn-save-animate w-full mt-4" id="btnSavePINOL" style="display:none">
               Enviar solicitud de pinol
             </button>
-          </div>
+          </div> <!-- Termina formPINOL -->
+          </div> <!-- Termina captureContentArea (Columna Izquierda) -->
+          
+          <!-- Columna Derecha: Command Hub Track (Ancho reservado en Desktop, Ancho 0 en Móvil) -->
+          <div class="pointer-events-none z-[900] w-0 lg:w-[160px] xl:w-[180px] shrink-0">
+             <div class="command-hub-tracker pointer-events-auto">
+                <!-- 🛸 GLOBAL COMMAND HUB (FLOATING ACTION ISLAND) -->
+                <div id="globalCommandHub" class="command-hub">
+                  <!-- Status Chip Premium -->
+                  <div id="hubStatusChip" class="status-chip-v5" style="display:none">
+                    <div class="status-dot"></div>
+                    <span id="hubStatusText">Guardado</span>
+                  </div>
 
-          <!-- 🧱 BLOCK 4: ADMINISTRATION TABS (Floating Islands) -->
-          <div id="panelAdminOpsTabs" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL" style="display:none" class="w-full contain-layout mb-8">
-            <div
-              class="flex flex-wrap gap-3 p-2 bg-white/40 backdrop-blur-md rounded-[26px] w-fit border border-white/40 shadow-[0_8px_20px_rgba(0,51,102,0.05)]">
-              <button
-                class="tab-btn tab-active flex items-center gap-2.5 h-[48px] px-6 rounded-[22px] font-bold tracking-wide text-[13px]"
-                id="tabOPS_CAPTURE" onclick="activateOpsTab('CAPTURE')">
-                <span class="material-symbols-rounded text-[22px]">dashboard</span>
-                <span>Resumen de captura</span>
+                  <button id="hubSaveBtn" class="save-chip-premium" title="Guardar cambios">
+                    <span class="material-symbols-rounded">save</span>
+                    <span>Guardar</span>
+                  </button>
+                  <button id="hubEditBtn" class="edit-btn-premium" style="display:none" title="Editar reporte">
+                    <span class="material-symbols-rounded">edit_document</span>
+                    <span>Editar</span>
+                  </button>
+                  <button id="hubCancelBtn" class="cancel-btn-premium" style="display:none" title="Cancelar edición">
+                    <span class="material-symbols-rounded">close</span>
+                    <span>Cancelar</span>
+                  </button>
+                </div>
+             </div>
+          </div>
+        </div>
+
+          <!-- 🧱 BLOCK 4: NAVEGACIÓN PREMIUM (Magic Tabs) -->
+          <div id="panelAdminOpsTabs" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL" style="display:none" class="w-full mb-8 flex justify-center">
+            <div class="nav-container">
+              <div id="opsTabIndicator" class="nav-indicator liquid-glass">
+                <div class="liquid-glass--bend"></div>
+                <div class="liquid-glass--face"></div>
+                <div class="liquid-glass--edge"></div>
+              </div>
+
+              <button class="nav-tab active" id="tabOPS_CAPTURE" onclick="activateOpsTab('CAPTURE')">
+                <span class="material-symbols-rounded">dashboard</span>
+                <span>Resumen</span>
               </button>
-              <button
-                class="tab-btn tab-inactive flex items-center gap-2.5 h-[48px] px-6 rounded-[22px] font-bold tracking-wide text-[13px]"
-                id="tabOPS_HISTORY" onclick="activateOpsTab('HISTORY')">
-                <span class="material-symbols-rounded text-[20px]">query_stats</span>
-                <span>Métricas históricas</span>
+              
+              <button class="nav-tab" id="tabOPS_HISTORY" onclick="activateOpsTab('HISTORY')">
+                <span class="material-symbols-rounded">query_stats</span>
+                <span>Métricas</span>
               </button>
-              <button
-                class="tab-btn tab-inactive flex items-center gap-2.5 h-[48px] px-6 rounded-[22px] font-bold tracking-wide text-[13px]"
-                id="tabOPS_PINOL" data-role-gate="ADMIN,MUNICIPAL" onclick="activateOpsTab('PINOL')">
-                <span class="material-symbols-rounded text-[22px]">sanitizer</span>
+              
+              <button class="nav-tab" id="tabOPS_PINOL" data-role-gate="ADMIN,MUNICIPAL" onclick="activateOpsTab('PINOL')">
+                <span class="material-symbols-rounded">sanitizer</span>
                 <span>Pinol</span>
               </button>
-              <button
-                class="tab-btn tab-inactive flex items-center gap-2.5 h-[48px] px-6 rounded-[22px] font-bold tracking-wide text-[13px]"
-                id="tabLOTES" data-role-gate="ADMIN,JURISDICCIONAL" style="display:none" onclick="activateOpsTab('LOTES')">
-                <span class="material-symbols-rounded text-[22px]">inventory_2</span>
+              
+              <button class="nav-tab" id="tabLOTES" data-role-gate="ADMIN,JURISDICCIONAL" style="display:none" onclick="activateOpsTab('LOTES')">
+                <span class="material-symbols-rounded">inventory_2</span>
                 <span>Lotes</span>
               </button>
-              <button
-                class="tab-btn tab-inactive flex items-center gap-2.5 h-[48px] px-6 rounded-[22px] font-bold tracking-wide text-[13px]"
-                id="tabOPS_NOTIFS" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL" onclick="activateMain('NOTIFS')">
-                <span class="material-symbols-rounded text-[22px]">campaign</span>
-                <span>Notificaciones</span>
+              
+              <button class="nav-tab" id="tabOPS_NOTIFS" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL" onclick="activateOpsTab('NOTIFICATIONS')">
+                <span class="material-symbols-rounded">campaign</span>
+                <span>Avisos</span>
               </button>
-              <button
-                class="tab-btn tab-inactive flex items-center gap-2.5 h-[48px] px-6 rounded-[22px] font-bold tracking-wide text-[13px]"
-                id="tabOPS_ADMIN" data-role-gate="ADMIN" onclick="activateMain('ADMIN')">
-                <span class="material-symbols-rounded text-[22px]">admin_panel_settings</span>
-                <span>Administración</span>
+              
+              <button class="nav-tab" id="tabOPS_ADMIN" data-role-gate="ADMIN" onclick="activateOpsTab('SECURITY')">
+                <span class="material-symbols-rounded">admin_panel_settings</span>
+                <span>Seguridad</span>
               </button>
             </div>
           </div>
@@ -1757,18 +1759,29 @@
                 </div>
               </div>
 
-              <div
-                class="flex items-center gap-2.5 bg-surface-variant/40 p-1.5 rounded-[22px] border border-outline-variant/20">
-                <button class="nav-tab-admin active" id="tabAdminAperturas"
-                  onclick="activateAdminSubPanel('aperturas')">
-                  <span class="material-symbols-rounded text-[18px]">event_available</span> Aperturas
-                </button>
-                <button class="nav-tab-admin" id="tabAdminCatalogo" onclick="activateAdminSubPanel('catalogo')">
-                  <span class="material-symbols-rounded text-[18px]">inventory_2</span> Catálogo
-                </button>
-                <button class="nav-tab-admin" id="tabAdminSeguridad" onclick="activateAdminSubPanel('seguridad')">
-                  <span class="material-symbols-rounded text-[18px]">verified_user</span> Seguridad
-                </button>
+              <div id="panelAdminSecurityTabs" class="contain-layout">
+                <div class="nav-container">
+                  <div id="adminTabIndicator" class="nav-indicator liquid-glass">
+                    <div class="liquid-glass--bend"></div>
+                    <div class="liquid-glass--face"></div>
+                    <div class="liquid-glass--edge"></div>
+                  </div>
+
+                  <button class="nav-tab active" id="tabAdminAperturas" onclick="activateAdminSubPanel('aperturas')">
+                    <span class="material-symbols-rounded">event_available</span> 
+                    <span>Aperturas</span>
+                  </button>
+                  
+                  <button class="nav-tab" id="tabAdminCatalogo" onclick="activateAdminSubPanel('catalogo')">
+                    <span class="material-symbols-rounded">inventory_2</span> 
+                    <span>Catálogo</span>
+                  </button>
+                  
+                  <button class="nav-tab" id="tabAdminSeguridad" onclick="activateAdminSubPanel('seguridad')">
+                    <span class="material-symbols-rounded">verified_user</span> 
+                    <span>Seguridad</span>
+                  </button>
+                </div>
               </div>
 
               <div class="flex items-center gap-3">
@@ -1979,7 +1992,15 @@
                     <h4 class="text-[14px] font-black text-primary m-0 uppercase tracking-widest">Gestión de Acceso
                       Institucional</h4>
                   </div>
-                  <span class="text-[11px] font-bold text-primary/60 uppercase" id="usersCount">...</span>
+                  <div class="flex items-center gap-3">
+                    <span class="text-[11px] font-bold text-primary/60 uppercase" id="usersCount">...</span>
+                    <button class="flex items-center justify-center gap-2 h-10 px-5 rounded-full text-xs font-black uppercase tracking-widest text-white shadow-[0_8px_16px_-4px_rgba(79,70,229,0.5)] transition-all hover:-translate-y-1 hover:shadow-[0_12px_24px_-6px_rgba(79,70,229,0.7)]"
+                      style="background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);"
+                      onclick="document.getElementById('createUserModal').classList.add('show')">
+                      <span class="material-symbols-rounded text-[18px]">person_add</span>
+                      Nuevo Usuario
+                    </button>
+                  </div>
                 </div>
 
                 <div class="overflow-x-auto min-h-[400px]">
@@ -2134,6 +2155,77 @@
             Confirmar entrega y notificar
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ MODAL CREAR USUARIO -->
+  <div id="createUserModal"
+    class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
+    aria-hidden="true">
+    <div class="w-full max-w-[500px] bg-white border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100 flex flex-col">
+      <div class="modalHead">
+        <div class="modalEyebrow" style="background: #e0e7ff; color: #3730a3; padding: 6px 14px; border-radius: 12px; display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 11px; text-transform: uppercase; margin-bottom: 12px;">
+          <span class="material-symbols-rounded" style="font-size:18px;">person_add</span>
+          Nuevo Acceso Institucional
+        </div>
+        <div class="modalTitle" style="font-weight:900; margin-bottom:8px;">Alta de Usuario</div>
+        <div class="modalSub" style="color:var(--md-sys-color-on-surface-variant); line-height:1.5;">
+          La contraseña inicial será <b>JS1-2026-Temp</b> y el usuario será forzado a cambiarla en su primer inicio de sesión.
+        </div>
+      </div>
+
+      <div class="modalBody" style="padding:10px 16px; display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+        <div class="flex flex-col gap-0.5">
+          <label class="text-[9px] font-bold text-primary/50 uppercase ml-1">Acceso (Correo)</label>
+          <input type="email" id="createEmail" placeholder="ejemplo@js1.com" class="bg-surface-variant/20 rounded-lg border border-outline-variant/50 outline-none h-9 px-3 text-xs font-bold w-full focus:ring-2 focus:ring-primary/50 transition-all" />
+        </div>
+        <div class="flex flex-col gap-0.5">
+          <label class="text-[9px] font-bold text-primary/50 uppercase ml-1">ID de Usuario</label>
+          <input type="text" id="createUsuarioID" placeholder="ID INTERNO" class="bg-surface-variant/20 rounded-lg border border-outline-variant/50 outline-none h-9 px-3 text-xs font-bold w-full focus:ring-2 focus:ring-primary/50 transition-all" />
+        </div>
+        
+        <div class="flex flex-col gap-0.5">
+          <label class="text-[9px] font-bold text-primary/50 uppercase ml-1">Rol</label>
+          <select id="createRol" class="bg-surface-variant/20 rounded-lg border border-outline-variant/50 outline-none h-9 px-2 text-xs font-bold w-full focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer">
+            <option value="">Selecciona...</option>
+            <option value="UNIDAD">UNIDAD</option>
+            <option value="MUNICIPAL">MUNICIPAL</option>
+            <option value="JURISDICCIONAL">JURISDICCIONAL</option>
+          </select>
+        </div>
+
+        <div class="flex flex-col gap-0.5">
+          <label class="text-[9px] font-bold text-primary/50 uppercase ml-1">Municipio</label>
+          <select id="createMunicipio" class="bg-surface-variant/20 rounded-lg border border-outline-variant/50 outline-none h-9 px-2 text-xs font-bold w-full focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer">
+            <option value="">Selecciona...</option>
+            <option value="QUERÉTARO">QUERÉTARO</option>
+            <option value="CORREGIDORA">CORREGIDORA</option>
+            <option value="EL MARQUÉS">EL MARQUÉS</option>
+            <option value="HUIMILPAN">HUIMILPAN</option>
+          </select>
+        </div>
+
+        <div class="col-span-2 flex flex-col gap-0.5">
+          <label class="text-[9px] font-bold text-primary/50 uppercase ml-1">Unidad Institucional</label>
+          <select id="createUnidad" class="bg-surface-variant/20 rounded-lg border border-outline-variant/50 outline-none h-9 px-3 text-xs font-bold w-full focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer">
+            <option value="">Selecciona la Unidad</option>
+          </select>
+        </div>
+        
+        <div class="col-span-2 flex flex-col gap-0.5">
+          <label class="text-[9px] font-bold text-primary/50 uppercase ml-1">CLUES</label>
+          <input type="text" id="createClues" placeholder="Auto-completado" readonly class="bg-surface-variant/10 rounded-lg border border-outline-variant/30 h-8 px-3 text-[11px] font-bold w-full text-primary/40" />
+        </div>
+      </div>
+
+      <div class="modalFooter" style="margin-top:24px; padding:20px; display:flex; justify-content:flex-end; gap:12px; border-top: 1px solid rgba(0,0,0,0.05);">
+        <button class="ghostBtn" type="button" onclick="document.getElementById('createUserModal').classList.remove('show')" style="font-weight:700; border:none; background:transparent;">
+          <span class="material-symbols-rounded">close</span> Cancelar
+        </button>
+        <button class="btn" id="btnSubmitCreateUser" type="button" style="background: var(--md-sys-color-primary); color: #ffffff; padding: 12px 28px; border: none; border-radius: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+          <span class="material-symbols-rounded">check_circle</span> Registrar
+        </button>
       </div>
     </div>
   </div>
@@ -2625,11 +2717,287 @@
 
 
 
+  <!-- El Command Hub fue reubicado a la sección de Captura (BLOCK 3) para soporte Sticky -->
+
   <script>
     console.log("Refractive Engine Active: SVG Displacement Map");
   </script>
   <script defer src="main.js"></script>
 
+
+  <svg style="display: none" xmlns="http://www.w3.org/2000/svg">
+    <filter id="glass-blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="3" result="turbulence" />
+      <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="22" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+  </svg>
+  <!-- 🛠️ TECHNICAL LOGIC CONTAINER (Hidden from UI, required for JS references) -->
+  <div id="legacyLogicContainer" style="display: none !important;">
+    <button id="btnSaveSR"></button>
+    <button id="btnEditSR"></button>
+    <button id="btnCancelEditSR"></button>
+    <button id="btnSaveCONS"></button>
+    <button id="btnEditCONS"></button>
+    <button id="btnCancelEditCONS"></button>
+    <button id="btnSaveBIO"></button>
+    <button id="btnEditBIO"></button>
+    <button id="btnCancelEditBIO"></button>
+  </div>
+
+  <!-- ==================================================================================== -->
+  <!-- 💉 RDA 2026 DASHBOARD EJECUTIVO (Premium Redesign v2) -->
+  <!-- ==================================================================================== -->
+  <div id="rdaDashboardOverlay" style="
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 8px;
+    background: rgba(15, 23, 42, 0.6);
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+    overflow: hidden;
+  ">
+  <style>
+    #rdaFilterMunicipio option, #rdaFilterUnidad option, #rdaMonthSelect option { background: #1e293b; color: #fff; }
+    .rda-export-opt:hover { background: #f1f5f9 !important; }
+  </style>
+    <div id="rdaDashboardPanel" style="
+      width: 100%; max-width: 1440px; height: 100%;
+      display: flex; flex-direction: column;
+      background: #f8fafc;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.25);
+      transform: scale(0.97);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    ">
+
+      <!-- ═══════════ HEADER ═══════════ -->
+      <div style="
+        flex-shrink: 0; padding: 16px 24px;
+        background: linear-gradient(135deg, #003366 0%, #001B3D 100%);
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 12px; flex-wrap: wrap;
+      ">
+        <!-- Título -->
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center;">
+            <span class="material-symbols-rounded" style="color: #67e8f9; font-size: 22px;">vaccines</span>
+          </div>
+          <div>
+            <h2 style="margin: 0; font-size: 18px; font-weight: 900; color: #fff; letter-spacing: -0.02em;">Dashboard RDA 2026</h2>
+            <p id="rdaScopeLabel" style="margin: 0; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.1em;">Jurisdicción Sanitaria 1</p>
+          </div>
+        </div>
+
+        <!-- Controles -->
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <!-- Vista Trimestral Tabs -->
+          <div id="rdaTimeTabs" style="display: flex; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden;">
+            <button class="rda-time-tab active" data-trimestre="1" style="padding: 8px 14px; font-size: 11px; font-weight: 800; color: #fff; background: rgba(103,232,249,0.25); border: none; cursor: pointer; transition: all 0.2s;">T1</button>
+            <button class="rda-time-tab" data-trimestre="2" style="padding: 8px 14px; font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.5); background: transparent; border: none; cursor: pointer; transition: all 0.2s;">T2</button>
+            <button class="rda-time-tab" data-trimestre="3" style="padding: 8px 14px; font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.5); background: transparent; border: none; cursor: pointer; transition: all 0.2s;">T3</button>
+            <button class="rda-time-tab" data-trimestre="4" style="padding: 8px 14px; font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.5); background: transparent; border: none; cursor: pointer; transition: all 0.2s;">T4</button>
+            <button class="rda-time-tab" data-trimestre="mensual" style="padding: 8px 14px; font-size: 11px; font-weight: 800; color: rgba(255,255,255,0.5); background: transparent; border: none; cursor: pointer; transition: all 0.2s;">Mes</button>
+          </div>
+
+          <!-- Selector de mes (hidden by default, shown when "Mes" tab is active) -->
+          <select id="rdaMonthSelect" style="
+            display: none; height: 36px; padding: 0 12px;
+            border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.1); color: #fff;
+            font-size: 12px; font-weight: 700; outline: none; cursor: pointer;
+          ">
+            <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+            <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+            <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+            <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+          </select>
+
+          <!-- Filtro Municipio -->
+          <select id="rdaFilterMunicipio" style="
+            height: 36px; padding: 0 12px; min-width: 140px;
+            border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.1); color: #fff;
+            font-size: 12px; font-weight: 700; outline: none; cursor: pointer;
+          ">
+            <option value="">Todos los municipios</option>
+          </select>
+
+          <!-- Filtro Unidad (aparece al seleccionar municipio) -->
+          <select id="rdaFilterUnidad" style="
+            display: none; height: 36px; padding: 0 12px; min-width: 160px;
+            border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.1); color: #fff;
+            font-size: 12px; font-weight: 700; outline: none; cursor: pointer;
+          ">
+            <option value="">Todas las unidades</option>
+          </select>
+
+          <!-- Exportar -->
+          <div style="position: relative;" id="rdaExportContainer">
+            <button id="btnExportRdaToggle" style="
+              height: 36px; padding: 0 14px;
+              border-radius: 10px; border: none;
+              background: linear-gradient(135deg, #0d9488, #0f766e);
+              color: #fff; font-size: 12px; font-weight: 800;
+              display: flex; align-items: center; gap: 6px;
+              cursor: pointer; transition: all 0.2s;
+              box-shadow: 0 4px 12px rgba(13,148,136,0.3);
+            ">
+              <span class="material-symbols-rounded" style="font-size: 18px;">download</span>
+              Exportar
+              <span class="material-symbols-rounded" style="font-size: 16px;">expand_more</span>
+            </button>
+            <div id="rdaExportDropdown" style="
+              display: none; position: absolute; top: 100%; right: 0; margin-top: 6px;
+              background: #fff; border-radius: 14px; min-width: 220px;
+              box-shadow: 0 12px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0;
+              overflow: hidden; z-index: 10;
+            ">
+              <button class="rda-export-opt" data-export="individual" style="width: 100%; padding: 12px 16px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 700; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.15s;">
+                <span class="material-symbols-rounded" style="font-size: 20px; color: #0d9488;">picture_as_pdf</span>
+                PDF Individual
+              </button>
+              <button class="rda-export-opt" data-export="masivo" style="width: 100%; padding: 12px 16px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 700; color: #334155; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.15s;">
+                <span class="material-symbols-rounded" style="font-size: 20px; color: #4338ca;">folder_zip</span>
+                ZIP Masivo (todas las unidades)
+              </button>
+            </div>
+          </div>
+
+          <!-- Cerrar -->
+          <button id="btnCloseRda" style="
+            width: 36px; height: 36px; border-radius: 10px; border: none;
+            background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.2s;
+          ">
+            <span class="material-symbols-rounded" style="font-size: 20px;">close</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ═══════════ CONTENT (Scrollable) ═══════════ -->
+      <div id="rdaDashboardContent" style="flex: 1; overflow-y: auto; padding: 20px 24px;">
+
+        <!-- KPI CARDS -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+
+          <!-- KPI: < 1 Año -->
+          <div style="background: #fff; border-radius: 20px; padding: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden;">
+
+            <div style="position: relative; z-index: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <span class="material-symbols-rounded" style="font-size: 20px; color: #0d9488;">child_care</span>
+                <span style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: #5eead4;">< 1 Año</span>
+              </div>
+              <div id="kpiMenor1" style="font-size: 36px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em; line-height: 1;">0%</div>
+              <div id="kpiMenor1Dosis" style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-top: 4px;">— dosis aplicadas</div>
+            </div>
+          </div>
+
+          <!-- KPI: 1 Año -->
+          <div style="background: #fff; border-radius: 20px; padding: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden;">
+
+            <div style="position: relative; z-index: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <span class="material-symbols-rounded" style="font-size: 20px; color: #0284c7;">face</span>
+                <span style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: #7dd3fc;">1 Año</span>
+              </div>
+              <div id="kpi1Ano" style="font-size: 36px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em; line-height: 1;">0%</div>
+              <div id="kpi1AnoDosis" style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-top: 4px;">— dosis aplicadas</div>
+            </div>
+          </div>
+
+          <!-- KPI: 4 Años -->
+          <div style="background: #fff; border-radius: 20px; padding: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden;">
+
+            <div style="position: relative; z-index: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <span class="material-symbols-rounded" style="font-size: 20px; color: #4338ca;">school</span>
+                <span style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: #a5b4fc;">4 Años</span>
+              </div>
+              <div id="kpi4Anos" style="font-size: 36px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em; line-height: 1;">0%</div>
+              <div id="kpi4AnosDosis" style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-top: 4px;">— dosis aplicadas</div>
+            </div>
+          </div>
+
+          <!-- KPI: Población -->
+          <div style="background: #fff; border-radius: 20px; padding: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden;">
+
+            <div style="position: relative; z-index: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <span class="material-symbols-rounded" style="font-size: 20px; color: #d97706;">groups</span>
+                <span style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: #fbbf24;">Población</span>
+              </div>
+              <div id="kpiPoblacion" style="font-size: 36px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em; line-height: 1;">0</div>
+              <div id="kpiUnidades" style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-top: 4px;">— unidades médicas</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CHARTS ROW -->
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px; margin-bottom: 24px;">
+
+          <!-- Doughnut -->
+          <div style="background: #fff; border-radius: 20px; padding: 20px; border: 1px solid #e2e8f0; display: flex; flex-direction: column;">
+            <h3 style="margin: 0 0 16px 0; font-size: 12px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 0.08em; text-align: center;">Desglose Global</h3>
+            <div style="flex: 1; min-height: 220px; position: relative;">
+              <canvas id="chartDoughnut"></canvas>
+            </div>
+          </div>
+
+          <!-- Bar: Por Municipio o Por Unidad -->
+          <div style="background: #fff; border-radius: 20px; padding: 20px; border: 1px solid #e2e8f0; display: flex; flex-direction: column;">
+            <h3 id="chartBarTitle" style="margin: 0 0 16px 0; font-size: 12px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 0.08em;">Cobertura por Municipio</h3>
+            <div style="flex: 1; min-height: 220px; position: relative;">
+              <canvas id="chartBar"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- DETAIL TABLE -->
+        <div style="background: #fff; border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden;">
+          <div style="padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+            <h3 style="margin: 0; font-size: 13px; font-weight: 900; color: #0f172a;">Detalle por Unidad Médica</h3>
+            <span id="rdaTableCount" style="font-size: 11px; font-weight: 700; color: #94a3b8; background: #f1f5f9; padding: 4px 12px; border-radius: 8px;">0 unidades</span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table id="rdaDetailTable" style="width: 100%; border-collapse: collapse; min-width: 700px;">
+              <thead>
+                <tr style="background: #f8fafc;">
+                  <th style="padding: 12px 16px; text-align: left; font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="clues">CLUES ↕</th>
+                  <th style="padding: 12px 16px; text-align: left; font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="nombre">Nombre ↕</th>
+                  <th style="padding: 12px 16px; text-align: left; font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #f1f5f9;">Municipio</th>
+                  <th style="padding: 12px 16px; text-align: center; font-size: 10px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="menor1">< 1 Año ↕</th>
+                  <th style="padding: 12px 16px; text-align: center; font-size: 10px; font-weight: 900; color: #0284c7; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="uno">1 Año ↕</th>
+                  <th style="padding: 12px 16px; text-align: center; font-size: 10px; font-weight: 900; color: #4338ca; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="cuatro">4 Años ↕</th>
+                  <th style="padding: 12px 16px; text-align: center; font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #f1f5f9;">Pob.</th>
+                </tr>
+              </thead>
+              <tbody id="rdaDetailTbody">
+                <tr><td colspan="7" style="padding: 40px; text-align: center; color: #94a3b8; font-weight: 600;">Cargando datos...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /rdaDashboardContent -->
+
+      <!-- HIDDEN: Template para generar PDFs individuales -->
+      <div id="rdaPdfTemplate" style="position: absolute; left: -9999px; top: 0; width: 1100px; background: #fff; padding: 40px;"></div>
+
+    </div><!-- /rdaDashboardPanel -->
+  </div><!-- /rdaDashboardOverlay -->
+
+  <!-- UPLOAD COMPONENT (Hidden, triggered by Admin Button) -->
+  <input type="file" id="rdaCsvInput" accept=".csv" class="hidden">
+
+  <!-- ==================================================================================== -->
+  
+  <script src="rda_calculator.js"></script>
+  <script src="rda_parser.js"></script>
+  <script src="rda_ui.js"></script>
 
 </body>
 

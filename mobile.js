@@ -325,4 +325,67 @@
         }
     });
 
+
+    // ─── LIQUID GLASS PRO: AUTO-INJECTION ENGINE ───
+    const setupLiquidGlassPro = () => {
+        const bases = document.querySelectorAll('.liquid-glass-pro--base');
+        bases.forEach(base => {
+            if (base.dataset.glassInjected) return;
+            base.dataset.glassInjected = "true";
+
+            // Inject structural layers (The "Strict Architecture")
+            const layers = ['bend', 'face', 'edge'];
+            layers.forEach(l => {
+                const div = document.createElement('div');
+                div.className = `liquid-glass-pro--${l}`;
+                base.insertBefore(div, base.firstChild);
+            });
+
+            // Ensure content wrapper exists if not provided
+            if (!base.querySelector('.liquid-glass-pro--content')) {
+                const content = document.createElement('div');
+                content.className = 'liquid-glass-pro--content';
+                // Move children into content
+                while (base.childNodes.length > 3) { // skip the 3 layers we just added
+                    content.appendChild(base.childNodes[3]);
+                }
+                base.appendChild(content);
+            }
+        });
+    };
+
+    // ─── LIQUID GLASS PRO: WOBBLE TRIGGER ───
+    const setupWobbleTriggers = () => {
+        const buttons = document.querySelectorAll('.liquid-glass-pro, .liquid-glass-pro--base');
+        const wobbleIn = document.getElementById('wobbleIn');
+        const wobbleOut = document.getElementById('wobbleOut');
+
+        if (!buttons.length || !wobbleIn || !wobbleOut) return;
+
+        buttons.forEach(btn => {
+            if (btn.dataset.wobbleBound) return;
+            btn.dataset.wobbleBound = "true";
+
+            btn.addEventListener('mouseenter', () => {
+                try { wobbleIn.beginElement(); } catch (e) { }
+            });
+            btn.addEventListener('mouseleave', () => {
+                try { wobbleOut.beginElement(); } catch (e) { }
+            });
+        });
+    };
+
+    // Initialize triggers
+    setTimeout(() => {
+        setupLiquidGlassPro();
+        setupWobbleTriggers();
+    }, 500);
+
+    // Also observe for new buttons
+    const glassObserver = new MutationObserver(() => {
+        setupLiquidGlassPro();
+        setupWobbleTriggers();
+    });
+    glassObserver.observe(document.body, { childList: true, subtree: true });
+
 })();

@@ -88,6 +88,61 @@ window.addEventListener('unhandledrejection', (event) => {
 /**
  * 💎 APP_STATE: Reactive Core (Senior UX Architecture)
  */
+// --- FACTS ENGINE (Dato Curioso) ---
+const FACTS = [
+  { icon: "ac_unit", tag: "Cadena fría", title: "Termómetro visible", body: "El termómetro del refrigerador debe colocarse en la zona central para reflejar mejor la temperatura real de almacenamiento." },
+  { icon: "ac_unit", tag: "Cadena fría", title: "Puerta cerrada", body: "Abrir el refrigerador el menor tiempo posible ayuda a mantener estable la temperatura de los biológicos." },
+  { icon: "ac_unit", tag: "Cadena fría", title: "Separación adecuada", body: "Los biológicos deben almacenarse separados de bebidas, alimentos u otros materiales no relacionados." },
+  { icon: "ac_unit", tag: "Cadena fría", title: "Espacio entre frascos", body: "Dejar espacio entre las cajas permite que el aire frío circule correctamente dentro del refrigerador." },
+  { icon: "ac_unit", tag: "Cadena fría", title: "Control de energía", body: "Ante cortes eléctricos prolongados se debe activar el plan de contingencia para proteger los biológicos." },
+  { icon: "science", tag: "Frascos", title: "Revisión de caducidad", body: "Antes de preparar una vacuna verifica siempre la fecha de caducidad del frasco." },
+  { icon: "science", tag: "Frascos", title: "Lote visible", body: "Registrar el número de lote facilita la trazabilidad ante eventos o alertas sanitarias." },
+  { icon: "science", tag: "Frascos", title: "Diluyente correcto", body: "Cada vacuna debe reconstituirse únicamente con el diluyente específico del fabricante." },
+  { icon: "vaccines", tag: "Aplicación", title: "Dosis correcta", body: "La correcta técnica de carga en jeringa ayuda a evitar desperdicio de biológico." },
+  { icon: "vaccines", tag: "Aplicación", title: "Sitio de aplicación", body: "El sitio anatómico recomendado varía según la vacuna y la edad del paciente." },
+  { icon: "vaccines", tag: "Aplicación", title: "Intervalos adecuados", body: "Respetar los intervalos entre dosis garantiza una respuesta inmunológica adecuada." },
+  { icon: "vaccines", tag: "Aplicación", title: "Observación posterior", body: "Después de aplicar una vacuna se recomienda observar al paciente algunos minutos." },
+  { icon: "security", tag: "Seguridad", title: "Caja de punzocortantes", body: "Las agujas usadas deben desecharse inmediatamente en contenedores para punzocortantes." },
+  { icon: "security", tag: "Seguridad", title: "Higiene de manos", body: "La higiene de manos antes y después de cada aplicación reduce el riesgo de infecciones." },
+  { icon: "inventory_2", tag: "Inventario", title: "Control periódico", body: "Revisar inventarios frecuentemente ayuda a detectar pérdidas o faltantes a tiempo." },
+  { icon: "inventory_2", tag: "Inventario", title: "Evitar sobrestock", body: "Solicitar biológicos según consumo real ayuda a prevenir caducidades." },
+  { icon: "bar_chart", tag: "Planeación", title: "Población objetivo", body: "Los pedidos deben considerar el tamaño de la población objetivo de la unidad." },
+  { icon: "bar_chart", tag: "Planeación", title: "Factor de seguridad", body: "Agregar un pequeño margen de seguridad al pedido ayuda a prevenir desabasto." },
+  { icon: "edit_note", tag: "Registro", title: "Datos completos", body: "Un registro completo permite generar indicadores confiables para la toma de decisiones." },
+  { icon: "edit_note", tag: "Registro", title: "Consistencia", body: "Mantener el mismo criterio de captura facilita el análisis histórico de la información." },
+  { icon: "query_stats", tag: "Cobertura", title: "Seguimiento de esquemas", body: "El seguimiento oportuno ayuda a completar esquemas de vacunación en la población." },
+  { icon: "query_stats", tag: "Cobertura", title: "Identificación de rezagos", body: "Los reportes periódicos permiten detectar zonas con menor cobertura de vacunación." },
+  { icon: "settings", tag: "Operación", title: "Preparación diaria", body: "Revisar insumos y biológicos antes de iniciar actividades evita interrupciones durante la jornada." },
+  { icon: "settings", tag: "Operación", title: "Orden en refrigerador", body: "Mantener un orden claro facilita localizar rápidamente cada biológico." },
+  { icon: "settings", tag: "Operación", title: "Comunicación", body: "La coordinación entre unidad y jurisdicción mejora la distribución de biológicos." }
+];
+let factIdx = Math.floor(Math.random() * FACTS.length);
+let FACTS_TIMER = null;
+
+function renderFact() {
+  if (!FACTS || !FACTS.length) return;
+  const tagEl = document.getElementById("factTag"), titleEl = document.getElementById("factTitle"), bodyEl = document.getElementById("factBody"), iconEl = document.getElementById("factIcon");
+  if (!tagEl || !titleEl || !bodyEl || !iconEl) return;
+  const f = FACTS[factIdx % FACTS.length];
+  const tagIconMap = { "Cadena fría": "ac_unit", "Frascos": "science", "Inventario": "inventory_2", "Planeación": "analytics", "Registro": "edit_note", "Cobertura": "query_stats", "Operación": "settings" };
+  const curIcon = tagIconMap[f.tag] || f.icon || "syringe";
+  tagEl.innerHTML = '<span class="material-symbols-rounded" style="font-size:18px; margin-right:8px;">' + curIcon + '</span>' + (f.tag || "");
+  titleEl.textContent = f.title || "";
+  bodyEl.textContent = f.body || "";
+  iconEl.textContent = f.icon || "syringe";
+  factIdx = (factIdx + 1) % FACTS.length;
+}
+
+function startFactsRotation() {
+  stopFactsRotation();
+  renderFact();
+  FACTS_TIMER = setInterval(() => { if (!document.hidden) renderFact(); }, 9000);
+}
+
+function stopFactsRotation() {
+  if (FACTS_TIMER) { clearInterval(FACTS_TIMER); FACTS_TIMER = null; }
+}
+
 const _InternalState = {
   user: null, token: null, isLoggedIn: false, notifCount: 0,
   unitBatches: [], biologicosCatalog: [], weather: { temp: null, emoji: null, code: null },
@@ -238,8 +293,6 @@ function clearSession() {
   }
 }
 
-// 📌 CONFIGURACIÓN DE ROTACIÓN DE DATOS (FACTS)
-let FACTS_TIMER = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   // 🛡️ ARRANQUE ÚNICO (Expert Implementation)
@@ -264,6 +317,7 @@ document.addEventListener("DOMContentLoaded", () => {
       hideOverlay();
       startFactsRotation();
       initWeather();
+      initHeaderGlass();
     }
   })();
 
@@ -2259,15 +2313,23 @@ async function loadNotifUnitCatalog(forceRefresh = false) {
   const cacheKey = buildCacheKey("UNIT_CATALOG", "NOTIFS");
   const cached = readCache(cacheKey, CACHE_TTL.UNIT_CATALOG);
 
-  if (!forceRefresh && cached && Array.isArray(cached)) {
+  if (!forceRefresh && cached && Array.isArray(cached) && cached.length > 0) {
     NOTIF_UNIT_CATALOG = cached;
     return NOTIF_UNIT_CATALOG;
   }
 
+  console.log("[Catalog] Solicitando catálogo de unidades...");
   const res = await apiCall("unitCatalog", {});
-  NOTIF_UNIT_CATALOG = Array.isArray(res.data) ? res.data : [];
 
-  writeCache(cacheKey, NOTIF_UNIT_CATALOG);
+  if (res && res.ok && Array.isArray(res.data)) {
+    NOTIF_UNIT_CATALOG = res.data;
+    console.log(`[Catalog] ${NOTIF_UNIT_CATALOG.length} unidades cargadas.`);
+    writeCache(cacheKey, NOTIF_UNIT_CATALOG);
+  } else {
+    console.error("[Catalog] Error al cargar unidades:", res?.error || "Respuesta inválida");
+    NOTIF_UNIT_CATALOG = [];
+  }
+
   return NOTIF_UNIT_CATALOG;
 }
 
@@ -3315,6 +3377,14 @@ async function supabaseRequest(action = "", payload) {
         });
 
         // 4. Ejecutar Inserción Dual en Paralelo
+        console.log("[Capture Logic] Preparando guardado de SR para:", { clues, fecha });
+
+        // PURGAR PREVIAMENTE PARA EVITAR DUPLICADOS AL EDITAR
+        await Promise.all([
+          supabase.from('biologicos_existencia').delete().eq('clues', clues).eq('fecha', fecha),
+          supabase.from('existencia_detalle').delete().eq('clues', clues).eq('fecha', fecha)
+        ]);
+
         const [resSummary, resDetail] = await Promise.all([
           supabase.from('biologicos_existencia').insert(summaryRecord),
           supabase.from('existencia_detalle').insert(detailRecords)
@@ -3322,6 +3392,8 @@ async function supabaseRequest(action = "", payload) {
 
         if (resSummary.error) throw resSummary.error;
         if (resDetail.error) throw resDetail.error;
+
+        console.log("[Capture Logic] SR Guardado correctamente.");
 
         return { ok: true };
       }
@@ -3351,8 +3423,12 @@ async function supabaseRequest(action = "", payload) {
           editado: payload.editado || 'NO'
         };
 
-        const { error } = await supabase.from('consumibles').insert(record);
-        if (error) throw error;
+        const { error } = await supabase.from('consumibles').upsert(record, { onConflict: 'id' });
+        if (error) {
+          console.error("[Capture Logic] Error al guardar consumibles:", error);
+          throw error;
+        }
+        console.log("[Capture Logic] Consumibles guardados/actualizados correctamente.");
         return { ok: true };
       }
 
@@ -3386,8 +3462,19 @@ async function supabaseRequest(action = "", payload) {
           capturado_por: USER.usuario
         }));
 
+        console.log("[Capture Logic] Preparando guardado de BIO para:", { clues: finalClues, fecha: payload.fecha || todayYmdLocal() });
+
+        // PURGAR PREVIAMENTE PARA EVITAR DUPLICADOS AL EDITAR
+        await supabase.from('biologicos_pedido').delete()
+          .eq('clues', finalClues)
+          .eq('fecha_captura', payload.fecha || todayYmdLocal());
+
         const { error } = await supabase.from('biologicos_pedido').insert(records);
-        if (error) throw error;
+        if (error) {
+          console.error("[Capture Logic] Error al guardar pedido de biológico:", error);
+          throw error;
+        }
+        console.log("[Capture Logic] Pedido de Biológico guardado correctamente.");
         return { ok: true };
       }
 
@@ -4023,7 +4110,8 @@ async function supabaseRequest(action = "", payload) {
 
       case "unitcatalog": {
         const role = String(USER?.rol || "").toUpperCase();
-        let query = supabase.from('unidades').select('*').eq('activo', 'SI').order('municipio').order('clues');
+        // 🧪 Flexibilizar query (quitar activo='SI' temporalmente por si la columna no existe o es distinta)
+        let query = supabase.from('unidades').select('*').order('municipio').order('clues');
 
         // 🛡️ Aplicar Jerarquía
         if (role === "MUNICIPAL") {
@@ -4034,7 +4122,10 @@ async function supabaseRequest(action = "", payload) {
         }
 
         const { data, error } = await query;
-        if (error) throw error;
+        if (error) {
+          console.error("[DB] Error en unitcatalog:", error);
+          throw error;
+        }
         return { ok: true, data };
       }
 
@@ -4267,7 +4358,7 @@ async function supabaseRequest(action = "", payload) {
 
       case "adminlistusers": {
         const { data, error } = await supabase
-          .from('usuarios_legacy')
+          .from('perfiles')
           .select('*')
           .order('usuario', { ascending: true });
         if (error) throw error;
@@ -4275,19 +4366,45 @@ async function supabaseRequest(action = "", payload) {
       }
 
       case "admincreateuser": {
-        const inputHash = await hashPassword(payload.password);
-        const record = {
-          usuario: payload.usuario,
-          password: inputHash,
-          municipio: payload.municipio,
-          clues: payload.clues,
-          unidad: payload.unidad,
-          rol: payload.rol,
-          activo: 'SI'
-        };
-        const { error } = await supabase.from('usuarios_legacy').insert(record);
-        if (error) throw error;
-        return { ok: true };
+        // 🛡️ Asegurar que enviamos el token de sesión actual para validación en la Edge Function
+        const { data: { session } } = await supabase.auth.getSession();
+        const sessionToken = session?.access_token || TOKEN || AppState.token;
+
+        const { data, error } = await supabase.functions.invoke('admin-create-user', {
+          body: {
+            usuario: payload.usuario,
+            municipio: payload.municipio,
+            clues: payload.clues,
+            unidad: payload.unidad,
+            rol: payload.rol
+          },
+          headers: {
+            Authorization: `Bearer ${sessionToken}`
+          }
+        });
+
+        if (error) {
+          console.error("Edge Function Error Details:", error);
+          let detailedMsg = error.message;
+
+          // Intentar extraer el mensaje real del cuerpo de la respuesta (400)
+          if (error.context && typeof error.context.json === 'function') {
+            try {
+              const body = await error.context.json();
+              if (body && body.error) detailedMsg = body.error;
+            } catch (e) {
+              console.warn("No se pudo parsear el error de la función:", e);
+            }
+          }
+
+          throw new Error(detailedMsg || "Error al comunicarse con la función de creación");
+        }
+
+        if (!data.ok) {
+          throw new Error(data.error || "No se pudo crear el usuario");
+        }
+
+        return { ok: true, message: data.message };
       }
 
       case "uploadfile": {
@@ -5895,33 +6012,57 @@ $("btnSaveLotesAdmin")?.addEventListener("click", async () => {
 // CAPTURA DINÁMICA DE BIOLÓGICOS (SR)
 // ==========================================
 
-function getShelfLifeClass(cadMmmAa) {
-  if (!cadMmmAa || cadMmmAa.length < 6) return "";
+function getShelfLifeClass(cad) {
+  if (!cad) return "";
+  let cadDate = null;
 
-  const monthsMap = {
-    'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5,
-    'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11
-  };
+  // 1. Detectar formato ISO (YYYY-MM-DD)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(cad)) {
+    cadDate = new Date(cad + "T00:00:00"); // Forzar local
+  }
+  // 2. Detectar formato Legacy (MMM-YY)
+  else {
+    const parts = String(cad).split('-');
+    if (parts.length === 2) {
+      const monthsMap = {
+        'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5,
+        'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11
+      };
+      const mStr = parts[0].toUpperCase();
+      const yShort = parseInt(parts[1]);
+      const mIdx = monthsMap[mStr];
+      if (!isNaN(yShort) && mIdx !== undefined) {
+        cadDate = new Date(2000 + yShort, mIdx, 1);
+      }
+    }
+  }
 
-  const parts = cadMmmAa.split('-');
-  if (parts.length !== 2) return "";
+  // Fallback si no se pudo parsear
+  if (!cadDate || isNaN(cadDate.getTime())) return "";
 
-  const mStr = parts[0].toUpperCase();
-  const yShort = parseInt(parts[1]);
-  const mIdx = monthsMap[mStr];
-
-  if (isNaN(yShort) || mIdx === undefined) return "";
-
-  const cadDate = new Date(2000 + yShort, mIdx, 1);
   const today = new Date();
   const firstOfCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
   const diffMonths = (cadDate.getFullYear() - firstOfCurrentMonth.getFullYear()) * 12 + (cadDate.getMonth() - firstOfCurrentMonth.getMonth());
 
   if (diffMonths < 0) return "shelf-life-danger"; // Expirado
-  if (diffMonths <= 3) return "shelf-life-danger"; // < 3 meses
-  if (diffMonths <= 6) return "shelf-life-warn";   // < 6 meses
+  if (diffMonths <= 3) return "shelf-life-danger"; // Crítico (<3 meses)
+  if (diffMonths <= 6) return "shelf-life-warn";   // Alerta (<6 meses)
   return "shelf-life-ok";
+}
+
+function formatToMmmAa(cad) {
+  if (!cad || cad === "—") return "—";
+  let d = null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(cad)) {
+    d = new Date(cad + "T00:00:00");
+  } else {
+    const parts = String(cad).split('-');
+    if (parts.length === 2 && parts[0].length === 3) return cad.toUpperCase();
+    d = new Date(cad);
+  }
+  if (!d || isNaN(d.getTime())) return cad;
+  const months = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+  return `${months[d.getMonth()]}-${String(d.getFullYear()).substring(2)}`;
 }
 
 window.addSRRow = function (data = null) {
@@ -6137,8 +6278,9 @@ window.handleSRLoteChange = function (selectEl) {
   const cad = opt.dataset.cad || "—";
   const rec = opt.dataset.rec || "";
 
-  // ✅ Envolver en span para que se vea como pill centrado
-  cadCell.innerHTML = `<span class="${getShelfLifeClass(cad)}">${cad}</span>`;
+  // ✅ Envolver en span para que se vea como pill centrado y formatear a MMM-YY
+  const formattedCad = formatToMmmAa(cad);
+  cadCell.innerHTML = `<span class="${getShelfLifeClass(cad)}">${formattedCad}</span>`;
   cadCell.className = "sr-cad-cell"; // Limpiar clases en el td
 
   if (recInput && !recInput.value && rec) {
@@ -6707,6 +6849,7 @@ function buildUserFromPerfil(uid, email, perfil) {
     email: email,
     rol: rol,
     usuario: (perfil && perfil.usuario) || email,
+    nombre: (perfil && perfil.nombre) || "",
     clues: userClues,
     unidad: userUnidad,
     municipio: municipio,
@@ -7657,18 +7800,21 @@ function setEditModeSR(on) {
   EDIT_SR = !!on;
   applyCaptureLockState();
   updateCaptureStateBanner();
+  syncCommandHub();
 }
 
 function setEditModeCONS(on) {
   EDIT_CONS = !!on;
   applyCaptureLockState();
   updateCaptureStateBanner();
+  syncCommandHub();
 }
 
 function setEditModeBIO(on) {
   EDIT_BIO = !!on;
   applyCaptureLockState();
   updateCaptureStateBanner();
+  syncCommandHub();
 }
 
 function setFormLocked(formId, locked) {
@@ -7677,10 +7823,16 @@ function setFormLocked(formId, locked) {
 
   form.classList.toggle("formLocked", !!locked);
 
-  form.querySelectorAll("input, select, textarea").forEach(el => {
+  form.querySelectorAll("input, select, textarea, button").forEach(el => {
     if (!el) return;
     if (el.id === "aguja_0600403711") return; // ya es automático
-    el.disabled = !!locked;
+    // No bloquear el botón de "Agregar otro lote" si es necesario, 
+    // pero sí los de eliminar.
+    if (el.classList.contains("md-delete-btn") || el.tagName === "INPUT" || el.tagName === "SELECT") {
+      el.disabled = !!locked;
+    }
+    // El botón de "Agregar otro lote" (btnAddSRRow) también debe bloquearse
+    if (el.id === "btnAddSRRow") el.disabled = !!locked;
   });
 }
 
@@ -7750,6 +7902,7 @@ function applyCaptureLockState() {
   if ($("btnBioConfirmAccept")) {
     $("btnBioConfirmAccept").disabled = false;
   }
+  syncCommandHub();
 }
 
 function loadExistenciaIntoForm(srData) {
@@ -8166,6 +8319,9 @@ function setLoggedInUI(user, status) {
   if ($("tabOPS_NOTIFS")) $("tabOPS_NOTIFS").style.display = canSeeNotifsCenter ? "flex" : "none";
   if ($("tabOPS_ADMIN")) $("tabOPS_ADMIN").style.display = canSeeAdminCenter ? "flex" : "none";
 
+  // 🔥 Sincronizar indicador de navegación (Premium)
+  setTimeout(() => syncTabGroupIndicator('#panelAdminOpsTabs .nav-container'), 350);
+
 
 
   if ($("notifInboxPane")) {
@@ -8336,1054 +8492,1238 @@ function setLoggedOutUI() {
 
   resetNotifCounter();
   clearLiveFeed();
+
+  // 🚪 Cerrar dropdowns de perfil y notificaciones al salir
+  const profileDropdown = document.getElementById("profileDropdown");
+  if (profileDropdown) {
+    profileDropdown.classList.add("hidden");
+    document.getElementById("btnProfileToggle")?.classList.remove("btn-active");
+  }
+  if (typeof closeTopNotifDropdown === "function") {
+    closeTopNotifDropdown();
+  }
+  document.getElementById("archivosDropdown")?.classList.add("hidden");
 }
 
 function activateMain(panel, target = null) {
   const role = String((USER && USER.rol) || "").trim().toUpperCase();
-    if (panel === "NOTIFS" && role === "UNIDAD") {
-      openTopNotifDropdown();
-      loadNotifications({ silent: true }).catch(err => {
-        console.error("activateMain NOTIFS unidad error:", err);
-      });
-      return;
-    }
-    const currentPanel = APP_STATE.mainPanel || "CAP";
-    const samePanel = currentPanel === panel;
-
-    Object.assign(AppState, { mainPanel: panel });
-
-    if (panel === "CAP") clearTabAttention("tabCAP");
-    if (panel === "NOTIFS") clearTabAttention("tabNOTIFS");
-    if (panel === "ADMIN") clearTabAttention("tabADMIN");
-
-    const isUnidad = role === "UNIDAD";
-    const isAdmin = role === "ADMIN";
-    const isMunicipal = role === "MUNICIPAL";
-    const isJurisdiccional = role === "JURISDICCIONAL";
-    const isOps = isAdmin || isMunicipal || isJurisdiccional;
-
-    const updateTabClass = (id, cond) => {
-      const el = $(id);
-      if (el) {
-        if (cond) { el.classList.add("tab-active"); el.classList.remove("tab-inactive"); }
-        else { el.classList.add("tab-inactive"); el.classList.remove("tab-active"); }
-      }
-    };
-
-    updateTabClass("tabCAP", panel === "CAP");
-    updateTabClass("tabNOTIFS", panel === "NOTIFS");
-    updateTabClass("tabADMIN", panel === "ADMIN");
-
-    // Sincronizar Pestañas de Operaciones/Admin (Bottom Row)
-    updateTabClass("tabOPS_NOTIFS", panel === "NOTIFS");
-    updateTabClass("tabOPS_ADMIN", panel === "ADMIN");
-
-    // Si entramos en ADMIN o NOTIFS, debemos desmarcar las pestañas de OPS
-    if (panel === "ADMIN" || panel === "NOTIFS") {
-      updateTabClass("tabOPS_CAPTURE", false);
-      updateTabClass("tabOPS_HISTORY", false);
-      updateTabClass("tabOPS_PINOL", false);
-      updateTabClass("tabLOTES", false);
-    }
-
-    // Sincronizar Bottom Nav (v2.0 Architecture)
-    const navMap = {
-      'navHome': 'CAP',
-      'navLotes': 'LOTES',
-      'navHistory': 'HISTORY',
-      'navExplorer': 'Archivos'
-    };
-
-    document.querySelectorAll(".nav-item").forEach(el => {
-      const target = el.getAttribute("data-tab")?.replace("tab", "");
-      el.classList.toggle("active", target === panel);
+  if (panel === "NOTIFS" && role === "UNIDAD") {
+    openTopNotifDropdown();
+    loadNotifications({ silent: true }).catch(err => {
+      console.error("activateMain NOTIFS unidad error:", err);
     });
+    return;
+  }
+  const currentPanel = APP_STATE.mainPanel || "CAP";
+  const samePanel = currentPanel === panel;
 
+  Object.assign(AppState, { mainPanel: panel });
 
+  if (panel === "CAP") clearTabAttention("tabCAP");
+  if (panel === "NOTIFS") clearTabAttention("tabNOTIFS");
+  if (panel === "ADMIN") clearTabAttention("tabADMIN");
 
-    const allPanels = [
-      "panelCAP", "panelNOTIFS", "panelADMIN", "panelCaptureSummary",
-      "panelPINOLADMIN", "panelHISTORY", "panelEDITLOG", "panelLOTES", "panelArchivos"
-    ];
-    allPanels.forEach(pId => {
-      const p = $(pId);
-      if (p) p.style.display = "none";
-    });
+  const isUnidad = role === "UNIDAD";
+  const isAdmin = role === "ADMIN";
+  const isMunicipal = role === "MUNICIPAL";
+  const isJurisdiccional = role === "JURISDICCIONAL";
+  const isOps = isAdmin || isMunicipal || isJurisdiccional;
 
-    if ($("panelCAP")) $("panelCAP").style.display = (panel === "CAP" && isUnidad) ? "block" : "none";
+  const updateTabClass = (id, cond) => {
+    const el = $(id);
+    if (el) {
+      if (cond) { el.classList.add("tab-active"); el.classList.remove("tab-inactive"); }
+      else { el.classList.add("tab-inactive"); el.classList.remove("tab-active"); }
+    }
+  };
 
-    if ($("panelAdminOpsTabs")) {
-      const isVisible = (panel === "CAP" || panel === "ADMIN" || panel === "NOTIFS") && isOps;
-      $("panelAdminOpsTabs").style.display = isVisible ? "block" : "none";
+  const opsContainer = document.querySelector('#panelAdminOpsTabs .nav-container');
+  if (opsContainer) {
+    opsContainer.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+
+    let targetId = null;
+    if (panel === "CAP") {
+      const t = APP_STATE.opsTab || "CAPTURE";
+      if (t === "CAPTURE") targetId = "tabOPS_CAPTURE";
+      else if (t === "HISTORY") targetId = "tabOPS_HISTORY";
+      else if (t === "PINOL") targetId = "tabOPS_PINOL";
+      else if (t === "LOTES") targetId = "tabLOTES";
+    } else if (panel === "NOTIFS") {
+      targetId = "tabOPS_NOTIFS";
+    } else if (panel === "ADMIN") {
+      targetId = "tabOPS_ADMIN";
     }
 
-    if ($("panelNOTIFS")) $("panelNOTIFS").style.display = (panel === "NOTIFS") ? "block" : "none";
-    if ($("panelADMIN")) $("panelADMIN").style.display = (panel === "ADMIN" && isAdmin) ? "block" : "none";
-
-
-    if (panel === "CAP" && isUnidad) {
-      // No-op scroll
-    }
-
-    if (panel === "NOTIFS") {
-      if (isOps) {
-        initNotificationCenter().catch(err => console.error("initNotificationCenter error:", err));
-      }
-
-      loadNotifications({ silent: false }).catch(err => {
-        console.error("loadNotifications error:", err);
-        showToast("No se pudieron cargar las notificaciones", false);
-      });
-    }
-
-    if (panel === "ADMIN" && isAdmin) {
-      // No-op scroll
+    if (targetId) {
+      const btn = $(targetId);
+      if (btn) btn.classList.add('active');
+      syncTabGroupIndicator('#panelAdminOpsTabs .nav-container');
     }
   }
 
-  function activateCapture(tab) {
-    const role = String((USER && USER.rol) || "").trim().toUpperCase();
+  // Sincronizar Bottom Nav (v2.0 Architecture)
+  const navMap = {
+    'navHome': 'CAP',
+    'navLotes': 'LOTES',
+    'navHistory': 'HISTORY',
+    'navExplorer': 'Archivos'
+  };
+
+  document.querySelectorAll(".nav-item").forEach(el => {
+    const target = el.getAttribute("data-tab")?.replace("tab", "");
+    el.classList.toggle("active", target === panel);
+  });
 
 
-    const updateTabClass = (id, cond) => {
-      const el = $(id);
-      if (el) {
-        if (cond) { el.classList.add("tab-active"); el.classList.remove("tab-inactive"); }
-        else { el.classList.add("tab-inactive"); el.classList.remove("tab-active"); }
-      }
-    };
 
-    if (role !== "UNIDAD") {
-      updateTabClass("tabSR", false);
-      updateTabClass("tabCONS", false);
-      updateTabClass("tabBIO", false);
-      updateTabClass("tabPINOL", false);
+  const allPanels = [
+    "panelCAP", "panelNOTIFS", "panelADMIN", "panelCaptureSummary",
+    "panelPINOLADMIN", "panelHISTORY", "panelEDITLOG", "panelLOTES", "panelArchivos"
+  ];
+  allPanels.forEach(pId => {
+    const p = $(pId);
+    if (p) p.style.display = "none";
+  });
 
-      if ($("formSR")) $("formSR").style.display = "none";
-      if ($("formCONS")) $("formCONS").style.display = "none";
-      if ($("formBIO")) $("formBIO").style.display = "none";
-      if ($("formPINOL")) $("formPINOL").style.display = "none";
+  if ($("panelCAP")) $("panelCAP").style.display = (panel === "CAP" && isUnidad) ? "block" : "none";
 
-      if ($("panelCAP")) $("panelCAP").style.display = "none";
-      return;
+  if ($("panelAdminOpsTabs")) {
+    const isVisible = (panel === "CAP" || panel === "ADMIN" || panel === "NOTIFS") && isOps;
+    $("panelAdminOpsTabs").style.display = isVisible ? "block" : "none";
+  }
+
+  if ($("panelNOTIFS")) $("panelNOTIFS").style.display = (panel === "NOTIFS") ? "block" : "none";
+  if ($("panelADMIN")) $("panelADMIN").style.display = (panel === "ADMIN" && isAdmin) ? "block" : "none";
+
+
+  if (panel === "CAP" && isUnidad) {
+    // No-op scroll
+  }
+
+  if (panel === "NOTIFS") {
+    if (isOps) {
+      initNotificationCenter().catch(err => console.error("initNotificationCenter error:", err));
     }
 
-    const currentTab = APP_STATE.captureTab || "SR";
-    const sameTab = currentTab === tab;
+    loadNotifications({ silent: false }).catch(err => {
+      console.error("loadNotifications error:", err);
+      showToast("No se pudieron cargar las notificaciones", false);
+    });
+  }
 
-    Object.assign(AppState, { captureTab: tab });
+  if (panel === "ADMIN" && isAdmin) {
+    // No-op scroll
+  }
+}
 
-    if (tab === "SR") {
-      clearTabAttention("tabSR");
+function activateCapture(tab) {
+  const role = String((USER && USER.rol) || "").trim().toUpperCase();
+
+
+  const updateTabClass = (id, cond) => {
+    const el = $(id);
+    if (el) {
+      if (cond) el.classList.add("active");
+      else el.classList.remove("active");
     }
+  };
 
-    if (tab === "CONS") {
-      clearTabAttention("tabCONS");
-    }
-
-    if (tab === "BIO") {
-      clearTabAttention("tabBIO");
-    }
-
-    if (tab === "PINOL") {
-      clearTabAttention("tabPINOL");
-    }
-
-    updateTabClass("tabSR", tab === "SR");
-    updateTabClass("tabCONS", tab === "CONS");
-    updateTabClass("tabBIO", tab === "BIO");
-    updateTabClass("tabPINOL", tab === "PINOL");
+  if (role !== "UNIDAD") {
+    updateTabClass("tabSR", false);
+    updateTabClass("tabCONS", false);
+    updateTabClass("tabBIO", false);
+    updateTabClass("tabPINOL", false);
 
     if ($("formSR")) $("formSR").style.display = "none";
     if ($("formCONS")) $("formCONS").style.display = "none";
     if ($("formBIO")) $("formBIO").style.display = "none";
     if ($("formPINOL")) $("formPINOL").style.display = "none";
 
-    let targetId = "formSR";
-
-    if (tab === "SR") {
-      if ($("formSR")) $("formSR").style.display = "block";
-      targetId = "formSR";
-    }
-
-    if (tab === "CONS") {
-      if ($("formCONS")) $("formCONS").style.display = "block";
-      targetId = "formCONS";
-    }
-
-    if (tab === "BIO") {
-      if ($("formBIO")) $("formBIO").style.display = "block";
-      targetId = "formBIO";
-    }
-
-    if (tab === "PINOL") {
-      if ($("formPINOL")) $("formPINOL").style.display = "block";
-      targetId = "formPINOL";
-    }
-
-    if (!sameTab) {
-      // scroll logic removed for desktop
-    }
-
-    updateCaptureStateBanner();
-    applyCaptureLockState();
-    applyCaptureNameAutocomplete();
-    bindFastNumericFocus();
-
-    if (tab === "CONS") {
-      bindCaptureUtilityEvents();
-      syncAguja();
-    }
+    if ($("panelCAP")) $("panelCAP").style.display = "none";
+    return;
   }
 
-  function activateOpsTab(tab) {
-    const currentOpsTab = APP_STATE.opsTab || "CAPTURE";
-    const sameTab = currentOpsTab === tab;
+  const currentTab = APP_STATE.captureTab || "SR";
+  const sameTab = currentTab === tab;
 
-    Object.assign(AppState, { opsTab: tab });
+  Object.assign(AppState, { captureTab: tab });
 
-    if (tab === "CAPTURE") clearTabAttention("tabOPS_CAPTURE");
-    if (tab === "PINOL") clearTabAttention("tabOPS_PINOL");
-    if (tab === "HISTORY") clearTabAttention("tabOPS_HISTORY");
-    if (tab === "LOTES") clearTabAttention("tabLOTES");
-
-    const role = String((USER && USER.rol) || "").trim().toUpperCase();
-    const isOps = ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(role);
-    const canSeeLotes = ["ADMIN", "JURISDICCIONAL"].includes(role);
-
-    if (tab === "LOTES" && !canSeeLotes) return;
-    if (!isOps) return;
-
-    const panelCaptureSummary = $("panelCaptureSummary");
-    const panelPINOLADMIN = $("panelPINOLADMIN");
-    const panelHISTORY = $("panelHISTORY");
-    const panelLOTES = $("panelLOTES");
-
-    const updateTabClass = (id, cond) => {
-      const el = $(id);
-      if (el) {
-        if (cond) { el.classList.add("tab-active"); el.classList.remove("tab-inactive"); }
-        else { el.classList.add("tab-inactive"); el.classList.remove("tab-active"); }
-      }
-    };
-
-    updateTabClass("tabOPS_CAPTURE", tab === "CAPTURE");
-    updateTabClass("tabOPS_PINOL", tab === "PINOL");
-    updateTabClass("tabOPS_HISTORY", tab === "HISTORY");
-    updateTabClass("tabLOTES", tab === "LOTES");
-    updateTabClass("tabOPS_ADMIN", false); // Siempre desactiva admin al entrar a una opsTab
-
-    // Si no estamos en el panel de CAP (Dashboard), forzamos el cambio
-    if (APP_STATE.mainPanel !== "CAP") {
-      activateMain("CAP", tab);
-    }
-
-    if (panelCaptureSummary) panelCaptureSummary.style.display = (tab === "CAPTURE") ? "block" : "none";
-    if ($("panelEDITLOG")) $("panelEDITLOG").style.display = "none";
-    if (panelPINOLADMIN) panelPINOLADMIN.style.display = (tab === "PINOL") ? "block" : "none";
-    if (panelHISTORY) panelHISTORY.style.display = (tab === "HISTORY") ? "block" : "none";
-    if (panelLOTES) panelLOTES.style.display = (tab === "LOTES") ? "block" : "none";
-
-    if (tab === "CAPTURE" && !sameTab) {
-        runSinglePanelTask("ops-tab-capture", () => reloadCaptureSummarySilent())
-          .finally(() => {
-            clearTabAttention("tabCAP");
-            scheduleOpsPrewarm(180);
-          });
-    }
-
-    if (tab === "PINOL" && !sameTab) {
-      runSinglePanelTask("ops-tab-pinol", () => refreshPinol())
-          .finally(() => {
-            refreshPinolBadgeOnly().catch(() => { });
-            scheduleOpsPrewarm(180);
-            clearTabAttention("tabCAP");
-          });
-    }
-
-    if (tab === "HISTORY" && !sameTab) {
-        runSinglePanelTask("ops-tab-history", () => reloadHistorySilent())
-          .finally(() => {
-            scheduleOpsPrewarm(180);
-          });
-    }
-
-    if (tab === "LOTES") {
-      // MEJORA: Siempre refrescar o asegurar que hay datos al entrar
-      activateLotesAdmin();
-    }
+  if (tab === "SR") {
+    clearTabAttention("tabSR");
   }
 
-  function resetExistencia() {
-    if (HAS_TODAY_SR && TODAY_CACHE && TODAY_CACHE.sr) {
-      loadExistenciaIntoForm(TODAY_CACHE.sr);
-    } else {
-      if ($("nombreSR")) $("nombreSR").value = "";
-      const tbody = $("srCaptureTbody");
-      if (tbody) {
-        tbody.innerHTML = "";
-        addSRRow(); // Empezar con una fila vacía
-      }
-      ORIGINAL_SR = null;
-    }
-    setEditModeSR(false);
+  if (tab === "CONS") {
+    clearTabAttention("tabCONS");
   }
 
-  function resetCONS() {
-    if (HAS_TODAY_CONS && TODAY_CACHE && TODAY_CACHE.cons) {
-      loadCONSIntoForm(TODAY_CACHE.cons);
-    } else {
-      if ($("nombreCONS")) $("nombreCONS").value = "";
-      if ($("srp_dosis")) $("srp_dosis").value = "";
-      if ($("sr_dosis")) $("sr_dosis").value = "";
-      if ($("jeringa_reconst_5ml_0605500438")) $("jeringa_reconst_5ml_0605500438").value = "";
-      if ($("jeringa_aplic_05ml_0605502657")) $("jeringa_aplic_05ml_0605502657").value = "";
-      if ($("aguja_0600403711")) $("aguja_0600403711").value = "";
-      ORIGINAL_CONS = null;
-    }
+  if (tab === "BIO") {
+    clearTabAttention("tabBIO");
+  }
 
-    setEditModeCONS(false);
+  if (tab === "PINOL") {
+    clearTabAttention("tabPINOL");
+  }
+
+  updateTabClass("tabSR", tab === "SR");
+  updateTabClass("tabCONS", tab === "CONS");
+  updateTabClass("tabBIO", tab === "BIO");
+  updateTabClass("tabPINOL", tab === "PINOL");
+
+  if ($("formSR")) $("formSR").style.display = "none";
+  if ($("formCONS")) $("formCONS").style.display = "none";
+  if ($("formBIO")) $("formBIO").style.display = "none";
+  if ($("formPINOL")) $("formPINOL").style.display = "none";
+
+  let targetId = "formSR";
+  if (tab === "SR") { if ($("formSR")) $("formSR").style.display = "block"; targetId = "formSR"; }
+  if (tab === "CONS") { if ($("formCONS")) $("formCONS").style.display = "block"; targetId = "formCONS"; }
+  if (tab === "BIO") { if ($("formBIO")) $("formBIO").style.display = "block"; targetId = "formBIO"; }
+  if (tab === "PINOL") { if ($("formPINOL")) $("formPINOL").style.display = "block"; targetId = "formPINOL"; }
+
+  updateCaptureStateBanner();
+  applyCaptureLockState();
+  applyCaptureNameAutocomplete();
+  bindFastNumericFocus();
+
+  if (tab === "CONS") {
     bindCaptureUtilityEvents();
     syncAguja();
   }
 
-  async function reloadCaptureSummarySilent(force = false) {
-    const filterKey = buildCaptureSummaryFilterKey();
+  syncTabGroupIndicator('#desktopCaptureTabs');
+}
 
-    if (!shouldReloadPanelByFilters("captureSummary", filterKey, force)) {
+/**
+ * Mueve el indicador de cualquier grupo de pestañas
+ * @param {string} containerSelector - Selector del contenedor (.nav-container)
+ */
+function syncTabGroupIndicator(containerSelector) {
+  const container = document.querySelector(containerSelector);
+  if (!container) return;
+  const activeBtn = container.querySelector('.nav-tab.active');
+  const indicator = container.querySelector('.nav-indicator');
+  if (!activeBtn || !indicator) return;
+
+  if (activeBtn.offsetWidth === 0) {
+    setTimeout(() => syncTabGroupIndicator(containerSelector), 100);
+    return;
+  }
+  indicator.style.width = `${activeBtn.offsetWidth}px`;
+  indicator.style.left = `${activeBtn.offsetLeft}px`;
+}
+
+window.addEventListener('resize', () => {
+  syncTabGroupIndicator('#panelAdminOpsTabs .nav-container');
+  syncTabGroupIndicator('#panelAdminSecurityTabs .nav-container');
+  syncTabGroupIndicator('#desktopCaptureTabs');
+});
+
+/**
+ * ACTIVATE OPS TAB (Final Refactor - High Fidelity)
+ */
+function activateOpsTab(tab) {
+  const currentOpsTab = APP_STATE.opsTab || "CAPTURE";
+  const sameTab = currentOpsTab === tab;
+  Object.assign(AppState, { opsTab: tab });
+
+  // 1. UI: Indicador azul y clases activas
+  const container = document.querySelector('#panelAdminOpsTabs .nav-container');
+  if (container) {
+    container.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+    let targetId = "tabOPS_CAPTURE";
+    if (tab === "HISTORY") targetId = "tabOPS_HISTORY";
+    if (tab === "PINOL") targetId = "tabOPS_PINOL";
+    if (tab === "LOTES") targetId = "tabLOTES";
+    if (tab === "NOTIFICATIONS") targetId = "tabOPS_NOTIFS";
+    if (tab === "SECURITY") targetId = "tabOPS_ADMIN";
+
+    const btn = $(targetId);
+    if (btn) btn.classList.add('active');
+    syncTabGroupIndicator('#panelAdminOpsTabs .nav-container');
+  }
+
+  // 2. CAMBIO DE CONTEXTO (Si es Avisos o Seguridad)
+  if (tab === "NOTIFICATIONS") { activateMain("NOTIFS"); return; }
+  if (tab === "SECURITY") { activateMain("ADMIN"); return; }
+
+  // 3. PANELES: Mostrar el correcto, ocultar los demás
+  if (APP_STATE.mainPanel !== "CAP") activateMain("CAP", tab);
+
+  const pCapture = $("panelCaptureSummary");
+  const pHistory = $("panelHISTORY");
+  const pPinol = $("panelPINOLADMIN");
+  const pLotes = $("panelLOTES");
+
+  if (pCapture) pCapture.style.display = (tab === "CAPTURE") ? "block" : "none";
+  if (pHistory) pHistory.style.display = (tab === "HISTORY") ? "block" : "none";
+  if (pPinol) pPinol.style.display = (tab === "PINOL") ? "block" : "none";
+  if (pLotes) pLotes.style.display = (tab === "LOTES") ? "block" : "none";
+  if ($("panelEDITLOG")) $("panelEDITLOG").style.display = "none";
+
+  // 4. DATOS: Carga de información
+  if (!sameTab) {
+    if (tab === "CAPTURE") {
+      clearTabAttention("tabOPS_CAPTURE");
+      runSinglePanelTask("ops-tab-capture", () => reloadCaptureSummarySilent()).finally(() => scheduleOpsPrewarm(180));
+    }
+    if (tab === "HISTORY") {
+      clearTabAttention("tabOPS_HISTORY");
+      runSinglePanelTask("ops-tab-history", () => reloadHistorySilent());
+    }
+    if (tab === "PINOL") {
+      clearTabAttention("tabOPS_PINOL");
+      runSinglePanelTask("ops-tab-pinol", () => refreshPinol());
+    }
+    if (tab === "LOTES") {
+      activateLotesAdmin();
+    }
+  }
+}
+
+function resetExistencia() {
+  if (HAS_TODAY_SR && TODAY_CACHE && TODAY_CACHE.sr) {
+    loadExistenciaIntoForm(TODAY_CACHE.sr);
+  } else {
+    if ($("nombreSR")) $("nombreSR").value = "";
+    const tbody = $("srCaptureTbody");
+    if (tbody) {
+      tbody.innerHTML = "";
+      addSRRow(); // Empezar con una fila vacía
+    }
+    ORIGINAL_SR = null;
+  }
+  setEditModeSR(false);
+}
+
+function resetCONS() {
+  if (HAS_TODAY_CONS && TODAY_CACHE && TODAY_CACHE.cons) {
+    loadCONSIntoForm(TODAY_CACHE.cons);
+  } else {
+    if ($("nombreCONS")) $("nombreCONS").value = "";
+    if ($("srp_dosis")) $("srp_dosis").value = "";
+    if ($("sr_dosis")) $("sr_dosis").value = "";
+    if ($("jeringa_reconst_5ml_0605500438")) $("jeringa_reconst_5ml_0605500438").value = "";
+    if ($("jeringa_aplic_05ml_0605502657")) $("jeringa_aplic_05ml_0605502657").value = "";
+    if ($("aguja_0600403711")) $("aguja_0600403711").value = "";
+    ORIGINAL_CONS = null;
+  }
+
+  setEditModeCONS(false);
+  bindCaptureUtilityEvents();
+  syncAguja();
+}
+
+async function reloadCaptureSummarySilent(force = false) {
+  const filterKey = buildCaptureSummaryFilterKey();
+
+  if (!shouldReloadPanelByFilters("captureSummary", filterKey, force)) {
+    return null;
+  }
+
+  return runSinglePanelTask("capture-summary", async () => {
+    if (!TOKEN) return null;
+
+    try {
+      const fecha = $("summaryFecha")?.value || todayYmdLocal();
+      const tipo = $("summaryTipo")?.value || "SR";
+
+      const data = await smartLoader(
+        () => getCaptureOverview(fecha, tipo, !!force),
+        {
+          delay: 220,
+          message: "Cargando resumen…",
+          title: "Resumen de captura"
+        }
+      );
+
+      if (data) {
+        renderCaptureSummary(data);
+        commitPanelFilterState("captureSummary", `${fecha}__${tipo}`);
+      }
+
+      return data;
+    } catch (e) {
+      console.error("reloadCaptureSummarySilent error:", e);
       return null;
     }
+  });
+}
 
-    return runSinglePanelTask("capture-summary", async () => {
-      if (!TOKEN) return null;
+async function reloadHistorySilent(force = false) {
+  const filterKey = buildHistoryFilterKey();
 
-      try {
-        const fecha = $("summaryFecha")?.value || todayYmdLocal();
-        const tipo = $("summaryTipo")?.value || "SR";
-
-        const data = await smartLoader(
-          () => getCaptureOverview(fecha, tipo, !!force),
-          {
-            delay: 220,
-            message: "Cargando resumen…",
-            title: "Resumen de captura"
-          }
-        );
-
-        if (data) {
-          renderCaptureSummary(data);
-          commitPanelFilterState("captureSummary", `${fecha}__${tipo}`);
-        }
-
-        return data;
-      } catch (e) {
-        console.error("reloadCaptureSummarySilent error:", e);
-        return null;
-      }
-    });
+  if (!shouldReloadPanelByFilters("historyMetrics", filterKey, force)) {
+    return null;
   }
 
-  async function reloadHistorySilent(force = false) {
-    const filterKey = buildHistoryFilterKey();
+  return runSinglePanelTask("history-metrics", async () => {
+    if (!TOKEN) return null;
 
-    if (!shouldReloadPanelByFilters("historyMetrics", filterKey, force)) {
+    try {
+      const inicio = $("histFechaInicio")?.value || todayYmdLocal();
+      const fin = $("histFechaFin")?.value || todayYmdLocal();
+
+      const data = await smartLoader(
+        () => getHistoryMetrics(inicio, fin, !!force),
+        {
+          delay: 220,
+          message: "Cargando métricas…",
+          title: "Histórico"
+        }
+      );
+
+      if (data) {
+        renderHistoryMetrics(data);
+        commitPanelFilterState("historyMetrics", `${inicio}__${fin}`);
+      }
+
+      return data;
+    } catch (e) {
+      console.error("reloadHistorySilent error:", e);
       return null;
     }
-
-    return runSinglePanelTask("history-metrics", async () => {
-      if (!TOKEN) return null;
-
-      try {
-        const inicio = $("histFechaInicio")?.value || todayYmdLocal();
-        const fin = $("histFechaFin")?.value || todayYmdLocal();
-
-        const data = await smartLoader(
-          () => getHistoryMetrics(inicio, fin, !!force),
-          {
-            delay: 220,
-            message: "Cargando métricas…",
-            title: "Histórico"
-          }
-        );
-
-        if (data) {
-          renderHistoryMetrics(data);
-          commitPanelFilterState("historyMetrics", `${inicio}__${fin}`);
-        }
-
-        return data;
-      } catch (e) {
-        console.error("reloadHistorySilent error:", e);
-        return null;
-      }
-    });
-  }
-  // (El listener de loginForm ya está registrado al inicio del archivo)
+  });
+}
+// (El listener de loginForm ya está registrado al inicio del archivo)
 
 
-  $("btnSaveSR").onclick = async () => {
-    const nombre = $("nombreSR")?.value.trim() || "";
-    if (!nombre) return showToast("Ingresa el nombre del responsable", false, "warn");
+const bSaveSR = $("btnSaveSR");
+if (bSaveSR) bSaveSR.onclick = async () => {
+  const nombre = $("nombreSR")?.value.trim() || "";
+  if (!nombre) return showToast("Ingresa el nombre del responsable", false, "warn");
 
-    const items = [];
-    let hasInvalid = false;
-    document.querySelectorAll("#srCaptureTbody tr").forEach(tr => {
-      const row = tr._cache || {};
-      const bio = (row.bioSelect || tr.querySelector(".sr-bio-select"))?.value;
-      const lote = (row.loteSelect || tr.querySelector(".sr-lote-select"))?.value;
-      const cant = (row.cantidadInput || tr.querySelector(".sr-cantidad-input"))?.value;
-      const recep = (row.recepcionInput || tr.querySelector(".sr-recepcion-input"))?.value;
+  const items = [];
+  let hasInvalid = false;
+  document.querySelectorAll("#srCaptureTbody tr").forEach(tr => {
+    const row = tr._cache || {};
+    const bio = (row.bioSelect || tr.querySelector(".sr-bio-select"))?.value;
+    const lote = (row.loteSelect || tr.querySelector(".sr-lote-select"))?.value;
+    const cant = (row.cantidadInput || tr.querySelector(".sr-cantidad-input"))?.value;
+    const recep = (row.recepcionInput || tr.querySelector(".sr-recepcion-input"))?.value;
 
-      if (!bio && !lote && !cant) return;
-      if (!bio || !lote || cant === "" || Number(cant) < 0) {
-        hasInvalid = true;
-        tr.style.background = "rgba(239, 68, 68, 0.1)";
-      } else {
-        tr.style.background = "";
-        items.push({ biologico: bio, lote, cantidad: Number(cant), fecha_recepcion: recep });
-      }
-    });
-
-    if (hasInvalid) return showToast("Corrige las filas en rojo", false, "warn");
-    if (!items.length) return showToast("Captura al menos un biológico", false, "warn");
-    if (HAS_TODAY_SR && !EDIT_SR) return showToast("Ya existe una captura de hoy", false, "warn");
-
-    await AppService.runCapture({
-      btnId: "btnSaveSR",
-      title: EDIT_SR ? "Actualizando" : "Guardando",
-      msg: "Procesando existencia de biológicos...",
-      successMsg: EDIT_SR ? "Existencia actualizada" : "Existencia guardada",
-      eventTitle: "Existencia de biológicos",
-      eventMsg: EDIT_SR ? "Actualizada correctamente." : "Guardada correctamente.",
-      mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true },
-      action: () => AppService.call("saveSR", {
-        fecha: todayYmdLocal(),
-        nombre,
-        items,
-        editado: EDIT_SR ? "SI" : "NO"
-      })
-    });
-  };
-
-  $("btnExportSelectAll").onclick = () => {
-    document.querySelectorAll(".exportMunicipioChk").forEach(chk => chk.checked = true);
-  };
-
-  $("btnExportClearAll").onclick = () => {
-    document.querySelectorAll(".exportMunicipioChk").forEach(chk => chk.checked = false);
-  };
-
-  $("exportTipo").addEventListener("change", updateExportFechaHint);
-
-  refreshExportSplitUi();
-
-  $("btnSaveCONS").onclick = async () => {
-    const nombre = $("nombreCONS")?.value.trim() || "";
-    if (!nombre) return showToast("Ingresa el nombre del responsable", false, "warn");
-
-    const numFields = ["srp_dosis", "sr_dosis", "jeringa_reconst_5ml_0605500438", "jeringa_aplic_05ml_0605502657"];
-    for (const f of numFields) {
-      const val = $(f)?.value;
-      if (val !== "" && (isNaN(val) || Number(val) < 0)) {
-        flashElement(f);
-        return showToast("Valores numéricos inválidos", false, "warn");
-      }
+    if (!bio && !lote && !cant) return;
+    if (!bio || !lote || cant === "" || Number(cant) < 0) {
+      hasInvalid = true;
+      tr.style.background = "rgba(239, 68, 68, 0.1)";
+    } else {
+      tr.style.background = "";
+      items.push({ biologico: bio, lote, cantidad: Number(cant), fecha_recepcion: recep });
     }
-
-    if (HAS_TODAY_CONS && !EDIT_CONS) return showToast("Ya existe un reporte de hoy", false, "warn");
-    if (EDIT_CONS && !hasCONSNumericChanges()) return showToast("No hay cambios numéricos", false, "warn");
-
-    const safeNum = (id) => Number($(id)?.value || 0);
-
-    await AppService.runCapture({
-      btnId: "btnSaveCONS",
-      title: EDIT_CONS ? "Actualizando" : "Guardando",
-      msg: "Procesando consumibles...",
-      successMsg: EDIT_CONS ? "Reporte actualizado" : "Reporte guardado",
-      eventTitle: "Consumibles",
-      eventMsg: EDIT_CONS ? "Actualizado correctamente." : "Guardado correctamente.",
-      mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true },
-      action: () => AppService.call(EDIT_CONS ? "updateConsumibles" : "saveConsumibles", {
-        nombre,
-        srp_dosis: safeNum("srp_dosis"),
-        sr_dosis: safeNum("sr_dosis"),
-        jeringa_reconst_5ml_0605500438: safeNum("jeringa_reconst_5ml_0605500438"),
-        jeringa_aplic_05ml_0605502657: safeNum("jeringa_aplic_05ml_0605502657"),
-        aguja_0600403711: safeNum("aguja_0600403711")
-      })
-    });
-  };
-
-  $("btnSaveBIO").onclick = async () => {
-    if (!BIO_STATE.canCapture) return showToast("Ventana de captura cerrada", false, "warn");
-    if (HAS_SAVED_BIO && !EDIT_BIO) return showToast("Pedido ya capturado", false, "warn");
-
-    const bioValidation = refreshBioAlerts(true);
-    if (bioValidation?.hasBlockingError) return showToast("Corrige los errores antes de guardar", false, "warn");
-
-    const nombre = $("nombreBIO")?.value.trim() || "";
-    const items = collectBioItems();
-
-    // Validaciones pro-activas de stock
-    const warningRows = [];
-    const bioStateByKey = Object.fromEntries((BIO_STATE.rows || []).map(r => [String(r.biologico).toUpperCase(), r]));
-
-    items.forEach(item => {
-      const key = String(item.biologico).toUpperCase();
-      const r = bioStateByKey[key];
-      if (!r) return;
-      if (["INFLUENZA", "COVID-19", "VPH", "VARICELA"].some(k => key.includes(k))) return;
-
-      const total = Number(item.existencia_actual_frascos || 0) + Number(item.pedido_frascos || 0);
-      if (r.promedio_frascos > 0 && total < r.promedio_frascos) {
-        warningRows.push(`• ${r.biologico}: stock insuficiente vs promedio.`);
-      }
-    });
-
-    if (warningRows.length && !(await openBioConfirm(warningRows))) return;
-
-    await AppService.runCapture({
-      btnId: "btnSaveBIO",
-      title: EDIT_BIO ? "Actualizando" : "Guardando",
-      msg: "Procesando pedido biológico...",
-      successMsg: EDIT_BIO ? "Pedido actualizado" : "Pedido guardado",
-      eventTitle: "Pedido de biológico",
-      eventMsg: EDIT_BIO ? "Actualizado correctamente." : "Guardado correctamente.",
-      mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true, touchBio: true },
-      action: async () => {
-        const res = await AppService.call("saveBio", {
-          nombre,
-          items,
-          tipo_pedido: BIO_STATE.isInsideWindow ? "MENSUAL" : "EXTRAORDINARIO",
-          sin_pedido: $("chkNoPedido")?.checked || false
-        });
-        if (res.ok) await loadBioForm(true);
-        return res;
-      }
-    });
-  };
-
-  if ($("btnBioConfirmCancel")) {
-    $("btnBioConfirmCancel").onclick = () => closeBioConfirm(false);
-  }
-
-  if ($("btnBioConfirmAccept")) {
-    $("btnBioConfirmAccept").onclick = () => closeBioConfirm(true);
-  }
-
-  if ($("bioConfirmOverlay")) {
-    $("bioConfirmOverlay").onclick = (e) => {
-      if (e.target === $("bioConfirmOverlay")) closeBioConfirm(false);
-    };
-  }
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && $("bioConfirmOverlay") && $("bioConfirmOverlay").classList.contains("show")) {
-      closeBioConfirm(false);
-    }
-
   });
 
-  $("btnSavePINOL").onclick = async () => {
-    const nombre = $("nombrePINOL")?.value.trim() || "";
-    if (!nombre) return showToast("Ingresa el nombre del responsable", false, "warn");
+  if (hasInvalid) return showToast("Corrige las filas en rojo", false, "warn");
+  if (!items.length) return showToast("Captura al menos un biológico", false, "warn");
+  if (HAS_TODAY_SR && !EDIT_SR) return showToast("Ya existe una captura de hoy", false, "warn");
 
-    await AppService.runCapture({
-      btnId: "btnSavePINOL",
-      title: "Guardando",
-      msg: "Enviando solicitud de pinol...",
-      successMsg: "Solicitud de pinol guardada",
-      eventTitle: "Pinol",
-      eventMsg: "Tu solicitud fue enviada correctamente.",
-      mutation: { touchPinol: true },
-      action: async () => {
-        const res = await AppService.call("savePinol", {
-          nombre,
-          existencia_actual_botellas: $("pinol_existencia")?.value,
-          solicitud_botellas: $("pinol_solicitud")?.value,
-          observaciones: $("pinol_observaciones")?.value.trim()
-        });
-        if (res.ok) {
-          $("nombrePINOL").value = "";
-          $("pinol_existencia").value = "";
-          $("pinol_solicitud").value = "";
-          $("pinol_observaciones").value = "";
-        }
-        return res;
-      }
-    });
-  };
+  await AppService.runCapture({
+    btnId: "btnSaveSR",
+    title: EDIT_SR ? "Actualizando" : "Guardando",
+    msg: "Procesando existencia de biológicos...",
+    successMsg: EDIT_SR ? "Existencia actualizada" : "Existencia guardada",
+    eventTitle: "Existencia de biológicos",
+    eventMsg: EDIT_SR ? "Actualizada correctamente." : "Guardada correctamente.",
+    mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true },
+    action: () => AppService.call("saveSR", {
+      fecha: todayYmdLocal(),
+      nombre,
+      items,
+      editado: EDIT_SR ? "SI" : "NO"
+    })
+  });
+};
 
-  $("btnEditSR").onclick = () => {
-    if (!TODAY_CACHE || !TODAY_CACHE.sr) return;
-    loadExistenciaIntoForm(TODAY_CACHE.sr);
-    setEditModeSR(true);
-    showToast("Modo edición activado (Existencia de biológicos)", true, "warn");
-  };
-  $("btnCancelEditSR").onclick = () => {
-    resetExistencia();
-    showToast("Edición cancelada");
-  };
-  $("btnEditBIO").onclick = () => {
-    if (!HAS_SAVED_BIO) return;
-    setEditModeBIO(true);
-    showToast("Modo edición activado (Pedido de biológico)", true, "warn");
-  };
+$("btnExportSelectAll").onclick = () => {
+  document.querySelectorAll(".exportMunicipioChk").forEach(chk => chk.checked = true);
+};
 
-  $("btnCancelEditBIO").onclick = async () => {
-    await loadBioForm();
-    showToast("Edición cancelada");
-  };
+$("btnExportClearAll").onclick = () => {
+  document.querySelectorAll(".exportMunicipioChk").forEach(chk => chk.checked = false);
+};
 
-  // EVENTOS DEL MODAL DE EXPORTACIÓN
-  if ($("exportTipo")) $("exportTipo").addEventListener("change", updateExportFechaHint);
-  if ($("exportMonth")) $("exportMonth").addEventListener("change", updateExportFechaHint);
-  if ($("exportYear")) $("exportYear").addEventListener("change", updateExportFechaHint);
+$("exportTipo").addEventListener("change", updateExportFechaHint);
 
-  if ($("btnExport")) $("btnExport").onclick = () => {
-    $("exportOverlay")?.classList.add("show");
-    updateExportFechaHint();
-    loadExportOptions().catch(console.error);
-  };
+refreshExportSplitUi();
 
-  if ($("btnCancelExport")) $("btnCancelExport").onclick = () => {
-    $("exportOverlay")?.classList.remove("show");
-  };
+const bSaveCONS = $("btnSaveCONS");
+if (bSaveCONS) bSaveCONS.onclick = async () => {
+  const nombre = $("nombreCONS")?.value.trim() || "";
+  if (!nombre) return showToast("Ingresa el nombre del responsable", false, "warn");
 
-
-  if ($("btnDoExport")) $("btnDoExport").onclick = async () => {
-    $("exportOverlay")?.classList.remove("show");
-    showOverlay("Generando reporte...");
-    try {
-      const municipios = getSelectedExportMunicipios();
-      const tipo = $("exportTipo").value || "SR";
-
-      let fIni = "";
-      if (tipo === "BIO") {
-        const exactBox = $("exportBioExactDateBox");
-        if (exactBox && exactBox.style.display !== "none" && $("exportBioExactDate").value) {
-          fIni = $("exportBioExactDate").value;
-        } else {
-          const mm = $("exportMonth") ? $("exportMonth").value : "01";
-          const yy = $("exportYear") ? $("exportYear").value : "2024";
-          fIni = `${yy}-${mm}-01`;
-        }
-      } else {
-        fIni = $("exportFechaInicio").value || todayYmdLocal();
-      }
-
-      const fFin = (tipo === "BIO" ? fIni : ($("exportFechaFin").value || fIni));
-
-      const res = await apiCall({
-        action: tipo === "BIO" ? "bioExportMatrix" : "export",
-        tipo,
-        municipios,
-        fechaInicio: fIni,
-        fechaFin: fFin
-      });
-
-      if (!res || !res.ok) {
-        showToast((res && res.error) ? res.error : "No se pudo obtener datos para el reporte", false);
-        return;
-      }
-
-      await generateProfessionalXLSX(tipo, res.data, fIni, fFin, municipios);
-      showToast("El reporte se generó correctamente");
-
-    } catch (e) {
-      console.error("Export error:", e);
-      showToast("Error al exportar", false);
-    } finally {
-      hideOverlay();
+  const numFields = ["srp_dosis", "sr_dosis", "jeringa_reconst_5ml_0605500438", "jeringa_aplic_05ml_0605502657"];
+  for (const f of numFields) {
+    const val = $(f)?.value;
+    if (val !== "" && (isNaN(val) || Number(val) < 0)) {
+      flashElement(f);
+      return showToast("Valores numéricos inválidos", false, "warn");
     }
-  };
+  }
 
-  /**
-   * Generador de Excel Profesional (Cliente)
-   */
-  async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipios = []) {
-    if (!window.ExcelJS) {
-      showToast("Librería de exportación no cargada", false);
+  if (HAS_TODAY_CONS && !EDIT_CONS) return showToast("Ya existe un reporte de hoy", false, "warn");
+  if (EDIT_CONS && !hasCONSNumericChanges()) return showToast("No hay cambios numéricos", false, "warn");
+
+  const safeNum = (id) => Number($(id)?.value || 0);
+
+  await AppService.runCapture({
+    btnId: "btnSaveCONS",
+    title: EDIT_CONS ? "Actualizando" : "Guardando",
+    msg: "Procesando consumibles...",
+    successMsg: EDIT_CONS ? "Reporte actualizado" : "Reporte guardado",
+    eventTitle: "Consumibles",
+    eventMsg: EDIT_CONS ? "Actualizado correctamente." : "Guardado correctamente.",
+    mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true },
+    action: () => AppService.call(EDIT_CONS ? "updateConsumibles" : "saveConsumibles", {
+      nombre,
+      srp_dosis: safeNum("srp_dosis"),
+      sr_dosis: safeNum("sr_dosis"),
+      jeringa_reconst_5ml_0605500438: safeNum("jeringa_reconst_5ml_0605500438"),
+      jeringa_aplic_05ml_0605502657: safeNum("jeringa_aplic_05ml_0605502657"),
+      aguja_0600403711: safeNum("aguja_0600403711")
+    })
+  });
+};
+
+const bSaveBIO = $("btnSaveBIO");
+if (bSaveBIO) bSaveBIO.onclick = async () => {
+  if (!BIO_STATE.canCapture) return showToast("Ventana de captura cerrada", false, "warn");
+  if (HAS_SAVED_BIO && !EDIT_BIO) return showToast("Pedido ya capturado", false, "warn");
+
+  const bioValidation = refreshBioAlerts(true);
+  if (bioValidation?.hasBlockingError) return showToast("Corrige los errores antes de guardar", false, "warn");
+
+  const nombre = $("nombreBIO")?.value.trim() || "";
+  const items = collectBioItems();
+
+  // Validaciones pro-activas de stock
+  const warningRows = [];
+  const bioStateByKey = Object.fromEntries((BIO_STATE.rows || []).map(r => [String(r.biologico).toUpperCase(), r]));
+
+  items.forEach(item => {
+    const key = String(item.biologico).toUpperCase();
+    const r = bioStateByKey[key];
+    if (!r) return;
+    if (["INFLUENZA", "COVID-19", "VPH", "VARICELA"].some(k => key.includes(k))) return;
+
+    const total = Number(item.existencia_actual_frascos || 0) + Number(item.pedido_frascos || 0);
+    if (r.promedio_frascos > 0 && total < r.promedio_frascos) {
+      warningRows.push(`• ${r.biologico}: stock insuficiente vs promedio.`);
+    }
+  });
+
+  if (warningRows.length && !(await openBioConfirm(warningRows))) return;
+
+  await AppService.runCapture({
+    btnId: "btnSaveBIO",
+    title: EDIT_BIO ? "Actualizando" : "Guardando",
+    msg: "Procesando pedido biológico...",
+    successMsg: EDIT_BIO ? "Pedido actualizado" : "Pedido guardado",
+    eventTitle: "Pedido de biológico",
+    eventMsg: EDIT_BIO ? "Actualizado correctamente." : "Guardado correctamente.",
+    mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true, touchBio: true },
+    action: async () => {
+      const res = await AppService.call("saveBio", {
+        nombre,
+        items,
+        tipo_pedido: BIO_STATE.isInsideWindow ? "MENSUAL" : "EXTRAORDINARIO",
+        sin_pedido: $("chkNoPedido")?.checked || false
+      });
+      if (res.ok) await loadBioForm(true);
+      return res;
+    }
+  });
+};
+
+if ($("btnBioConfirmCancel")) {
+  $("btnBioConfirmCancel").onclick = () => closeBioConfirm(false);
+}
+
+if ($("btnBioConfirmAccept")) {
+  $("btnBioConfirmAccept").onclick = () => closeBioConfirm(true);
+}
+
+if ($("bioConfirmOverlay")) {
+  $("bioConfirmOverlay").onclick = (e) => {
+    if (e.target === $("bioConfirmOverlay")) closeBioConfirm(false);
+  };
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && $("bioConfirmOverlay") && $("bioConfirmOverlay").classList.contains("show")) {
+    closeBioConfirm(false);
+  }
+
+});
+
+$("btnSavePINOL").onclick = async () => {
+  const nombre = $("nombrePINOL")?.value.trim() || "";
+  if (!nombre) return showToast("Ingresa el nombre del responsable", false, "warn");
+
+  await AppService.runCapture({
+    btnId: "btnSavePINOL",
+    title: "Guardando",
+    msg: "Enviando solicitud de pinol...",
+    successMsg: "Solicitud de pinol guardada",
+    eventTitle: "Pinol",
+    eventMsg: "Tu solicitud fue enviada correctamente.",
+    mutation: { touchPinol: true },
+    action: async () => {
+      const res = await AppService.call("savePinol", {
+        nombre,
+        existencia_actual_botellas: $("pinol_existencia")?.value,
+        solicitud_botellas: $("pinol_solicitud")?.value,
+        observaciones: $("pinol_observaciones")?.value.trim()
+      });
+      if (res.ok) {
+        $("nombrePINOL").value = "";
+        $("pinol_existencia").value = "";
+        $("pinol_solicitud").value = "";
+        $("pinol_observaciones").value = "";
+      }
+      return res;
+    }
+  });
+};
+
+$("btnEditSR").onclick = () => {
+  if (!TODAY_CACHE || !TODAY_CACHE.sr) return;
+  loadExistenciaIntoForm(TODAY_CACHE.sr);
+  setEditModeSR(true);
+  showToast("Modo edición activado (Existencia de biológicos)", true, "warn");
+};
+$("btnCancelEditSR").onclick = () => {
+  resetExistencia();
+  showToast("Edición cancelada");
+};
+$("btnEditBIO").onclick = () => {
+  if (!HAS_SAVED_BIO) return;
+  setEditModeBIO(true);
+  showToast("Modo edición activado (Pedido de biológico)", true, "warn");
+};
+
+$("btnCancelEditBIO").onclick = async () => {
+  await loadBioForm();
+  showToast("Edición cancelada");
+};
+
+// EVENTOS DEL MODAL DE EXPORTACIÓN
+if ($("exportTipo")) $("exportTipo").addEventListener("change", updateExportFechaHint);
+if ($("exportMonth")) $("exportMonth").addEventListener("change", updateExportFechaHint);
+if ($("exportYear")) $("exportYear").addEventListener("change", updateExportFechaHint);
+
+if ($("btnExport")) $("btnExport").onclick = () => {
+  $("exportOverlay")?.classList.add("show");
+  updateExportFechaHint();
+  loadExportOptions().catch(console.error);
+};
+
+if ($("btnCancelExport")) $("btnCancelExport").onclick = () => {
+  $("exportOverlay")?.classList.remove("show");
+};
+
+
+if ($("btnDoExport")) $("btnDoExport").onclick = async () => {
+  $("exportOverlay")?.classList.remove("show");
+  showOverlay("Generando reporte...");
+  try {
+    const municipios = getSelectedExportMunicipios();
+    const tipo = $("exportTipo").value || "SR";
+
+    let fIni = "";
+    if (tipo === "BIO") {
+      const exactBox = $("exportBioExactDateBox");
+      if (exactBox && exactBox.style.display !== "none" && $("exportBioExactDate").value) {
+        fIni = $("exportBioExactDate").value;
+      } else {
+        const mm = $("exportMonth") ? $("exportMonth").value : "01";
+        const yy = $("exportYear") ? $("exportYear").value : "2024";
+        fIni = `${yy}-${mm}-01`;
+      }
+    } else {
+      fIni = $("exportFechaInicio").value || todayYmdLocal();
+    }
+
+    const fFin = (tipo === "BIO" ? fIni : ($("exportFechaFin").value || fIni));
+
+    const res = await apiCall({
+      action: tipo === "BIO" ? "bioExportMatrix" : "export",
+      tipo,
+      municipios,
+      fechaInicio: fIni,
+      fechaFin: fFin
+    });
+
+    if (!res || !res.ok) {
+      showToast((res && res.error) ? res.error : "No se pudo obtener datos para el reporte", false);
       return;
     }
 
-    const wb = new ExcelJS.Workbook();
-    wb.creator = 'JS1 Reportes';
-    const sheetName = tipo === "SR" ? "EXISTENCIAS" : (tipo === "CONS" ? "CONSUMIBLES" : "PEDIDOS");
-    const ws = wb.addWorksheet(sheetName, { views: [{ showGridLines: false }] });
+    await generateProfessionalXLSX(tipo, res.data, fIni, fFin, municipios);
+    showToast("El reporte se generó correctamente");
 
-    const unidadesSet = new Set();
-    const mapUnidades = {};
+  } catch (e) {
+    console.error("Export error:", e);
+    showToast("Error al exportar", false);
+  } finally {
+    hideOverlay();
+  }
+};
 
-    data.forEach(d => {
-      unidadesSet.add(d.clues);
-      if (d.unidades && d.unidades.nombre) {
-        mapUnidades[d.clues] = d.unidades.nombre.toUpperCase();
-      } else {
-        mapUnidades[d.clues] = (d.unidad || "UNIDAD DESCONOCIDA").toUpperCase();
-      }
-    });
+/**
+ * Generador de Excel Profesional (Cliente)
+ */
+async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipios = []) {
+  if (!window.ExcelJS) {
+    showToast("Librería de exportación no cargada", false);
+    return;
+  }
 
-    const arrClues = Array.from(unidadesSet).sort();
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'JS1 Reportes';
+  const sheetName = tipo === "SR" ? "EXISTENCIAS" : (tipo === "CONS" ? "CONSUMIBLES" : "PEDIDOS");
+  const ws = wb.addWorksheet(sheetName, { views: [{ showGridLines: false }] });
 
-    let insumos = [];
-    if (tipo === "CONS") {
-      insumos = [
-        { key: "srp_dosis", label: "DOSIS DE SRP", color: "A75985" },
-        { key: "sr_dosis", label: "DOSIS DE SR", color: "5C4B92" },
-        { key: "jeringa_reconst_5ml_0605500438", label: "JERINGA DE RECONSTITUCIÓN 5 mL", color: "EAD1DC" },
-        { key: "jeringa_aplic_05ml_0605502657", label: "JERINGA DE APLICACIÓN 0.5 mL", color: "E2B7A8" },
-        { key: "aguja_0600403711", label: "AGUJA", color: "E1955D" }
-      ];
+  const unidadesSet = new Set();
+  const mapUnidades = {};
+
+  data.forEach(d => {
+    unidadesSet.add(d.clues);
+    if (d.unidades && d.unidades.nombre) {
+      mapUnidades[d.clues] = d.unidades.nombre.toUpperCase();
     } else {
-      insumos = [
-        { key: "bcg", label: "BCG", color: "4A86E8" },
-        { key: "hepatitis_b", label: "HEPATITIS B", color: "CC0000" },
-        { key: "hexavalente", label: "HEXAVALENTE", color: "93C47D" },
-        { key: "dpt", label: "DPT", color: "F1C232" },
-        { key: "rotavirus", label: "ROTAVIRUS", color: "3D85C6" },
-        { key: "neumococica_13", label: "NEUMOCÓCICA 13", color: "1155CC" },
-        { key: "neumococica_20", label: "NEUMOCÓCICA 20", color: "0B5394" },
-        { key: "srp", label: "SRP", color: "A64D79" },
-        { key: "sr", label: "SR", color: "741B47" },
-        { key: "vph", label: "VPH", color: "76A5AF" },
-        { key: "varicela", label: "VARICELA", color: "45818E" },
-        { key: "hepatitis_a", label: "HEPATITIS A", color: "8E7CC3" },
-        { key: "td", label: "TD", color: "999999" },
-        { key: "tdpa", label: "TDPA", color: "E69138" },
-        { key: "covid_19", label: "COVID-19", color: "B6D7A8" },
-        { key: "influenza", label: "INFLUENZA", color: "20B2AA" },
-        { key: "vsr", label: "VSR", color: "C90076" }
-      ];
+      mapUnidades[d.clues] = (d.unidad || "UNIDAD DESCONOCIDA").toUpperCase();
     }
+  });
 
-    const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2F3E46' } };
-    const fontWhite = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Arial', size: 12 };
-    const borderAll = {
-      top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' }
-    };
+  const arrClues = Array.from(unidadesSet).sort();
 
-    let headerRowText = tipo === "SR" ? "EXISTENCIA DE BIOLÓGICO" : (tipo === "CONS" ? "CONSUMIBLES SR/SRP" : "PEDIDO BIOLÓGICO");
+  let insumos = [];
+  if (tipo === "CONS") {
+    insumos = [
+      { key: "srp_dosis", label: "DOSIS DE SRP", color: "A75985" },
+      { key: "sr_dosis", label: "DOSIS DE SR", color: "5C4B92" },
+      { key: "jeringa_reconst_5ml_0605500438", label: "JERINGA DE RECONSTITUCIÓN 5 mL", color: "EAD1DC" },
+      { key: "jeringa_aplic_05ml_0605502657", label: "JERINGA DE APLICACIÓN 0.5 mL", color: "E2B7A8" },
+      { key: "aguja_0600403711", label: "AGUJA", color: "E1955D" }
+    ];
+  } else {
+    insumos = [
+      { key: "bcg", label: "BCG", color: "4A86E8" },
+      { key: "hepatitis_b", label: "HEPATITIS B", color: "CC0000" },
+      { key: "hexavalente", label: "HEXAVALENTE", color: "93C47D" },
+      { key: "dpt", label: "DPT", color: "F1C232" },
+      { key: "rotavirus", label: "ROTAVIRUS", color: "3D85C6" },
+      { key: "neumococica_13", label: "NEUMOCÓCICA 13", color: "1155CC" },
+      { key: "neumococica_20", label: "NEUMOCÓCICA 20", color: "0B5394" },
+      { key: "srp", label: "SRP", color: "A64D79" },
+      { key: "sr", label: "SR", color: "741B47" },
+      { key: "vph", label: "VPH", color: "76A5AF" },
+      { key: "varicela", label: "VARICELA", color: "45818E" },
+      { key: "hepatitis_a", label: "HEPATITIS A", color: "8E7CC3" },
+      { key: "td", label: "TD", color: "999999" },
+      { key: "tdpa", label: "TDPA", color: "E69138" },
+      { key: "covid_19", label: "COVID-19", color: "B6D7A8" },
+      { key: "influenza", label: "INFLUENZA", color: "20B2AA" },
+      { key: "vsr", label: "VSR", color: "C90076" }
+    ];
+  }
 
-    ws.getCell('A1').value = 'REPORTE';
-    ws.getCell('A1').fill = headerFill;
-    ws.getCell('A1').font = fontWhite;
-    ws.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
-    ws.mergeCells('A1:B1');
-    ws.getCell('C1').value = headerRowText;
-    ws.getCell('C1').font = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Arial', size: 18 };
-    ws.getCell('C1').fill = headerFill;
-    ws.getCell('C1').alignment = { vertical: 'middle', horizontal: 'center' };
-    ws.mergeCells(1, 3, 1, 3 + arrClues.length);
-    ws.getRow(1).height = 50;
+  const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2F3E46' } };
+  const fontWhite = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Arial', size: 12 };
+  const borderAll = {
+    top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' }
+  };
 
-    let munisLabel = "TODOS";
-    if (selectedMunicipios && selectedMunicipios.length > 0) {
-      munisLabel = selectedMunicipios.join(", ").toUpperCase();
-    } else if (data[0]?.municipio) {
-      munisLabel = data[0].municipio.toUpperCase();
+  let headerRowText = tipo === "SR" ? "EXISTENCIA DE BIOLÓGICO" : (tipo === "CONS" ? "CONSUMIBLES SR/SRP" : "PEDIDO BIOLÓGICO");
+
+  ws.getCell('A1').value = 'REPORTE';
+  ws.getCell('A1').fill = headerFill;
+  ws.getCell('A1').font = fontWhite;
+  ws.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
+  ws.mergeCells('A1:B1');
+  ws.getCell('C1').value = headerRowText;
+  ws.getCell('C1').font = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Arial', size: 18 };
+  ws.getCell('C1').fill = headerFill;
+  ws.getCell('C1').alignment = { vertical: 'middle', horizontal: 'center' };
+  ws.mergeCells(1, 3, 1, 3 + arrClues.length);
+  ws.getRow(1).height = 50;
+
+  let munisLabel = "TODOS";
+  if (selectedMunicipios && selectedMunicipios.length > 0) {
+    munisLabel = selectedMunicipios.join(", ").toUpperCase();
+  } else if (data[0]?.municipio) {
+    munisLabel = data[0].municipio.toUpperCase();
+  }
+
+  ws.getCell('A2').value = 'MUNICIPIO: ' + munisLabel;
+  ws.getCell('A2').font = { bold: true };
+  ws.getCell('A2').alignment = { horizontal: 'left' };
+  ws.mergeCells('A2:B2');
+
+  const lastColIndex = 1 + arrClues.length + (tipo === "CONS" ? 0 : 1);
+  ws.getCell(2, Math.max(3, lastColIndex)).value = (tipo === 'BIO' ? 'FECHA PEDIDO: ' : 'FECHA REPORTE: ') + fIni;
+  ws.getCell(2, Math.max(3, lastColIndex)).font = { bold: true };
+  ws.getCell(2, Math.max(3, lastColIndex)).alignment = { horizontal: 'right' };
+
+  const headerRowIdx = 3;
+  const headerRow = ws.getRow(headerRowIdx);
+  let colIndex = 1;
+  const colName = tipo === "CONS" ? "INSUMO" : "BIOLÓGICO";
+  ws.getCell(headerRowIdx, colIndex).value = colName;
+  ws.getCell(headerRowIdx, colIndex).fill = headerFill;
+  ws.getCell(headerRowIdx, colIndex).font = fontWhite;
+  ws.getCell(headerRowIdx, colIndex).alignment = { vertical: 'middle', horizontal: 'center' };
+  colIndex++;
+
+  arrClues.forEach(clues => {
+    ws.getCell(headerRowIdx, colIndex).value = `${clues} - ${mapUnidades[clues]}`;
+    ws.getCell(headerRowIdx, colIndex).fill = headerFill;
+    ws.getCell(headerRowIdx, colIndex).font = fontWhite;
+    ws.getCell(headerRowIdx, colIndex).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    ws.getCell(headerRowIdx, colIndex).border = borderAll;
+    ws.getColumn(colIndex).width = 20;
+
+    if (tipo === "BIO") {
+      ws.getCell(4, colIndex).value = "PEDIDO";
+      ws.getCell(4, colIndex).font = { bold: true };
+      ws.getCell(4, colIndex).alignment = { horizontal: 'center' };
+      ws.getCell(4, colIndex).border = borderAll;
     }
+    colIndex++;
+  });
 
-    ws.getCell('A2').value = 'MUNICIPIO: ' + munisLabel;
-    ws.getCell('A2').font = { bold: true };
-    ws.getCell('A2').alignment = { horizontal: 'left' };
-    ws.mergeCells('A2:B2');
-
-    const lastColIndex = 1 + arrClues.length + (tipo === "CONS" ? 0 : 1);
-    ws.getCell(2, Math.max(3, lastColIndex)).value = (tipo === 'BIO' ? 'FECHA PEDIDO: ' : 'FECHA REPORTE: ') + fIni;
-    ws.getCell(2, Math.max(3, lastColIndex)).font = { bold: true };
-    ws.getCell(2, Math.max(3, lastColIndex)).alignment = { horizontal: 'right' };
-
-    const headerRowIdx = 3;
-    const headerRow = ws.getRow(headerRowIdx);
-    let colIndex = 1;
-    const colName = tipo === "CONS" ? "INSUMO" : "BIOLÓGICO";
-    ws.getCell(headerRowIdx, colIndex).value = colName;
+  if (tipo !== "CONS") {
+    ws.getCell(headerRowIdx, colIndex).value = "TOTAL";
     ws.getCell(headerRowIdx, colIndex).fill = headerFill;
     ws.getCell(headerRowIdx, colIndex).font = fontWhite;
     ws.getCell(headerRowIdx, colIndex).alignment = { vertical: 'middle', horizontal: 'center' };
+    ws.getCell(headerRowIdx, colIndex).border = borderAll;
     colIndex++;
+  }
+
+  ws.getColumn(1).width = 30;
+  headerRow.height = 40;
+
+  let rowCursor = tipo === "BIO" ? 5 : 4;
+
+  insumos.forEach(insumo => {
+    let cIdx = 1;
+    const fgColor = { argb: 'FF' + insumo.color.replace('#', '') };
+
+    ws.getCell(rowCursor, cIdx).value = insumo.label;
+    ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor };
+    ws.getCell(rowCursor, cIdx).font = { color: { argb: 'FFFFFFFF' }, bold: true };
+    ws.getCell(rowCursor, cIdx).border = borderAll;
+
+    let rowTotal = 0;
+    cIdx++;
 
     arrClues.forEach(clues => {
-      ws.getCell(headerRowIdx, colIndex).value = `${clues} - ${mapUnidades[clues]}`;
-      ws.getCell(headerRowIdx, colIndex).fill = headerFill;
-      ws.getCell(headerRowIdx, colIndex).font = fontWhite;
-      ws.getCell(headerRowIdx, colIndex).alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-      ws.getCell(headerRowIdx, colIndex).border = borderAll;
-      ws.getColumn(colIndex).width = 20;
+      let val = 0;
+      const matchingRecords = data.filter(d => d.clues === clues);
 
-      if (tipo === "BIO") {
-        ws.getCell(4, colIndex).value = "PEDIDO";
-        ws.getCell(4, colIndex).font = { bold: true };
-        ws.getCell(4, colIndex).alignment = { horizontal: 'center' };
-        ws.getCell(4, colIndex).border = borderAll;
+      if (tipo === "CONS") {
+        matchingRecords.forEach(d => { val += Number(d[insumo.key] || 0); });
+      } else if (tipo === "SR") {
+        // Acceso directo a la columna del biológico en la tabla ancha (biologicos_existencia)
+        matchingRecords.forEach(d => { val += Number(d[insumo.key] || 0); });
+      } else {
+        // Filtrado por nombre en la tabla larga (biologicos_pedido)
+        matchingRecords.filter(d => String(d.biologico).toUpperCase() === String(insumo.label).toUpperCase())
+          .forEach(d => { val += Number(d.frascos || d.solicitud || 0); });
       }
-      colIndex++;
+
+      rowTotal += val;
+      ws.getCell(rowCursor, cIdx).value = val || '';
+      ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '40' + insumo.color } };
+      ws.getCell(rowCursor, cIdx).border = borderAll;
+      ws.getCell(rowCursor, cIdx).alignment = { horizontal: 'center' };
+      cIdx++;
     });
 
     if (tipo !== "CONS") {
-      ws.getCell(headerRowIdx, colIndex).value = "TOTAL";
-      ws.getCell(headerRowIdx, colIndex).fill = headerFill;
-      ws.getCell(headerRowIdx, colIndex).font = fontWhite;
-      ws.getCell(headerRowIdx, colIndex).alignment = { vertical: 'middle', horizontal: 'center' };
-      ws.getCell(headerRowIdx, colIndex).border = borderAll;
-      colIndex++;
-    }
-
-    ws.getColumn(1).width = 30;
-    headerRow.height = 40;
-
-    let rowCursor = tipo === "BIO" ? 5 : 4;
-
-    insumos.forEach(insumo => {
-      let cIdx = 1;
-      const fgColor = { argb: 'FF' + insumo.color.replace('#', '') };
-
-      ws.getCell(rowCursor, cIdx).value = insumo.label;
-      ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor };
-      ws.getCell(rowCursor, cIdx).font = { color: { argb: 'FFFFFFFF' }, bold: true };
+      ws.getCell(rowCursor, cIdx).value = rowTotal || '';
       ws.getCell(rowCursor, cIdx).border = borderAll;
+      ws.getCell(rowCursor, cIdx).alignment = { horizontal: 'center', vertical: 'middle' };
+      ws.getCell(rowCursor, cIdx).font = { bold: true };
+    }
+    rowCursor++;
+  });
 
-      let rowTotal = 0;
-      cIdx++;
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/octet-stream' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Reporte_${tipo}_${fIni}.xlsx`;
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
 
-      arrClues.forEach(clues => {
-        let val = 0;
-        const matchingRecords = data.filter(d => d.clues === clues);
-
-        if (tipo === "CONS") {
-          matchingRecords.forEach(d => { val += Number(d[insumo.key] || 0); });
-        } else if (tipo === "SR") {
-          // Acceso directo a la columna del biológico en la tabla ancha (biologicos_existencia)
-          matchingRecords.forEach(d => { val += Number(d[insumo.key] || 0); });
-        } else {
-          // Filtrado por nombre en la tabla larga (biologicos_pedido)
-          matchingRecords.filter(d => String(d.biologico).toUpperCase() === String(insumo.label).toUpperCase())
-            .forEach(d => { val += Number(d.frascos || d.solicitud || 0); });
-        }
-
-        rowTotal += val;
-        ws.getCell(rowCursor, cIdx).value = val || '';
-        ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '40' + insumo.color } };
-        ws.getCell(rowCursor, cIdx).border = borderAll;
-        ws.getCell(rowCursor, cIdx).alignment = { horizontal: 'center' };
-        cIdx++;
-      });
-
-      if (tipo !== "CONS") {
-        ws.getCell(rowCursor, cIdx).value = rowTotal || '';
-        ws.getCell(rowCursor, cIdx).border = borderAll;
-        ws.getCell(rowCursor, cIdx).alignment = { horizontal: 'center', vertical: 'middle' };
-        ws.getCell(rowCursor, cIdx).font = { bold: true };
-      }
-      rowCursor++;
-    });
-
-    const buffer = await wb.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/octet-stream' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Reporte_${tipo}_${fIni}.xlsx`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-  }
-
-  // --- PANEL ADMINISTRATIVO (LOGICA MODULAR) ---
-  window.activateAdminSubPanel = function (panelId) {
-    // 1. Alternar Clases de Pestañas
-    document.querySelectorAll(".nav-tab-admin").forEach(btn => {
-      const isTarget = btn.id === "tabAdmin" + panelId.charAt(0).toUpperCase() + panelId.slice(1);
+// --- PANEL ADMINISTRATIVO (LOGICA MODULAR) ---
+window.activateAdminSubPanel = function (panelId) {
+  // 1. Alternar Clases de Pestañas (Premium)
+  const container = document.querySelector('#panelAdminSecurityTabs .nav-container');
+  if (container) {
+    container.querySelectorAll(".nav-tab").forEach(btn => {
+      const isTarget = btn.id.toLowerCase().includes(panelId.toLowerCase());
       btn.classList.toggle("active", isTarget);
     });
+    syncTabGroupIndicator('#panelAdminSecurityTabs .nav-container');
+  }
 
-    // 2. Alternar Visibilidad de Paneles
-    document.querySelectorAll(".admin-sub-panel").forEach(p => {
-      const isTarget = p.id === "adminSection_" + panelId;
-      p.classList.toggle("hide", !isTarget);
-    });
+  // 2. Alternar Visibilidad de Paneles
+  document.querySelectorAll(".admin-sub-panel").forEach(p => {
+    const isTarget = p.id === "adminSection_" + panelId;
+    p.classList.toggle("hide", !isTarget);
+    p.style.display = isTarget ? "block" : "none";
+  });
 
-    // 3. Carga Automática según el Panel
-    if (panelId === 'seguridad') refreshUsers();
-    if (panelId === 'aperturas') loadConsumiblesOverrideAdmin();
-    if (panelId === 'catalogo') refreshBulkBioSetup();
+  // 3. Carga Automática según el Panel
+  if (panelId === 'seguridad') refreshUsers();
+  if (panelId === 'aperturas') loadConsumiblesOverrideAdmin();
+  if (panelId === 'catalogo') refreshBulkBioSetup();
+};
+
+const rBtn = $("btnRefreshUsers");
+if (rBtn) {
+  rBtn.onclick = () => {
+    const activeSub = document.querySelector(".nav-tab-admin.active")?.id;
+    if (activeSub === 'tabAdminSeguridad') refreshUsers();
+    else if (activeSub === 'tabAdminAperturas') loadConsumiblesOverrideAdmin();
+    else if (activeSub === 'tabAdminCatalogo') refreshBulkBioSetup();
+    else refreshUsers();
   };
+}
 
-  const rBtn = $("btnRefreshUsers");
-  if (rBtn) {
-    rBtn.onclick = () => {
-      const activeSub = document.querySelector(".nav-tab-admin.active")?.id;
-      if (activeSub === 'tabAdminSeguridad') refreshUsers();
-      else if (activeSub === 'tabAdminAperturas') loadConsumiblesOverrideAdmin();
-      else if (activeSub === 'tabAdminCatalogo') refreshBulkBioSetup();
-      else refreshUsers();
-    };
-  }
+// --- Lógica del Modal "Alta de Usuario" ---
+const btnCreateUser = $("btnSubmitCreateUser");
+if (btnCreateUser) {
+  btnCreateUser.onclick = async () => {
+    const email = $("createEmail")?.value.trim();
+    const usuarioID = $("createUsuarioID")?.value.trim();
+    const rol = $("createRol")?.value;
+    const unidad = $("createUnidad")?.value;
+    const clues = $("createClues")?.value.trim() || "";
+    const municipio = $("createMunicipio")?.value;
 
-  const pBtn = $("btnRefreshPinol");
-  if (pBtn) pBtn.onclick = () => refreshPinol();
-
-  // Link Save Biological Calendar
-  $("btnSaveBioOverride")?.addEventListener("click", saveBioOverride);
-  if ($("pinolFiltroEstatus")) {
-    $("pinolFiltroEstatus").addEventListener("change", () => refreshPinol());
-  }
-
-  async function loadConsumiblesOverrideAdmin() {
-    if (!USER || USER.rol !== "ADMIN") return;
-
-    try {
-      const r = await apiCall({ action: "adminGetConsumiblesOverride" });
-      if (!r || !r.ok) {
-        if ($("consOverrideStateTxt")) $("consOverrideStateTxt").textContent = "REGLA ESTÁNDAR";
-        return;
-      }
-
-      const data = r.data || {};
-      if ($("consOverrideDate")) $("consOverrideDate").value = data.fecha || "";
-      if ($("consOverrideReason")) $("consOverrideReason").value = data.motivo || "";
-      if ($("consOverrideStateTxt")) {
-        $("consOverrideStateTxt").textContent = data.fecha ? "ACTIVA: " + formatDateMx(data.fecha) : "REGLA ESTÁNDAR";
-      }
-    } catch (e) {
-      console.error("loadConsumiblesOverrideAdmin error:", e);
-    }
-  }
-
-  async function refreshConsumiblesStatusUi() {
-    const st = await unitStatus();
-    if (!st) return;
-
-    STATUS = st;
-
-    if ($("dayTxt")) {
-      $("dayTxt").textContent = formatDayBadgeMx(STATUS.today);
-    }
-
-    if ($("tabCONS")) {
-      const can = !!(STATUS && STATUS.canCaptureConsumibles);
-      $("tabCONS").disabled = !can;
-      $("tabCONS").title = can ? (STATUS.consumiblesReason || "Abierto") : "Cerrado: Solo jueves o por apertura extraordinaria";
-
-      // Mostrar leyenda de motivo si está abierto
-      if (can && (STATUS.consumiblesReason && !STATUS.consumiblesReason.includes("Jueves"))) {
-        showToast(STATUS.consumiblesReason, true, "info");
-      }
-    }
-
-    if ($("tabBIO")) {
-      const can = !!(STATUS && STATUS.canCaptureBio);
-      $("tabBIO").title = can ? (STATUS.bioReason || "Abierto") : "Cerrado: Solo jueves/viernes o ventana mensual";
-    }
-
-    paintStatusChips(STATUS);
-  }
-
-  $("btnSaveConsOverride").onclick = async () => {
-    if (isBtnBusy("btnSaveConsOverride")) return;
-
-    const fecha = $("consOverrideDate").value;
-    const motivo = $("consOverrideReason").value;
-
-    if (!fecha) {
-      showToast("Selecciona una fecha de apertura", false, "warn");
+    if (!email || !usuarioID || !rol) {
+      showToast("El correo de acceso, el ID de usuario y el rol son obligatorios", false);
       return;
     }
 
-    setBtnBusy("btnSaveConsOverride", true, "Guardando...");
-    showOverlay("Configurando apertura extraordinaria...", "Administración");
+    setBtnBusy("btnSubmitCreateUser", true);
+    showOverlay("Creando usuario e inicializando sesión...", "Administración");
 
     try {
-      const r = await apiCall({
-        action: "adminSetConsumiblesOverride",
-        fecha,
-        motivo,
-        enabled: "SI"
-      });
+      const payload = {
+        action: "admincreateuser",
+        email: email,       // Credencial Supabase Auth
+        usuario: usuarioID, // Identificador interno en tablas
+        rol: rol,
+        unidad: unidad,
+        clues: clues,
+        municipio: municipio
+      };
 
-      if (!r || !r.ok) {
-        showToast(r?.error || "No se pudo guardar la apertura", false);
-        return;
+      const res = await apiCall(payload);
+      if (res && res.ok) {
+        showToast(res.message || "Usuario dado de alta exitosamente", true);
+        document.getElementById('createUserModal').classList.remove('show');
+        // Limpiar formulario
+        if ($("createEmail")) $("createEmail").value = "";
+        if ($("createUsuarioID")) $("createUsuarioID").value = "";
+        if ($("createRol")) $("createRol").value = "";
+        if ($("createUnidad")) {
+          $("createUnidad").innerHTML = '<option value="">Selecciona la Unidad</option>';
+          $("createUnidad").value = "";
+        }
+        if ($("createClues")) $("createClues").value = "";
+        if ($("createMunicipio")) $("createMunicipio").value = "";
+        await refreshUsers();
+      } else {
+        showToast(res.error || "Hubo un error al crear el usuario", false);
       }
-
-      showToast("Apertura extraordinaria habilitada con éxito", true);
-      await loadConsumiblesOverrideAdmin();
-      await refreshConsumiblesStatusUi();
-    } catch (e) {
-      console.error("btnSaveConsOverride error:", e);
-      showToast("Error al guardar apertura extraordinaria", false);
+    } catch (err) {
+      showToast(err.message || "Error de conexión", false);
+      console.error(err);
     } finally {
-      setBtnBusy("btnSaveConsOverride", false);
+      setBtnBusy("btnSubmitCreateUser", false);
       hideOverlay();
     }
   };
+}
 
-  $("btnClearConsOverride").onclick = async () => {
-    if (isBtnBusy("btnClearConsOverride")) return;
-    if (!confirm("¿Deseas desactivar la apertura extraordinaria de consumibles?")) return;
+// Lógica dinámica para el formulario (Cascada y Auto-completado)
+const createRol = $("createRol");
+const createUnidad = $("createUnidad");
+const createClues = $("createClues");
+const createMunicipio = $("createMunicipio");
+const createUsuarioID = $("createUsuarioID");
 
-    setBtnBusy("btnClearConsOverride", true, "Limpiando...");
-    try {
-      const r = await apiCall({
-        action: "adminSetConsumiblesOverride",
-        enabled: "NO"
-      });
+if (createRol && createUnidad && createClues && createMunicipio) {
+  createRol.addEventListener("change", () => {
+    const val = createRol.value;
 
-      if (!r || !r.ok) throw new Error(r?.error || "Error al desactivar");
+    // Reset
+    createUnidad.disabled = false;
+    createMunicipio.disabled = false;
+    createClues.value = "";
+    createUnidad.innerHTML = '<option value="">Selecciona la Unidad</option>';
 
-      showToast("Apertura extraordinaria desactivada");
-      $("consOverrideDate").value = "";
-      $("consOverrideReason").value = "";
-      await loadConsumiblesOverrideAdmin();
-      await refreshConsumiblesStatusUi();
-    } catch (e) {
-      console.error("btnClearConsOverride error:", e);
-      showToast("Error al desactivar", false);
-    } finally {
-      setBtnBusy("btnClearConsOverride", false);
+    if (val === "JURISDICCIONAL" || val === "MUNICIPAL") {
+      createUnidad.innerHTML = '<option value="OFICINAS DE LA JURISDICCIÓN SANITARIA 1">OFICINAS DE LA JURISDICCIÓN SANITARIA 1</option>';
+      createUnidad.value = "OFICINAS DE LA JURISDICCIÓN SANITARIA 1";
+      createClues.value = "QTSSA012154";
+      createUnidad.disabled = true;
+
+      if (val === "JURISDICCIONAL") {
+        createMunicipio.value = "";
+        createMunicipio.disabled = true;
+        createUsuarioID.value = "QTSSA012154_JURISDICCIONAL";
+      } else {
+        // MUNICIPAL: Permite elegir municipio pero bloquea unidad
+        createMunicipio.disabled = false;
+        createMunicipio.value = "";
+        createUsuarioID.value = "";
+      }
+    } else if (val === "UNIDAD") {
+      createUnidad.value = "";
+      createClues.value = "";
+      createMunicipio.value = "";
+      createUnidad.disabled = false;
+      createMunicipio.disabled = false;
+      createUsuarioID.value = "";
     }
-  };
+  });
 
+  createMunicipio.addEventListener("change", async () => {
+    const rol = createRol.value;
+    const mun = createMunicipio.value;
 
-  async function refreshUsers() {
-    if (!USER || USER.rol !== "ADMIN") return;
-
-    try {
-      const r = await smartLoader(
-        () => apiCall({ action: "adminListUsers", token: TOKEN }),
-        {
-          delay: 140,
-          message: "Cargando usuarios…",
-          title: "Usuarios"
-        }
-      );
-      if (!r || !r.ok) {
-        showToast((r && r.error) ? r.error : "No se pudo cargar", false);
-        return;
+    if (rol === "UNIDAD" || rol === "MUNICIPAL") {
+      // Asegurar que el catálogo esté cargado
+      let catalog = (typeof NOTIF_UNIT_CATALOG !== "undefined") ? NOTIF_UNIT_CATALOG : [];
+      if (catalog.length === 0 && typeof loadNotifUnitCatalog === "function") {
+        catalog = await loadNotifUnitCatalog();
       }
 
-      const users = r.data || [];
-      if ($("usersCount")) $("usersCount").textContent = `${users.length} usuario(s)`;
+      const norm = (str) => String(str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+      const munNorm = norm(mun);
 
-      const tbody = $("usersTbody");
-      if (!tbody) throw new Error("No existe #usersTbody");
-
-      tbody.innerHTML = "";
-
-      if (users.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="muted">Sin usuarios</td></tr>`;
-        return;
+      if (rol === "UNIDAD") {
+        const filtered = catalog.filter(x => norm(x.municipio || x.MUNICIPIO || "") === munNorm);
+        let html = '<option value="">Selecciona la Unidad</option>';
+        filtered.forEach(u => {
+          const name = u.unidad || u.UNIDAD || u.nombre || "";
+          html += `<option value="${name}">${name}</option>`;
+        });
+        createUnidad.innerHTML = html;
+        createUnidad.value = "";
+        createClues.value = "";
       }
 
-      for (const u of users) {
-        const tr = document.createElement("tr");
-        tr.className = "hover:bg-primary/5 transition-colors group border-b border-outline-variant/30";
+      if (rol === "MUNICIPAL") {
+        createUsuarioID.value = `QTSSA012154_${munNorm.replace(/\s+/g, '_')}`;
+      }
+    }
+  });
 
-        const isActivo = u.activo === "SI";
-        const roleClass = u.rol === "ADMIN" ? "bg-primary/10 text-primary border-primary/20" : "bg-slate-100 text-slate-600 border-slate-200";
-        const statusClass = isActivo ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700";
+  createUnidad.addEventListener("change", async () => {
+    const rol = createRol.value;
+    if (rol !== "UNIDAD") return;
 
-        tr.innerHTML = `
+    const val = createUnidad.value;
+    const mun = createMunicipio.value;
+
+    let catalog = (typeof NOTIF_UNIT_CATALOG !== "undefined") ? NOTIF_UNIT_CATALOG : [];
+    const norm = (str) => String(str || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+    const munNorm = norm(mun);
+    const valNorm = norm(val);
+
+    const match = catalog.find(x => {
+      const itemMun = norm(x.municipio || x.MUNICIPIO || "");
+      const itemUni = norm(x.unidad || x.UNIDAD || x.nombre || "");
+      return itemMun === munNorm && itemUni === valNorm;
+    });
+
+    if (match) {
+      const clues = match.clues || match.CLUES || "";
+      const unitName = match.unidad || match.UNIDAD || match.nombre || "";
+      createClues.value = clues;
+      // Generar ID con CLUES + NOMBRE DE UNIDAD (normalizado)
+      const unitID = norm(unitName).replace(/\s+/g, '_');
+      createUsuarioID.value = `${clues}_${unitID}`;
+    }
+  });
+}
+
+const pBtn = $("btnRefreshPinol");
+if (pBtn) pBtn.onclick = () => refreshPinol();
+
+// Link Save Biological Calendar
+$("btnSaveBioOverride")?.addEventListener("click", saveBioOverride);
+if ($("pinolFiltroEstatus")) {
+  $("pinolFiltroEstatus").addEventListener("change", () => refreshPinol());
+}
+
+async function loadConsumiblesOverrideAdmin() {
+  if (!USER || USER.rol !== "ADMIN") return;
+
+  try {
+    const r = await apiCall({ action: "adminGetConsumiblesOverride" });
+    if (!r || !r.ok) {
+      if ($("consOverrideStateTxt")) $("consOverrideStateTxt").textContent = "REGLA ESTÁNDAR";
+      return;
+    }
+
+    const data = r.data || {};
+    if ($("consOverrideDate")) $("consOverrideDate").value = data.fecha || "";
+    if ($("consOverrideReason")) $("consOverrideReason").value = data.motivo || "";
+    if ($("consOverrideStateTxt")) {
+      $("consOverrideStateTxt").textContent = data.fecha ? "ACTIVA: " + formatDateMx(data.fecha) : "REGLA ESTÁNDAR";
+    }
+  } catch (e) {
+    console.error("loadConsumiblesOverrideAdmin error:", e);
+  }
+}
+
+async function refreshConsumiblesStatusUi() {
+  const st = await unitStatus();
+  if (!st) return;
+
+  STATUS = st;
+
+  if ($("dayTxt")) {
+    $("dayTxt").textContent = formatDayBadgeMx(STATUS.today);
+  }
+
+  if ($("tabCONS")) {
+    const can = !!(STATUS && STATUS.canCaptureConsumibles);
+    $("tabCONS").disabled = !can;
+    $("tabCONS").title = can ? (STATUS.consumiblesReason || "Abierto") : "Cerrado: Solo jueves o por apertura extraordinaria";
+
+    // Mostrar leyenda de motivo si está abierto
+    if (can && (STATUS.consumiblesReason && !STATUS.consumiblesReason.includes("Jueves"))) {
+      showToast(STATUS.consumiblesReason, true, "info");
+    }
+  }
+
+  if ($("tabBIO")) {
+    const can = !!(STATUS && STATUS.canCaptureBio);
+    $("tabBIO").title = can ? (STATUS.bioReason || "Abierto") : "Cerrado: Solo jueves/viernes o ventana mensual";
+  }
+
+  paintStatusChips(STATUS);
+}
+
+$("btnSaveConsOverride").onclick = async () => {
+  if (isBtnBusy("btnSaveConsOverride")) return;
+
+  const fecha = $("consOverrideDate").value;
+  const motivo = $("consOverrideReason").value;
+
+  if (!fecha) {
+    showToast("Selecciona una fecha de apertura", false, "warn");
+    return;
+  }
+
+  setBtnBusy("btnSaveConsOverride", true, "Guardando...");
+  showOverlay("Configurando apertura extraordinaria...", "Administración");
+
+  try {
+    const r = await apiCall({
+      action: "adminSetConsumiblesOverride",
+      fecha,
+      motivo,
+      enabled: "SI"
+    });
+
+    if (!r || !r.ok) {
+      showToast(r?.error || "No se pudo guardar la apertura", false);
+      return;
+    }
+
+    showToast("Apertura extraordinaria habilitada con éxito", true);
+    await loadConsumiblesOverrideAdmin();
+    await refreshConsumiblesStatusUi();
+  } catch (e) {
+    console.error("btnSaveConsOverride error:", e);
+    showToast("Error al guardar apertura extraordinaria", false);
+  } finally {
+    setBtnBusy("btnSaveConsOverride", false);
+    hideOverlay();
+  }
+};
+
+$("btnClearConsOverride").onclick = async () => {
+  if (isBtnBusy("btnClearConsOverride")) return;
+  if (!confirm("¿Deseas desactivar la apertura extraordinaria de consumibles?")) return;
+
+  setBtnBusy("btnClearConsOverride", true, "Limpiando...");
+  try {
+    const r = await apiCall({
+      action: "adminSetConsumiblesOverride",
+      enabled: "NO"
+    });
+
+    if (!r || !r.ok) throw new Error(r?.error || "Error al desactivar");
+
+    showToast("Apertura extraordinaria desactivada");
+    $("consOverrideDate").value = "";
+    $("consOverrideReason").value = "";
+    await loadConsumiblesOverrideAdmin();
+    await refreshConsumiblesStatusUi();
+  } catch (e) {
+    console.error("btnClearConsOverride error:", e);
+    showToast("Error al desactivar", false);
+  } finally {
+    setBtnBusy("btnClearConsOverride", false);
+  }
+};
+
+
+async function refreshUsers() {
+  if (!USER || USER.rol !== "ADMIN") return;
+
+  // Asegurar que catálogos de apoyo estén cargados
+  loadNotifUnitCatalog().catch(console.error);
+  loadNotifUserCatalog().catch(console.error);
+
+  try {
+    const r = await smartLoader(
+      () => apiCall({ action: "adminListUsers", token: TOKEN }),
+      {
+        delay: 140,
+        message: "Cargando usuarios…",
+        title: "Usuarios"
+      }
+    );
+    if (!r || !r.ok) {
+      showToast((r && r.error) ? r.error : "No se pudo cargar", false);
+      return;
+    }
+
+    const users = r.data || [];
+    if ($("usersCount")) $("usersCount").textContent = `${users.length} usuario(s)`;
+
+    const tbody = $("usersTbody");
+    if (!tbody) throw new Error("No existe #usersTbody");
+
+    tbody.innerHTML = "";
+
+    if (users.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="muted">Sin usuarios</td></tr>`;
+      return;
+    }
+
+    for (const u of users) {
+      const tr = document.createElement("tr");
+      tr.className = "hover:bg-primary/5 transition-colors group border-b border-outline-variant/30";
+
+      const isActivo = u.activo === "SI";
+      const roleClass = u.rol === "ADMIN" ? "bg-primary/10 text-primary border-primary/20" : "bg-slate-100 text-slate-600 border-slate-200";
+      const statusClass = isActivo ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700";
+
+      tr.innerHTML = `
         <td class="px-6 py-5">
            <div class="flex flex-col">
               <span class="font-extrabold text-primary text-[14px]">${escapeHtml(u.usuario)}</span>
@@ -9407,348 +9747,348 @@ function activateMain(panel, target = null) {
         </td>
         <td class="px-6 py-5 text-right">
           <div class="flex items-center justify-end gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
-            <button class="w-8 h-8 rounded-xl bg-surface-variant flex items-center justify-center text-surface-on hover:bg-primary hover:text-white transition-all shadow-sm" data-action="reset" data-user="${escapeAttr(u.usuario)}" title="Nueva Contraseña">
+            <button class="adminActionBtn w-8 h-8 rounded-xl bg-surface-variant flex items-center justify-center text-surface-on hover:bg-primary hover:text-white transition-all shadow-sm" data-action="reset" data-user="${escapeAttr(u.usuario)}" title="Nueva Contraseña">
               <span class="material-symbols-rounded text-lg">key</span>
             </button>
-            <button class="w-8 h-8 rounded-xl ${isActivo ? 'bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white'} flex items-center justify-center transition-all shadow-sm" data-action="toggle" data-user="${escapeAttr(u.usuario)}" data-active="${escapeAttr(u.activo)}" title="${isActivo ? 'Bloquear Acceso' : 'Activar Acceso'}">
+            <button class="adminActionBtn w-8 h-8 rounded-xl ${isActivo ? 'bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white'} flex items-center justify-center transition-all shadow-sm" data-action="toggle" data-user="${escapeAttr(u.usuario)}" data-active="${escapeAttr(u.activo)}" title="${isActivo ? 'Bloquear Acceso' : 'Activar Acceso'}">
               <span class="material-symbols-rounded text-lg">${isActivo ? 'block' : 'check_circle'}</span>
             </button>
-            <button class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white flex items-center justify-center transition-all shadow-sm" data-action="delete" data-user="${escapeAttr(u.usuario)}" title="Eliminar definitivamente">
+            <button class="adminActionBtn w-8 h-8 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white flex items-center justify-center transition-all shadow-sm" data-action="delete" data-user="${escapeAttr(u.usuario)}" title="Eliminar definitivamente">
               <span class="material-symbols-rounded text-lg">delete</span>
             </button>
           </div>
         </td>`;
-        tbody.appendChild(tr);
-      }
-
-      // VINCULAR EVENTOS
-      document.querySelectorAll("#usersTbody .miniBtn").forEach(btn => {
-        btn.onclick = async () => {
-          const action = btn.dataset.action;
-          const targetUser = btn.dataset.user;
-          const currentActive = btn.dataset.active;
-
-          if (action === "delete" && !confirm(`¿Estás seguro de eliminar a ${targetUser}?`)) return;
-
-          try {
-            showOverlay("Procesando...", "Admin");
-            let r;
-            if (action === "toggle") {
-              const newActive = String(currentActive || "SI").toUpperCase() === "SI" ? "NO" : "SI";
-              r = await apiCall({ action: "adminToggleUser", usuario: targetUser, activo: newActive });
-            } else if (action === "reset") {
-              r = await apiCall({ action: "adminResetPassword", usuario: targetUser });
-            } else if (action === "delete") {
-              r = await apiCall({ action: "adminDeleteUser", usuario: targetUser });
-            }
-
-            if (r && r.ok) {
-              showToast(r.message || "Operación exitosa", true);
-              await refreshUsers();
-            } else {
-              showToast(r.error || "Error en la operación", false);
-            }
-          } catch (e) {
-            showToast("Error de conexión", false);
-          } finally {
-            hideOverlay();
-          }
-        };
-      });
-    } catch (e) {
-      console.error("refreshUsers error:", e);
+      tbody.appendChild(tr);
     }
+
+    // VINCULAR EVENTOS
+    document.querySelectorAll("#usersTbody .adminActionBtn").forEach(btn => {
+      btn.onclick = async () => {
+        const action = btn.dataset.action;
+        const targetUser = btn.dataset.user;
+        const currentActive = btn.dataset.active;
+
+        if (action === "delete" && !confirm(`¿Estás seguro de eliminar a ${targetUser}?`)) return;
+
+        try {
+          showOverlay("Procesando...", "Admin");
+          let r;
+          if (action === "toggle") {
+            const newActive = String(currentActive || "SI").toUpperCase() === "SI" ? "NO" : "SI";
+            r = await apiCall({ action: "adminToggleUser", usuario: targetUser, activo: newActive });
+          } else if (action === "reset") {
+            r = await apiCall({ action: "adminResetPassword", usuario: targetUser });
+          } else if (action === "delete") {
+            r = await apiCall({ action: "adminDeleteUser", usuario: targetUser });
+          }
+
+          if (r && r.ok) {
+            showToast(r.message || "Operación exitosa", true);
+            await refreshUsers();
+          } else {
+            showToast(r.error || "Error en la operación", false);
+          }
+        } catch (e) {
+          showToast("Error de conexión", false);
+        } finally {
+          hideOverlay();
+        }
+      };
+    });
+  } catch (e) {
+    console.error("refreshUsers error:", e);
   }
+}
 
 
-  async function listPinol(force = false) {
-    if (!TOKEN) throw new Error("Sin token de sesión");
+async function listPinol(force = false) {
+  if (!TOKEN) throw new Error("Sin token de sesión");
 
-    const cacheKey = buildCacheKey("PINOL_LIST", "BASE");
+  const cacheKey = buildCacheKey("PINOL_LIST", "BASE");
 
-    const data = force
-      ? await (async () => {
+  const data = force
+    ? await (async () => {
+      const r = await apiCall({ action: "listPinol", token: TOKEN });
+
+      if (!r) throw new Error("Respuesta vacía del servidor");
+      if (!r.ok) throw new Error(r.error || "No se pudo consultar PINOL");
+
+      return Array.isArray(r.data) ? r.data : [];
+    })()
+    : await getCachedOrFetch({
+      key: cacheKey,
+      ttl: CACHE_TTL.PINOL_LIST,
+      fetcher: async () => {
         const r = await apiCall({ action: "listPinol", token: TOKEN });
 
         if (!r) throw new Error("Respuesta vacía del servidor");
         if (!r.ok) throw new Error(r.error || "No se pudo consultar PINOL");
 
         return Array.isArray(r.data) ? r.data : [];
-      })()
-      : await getCachedOrFetch({
-        key: cacheKey,
-        ttl: CACHE_TTL.PINOL_LIST,
-        fetcher: async () => {
-          const r = await apiCall({ action: "listPinol", token: TOKEN });
+      },
+      shouldCache: (data) => Array.isArray(data)
+    });
 
-          if (!r) throw new Error("Respuesta vacía del servidor");
-          if (!r.ok) throw new Error(r.error || "No se pudo consultar PINOL");
+  return Array.isArray(data) ? data : [];
+}
 
-          return Array.isArray(r.data) ? r.data : [];
-        },
-        shouldCache: (data) => Array.isArray(data)
-      });
+function openPinolEntregaModal(item) {
+  PINOL_ENTREGA_CTX = item || null;
 
-    return Array.isArray(data) ? data : [];
-  }
+  $("pinolEntregaMetaMunicipio").textContent = item?.municipio || "—";
+  $("pinolEntregaMetaClues").textContent = item?.clues || "—";
+  $("pinolEntregaMetaUnidad").textContent = item?.unidad || "—";
+  $("pinolEntregaComentario").value = "";
 
-  function openPinolEntregaModal(item) {
-    PINOL_ENTREGA_CTX = item || null;
+  $("pinolEntregaModal")?.classList.add("show");
 
-    $("pinolEntregaMetaMunicipio").textContent = item?.municipio || "—";
-    $("pinolEntregaMetaClues").textContent = item?.clues || "—";
-    $("pinolEntregaMetaUnidad").textContent = item?.unidad || "—";
-    $("pinolEntregaComentario").value = "";
+  setTimeout(() => {
+    $("pinolEntregaComentario")?.focus();
+  }, 30);
+}
 
-    $("pinolEntregaModal")?.classList.add("show");
+function closePinolEntregaModal() {
+  PINOL_ENTREGA_CTX = null;
+  $("pinolEntregaComentario").value = "";
+  $("pinolEntregaModal")?.classList.remove("show");
+}
 
-    setTimeout(() => {
-      $("pinolEntregaComentario")?.focus();
-    }, 30);
-  }
-
-  function closePinolEntregaModal() {
-    PINOL_ENTREGA_CTX = null;
-    $("pinolEntregaComentario").value = "";
-    $("pinolEntregaModal")?.classList.remove("show");
-  }
-
-  async function confirmPinolDeliveredFromModal() {
-    const item = PINOL_ENTREGA_CTX;
-    if (!item?.id) {
-      showToast("No se encontró la solicitud de pinol", false);
-      closePinolEntregaModal();
-      return;
-    }
-
-    const comentario = String($("pinolEntregaComentario")?.value || "").trim();
-
+async function confirmPinolDeliveredFromModal() {
+  const item = PINOL_ENTREGA_CTX;
+  if (!item?.id) {
+    showToast("No se encontró la solicitud de pinol", false);
     closePinolEntregaModal();
-    showOverlay("Marcando solicitud como entregada…", "Pinol");
-
-    await markPinolDelivered(item.id, comentario);
+    return;
   }
 
-  async function markPinolDelivered(id, comentario = "") {
-    try {
-      const r = await apiCall({
-        action: "markPinolDelivered",
-        token: TOKEN,
-        id,
-        comentario_notificacion: String(comentario || "").trim()
-      });
+  const comentario = String($("pinolEntregaComentario")?.value || "").trim();
 
-      if (!r || !r.ok) {
-        showToast((r && r.error) ? r.error : "No se pudo marcar como entregada", false);
-        return;
-      }
+  closePinolEntregaModal();
+  showOverlay("Marcando solicitud como entregada…", "Pinol");
 
-      showToast("Solicitud marcada como entregada");
-      pushLiveEvent(
-        "Pinol entregado",
-        "Se notificó a la unidad que su solicitud fue entregada.",
-        "good",
-        "panelPINOLADMIN",
-        { cooldownMs: 1400 }
-      );
+  await markPinolDelivered(item.id, comentario);
+}
 
-      await refreshAfterMutation({
-        touchPinol: true
-      });
+async function markPinolDelivered(id, comentario = "") {
+  try {
+    const r = await apiCall({
+      action: "markPinolDelivered",
+      token: TOKEN,
+      id,
+      comentario_notificacion: String(comentario || "").trim()
+    });
 
-      await loadNotifications({ silent: true });
-    } catch (e) {
-      console.error("markPinolDelivered error:", e);
-      showToast("Error al marcar solicitud como entregada", false);
-    } finally {
-      hideOverlay();
-    }
-  }
-
-  function updatePinolTabBadge(items) {
-    const badgeTab = $("pinolBadgeTab");
-    const badgeMain = $("pinolBadgeMain");
-    const tabPinol = $("tabOPS_PINOL");
-    const tabMain = $("tabCAP");
-
-    const pendientes = (items || []).filter(x =>
-      String(x.estatus || "PENDIENTE").toUpperCase() === "PENDIENTE"
-    ).length;
-
-    const hasPending = pendientes > 0;
-    const badgeText = pendientes > 99 ? "99+" : String(pendientes);
-
-    if (badgeTab) {
-      badgeTab.textContent = badgeText;
-      badgeTab.title = hasPending
-        ? `${pendientes} solicitud(es) de pinol pendiente(s)`
-        : "Sin solicitudes pendientes";
-      badgeTab.style.display = hasPending ? "inline-flex" : "none";
-      badgeTab.style.background = hasPending ? "#ef4444" : "#64748b";
-    }
-
-    if (badgeMain && USER && (USER.rol === "ADMIN" || USER.rol === "MUNICIPAL")) {
-      badgeMain.textContent = badgeText;
-      badgeMain.title = hasPending
-        ? `${pendientes} solicitud(es) de pinol pendiente(s)`
-        : "Sin solicitudes pendientes";
-      badgeMain.style.display = hasPending ? "inline-flex" : "none";
-      badgeMain.style.background = hasPending ? "#ef4444" : "#64748b";
-    } else if (badgeMain) {
-      badgeMain.style.display = "none";
-    }
-
-    if (tabPinol) {
-      tabPinol.classList.toggle("liveAccent", hasPending);
-      tabPinol.classList.toggle("notifHot", pendientes >= 5);
-      tabPinol.title = hasPending
-        ? `${pendientes} solicitud(es) pendiente(s) de pinol`
-        : "Pinol sin pendientes";
-    }
-
-    if (tabMain && USER && (USER.rol === "ADMIN" || USER.rol === "MUNICIPAL")) {
-      tabMain.classList.toggle("liveAccent", hasPending);
-      tabMain.classList.toggle("notifHot", pendientes >= 5);
-      tabMain.title = hasPending
-        ? `Captura / Operación con ${pendientes} pendiente(s) de pinol`
-        : "Captura / Operación";
-    } else if (tabMain) {
-      tabMain.classList.remove("liveAccent", "notifHot");
-      tabMain.title = "Captura";
-    }
-  }
-
-  async function refreshPinolBadgeOnly() {
-    if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL")) {
-      $("tabOPS_PINOL")?.classList.remove("liveAccent", "notifHot");
-      $("tabCAP")?.classList.remove("liveAccent", "notifHot");
-      if ($("pinolBadgeMain")) $("pinolBadgeMain").style.display = "none";
-      if ($("pinolBadgeTab")) $("pinolBadgeTab").style.display = "none";
+    if (!r || !r.ok) {
+      showToast((r && r.error) ? r.error : "No se pudo marcar como entregada", false);
       return;
     }
 
-    try {
-      const items = await listPinol(false);
-      updatePinolTabBadge(items);
-    } catch (e) {
-      console.error("No se pudo actualizar badge de pinol", e);
-    }
+    showToast("Solicitud marcada como entregada");
+    pushLiveEvent(
+      "Pinol entregado",
+      "Se notificó a la unidad que su solicitud fue entregada.",
+      "good",
+      "panelPINOLADMIN",
+      { cooldownMs: 1400 }
+    );
+
+    await refreshAfterMutation({
+      touchPinol: true
+    });
+
+    await loadNotifications({ silent: true });
+  } catch (e) {
+    console.error("markPinolDelivered error:", e);
+    showToast("Error al marcar solicitud como entregada", false);
+  } finally {
+    hideOverlay();
+  }
+}
+
+function updatePinolTabBadge(items) {
+  const badgeTab = $("pinolBadgeTab");
+  const badgeMain = $("pinolBadgeMain");
+  const tabPinol = $("tabOPS_PINOL");
+  const tabMain = $("tabCAP");
+
+  const pendientes = (items || []).filter(x =>
+    String(x.estatus || "PENDIENTE").toUpperCase() === "PENDIENTE"
+  ).length;
+
+  const hasPending = pendientes > 0;
+  const badgeText = pendientes > 99 ? "99+" : String(pendientes);
+
+  if (badgeTab) {
+    badgeTab.textContent = badgeText;
+    badgeTab.title = hasPending
+      ? `${pendientes} solicitud(es) de pinol pendiente(s)`
+      : "Sin solicitudes pendientes";
+    badgeTab.style.display = hasPending ? "inline-flex" : "none";
+    badgeTab.style.background = hasPending ? "#ef4444" : "#64748b";
   }
 
-  async function refreshPinol() {
-    if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL")) return;
+  if (badgeMain && USER && (USER.rol === "ADMIN" || USER.rol === "MUNICIPAL")) {
+    badgeMain.textContent = badgeText;
+    badgeMain.title = hasPending
+      ? `${pendientes} solicitud(es) de pinol pendiente(s)`
+      : "Sin solicitudes pendientes";
+    badgeMain.style.display = hasPending ? "inline-flex" : "none";
+    badgeMain.style.background = hasPending ? "#ef4444" : "#64748b";
+  } else if (badgeMain) {
+    badgeMain.style.display = "none";
+  }
 
-    try {
-      const items = await smartLoader(
-        () => listPinol(true),
-        {
-          delay: 220,
-          message: "Cargando solicitudes de pinol…",
-          title: "Pinol"
-        }
-      );
+  if (tabPinol) {
+    tabPinol.classList.toggle("liveAccent", hasPending);
+    tabPinol.classList.toggle("notifHot", pendientes >= 5);
+    tabPinol.title = hasPending
+      ? `${pendientes} solicitud(es) pendiente(s) de pinol`
+      : "Pinol sin pendientes";
+  }
 
-      const tbody = $("pinolTbody");
-      const filtroSel = $("pinolFiltroEstatus");
-      const totalEl = $("pinolTotal");
-      const pendientesEl = $("pinolPendientes");
-      const entregadasEl = $("pinolEntregadas");
-      const recibidasEl = $("pinolRecibidas");
-      const alertMsgEl = $("pinolAlertMsg");
+  if (tabMain && USER && (USER.rol === "ADMIN" || USER.rol === "MUNICIPAL")) {
+    tabMain.classList.toggle("liveAccent", hasPending);
+    tabMain.classList.toggle("notifHot", pendientes >= 5);
+    tabMain.title = hasPending
+      ? `Captura / Operación con ${pendientes} pendiente(s) de pinol`
+      : "Captura / Operación";
+  } else if (tabMain) {
+    tabMain.classList.remove("liveAccent", "notifHot");
+    tabMain.title = "Captura";
+  }
+}
 
-      if (!tbody) throw new Error("No existe #pinolTbody");
+async function refreshPinolBadgeOnly() {
+  if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL")) {
+    $("tabOPS_PINOL")?.classList.remove("liveAccent", "notifHot");
+    $("tabCAP")?.classList.remove("liveAccent", "notifHot");
+    if ($("pinolBadgeMain")) $("pinolBadgeMain").style.display = "none";
+    if ($("pinolBadgeTab")) $("pinolBadgeTab").style.display = "none";
+    return;
+  }
 
-      const filtro = filtroSel
-        ? String(filtroSel.value || "TODOS").toUpperCase()
-        : "TODOS";
+  try {
+    const items = await listPinol(false);
+    updatePinolTabBadge(items);
+  } catch (e) {
+    console.error("No se pudo actualizar badge de pinol", e);
+  }
+}
 
-      const safeItems = Array.isArray(items) ? items : [];
+async function refreshPinol() {
+  if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL")) return;
 
-      const total = safeItems.length;
-      const pendientes = safeItems.filter(x => String(x?.estatus_visual || x?.estatus || "PENDIENTE").toUpperCase() === "PENDIENTE");
-      const entregadas = safeItems.filter(x => String(x?.estatus_visual || x?.estatus || "").toUpperCase() === "ENTREGADO");
-      const recibidas = safeItems.filter(x => String(x?.estatus_visual || x?.estatus || "").toUpperCase() === "RECIBIDO");
-
-      updatePinolTabBadge(safeItems);
-
-      if (totalEl) totalEl.textContent = String(total);
-      if (pendientesEl) pendientesEl.textContent = String(pendientes.length);
-      if (entregadasEl) entregadasEl.textContent = String(entregadas.length);
-      if (recibidasEl) recibidasEl.textContent = String(recibidas.length);
-
-      // Semáforo automático
-      if ($("kpiCardPinolPendientes")) {
-        $("kpiCardPinolPendientes").className = "kpiCard " + (pendientes.length > 0 ? "warn" : "ok");
+  try {
+    const items = await smartLoader(
+      () => listPinol(true),
+      {
+        delay: 220,
+        message: "Cargando solicitudes de pinol…",
+        title: "Pinol"
       }
+    );
 
-      if (alertMsgEl) {
-        alertMsgEl.className = "hint pinolAlertBox " + (pendientes.length > 0 ? "warn" : "ok");
-        alertMsgEl.innerHTML = pendientes.length > 0
-          ? `⚠️ Hay <b>${pendientes.length}</b> solicitud(es) de pinol pendientes por atender.`
-          : `✅ No hay solicitudes pendientes de pinol. <span style="opacity:.9">Recibidas por unidad: <b>${recibidas.length}</b></span>`;
-      }
+    const tbody = $("pinolTbody");
+    const filtroSel = $("pinolFiltroEstatus");
+    const totalEl = $("pinolTotal");
+    const pendientesEl = $("pinolPendientes");
+    const entregadasEl = $("pinolEntregadas");
+    const recibidasEl = $("pinolRecibidas");
+    const alertMsgEl = $("pinolAlertMsg");
 
-      let filtered = safeItems.slice();
+    if (!tbody) throw new Error("No existe #pinolTbody");
 
-      if (filtro === "PENDIENTE") {
-        filtered = filtered.filter(x => String(x?.estatus_visual || x?.estatus || "PENDIENTE").toUpperCase() === "PENDIENTE");
-      } else if (filtro === "ENTREGADO") {
-        filtered = filtered.filter(x => String(x?.estatus_visual || x?.estatus || "").toUpperCase() === "ENTREGADO");
-      } else if (filtro === "RECIBIDO") {
-        filtered = filtered.filter(x => String(x?.estatus_visual || x?.estatus || "").toUpperCase() === "RECIBIDO");
-      }
+    const filtro = filtroSel
+      ? String(filtroSel.value || "TODOS").toUpperCase()
+      : "TODOS";
 
-      filtered.sort((a, b) => {
-        const ea = String(a?.estatus_visual || a?.estatus || "PENDIENTE").toUpperCase();
-        const eb = String(b?.estatus_visual || b?.estatus || "PENDIENTE").toUpperCase();
+    const safeItems = Array.isArray(items) ? items : [];
 
-        const order = {
-          "PENDIENTE": 1,
-          "ENTREGADO": 2,
-          "RECIBIDO": 3
-        };
+    const total = safeItems.length;
+    const pendientes = safeItems.filter(x => String(x?.estatus_visual || x?.estatus || "PENDIENTE").toUpperCase() === "PENDIENTE");
+    const entregadas = safeItems.filter(x => String(x?.estatus_visual || x?.estatus || "").toUpperCase() === "ENTREGADO");
+    const recibidas = safeItems.filter(x => String(x?.estatus_visual || x?.estatus || "").toUpperCase() === "RECIBIDO");
 
-        const oa = order[ea] || 99;
-        const ob = order[eb] || 99;
+    updatePinolTabBadge(safeItems);
 
-        if (oa !== ob) return oa - ob;
+    if (totalEl) totalEl.textContent = String(total);
+    if (pendientesEl) pendientesEl.textContent = String(pendientes.length);
+    if (entregadasEl) entregadasEl.textContent = String(entregadas.length);
+    if (recibidasEl) recibidasEl.textContent = String(recibidas.length);
 
-        return String(b?.fecha_solicitud || "").localeCompare(String(a?.fecha_solicitud || ""), "es");
-      });
+    // Semáforo automático
+    if ($("kpiCardPinolPendientes")) {
+      $("kpiCardPinolPendientes").className = "kpiCard " + (pendientes.length > 0 ? "warn" : "ok");
+    }
 
-      if (!filtered.length) {
-        tbody.innerHTML = `<tr><td colspan="12" class="muted">Sin solicitudes para ese filtro</td></tr>`;
-        return;
-      }
+    if (alertMsgEl) {
+      alertMsgEl.className = "hint pinolAlertBox " + (pendientes.length > 0 ? "warn" : "ok");
+      alertMsgEl.innerHTML = pendientes.length > 0
+        ? `⚠️ Hay <b>${pendientes.length}</b> solicitud(es) de pinol pendientes por atender.`
+        : `✅ No hay solicitudes pendientes de pinol. <span style="opacity:.9">Recibidas por unidad: <b>${recibidas.length}</b></span>`;
+    }
 
-      tbody.innerHTML = filtered.map(x => {
-        const estatus = String(x?.estatus_visual || x?.estatus || "").toUpperCase();
+    let filtered = safeItems.slice();
 
-        let estatusHtml = `
+    if (filtro === "PENDIENTE") {
+      filtered = filtered.filter(x => String(x?.estatus_visual || x?.estatus || "PENDIENTE").toUpperCase() === "PENDIENTE");
+    } else if (filtro === "ENTREGADO") {
+      filtered = filtered.filter(x => String(x?.estatus_visual || x?.estatus || "").toUpperCase() === "ENTREGADO");
+    } else if (filtro === "RECIBIDO") {
+      filtered = filtered.filter(x => String(x?.estatus_visual || x?.estatus || "").toUpperCase() === "RECIBIDO");
+    }
+
+    filtered.sort((a, b) => {
+      const ea = String(a?.estatus_visual || a?.estatus || "PENDIENTE").toUpperCase();
+      const eb = String(b?.estatus_visual || b?.estatus || "PENDIENTE").toUpperCase();
+
+      const order = {
+        "PENDIENTE": 1,
+        "ENTREGADO": 2,
+        "RECIBIDO": 3
+      };
+
+      const oa = order[ea] || 99;
+      const ob = order[eb] || 99;
+
+      if (oa !== ob) return oa - ob;
+
+      return String(b?.fecha_solicitud || "").localeCompare(String(a?.fecha_solicitud || ""), "es");
+    });
+
+    if (!filtered.length) {
+      tbody.innerHTML = `<tr><td colspan="12" class="muted">Sin solicitudes para ese filtro</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(x => {
+      const estatus = String(x?.estatus_visual || x?.estatus || "").toUpperCase();
+
+      let estatusHtml = `
   <span class="crystalStatus warn">
     <span class="material-symbols-rounded">schedule</span>
     <span>Pendiente</span>
   </span>
 `;
 
-        if (estatus === "ENTREGADO") {
-          estatusHtml = `
+      if (estatus === "ENTREGADO") {
+        estatusHtml = `
     <span class="crystalStatus info">
       <span class="material-symbols-rounded">local_shipping</span>
       <span>Entregado</span>
     </span>
   `;
-        }
+      }
 
-        if (estatus === "RECIBIDO") {
-          estatusHtml = `
+      if (estatus === "RECIBIDO") {
+        estatusHtml = `
     <span class="crystalStatus ok">
       <span class="material-symbols-rounded">task_alt</span>
       <span>Recibido</span>
     </span>
   `;
-        }
-        return `
+      }
+      return `
         <tr>
           <td>${escapeHtml(x?.fecha_solicitud || "")}</td>
           <td>${escapeHtml(x?.municipio || "")}</td>
@@ -9763,173 +10103,107 @@ function activateMain(panel, target = null) {
           <td>${estatusHtml}</td>
           <td>
             ${estatus === "PENDIENTE"
-            ? `<button class="miniBtn btnPinolDeliver" data-id="${escapeAttr(x?.id || "")}">
+          ? `<button class="miniBtn btnPinolDeliver" data-id="${escapeAttr(x?.id || "")}">
     <span class="material-symbols-rounded">local_shipping</span> Entregar
   </button>`
-            : `<span class="muted">—</span>`
-          }
+          : `<span class="muted">—</span>`
+        }
           </td>
         </tr>
       `;
-      }).join("");
+    }).join("");
 
 
-      document.querySelectorAll(".btnPinolDeliver").forEach(btn => {
-        btn.onclick = () => {
-          const id = btn.getAttribute("data-id");
-          if (!id) return;
+    document.querySelectorAll(".btnPinolDeliver").forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.getAttribute("data-id");
+        if (!id) return;
 
-          const item = Array.isArray(items)
-            ? items.find(x => String(x?.id || "") === String(id))
-            : null;
+        const item = Array.isArray(items)
+          ? items.find(x => String(x?.id || "") === String(id))
+          : null;
 
-          if (!item) {
-            showToast("No se encontró la solicitud seleccionada", false);
-            return;
-          }
+        if (!item) {
+          showToast("No se encontró la solicitud seleccionada", false);
+          return;
+        }
 
-          openPinolEntregaModal(item);
-        };
-      });
-
-    } catch (e) {
-      console.error("refreshPinol error:", e);
-      showToast("No se pudo cargar PINOL", false);
-    } finally {
-      hideOverlay();
-    }
-  }
-
-  const FACTS = [
-    { icon: "ac_unit", tag: "Cadena fría", title: "Termómetro visible", body: "El termómetro del refrigerador debe colocarse en la zona central para reflejar mejor la temperatura real de almacenamiento." },
-    { icon: "ac_unit", tag: "Cadena fría", title: "Puerta cerrada", body: "Abrir el refrigerador el menor tiempo posible ayuda a mantener estable la temperatura de los biológicos." },
-    { icon: "ac_unit", tag: "Cadena fría", title: "Separación adecuada", body: "Los biológicos deben almacenarse separados de bebidas, alimentos u otros materiales no relacionados." },
-    { icon: "ac_unit", tag: "Cadena fría", title: "Espacio entre frascos", body: "Dejar espacio entre las cajas permite que el aire frío circule correctamente dentro del refrigerador." },
-    { icon: "ac_unit", tag: "Cadena fría", title: "Control de energía", body: "Ante cortes eléctricos prolongados se debe activar el plan de contingencia para proteger los biológicos." },
-    { icon: "science", tag: "Frascos", title: "Revisión de caducidad", body: "Antes de preparar una vacuna verifica siempre la fecha de caducidad del frasco." },
-    { icon: "science", tag: "Frascos", title: "Lote visible", body: "Registrar el número de lote facilita la trazabilidad ante eventos o alertas sanitarias." },
-    { icon: "science", tag: "Frascos", title: "Diluyente correcto", body: "Cada vacuna debe reconstituirse únicamente con el diluyente específico del fabricante." },
-    { icon: "vaccines", tag: "Aplicación", title: "Dosis correcta", body: "La correcta técnica de carga en jeringa ayuda a evitar desperdicio de biológico." },
-    { icon: "vaccines", tag: "Aplicación", title: "Sitio de aplicación", body: "El sitio anatómico recomendado varía según la vacuna y la edad del paciente." },
-    { icon: "vaccines", tag: "Aplicación", title: "Intervalos adecuados", body: "Respetar los intervalos entre dosis garantiza una respuesta inmunológica adecuada." },
-    { icon: "vaccines", tag: "Aplicación", title: "Observación posterior", body: "Después de aplicar una vacuna se recomienda observar al paciente algunos minutos." },
-    { icon: "security", tag: "Seguridad", title: "Caja de punzocortantes", body: "Las agujas usadas deben desecharse inmediatamente en contenedores para punzocortantes." },
-    { icon: "security", tag: "Seguridad", title: "Higiene de manos", body: "La higiene de manos antes y después de cada aplicación reduce el riesgo de infecciones." },
-    { icon: "inventory_2", tag: "Inventario", title: "Control periódico", body: "Revisar inventarios frecuentemente ayuda a detectar pérdidas o faltantes a tiempo." },
-    { icon: "inventory_2", tag: "Inventario", title: "Evitar sobrestock", body: "Solicitar biológicos según consumo real ayuda a prevenir caducidades." },
-    { icon: "bar_chart", tag: "Planeación", title: "Población objetivo", body: "Los pedidos deben considerar el tamaño de la población objetivo de la unidad." },
-    { icon: "bar_chart", tag: "Planeación", title: "Factor de seguridad", body: "Agregar un pequeño margen de seguridad al pedido ayuda a prevenir desabasto." },
-    { icon: "edit_note", tag: "Registro", title: "Datos completos", body: "Un registro completo permite generar indicadores confiables para la toma de decisiones." },
-    { icon: "edit_note", tag: "Registro", title: "Consistencia", body: "Mantener el mismo criterio de captura facilita el análisis histórico de la información." },
-    { icon: "query_stats", tag: "Cobertura", title: "Seguimiento de esquemas", body: "El seguimiento oportuno ayuda a completar esquemas de vacunación en la población." },
-    { icon: "query_stats", tag: "Cobertura", title: "Identificación de rezagos", body: "Los reportes periódicos permiten detectar zonas con menor cobertura de vacunación." },
-    { icon: "settings", tag: "Operación", title: "Preparación diaria", body: "Revisar insumos y biológicos antes de iniciar actividades evita interrupciones durante la jornada." },
-    { icon: "settings", tag: "Operación", title: "Orden en refrigerador", body: "Mantener un orden claro facilita localizar rápidamente cada biológico." },
-    { icon: "settings", tag: "Operación", title: "Comunicación", body: "La coordinación entre unidad y jurisdicción mejora la distribución de biológicos." }
-  ];
-  let factIdx = Math.floor(Math.random() * FACTS.length);
-
-  function rotateFact() {
-    renderFact();
-  }
-
-  function renderFact() {
-    if (!FACTS || !FACTS.length) return;
-
-    const tagEl = $("factTag");
-    const titleEl = $("factTitle");
-    const bodyEl = $("factBody");
-    const iconEl = $("factIcon");
-
-    if (!tagEl || !titleEl || !bodyEl || !iconEl) return;
-
-    const f = FACTS[factIdx % FACTS.length];
-
-    const tagIconMap = {
-      "Cadena fría": "ac_unit",
-      "Frascos": "science",
-      "Inventario": "inventory_2",
-      "Planeación": "analytics",
-      "Registro": "edit_note",
-      "Cobertura": "query_stats",
-      "Operación": "settings"
-    };
-
-    const curIcon = tagIconMap[f.tag] || f.icon || "syringe";
-    tagEl.innerHTML = `<span class="material-symbols-rounded" style="font-size:18px; margin-right:8px;">${curIcon}</span>` + (f.tag || "");
-    titleEl.textContent = f.title || "";
-    bodyEl.textContent = f.body || "";
-    iconEl.textContent = f.icon || "syringe";
-
-    factIdx = (factIdx + 1) % FACTS.length;
-  }
-
-  function startFactsRotation() {
-    stopFactsRotation();
-    renderFact();
-
-    FACTS_TIMER = setInterval(() => {
-      if (document.hidden) return;
-      renderFact();
-    }, 9000);
-  }
-
-  function stopFactsRotation() {
-    if (FACTS_TIMER) {
-      clearInterval(FACTS_TIMER);
-      FACTS_TIMER = null;
-    }
-  }
-
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && !FACTS_TIMER) {
-      startFactsRotation();
-    }
-  });
-
-  // Arranque unificado activo.
-
-  async function getEditLog(fecha, tipo) {
-    if (!TOKEN) return [];
-
-    const r = await apiCall({
-      action: "getEditLog",
-      token: TOKEN,
-      fecha: fecha || "",
-      tipo: tipo || "TODOS"
+        openPinolEntregaModal(item);
+      };
     });
 
-    if (!r || !r.ok) return [];
-    return Array.isArray(r.data) ? r.data : [];
+  } catch (e) {
+    console.error("refreshPinol error:", e);
+    showToast("No se pudo cargar PINOL", false);
+  } finally {
+    hideOverlay();
   }
+}
 
-  async function refreshEditLog() {
-    if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL" && USER.rol !== "JURISDICCIONAL")) return;
 
-    showOverlay("Cargando historial de ediciones…");
-    try {
-      const fecha = $("editLogFecha") ? $("editLogFecha").value : "";
-      const tipo = $("editLogTipo") ? $("editLogTipo").value : "TODOS";
-
-      const items = await getEditLog(fecha, tipo);
-      renderEditLog(items);
-    } catch (e) {
-      console.error("refreshEditLog error:", e);
-      showToast("Error al cargar historial de ediciones", false);
-    } finally {
-      hideOverlay();
-    }
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && !FACTS_TIMER) {
+    startFactsRotation();
   }
+});
 
-  async function getHistoryMetrics(fechaInicio, fechaFin, force = false) {
-    if (!TOKEN) return null;
+// Arranque unificado activo.
 
-    const inicio = fechaInicio || todayYmdLocal();
-    const fin = fechaFin || todayYmdLocal();
-    const cacheKey = buildCacheKey("HISTORY_METRICS", `${inicio}::${fin}`);
+async function getEditLog(fecha, tipo) {
+  if (!TOKEN) return [];
 
-    const data = force
-      ? await (async () => {
+  const r = await apiCall({
+    action: "getEditLog",
+    token: TOKEN,
+    fecha: fecha || "",
+    tipo: tipo || "TODOS"
+  });
+
+  if (!r || !r.ok) return [];
+  return Array.isArray(r.data) ? r.data : [];
+}
+
+async function refreshEditLog() {
+  if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL" && USER.rol !== "JURISDICCIONAL")) return;
+
+  showOverlay("Cargando historial de ediciones…");
+  try {
+    const fecha = $("editLogFecha") ? $("editLogFecha").value : "";
+    const tipo = $("editLogTipo") ? $("editLogTipo").value : "TODOS";
+
+    const items = await getEditLog(fecha, tipo);
+    renderEditLog(items);
+  } catch (e) {
+    console.error("refreshEditLog error:", e);
+    showToast("Error al cargar historial de ediciones", false);
+  } finally {
+    hideOverlay();
+  }
+}
+
+async function getHistoryMetrics(fechaInicio, fechaFin, force = false) {
+  if (!TOKEN) return null;
+
+  const inicio = fechaInicio || todayYmdLocal();
+  const fin = fechaFin || todayYmdLocal();
+  const cacheKey = buildCacheKey("HISTORY_METRICS", `${inicio}::${fin}`);
+
+  const data = force
+    ? await (async () => {
+      const r = await apiCall({
+        action: "historyMetrics",
+        token: TOKEN,
+        fechaInicio: inicio,
+        fechaFin: fin
+      });
+
+      if (!r || !r.ok) return null;
+      return r.data || null;
+    })()
+    : await getCachedOrFetch({
+      key: cacheKey,
+      ttl: CACHE_TTL.HISTORY_METRICS,
+      fetcher: async () => {
         const r = await apiCall({
           action: "historyMetrics",
           token: TOKEN,
@@ -9939,48 +10213,34 @@ function activateMain(panel, target = null) {
 
         if (!r || !r.ok) return null;
         return r.data || null;
-      })()
-      : await getCachedOrFetch({
-        key: cacheKey,
-        ttl: CACHE_TTL.HISTORY_METRICS,
-        fetcher: async () => {
-          const r = await apiCall({
-            action: "historyMetrics",
-            token: TOKEN,
-            fechaInicio: inicio,
-            fechaFin: fin
-          });
+      },
+      shouldCache: (data) => data != null
+    });
 
-          if (!r || !r.ok) return null;
-          return r.data || null;
-        },
-        shouldCache: (data) => data != null
-      });
+  return data || null;
+}
 
-    return data || null;
+function renderHistoryMetrics(data) {
+  const rows = data?.rows || [];
+  const tbody = $("historyTbody");
+
+  const avgBIO = rows.length ? Math.round(rows.reduce((a, b) => a + Number(b.bio_cumplimiento || 0), 0) / rows.length) : 0;
+  const avgCONS = rows.length ? Math.round(rows.reduce((a, b) => a + Number(b.cons_cumplimiento || 0), 0) / rows.length) : 0;
+
+  $("histTotalUnidades").textContent = rows.length;
+  $("histPromSR").textContent = `${avgBIO}%`;
+  $("histPromCONS").textContent = `${avgCONS}%`;
+
+  // Semáforo automático
+  if ($("kpiCardHistSR")) $("kpiCardHistSR").className = "kpiCard " + getComplianceTone(avgBIO);
+  if ($("kpiCardHistCONS")) $("kpiCardHistCONS").className = "kpiCard " + getComplianceTone(avgCONS);
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="11" class="muted">Sin datos para ese periodo</td></tr>`;
+    return;
   }
 
-  function renderHistoryMetrics(data) {
-    const rows = data?.rows || [];
-    const tbody = $("historyTbody");
-
-    const avgBIO = rows.length ? Math.round(rows.reduce((a, b) => a + Number(b.bio_cumplimiento || 0), 0) / rows.length) : 0;
-    const avgCONS = rows.length ? Math.round(rows.reduce((a, b) => a + Number(b.cons_cumplimiento || 0), 0) / rows.length) : 0;
-
-    $("histTotalUnidades").textContent = rows.length;
-    $("histPromSR").textContent = `${avgBIO}%`;
-    $("histPromCONS").textContent = `${avgCONS}%`;
-
-    // Semáforo automático
-    if ($("kpiCardHistSR")) $("kpiCardHistSR").className = "kpiCard " + getComplianceTone(avgBIO);
-    if ($("kpiCardHistCONS")) $("kpiCardHistCONS").className = "kpiCard " + getComplianceTone(avgCONS);
-
-    if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="11" class="muted">Sin datos para ese periodo</td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = rows.map(r => `
+  tbody.innerHTML = rows.map(r => `
     <tr>
       <td>${escapeHtml(r.municipio || "")}</td>
       <td>${escapeHtml(r.clues || "")}</td>
@@ -9996,23 +10256,23 @@ function activateMain(panel, target = null) {
     </tr>
   `).join("");
 
+}
+
+
+
+
+
+
+function renderEditLog(items) {
+  const tbody = $("editLogTbody");
+  if (!tbody) return;
+
+  if (!items || !items.length) {
+    tbody.innerHTML = `<tr><td colspan="8" class="muted">Sin ediciones para ese filtro</td></tr>`;
+    return;
   }
 
-
-
-
-
-
-  function renderEditLog(items) {
-    const tbody = $("editLogTbody");
-    if (!tbody) return;
-
-    if (!items || !items.length) {
-      tbody.innerHTML = `<tr><td colspan="8" class="muted">Sin ediciones para ese filtro</td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = items.map(x => `
+  tbody.innerHTML = items.map(x => `
     <tr>
       <td>${escapeHtml(x.fecha_reporte || "")}</td>
       <td>${escapeHtml(x.tipo || "")}</td>
@@ -10024,628 +10284,628 @@ function activateMain(panel, target = null) {
       <td>${escapeHtml(x.detalle || "")}</td>
     </tr>
   `).join("");
-  }
+}
 
-  async function watchPinolRealtime() {
-    if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL")) return;
-    if (LIVE_STATE.pinolWatching) return;
+async function watchPinolRealtime() {
+  if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL")) return;
+  if (LIVE_STATE.pinolWatching) return;
 
-    LIVE_STATE.pinolWatching = true;
+  LIVE_STATE.pinolWatching = true;
 
-    try {
-      const items = await listPinol(false);
-      const pendientes = (items || []).filter(x =>
-        String(x.estatus || "PENDIENTE").toUpperCase() === "PENDIENTE"
-      ).length;
+  try {
+    const items = await listPinol(false);
+    const pendientes = (items || []).filter(x =>
+      String(x.estatus || "PENDIENTE").toUpperCase() === "PENDIENTE"
+    ).length;
 
-      if (LIVE_STATE.pinolPendientes === null) {
-        LIVE_STATE.pinolPendientes = pendientes;
-        updatePinolTabBadge(items);
-        return;
-      }
-
-      if (pendientes !== LIVE_STATE.pinolPendientes) {
-        const prev = Number(LIVE_STATE.pinolPendientes || 0);
-        LIVE_STATE.pinolPendientes = pendientes;
-
-        updatePinolTabBadge(items);
-
-        pulseTabBadge("tabOPS_PINOL", {
-          hot: pendientes >= 5
-        });
-
-        pulseTabBadge("tabCAP", {
-          hot: pendientes >= 5
-        });
-
-        pulseValueChange("pinolBadgeMain", pendientes > prev ? "rise" : "drop");
-        pulseValueChange("pinolBadgeTab", pendientes > prev ? "rise" : "drop");
-
-        if ($("panelPINOLADMIN")?.style.display !== "none") {
-          flashElement("panelPINOLADMIN");
-        }
-
-        if (pendientes > prev) {
-          showWarnToast(`Hay ${pendientes} solicitud(es) pendientes de pinol`);
-        } else {
-          showToast("Cambió el estado de solicitudes de pinol");
-        }
-      }
-    } catch (e) {
-      console.error("watchPinolRealtime error:", e);
-    } finally {
-      LIVE_STATE.pinolWatching = false;
+    if (LIVE_STATE.pinolPendientes === null) {
+      LIVE_STATE.pinolPendientes = pendientes;
+      updatePinolTabBadge(items);
+      return;
     }
-  }
 
-  async function watchCaptureSummaryRealtime() {
-    if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL" && USER.rol !== "JURISDICCIONAL")) return;
+    if (pendientes !== LIVE_STATE.pinolPendientes) {
+      const prev = Number(LIVE_STATE.pinolPendientes || 0);
+      LIVE_STATE.pinolPendientes = pendientes;
 
-    if (!$("panelCaptureSummary")) return;
-    if (LIVE_STATE.summaryWatching) return;
+      updatePinolTabBadge(items);
 
-    LIVE_STATE.summaryWatching = true;
+      pulseTabBadge("tabOPS_PINOL", {
+        hot: pendientes >= 5
+      });
 
-    try {
-      const fecha = $("summaryFecha")?.value || todayYmdLocal();
-      const tipo = $("summaryTipo")?.value || "SR";
-      const data = await getCaptureOverview(fecha, tipo);
-      if (!data) return;
+      pulseTabBadge("tabCAP", {
+        hot: pendientes >= 5
+      });
 
-      const capturadas = Number(data.total_capturadas || 0);
-      const faltantes = Number(data.total_faltantes || 0);
-      const keyNow = `${tipo}_${fecha}`;
+      pulseValueChange("pinolBadgeMain", pendientes > prev ? "rise" : "drop");
+      pulseValueChange("pinolBadgeTab", pendientes > prev ? "rise" : "drop");
 
-      if (LIVE_STATE.summaryKey !== keyNow) {
-        LIVE_STATE.summaryKey = keyNow;
-        LIVE_STATE.summaryCapturadas = capturadas;
-        LIVE_STATE.summaryFaltantes = faltantes;
-        return;
+      if ($("panelPINOLADMIN")?.style.display !== "none") {
+        flashElement("panelPINOLADMIN");
       }
 
-      const prevCapturadas = Number(LIVE_STATE.summaryCapturadas ?? capturadas);
-      const prevFaltantes = Number(LIVE_STATE.summaryFaltantes ?? faltantes);
-
-      if (
-        LIVE_STATE.summaryCapturadas !== null &&
-        (capturadas !== LIVE_STATE.summaryCapturadas || faltantes !== LIVE_STATE.summaryFaltantes)
-      ) {
-        LIVE_STATE.summaryCapturadas = capturadas;
-        LIVE_STATE.summaryFaltantes = faltantes;
-
-        renderCaptureSummary(data);
-        flashElement("panelCaptureSummary");
-
-        if (capturadas !== prevCapturadas) {
-          pulseBadge("capturadasCount");
-          pulseValueChange("capturadasCount", capturadas > prevCapturadas ? "rise" : "drop");
-        }
-
-        if (faltantes !== prevFaltantes) {
-          pulseBadge("faltantesCount");
-          pulseValueChange("faltantesCount", faltantes < prevFaltantes ? "rise" : "drop");
-        }
-
-        if (capturadas > prevCapturadas) {
-          showToast(
-            `Nueva captura detectada en ${tipo === "CONS" ? "Consumibles" : "Existencia de biológicos"}`,
-            true,
-            "good"
-          );
-        }
+      if (pendientes > prev) {
+        showWarnToast(`Hay ${pendientes} solicitud(es) pendientes de pinol`);
+      } else {
+        showToast("Cambió el estado de solicitudes de pinol");
       }
-    } catch (e) {
-      console.error("watchCaptureSummaryRealtime error:", e);
-    } finally {
-      LIVE_STATE.summaryWatching = false;
     }
+  } catch (e) {
+    console.error("watchPinolRealtime error:", e);
+  } finally {
+    LIVE_STATE.pinolWatching = false;
   }
+}
 
-  let LAST_TODAY_SNAPSHOT = "";
+async function watchCaptureSummaryRealtime() {
+  if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL" && USER.rol !== "JURISDICCIONAL")) return;
 
-  async function watchUnidadTodayRealtime() {
-    if (!USER || USER.rol !== "UNIDAD") return;
-    if (LIVE_STATE.unidadWatching) return;
+  if (!$("panelCaptureSummary")) return;
+  if (LIVE_STATE.summaryWatching) return;
 
-    LIVE_STATE.unidadWatching = true;
+  LIVE_STATE.summaryWatching = true;
 
-    try {
-      const today = await getTodayReports(todayYmdLocal());
-      const snapshot = JSON.stringify(today || null);
+  try {
+    const fecha = $("summaryFecha")?.value || todayYmdLocal();
+    const tipo = $("summaryTipo")?.value || "SR";
+    const data = await getCaptureOverview(fecha, tipo);
+    if (!data) return;
 
-      if (snapshot === LAST_TODAY_SNAPSHOT) {
-        return;
-      }
+    const capturadas = Number(data.total_capturadas || 0);
+    const faltantes = Number(data.total_faltantes || 0);
+    const keyNow = `${tipo}_${fecha}`;
 
-      LAST_TODAY_SNAPSHOT = snapshot;
-
-      const normalized = normalizeTodayReports(today);
-
-      const existenciaNow = !!normalized.sr;
-      const consNow = !!normalized.cons;
-
-      if (LIVE_STATE.todayExistenciaCaptured === null) {
-        LIVE_STATE.todayExistenciaCaptured = existenciaNow;
-        LIVE_STATE.todayConsCaptured = consNow;
-        return;
-      }
-
-      const existenciaChanged = existenciaNow !== LIVE_STATE.todayExistenciaCaptured;
-      const consChanged = consNow !== LIVE_STATE.todayConsCaptured;
-
-      if (!existenciaChanged && !consChanged) {
-        return;
-      }
-
-      LIVE_STATE.todayExistenciaCaptured = existenciaNow;
-      LIVE_STATE.todayConsCaptured = consNow;
-
-      if (existenciaChanged || consChanged) {
-        hydrateTodayForms(today);
-      }
-
-      if (existenciaChanged) {
-        flashElement("formSR");
-        pulseValueChange("tabSR", "rise");
-
-        if (existenciaNow) {
-          showToast("Tu captura de existencia de biológicos ya quedó reflejada en tiempo real");
-          pushLiveEvent("Existencia de biológicos", "El estado de la captura de hoy cambió automáticamente.", "good", "formSR");
-        }
-      }
-
-      if (consChanged) {
-        flashElement("formCONS");
-        pulseValueChange("tabCONS", "rise");
-
-        if (consNow) {
-          showToast("Tu reporte de consumibles ya quedó reflejado en tiempo real");
-          pushLiveEvent("Consumibles", "El estado del reporte de hoy cambió automáticamente.", "good", "formCONS");
-        }
-      }
-    } catch (e) {
-      console.error("watchUnidadTodayRealtime error:", e);
-    } finally {
-      LIVE_STATE.unidadWatching = false;
+    if (LIVE_STATE.summaryKey !== keyNow) {
+      LIVE_STATE.summaryKey = keyNow;
+      LIVE_STATE.summaryCapturadas = capturadas;
+      LIVE_STATE.summaryFaltantes = faltantes;
+      return;
     }
-  }
 
-  async function watchHistoryRealtimeLight() {
-    if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL" && USER.rol !== "JURISDICCIONAL")) return;
+    const prevCapturadas = Number(LIVE_STATE.summaryCapturadas ?? capturadas);
+    const prevFaltantes = Number(LIVE_STATE.summaryFaltantes ?? faltantes);
 
-    if (LIVE_STATE.historyWatching) return;
+    if (
+      LIVE_STATE.summaryCapturadas !== null &&
+      (capturadas !== LIVE_STATE.summaryCapturadas || faltantes !== LIVE_STATE.summaryFaltantes)
+    ) {
+      LIVE_STATE.summaryCapturadas = capturadas;
+      LIVE_STATE.summaryFaltantes = faltantes;
 
-    LIVE_STATE.historyWatching = true;
+      renderCaptureSummary(data);
+      flashElement("panelCaptureSummary");
 
-    try {
-      const inicio = $("histFechaInicio")?.value || todayYmdLocal();
-      const fin = $("histFechaFin")?.value || todayYmdLocal();
-      const data = await getHistoryMetrics(inicio, fin);
-      if (!data) return;
-
-      const rows = Array.isArray(data.rows) ? data.rows.length : 0;
-
-      if (LIVE_STATE.lastHistoryRows === null) {
-        LIVE_STATE.lastHistoryRows = rows;
-        return;
+      if (capturadas !== prevCapturadas) {
+        pulseBadge("capturadasCount");
+        pulseValueChange("capturadasCount", capturadas > prevCapturadas ? "rise" : "drop");
       }
 
-      if (rows !== LIVE_STATE.lastHistoryRows) {
-        LIVE_STATE.lastHistoryRows = rows;
+      if (faltantes !== prevFaltantes) {
+        pulseBadge("faltantesCount");
+        pulseValueChange("faltantesCount", faltantes < prevFaltantes ? "rise" : "drop");
+      }
 
-        if ($("panelHISTORY")?.style.display !== "none") {
-          renderHistoryMetrics(data);
-          flashElement("panelHISTORY");
-        }
-
-        pulseTabBadge("tabOPS_HISTORY", {
-          hot: rows > 0
-        });
-
-        pulseTabBadge("tabCAP", {
-          hot: false
-        });
-
-        pushLiveEvent(
-          "Métricas históricas",
-          "Se actualizó la información del panel histórico.",
-          "good",
-          "panelHISTORY"
+      if (capturadas > prevCapturadas) {
+        showToast(
+          `Nueva captura detectada en ${tipo === "CONS" ? "Consumibles" : "Existencia de biológicos"}`,
+          true,
+          "good"
         );
       }
-    } catch (e) {
-      console.error("watchHistoryRealtimeLight error:", e);
-    } finally {
-      LIVE_STATE.historyWatching = false;
     }
+  } catch (e) {
+    console.error("watchCaptureSummaryRealtime error:", e);
+  } finally {
+    LIVE_STATE.summaryWatching = false;
   }
+}
 
-  function startRealtimeUX() {
-    startPublicClockTimer();
+let LAST_TODAY_SNAPSHOT = "";
 
-    if (LIVE_TIMERS_STARTED) return;
-    LIVE_TIMERS_STARTED = true;
+async function watchUnidadTodayRealtime() {
+  if (!USER || USER.rol !== "UNIDAD") return;
+  if (LIVE_STATE.unidadWatching) return;
 
-    // Optimización de Cuotas: Se relajan los ciclos (Throttling) para prevenir el límite estricto de 20,000 Trigger Quotas diarios de GAS.
-    LIVE_TIMERS.push(setInterval(() => {
-      if (!canRunRealtime()) return;
-      watchPinolRealtime();
-    }, 120000)); // 2 mins
+  LIVE_STATE.unidadWatching = true;
 
-    LIVE_TIMERS.push(setInterval(() => {
-      if (!canRunRealtime()) return;
-      watchCaptureSummaryRealtime();
-    }, 180000)); // 3 mins
+  try {
+    const today = await getTodayReports(todayYmdLocal());
+    const snapshot = JSON.stringify(today || null);
 
-    LIVE_TIMERS.push(setInterval(() => {
-      if (!canRunRealtime()) return;
-      watchUnidadTodayRealtime();
-    }, 30000));
+    if (snapshot === LAST_TODAY_SNAPSHOT) {
+      return;
+    }
 
-    LIVE_TIMERS.push(setInterval(() => {
-      if (!canRunRealtime()) return;
-      watchHistoryRealtimeLight();
-    }, 45000));
+    LAST_TODAY_SNAPSHOT = snapshot;
 
-    LIVE_TIMERS.push(setInterval(() => {
-      if (!canRunRealtime()) return;
-      loadNotifications({ silent: true }).catch(err => {
-        console.warn("realtime loadNotifications error:", err);
-      });
-    }, 45000));
-  }
+    const normalized = normalizeTodayReports(today);
 
-  /**
-   * 🌤️ Weather Loader: Obtiene el clima de la API Open-Meteo.
-   * Se ejecuta al cargar y se re-lanza cada 15 min.
-   */
-  async function initWeather() {
-    try {
-      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=20.5881&longitude=-100.3899&current=temperature_2m,weather_code`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
+    const existenciaNow = !!normalized.sr;
+    const consNow = !!normalized.cons;
 
-      if (data && data.current) {
-        const temp = Math.round(data.current.temperature_2m);
-        const code = data.current.weather_code;
-        const emoji = getWeatherEmoji(code);
+    if (LIVE_STATE.todayExistenciaCaptured === null) {
+      LIVE_STATE.todayExistenciaCaptured = existenciaNow;
+      LIVE_STATE.todayConsCaptured = consNow;
+      return;
+    }
 
-        CURRENT_WEATHER = { temp, emoji, code };
+    const existenciaChanged = existenciaNow !== LIVE_STATE.todayExistenciaCaptured;
+    const consChanged = consNow !== LIVE_STATE.todayConsCaptured;
 
-        // Update legacy headers if they exist
-        const hdr1 = $("hdrClima");
-        if (hdr1) hdr1.textContent = `Qro ${temp}°C`;
+    if (!existenciaChanged && !consChanged) {
+      return;
+    }
 
-        const hdr2 = $("hdrClima2");
-        if (hdr2) hdr2.textContent = `${temp}°C`;
+    LIVE_STATE.todayExistenciaCaptured = existenciaNow;
+    LIVE_STATE.todayConsCaptured = consNow;
 
-        // Update greeting in real time
-        if (USER) {
-          updateDynamicGreeting();
-        }
+    if (existenciaChanged || consChanged) {
+      hydrateTodayForms(today);
+    }
+
+    if (existenciaChanged) {
+      flashElement("formSR");
+      pulseValueChange("tabSR", "rise");
+
+      if (existenciaNow) {
+        showToast("Tu captura de existencia de biológicos ya quedó reflejada en tiempo real");
+        pushLiveEvent("Existencia de biológicos", "El estado de la captura de hoy cambió automáticamente.", "good", "formSR");
       }
-    } catch (e) {
-      console.warn("initWeather failed:", e);
-      CURRENT_WEATHER = { temp: 24, emoji: "🌤️", code: 1 };
-      if (USER) updateDynamicGreeting();
     }
-  }
 
-  function getWeatherEmoji(code) {
-    if (code === null) return "🌡️";
-    // Open-Meteo WMO Weather interpretation codes (WW)
-    if (code === 0) return "☀️"; // Clear sky
-    if ([1, 2].includes(code)) return "🌤️"; // Mainly clear, partly cloudy
-    if (code === 3) return "☁️"; // Overcast
-    if ([45, 48].includes(code)) return "🌫️"; // Fog and depositing rime fog
-    if ([51, 53, 55].includes(code)) return "🌦️"; // Drizzle: Light, moderate, and dense intensity
-    if ([61, 63, 65].includes(code)) return "🌧️"; // Rain: Slight, moderate and heavy intensity
-    if ([71, 73, 75].includes(code)) return "❄️"; // Snow fall: Slight, moderate, and heavy intensity
-    if ([80, 81, 82].includes(code)) return "🌦️"; // Rain showers: Slight, moderate, and violent
-    if ([95, 96, 99].includes(code)) return "⛈️"; // Thunderstorm: Slight or moderate
-    return "🌤️";
-  }
+    if (consChanged) {
+      flashElement("formCONS");
+      pulseValueChange("tabCONS", "rise");
 
-  // Esperar a que el DOM esté listo antes de arrancar
-  document.addEventListener('DOMContentLoaded', () => {
-    initWeather();
-    // Añadirlo a LIVE_TIMERS solo si está definido (evitar ReferenceError preventivo)
-    if (typeof LIVE_TIMERS !== 'undefined') {
-      LIVE_TIMERS.push(setInterval(initWeather, 900000));
+      if (consNow) {
+        showToast("Tu reporte de consumibles ya quedó reflejado en tiempo real");
+        pushLiveEvent("Consumibles", "El estado del reporte de hoy cambió automáticamente.", "good", "formCONS");
+      }
     }
-  });
-
-  // Fallback por si DOMContentLoaded ya pasó
-  if (document.readyState === "complete" || document.readyState === "interactive") {
-    initWeather();
+  } catch (e) {
+    console.error("watchUnidadTodayRealtime error:", e);
+  } finally {
+    LIVE_STATE.unidadWatching = false;
   }
+}
+
+async function watchHistoryRealtimeLight() {
+  if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL" && USER.rol !== "JURISDICCIONAL")) return;
+
+  if (LIVE_STATE.historyWatching) return;
+
+  LIVE_STATE.historyWatching = true;
+
+  try {
+    const inicio = $("histFechaInicio")?.value || todayYmdLocal();
+    const fin = $("histFechaFin")?.value || todayYmdLocal();
+    const data = await getHistoryMetrics(inicio, fin);
+    if (!data) return;
+
+    const rows = Array.isArray(data.rows) ? data.rows.length : 0;
+
+    if (LIVE_STATE.lastHistoryRows === null) {
+      LIVE_STATE.lastHistoryRows = rows;
+      return;
+    }
+
+    if (rows !== LIVE_STATE.lastHistoryRows) {
+      LIVE_STATE.lastHistoryRows = rows;
+
+      if ($("panelHISTORY")?.style.display !== "none") {
+        renderHistoryMetrics(data);
+        flashElement("panelHISTORY");
+      }
+
+      pulseTabBadge("tabOPS_HISTORY", {
+        hot: rows > 0
+      });
+
+      pulseTabBadge("tabCAP", {
+        hot: false
+      });
+
+      pushLiveEvent(
+        "Métricas históricas",
+        "Se actualizó la información del panel histórico.",
+        "good",
+        "panelHISTORY"
+      );
+    }
+  } catch (e) {
+    console.error("watchHistoryRealtimeLight error:", e);
+  } finally {
+    LIVE_STATE.historyWatching = false;
+  }
+}
+
+function startRealtimeUX() {
+  startPublicClockTimer();
+
+  if (LIVE_TIMERS_STARTED) return;
+  LIVE_TIMERS_STARTED = true;
+
+  // Optimización de Cuotas: Se relajan los ciclos (Throttling) para prevenir el límite estricto de 20,000 Trigger Quotas diarios de GAS.
+  LIVE_TIMERS.push(setInterval(() => {
+    if (!canRunRealtime()) return;
+    watchPinolRealtime();
+  }, 120000)); // 2 mins
+
+  LIVE_TIMERS.push(setInterval(() => {
+    if (!canRunRealtime()) return;
+    watchCaptureSummaryRealtime();
+  }, 180000)); // 3 mins
+
+  LIVE_TIMERS.push(setInterval(() => {
+    if (!canRunRealtime()) return;
+    watchUnidadTodayRealtime();
+  }, 30000));
+
+  LIVE_TIMERS.push(setInterval(() => {
+    if (!canRunRealtime()) return;
+    watchHistoryRealtimeLight();
+  }, 45000));
+
+  LIVE_TIMERS.push(setInterval(() => {
+    if (!canRunRealtime()) return;
+    loadNotifications({ silent: true }).catch(err => {
+      console.warn("realtime loadNotifications error:", err);
+    });
+  }, 45000));
+}
+
+/**
+ * 🌤️ Weather Loader: Obtiene el clima de la API Open-Meteo.
+ * Se ejecuta al cargar y se re-lanza cada 15 min.
+ */
+async function initWeather() {
+  try {
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=20.5881&longitude=-100.3899&current=temperature_2m,weather_code`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (data && data.current) {
+      const temp = Math.round(data.current.temperature_2m);
+      const code = data.current.weather_code;
+      const emoji = getWeatherEmoji(code);
+
+      CURRENT_WEATHER = { temp, emoji, code };
+
+      // Update legacy headers if they exist
+      const hdr1 = $("hdrClima");
+      if (hdr1) hdr1.textContent = `Qro ${temp}°C`;
+
+      const hdr2 = $("hdrClima2");
+      if (hdr2) hdr2.textContent = `${temp}°C`;
+
+      // Update greeting in real time
+      if (USER) {
+        updateDynamicGreeting();
+      }
+    }
+  } catch (e) {
+    console.warn("initWeather failed:", e);
+    CURRENT_WEATHER = { temp: 24, emoji: "🌤️", code: 1 };
+    if (USER) updateDynamicGreeting();
+  }
+}
+
+function getWeatherEmoji(code) {
+  if (code === null) return "🌡️";
+  // Open-Meteo WMO Weather interpretation codes (WW)
+  if (code === 0) return "☀️"; // Clear sky
+  if ([1, 2].includes(code)) return "🌤️"; // Mainly clear, partly cloudy
+  if (code === 3) return "☁️"; // Overcast
+  if ([45, 48].includes(code)) return "🌫️"; // Fog and depositing rime fog
+  if ([51, 53, 55].includes(code)) return "🌦️"; // Drizzle: Light, moderate, and dense intensity
+  if ([61, 63, 65].includes(code)) return "🌧️"; // Rain: Slight, moderate and heavy intensity
+  if ([71, 73, 75].includes(code)) return "❄️"; // Snow fall: Slight, moderate, and heavy intensity
+  if ([80, 81, 82].includes(code)) return "🌦️"; // Rain showers: Slight, moderate, and violent
+  if ([95, 96, 99].includes(code)) return "⛈️"; // Thunderstorm: Slight or moderate
+  return "🌤️";
+}
+
+// Esperar a que el DOM esté listo antes de arrancar
+document.addEventListener('DOMContentLoaded', () => {
+  initWeather();
+  // Añadirlo a LIVE_TIMERS solo si está definido (evitar ReferenceError preventivo)
+  if (typeof LIVE_TIMERS !== 'undefined') {
+    LIVE_TIMERS.push(setInterval(initWeather, 900000));
+  }
+});
+
+// Fallback por si DOMContentLoaded ya pasó
+if (document.readyState === "complete" || document.readyState === "interactive") {
+  initWeather();
+}
 
 
 
-  /** ===== DRIVE UPLOAD LOGIC ===== **/
-  let ALL_UNITS_CATALOG = null;
+/** ===== DRIVE UPLOAD LOGIC ===== **/
+let ALL_UNITS_CATALOG = null;
 
-  async function openUploadFilesModal() {
-    const modal = $("uploadFilesOverlay");
-    if (!modal) return;
+async function openUploadFilesModal() {
+  const modal = $("uploadFilesOverlay");
+  if (!modal) return;
 
-    modal.classList.add("show");
-    resetUploadForm();
+  modal.classList.add("show");
+  resetUploadForm();
 
-    const role = String(USER?.rol || "UNIDAD").toUpperCase();
-    const categorySelect = $("uploadCategory");
-    const muniWrap = $("uploadMunicipalMuniWrap");
-    const unitWrap = $("uploadMunicipalUnitWrap");
-    const cluesView = $("uploadCluesView");
+  const role = String(USER?.rol || "UNIDAD").toUpperCase();
+  const categorySelect = $("uploadCategory");
+  const muniWrap = $("uploadMunicipalMuniWrap");
+  const unitWrap = $("uploadMunicipalUnitWrap");
+  const cluesView = $("uploadCluesView");
 
-    // Clear previous dynamic state
-    muniWrap.style.display = "none";
-    unitWrap.style.display = "none";
-    cluesView.style.display = "none";
+  // Clear previous dynamic state
+  muniWrap.style.display = "none";
+  unitWrap.style.display = "none";
+  cluesView.style.display = "none";
 
-    if (role === "MUNICIPAL") {
-      // REGLA: SÓLO MUNICIPAL SUBE SUPERVISIONES
-      categorySelect.innerHTML = '<option value="Supervisión" selected>Supervisión</option>';
-      categorySelect.disabled = true;
-      await loadMunicipalUploadContext();
-    } else if (role === "UNIDAD") {
-      // REGLA: SÓLO UNIDAD SUBE EVIDENCIAS
-      categorySelect.innerHTML = `
+  if (role === "MUNICIPAL") {
+    // REGLA: SÓLO MUNICIPAL SUBE SUPERVISIONES
+    categorySelect.innerHTML = '<option value="Supervisión" selected>Supervisión</option>';
+    categorySelect.disabled = true;
+    await loadMunicipalUploadContext();
+  } else if (role === "UNIDAD") {
+    // REGLA: SÓLO UNIDAD SUBE EVIDENCIAS
+    categorySelect.innerHTML = `
         <option value="Evidencia de capacitaciones" selected>Evidencia de capacitaciones</option>
         <option value="Evidencias de campaña">Evidencias de campaña</option>
         <option value="Otros reportes">Otros reportes</option>
       `;
-      categorySelect.disabled = false;
-    } else {
-      // ADMIN / JURISDICCIONAL: NO SUBEN NADA
-      modal.classList.remove("show");
-      showToast("Acceso denegado: Tu perfil no tiene permisos para subir archivos.", false);
-      return;
-    }
-  }
-
-  async function loadMunicipalUploadContext() {
-    try {
-      if (!ALL_UNITS_CATALOG) {
-        showOverlay("Cargando catálogo…", "Catálogo");
-        const res = await apiCall({ action: "unitCatalog" });
-        hideOverlay();
-        if (res && res.ok) {
-          ALL_UNITS_CATALOG = res.data || [];
-        }
-      }
-
-      const munis = USER.municipiosAllowed || [];
-      const muniSelect = $("uploadMuniSelect");
-      const muniWrap = $("uploadMunicipalMuniWrap");
-
-      if (munis.length > 1 || (munis.length === 1 && munis[0] === "*")) {
-        // Multi-municipio or Admin-like municipal
-        muniWrap.style.display = "block";
-        const uniqueMunis = [...new Set(ALL_UNITS_CATALOG.map(u => u.municipio))].filter(m => canSeeMunicipio_(USER, m));
-
-        muniSelect.innerHTML = '<option value="" disabled selected>Selecciona municipio...</option>' +
-          uniqueMunis.map(m => `<option value="${m}">${m}</option>`).join("");
-      } else {
-        // Single municipio: Skip selection, jump to units
-        muniWrap.style.display = "none";
-        muniSelect.value = munis[0] || "";
-        updateUploadUnitList();
-      }
-    } catch (e) {
-      showToast("Error al cargar contexto municipal", false);
-    }
-  }
-
-  function updateUploadUnitList() {
-    const muni = $("uploadMuniSelect").value || (USER.municipiosAllowed?.[0] !== "*" ? USER.municipiosAllowed?.[0] : "");
-    if (!muni) return;
-
-    const units = (ALL_UNITS_CATALOG || []).filter(u => u.municipio === muni);
-    const unitSelect = $("uploadUnitSelect");
-    const unitWrap = $("uploadMunicipalUnitWrap");
-
-    unitWrap.style.display = "block";
-    unitSelect.innerHTML = '<option value="" disabled selected>Selecciona unidad...</option>' +
-      units.map(u => `<option value="${u.clues}" data-name="${u.unidad}">${u.unidad}</option>`).join("");
-  }
-
-  function updateUploadCluesView() {
-    const unitSelect = $("uploadUnitSelect");
-    const cluesValue = $("uploadCluesValue");
-    const cluesView = $("uploadCluesView");
-
-    const selected = unitSelect.value;
-    if (selected) {
-      cluesView.style.display = "block";
-      cluesValue.textContent = selected;
-    } else {
-      cluesView.style.display = "none";
-    }
-  }
-
-  $("uploadMuniSelect")?.addEventListener("change", updateUploadUnitList);
-  $("uploadUnitSelect")?.addEventListener("change", updateUploadCluesView);
-
-  function closeUploadFilesModal() {
-    const modal = $("uploadFilesOverlay");
-    if (!modal) return;
+    categorySelect.disabled = false;
+  } else {
+    // ADMIN / JURISDICCIONAL: NO SUBEN NADA
     modal.classList.remove("show");
+    showToast("Acceso denegado: Tu perfil no tiene permisos para subir archivos.", false);
+    return;
+  }
+}
+
+async function loadMunicipalUploadContext() {
+  try {
+    if (!ALL_UNITS_CATALOG) {
+      showOverlay("Cargando catálogo…", "Catálogo");
+      const res = await apiCall({ action: "unitCatalog" });
+      hideOverlay();
+      if (res && res.ok) {
+        ALL_UNITS_CATALOG = res.data || [];
+      }
+    }
+
+    const munis = USER.municipiosAllowed || [];
+    const muniSelect = $("uploadMuniSelect");
+    const muniWrap = $("uploadMunicipalMuniWrap");
+
+    if (munis.length > 1 || (munis.length === 1 && munis[0] === "*")) {
+      // Multi-municipio or Admin-like municipal
+      muniWrap.style.display = "block";
+      const uniqueMunis = [...new Set(ALL_UNITS_CATALOG.map(u => u.municipio))].filter(m => canSeeMunicipio_(USER, m));
+
+      muniSelect.innerHTML = '<option value="" disabled selected>Selecciona municipio...</option>' +
+        uniqueMunis.map(m => `<option value="${m}">${m}</option>`).join("");
+    } else {
+      // Single municipio: Skip selection, jump to units
+      muniWrap.style.display = "none";
+      muniSelect.value = munis[0] || "";
+      updateUploadUnitList();
+    }
+  } catch (e) {
+    showToast("Error al cargar contexto municipal", false);
+  }
+}
+
+function updateUploadUnitList() {
+  const muni = $("uploadMuniSelect").value || (USER.municipiosAllowed?.[0] !== "*" ? USER.municipiosAllowed?.[0] : "");
+  if (!muni) return;
+
+  const units = (ALL_UNITS_CATALOG || []).filter(u => u.municipio === muni);
+  const unitSelect = $("uploadUnitSelect");
+  const unitWrap = $("uploadMunicipalUnitWrap");
+
+  unitWrap.style.display = "block";
+  unitSelect.innerHTML = '<option value="" disabled selected>Selecciona unidad...</option>' +
+    units.map(u => `<option value="${u.clues}" data-name="${u.unidad}">${u.unidad}</option>`).join("");
+}
+
+function updateUploadCluesView() {
+  const unitSelect = $("uploadUnitSelect");
+  const cluesValue = $("uploadCluesValue");
+  const cluesView = $("uploadCluesView");
+
+  const selected = unitSelect.value;
+  if (selected) {
+    cluesView.style.display = "block";
+    cluesValue.textContent = selected;
+  } else {
+    cluesView.style.display = "none";
+  }
+}
+
+$("uploadMuniSelect")?.addEventListener("change", updateUploadUnitList);
+$("uploadUnitSelect")?.addEventListener("change", updateUploadCluesView);
+
+function closeUploadFilesModal() {
+  const modal = $("uploadFilesOverlay");
+  if (!modal) return;
+  modal.classList.remove("show");
+  resetUploadForm();
+}
+
+
+function resetUploadForm() {
+  const fileInput = $("uploadFileInput");
+  if (fileInput) fileInput.value = "";
+  const fileNameLabel = $("fileNameLabel");
+  if (fileNameLabel) fileNameLabel.textContent = "Ningún archivo seleccionado";
+  const btnBrowse = $("btnBrowseFile");
+  if (btnBrowse) btnBrowse.classList.remove("hasFile");
+  const btnDoUpload = $("btnDoUpload");
+  if (btnDoUpload) btnDoUpload.disabled = true;
+
+  // Reset selections
+  $("uploadUnitSelect").innerHTML = "";
+  $("uploadMuniSelect").value = "";
+  $("uploadCluesValue").textContent = "—";
+}
+
+$("btnOpenUpload")?.addEventListener("click", openUploadFilesModal);
+$("btnCloseUpload")?.addEventListener("click", closeUploadFilesModal);
+
+$("btnBrowseFile")?.addEventListener("click", () => {
+  $("uploadFileInput")?.click();
+});
+
+$("uploadFileInput")?.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  const fileNameLabel = $("fileNameLabel");
+  const btnBrowse = $("btnBrowseFile");
+  const btnDoUpload = $("btnDoUpload");
+
+  if (file) {
+    if (fileNameLabel) fileNameLabel.textContent = file.name;
+    if (btnBrowse) btnBrowse.classList.add("hasFile");
+    if (btnDoUpload) btnDoUpload.disabled = false;
+  } else {
     resetUploadForm();
   }
+});
 
+$("btnDoUpload")?.addEventListener("click", handleFileUploadFlow);
 
-  function resetUploadForm() {
-    const fileInput = $("uploadFileInput");
-    if (fileInput) fileInput.value = "";
-    const fileNameLabel = $("fileNameLabel");
-    if (fileNameLabel) fileNameLabel.textContent = "Ningún archivo seleccionado";
-    const btnBrowse = $("btnBrowseFile");
-    if (btnBrowse) btnBrowse.classList.remove("hasFile");
-    const btnDoUpload = $("btnDoUpload");
-    if (btnDoUpload) btnDoUpload.disabled = true;
+async function handleFileUploadFlow() {
+  const fileInput = $("uploadFileInput");
+  const file = fileInput?.files?.[0];
+  const category = $("uploadCategory")?.value || "Otros reportes";
 
-    // Reset selections
-    $("uploadUnitSelect").innerHTML = "";
-    $("uploadMuniSelect").value = "";
-    $("uploadCluesValue").textContent = "—";
+  if (!file) {
+    showToast("Por favor selecciona un archivo primero", false);
+    return;
   }
 
-  $("btnOpenUpload")?.addEventListener("click", openUploadFilesModal);
-  $("btnCloseUpload")?.addEventListener("click", closeUploadFilesModal);
+  if (file.size > 15 * 1024 * 1024) {
+    showToast("El archivo es demasiado grande (máx 15MB)", false);
+    return;
+  }
 
-  $("btnBrowseFile")?.addEventListener("click", () => {
-    $("uploadFileInput")?.click();
-  });
+  let targetClues = USER.clues;
+  let targetUnidad = USER.unidad;
+  let targetMunicipio = USER.municipio; // Valor por defecto del usuario
 
-  $("uploadFileInput")?.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    const fileNameLabel = $("fileNameLabel");
-    const btnBrowse = $("btnBrowseFile");
-    const btnDoUpload = $("btnDoUpload");
+  if (USER.rol === "MUNICIPAL") {
+    const unitSelect = $("uploadUnitSelect");
+    targetClues = unitSelect.value;
+    if (!targetClues) {
+      showToast("Debes seleccionar una unidad a supervisar", false);
+      return;
+    }
+    const option = unitSelect.options[unitSelect.selectedIndex];
+    targetUnidad = option.getAttribute("data-name") || "";
+    // REGLA: Detectar municipio de la unidad para crear la carpeta correcta
+    targetMunicipio = option.getAttribute("data-muni") || "";
+  }
 
-    if (file) {
-      if (fileNameLabel) fileNameLabel.textContent = file.name;
-      if (btnBrowse) btnBrowse.classList.add("hasFile");
-      if (btnDoUpload) btnDoUpload.disabled = false;
+  try {
+    showOverlay("Subiendo archivo…", "Cargando");
+    setBtnBusy("btnDoUpload", true, "Subiendo…");
+
+    const res = await apiCall({
+      action: "uploadFile",
+      file: file,
+      category: category,
+      targetClues: targetClues,
+      targetUnidad: targetUnidad,
+      targetMunicipio: targetMunicipio
+    });
+
+    if (res && res.ok) {
+      showToast("¡Archivo subido exitosamente!", true);
+      closeUploadFilesModal();
     } else {
-      resetUploadForm();
+      showToast("Error al subir: " + (res?.error || "Desconocido"), false);
     }
-  });
-
-  $("btnDoUpload")?.addEventListener("click", handleFileUploadFlow);
-
-  async function handleFileUploadFlow() {
-    const fileInput = $("uploadFileInput");
-    const file = fileInput?.files?.[0];
-    const category = $("uploadCategory")?.value || "Otros reportes";
-
-    if (!file) {
-      showToast("Por favor selecciona un archivo primero", false);
-      return;
-    }
-
-    if (file.size > 15 * 1024 * 1024) {
-      showToast("El archivo es demasiado grande (máx 15MB)", false);
-      return;
-    }
-
-    let targetClues = USER.clues;
-    let targetUnidad = USER.unidad;
-    let targetMunicipio = USER.municipio; // Valor por defecto del usuario
-
-    if (USER.rol === "MUNICIPAL") {
-      const unitSelect = $("uploadUnitSelect");
-      targetClues = unitSelect.value;
-      if (!targetClues) {
-        showToast("Debes seleccionar una unidad a supervisar", false);
-        return;
-      }
-      const option = unitSelect.options[unitSelect.selectedIndex];
-      targetUnidad = option.getAttribute("data-name") || "";
-      // REGLA: Detectar municipio de la unidad para crear la carpeta correcta
-      targetMunicipio = option.getAttribute("data-muni") || "";
-    }
-
-    try {
-      showOverlay("Subiendo archivo…", "Cargando");
-      setBtnBusy("btnDoUpload", true, "Subiendo…");
-
-      const res = await apiCall({
-        action: "uploadFile",
-        file: file,
-        category: category,
-        targetClues: targetClues,
-        targetUnidad: targetUnidad,
-        targetMunicipio: targetMunicipio
-      });
-
-      if (res && res.ok) {
-        showToast("¡Archivo subido exitosamente!", true);
-        closeUploadFilesModal();
-      } else {
-        showToast("Error al subir: " + (res?.error || "Desconocido"), false);
-      }
-    } catch (err) {
-      console.error("Upload Error:", err);
-      showToast("Error de conexión al subir el archivo", false);
-    } finally {
-      setBtnBusy("btnDoUpload", false);
-      hideOverlay();
-    }
+  } catch (err) {
+    console.error("Upload Error:", err);
+    showToast("Error de conexión al subir el archivo", false);
+  } finally {
+    setBtnBusy("btnDoUpload", false);
+    hideOverlay();
   }
+}
 
-  // ✅ VISTA EN VIVO LOGIC
-  let CHART_SEM = null;
-  let CHART_CAD = null;
+// ✅ VISTA EN VIVO LOGIC
+let CHART_SEM = null;
+let CHART_CAD = null;
 
-  function formatAppDate(dateStr) {
-    if (!dateStr || dateStr === "—") return "—";
-    try {
-      // Intentar parsear fecha ISO o similar
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
+function formatAppDate(dateStr) {
+  if (!dateStr || dateStr === "—") return "—";
+  try {
+    // Intentar parsear fecha ISO o similar
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
 
-      const day = String(d.getDate()).padStart(2, '0');
-      const months = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
-      const month = months[d.getMonth()];
-      const year = d.getFullYear();
+    const day = String(d.getDate()).padStart(2, '0');
+    const months = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+    const month = months[d.getMonth()];
+    const year = d.getFullYear();
 
-      return `${day}-${month}-${year}`;
-    } catch (e) {
-      return dateStr;
+    return `${day}-${month}-${year}`;
+  } catch (e) {
+    return dateStr;
+  }
+}
+
+/**
+ * Sanitiza una cadena para uso en Storage (remueve acentos y caracteres especiales)
+ */
+function normalizePath(str) {
+  if (!str) return "";
+  return str.normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remueve acentos
+    .replace(/[^a-zA-Z0-9\/\-\_\.\s]/g, "") // Solo permite ASCII básico, /, -, ., _ y espacios
+    .trim();
+}
+
+async function openLiveView(clues, unidad, municipio) {
+  const overlay = $("liveViewOverlay");
+  const tbody = $("liveViewTbody");
+  const headRow = $("liveViewTable")?.querySelector("thead tr");
+
+  if (!overlay || !tbody) return;
+
+  try {
+    /* Semaforización de Cumplimiento (Bulletproof) */
+    /* CSS handled externally: #bCumplimiento.good, #bCumplimiento[data-tone="good"] { ... } */
+
+    // 1. Mostrar modal inmediatamente con estado de carga
+    overlay.classList.add("show");
+    overlay.style.display = "flex";
+    overlay.ariaHidden = "false";
+    tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:60px; text-align:center;"><div class="spinner-small" style="margin:0 auto 12px;"></div>Obteniendo detalle...</td></tr>';
+
+    const fecha = ($("summaryFecha") && $("summaryFecha").value) ? $("summaryFecha").value : todayYmdLocal();
+    const tipo = ($("summaryTipo") && $("summaryTipo").value) ? $("summaryTipo").value : "SR";
+    const fechaFormatted = formatAppDate(fecha);
+
+    // 2. Títulos
+    if ($("liveViewUnidad")) $("liveViewUnidad").textContent = (tipo === "SR" ? "Existencia: " : "Consumibles: ") + unidad;
+    if ($("liveViewMunicipio")) {
+      $("liveViewMunicipio").innerHTML =
+        escapeHtml(municipio) + " &nbsp;|&nbsp; " + escapeHtml(clues) +
+        `<span style="margin-left:12px; font-size:11px; background:#e8f0fe; color:#003366; padding:2px 10px; border-radius:20px; font-weight:700;">📅 ${fechaFormatted}</span>`;
     }
-  }
 
-  /**
-   * Sanitiza una cadena para uso en Storage (remueve acentos y caracteres especiales)
-   */
-  function normalizePath(str) {
-    if (!str) return "";
-    return str.normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "") // Remueve acentos
-      .replace(/[^a-zA-Z0-9\/\-\_\.\s]/g, "") // Solo permite ASCII básico, /, -, ., _ y espacios
-      .trim();
-  }
+    // 3. Petición real
+    const res = await apiCall("adminGetUnitDetail", { clues, fecha, tipo });
+    if (!res || !res.ok) throw new Error((res && res.error) || "Sin respuesta del servidor");
 
-  async function openLiveView(clues, unidad, municipio) {
-    const overlay = $("liveViewOverlay");
-    const tbody = $("liveViewTbody");
-    const headRow = $("liveViewTable")?.querySelector("thead tr");
-
-    if (!overlay || !tbody) return;
-
-    try {
-      /* Semaforización de Cumplimiento (Bulletproof) */
-      /* CSS handled externally: #bCumplimiento.good, #bCumplimiento[data-tone="good"] { ... } */
-
-      // 1. Mostrar modal inmediatamente con estado de carga
-      overlay.classList.add("show");
-      overlay.style.display = "flex";
-      overlay.ariaHidden = "false";
-      tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:60px; text-align:center;"><div class="spinner-small" style="margin:0 auto 12px;"></div>Obteniendo detalle...</td></tr>';
-
-      const fecha = ($("summaryFecha") && $("summaryFecha").value) ? $("summaryFecha").value : todayYmdLocal();
-      const tipo = ($("summaryTipo") && $("summaryTipo").value) ? $("summaryTipo").value : "SR";
-      const fechaFormatted = formatAppDate(fecha);
-
-      // 2. Títulos
-      if ($("liveViewUnidad")) $("liveViewUnidad").textContent = (tipo === "SR" ? "Existencia: " : "Consumibles: ") + unidad;
-      if ($("liveViewMunicipio")) {
-        $("liveViewMunicipio").innerHTML =
-          escapeHtml(municipio) + " &nbsp;|&nbsp; " + escapeHtml(clues) +
-          `<span style="margin-left:12px; font-size:11px; background:#e8f0fe; color:#003366; padding:2px 10px; border-radius:20px; font-weight:700;">📅 ${fechaFormatted}</span>`;
-      }
-
-      // 3. Petición real
-      const res = await apiCall("adminGetUnitDetail", { clues, fecha, tipo });
-      if (!res || !res.ok) throw new Error((res && res.error) || "Sin respuesta del servidor");
-
-      // 4. Renderizar según tipo
-      if (tipo === "SR") {
-        // Ajustar headers Bio
-        if (headRow) {
-          headRow.innerHTML = `
+    // 4. Renderizar según tipo
+    if (tipo === "SR") {
+      // Ajustar headers Bio
+      if (headRow) {
+        headRow.innerHTML = `
              <th style="padding: 16px 24px; text-align: left;">Biológico</th>
              <th style="padding: 16px 24px; text-align: left;">Lote</th>
              <th style="padding: 16px 24px; text-align: center;">Existencia</th>
@@ -10653,26 +10913,26 @@ function activateMain(panel, target = null) {
              <th style="padding: 16px 24px; text-align: center;">Semaforización</th>
              <th style="padding: 16px 24px; text-align: center;">Última Rec.</th>
            `;
-        }
+      }
 
-        if (!res.data || !res.data.length) {
-          tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay registros detallados para esta fecha.</td></tr>';
-          renderLiveCharts({ pronto: 0, normal: 0, lejana: 0 }, { m3: 0, m6: 0, m12: 0, more: 0 });
-        } else {
-          const items = res.data;
-          let semStats = { pronto: 0, normal: 0, lejana: 0 };
-          let cadStats = { m3: 0, m6: 0, m12: 0, more: 0 };
+      if (!res.data || !res.data.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay registros detallados para esta fecha.</td></tr>';
+        renderLiveCharts({ pronto: 0, normal: 0, lejana: 0 }, { m3: 0, m6: 0, m12: 0, more: 0 });
+      } else {
+        const items = res.data;
+        let semStats = { pronto: 0, normal: 0, lejana: 0 };
+        let cadStats = { m3: 0, m6: 0, m12: 0, more: 0 };
 
-          tbody.innerHTML = items.map(r => {
-            const status = getSemaforoStatus(r.caducidad);
-            semStats[status.key]++;
-            const diffMonths = getMonthsTo(r.caducidad);
-            if (diffMonths <= 3) cadStats.m3++;
-            else if (diffMonths <= 6) cadStats.m6++;
-            else if (diffMonths <= 12) cadStats.m12++;
-            else cadStats.more++;
+        tbody.innerHTML = items.map(r => {
+          const status = getSemaforoStatus(r.caducidad);
+          semStats[status.key]++;
+          const diffMonths = getMonthsTo(r.caducidad);
+          if (diffMonths <= 3) cadStats.m3++;
+          else if (diffMonths <= 6) cadStats.m6++;
+          else if (diffMonths <= 12) cadStats.m12++;
+          else cadStats.more++;
 
-            return `
+          return `
                 <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
                   <td style="padding:14px 24px; font-weight:800; color:#0f172a;">${escapeHtml(r.biologico || "—")}</td>
                   <td style="padding:14px 24px; font-weight:600; color:#475569;">${escapeHtml(r.lote || "—")}</td>
@@ -10686,32 +10946,32 @@ function activateMain(panel, target = null) {
                   <td style="padding:14px 24px; font-weight:600; text-align:center; color:#94a3b8; font-size: 11px;">${formatAppDate(r.fecha_recepcion)}</td>
                 </tr>
               `;
-          }).join("");
-          renderLiveCharts(semStats, cadStats);
-        }
-      } else {
-        // Tipo CONSUMIBLES
-        if (headRow) {
-          headRow.innerHTML = `
+        }).join("");
+        renderLiveCharts(semStats, cadStats);
+      }
+    } else {
+      // Tipo CONSUMIBLES
+      if (headRow) {
+        headRow.innerHTML = `
              <th style="padding: 16px 24px; text-align: left;">Insumo / Concepto</th>
              <th style="padding: 16px 24px; text-align: center;">Cantidad / Dosis</th>
              <th style="padding: 16px 24px; text-align: left;" colspan="4">Detalles adicionales</th>
            `;
-        }
+      }
 
-        if (!res.data || !res.data.length) {
-          tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay reporte de consumibles hoy.</td></tr>';
-          renderLiveCharts({ pronto: 0, normal: 0, lejana: 0 }, { m3: 0, m6: 0, m12: 0, more: 0 });
-        } else {
-          const c = res.data[0];
-          const rows = [
-            { label: "Surtimiento SRP (Dosis)", val: c.srp_dosis || 0 },
-            { label: "Surtimiento SR (Dosis)", val: c.sr_dosis || 0 },
-            { label: "Jeringa de 5 ml", val: c.jeringa_reconst_5ml_0605500438 || 0 },
-            { label: "Jeringa de 0.5 ml", val: c.jeringa_aplic_05ml_0605502657 || 0 },
-            { label: "Aguja", val: c.aguja_0600403711 || 0 }
-          ];
-          tbody.innerHTML = rows.map(r => `
+      if (!res.data || !res.data.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay reporte de consumibles hoy.</td></tr>';
+        renderLiveCharts({ pronto: 0, normal: 0, lejana: 0 }, { m3: 0, m6: 0, m12: 0, more: 0 });
+      } else {
+        const c = res.data[0];
+        const rows = [
+          { label: "Surtimiento SRP (Dosis)", val: c.srp_dosis || 0 },
+          { label: "Surtimiento SR (Dosis)", val: c.sr_dosis || 0 },
+          { label: "Jeringa de 5 ml", val: c.jeringa_reconst_5ml_0605500438 || 0 },
+          { label: "Jeringa de 0.5 ml", val: c.jeringa_aplic_05ml_0605502657 || 0 },
+          { label: "Aguja", val: c.aguja_0600403711 || 0 }
+        ];
+        tbody.innerHTML = rows.map(r => `
              <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
                <td style="padding:16px 24px; font-weight:800; color:#0f172a;">${r.label}</td>
                <td style="padding:16px 24px; text-align:center;">
@@ -10720,349 +10980,349 @@ function activateMain(panel, target = null) {
                <td colspan="4" style="padding:16px 24px; color:#94a3b8; font-size:12px; font-weight:600;">Reportado por ${escapeHtml(c.capturado_por || "—")}</td>
              </tr>
            `).join("");
-          renderLiveCharts({ pronto: 0, normal: 0, lejana: 1 }, { m3: 0, m6: 0, m12: 0, more: 1 });
-        }
+        renderLiveCharts({ pronto: 0, normal: 0, lejana: 1 }, { m3: 0, m6: 0, m12: 0, more: 1 });
       }
-
-    } catch (e) {
-      console.error("openLiveView error:", e);
-      if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">Error al cargar: ${escapeHtml(e.message)}</td></tr>`;
-      showToast("Error al cargar detalle: " + e.message, false);
     }
+
+  } catch (e) {
+    console.error("openLiveView error:", e);
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">Error al cargar: ${escapeHtml(e.message)}</td></tr>`;
+    showToast("Error al cargar detalle: " + e.message, false);
+  }
+}
+
+function getMonthsTo(mmmaa) {
+  if (!mmmaa) return 99;
+  // Soporte tanto para MMM-YY como para ISO YYYY-MM-DD
+  let mStr, yStr;
+  if (mmmaa.includes("-") && mmmaa.length <= 7) {
+    const parts = mmmaa.split("-");
+    mStr = parts[0].toUpperCase();
+    yStr = parts[1];
+  } else {
+    // Es ISO? yyyy-mm-dd
+    const parts = mmmaa.split("-");
+    if (parts.length < 2) return 99;
+    const months = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+    mStr = months[parseInt(parts[1]) - 1];
+    yStr = parts[0].substring(2);
   }
 
-  function getMonthsTo(mmmaa) {
-    if (!mmmaa) return 99;
-    // Soporte tanto para MMM-YY como para ISO YYYY-MM-DD
-    let mStr, yStr;
-    if (mmmaa.includes("-") && mmmaa.length <= 7) {
-      const parts = mmmaa.split("-");
-      mStr = parts[0].toUpperCase();
-      yStr = parts[1];
-    } else {
-      // Es ISO? yyyy-mm-dd
-      const parts = mmmaa.split("-");
-      if (parts.length < 2) return 99;
-      const months = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
-      mStr = months[parseInt(parts[1]) - 1];
-      yStr = parts[0].substring(2);
-    }
+  const months = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+  const mIdx = months.indexOf(mStr);
+  if (mIdx === -1) return 99;
 
+  const year = 2000 + parseInt(yStr);
+  const cadDate = new Date(year, mIdx, 1);
+  const now = new Date();
+
+  return (cadDate.getFullYear() - now.getFullYear()) * 12 + (cadDate.getMonth() - now.getMonth());
+}
+
+function mmmaaToIsoDate(str) {
+  if (!str || !str.includes("-") || str.length > 7) return str;
+  try {
+    const [mStr, yStr] = str.toUpperCase().split("-");
     const months = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
     const mIdx = months.indexOf(mStr);
-    if (mIdx === -1) return 99;
-
+    if (mIdx === -1) return str;
     const year = 2000 + parseInt(yStr);
-    const cadDate = new Date(year, mIdx, 1);
-    const now = new Date();
+    const lastDay = new Date(year, mIdx + 1, 0).getDate();
+    return `${year}-${String(mIdx + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+  } catch (e) { return str; }
+}
 
-    return (cadDate.getFullYear() - now.getFullYear()) * 12 + (cadDate.getMonth() - now.getMonth());
-  }
+function isoToMmmaa(isoStr) {
+  if (!isoStr || isoStr.length < 7) return isoStr;
+  try {
+    const parts = isoStr.split("-");
+    if (parts.length < 2) return isoStr;
+    const y = parts[0].substring(2);
+    const mIdx = parseInt(parts[1]) - 1;
+    const months = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+    return `${months[mIdx]}-${y}`;
+  } catch (e) { return isoStr; }
+}
 
-  function mmmaaToIsoDate(str) {
-    if (!str || !str.includes("-") || str.length > 7) return str;
-    try {
-      const [mStr, yStr] = str.toUpperCase().split("-");
-      const months = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
-      const mIdx = months.indexOf(mStr);
-      if (mIdx === -1) return str;
-      const year = 2000 + parseInt(yStr);
-      const lastDay = new Date(year, mIdx + 1, 0).getDate();
-      return `${year}-${String(mIdx + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-    } catch (e) { return str; }
-  }
+function getSemaforoStatus(val) {
+  const diff = getMonthsTo(val);
+  if (diff < 0) return { key: "expired", label: "Expirado", color: "#ba1a1a" };
+  if (diff <= 3) return { key: "pronto", label: "Cad. Próxima", color: "#ef4444" };
+  if (diff <= 6) return { key: "normal", label: "Cad. Media", color: "#f59e0b" };
+  return { key: "lejana", label: "Vigente", color: "#10b981" };
+}
 
-  function isoToMmmaa(isoStr) {
-    if (!isoStr || isoStr.length < 7) return isoStr;
-    try {
-      const parts = isoStr.split("-");
-      if (parts.length < 2) return isoStr;
-      const y = parts[0].substring(2);
-      const mIdx = parseInt(parts[1]) - 1;
-      const months = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
-      return `${months[mIdx]}-${y}`;
-    } catch (e) { return isoStr; }
-  }
+function renderLiveCharts(sem, cad) {
+  try {
+    const ctxSem = $("chartSemaforo")?.getContext("2d");
+    const ctxCad = $("chartCaducidad")?.getContext("2d");
+    if (!ctxSem || !ctxCad) return;
 
-  function getSemaforoStatus(val) {
-    const diff = getMonthsTo(val);
-    if (diff < 0) return { key: "expired", label: "Expirado", color: "#ba1a1a" };
-    if (diff <= 3) return { key: "pronto", label: "Cad. Próxima", color: "#ef4444" };
-    if (diff <= 6) return { key: "normal", label: "Cad. Media", color: "#f59e0b" };
-    return { key: "lejana", label: "Vigente", color: "#10b981" };
-  }
+    if (CHART_SEM) CHART_SEM.destroy();
+    if (CHART_CAD) CHART_CAD.destroy();
 
-  function renderLiveCharts(sem, cad) {
-    try {
-      const ctxSem = $("chartSemaforo")?.getContext("2d");
-      const ctxCad = $("chartCaducidad")?.getContext("2d");
-      if (!ctxSem || !ctxCad) return;
-
-      if (CHART_SEM) CHART_SEM.destroy();
-      if (CHART_CAD) CHART_CAD.destroy();
-
-      CHART_SEM = new Chart(ctxSem, {
-        type: 'doughnut',
-        data: {
-          labels: ['Próxima', 'Media', 'Vigente'],
-          datasets: [{
-            data: [sem.pronto, sem.normal, sem.lejana],
-            backgroundColor: ['#f87171', '#fbbf24', '#4ade80'],
-            borderWidth: 0,
-            hoverOffset: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'right', labels: { boxWidth: 8, font: { size: 9, weight: '700' } } } }
-        }
-      });
-
-      CHART_CAD = new Chart(ctxCad, {
-        type: 'bar',
-        data: {
-          labels: ['< 3m', '3-6m', '6-12m', '> 12m'],
-          datasets: [{
-            label: 'Lotes',
-            data: [cad.m3, cad.m6, cad.m12, cad.more],
-            backgroundColor: '#3b82f6',
-            borderRadius: 6
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 8 } }, grid: { display: false } },
-            x: { ticks: { font: { size: 8, weight: '700' } }, grid: { display: false } }
-          },
-          plugins: { legend: { display: false } }
-        }
-      });
-    } catch (err) {
-      console.warn("Chart error:", err);
-    }
-  }
-
-  if ($("btnLiveViewClose")) {
-    $("btnLiveViewClose").onclick = () => {
-      $("liveViewOverlay").classList.remove("show");
-      $("liveViewOverlay").style.display = "none";
-      $("liveViewOverlay").ariaHidden = "true";
-    };
-  }
-
-  window.openLiveView = openLiveView;
-
-  // ✅ AUTO-UPPERCASE FOR LOTES
-  document.addEventListener("input", e => {
-    if (e.target && (e.target.id === "loteTxt" || e.target.classList.contains("sr-lote-select") || e.target.classList.contains("rowLoteInput"))) {
-      if (typeof e.target.value === "string") {
-        e.target.value = e.target.value.toUpperCase();
+    CHART_SEM = new Chart(ctxSem, {
+      type: 'doughnut',
+      data: {
+        labels: ['Próxima', 'Media', 'Vigente'],
+        datasets: [{
+          data: [sem.pronto, sem.normal, sem.lejana],
+          backgroundColor: ['#f87171', '#fbbf24', '#4ade80'],
+          borderWidth: 0,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'right', labels: { boxWidth: 8, font: { size: 9, weight: '700' } } } }
       }
-    }
-  });
-
-  // ==========================================
-  // PANEL DE ARCHIVOS (VISUALIZADOR DROPDOWN)
-  // ==========================================
-  let ARCHIVOS_DATA = [];
-
-  function getArchivosDropdownRefs() {
-    return {
-      box: $("archivosDropdown"),
-      btn: $("btnViewArchivos"),
-      host: $("cardSide")
-    };
-  }
-
-  function positionArchivosDropdown() {
-    const refs = getArchivosDropdownRefs();
-    const box = refs.box;
-    const btn = refs.btn;
-    if (!box || !btn) return;
-
-    const btnRect = btn.getBoundingClientRect();
-    const boxWidth = box.offsetWidth;
-    const padding = 12;
-
-    let top = btnRect.bottom + 12;
-    let left = btnRect.right - boxWidth;
-
-    if (left < padding) left = padding;
-    if (left + boxWidth > window.innerWidth - padding) {
-      left = window.innerWidth - boxWidth - padding;
-    }
-
-    const availableHeight = window.innerHeight - top - padding;
-
-    box.style.position = "fixed";
-    box.style.top = top + "px";
-    box.style.left = left + "px";
-    box.style.maxHeight = availableHeight + "px";
-    box.style.zIndex = "10000";
-  }
-
-
-  function toggleArchivosDropdown() {
-    const box = $("archivosDropdown");
-    if (!box) return;
-
-    const isOpen = box.style.display === "block";
-    if (isOpen) {
-      box.classList.remove("open");
-      box.style.display = "none";
-    } else {
-      // Ocultar notif si está abierto
-      if (typeof closeTopNotifDropdown === "function") closeTopNotifDropdown();
-
-      box.style.display = "block";
-      // Force reflow for animation
-      void box.offsetWidth;
-      box.classList.add("open");
-      positionArchivosDropdown();
-      renderArchivosView();
-    }
-  }
-
-  $("btnViewArchivos")?.addEventListener("click", ev => {
-    ev.preventDefault();
-    ev.stopPropagation();
-    toggleArchivosDropdown();
-  });
-
-  $("btnArchivosClose")?.addEventListener("click", ev => {
-    ev.preventDefault();
-    toggleArchivosDropdown();
-  });
-
-  document.addEventListener("click", ev => {
-    const box = $("archivosDropdown");
-    if (box && box.style.display === "block") {
-      const isBtn = ev.target.closest("#btnViewArchivos");
-      if (!box.contains(ev.target) && !isBtn) {
-        box.classList.remove("open");
-        box.style.display = "none";
-      }
-    }
-  });
-
-  document.addEventListener("keydown", ev => {
-    if (ev.key === "Escape") {
-      const box = $("archivosDropdown");
-      if (box && box.style.display === "block") {
-        box.classList.remove("open");
-        box.style.display = "none";
-      }
-    }
-  });
-
-  $("btnRefreshArchivos")?.addEventListener("click", renderArchivosView);
-  $("archivosSearch")?.addEventListener("input", filterArchivosGrid);
-  $("archivosCategoria")?.addEventListener("change", filterArchivosGrid);
-
-  async function renderArchivosView() {
-    try {
-      showOverlay("Cargando evidencias...", "Leyendo desde Supabase");
-
-      // 🛡️ Garantizar que el catálogo de unidades esté cargado (crítico para filtro MUNICIPAL)
-      if (!UNIT_CATALOG || UNIT_CATALOG.length === 0) {
-        await loadUnitCatalog();
-      }
-
-      const res = await apiCall({ action: "listfiles" });
-      if (res && res.ok) {
-        ARCHIVOS_DATA = res.data;
-        filterArchivosGrid();
-      } else {
-        showToast("Error al cargar archivos", false);
-      }
-    } catch (e) {
-      console.error(e);
-      showToast("Error", false);
-    } finally {
-      hideOverlay();
-    }
-  }
-
-  function filterArchivosGrid() {
-    const container = $("archivosContainer");
-    if (!container) return;
-
-    const catFilt = ($("archivosCategoria")?.value || "").toLowerCase();
-    const txtFilt = ($("archivosSearch")?.value || "").toLowerCase();
-    const role = String((typeof USER !== "undefined" && USER && USER.rol) ? USER.rol : "").toUpperCase();
-    const myClues = (typeof USER !== "undefined" && USER && USER.clues) ? USER.clues : "";
-    const myMunicipio = (typeof USER !== "undefined" && USER && USER.municipio) ? USER.municipio : "";
-    const isUnidad = role === "UNIDAD";
-    const isMunicipal = role === "MUNICIPAL";
-    const isAdmin = role === "ADMIN" || role === "JURISDICCIONAL";
-
-    // 🛡️ Para MUNICIPAL: construir set de CLUES permitidas basándose en sus municipios autorizados
-    let allowedCluesSet = null;
-    if (isMunicipal) {
-      allowedCluesSet = new Set();
-      const catalog = Array.isArray(UNIT_CATALOG) ? UNIT_CATALOG : [];
-      catalog.forEach(u => {
-        if (canSeeMunicipio_(USER, u.municipio)) {
-          allowedCluesSet.add(String(u.clues || "").trim().toUpperCase());
-        }
-      });
-    }
-
-    let filtered = ARCHIVOS_DATA.filter(f => {
-      const pathParts = (f.name || "").split("/");
-      if (pathParts.length < 3) return false;
-
-      const category = (pathParts[0] || "").toLowerCase();
-      const cluMun = (pathParts[1] || "").toUpperCase();
-
-      // ✅ REGLA: UNIDAD solo ve 'Supervisión' de su CLUES
-      if (isUnidad) {
-        const myCluesClean = String(myClues).trim().toUpperCase();
-        if (!category.includes("supervisi")) return false;
-        if (!cluMun.includes(myCluesClean)) return false;
-      }
-
-      // ✅ REGLA: MUNICIPAL solo ve archivos de CLUES de su municipio
-      if (isMunicipal && allowedCluesSet) {
-        // Extraer CLUES del path (formato: CLUES_NombreUnidad)
-        const cluesFromPath = cluMun.split("_")[0];
-        if (!allowedCluesSet.has(cluesFromPath)) return false;
-      }
-
-      // ADMIN y JURISDICCIONAL ven todo
-      return true;
     });
 
-    if (txtFilt) {
-      filtered = filtered.filter(f => f.name.toLowerCase().includes(txtFilt));
+    CHART_CAD = new Chart(ctxCad, {
+      type: 'bar',
+      data: {
+        labels: ['< 3m', '3-6m', '6-12m', '> 12m'],
+        datasets: [{
+          label: 'Lotes',
+          data: [cad.m3, cad.m6, cad.m12, cad.more],
+          backgroundColor: '#3b82f6',
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 8 } }, grid: { display: false } },
+          x: { ticks: { font: { size: 8, weight: '700' } }, grid: { display: false } }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+  } catch (err) {
+    console.warn("Chart error:", err);
+  }
+}
+
+if ($("btnLiveViewClose")) {
+  $("btnLiveViewClose").onclick = () => {
+    $("liveViewOverlay").classList.remove("show");
+    $("liveViewOverlay").style.display = "none";
+    $("liveViewOverlay").ariaHidden = "true";
+  };
+}
+
+window.openLiveView = openLiveView;
+
+// ✅ AUTO-UPPERCASE FOR LOTES
+document.addEventListener("input", e => {
+  if (e.target && (e.target.id === "loteTxt" || e.target.classList.contains("sr-lote-select") || e.target.classList.contains("rowLoteInput"))) {
+    if (typeof e.target.value === "string") {
+      e.target.value = e.target.value.toUpperCase();
+    }
+  }
+});
+
+// ==========================================
+// PANEL DE ARCHIVOS (VISUALIZADOR DROPDOWN)
+// ==========================================
+let ARCHIVOS_DATA = [];
+
+function getArchivosDropdownRefs() {
+  return {
+    box: $("archivosDropdown"),
+    btn: $("btnViewArchivos"),
+    host: $("cardSide")
+  };
+}
+
+function positionArchivosDropdown() {
+  const refs = getArchivosDropdownRefs();
+  const box = refs.box;
+  const btn = refs.btn;
+  if (!box || !btn) return;
+
+  const btnRect = btn.getBoundingClientRect();
+  const boxWidth = box.offsetWidth;
+  const padding = 12;
+
+  let top = btnRect.bottom + 12;
+  let left = btnRect.right - boxWidth;
+
+  if (left < padding) left = padding;
+  if (left + boxWidth > window.innerWidth - padding) {
+    left = window.innerWidth - boxWidth - padding;
+  }
+
+  const availableHeight = window.innerHeight - top - padding;
+
+  box.style.position = "fixed";
+  box.style.top = top + "px";
+  box.style.left = left + "px";
+  box.style.maxHeight = availableHeight + "px";
+  box.style.zIndex = "10000";
+}
+
+
+function toggleArchivosDropdown() {
+  const box = $("archivosDropdown");
+  if (!box) return;
+
+  const isOpen = box.style.display === "block";
+  if (isOpen) {
+    box.classList.remove("open");
+    box.style.display = "none";
+  } else {
+    // Ocultar notif si está abierto
+    if (typeof closeTopNotifDropdown === "function") closeTopNotifDropdown();
+
+    box.style.display = "block";
+    // Force reflow for animation
+    void box.offsetWidth;
+    box.classList.add("open");
+    positionArchivosDropdown();
+    renderArchivosView();
+  }
+}
+
+$("btnViewArchivos")?.addEventListener("click", ev => {
+  ev.preventDefault();
+  ev.stopPropagation();
+  toggleArchivosDropdown();
+});
+
+$("btnArchivosClose")?.addEventListener("click", ev => {
+  ev.preventDefault();
+  toggleArchivosDropdown();
+});
+
+document.addEventListener("click", ev => {
+  const box = $("archivosDropdown");
+  if (box && box.style.display === "block") {
+    const isBtn = ev.target.closest("#btnViewArchivos");
+    if (!box.contains(ev.target) && !isBtn) {
+      box.classList.remove("open");
+      box.style.display = "none";
+    }
+  }
+});
+
+document.addEventListener("keydown", ev => {
+  if (ev.key === "Escape") {
+    const box = $("archivosDropdown");
+    if (box && box.style.display === "block") {
+      box.classList.remove("open");
+      box.style.display = "none";
+    }
+  }
+});
+
+$("btnRefreshArchivos")?.addEventListener("click", renderArchivosView);
+$("archivosSearch")?.addEventListener("input", filterArchivosGrid);
+$("archivosCategoria")?.addEventListener("change", filterArchivosGrid);
+
+async function renderArchivosView() {
+  try {
+    showOverlay("Cargando evidencias...", "Leyendo desde Supabase");
+
+    // 🛡️ Garantizar que el catálogo de unidades esté cargado (crítico para filtro MUNICIPAL)
+    if (!UNIT_CATALOG || UNIT_CATALOG.length === 0) {
+      await loadUnitCatalog();
     }
 
-    // Filtro de categoría inteligente (ignora guiones bajos y acentos)
-    if (catFilt) {
-      const normalize = str => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/_/g, " ");
-      const normalizedCat = normalize(catFilt).toLowerCase();
-      filtered = filtered.filter(f => {
-        const pathCat = normalize(f.name.split("/")[0] || "").toLowerCase();
-        return pathCat === normalizedCat;
-      });
+    const res = await apiCall({ action: "listfiles" });
+    if (res && res.ok) {
+      ARCHIVOS_DATA = res.data;
+      filterArchivosGrid();
+    } else {
+      showToast("Error al cargar archivos", false);
+    }
+  } catch (e) {
+    console.error(e);
+    showToast("Error", false);
+  } finally {
+    hideOverlay();
+  }
+}
+
+function filterArchivosGrid() {
+  const container = $("archivosContainer");
+  if (!container) return;
+
+  const catFilt = ($("archivosCategoria")?.value || "").toLowerCase();
+  const txtFilt = ($("archivosSearch")?.value || "").toLowerCase();
+  const role = String((typeof USER !== "undefined" && USER && USER.rol) ? USER.rol : "").toUpperCase();
+  const myClues = (typeof USER !== "undefined" && USER && USER.clues) ? USER.clues : "";
+  const myMunicipio = (typeof USER !== "undefined" && USER && USER.municipio) ? USER.municipio : "";
+  const isUnidad = role === "UNIDAD";
+  const isMunicipal = role === "MUNICIPAL";
+  const isAdmin = role === "ADMIN" || role === "JURISDICCIONAL";
+
+  // 🛡️ Para MUNICIPAL: construir set de CLUES permitidas basándose en sus municipios autorizados
+  let allowedCluesSet = null;
+  if (isMunicipal) {
+    allowedCluesSet = new Set();
+    const catalog = Array.isArray(UNIT_CATALOG) ? UNIT_CATALOG : [];
+    catalog.forEach(u => {
+      if (canSeeMunicipio_(USER, u.municipio)) {
+        allowedCluesSet.add(String(u.clues || "").trim().toUpperCase());
+      }
+    });
+  }
+
+  let filtered = ARCHIVOS_DATA.filter(f => {
+    const pathParts = (f.name || "").split("/");
+    if (pathParts.length < 3) return false;
+
+    const category = (pathParts[0] || "").toLowerCase();
+    const cluMun = (pathParts[1] || "").toUpperCase();
+
+    // ✅ REGLA: UNIDAD solo ve 'Supervisión' de su CLUES
+    if (isUnidad) {
+      const myCluesClean = String(myClues).trim().toUpperCase();
+      if (!category.includes("supervisi")) return false;
+      if (!cluMun.includes(myCluesClean)) return false;
     }
 
-    if (filtered.length === 0) {
-      container.innerHTML = `<div class="col-span-full text-center text-outline p-8 bg-surface-variant rounded-2xl">No se encontraron archivos.</div>`;
-      return;
+    // ✅ REGLA: MUNICIPAL solo ve archivos de CLUES de su municipio
+    if (isMunicipal && allowedCluesSet) {
+      // Extraer CLUES del path (formato: CLUES_NombreUnidad)
+      const cluesFromPath = cluMun.split("_")[0];
+      if (!allowedCluesSet.has(cluesFromPath)) return false;
     }
 
-    container.innerHTML = filtered.map(f => {
-      const url = `${SUPABASE_URL}/storage/v1/object/public/evidencias/${encodeURIComponent(f.name)}`;
-      const parts = f.name.split("/");
-      const fileName = parts[2];
-      const cluesUnidad = parts[1];
-      const dObj = new Date(f.created_at);
+    // ADMIN y JURISDICCIONAL ven todo
+    return true;
+  });
 
-      return `<div class="bg-surface-variant/10 border border-outline-variant/20 rounded-md p-3 flex items-center gap-3 transition-all hover:bg-surface-variant/30 group">
+  if (txtFilt) {
+    filtered = filtered.filter(f => f.name.toLowerCase().includes(txtFilt));
+  }
+
+  // Filtro de categoría inteligente (ignora guiones bajos y acentos)
+  if (catFilt) {
+    const normalize = str => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/_/g, " ");
+    const normalizedCat = normalize(catFilt).toLowerCase();
+    filtered = filtered.filter(f => {
+      const pathCat = normalize(f.name.split("/")[0] || "").toLowerCase();
+      return pathCat === normalizedCat;
+    });
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div class="col-span-full text-center text-outline p-8 bg-surface-variant rounded-2xl">No se encontraron archivos.</div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(f => {
+    const url = `${SUPABASE_URL}/storage/v1/object/public/evidencias/${encodeURIComponent(f.name)}`;
+    const parts = f.name.split("/");
+    const fileName = parts[2];
+    const cluesUnidad = parts[1];
+    const dObj = new Date(f.created_at);
+
+    return `<div class="bg-surface-variant/10 border border-outline-variant/20 rounded-md p-3 flex items-center gap-3 transition-all hover:bg-surface-variant/30 group">
                   <div class="w-10 h-10 rounded bg-primary/5 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/10">
                      <span class="material-symbols-rounded text-primary text-[20px]">description</span>
                   </div>
@@ -11079,37 +11339,37 @@ function activateMain(panel, target = null) {
                   </a>
                </div>`;
 
-    }).join("");
+  }).join("");
+}
+
+/**
+ * ✅ GESTIÓN LOGÍSTICA - ADMIN
+ */
+/**
+ * ✅ GESTIÓN LOGÍSTICA - ADMIN (REFACTORED FOR TABS)
+ */
+async function refreshBulkBioSetup() {
+  if (!USER || USER.rol !== "ADMIN") return;
+
+  // 1. Cargar Catálogo de Biológicos para el Bulk Tool
+  loadBioBulkCatalogo();
+
+  // 2. Listener de Búsqueda de Unidades
+  const searchInput = $("unitBulkSearch");
+  if (searchInput) {
+    searchInput.oninput = debounce(() => searchBioBulkUnits(searchInput.value), 300);
   }
+}
 
-  /**
-   * ✅ GESTIÓN LOGÍSTICA - ADMIN
-   */
-  /**
-   * ✅ GESTIÓN LOGÍSTICA - ADMIN (REFACTORED FOR TABS)
-   */
-  async function refreshBulkBioSetup() {
-    if (!USER || USER.rol !== "ADMIN") return;
+async function loadBioBulkCatalogo() {
+  const wrap = $("bioBulkVaccinesList");
+  if (!wrap) return;
 
-    // 1. Cargar Catálogo de Biológicos para el Bulk Tool
-    loadBioBulkCatalogo();
+  try {
+    const res = await supabase.from('biologicos_catalogo').select('*').order('orden_biologico');
+    if (res.error) throw res.error;
 
-    // 2. Listener de Búsqueda de Unidades
-    const searchInput = $("unitBulkSearch");
-    if (searchInput) {
-      searchInput.oninput = debounce(() => searchBioBulkUnits(searchInput.value), 300);
-    }
-  }
-
-  async function loadBioBulkCatalogo() {
-    const wrap = $("bioBulkVaccinesList");
-    if (!wrap) return;
-
-    try {
-      const res = await supabase.from('biologicos_catalogo').select('*').order('orden_biologico');
-      if (res.error) throw res.error;
-
-      wrap.innerHTML = res.data.map(v => `
+    wrap.innerHTML = res.data.map(v => `
         <label class="flex items-center gap-3 p-2.5 rounded-xl bg-white hover:bg-primary/5 cursor-pointer transition-all border border-outline-variant/30 group">
           <input type="checkbox" class="bioBulkCheckbox w-4 h-4 rounded border-primary" value="${escapeAttr(v.biologico)}">
           <div class="flex flex-col min-w-0">
@@ -11118,72 +11378,72 @@ function activateMain(panel, target = null) {
           </div>
         </label>
       `).join('');
-    } catch (e) {
-      console.error("Error loading bio catalog:", e);
-      wrap.innerHTML = `<div class="muted col-span-2 text-center text-[11px]">Error al cargar catálogo</div>`;
-    }
+  } catch (e) {
+    console.error("Error loading bio catalog:", e);
+    wrap.innerHTML = `<div class="muted col-span-2 text-center text-[11px]">Error al cargar catálogo</div>`;
   }
+}
 
-  window.loadAllUnitsBulk = async function () {
-    const wrap = $("unitBulkList");
-    if (!wrap) return;
+window.loadAllUnitsBulk = async function () {
+  const wrap = $("unitBulkList");
+  if (!wrap) return;
 
-    showOverlay("Cargando todas las unidades...", "Carga Global");
-    try {
-      const { data, error } = await supabase
-        .from('unidades')
-        .select('clues, unidad, municipio')
-        .eq('activo', 'SI')
-        .order('municipio', { ascending: true })
-        .order('clues', { ascending: true });
+  showOverlay("Cargando todas las unidades...", "Carga Global");
+  try {
+    const { data, error } = await supabase
+      .from('unidades')
+      .select('clues, unidad, municipio')
+      .eq('activo', 'SI')
+      .order('municipio', { ascending: true })
+      .order('clues', { ascending: true });
 
-      if (error) throw error;
-      renderBulkUnitItems(data);
-      showToast(`Cargadas ${data.length} unidades`, true);
-    } catch (e) {
-      console.error("Error global units load:", e);
-      showToast("Error al cargar todas las unidades", false, "error");
-    } finally {
-      hideOverlay();
-    }
-  };
+    if (error) throw error;
+    renderBulkUnitItems(data);
+    showToast(`Cargadas ${data.length} unidades`, true);
+  } catch (e) {
+    console.error("Error global units load:", e);
+    showToast("Error al cargar todas las unidades", false, "error");
+  } finally {
+    hideOverlay();
+  }
+};
 
-  window.selectAllFilteredUnits = function () {
-    const checks = document.querySelectorAll(".unitBulkCheckbox");
-    if (checks.length === 0) {
-      showToast("No hay unidades listadas para marcar", false, "warn");
-      return;
-    }
-    checks.forEach(i => i.checked = true);
-    showToast(`Marcadas ${checks.length} unidades`, true);
-  };
+window.selectAllFilteredUnits = function () {
+  const checks = document.querySelectorAll(".unitBulkCheckbox");
+  if (checks.length === 0) {
+    showToast("No hay unidades listadas para marcar", false, "warn");
+    return;
+  }
+  checks.forEach(i => i.checked = true);
+  showToast(`Marcadas ${checks.length} unidades`, true);
+};
 
-  window.deselectAllUnits = function () {
-    const checks = document.querySelectorAll(".unitBulkCheckbox");
-    checks.forEach(i => i.checked = false);
-    showToast("Unidades desmarcadas");
-  };
+window.deselectAllUnits = function () {
+  const checks = document.querySelectorAll(".unitBulkCheckbox");
+  checks.forEach(i => i.checked = false);
+  showToast("Unidades desmarcadas");
+};
 
-  window.selectAllVaccinesBulk = function () {
-    const checks = document.querySelectorAll(".bioBulkCheckbox");
-    checks.forEach(i => i.checked = true);
-    showToast("Todos los biológicos marcados");
-  };
+window.selectAllVaccinesBulk = function () {
+  const checks = document.querySelectorAll(".bioBulkCheckbox");
+  checks.forEach(i => i.checked = true);
+  showToast("Todos los biológicos marcados");
+};
 
-  window.deselectAllVaccinesBulk = function () {
-    const checks = document.querySelectorAll(".bioBulkCheckbox");
-    checks.forEach(i => i.checked = false);
-    showToast("Biológicos desmarcados");
-  };
+window.deselectAllVaccinesBulk = function () {
+  const checks = document.querySelectorAll(".bioBulkCheckbox");
+  checks.forEach(i => i.checked = false);
+  showToast("Biológicos desmarcados");
+};
 
-  function renderBulkUnitItems(data) {
-    const wrap = $("unitBulkList");
-    if (!wrap) return;
-    if (!data || data.length === 0) {
-      wrap.innerHTML = `<div class="muted p-2 text-center text-[11px] font-bold opacity-40 py-10 w-full">No se encontraron unidades</div>`;
-      return;
-    }
-    wrap.innerHTML = data.map(u => `
+function renderBulkUnitItems(data) {
+  const wrap = $("unitBulkList");
+  if (!wrap) return;
+  if (!data || data.length === 0) {
+    wrap.innerHTML = `<div class="muted p-2 text-center text-[11px] font-bold opacity-40 py-10 w-full">No se encontraron unidades</div>`;
+    return;
+  }
+  wrap.innerHTML = data.map(u => `
       <label class="flex items-center gap-3 p-3 rounded-xl bg-white hover:bg-primary/5 cursor-pointer transition-all border border-outline-variant/30 group shadow-sm min-w-[200px] flex-1">
         <input type="checkbox" class="unitBulkCheckbox w-4 h-4 rounded border-primary" value="${escapeAttr(u.clues)}">
         <div class="flex flex-col min-w-0">
@@ -11192,238 +11452,411 @@ function activateMain(panel, target = null) {
         </div>
       </label>
     `).join('');
-  }
+}
 
-  async function searchBioBulkUnits(query) {
-    const wrap = $("unitBulkList");
-    if (!wrap) return;
-    if (!query || query.length < 2) {
-      wrap.innerHTML = `<div class="muted p-2 text-center text-[11px] font-bold opacity-40 py-10 w-full flex flex-col items-center gap-3">
+async function searchBioBulkUnits(query) {
+  const wrap = $("unitBulkList");
+  if (!wrap) return;
+  if (!query || query.length < 2) {
+    wrap.innerHTML = `<div class="muted p-2 text-center text-[11px] font-bold opacity-40 py-10 w-full flex flex-col items-center gap-3">
                         <span class="material-symbols-rounded text-[32px]">manage_search</span>
                         Escribe para buscar unidades...
                       </div>`;
-      return;
+    return;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('unidades')
+      .select('clues, unidad, municipio')
+      .or(`clues.ilike.%${query}%,unidad.ilike.%${query}%`)
+      .order('municipio', { ascending: true })
+      .order('clues', { ascending: true })
+      .limit(30);
+
+    if (error) throw error;
+    renderBulkUnitItems(data);
+  } catch (e) {
+    console.error("Error searching units:", e);
+    wrap.innerHTML = `<div class="muted p-2 text-center text-[11px]">Error en la búsqueda</div>`;
+  }
+}
+
+window.handleBulkBioVisibility = async function (activo) {
+  const selectedClues = Array.from(document.querySelectorAll(".unitBulkCheckbox:checked")).map(i => i.value);
+  const selectedVaccines = Array.from(document.querySelectorAll(".bioBulkCheckbox:checked")).map(i => i.value);
+
+  if (selectedClues.length === 0 || selectedVaccines.length === 0) {
+    showToast("Selecciona al menos una unidad y un biológico", false, "warn");
+    return;
+  }
+
+  const actionText = activo === 'SI' ? 'HABILITAR' : 'OCULTAR';
+  if (!confirm(`¿Estás seguro de ${actionText} los ${selectedVaccines.length} biológicos seleccionados en las ${selectedClues.length} unidades?`)) return;
+
+  showOverlay("Aplicando cambios masivos...", "Admin Logística");
+  try {
+    const res = await apiCall({
+      action: "adminToggleBioParam",
+      cluesList: selectedClues,
+      vaccinesList: selectedVaccines,
+      activo: activo
+    });
+
+    if (res && res.ok) {
+      showToast("Configuración actualizada con éxito", true);
+      document.querySelectorAll(".unitBulkCheckbox, .bioBulkCheckbox").forEach(i => i.checked = false);
+    } else {
+      throw new Error(res?.error || "Error en el servidor");
     }
+  } catch (e) {
+    showToast("Error: " + e.message, false);
+  } finally {
+    hideOverlay();
+  }
+};
 
-    try {
-      const { data, error } = await supabase
-        .from('unidades')
-        .select('clues, unidad, municipio')
-        .or(`clues.ilike.%${query}%,unidad.ilike.%${query}%`)
-        .order('municipio', { ascending: true })
-        .order('clues', { ascending: true })
-        .limit(30);
+async function saveBioOverride() {
+  const month = $("bioOverrideMonth").value; // YYYY-MM
+  const target = $("bioOverrideTarget").value;
+  const start = $("bioOverrideStart").value;
+  const end = $("bioOverrideEnd").value;
 
-      if (error) throw error;
-      renderBulkUnitItems(data);
-    } catch (e) {
-      console.error("Error searching units:", e);
-      wrap.innerHTML = `<div class="muted p-2 text-center text-[11px]">Error en la búsqueda</div>`;
+  if (!month || !target || !start || !end) {
+    showToast("Por favor completa todos los campos de la ventana", false, "warn");
+    return;
+  }
+
+  showOverlay("Guardando ventana extraordinaria...", "Calendario");
+  try {
+    const res = await apiCall({
+      action: "adminSetBioOverride",
+      anio_mes: month,
+      fecha_target: target,
+      habilitar_desde: start,
+      habilitar_hasta: end,
+      motivo: "APERTURA EXTRAORDINARIA ADMIN",
+      activo: "SI"
+    });
+
+    if (res && res.ok) {
+      showToast("Ventana extraordinaria habilitada", true);
+      // Limpiar para evitar duplicados accidentales
+      $("bioOverrideTarget").value = "";
+      $("bioOverrideStart").value = "";
+      $("bioOverrideEnd").value = "";
+      await refreshConsumiblesStatusUi();
+    } else {
+      throw new Error(res?.error || "Error al guardar");
+    }
+  } catch (e) {
+    showToast("Error: " + e.message, false);
+  } finally {
+    hideOverlay();
+  }
+}
+
+// === GLOBAL UX ENHANCEMENTS ===
+
+// 1. Open native date picker when clicking anywhere in the input or its container group
+document.addEventListener("click", (e) => {
+  // Only target date or month inputs
+  const isDateInput = (el) => el && el.tagName === "INPUT" && (el.type === "date" || el.type === "month");
+
+  let targetInput = null;
+  if (isDateInput(e.target)) {
+    targetInput = e.target;
+  } else {
+    // Check if clicking inside a group that contains a date input (icon, padding, etc)
+    const group = e.target.closest(".modern-input-group");
+    if (group) {
+      targetInput = group.querySelector('input[type="date"], input[type="month"]');
     }
   }
 
-  window.handleBulkBioVisibility = async function (activo) {
-    const selectedClues = Array.from(document.querySelectorAll(".unitBulkCheckbox:checked")).map(i => i.value);
-    const selectedVaccines = Array.from(document.querySelectorAll(".bioBulkCheckbox:checked")).map(i => i.value);
-
-    if (selectedClues.length === 0 || selectedVaccines.length === 0) {
-      showToast("Selecciona al menos una unidad y un biológico", false, "warn");
-      return;
-    }
-
-    const actionText = activo === 'SI' ? 'HABILITAR' : 'OCULTAR';
-    if (!confirm(`¿Estás seguro de ${actionText} los ${selectedVaccines.length} biológicos seleccionados en las ${selectedClues.length} unidades?`)) return;
-
-    showOverlay("Aplicando cambios masivos...", "Admin Logística");
+  if (targetInput && typeof targetInput.showPicker === "function") {
     try {
-      const res = await apiCall({
-        action: "adminToggleBioParam",
-        cluesList: selectedClues,
-        vaccinesList: selectedVaccines,
-        activo: activo
-      });
-
-      if (res && res.ok) {
-        showToast("Configuración actualizada con éxito", true);
-        document.querySelectorAll(".unitBulkCheckbox, .bioBulkCheckbox").forEach(i => i.checked = false);
-      } else {
-        throw new Error(res?.error || "Error en el servidor");
-      }
-    } catch (e) {
-      showToast("Error: " + e.message, false);
-    } finally {
-      hideOverlay();
+      targetInput.showPicker();
+    } catch (err) {
+      // Silently fail if browser doesn't support it or state doesn't allow it
     }
+  }
+});
+
+// Dinamización instantánea del Resumen de Captura
+document.getElementById("summaryTipo")?.addEventListener("change", () => reloadCaptureSummarySilent());
+document.getElementById("summaryFecha")?.addEventListener("change", () => reloadCaptureSummarySilent());
+
+function isWorkDay(d) {
+  if (!d) return false;
+  const dateObj = (d instanceof Date) ? d : new Date(d + "T00:00:00");
+  return isBusinessDay(dateObj);
+}
+
+function getBioCaptureWindow(year, month) {
+  let target = new Date(year, month - 1, 22);
+  while (!isBusinessDay(target)) {
+    target.setDate(target.getDate() - 1);
+  }
+  let start = new Date(target);
+  start.setDate(start.getDate() - 1);
+  while (!isBusinessDay(start)) {
+    start.setDate(start.getDate() - 1);
+  }
+  let end = new Date(target);
+  end.setDate(end.getDate() + 1);
+  while (!isBusinessDay(end)) {
+    end.setDate(end.getDate() + 1);
+  }
+  return { start, target, end };
+}
+
+// Profile Dropdown Toggle Logic
+// Profile Dropdown Toggle Logic
+function initProfileDropdown() {
+  const btn = document.getElementById("btnProfileToggle");
+  const dropdown = document.getElementById("profileDropdown");
+  if (!btn || !dropdown) return;
+
+  btn.onclick = (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle("hidden");
+    btn.classList.toggle("btn-active", !dropdown.classList.contains("hidden"));
   };
 
-  async function saveBioOverride() {
-    const month = $("bioOverrideMonth").value; // YYYY-MM
-    const target = $("bioOverrideTarget").value;
-    const start = $("bioOverrideStart").value;
-    const end = $("bioOverrideEnd").value;
-
-    if (!month || !target || !start || !end) {
-      showToast("Por favor completa todos los campos de la ventana", false, "warn");
-      return;
-    }
-
-    showOverlay("Guardando ventana extraordinaria...", "Calendario");
-    try {
-      const res = await apiCall({
-        action: "adminSetBioOverride",
-        anio_mes: month,
-        fecha_target: target,
-        habilitar_desde: start,
-        habilitar_hasta: end,
-        motivo: "APERTURA EXTRAORDINARIA ADMIN",
-        activo: "SI"
-      });
-
-      if (res && res.ok) {
-        showToast("Ventana extraordinaria habilitada", true);
-        // Limpiar para evitar duplicados accidentales
-        $("bioOverrideTarget").value = "";
-        $("bioOverrideStart").value = "";
-        $("bioOverrideEnd").value = "";
-        await refreshConsumiblesStatusUi();
-      } else {
-        throw new Error(res?.error || "Error al guardar");
-      }
-    } catch (e) {
-      showToast("Error: " + e.message, false);
-    } finally {
-      hideOverlay();
-    }
-  }
-
-  // === GLOBAL UX ENHANCEMENTS ===
-
-  // 1. Open native date picker when clicking anywhere in the input or its container group
   document.addEventListener("click", (e) => {
-    // Only target date or month inputs
-    const isDateInput = (el) => el && el.tagName === "INPUT" && (el.type === "date" || el.type === "month");
-
-    let targetInput = null;
-    if (isDateInput(e.target)) {
-      targetInput = e.target;
-    } else {
-      // Check if clicking inside a group that contains a date input (icon, padding, etc)
-      const group = e.target.closest(".modern-input-group");
-      if (group) {
-        targetInput = group.querySelector('input[type="date"], input[type="month"]');
-      }
-    }
-
-    if (targetInput && typeof targetInput.showPicker === "function") {
-      try {
-        targetInput.showPicker();
-      } catch (err) {
-        // Silently fail if browser doesn't support it or state doesn't allow it
-      }
+    if (!dropdown.classList.contains("hidden") && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+      dropdown.classList.add("hidden");
+      btn.classList.remove("btn-active");
     }
   });
 
-  // Dinamización instantánea del Resumen de Captura
-  document.getElementById("summaryTipo")?.addEventListener("change", () => reloadCaptureSummarySilent());
-  document.getElementById("summaryFecha")?.addEventListener("change", () => reloadCaptureSummarySilent());
-
-  function isWorkDay(d) {
-    if (!d) return false;
-    const dateObj = (d instanceof Date) ? d : new Date(d + "T00:00:00");
-    return isBusinessDay(dateObj);
-  }
-
-  function getBioCaptureWindow(year, month) {
-    let target = new Date(year, month - 1, 22);
-    while (!isBusinessDay(target)) {
-      target.setDate(target.getDate() - 1);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !dropdown.classList.contains("hidden")) {
+      dropdown.classList.add("hidden");
+      btn.classList.remove("btn-active");
     }
-    let start = new Date(target);
-    start.setDate(start.getDate() - 1);
-    while (!isBusinessDay(start)) {
-      start.setDate(start.getDate() - 1);
+  });
+}
+
+
+
+/**
+ * 🛡️ CENTRALIZED PERMISSION ENGINE (Attribute-Based)
+ * Scans the DOM for [data-role-gate] and toggles visibility based on role.
+ */
+function applyRolePermissions(role) {
+  const normalizedRole = String(role || "UNIDAD").trim().toUpperCase();
+  console.log("🛡️ Applying permissions for role:", normalizedRole);
+
+  document.querySelectorAll("[data-role-gate]").forEach(el => {
+    const allowedRoles = el.getAttribute("data-role-gate").split(",").map(r => r.trim().toUpperCase());
+    const isAllowed = allowedRoles.includes(normalizedRole);
+
+    if (isAllowed) {
+      el.classList.remove("nav-hidden");
+      el.style.removeProperty("display");
+    } else {
+      el.classList.add("nav-hidden");
+      el.style.setProperty("display", "none", "important");
     }
-    let end = new Date(target);
-    end.setDate(end.getDate() + 1);
-    while (!isBusinessDay(end)) {
-      end.setDate(end.getDate() + 1);
+  });
+
+  // Especial: Ajustes de UI que no son solo ocultar (placeholders, etc)
+  const isUnidad = normalizedRole === "UNIDAD";
+  if ($("archivosSearch")) {
+    $("archivosSearch").placeholder = isUnidad ? "Buscar por fecha..." : "Buscar por Clues o Unidad...";
+  }
+  if ($("archivosCategoria")) {
+    $("archivosCategoria").style.display = isUnidad ? "none" : "block";
+  }
+}
+
+// Iniciar componentes al cargar
+function toggleProfileDropdown() {
+  const dropdown = document.getElementById("profileDropdown");
+  if (!dropdown) return;
+
+
+  dropdown.classList.toggle("hidden");
+}
+
+function toggleNotifications() {
+  const btn = document.getElementById("btnTopNotifications");
+  if (btn) btn.click(); // Trigger the existing logic
+}
+
+/**
+ * 🛸 SYNC COMMAND HUB (Control Flotante Premium)
+ */
+function syncCommandHub() {
+  const hub = document.getElementById("globalCommandHub");
+  if (!hub) return;
+
+  const mainPanel = AppState.mainPanel; // CAP, ARCHIVOS, NOTIFS, ADMIN
+  const captureTab = AppState.captureTab || "SR";
+
+  // 1. Visibilidad Global (Solo en paneles de captura)
+  const isCapture = (mainPanel === "CAP");
+  const isUnidad = (typeof USER !== "undefined" && USER?.rol === "UNIDAD");
+  
+  if (isCapture && isUnidad) {
+    hub.classList.add("visible");
+  } else {
+    hub.classList.remove("visible");
+    return;
+  }
+
+  // 2. Mapeo de botones por pestaña
+  // Nota: Aunque los eliminamos del HTML, las funciones de JS siguen buscando estos IDs
+  // por lo que crearemos referencias virtuales o proxies.
+  let realSaveBtn = document.getElementById("btnSave" + captureTab);
+  let realEditBtn = document.getElementById("btnEdit" + captureTab);
+  let realCancelBtn = document.getElementById("btnCancelEdit" + captureTab);
+
+  if (captureTab === "SR") {
+    realSaveBtn = document.getElementById("btnSaveSR");
+    realEditBtn = document.getElementById("btnEditSR");
+    realCancelBtn = document.getElementById("btnCancelEditSR");
+  }
+
+  // 3. Sincronizar visibilidad y estados en el Hub
+  const hubEdit = document.getElementById("hubEditBtn");
+  const hubCancel = document.getElementById("hubCancelBtn");
+  const hubSave = document.getElementById("hubSaveBtn");
+  const hubStatus = document.getElementById("hubStatusChip");
+  const hubStatusText = document.getElementById("hubStatusText");
+
+  // Lógica del Status Chip (¿Está guardado hoy?)
+  let isSaved = false;
+  if (captureTab === "SR") isSaved = !!HAS_TODAY_SR;
+  if (captureTab === "CONS") isSaved = !!HAS_TODAY_CONS;
+  if (captureTab === "BIO") isSaved = !!HAS_SAVED_BIO;
+
+  if (hubStatus && hubStatusText) {
+    hubStatus.style.display = "flex";
+    if (isSaved) {
+      hubStatus.className = "status-chip-v5 saved";
+      hubStatusText.textContent = "Reporte Guardado";
+    } else {
+      hubStatus.className = "status-chip-v5 pending";
+      hubStatusText.textContent = "Pendiente de Captura";
     }
-    return { start, target, end };
   }
 
-  // Profile Dropdown Toggle Logic
-  // Profile Dropdown Toggle Logic
-  function initProfileDropdown() {
-    const btn = document.getElementById("btnProfileToggle");
-    const dropdown = document.getElementById("profileDropdown");
-    if (!btn || !dropdown) return;
+  if (realSaveBtn && hubSave) {
+    hubSave.disabled = realSaveBtn.disabled;
 
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      dropdown.classList.toggle("hidden");
-      btn.classList.toggle("btn-active", !dropdown.classList.contains("hidden"));
-    };
+    if (realSaveBtn.hasAttribute("data-alert")) hubSave.setAttribute("data-alert", realSaveBtn.getAttribute("data-alert"));
+    else hubSave.removeAttribute("data-alert");
 
-    document.addEventListener("click", (e) => {
-      if (!dropdown.classList.contains("hidden") && !dropdown.contains(e.target) && !btn.contains(e.target)) {
-        dropdown.classList.add("hidden");
-        btn.classList.remove("btn-active");
-      }
-    });
+    if (realSaveBtn.hasAttribute("data-blocked")) hubSave.setAttribute("data-blocked", realSaveBtn.getAttribute("data-blocked"));
+    else hubSave.removeAttribute("data-blocked");
 
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && !dropdown.classList.contains("hidden")) {
-        dropdown.classList.add("hidden");
-        btn.classList.remove("btn-active");
-      }
-    });
-  }
-
-
-
-  /**
-   * 🛡️ CENTRALIZED PERMISSION ENGINE (Attribute-Based)
-   * Scans the DOM for [data-role-gate] and toggles visibility based on role.
-   */
-  function applyRolePermissions(role) {
-    const normalizedRole = String(role || "UNIDAD").trim().toUpperCase();
-    console.log("🛡️ Applying permissions for role:", normalizedRole);
-
-    document.querySelectorAll("[data-role-gate]").forEach(el => {
-      const allowedRoles = el.getAttribute("data-role-gate").split(",").map(r => r.trim().toUpperCase());
-      const isAllowed = allowedRoles.includes(normalizedRole);
-
-      if (isAllowed) {
-        el.classList.remove("nav-hidden");
-        el.style.removeProperty("display");
-      } else {
-        el.classList.add("nav-hidden");
-        el.style.setProperty("display", "none", "important");
-      }
-    });
-
-    // Especial: Ajustes de UI que no son solo ocultar (placeholders, etc)
-    const isUnidad = normalizedRole === "UNIDAD";
-    if ($("archivosSearch")) {
-      $("archivosSearch").placeholder = isUnidad ? "Buscar por fecha..." : "Buscar por Clues o Unidad...";
-    }
-    if ($("archivosCategoria")) {
-      $("archivosCategoria").style.display = isUnidad ? "none" : "block";
+    const saveText = hubSave.querySelector('span:last-child');
+    if (saveText) {
+      if (realCancelBtn && realCancelBtn.style.display !== "none") saveText.textContent = "Actualizar";
+      else saveText.textContent = "Guardar";
     }
   }
 
-  // Iniciar componentes al cargar
-  function toggleProfileDropdown() {
-    const dropdown = document.getElementById("profileDropdown");
-    if (!dropdown) return;
+  if (realEditBtn && realEditBtn.style.display !== "none") hubEdit.style.display = "flex";
+  else hubEdit.style.display = "none";
 
+  if (realCancelBtn && realCancelBtn.style.display !== "none") hubCancel.style.display = "flex";
+  else hubCancel.style.display = "none";
 
-    dropdown.classList.toggle("hidden");
+  // 4. Bind Actions
+  hubSave.onclick = () => realSaveBtn && realSaveBtn.click();
+  if (hubEdit) hubEdit.onclick = () => realEditBtn && realEditBtn.click();
+  if (hubCancel) hubCancel.onclick = () => realCancelBtn && realCancelBtn.click();
+}
+
+// Hook into existing events
+const originalActivateCapture = window.activateCapture;
+window.activateCapture = function (tab) {
+  if (typeof originalActivateCapture === "function") originalActivateCapture(tab);
+  syncCommandHub();
+};
+
+const originalActivateMain = window.activateMain;
+window.activateMain = function (panel, sub) {
+  if (typeof originalActivateMain === "function") originalActivateMain(panel, sub);
+  syncCommandHub();
+};
+
+// ============================================================================
+// DYNAMIC HEADER LIQUID GLASS GENERATOR (Lens Refraction + Frosted Blur)
+// ============================================================================
+function initHeaderGlass() {
+  let svgContainer = document.getElementById('header-glass-svg-container');
+  if (!svgContainer) {
+    svgContainer = document.createElement('div');
+    svgContainer.id = 'header-glass-svg-container';
+    svgContainer.style.width = '0';
+    svgContainer.style.height = '0';
+    svgContainer.style.position = 'absolute';
+    svgContainer.style.overflow = 'hidden';
+    document.body.appendChild(svgContainer);
   }
 
-  function toggleNotifications() {
-    const btn = document.getElementById("btnTopNotifications");
-    if (btn) btn.click(); // Trigger the existing logic
-  }
+  const items = document.querySelectorAll('.header-liquid-glass');
+  let svgDefs = '<svg xmlns="http://www.w3.org/2000/svg"><defs>';
 
+  items.forEach((item, index) => {
+    const rect = item.getBoundingClientRect();
+    const width = Math.max(10, Math.round(rect.width));
+    const height = Math.max(10, Math.round(rect.height));
+    const computedStyle = window.getComputedStyle(item);
+    let radius = parseInt(computedStyle.borderTopLeftRadius) || 28;
 
+    // Neutral displacement map with a subtle bevel at the edges.
+    // #808080 represents 0 displacement.
+    // We use an inset shadow-like gradient by using a slightly darker/lighter edge.
+    const mapSvg = `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <radialGradient id="lensGrad-${index}" cx="50%" cy="50%" r="60%">
+                    <stop offset="60%" stop-color="#808080"/>
+                    <stop offset="100%" stop-color="#404040"/>
+                </radialGradient>
+            </defs>
+            <rect x="0" y="0" width="${width}" height="${height}" rx="${radius}" fill="url(#lensGrad-${index})" />
+        </svg>`;
+
+    const encodedMap = encodeURIComponent(mapSvg);
+    const dataUri = `data:image/svg+xml,${encodedMap}`;
+
+    // Refraction without chromatic aberration + frosted blur
+    svgDefs += `
+            <filter id="headerGlassFilter-${index}" x="-20%" y="-20%" width="140%" height="140%">
+                <!-- Load the displacement map -->
+                <feImage x="0" y="0" width="${width}" height="${height}" result="map" href="${dataUri}"></feImage>
+                
+                <!-- Displace the background cleanly -->
+                <feDisplacementMap in="SourceGraphic" in2="map" xChannelSelector="R" yChannelSelector="G" scale="18" result="refraction" />
+                
+                <!-- Frosted blur effect (CONTROL DE TRANSPARENCIA / BLUR) -->
+                <!-- Cambia el valor de stdDeviation para más o menos blur. Ej: 0.5 (muy transparente), 4.0 (muy borroso) -->
+                <feGaussianBlur in="refraction" stdDeviation="1.3" result="frosted" />
+                
+                <!-- Slight brightness boost -->
+                <feComponentTransfer in="frosted">
+                    <feFuncR type="linear" slope="1.05"/>
+                    <feFuncG type="linear" slope="1.05"/>
+                    <feFuncB type="linear" slope="1.05"/>
+                </feComponentTransfer>
+            </filter>
+        `;
+
+    item.style.setProperty('backdrop-filter', `url(#headerGlassFilter-${index})`, 'important');
+    item.style.setProperty('-webkit-backdrop-filter', `url(#headerGlassFilter-${index})`, 'important');
+  });
+
+  svgDefs += '</defs></svg>';
+  svgContainer.innerHTML = svgDefs;
+}
+
+window.addEventListener('resize', () => {
+  if (window.headerGlassTimeout) clearTimeout(window.headerGlassTimeout);
+  window.headerGlassTimeout = setTimeout(initHeaderGlass, 200);
+});
