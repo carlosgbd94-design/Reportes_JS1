@@ -24,6 +24,7 @@ const DICT_RDA = {
     ADOL_VPH: ['VPH05','VPH06','VPH07','VPH08','VPH12','VPH13','VPH14'],
     ADOL_TD:  ['VAC39','VAC40','VAC47','VAC48','VTD01','VTD02','VAC55','VAC56',
                'VTT01','VTT02','VTT04','VTT05','VTT07','VTT08','VTT10','VTT11'],
+    ADOL_TDPA: ['VAC63'],
 
     // ── ADULTOS MAYORES (Solo aplicaciones) ──
     AM_NEUMO13: ['VNC04'],
@@ -91,7 +92,8 @@ class RDA2026Calculator {
         const total = this.sumVariables(registros, DICT_RDA.Hexa_Ref, meses)
                     + this.sumVariables(registros, DICT_RDA.Neumo_Ref, meses)
                     + this.sumVariables(registros, DICT_RDA.SRP_2, meses);
-        const cob = ((total / 3) / factor) * 100;
+        // Regla: Suma simple (sin dividir entre 3)
+        const cob = (total / factor) * 100;
         return isFinite(cob) ? Math.round(cob * 10) / 10 : 0;
     }
 
@@ -106,10 +108,11 @@ class RDA2026Calculator {
 
     static aplicacionesAdolescentes(registros, maxMes) {
         return {
-            hb:  this.sumVariables(registros, DICT_RDA.ADOL_HB, maxMes),
-            sr:  this.sumVariables(registros, DICT_RDA.ADOL_SR, maxMes),
-            vph: this.sumVariables(registros, DICT_RDA.ADOL_VPH, maxMes),
-            td:  this.sumVariables(registros, DICT_RDA.ADOL_TD, maxMes)
+            hb:   this.sumVariables(registros, DICT_RDA.ADOL_HB, maxMes),
+            sr:   this.sumVariables(registros, DICT_RDA.ADOL_SR, maxMes),
+            vph:  this.sumVariables(registros, DICT_RDA.ADOL_VPH, maxMes),
+            td:   this.sumVariables(registros, DICT_RDA.ADOL_TD, maxMes),
+            tdpa: this.sumVariables(registros, DICT_RDA.ADOL_TDPA, maxMes)
         };
     }
 

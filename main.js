@@ -2832,10 +2832,18 @@ function applyLoginAutocomplete() {
 }
 
 function applyCaptureNameAutocomplete() {
-  fillIfEmpty("nombreSR", getUxValue(UX_KEYS.existenciaName));
-  fillIfEmpty("nombreCONS", getUxValue(UX_KEYS.consName));
-  fillIfEmpty("nombreBIO", getUxValue(UX_KEYS.bioName));
-  fillIfEmpty("nombrePINOL", getUxValue(UX_KEYS.pinolName));
+  const nameSR = getUxValue(UX_KEYS.existenciaName);
+  const nameCONS = getUxValue(UX_KEYS.consName);
+  const nameBIO = getUxValue(UX_KEYS.bioName);
+  const namePINOL = getUxValue(UX_KEYS.pinolName);
+
+  // If we have a stored name, use it. If not, fallback to USER.nombre if it's not a generic ID
+  const defaultName = (USER && USER.nombre && !USER.nombre.includes("_")) ? USER.nombre : "";
+
+  fillIfEmpty("nombreSR", nameSR || defaultName);
+  fillIfEmpty("nombreCONS", nameCONS || defaultName);
+  fillIfEmpty("nombreBIO", nameBIO || defaultName);
+  fillIfEmpty("nombrePINOL", namePINOL || defaultName);
 }
 
 function bindFastNumericFocus() {
@@ -3313,6 +3321,7 @@ async function supabaseRequest(action = "", payload) {
         const clues = payload.clues || USER.clues;
         const municipio = payload.municipio || USER.municipio;
         const unidad = payload.unidad || USER.unidad;
+        const nombreResp = payload.nombre || USER.nombre || USER.usuario;
 
         // 1. Obtener catálogo de lotes para autocompletado de caducidad
         const { data: catLotes } = await supabase.from('lotes').select('biologico, lote, caducidad');
@@ -3338,7 +3347,7 @@ async function supabaseRequest(action = "", payload) {
           municipio: finalMuni,
           clues,
           unidad,
-          capturado_por: USER.usuario
+          capturado_por: nombreResp
         };
 
         // Inicializar biológicos según auditoría exacta
@@ -3372,7 +3381,7 @@ async function supabaseRequest(action = "", payload) {
             caducidad: mmmaaToIsoDate(finalCad), // CONVERSIÓN A ISO PARA DB
             fecha_recepcion: it.fecha_recepcion,
             cantidad: Number(it.cantidad || 0),
-            capturado_por: USER.usuario
+            capturado_por: nombreResp
           };
         });
 
@@ -3419,7 +3428,7 @@ async function supabaseRequest(action = "", payload) {
           jeringa_reconst_5ml_0605500438: Number(payload.jeringa_reconst_5ml_0605500438 || 0),
           jeringa_aplic_05ml_0605502657: Number(payload.jeringa_aplic_05ml_0605502657 || 0),
           aguja_0600403711: Number(payload.aguja_0600403711 || payload.aguja_06004037 || 0),
-          capturado_por: USER.usuario,
+          capturado_por: payload.nombre || USER.nombre || USER.usuario,
           editado: payload.editado || 'NO'
         };
 
@@ -3459,7 +3468,7 @@ async function supabaseRequest(action = "", payload) {
           solicitud: Number(it.pedido_frascos || 0),
           observaciones: it.observaciones || "",
           usuario: USER.usuario,
-          capturado_por: USER.usuario
+          capturado_por: payload.nombre || USER.nombre || USER.usuario
         }));
 
         console.log("[Capture Logic] Preparando guardado de BIO para:", { clues: finalClues, fecha: payload.fecha || todayYmdLocal() });
@@ -4241,7 +4250,7 @@ async function supabaseRequest(action = "", payload) {
           solicitud_botellas: Number(payload.solicitud_botellas || payload.cantidad || payload.solicitud || 0),
           observaciones: payload.observaciones || payload.motivo || "",
           estatus: 'PENDIENTE',
-          capturado_por: USER.usuario
+          capturado_por: payload.nombre || USER.nombre || USER.usuario
         };
         const { error } = await supabase.from('pinol_solicitudes').insert(record);
         if (error) throw error;
@@ -5800,7 +5809,7 @@ function renderLotesAdmin() {
           </td>
           <td style="font-family:monospace; font-weight:700; font-size:14px;">${escapeHtml(item.lote)}</td>
           <td>
-             <div style="font-weight:900;">${escapeHtml(item.caducidad)}</div>
+             <div style="font-weight:900;">${escapeHtml(formatToMmmAa(item.caducidad))}</div>
              <div class="lote-life-container">
                <div class="lote-life-bar ${expiryInfo.class}" style="width: ${expiryInfo.progress}%"></div>
              </div>
@@ -5848,12 +5857,19 @@ function getExpiryLogistics(cadStr) {
   if (!cadStr || cadStr === "—") return { label: "N/A", class: "ok", icon: "check_circle", days: 999, level: 0 };
 
   const months = { "ENE": 0, "FEB": 1, "MAR": 2, "ABR": 3, "MAY": 4, "JUN": 5, "JUL": 6, "AGO": 7, "SEP": 8, "OCT": 9, "NOV": 10, "DIC": 11 };
-  const parts = cadStr.split("-");
-  if (parts.length !== 2) return { label: "ERROR", class: "bad", icon: "error", days: 0, level: 0 };
+  let expiryDate = null;
 
-  const m = months[parts[0]];
-  const y = 2000 + parseInt(parts[1]);
-  const expiryDate = new Date(y, m + 1, 0); // Último día del mes
+  // Soporte para formato ISO (YYYY-MM-DD)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(cadStr)) {
+    expiryDate = new Date(cadStr + "T00:00:00");
+  } else {
+    const parts = cadStr.split("-");
+    if (parts.length !== 2) return { label: "ERROR", class: "bad", icon: "error", days: 0, level: 0 };
+    const m = months[parts[0].toUpperCase()];
+    const y = 2000 + parseInt(parts[1]);
+    expiryDate = new Date(y, m + 1, 0); // Último día del mes
+  }
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -6284,7 +6300,7 @@ window.handleSRLoteChange = function (selectEl) {
   cadCell.className = "sr-cad-cell"; // Limpiar clases en el td
 
   if (recInput && !recInput.value && rec) {
-    recInput.value = rec;
+    // recInput.value = rec; // Eliminado por solicitud de usuario: no arrojar fecha por default
   }
 
   // ✅ Actualizar semaforización de permanencia
@@ -8923,12 +8939,15 @@ if (bSaveSR) bSaveSR.onclick = async () => {
     eventTitle: "Existencia de biológicos",
     eventMsg: EDIT_SR ? "Actualizada correctamente." : "Guardada correctamente.",
     mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true },
-    action: () => AppService.call("saveSR", {
-      fecha: todayYmdLocal(),
-      nombre,
-      items,
-      editado: EDIT_SR ? "SI" : "NO"
-    })
+    action: () => {
+      saveUxValue(UX_KEYS.existenciaName, nombre);
+      return AppService.call("saveSR", {
+        fecha: todayYmdLocal(),
+        nombre,
+        items,
+        editado: EDIT_SR ? "SI" : "NO"
+      });
+    }
   });
 };
 
@@ -8971,14 +8990,17 @@ if (bSaveCONS) bSaveCONS.onclick = async () => {
     eventTitle: "Consumibles",
     eventMsg: EDIT_CONS ? "Actualizado correctamente." : "Guardado correctamente.",
     mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true },
-    action: () => AppService.call(EDIT_CONS ? "updateConsumibles" : "saveConsumibles", {
-      nombre,
-      srp_dosis: safeNum("srp_dosis"),
-      sr_dosis: safeNum("sr_dosis"),
-      jeringa_reconst_5ml_0605500438: safeNum("jeringa_reconst_5ml_0605500438"),
-      jeringa_aplic_05ml_0605502657: safeNum("jeringa_aplic_05ml_0605502657"),
-      aguja_0600403711: safeNum("aguja_0600403711")
-    })
+    action: () => {
+      saveUxValue(UX_KEYS.consName, nombre);
+      return AppService.call(EDIT_CONS ? "updateConsumibles" : "saveConsumibles", {
+        nombre,
+        srp_dosis: safeNum("srp_dosis"),
+        sr_dosis: safeNum("sr_dosis"),
+        jeringa_reconst_5ml_0605500438: safeNum("jeringa_reconst_5ml_0605500438"),
+        jeringa_aplic_05ml_0605502657: safeNum("jeringa_aplic_05ml_0605502657"),
+        aguja_0600403711: safeNum("aguja_0600403711")
+      });
+    }
   });
 };
 
@@ -9020,6 +9042,7 @@ if (bSaveBIO) bSaveBIO.onclick = async () => {
     eventMsg: EDIT_BIO ? "Actualizado correctamente." : "Guardado correctamente.",
     mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true, touchBio: true },
     action: async () => {
+      saveUxValue(UX_KEYS.bioName, nombre);
       const res = await AppService.call("saveBio", {
         nombre,
         items,
@@ -9066,6 +9089,7 @@ $("btnSavePINOL").onclick = async () => {
     eventMsg: "Tu solicitud fue enviada correctamente.",
     mutation: { touchPinol: true },
     action: async () => {
+      saveUxValue(UX_KEYS.pinolName, nombre);
       const res = await AppService.call("savePinol", {
         nombre,
         existencia_actual_botellas: $("pinol_existencia")?.value,
