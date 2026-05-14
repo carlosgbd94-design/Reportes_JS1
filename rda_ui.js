@@ -1,10 +1,11 @@
 /**
- * rda_ui.js — Dashboard Ejecutivo RDA 2026 v4
+ * rda_ui.js — Indicadores Vacunas 2026 v5 (Premium Analysis)
  */
 let _rdaCharts = {};
-let _rdaCache = { unidades: null, registros: null };
-let _rdaState = { trimestre: 1, modo: 'trimestral', meses: 3, sortCol: null, sortAsc: true };
+let _rdaCache = { unidades: null, registros: null, anio: 2026, maxMes: 0 };
+let _rdaState = { sortCol: null, sortAsc: true };
 const MUNI_ORDER = ['CORREGIDORA','HUIMILPAN','EL MARQUES','MARQUÉS','MARQUES','QUERETARO','QUERÉTARO'];
+const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 function initRDADashboard() {
     const overlay = document.getElementById('rdaDashboardOverlay');
@@ -32,30 +33,7 @@ function initRDADashboard() {
         document.addEventListener('keydown', e => { if (e.key === 'Escape' && overlay.style.visibility === 'visible') closeDash(); });
     }
 
-    // Time tabs
-    document.querySelectorAll('.rda-time-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            document.querySelectorAll('.rda-time-tab').forEach(t => {
-                t.style.background = 'transparent'; t.style.color = 'rgba(255,255,255,0.5)';
-            });
-            tab.style.background = 'rgba(103,232,249,0.25)'; tab.style.color = '#fff';
-            const val = tab.dataset.trimestre;
-            const ms = document.getElementById('rdaMonthSelect');
-            if (val === 'mensual') {
-                _rdaState.modo = 'mensual'; ms.style.display = 'block';
-                _rdaState.meses = parseInt(ms.value, 10);
-            } else {
-                _rdaState.modo = 'trimestral'; ms.style.display = 'none';
-                _rdaState.trimestre = parseInt(val, 10);
-                _rdaState.meses = _rdaState.trimestre * 3;
-            }
-            renderDashboard();
-        });
-    });
-
-    document.getElementById('rdaMonthSelect')?.addEventListener('change', e => {
-        _rdaState.meses = parseInt(e.target.value, 10); renderDashboard();
-    });
+    // Removed Trimester tabs and month select logic as per request.
     document.getElementById('rdaFilterMunicipio')?.addEventListener('change', () => {
         populateUnidadFilter(); renderDashboard();
     });
@@ -99,26 +77,35 @@ async function loadAndRender() {
 async function fetchRDAData() {
     if (_rdaCache.unidades && _rdaCache.registros) return _rdaCache;
 
-    // Fetch ALL unidades
+    // Fetch ALL unidades (población is fixed here)
     const { data: unidades, error: e1 } = await window.supabase
         .from('unidades_medicas').select('*').limit(5000);
     if (e1) throw e1;
 
-    // Fetch ALL registros (paginated — Supabase default max is 1000)
-    let allRegs = [], page = 0, pageSize = 1000, hasMore = true;
+    // OPTIMIZATION: Filter by Year (Integer) to avoid 400 errors and speed up load
+    const curYear = _rdaCache.anio;
+    let allRegs = [], page = 0, pageSize = 2000, hasMore = true;
     while (hasMore) {
         const { data, error } = await window.supabase
             .from('registros_sis')
             .select('clues, variable_sis, valor, mes, anio')
+            .eq('anio', curYear)
             .range(page * pageSize, (page + 1) * pageSize - 1);
         if (error) throw error;
-        if (data && data.length > 0) { allRegs = allRegs.concat(data); page++; }
+        if (data && data.length > 0) {
+            allRegs = allRegs.concat(data);
+            page++;
+        }
         if (!data || data.length < pageSize) hasMore = false;
     }
 
-    console.log(`[RDA] Loaded: ${unidades.length} unidades, ${allRegs.length} registros`);
+    // Detect latest month for progressive logic
+    const maxMes = allRegs.length > 0 ? Math.max(...allRegs.map(r => r.mes)) : 0;
+
+    console.log(`[RDA] Loaded 2026: ${unidades.length} unidades, ${allRegs.length} registros. Cierre: Mes ${maxMes}`);
     _rdaCache.unidades = unidades || [];
     _rdaCache.registros = allRegs;
+    _rdaCache.maxMes = maxMes;
     return _rdaCache;
 }
 
@@ -161,10 +148,9 @@ function populateUnidadFilter() {
 
 // ══════════ RENDER ══════════
 function renderDashboard() {
-    const { unidades, registros } = _rdaCache;
+    const { unidades, registros, maxMes } = _rdaCache;
     if (!unidades || !registros) return;
 
-    const meses = _rdaState.meses;
     const muniFilter = document.getElementById('rdaFilterMunicipio')?.value || '';
     const uniFilter = document.getElementById('rdaFilterUnidad')?.value || '';
 
@@ -175,32 +161,18 @@ function renderDashboard() {
     const fClues = new Set(fUnits.map(u => u.clues));
     const fRegs = registros.filter(r => fClues.has(r.clues));
 
-    // 🔍 DIAGNÓSTICO — ver en consola para detectar problemas de mapeo
-    console.log(`[RDA DEBUG] Meses: ${meses} | Unidades filtradas: ${fUnits.length} | Registros total: ${registros.length} | Registros filtrados: ${fRegs.length}`);
-    if (registros.length > 0) {
-        console.log('[RDA DEBUG] Ejemplo registro:', registros[0]);
-        const vars = [...new Set(registros.map(r => r.variable_sis))].sort();
-        console.log('[RDA DEBUG] Variables únicas en registros:', vars.join(', '));
-        const cluesInRegs = [...new Set(registros.map(r => r.clues))];
-        const cluesInUnits = [...new Set(fUnits.map(u => u.clues))];
-        const matching = cluesInRegs.filter(c => fClues.has(c));
-        console.log(`[RDA DEBUG] CLUES en registros: ${cluesInRegs.length} | CLUES en unidades: ${cluesInUnits.length} | Coinciden: ${matching.length}`);
-        if (matching.length === 0 && cluesInRegs.length > 0) {
-            console.warn('[RDA DEBUG] ⚠️ NINGUNA CLUES coincide! Ejemplos — Registros:', cluesInRegs.slice(0,3), 'Unidades:', cluesInUnits.slice(0,3));
-        }
-    } else {
-        console.warn('[RDA DEBUG] ⚠️ No hay registros en registros_sis. ¿Ya se subió el CSV?');
-    }
+    // Progressive Calculation (up to maxMes)
+    const global = RDA2026Calculator.calcularGlobal(fUnits, fRegs, maxMes);
 
-    const global = RDA2026Calculator.calcularGlobal(fUnits, fRegs, meses);
-
-    // Scope label
+    // Labels
     const scopeEl = document.getElementById('rdaScopeLabel');
     if (scopeEl) {
         if (uniFilter) scopeEl.textContent = fUnits[0]?.nombre || uniFilter;
         else if (muniFilter) scopeEl.textContent = `Municipio: ${muniFilter}`;
         else scopeEl.textContent = 'Jurisdicción Sanitaria 1';
     }
+    const cierreEl = document.getElementById('rdaCierreLabel');
+    if (cierreEl) cierreEl.textContent = `Avance al cierre de ${MONTH_NAMES[maxMes-1] || 'Sin datos'}`;
 
     // KPIs
     setKPI('kpiMenor1', global.coberturas.menor1);
@@ -213,13 +185,13 @@ function renderDashboard() {
     const kpiUni = document.getElementById('kpiUnidades');
     if (kpiUni) kpiUni.textContent = `${global.totalUnidades} unidades médicas`;
 
-    setDosis('kpiMenor1Dosis', fRegs, [...DICT_RDA.BCG,...DICT_RDA.HepB_0_7,...DICT_RDA.Hexa_3,...DICT_RDA.Rota_2,...DICT_RDA.Neumo_2], meses);
-    setDosis('kpi1AnoDosis', fRegs, [...DICT_RDA.Hexa_Ref,...DICT_RDA.Neumo_Ref,...DICT_RDA.SRP_2], meses);
-    setDosis('kpi4AnosDosis', fRegs, DICT_RDA.DPT_4, meses);
+    setDosis('kpiMenor1Dosis', fRegs, [...DICT_RDA.BCG,...DICT_RDA.HepB_0_7,...DICT_RDA.Hexa_3,...DICT_RDA.Rota_2,...DICT_RDA.Neumo_2], maxMes);
+    setDosis('kpi1AnoDosis', fRegs, [...DICT_RDA.Hexa_Ref,...DICT_RDA.Neumo_Ref,...DICT_RDA.SRP_2], maxMes);
+    setDosis('kpi4AnosDosis', fRegs, DICT_RDA.DPT_4, maxMes);
 
     renderDoughnut(global.coberturas);
-    renderBarChart(fUnits, fRegs, meses, muniFilter);
-    renderTable(fUnits, fRegs, meses);
+    renderBarChart(fUnits, fRegs, maxMes, muniFilter);
+    renderTable(fUnits, fRegs, maxMes);
 }
 
 function setKPI(id, val) {
@@ -242,10 +214,20 @@ function renderDoughnut(cob) {
         type: 'doughnut',
         data: {
             labels: ['< 1 Año', '1 Año', '4 Años'],
-            datasets: [{ data: [cob.menor1, cob.uno, cob.cuatro], backgroundColor: ['#0d9488','#0284c7','#4338ca'], borderWidth: 3, borderColor: '#fff', borderRadius: 4 }]
+            datasets: [{ 
+                data: [cob.menor1, cob.uno, cob.cuatro], 
+                backgroundColor: ['#0d9488','#0284c7','#7c3aed'], 
+                hoverOffset: 12,
+                borderWidth: 0,
+                borderRadius: 8
+            }]
         },
-        options: { responsive: true, maintainAspectRatio: false, cutout: '65%', animation: false,
-            plugins: { legend: { position: 'bottom', labels: { font: { size: 11, weight: 'bold' }, color: '#475569', padding: 12, usePointStyle: true } } }
+        options: { 
+            responsive: true, maintainAspectRatio: false, cutout: '75%', animation: { duration: 800, easing: 'easeOutQuart' },
+            plugins: { 
+                legend: { position: 'bottom', labels: { font: { size: 12, weight: '700' }, color: '#64748b', padding: 20, usePointStyle: true, pointStyle: 'circle' } },
+                tooltip: { backgroundColor: '#0f172a', titleFont: { size: 13 }, bodyFont: { size: 13 }, padding: 12, cornerRadius: 10 }
+            }
         }
     });
 }
@@ -260,32 +242,39 @@ function renderBarChart(units, regs, meses, muniFilter) {
     const role = (typeof USER !== 'undefined' && USER?.rol) || 'UNIDAD';
 
     if (!muniFilter && (role === 'ADMIN' || role === 'JURISDICCIONAL')) {
-        if (titleEl) titleEl.textContent = 'Cobertura por Municipio';
+        if (titleEl) titleEl.textContent = 'Análisis por Municipio';
         const munis = [...new Set(units.map(u => (u.municipio||'').toUpperCase().trim()))].filter(Boolean).sort();
         for (const m of munis) {
             const r = RDA2026Calculator.calcularPorMunicipio(m, units, regs, meses);
             labels.push(m); d1.push(r.coberturas.menor1); d2.push(r.coberturas.uno); d3.push(r.coberturas.cuatro);
         }
     } else {
-        if (titleEl) titleEl.textContent = 'Cobertura por Unidad';
+        if (titleEl) titleEl.textContent = 'Top 12 Unidades (Cobertura)';
         const results = units.map(u => RDA2026Calculator.calcularPorUnidad(u, regs, meses))
-            .sort((a, b) => b.coberturas.menor1 - a.coberturas.menor1).slice(0, 15);
+            .sort((a, b) => b.coberturas.menor1 - a.coberturas.menor1).slice(0, 12);
         for (const r of results) {
-            labels.push((r.nombre||r.clues).substring(0, 22)); d1.push(r.coberturas.menor1); d2.push(r.coberturas.uno); d3.push(r.coberturas.cuatro);
+            labels.push((r.nombre||r.clues).substring(0, 20)); d1.push(r.coberturas.menor1); d2.push(r.coberturas.uno); d3.push(r.coberturas.cuatro);
         }
     }
 
     _rdaCharts.b = new Chart(ctx, {
         type: 'bar',
         data: { labels, datasets: [
-            { label: '< 1 Año', data: d1, backgroundColor: '#0d9488', borderRadius: 3 },
-            { label: '1 Año', data: d2, backgroundColor: '#0284c7', borderRadius: 3 },
-            { label: '4 Años', data: d3, backgroundColor: '#4338ca', borderRadius: 3 }
+            { label: '< 1 Año', data: d1, backgroundColor: '#0d9488', borderRadius: 6, barThickness: 12 },
+            { label: '1 Año', data: d2, backgroundColor: '#0284c7', borderRadius: 6, barThickness: 12 },
+            { label: '4 Años', data: d3, backgroundColor: '#7c3aed', borderRadius: 6, barThickness: 12 }
         ]},
-        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: false,
-            plugins: { legend: { position: 'top', labels: { font: { size: 10, weight: 'bold' }, usePointStyle: true, padding: 10 } } },
-            scales: { x: { beginAtZero: true, max: 100, ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { color: '#f1f5f9' } },
-                      y: { ticks: { color: '#334155', font: { size: 10, weight: '700' } }, grid: { display: false } } }
+        options: { 
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false, 
+            animation: { duration: 1000, easing: 'easeOutQuart' },
+            plugins: { 
+                legend: { display: false },
+                tooltip: { backgroundColor: '#0f172a', padding: 12, cornerRadius: 10, callbacks: { label: c => ` ${c.dataset.label}: ${c.raw}%` } }
+            },
+            scales: { 
+                x: { beginAtZero: true, max: 100, ticks: { color: '#94a3b8', font: { size: 11, weight: '600' } }, grid: { color: '#f1f5f9', borderDash: [5,5] } },
+                y: { ticks: { color: '#0f172a', font: { size: 11, weight: '800' } }, grid: { display: false } } 
+            }
         }
     });
 }
@@ -300,7 +289,8 @@ function renderTable(units, regs, meses) {
         const r = RDA2026Calculator.calcularPorUnidad(u, regs, meses);
         return { clues: u.clues, nombre: r.nombre, municipio: r.municipio,
             menor1: r.coberturas.menor1, uno: r.coberturas.uno, cuatro: r.coberturas.cuatro,
-            pob: (u.pob_menor_1||0)+(u.pob_1_ano||0)+(u.pob_4_anos||0) };
+            pob: (u.pob_menor_1||0)+(u.pob_1_ano||0)+(u.pob_4_anos||0),
+            dosis: r.dosis.menor1 + r.dosis.uno + r.dosis.cuatro };
     });
 
     // Default sort: by municipio (custom order) then CLUES ascending
@@ -319,20 +309,21 @@ function renderTable(units, regs, meses) {
         return `<span style="display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;background:${bg};color:${fg}">${v}%</span>`;
     };
     tbody.innerHTML = rows.length === 0
-        ? '<tr><td colspan="7" style="padding:40px;text-align:center;color:#94a3b8;font-weight:600;">Sin datos</td></tr>'
+        ? '<tr><td colspan="8" style="padding:40px;text-align:center;color:#94a3b8;font-weight:600;">Sin datos</td></tr>'
         : rows.map(r => `<tr style="border-bottom:1px solid #f1f5f9;">
-            <td style="padding:8px 12px;font-size:11px;font-weight:700;color:#64748b;font-family:monospace">${r.clues}</td>
-            <td style="padding:8px 12px;font-size:11px;font-weight:700;color:#0f172a">${r.nombre}</td>
-            <td style="padding:8px 12px;font-size:11px;color:#64748b">${r.municipio}</td>
+            <td style="padding:16px 24px;font-size:11px;font-weight:700;color:#64748b;font-family:monospace">${r.clues}</td>
+            <td style="padding:16px 24px;font-size:11px;font-weight:800;color:#0f172a">${r.nombre}</td>
+            <td style="padding:16px 24px;font-size:11px;color:#64748b;font-weight:600;">${r.municipio}</td>
             <td style="padding:8px 12px;text-align:center">${badge(r.menor1)}</td>
             <td style="padding:8px 12px;text-align:center">${badge(r.uno)}</td>
             <td style="padding:8px 12px;text-align:center">${badge(r.cuatro)}</td>
-            <td style="padding:8px 12px;text-align:center;font-size:11px;font-weight:700;color:#64748b">${r.pob.toLocaleString('es-MX')}</td>
+            <td style="padding:16px 24px;text-align:center;font-size:11px;font-weight:800;color:#64748b">${r.pob.toLocaleString('es-MX')}</td>
+            <td style="padding:16px 24px;text-align:center;font-size:11px;font-weight:800;color:#0f172a">${r.dosis.toLocaleString('es-MX')}</td>
           </tr>`).join('');
 }
 
 // ══════════ EXPORT ══════════
-function _tLabel() { return _rdaState.modo === 'mensual' ? `M${_rdaState.meses}` : `T${_rdaState.trimestre}`; }
+function _tLabel() { return `Cierre_${MONTH_NAMES[_rdaCache.maxMes-1] || 'Final'}`; }
 function _dateStr() { return new Date().toISOString().slice(0,10).replace(/-/g,''); }
 function _safeName(n) { return (n||'').replace(/[^a-zA-Z0-9]/g,'_').substring(0,40); }
 
