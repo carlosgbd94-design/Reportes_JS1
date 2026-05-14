@@ -86,7 +86,8 @@ async function fetchRDAData() {
 
     // OPTIMIZATION: Filter by Year (Integer) to avoid 400 errors and speed up load
     const curYear = _rdaCache.anio;
-    let allRegs = [], page = 0, pageSize = 2000, hasMore = true;
+    // Supabase default max = 1000 rows per request. pageSize MUST be <= 1000.
+    let allRegs = [], page = 0, pageSize = 1000, hasMore = true;
     while (hasMore) {
         const { data, error } = await window.supabase
             .from('registros_sis')
