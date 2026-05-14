@@ -17,7 +17,9 @@ function initRDADashboard() {
             overlay.style.opacity = '1'; overlay.style.visibility = 'visible';
             document.getElementById('rdaDashboardPanel').style.transform = 'scale(1)';
             document.body.style.overflow = 'hidden';
-            _rdaCache = { unidades: null, registros: null };
+            _rdaCache.unidades = null;
+            _rdaCache.registros = null;
+            _rdaCache.maxMes = 0;
             loadAndRender();
         });
     }
@@ -103,6 +105,41 @@ async function fetchRDAData() {
     const maxMes = allRegs.length > 0 ? Math.max(...allRegs.map(r => r.mes)) : 0;
 
     console.log(`[RDA] Loaded 2026: ${unidades.length} unidades, ${allRegs.length} registros. Cierre: Mes ${maxMes}`);
+    
+    // ═══ DIAGNÓSTICO DETALLADO POR MUNICIPIO ═══
+    if (allRegs.length > 0) {
+        const regClues = new Set(allRegs.map(r => r.clues));
+        const uniClues = new Set((unidades||[]).map(u => u.clues));
+        const soloEnRegs = [...regClues].filter(c => !uniClues.has(c));
+        const soloEnUnis = [...uniClues].filter(c => !regClues.has(c));
+        const enAmbos = [...regClues].filter(c => uniClues.has(c));
+        
+        console.log(`%c[RDA DIAGNÓSTICO COMPLETO]`, 'color: #0d9488; font-weight: bold; font-size: 14px');
+        console.log(`CLUES en registros: ${regClues.size} | en unidades: ${uniClues.size} | Coinciden: ${enAmbos.length}`);
+        console.log(`Solo en registros (sin unidad): ${soloEnRegs.length}`, soloEnRegs.slice(0,10));
+        console.log(`Solo en unidades (sin registros): ${soloEnUnis.length}`, soloEnUnis.slice(0,10));
+        
+        // Desglose por municipio
+        const muniMap = {};
+        for (const u of (unidades||[])) {
+            const m = (u.municipio||'DESCONOCIDO').toUpperCase().trim();
+            if (!muniMap[m]) muniMap[m] = { uniClues: [], uniConRegs: 0, uniSinRegs: 0, pobTotal: 0 };
+            muniMap[m].uniClues.push(u.clues);
+            muniMap[m].pobTotal += (u.pob_menor_1||0) + (u.pob_1_ano||0) + (u.pob_4_anos||0);
+            if (regClues.has(u.clues)) muniMap[m].uniConRegs++;
+            else muniMap[m].uniSinRegs++;
+        }
+        console.table(Object.entries(muniMap).map(([m, d]) => ({
+            Municipio: m, 
+            'Total Unidades': d.uniClues.length,
+            'Con Registros': d.uniConRegs, 
+            'Sin Registros': d.uniSinRegs,
+            'Poblacion': d.pobTotal,
+            'CLUES (muestra)': d.uniClues.slice(0,3).join(', ')
+        })));
+    } else {
+        console.warn(`[RDA DIAG] ⚠️ 0 registros cargados para año ${curYear}. ¿Se subió el CSV?`);
+    }
     _rdaCache.unidades = unidades || [];
     _rdaCache.registros = allRegs;
     _rdaCache.maxMes = maxMes;
@@ -287,14 +324,22 @@ function renderTable(units, regs, meses) {
 
     const rows = units.map(u => {
         const r = RDA2026Calculator.calcularPorUnidad(u, regs, meses);
+        const dosis = r.dosis || { menor1: 0, uno: 0, cuatro: 0 };
         return { clues: u.clues, nombre: r.nombre, municipio: r.municipio,
             menor1: r.coberturas.menor1, uno: r.coberturas.uno, cuatro: r.coberturas.cuatro,
             pob: (u.pob_menor_1||0)+(u.pob_1_ano||0)+(u.pob_4_anos||0),
-            dosis: r.dosis.menor1 + r.dosis.uno + r.dosis.cuatro };
+            dosis: dosis.menor1 + dosis.uno + dosis.cuatro };
     });
 
     // Default sort: by municipio (custom order) then CLUES ascending
-    const muniIdx = m => { const n = (m||'').toUpperCase().trim(); const i = MUNI_ORDER.findIndex(x => n.includes(x) || x.includes(n)); return i >= 0 ? i : 99; };
+    const muniIdx = m => { 
+        const n = (m||'').toUpperCase().trim(); 
+        if (n.includes('CORREGIDORA')) return 0;
+        if (n.includes('HUIMILPAN')) return 1;
+        if (n.includes('MARQUES') || n.includes('MARQUÉS')) return 2;
+        if (n.includes('QUERETARO') || n.includes('QUERÉTARO')) return 3;
+        return 99;
+    };
     if (_rdaState.sortCol) {
         const col = _rdaState.sortCol;
         rows.sort((a, b) => { const va = a[col], vb = b[col]; return typeof va === 'string' ? (_rdaState.sortAsc ? va.localeCompare(vb) : vb.localeCompare(va)) : (_rdaState.sortAsc ? va - vb : vb - va); });
@@ -330,93 +375,187 @@ function _safeName(n) { return (n||'').replace(/[^a-zA-Z0-9]/g,'_').substring(0,
 async function exportIndividualPDF() {
     const content = document.getElementById('rdaDashboardContent');
     if (!content) return;
-    if (typeof showOverlay === 'function') showOverlay('Generando PDF...', 'Exportando');
+    if (typeof showOverlay === 'function') showOverlay('Preparando reporte...', 'Exportando');
 
     const muni = document.getElementById('rdaFilterMunicipio')?.value || '';
     const uni = document.getElementById('rdaFilterUnidad')?.value || '';
-    let fname = `RDA2026_${_tLabel()}_${_dateStr()}.pdf`;
-    if (uni) { const u = (_rdaCache.unidades||[]).find(x=>x.clues===uni); fname = `${uni}_${_safeName(u?.nombre)}_${_tLabel()}_${_dateStr()}.pdf`; }
-    else if (muni) fname = `${_safeName(muni)}_${_tLabel()}_${_dateStr()}.pdf`;
+    let fname = `Reporte_RDA2026_${_tLabel()}_${_dateStr()}.pdf`;
+    
+    // Better naming
+    if (uni) { 
+        const u = (_rdaCache.unidades||[]).find(x=>x.clues===uni); 
+        fname = `RDA_${uni}_${_safeName(u?.nombre)}_${_tLabel()}.pdf`; 
+    } else if (muni) {
+        fname = `RDA_${_safeName(muni)}_${_tLabel()}.pdf`;
+    }
 
-    // Clone content to avoid modifying live DOM
+    // Capture the Dashboard for premium look but strip scrollbars/fixed heights
     const clone = content.cloneNode(true);
-    clone.style.width = '1000px';
-    clone.style.padding = '16px';
-    clone.style.background = '#fff';
+    clone.style.width = '1200px'; // Forced width for landscape letter
+    clone.style.height = 'auto';
+    clone.style.overflow = 'visible';
+    clone.style.padding = '40px';
+    clone.style.background = '#f8fafc';
+    clone.style.position = 'absolute';
+    clone.style.left = '-5000px';
+    clone.style.top = '0';
+    
+    // Remove scrollbars from any child
+    clone.querySelectorAll('*').forEach(el => {
+        if (el.style.overflow) el.style.overflow = 'visible';
+        if (el.style.overflowY) el.style.overflowY = 'visible';
+    });
+
     document.body.appendChild(clone);
 
     try {
-        await html2pdf().set({
-            margin: [10, 10, 10, 10], filename: fname,
-            image: { type: 'jpeg', quality: 0.9 },
-            html2canvas: { scale: 1.5, useCORS: true, scrollY: -window.scrollY },
-            jsPDF: { unit: 'mm', format: 'letter', orientation: 'landscape' },
-            pagebreak: { mode: ['avoid-all'], before: '.no-break' }
-        }).from(clone).save();
-        if (typeof showToast === 'function') showToast('PDF generado', true, 'good');
-    } catch (e) { console.error(e); if (typeof showToast === 'function') showToast('Error al exportar', false, 'bad'); }
-    finally { document.body.removeChild(clone); if (typeof hideOverlay === 'function') hideOverlay(); }
+        const opt = {
+            margin: 0,
+            filename: fname,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { 
+                scale: 2, 
+                useCORS: true, 
+                letterRendering: true,
+                logging: false,
+                width: 1200
+            },
+            jsPDF: { unit: 'px', format: [1200, 927], orientation: 'landscape' }, // Aspect ratio for letter-like
+            pagebreak: { mode: ['avoid-all'] }
+        };
+
+        await html2pdf().set(opt).from(clone).save();
+        if (typeof showToast === 'function') showToast('Reporte generado exitosamente', true, 'good');
+    } catch (e) { 
+        console.error('[RDA Export]', e); 
+        if (typeof showToast === 'function') showToast('Error al generar PDF', false, 'bad'); 
+    } finally { 
+        document.body.removeChild(clone); 
+        if (typeof hideOverlay === 'function') hideOverlay(); 
+    }
 }
 
 async function exportMasivoZIP() {
     if (typeof JSZip === 'undefined') { if (typeof showToast === 'function') showToast('JSZip no disponible', false, 'bad'); return; }
-    if (typeof showOverlay === 'function') showOverlay('Preparando exportación...', 'ZIP');
+    
+    const { unidades, registros, maxMes } = _rdaCache;
+    if (!unidades) return;
+
+    const muni = document.getElementById('rdaFilterMunicipio')?.value || '';
+    let targets = unidades;
+    if (muni) targets = targets.filter(u => (u.municipio||'').toUpperCase().trim() === muni.toUpperCase().trim());
+
+    if (targets.length > 50) {
+        if (!confirm(`Vas a generar ${targets.length} reportes. Esto puede tardar un momento. ¿Continuar?`)) return;
+    }
+
+    if (typeof showOverlay === 'function') showOverlay('Iniciando proceso masivo...', 'ZIP');
 
     try {
-        const { unidades, registros } = _rdaCache;
-        const meses = _rdaState.meses;
-        const muni = document.getElementById('rdaFilterMunicipio')?.value || '';
-        let targets = unidades;
-        if (muni) targets = targets.filter(u => (u.municipio||'').toUpperCase().trim() === muni.toUpperCase().trim());
-
         const zip = new JSZip();
-
+        const worker = html2pdf(); // Reuse worker for performance
+        
         for (let i = 0; i < targets.length; i++) {
             const u = targets[i];
-            if (typeof showOverlay === 'function') showOverlay(`${i+1}/${targets.length}: ${(u.nombre||u.clues).substring(0,30)}`, 'Generando PDFs');
+            const pct = Math.round(((i + 1) / targets.length) * 100);
+            if (typeof showOverlay === 'function') showOverlay(`${pct}%: ${(u.nombre||u.clues).substring(0,25)}`, 'Procesando reportes');
 
-            const r = RDA2026Calculator.calcularPorUnidad(u, registros, meses);
+            const r = RDA2026Calculator.calcularPorUnidad(u, registros, maxMes);
 
-            // Create a temporary visible div appended to body
             const tmpDiv = document.createElement('div');
-            tmpDiv.style.cssText = 'position:fixed;left:0;top:0;width:700px;background:#fff;padding:30px;z-index:-1;opacity:0.01;';
-            tmpDiv.innerHTML = `<div style="font-family:Arial,sans-serif;">
-                <h1 style="font-size:18px;font-weight:900;color:#003366;margin:0 0 4px 0;">Reporte RDA 2026 — ${_tLabel()}</h1>
-                <p style="font-size:11px;color:#64748b;margin:0 0 16px 0;">CLUES: ${u.clues} | ${u.nombre} | ${u.municipio}</p>
-                <table style="width:100%;border-collapse:collapse;">
-                    <tr style="background:#f0f9ff"><th style="padding:8px;text-align:left;border:1px solid #e2e8f0;font-size:11px">Indicador</th><th style="padding:8px;text-align:center;border:1px solid #e2e8f0;font-size:11px">Cobertura</th><th style="padding:8px;text-align:center;border:1px solid #e2e8f0;font-size:11px">Población</th></tr>
-                    <tr><td style="padding:8px;border:1px solid #e2e8f0;font-weight:700">< 1 Año</td><td style="padding:8px;text-align:center;border:1px solid #e2e8f0;font-weight:800">${r.coberturas.menor1}%</td><td style="padding:8px;text-align:center;border:1px solid #e2e8f0">${r.poblacion.menor1}</td></tr>
-                    <tr><td style="padding:8px;border:1px solid #e2e8f0;font-weight:700">1 Año</td><td style="padding:8px;text-align:center;border:1px solid #e2e8f0;font-weight:800">${r.coberturas.uno}%</td><td style="padding:8px;text-align:center;border:1px solid #e2e8f0">${r.poblacion.uno}</td></tr>
-                    <tr><td style="padding:8px;border:1px solid #e2e8f0;font-weight:700">4 Años</td><td style="padding:8px;text-align:center;border:1px solid #e2e8f0;font-weight:800">${r.coberturas.cuatro}%</td><td style="padding:8px;text-align:center;border:1px solid #e2e8f0">${r.poblacion.cuatro}</td></tr>
+            tmpDiv.style.cssText = 'position:fixed;left:-5000px;top:0;width:800px;background:#fff;padding:50px;font-family:sans-serif;';
+            tmpDiv.innerHTML = `
+                <div style="border-bottom: 2px solid #0f172a; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div>
+                        <h1 style="font-size:24px; color:#0f172a; margin:0;">Reporte RDA 2026</h1>
+                        <p style="font-size:12px; color:#64748b; margin:2px 0 0 0;">Cierre de información: ${MONTH_NAMES[maxMes-1] || 'Sin datos'}</p>
+                    </div>
+                    <div style="text-align:right;">
+                        <p style="font-size:10px; color:#94a3b8; margin:0;">CLUES: ${u.clues}</p>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 30px;">
+                    <h2 style="font-size:16px; margin:0 0 10px 0;">Datos de la Unidad</h2>
+                    <p style="font-size:14px; margin:0;"><strong>Nombre:</strong> ${u.nombre}</p>
+                    <p style="font-size:14px; margin:4px 0 0 0;"><strong>Municipio:</strong> ${u.municipio}</p>
+                </div>
+
+                <table style="width:100%; border-collapse:collapse; margin-bottom:30px;">
+                    <thead>
+                        <tr style="background:#f8fafc;">
+                            <th style="padding:12px; text-align:left; border:1px solid #e2e8f0; font-size:12px; color:#64748b;">CATEGORÍA</th>
+                            <th style="padding:12px; text-align:center; border:1px solid #e2e8f0; font-size:12px; color:#64748b;">META (POB)</th>
+                            <th style="padding:12px; text-align:center; border:1px solid #e2e8f0; font-size:12px; color:#64748b;">AVANCE (DOSIS)</th>
+                            <th style="padding:12px; text-align:center; border:1px solid #e2e8f0; font-size:12px; color:#64748b;">COBERTURA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding:12px; border:1px solid #e2e8f0; font-size:14px; font-weight:700;">Menores de 1 Año</td>
+                            <td style="padding:12px; border:1px solid #e2e8f0; text-align:center; font-size:14px;">${u.pob_menor_1 || 0}</td>
+                            <td style="padding:12px; border:1px solid #e2e8f0; text-align:center; font-size:14px;">${r.dosis.menor1}</td>
+                            <td style="padding:12px; border:1px solid #e2e8f0; text-align:center; font-size:14px; font-weight:800; color:${r.coberturas.menor1 >= 80 ? '#059669' : '#dc2626'}">${r.coberturas.menor1}%</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:12px; border:1px solid #e2e8f0; font-size:14px; font-weight:700;">Niños de 1 Año</td>
+                            <td style="padding:12px; border:1px solid #e2e8f0; text-align:center; font-size:14px;">${u.pob_1_ano || 0}</td>
+                            <td style="padding:12px; border:1px solid #e2e8f0; text-align:center; font-size:14px;">${r.dosis.uno}</td>
+                            <td style="padding:12px; border:1px solid #e2e8f0; text-align:center; font-size:14px; font-weight:800; color:${r.coberturas.uno >= 80 ? '#059669' : '#dc2626'}">${r.coberturas.uno}%</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:12px; border:1px solid #e2e8f0; font-size:14px; font-weight:700;">Niños de 4 Años</td>
+                            <td style="padding:12px; border:1px solid #e2e8f0; text-align:center; font-size:14px;">${u.pob_4_anos || 0}</td>
+                            <td style="padding:12px; border:1px solid #e2e8f0; text-align:center; font-size:14px;">${r.dosis.cuatro}</td>
+                            <td style="padding:12px; border:1px solid #e2e8f0; text-align:center; font-size:14px; font-weight:800; color:${r.coberturas.cuatro >= 80 ? '#059669' : '#dc2626'}">${r.coberturas.cuatro}%</td>
+                        </tr>
+                    </tbody>
                 </table>
-                <p style="font-size:8px;color:#94a3b8;margin-top:12px;">Generado: ${new Date().toLocaleString('es-MX')} | JS1</p>
-            </div>`;
+
+                <div style="background:#fffbeb; border:1px solid #fde68a; padding:15px; border-radius:8px;">
+                    <p style="margin:0; font-size:12px; color:#92400e; line-height:1.5;">
+                        <strong>Nota:</strong> Los datos presentados corresponden al avance acumulado reportado en el sistema SIS hasta el mes de ${MONTH_NAMES[maxMes-1]}.
+                    </p>
+                </div>
+                
+                <div style="margin-top:50px; border-top:1px solid #e2e8f0; padding-top:10px;">
+                    <p style="font-size:10px; color:#94a3b8; margin:0;">Jurisdicción Sanitaria 1 — Reporte Generado el ${new Date().toLocaleString('es-MX')}</p>
+                </div>
+            `;
             document.body.appendChild(tmpDiv);
 
-            // Wait for DOM paint
-            await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-            const blob = await html2pdf().set({
-                margin: 10, image: { type: 'jpeg', quality: 0.85 },
-                html2canvas: { scale: 1.5, scrollY: -window.scrollY, useCORS: true },
-                jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
-                pagebreak: { mode: ['avoid-all'] }
+            const blob = await worker.set({
+                margin: 10,
+                image: { type: 'jpeg', quality: 0.8 },
+                html2canvas: { scale: 1.5, logging: false },
+                jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' }
             }).from(tmpDiv).outputPdf('blob');
 
             document.body.removeChild(tmpDiv);
-            zip.file(`${u.clues}_${_safeName(u.nombre)}_${_tLabel()}_${_dateStr()}.pdf`, blob);
+            zip.file(`RDA_${u.clues}_${_safeName(u.nombre)}.pdf`, blob);
         }
 
-        if (typeof showOverlay === 'function') showOverlay('Comprimiendo...', 'Finalizando');
+        if (typeof showOverlay === 'function') showOverlay('Finalizando compresión...', 'ZIP');
         const zipBlob = await zip.generateAsync({ type: 'blob' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(zipBlob);
-        link.download = `Reporte_RDA2026_${muni || 'JS1'}_${_dateStr()}.zip`;
-        link.click(); URL.revokeObjectURL(link.href);
-        if (typeof showToast === 'function') showToast(`ZIP con ${targets.length} PDFs listo`, true, 'good');
-    } catch (e) { console.error(e); if (typeof showToast === 'function') showToast('Error en exportación', false, 'bad'); }
-    finally { if (typeof hideOverlay === 'function') hideOverlay(); }
+        link.download = `Reportes_RDA2026_${_safeName(muni) || 'JS1'}_${_dateStr()}.zip`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        
+        if (typeof showToast === 'function') showToast(`Exportación masiva completada`, true, 'good');
+    } catch (e) { 
+        console.error('[RDA ZIP]', e); 
+        if (typeof showToast === 'function') showToast('Error en exportación masiva', false, 'bad'); 
+    } finally { 
+        if (typeof hideOverlay === 'function') hideOverlay(); 
+    }
 }
 
-window.refreshRDADashboard = () => { _rdaCache = { unidades: null, registros: null }; loadAndRender(); };
+window.refreshRDADashboard = () => { 
+    _rdaCache.unidades = null; 
+    _rdaCache.registros = null; 
+    _rdaCache.maxMes = 0;
+    loadAndRender(); 
+};
 window.addEventListener('DOMContentLoaded', () => initRDADashboard());

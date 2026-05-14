@@ -5,8 +5,6 @@
  * de esos meses, y luego inserta los nuevos datos.
  */
 
-const ALLOWED_BIO = ['BIO50'];
-
 class RDAParser {
     static init() {
         const fileInput = document.getElementById('rdaCsvInput');
@@ -68,6 +66,7 @@ class RDAParser {
         const cleanData = [];
         const uniqueUnits = {};
         const mesesEnCSV = new Set();
+        let skippedInventory = 0;
 
         for (const row of data) {
             const clues    = this._getCol(row, 'CLUES');
@@ -85,9 +84,15 @@ class RDAParser {
 
             const varUpper = variable.toUpperCase();
 
-            // Filtrado: excluir VOI, VOF, VBC5, BIE/BIO sin impacto
-            if (varUpper.startsWith('VOI') || varUpper.startsWith('VOF') || varUpper.startsWith('VBC5')) continue;
-            if ((varUpper.startsWith('BIE') || varUpper.startsWith('BIO')) && !ALLOWED_BIO.includes(varUpper)) continue;
+            // Solo excluir variables de inventario (no son aplicaciones)
+            if (varUpper.startsWith('VOI') || varUpper.startsWith('VOF') || varUpper.startsWith('VBC5')) {
+                skippedInventory++;
+                continue;
+            }
+
+            // ⚠️ NO filtrar por ALL_RDA_SET — guardar TODAS las variables de aplicaciones.
+            // El calculator selecciona las que necesita. Así no perdemos datos si
+            // se agregan nuevas variables al diccionario en el futuro.
 
             cleanData.push({
                 clues: clues,
@@ -109,6 +114,9 @@ class RDAParser {
             }
         }
 
+        console.log(`[RDA Parser] CSV procesado: ${data.length} filas → ${cleanData.length} registros válidos (${skippedInventory} inventario excluido)`);
+        console.log(`[RDA Parser] CLUES únicas: ${Object.keys(uniqueUnits).length} | Meses: ${[...mesesEnCSV].sort().join(', ')}`);
+
         if (cleanData.length === 0) {
             if (typeof hideOverlay === 'function') hideOverlay();
             if (typeof showToast === 'function') showToast('No se encontraron datos válidos', false, 'warn');
@@ -117,7 +125,6 @@ class RDAParser {
 
         const mesesArray = [...mesesEnCSV].sort((a, b) => a - b);
         const mesesStr = mesesArray.join(', ');
-        console.log(`[RDA Parser] ${cleanData.length} registros válidos. Meses detectados: ${mesesStr}`);
 
         // 2. Auto-upsert de unidades médicas (evitar FK errors)
         const unitsToUpsert = Object.values(uniqueUnits);
@@ -149,7 +156,7 @@ class RDAParser {
             }
         }
 
-        // 4. Bulk Insert
+        // 4. Bulk Insert — batches pequeños para evitar truncamiento
         await this.bulkInsert(cleanData);
     }
 
@@ -157,27 +164,44 @@ class RDAParser {
         if (typeof showOverlay === 'function') showOverlay(`Subiendo ${cleanData.length} registros...`, "Guardando");
 
         try {
-            const BATCH_SIZE = 500;
+            // Batches de 200 para evitar timeouts y errores de Supabase
+            const BATCH_SIZE = 200;
             let success = 0;
+            let errors = 0;
+            const totalBatches = Math.ceil(cleanData.length / BATCH_SIZE);
 
             for (let i = 0; i < cleanData.length; i += BATCH_SIZE) {
                 const batch = cleanData.slice(i, i + BATCH_SIZE);
+                const batchNum = Math.floor(i / BATCH_SIZE) + 1;
                 const pct = Math.round(((i + batch.length) / cleanData.length) * 100);
-                if (typeof showOverlay === 'function') showOverlay(`Subiendo registros... ${pct}%`, "Guardando en BD");
+                if (typeof showOverlay === 'function') {
+                    showOverlay(`Subiendo registros... ${pct}% (lote ${batchNum}/${totalBatches})`, "Guardando en BD");
+                }
 
                 const { error } = await window.supabase
                     .from('registros_sis')
                     .insert(batch);
 
                 if (error) {
-                    console.error("[RDA Parser] Batch error:", error);
-                    throw new Error(`Error en inserción: ${error.message}`);
+                    errors++;
+                    console.error(`[RDA Parser] ❌ Error lote ${batchNum}/${totalBatches}:`, error.message);
+                    console.error(`[RDA Parser] Muestra del lote fallido:`, batch.slice(0, 2));
+                    // NO detener — continuar con siguientes lotes para maximizar datos cargados
+                    continue;
                 }
                 success += batch.length;
             }
 
             if (typeof hideOverlay === 'function') hideOverlay();
-            if (typeof showToast === 'function') showToast(`${success} registros actualizados correctamente`, true, 'good');
+            
+            if (errors > 0) {
+                const msg = `${success} registros cargados (${errors} lotes con error)`;
+                console.warn(`[RDA Parser] ⚠️ ${msg}`);
+                if (typeof showToast === 'function') showToast(msg, false, 'warn');
+            } else {
+                console.log(`[RDA Parser] ✅ ${success} registros cargados correctamente`);
+                if (typeof showToast === 'function') showToast(`${success} registros actualizados correctamente`, true, 'good');
+            }
 
             // Refrescar el dashboard si está abierto
             if (typeof window.refreshRDADashboard === 'function') {
@@ -185,6 +209,7 @@ class RDAParser {
             }
 
         } catch (error) {
+            console.error("[RDA Parser] Error fatal:", error);
             if (typeof hideOverlay === 'function') hideOverlay();
             if (typeof showToast === 'function') showToast(error.message, false, 'bad');
         }
