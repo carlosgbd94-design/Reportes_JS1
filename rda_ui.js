@@ -185,10 +185,7 @@ function populateFilters() {
     if (!muniSel || !unidades) return;
 
     const role = String((typeof USER !== 'undefined' && USER?.rol) || 'UNIDAD').toUpperCase();
-    let allowed = (typeof USER !== 'undefined' && Array.isArray(USER?.municipiosAllowed)) ? USER.municipiosAllowed : [];
-    if (allowed.length === 0 && typeof USER !== 'undefined' && USER?.municipio) {
-        allowed = String(USER.municipio).split(',').map(m => m.trim().toUpperCase()).filter(Boolean);
-    }
+    const allowed = (typeof USER !== 'undefined' && Array.isArray(USER?.municipiosAllowed)) ? USER.municipiosAllowed : [];
 
     let municipios = [...new Set(unidades.map(u => (u.municipio || '').toUpperCase().trim()))].filter(Boolean).sort();
 
@@ -212,20 +209,26 @@ function populateFilters() {
         populateUnidadFilter();
     } else if (role === 'MUNICIPAL') {
         if (uniSel) uniSel.disabled = false;
-        const norm = allowed.map(m => m.toUpperCase().trim());
-        municipios = municipios.filter(m => norm.some(a => m.includes(a) || a.includes(m)));
+        
+        municipios = municipios.filter(m => {
+            // Strip accents for safe comparison with allowed array
+            const mNorm = m.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+            return allowed.some(a => mNorm.includes(a) || a.includes(mNorm));
+        });
         
         muniSel.innerHTML = municipios.map(m => `<option value="${m}">${m}</option>`).join('');
         
         if (municipios.length === 1) {
-            muniSel.disabled = true;
             muniSel.value = municipios[0];
+            muniSel.disabled = true;
         } else {
             muniSel.disabled = false;
             if (municipios.length > 0) {
                 muniSel.value = municipios[0];
             }
         }
+        
+        // Explicitly populate CLUES with the chosen municipality DOM value
         populateUnidadFilter();
     } else if (role === 'UNIDAD') {
         muniSel.disabled = true;
