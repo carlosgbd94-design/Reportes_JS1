@@ -64,13 +64,14 @@
         <div
           class="GlassContent liquidGL header-liquid-glass px-4 sm:px-8 py-2 sm:py-3 flex items-center flex-row flex-nowrap gap-3 sm:gap-8 bg-transparent! whitespace-nowrap overflow-visible transition-all duration-300"
           style="display: flex !important; flex-direction: row !important; align-items: center !important;">
-          <!-- Logo SESEQ -->
+          <!-- Logo SESEQ (Comentado a petición del usuario)
           <img id="logoA" class="object-contain flex-none transition-all duration-300"
             style="height: 40px !important; width: auto !important;"
             src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/Seseq_vertical_2025.png"
             alt="SESEQ">
 
           <div class="hidden sm:block w-[1px] h-8 bg-primary/20 flex-none mx-2"></div>
+          -->
 
           <!-- Logo Q -->
           <img id="logoB" class="hidden sm:block object-contain flex-none transition-all duration-300"
@@ -148,7 +149,7 @@
         <div class="relative flex-none" id="profileDropdownContainer">
           <div class="GlassContainer" style="--corner-radius: 28px;">
             <div class="GlassContent liquidGL header-liquid-glass">
-              <button id="btnProfileToggle" data-tooltip="Mi Perfil / Ajustes"
+              <button id="btnProfileToggle" data-tooltip="Mi Perfil / Ajustes" title="Perfil"
                 class="h-[42px] sm:h-[56px] px-1 sm:px-6 lg:px-8 text-primary rounded-[21px] sm:rounded-[28px] flex items-center justify-center gap-0 sm:gap-3 lg:gap-4 border-none cursor-pointer shadow-none transition-all duration-300">
                 <div
                   class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/10 flex-none transition-all duration-300">
@@ -166,7 +167,7 @@
           </div>
 
           <!-- Dropdown Menu (Glassmorphism) -->
-          <div id="profileDropdown"
+          <div id="profileDropdown" style="overflow: hidden;"
             class="hidden absolute right-0 mt-4 w-[300px] sm:w-[360px] bg-white border border-outline-variant/40 rounded-[32px] shadow-[0_32px_64px_-12px_rgba(0,51,102,0.2)] z-[5000] overflow-hidden transform origin-top-right transition-all animate-dropdownIn gpu-accelerated">
 
             <!-- 👤 PREMIUM IDENTITY HUB -->
