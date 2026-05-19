@@ -648,6 +648,7 @@ function exposeAppFns() {
   window.getCaptureOverview = getCaptureOverview;
   window.getHistoryMetrics = getHistoryMetrics;
   window.loadNotifications = loadNotifications;
+  window.reloadCaptureSummary = reloadCaptureSummary;
   window.reloadCaptureSummarySilent = reloadCaptureSummarySilent;
 }
 
@@ -657,6 +658,7 @@ function assertCriticalFns() {
     "getCaptureOverview",
     "getHistoryMetrics",
     "loadNotifications",
+    "reloadCaptureSummary",
     "reloadCaptureSummarySilent"
   ];
 
@@ -5259,11 +5261,7 @@ function bindAuthUiEvents() {
   }
 }
 
-function bindHistoryUiEvents() {
-  $("btnRefreshEditLog")?.addEventListener("click", () => refreshEditLog());
-  $("editLogFecha")?.addEventListener("change", () => debouncedReloadHistory());
-  $("editLogTipo")?.addEventListener("change", () => debouncedReloadHistory());
-}
+
 
 function bindLiveFeedUiEvents() {
   if ($("btnClearLiveFeed")) {
@@ -5405,9 +5403,7 @@ const debouncedReloadHistory = debounce(() => {
   reloadHistorySilent();
 }, 220);
 
-const debouncedRefreshEditLog = debounce(() => {
-  refreshEditLog();
-}, 220);
+
 
 const PANEL_TASKS = new Map();
 
@@ -5474,7 +5470,7 @@ function resetAllPanelFilterState() {
 function initAppShell() {
   initStaticAssets();
   bindAuthUiEvents();
-  bindHistoryUiEvents();
+
   bindLiveFeedUiEvents();
   bindToastUiEvents();
   bindNavigationUiEvents();
@@ -8256,6 +8252,7 @@ function renderCaptureSummary(data) {
 
 function setLoggedInUI(user, status) {
   USER = user;
+  document.body.setAttribute("data-role", USER.rol);
   STATUS = (status && status.data) ? status.data : (status || null);
 
   Object.assign(AppState, {
@@ -8305,10 +8302,10 @@ function setLoggedInUI(user, status) {
   // Tabs y botones de acceso rápido ahora se gestionan vía data-role-gate en applyRolePermissions
 
   if ($("tabOPS_ADMIN")) {
-    $("tabOPS_ADMIN").onclick = () => activateMain("ADMIN");
+    $("tabOPS_ADMIN").onclick = () => activateOpsTab("SECURITY");
   }
   if ($("tabOPS_NOTIFS")) {
-    $("tabOPS_NOTIFS").onclick = () => activateMain("NOTIFS");
+    $("tabOPS_NOTIFS").onclick = () => activateOpsTab("NOTIFICATIONS");
   }
 
   updateDynamicGreeting();
@@ -8330,13 +8327,17 @@ function setLoggedInUI(user, status) {
   const canExport = (isAdmin || isJurisdiccional || isMunicipal);
 
   if ($("panelAdminOpsTabs")) $("panelAdminOpsTabs").style.display = (isAdmin || isJurisdiccional || isMunicipal) ? "block" : "none";
+  if ($("panelUnidadOpsTabs")) $("panelUnidadOpsTabs").style.display = isUnidad ? "block" : "none";
   if ($("tabLOTES")) $("tabLOTES").style.display = canSeeLotes ? "flex" : "none";
   if ($("tabOPS_PINOL")) $("tabOPS_PINOL").style.display = canSeePinol ? "flex" : "none";
   if ($("tabOPS_NOTIFS")) $("tabOPS_NOTIFS").style.display = canSeeNotifsCenter ? "flex" : "none";
   if ($("tabOPS_ADMIN")) $("tabOPS_ADMIN").style.display = canSeeAdminCenter ? "flex" : "none";
 
   // 🔥 Sincronizar indicador de navegación (Premium)
-  setTimeout(() => syncTabGroupIndicator('#panelAdminOpsTabs .nav-container'), 350);
+  setTimeout(() => {
+    syncTabGroupIndicator('#panelAdminOpsTabs .nav-container');
+    syncTabGroupIndicator('#panelUnidadOpsTabs .nav-container');
+  }, 350);
 
 
 
@@ -8521,115 +8522,110 @@ function setLoggedOutUI() {
   document.getElementById("archivosDropdown")?.classList.add("hidden");
 }
 
-function activateMain(panel, target = null) {
-  const role = String((USER && USER.rol) || "").trim().toUpperCase();
-  if (panel === "NOTIFS" && role === "UNIDAD") {
-    openTopNotifDropdown();
-    loadNotifications({ silent: true }).catch(err => {
-      console.error("activateMain NOTIFS unidad error:", err);
+function activateMain(tab) {
+    const pCapSummary = document.getElementById("panelCaptureSummary");
+    if (pCapSummary && AppState.rol === "UNIDAD") {
+        pCapSummary.style.display = "none !important";
+        pCapSummary.classList.add("hidden");
+    }
+
+    if (tab === AppState.mainTab) return;
+    AppState.mainTab = tab;
+
+    const mainTabs = document.querySelectorAll('.main-nav-tab');
+    mainTabs.forEach(btn => {
+        if (btn.getAttribute('onclick')?.includes(`activateMain('${tab}')`)) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
     });
-    return;
-  }
-  const currentPanel = APP_STATE.mainPanel || "CAP";
-  const samePanel = currentPanel === panel;
 
-  Object.assign(AppState, { mainPanel: panel });
+    const pWelcome = document.getElementById("panelWelcome");
+    const pAdmin = document.getElementById("panelADMIN");
+    const pCap = document.getElementById("panelCAP");
+    const pSec = document.getElementById("panelSEC");
+    const pRda = document.getElementById("rdaDashboardOverlay");
 
-  if (panel === "CAP") clearTabAttention("tabCAP");
-  if (panel === "NOTIFS") clearTabAttention("tabNOTIFS");
-  if (panel === "ADMIN") clearTabAttention("tabADMIN");
+    if (pWelcome) pWelcome.style.display = (tab === "WELCOME") ? "block" : "none";
+    if (pAdmin) pAdmin.style.display = (tab === "ADMIN") ? "block" : "none";
+    if (pSec) pSec.style.display = (tab === "SEC") ? "block" : "none";
 
-  const isUnidad = role === "UNIDAD";
-  const isAdmin = role === "ADMIN";
-  const isMunicipal = role === "MUNICIPAL";
-  const isJurisdiccional = role === "JURISDICCIONAL";
-  const isOps = isAdmin || isMunicipal || isJurisdiccional;
-
-  const updateTabClass = (id, cond) => {
-    const el = $(id);
-    if (el) {
-      if (cond) { el.classList.add("tab-active"); el.classList.remove("tab-inactive"); }
-      else { el.classList.add("tab-inactive"); el.classList.remove("tab-active"); }
+    if (pCap) {
+        pCap.removeAttribute("style");
+        if (tab === "CAP") {
+            pCap.classList.remove("hidden");
+            pCap.style.display = "block";
+        } else {
+            pCap.classList.add("hidden");
+            pCap.style.display = "none";
+        }
     }
-  };
-
-  const opsContainer = document.querySelector('#panelAdminOpsTabs .nav-container');
-  if (opsContainer) {
-    opsContainer.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-
-    let targetId = null;
-    if (panel === "CAP") {
-      const t = APP_STATE.opsTab || "CAPTURE";
-      if (t === "CAPTURE") targetId = "tabOPS_CAPTURE";
-      else if (t === "HISTORY") targetId = "tabOPS_HISTORY";
-      else if (t === "PINOL") targetId = "tabOPS_PINOL";
-      else if (t === "LOTES") targetId = "tabLOTES";
-    } else if (panel === "NOTIFS") {
-      targetId = "tabOPS_NOTIFS";
-    } else if (panel === "ADMIN") {
-      targetId = "tabOPS_ADMIN";
+    if (pCapSummary) {
+        pCapSummary.removeAttribute("style");
+        // Strict Role Gate: Hidden for UNIDAD at all times
+        if (tab === "CAP" && AppState.rol !== "UNIDAD") {
+            pCapSummary.classList.remove("hidden");
+            pCapSummary.style.display = "block";
+        } else {
+            pCapSummary.classList.add("hidden");
+            pCapSummary.style.setProperty("display", "none", "important");
+        }
     }
 
-    if (targetId) {
-      const btn = $(targetId);
-      if (btn) btn.classList.add('active');
-      syncTabGroupIndicator('#panelAdminOpsTabs .nav-container');
-    }
-  }
-
-  // Sincronizar Bottom Nav (v2.0 Architecture)
-  const navMap = {
-    'navHome': 'CAP',
-    'navLotes': 'LOTES',
-    'navHistory': 'HISTORY',
-    'navExplorer': 'Archivos'
-  };
-
-  document.querySelectorAll(".nav-item").forEach(el => {
-    const target = el.getAttribute("data-tab")?.replace("tab", "");
-    el.classList.toggle("active", target === panel);
-  });
-
-
-
-  const allPanels = [
-    "panelCAP", "panelNOTIFS", "panelADMIN", "panelCaptureSummary",
-    "panelPINOLADMIN", "panelHISTORY", "panelEDITLOG", "panelLOTES", "panelArchivos"
-  ];
-  allPanels.forEach(pId => {
-    const p = $(pId);
-    if (p) p.style.display = "none";
-  });
-
-  if ($("panelCAP")) $("panelCAP").style.display = (panel === "CAP" && isUnidad) ? "block" : "none";
-
-  if ($("panelAdminOpsTabs")) {
-    const isVisible = (panel === "CAP" || panel === "ADMIN" || panel === "NOTIFS") && isOps;
-    $("panelAdminOpsTabs").style.display = isVisible ? "block" : "none";
-  }
-
-  if ($("panelNOTIFS")) $("panelNOTIFS").style.display = (panel === "NOTIFS") ? "block" : "none";
-  if ($("panelADMIN")) $("panelADMIN").style.display = (panel === "ADMIN" && isAdmin) ? "block" : "none";
-
-
-  if (panel === "CAP" && isUnidad) {
-    // No-op scroll
-  }
-
-  if (panel === "NOTIFS") {
-    if (isOps) {
-      initNotificationCenter().catch(err => console.error("initNotificationCenter error:", err));
+    if (pRda) {
+        if (tab === "RDA" || (tab === "ADMIN" && AppState.opsTab === "RDA")) {
+            pRda.classList.remove("hidden");
+            pRda.style.display = "flex";
+        } else {
+            pRda.classList.add("hidden");
+            pRda.style.display = "none";
+        }
     }
 
-    loadNotifications({ silent: false }).catch(err => {
-      console.error("loadNotifications error:", err);
-      showToast("No se pudieron cargar las notificaciones", false);
-    });
-  }
+    // --- ARCHITECTURAL FIX: HIDE LOOSE SIBLING FORMS ---
+    // Corrected to the ACTUAL DOM IDs used in index.html
+    const looseForms = ["formSR", "formCONS", "formBIO", "formPINOL", "panelDIST"];
+    
+    if (tab !== "CAP" && tab !== "ADMIN") {
+        // Lock them down with !important
+        looseForms.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.setAttribute("style", "display: none !important;");
+        });
+    } else {
+        // Unlock them safely (removes !important but keeps them hidden natively)
+        looseForms.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.setAttribute("style", "display: none;");
+        });
+    }
 
-  if (panel === "ADMIN" && isAdmin) {
-    // No-op scroll
-  }
+    const floatingHub = document.querySelector('.command-hub') || document.getElementById('commandHub');
+    if (floatingHub) {
+        if (tab !== "CAP") {
+            floatingHub.setAttribute("style", "display: none !important;");
+        } else {
+            floatingHub.removeAttribute("style");
+        }
+    }
+
+    if (tab === "CAP") {
+        if (AppState.rol !== "UNIDAD") {
+            activateOpsTab("CAPTURE");
+        } else {
+            // Restore the specifically selected capture form for UNIDAD
+            if (typeof activateCapture === 'function') {
+                const currentCap = AppState.capTab || "SR";
+                AppState.capTab = null; // Force DOM refresh
+                activateCapture(currentCap);
+            }
+        }
+    } else if (tab === "ADMIN") {
+        activateOpsTab(AppState.opsTab);
+    } else if (tab === "RDA") {
+        if (typeof loadAndRender === 'function') loadAndRender();
+    }
 }
 
 function activateCapture(tab) {
@@ -8730,6 +8726,7 @@ function syncTabGroupIndicator(containerSelector) {
 
 window.addEventListener('resize', () => {
   syncTabGroupIndicator('#panelAdminOpsTabs .nav-container');
+  syncTabGroupIndicator('#panelUnidadOpsTabs .nav-container');
   syncTabGroupIndicator('#panelAdminSecurityTabs .nav-container');
   syncTabGroupIndicator('#desktopCaptureTabs');
 });
@@ -8737,64 +8734,167 @@ window.addEventListener('resize', () => {
 /**
  * ACTIVATE OPS TAB (Final Refactor - High Fidelity)
  */
-function activateOpsTab(tab) {
-  const currentOpsTab = APP_STATE.opsTab || "CAPTURE";
-  const sameTab = currentOpsTab === tab;
-  Object.assign(AppState, { opsTab: tab });
+window.activateOpsTab = function(tab) {
+    // Normalization bridge: Map inputs to normalized tab keys
+    if (tab === "NOTIFS" || tab === "NOTIF") tab = "NOTIFICATIONS";
+    if (tab === "ADMIN" || tab === "SEC") tab = "SECURITY";
 
-  // 1. UI: Indicador azul y clases activas
-  const container = document.querySelector('#panelAdminOpsTabs .nav-container');
-  if (container) {
-    container.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-    let targetId = "tabOPS_CAPTURE";
-    if (tab === "HISTORY") targetId = "tabOPS_HISTORY";
-    if (tab === "PINOL") targetId = "tabOPS_PINOL";
-    if (tab === "LOTES") targetId = "tabLOTES";
-    if (tab === "NOTIFICATIONS") targetId = "tabOPS_NOTIFS";
-    if (tab === "SECURITY") targetId = "tabOPS_ADMIN";
+    if (tab === "CAPTURE" && AppState.rol === "UNIDAD") {
+        if (typeof activateUnidadTab === 'function') activateUnidadTab("CAPTURE");
+        return;
+    }
+    if (tab === "RDA" && AppState.rol === "UNIDAD") {
+        if (typeof activateUnidadTab === 'function') activateUnidadTab("RDA");
+        return;
+    }
 
-    const btn = $(targetId);
-    if (btn) btn.classList.add('active');
-    syncTabGroupIndicator('#panelAdminOpsTabs .nav-container');
-  }
+    const sameTab = AppState.opsTab === tab;
+    AppState.opsTab = tab;
 
-  // 2. CAMBIO DE CONTEXTO (Si es Avisos o Seguridad)
-  if (tab === "NOTIFICATIONS") { activateMain("NOTIFS"); return; }
-  if (tab === "SECURITY") { activateMain("ADMIN"); return; }
+    // Sync AppState.mainTab to prevent async summary panel leaks
+    if (tab === "NOTIFICATIONS") {
+        AppState.mainTab = "NOTIFS";
+    } else if (tab === "SECURITY") {
+        AppState.mainTab = "ADMIN";
+    } else {
+        AppState.mainTab = "CAP";
+    }
 
-  // 3. PANELES: Mostrar el correcto, ocultar los demás
-  if (APP_STATE.mainPanel !== "CAP") activateMain("CAP", tab);
+    // 1. UI: Botonera y animación (CORREGIDO AL ID REAL)
+    const container = document.getElementById("panelAdminOpsTabs");
+    if (container) {
+        const navContainer = container.querySelector(".nav-container");
+        if (navContainer) {
+            navContainer.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
+        }
+        
+        const buttonIds = {
+            "CAPTURE": "tabOPS_CAPTURE",
+            "HISTORY": "tabOPS_HISTORY",
+            "RDA": "tabOPS_RDA",
+            "PINOL": "tabOPS_PINOL",
+            "LOTES": "tabLOTES",
+            "NOTIFICATIONS": "tabOPS_NOTIFS",
+            "SECURITY": "tabOPS_ADMIN"
+        };
+        const targetId = buttonIds[tab];
+        if (targetId) {
+            const btn = document.getElementById(targetId);
+            if (btn) btn.classList.add("active");
+        }
+        
+        if (typeof syncTabGroupIndicator === 'function') {
+            syncTabGroupIndicator("#panelAdminOpsTabs .nav-container");
+        }
+    }
 
-  const pCapture = $("panelCaptureSummary");
-  const pHistory = $("panelHISTORY");
-  const pPinol = $("panelPINOLADMIN");
-  const pLotes = $("panelLOTES");
+    // 2. PANELES: Apagado forzoso termonuclear de todos los paneles de esta sección
+    const panelIds = {
+        "CAPTURE": "panelCaptureSummary",
+        "HISTORY": "panelHISTORY",
+        "RDA": "rdaDashboardOverlay",
+        "PINOL": "panelPINOLADMIN",
+        "LOTES": "panelLOTES",
+        "NOTIFICATIONS": "panelNOTIFS",
+        "SECURITY": "panelADMIN"
+    };
 
-  if (pCapture) pCapture.style.display = (tab === "CAPTURE") ? "block" : "none";
-  if (pHistory) pHistory.style.display = (tab === "HISTORY") ? "block" : "none";
-  if (pPinol) pPinol.style.display = (tab === "PINOL") ? "block" : "none";
-  if (pLotes) pLotes.style.display = (tab === "LOTES") ? "block" : "none";
-  if ($("panelEDITLOG")) $("panelEDITLOG").style.display = "none";
+    Object.keys(panelIds).forEach(k => {
+        const el = document.getElementById(panelIds[k]);
+        if (el) {
+            el.classList.add("hidden");
+            el.style.setProperty("display", "none", "important");
+        }
+    });
 
-  // 4. DATOS: Carga de información
-  if (!sameTab) {
+    // Encendido exclusivo del panel seleccionado
+    const activePanelId = panelIds[tab];
+    if (activePanelId) {
+        const activePanel = document.getElementById(activePanelId);
+        if (activePanel) {
+            activePanel.classList.remove("hidden");
+            const dType = (tab === "RDA") ? "flex" : "block";
+            activePanel.style.setProperty("display", dType, "important");
+        }
+    }
+
+    // Standard mainTab cleanups to keep UI in sync
+    const isCapTab = (AppState.mainTab === "CAP");
+    const looseForms = ["formSR", "formCONS", "formBIO", "formPINOL", "panelDIST"];
+    looseForms.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (!isCapTab) {
+                el.setAttribute("style", "display: none !important;");
+            } else {
+                el.setAttribute("style", "display: none;");
+            }
+        }
+    });
+
+    const floatingHub = document.querySelector('.command-hub') || document.getElementById('commandHub');
+    if (floatingHub) {
+        if (!isCapTab) {
+            floatingHub.setAttribute("style", "display: none !important;");
+        } else {
+            floatingHub.removeAttribute("style");
+        }
+    }
+
+    // 3. DATOS: Carga de información
+    if (!sameTab) {
+        if (tab === "CAPTURE") {
+            if (typeof runSinglePanelTask === 'function') runSinglePanelTask("ops-tab-capture", () => reloadCaptureSummarySilent());
+        }
+        if (tab === "HISTORY") {
+            if (typeof runSinglePanelTask === 'function') runSinglePanelTask("ops-tab-history", () => reloadHistorySilent());
+        }
+        if (tab === "PINOL") {
+            if (typeof runSinglePanelTask === 'function') runSinglePanelTask("ops-tab-pinol", () => refreshPinol());
+        }
+        if (tab === "RDA") {
+            if (typeof loadAndRender === 'function') loadAndRender();
+        }
+        if (tab === "LOTES") {
+            if (typeof activateLotesAdmin === 'function') activateLotesAdmin();
+        }
+        if (tab === "NOTIFICATIONS") {
+            if (AppState.rol !== "UNIDAD" && typeof initNotificationCenter === 'function') {
+                initNotificationCenter().catch(err => console.error("initNotificationCenter error:", err));
+            }
+            if (typeof loadNotifications === 'function') {
+                loadNotifications({ silent: false }).catch(err => {
+                    console.error("loadNotifications error:", err);
+                    if (typeof showToast === 'function') showToast("No se pudieron cargar las notificaciones", false);
+                });
+            }
+        }
+    }
+};
+
+function activateUnidadTab(tab) {
+    if (tab === AppState.opsTab) return;
+    AppState.opsTab = tab;
+
+    const container = document.querySelector('#panelUnidadOpsTabs .nav-container');
+    if (container) {
+        container.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+        let targetId = (tab === "RDA") ? "tabUNIDAD_RDA" : "tabUNIDAD_CAPTURE";
+        const btn = document.getElementById(targetId);
+        if (btn) btn.classList.add('active');
+        if (typeof syncTabGroupIndicator === 'function') syncTabGroupIndicator('#panelUnidadOpsTabs .nav-container');
+    }
+
+    console.log("[Navigation] UNIDAD requested main section:", tab);
+
     if (tab === "CAPTURE") {
-      clearTabAttention("tabOPS_CAPTURE");
-      runSinglePanelTask("ops-tab-capture", () => reloadCaptureSummarySilent()).finally(() => scheduleOpsPrewarm(180));
+        activateMain("CAP");
+        if (typeof reloadCaptureSummarySilent === 'function') runSinglePanelTask("ops-tab-capture", () => reloadCaptureSummarySilent());
+    } else if (tab === "RDA") {
+        activateMain("RDA");
     }
-    if (tab === "HISTORY") {
-      clearTabAttention("tabOPS_HISTORY");
-      runSinglePanelTask("ops-tab-history", () => reloadHistorySilent());
-    }
-    if (tab === "PINOL") {
-      clearTabAttention("tabOPS_PINOL");
-      runSinglePanelTask("ops-tab-pinol", () => refreshPinol());
-    }
-    if (tab === "LOTES") {
-      activateLotesAdmin();
-    }
-  }
 }
+window.activateUnidadTab = activateUnidadTab;
 
 function resetExistencia() {
   if (HAS_TODAY_SR && TODAY_CACHE && TODAY_CACHE.sr) {
@@ -8829,6 +8929,63 @@ function resetCONS() {
   syncAguja();
 }
 
+async function reloadCaptureSummary(force = false) {
+  const filterKey = buildCaptureSummaryFilterKey();
+
+  if (!shouldReloadPanelByFilters("captureSummary", filterKey, force)) {
+    return null;
+  }
+
+  return runSinglePanelTask("capture-summary", async () => {
+    if (!TOKEN) return null;
+
+    try {
+      const fecha = $("summaryFecha")?.value || todayYmdLocal();
+      const tipo = $("summaryTipo")?.value || "SR";
+
+      const data = await smartLoader(
+        () => getCaptureOverview(fecha, tipo, !!force),
+        {
+          delay: 220,
+          message: "Cargando resumen…",
+          title: "Resumen de captura"
+        }
+      );
+
+      const pCapSummary = document.getElementById("panelCaptureSummary");
+      const panel = pCapSummary;
+      const hasRecords = !!data;
+
+      if (data) {
+        renderCaptureSummary(data);
+        commitPanelFilterState("captureSummary", `${fecha}__${tipo}`);
+      }
+
+      // STRICT ASYNC GUARD WITH ROLE GATE
+      if (AppState.mainTab === "CAP" && AppState.rol !== "UNIDAD" && AppState.opsTab === "CAPTURE") {
+          if (hasRecords) {
+              if (panel) {
+                  panel.classList.remove("hidden");
+                  panel.style.display = "block";
+              }
+          } else {
+              if (panel) { panel.style.display = "none"; }
+          }
+      } else {
+          if (panel) {
+              panel.classList.add("hidden");
+              panel.style.setProperty("display", "none", "important");
+          }
+      }
+
+      return data;
+    } catch (e) {
+      console.error("reloadCaptureSummary error:", e);
+      return null;
+    }
+  });
+}
+
 async function reloadCaptureSummarySilent(force = false) {
   const filterKey = buildCaptureSummaryFilterKey();
 
@@ -8852,9 +9009,30 @@ async function reloadCaptureSummarySilent(force = false) {
         }
       );
 
+      const pCapSummary = document.getElementById("panelCaptureSummary");
+      const panel = pCapSummary;
+      const hasRecords = !!data;
+
       if (data) {
         renderCaptureSummary(data);
         commitPanelFilterState("captureSummary", `${fecha}__${tipo}`);
+      }
+
+      // STRICT ASYNC GUARD WITH ROLE GATE
+      if (AppState.mainTab === "CAP" && AppState.rol !== "UNIDAD" && AppState.opsTab === "CAPTURE") {
+          if (hasRecords) {
+              if (panel) {
+                  panel.classList.remove("hidden");
+                  panel.style.display = "block";
+              }
+          } else {
+              if (panel) { panel.style.display = "none"; }
+          }
+      } else {
+          if (panel) {
+              panel.classList.add("hidden");
+              panel.style.setProperty("display", "none", "important");
+          }
       }
 
       return data;
@@ -10173,37 +10351,7 @@ document.addEventListener("visibilitychange", () => {
 
 // Arranque unificado activo.
 
-async function getEditLog(fecha, tipo) {
-  if (!TOKEN) return [];
 
-  const r = await apiCall({
-    action: "getEditLog",
-    token: TOKEN,
-    fecha: fecha || "",
-    tipo: tipo || "TODOS"
-  });
-
-  if (!r || !r.ok) return [];
-  return Array.isArray(r.data) ? r.data : [];
-}
-
-async function refreshEditLog() {
-  if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL" && USER.rol !== "JURISDICCIONAL")) return;
-
-  showOverlay("Cargando historial de ediciones…");
-  try {
-    const fecha = $("editLogFecha") ? $("editLogFecha").value : "";
-    const tipo = $("editLogTipo") ? $("editLogTipo").value : "TODOS";
-
-    const items = await getEditLog(fecha, tipo);
-    renderEditLog(items);
-  } catch (e) {
-    console.error("refreshEditLog error:", e);
-    showToast("Error al cargar historial de ediciones", false);
-  } finally {
-    hideOverlay();
-  }
-}
 
 async function getHistoryMetrics(fechaInicio, fechaFin, force = false) {
   if (!TOKEN) return null;
@@ -10287,28 +10435,7 @@ function renderHistoryMetrics(data) {
 
 
 
-function renderEditLog(items) {
-  const tbody = $("editLogTbody");
-  if (!tbody) return;
 
-  if (!items || !items.length) {
-    tbody.innerHTML = `<tr><td colspan="8" class="muted">Sin ediciones para ese filtro</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = items.map(x => `
-    <tr>
-      <td>${escapeHtml(x.fecha_reporte || "")}</td>
-      <td>${escapeHtml(x.tipo || "")}</td>
-      <td>${escapeHtml(x.municipio || "")}</td>
-      <td>${escapeHtml(x.clues || "")}</td>
-      <td>${escapeHtml(x.unidad || "")}</td>
-      <td>${escapeHtml(x.editado_por || "")}</td>
-      <td>${escapeHtml(x.editado_ts || "")}</td>
-      <td>${escapeHtml(x.detalle || "")}</td>
-    </tr>
-  `).join("");
-}
 
 async function watchPinolRealtime() {
   if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL")) return;
