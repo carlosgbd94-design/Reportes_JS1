@@ -20,6 +20,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
   <!-- Tailwind CSS Compiled -->
@@ -28,6 +30,12 @@
   <!-- Mobile Adaptation Layer (MAL) -->
   <link rel="stylesheet" href="mobile.css">
   <script src="mobile.js" defer></script>
+  <style>
+    #tabOPS_RDA.active span.material-symbols-rounded,
+    #tabUNIDAD_RDA.active span.material-symbols-rounded {
+      color: #6366f1 !important;
+    }
+  </style>
 </head>
 
 <body class="bg-surface-container min-h-screen relative overflow-x-hidden">
@@ -89,7 +97,7 @@
 
           <div class="GlassContainer" id="glassBtnExport" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL" style="--glass-icon-color: #003366; --corner-radius: 100px;">
             <div class="GlassContent liquidGL header-liquid-glass">
-              <button class="header-action-btn" id="btnExport" data-tooltip="Exportar reportes" style="display:none;">
+              <button class="header-action-btn" id="btnExport" data-tooltip="Exportar reportes" title="Exportar reportes" style="display:none;">
                 <span class="material-symbols-rounded">download</span>
               </button>
             </div>
@@ -97,7 +105,7 @@
 
           <div class="GlassContainer" id="glassBtnUpload" data-role-gate="UNIDAD,MUNICIPAL" style="--glass-icon-color: #005bb5; --corner-radius: 100px;">
             <div class="GlassContent liquidGL header-liquid-glass">
-              <button class="header-action-btn" id="btnOpenUpload" data-tooltip="Subir archivos" style="display:none;">
+              <button class="header-action-btn" id="btnOpenUpload" data-tooltip="Subir archivos" title="Subir archivos" style="display:none;">
                 <span class="material-symbols-rounded">cloud_upload</span>
               </button>
             </div>
@@ -106,7 +114,7 @@
           <div class="GlassContainer" id="glassBtnExplorer" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,UNIDAD"
             style="--glass-icon-color: #00695c; --corner-radius: 100px;">
             <div class="GlassContent liquidGL header-liquid-glass">
-              <button class="header-action-btn" id="btnViewArchivos" data-tooltip="Explorador de evidencias"
+              <button class="header-action-btn" id="btnViewArchivos" data-tooltip="Explorador de evidencias" title="Ver evidencia"
                 style="display:none;">
                 <span class="material-symbols-rounded">folder_open</span>
               </button>
@@ -115,21 +123,12 @@
 
           <div class="GlassContainer" id="glassBtnNotifs" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,UNIDAD" style="--glass-icon-color: #c41e3a; --corner-radius: 100px;">
             <div class="GlassContent liquidGL header-liquid-glass">
-              <button class="header-action-btn" id="btnTopNotifications" data-tooltip="Notificaciones"
+              <button class="header-action-btn" id="btnTopNotifications" data-tooltip="Notificaciones" title="Notificaciones"
                 style="display:none;">
                 <div class="flex items-center justify-center relative !overflow-visible">
                   <span class="material-symbols-rounded">notifications</span>
                   <span id="topNotifBadge"></span>
                 </div>
-              </button>
-            </div>
-          </div>
-
-          <!-- RDA 2026 DASHBOARD BUTTON -->
-          <div class="GlassContainer" id="glassBtnRdaDashboard" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,UNIDAD" style="--glass-icon-color: #0d9488; --corner-radius: 100px;">
-            <div class="GlassContent liquidGL header-liquid-glass">
-              <button class="header-action-btn" id="btnOpenRdaDashboard" data-tooltip="Dashboard RDA 2026" style="display:none;">
-                <span class="material-symbols-rounded">vaccines</span>
               </button>
             </div>
           </div>
@@ -463,6 +462,27 @@
             </div>
           </div>
         </div>
+
+          <!-- 🧱 BLOCK 4.5: NAVEGACIÓN PARA ROL UNIDAD (Captura / Indicadores) -->
+          <div id="panelUnidadOpsTabs" data-role-gate="UNIDAD" style="display:none" class="w-full mb-8 flex justify-center">
+            <div class="nav-container">
+              <div id="unidadTabIndicator" class="nav-indicator liquid-glass">
+                <div class="liquid-glass--bend"></div>
+                <div class="liquid-glass--face"></div>
+                <div class="liquid-glass--edge"></div>
+              </div>
+
+              <button class="nav-tab active" id="tabUNIDAD_CAPTURE" onclick="activateUnidadTab('CAPTURE')">
+                <span class="material-symbols-rounded">edit_note</span>
+                <span>Captura</span>
+              </button>
+
+              <button class="nav-tab" id="tabUNIDAD_RDA" onclick="activateUnidadTab('RDA')">
+                <span class="material-symbols-rounded">analytics</span>
+                <span>Indicadores</span>
+              </button>
+            </div>
+          </div>
 
         <!-- 🧱 BLOCK 2: PANEL SELECTOR & CAPTURE TABS -->
         <div id="panelCAP" data-role-gate="UNIDAD" style="display:none; content-visibility: auto; contain-intrinsic-size: 80px;"
@@ -964,6 +984,11 @@
               <button class="nav-tab" id="tabOPS_HISTORY" onclick="activateOpsTab('HISTORY')">
                 <span class="material-symbols-rounded">query_stats</span>
                 <span>Métricas</span>
+              </button>
+              
+              <button class="nav-tab" id="tabOPS_RDA" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL" onclick="activateOpsTab('RDA')">
+                <span class="material-symbols-rounded">analytics</span>
+                <span>Indicadores RDA</span>
               </button>
               
               <button class="nav-tab" id="tabOPS_PINOL" data-role-gate="ADMIN,MUNICIPAL" onclick="activateOpsTab('PINOL')">
@@ -1485,60 +1510,7 @@
 
           </div>
 
-          <div id="panelEDITLOG" data-role-gate="ADMIN" style="display:none"
-            class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8 overflow-hidden">
-            <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-6">
-              <h3 class="text-lg font-extrabold text-primary m-0 tracking-tight">Historial de ediciones</h3>
-              <button
-                class="bg-primary/10 text-primary hover:bg-primary/20 px-4 h-[42px] rounded-xl font-bold flex items-center justify-center gap-2 transition-all border-none cursor-pointer text-sm"
-                id="btnRefreshEditLog" title="Actualizar historial">
-                <span class="material-symbols-rounded text-[18px]">refresh</span> Actualizar
-              </button>
-            </div>
 
-            <div class="hint">
-              Consulta qué reportes fueron editados, por quién y cuándo.
-            </div>
-
-            <div class="row" style="margin-top:10px">
-              <div>
-                <label for="editLogTipo">Tipo</label>
-                <select id="editLogTipo">
-                  <option value="TODOS">Todos</option>
-                  <option value="SR">Existencia de biológicos</option>
-                  <option value="CONS">Consumibles</option>
-                </select>
-              </div>
-
-              <div>
-                <label for="editLogFecha">Fecha</label>
-                <input type="date" id="editLogFecha">
-              </div>
-            </div>
-
-            <div class="tableWrap" style="margin-top:10px;">
-              <table class="summaryTable">
-                <thead>
-                  <tr>
-                    <th>Fecha reporte</th>
-                    <th>Tipo</th>
-                    <th>Municipio</th>
-                    <th>CLUES</th>
-                    <th>Unidad</th>
-                    <th>Editó</th>
-                    <th>Fecha edición</th>
-                    <th>Detalle</th>
-                  </tr>
-                </thead>
-                <tbody id="editLogTbody">
-                  <tr>
-                    <td colspan="8" class="muted">Sin datos</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-          </div>
 
           <!-- CARGA DE LOTES (Premium Card Design) -->
           <div id="panelLOTES" data-role-gate="ADMIN,JURISDICCIONAL" style="display:none"
@@ -1699,41 +1671,6 @@
             <button class="btn-premium-action btn-save-animate w-full" id="btnSaveLotesAdmin" style="margin-top:20px;">
               <span class="material-symbols-rounded">save</span> Guardar catálogo de lotes
             </button>
-          </div>
-
-          <!-- ARCHIVOS -->
-          <div id="panelArchivos" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,UNIDAD" style="display:none"
-            class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8">
-            <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-4">
-              <h3
-                class="text-[17px] font-extrabold text-primary tracking-tight m-0 bg-primary-container/40 px-6 py-2.5 rounded-2xl border border-primary/10">
-                Navegador de Evidencias</h3>
-              <button
-                class="bg-surface-variant text-surface-on hover:bg-surface-onVariant/10 px-3 h-[36px] rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all outline-none border-none cursor-pointer text-[12px]"
-                id="btnRefreshArchivos" title="Actualizar lista">
-                <span class="material-symbols-rounded text-[18px]">refresh</span>
-              </button>
-            </div>
-            <!-- Controls -->
-            <div class="flex flex-wrap gap-4 mb-6">
-              <select id="archivosCategoria"
-                class="bg-surface-variant rounded-xl border border-outline-variant/30 py-3 px-5 text-sm outline-none font-bold text-primary">
-                <option value="">Todas las Categorías</option>
-                <option value="Evidencia de capacitaciones">Capacitaciones</option>
-                <option value="Evidencias de campaña">Campañas</option>
-                <option value="Supervisión">Supervisión</option>
-                <option value="Otros reportes">Otros reportes</option>
-              </select>
-              <div class="modern-input-group flex-1">
-                <span class="input-icon material-symbols-rounded">search</span>
-                <input type="text" id="archivosSearch" placeholder="Buscar por Clues o Unidad..."
-                  class="rounded-xl h-11 text-sm font-bold" />
-              </div>
-            </div>
-            <!-- Grid -->
-            <div id="archivosContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              <!-- JS will populate -->
-            </div>
           </div>
 
           <!-- ADMIN (MODULAR REFACTOR) -->
@@ -2029,6 +1966,220 @@
             </div>
           </div>
         </div>
+
+        <!-- ==================================================================================== -->
+        <!-- 💉 RDA 2026 DASHBOARD EJECUTIVO (Premium Redesign v2) -->
+        <!-- ==================================================================================== -->
+        <!-- ==================================================================================== -->
+        <!-- 💉 INDICADORES VACUNAS 2026 (Premium Executive Design) -->
+        <!-- ==================================================================================== -->
+        <div id="rdaDashboardOverlay" class="w-full max-w-7xl mx-auto flex flex-col gap-8 fade-in" style="display:none !important;">
+          <style>
+            #rdaFilterMunicipio option, #rdaFilterUnidad option { background: #fff; color: #1e293b; }
+            .rda-kpi-card {
+              background: #fff; border-radius: 20px; padding: 24px;
+              border: 1px solid #e2e8f0; position: relative;
+              box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+              transition: transform 0.2s, box-shadow 0.2s;
+            }
+            .rda-kpi-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+            .rda-icon-box {
+              width: 48px; height: 48px; border-radius: 14px;
+              display: flex; align-items: center; justify-content: center;
+              margin-bottom: 16px;
+            }
+          </style>
+
+          <div id="rdaDashboardPanel" class="bg-white rounded-[24px] shadow-sm border border-slate-200 p-6 md:p-8 w-full flex flex-col relative z-50">
+
+            <!-- ═══════════ TOP BAR (Title + Actions) ═══════════ -->
+            <div style="
+              flex-shrink: 0; padding: 24px 32px;
+              background: #fff; border-bottom: 1px solid #e2e8f0;
+              display: flex; align-items: center; justify-content: space-between;
+            ">
+              <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="width: 52px; height: 52px; border-radius: 16px; background: #0f172a; display: flex; align-items: center; justify-content: center; color: #67e8f9;">
+                  <span class="material-symbols-rounded" style="font-size: 28px;">analytics</span>
+                </div>
+                <div>
+                  <h2 style="margin: 0; font-size: 22px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em;">Indicadores vacunas 2026</h2>
+                  <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
+                    <span id="rdaScopeLabel" style="font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Jurisdicción Sanitaria 1</span>
+                    <span id="rdaCierreLabel" style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: #f1f5f9; color: #0f172a; border: 1px solid #e2e8f0;">Avance al cierre de ...</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <!-- Filtros inline -->
+                <div style="display: flex; align-items: center; gap: 8px; margin-right: 16px; background: #f1f5f9; padding: 6px; border-radius: 14px;">
+                  <select id="rdaFilterMunicipio" style="
+                    height: 38px; padding: 0 16px; min-width: 180px;
+                    border-radius: 10px; border: 1px solid #e2e8f0;
+                    background: #fff; color: #0f172a;
+                    font-size: 13px; font-weight: 700; outline: none; cursor: pointer;
+                  ">
+                    <option value="">Todos los municipios</option>
+                  </select>
+
+                  <select id="rdaFilterUnidad" style="
+                    display: none; height: 38px; padding: 0 16px; min-width: 220px;
+                    border-radius: 10px; border: 1px solid #e2e8f0;
+                    background: #fff; color: #0f172a;
+                    font-size: 13px; font-weight: 700; outline: none; cursor: pointer;
+                  ">
+                    <option value="">Todas las unidades</option>
+                  </select>
+                </div>
+
+                <!-- Botones Acción -->
+                <div style="position: relative;" id="rdaExportContainer">
+                  <button id="btnExportRdaToggle" style="
+                    height: 48px; padding: 0 20px;
+                    border-radius: 14px; border: none;
+                    background: #0f172a; color: #fff; font-size: 14px; font-weight: 800;
+                    display: flex; align-items: center; gap: 10px;
+                    cursor: pointer; transition: all 0.2s;
+                  ">
+                    <span class="material-symbols-rounded" style="font-size: 20px;">download</span>
+                    Exportar
+                    <span class="material-symbols-rounded" style="font-size: 18px;">expand_more</span>
+                  </button>
+                  <div id="rdaExportDropdown" style="
+                    display: none; position: absolute; top: 100%; right: 0; margin-top: 8px;
+                    background: #fff; border-radius: 16px; min-width: 240px;
+                    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+                    border: 1px solid #e2e8f0; overflow: hidden; z-index: 100;
+                  ">
+                    <button class="rda-export-opt" data-export="individual" style="width: 100%; padding: 16px; border: none; background: transparent; text-align: left; font-size: 14px; font-weight: 700; color: #1e293b; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                      <span class="material-symbols-rounded" style="color: #0d9488;">picture_as_pdf</span>
+                      Reporte PDF Individual
+                    </button>
+                    <button class="rda-export-opt" data-export="masivo" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL" style="width: 100%; padding: 16px; border: none; background: transparent; text-align: left; font-size: 14px; font-weight: 700; color: #1e293b; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                      <span class="material-symbols-rounded" style="color: #4338ca;">folder_zip</span>
+                      Archivo ZIP Masivo
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ═══════════ CONTENT ═══════════ -->
+            <div id="rdaDashboardContent" style="flex: 1; overflow-y: auto; padding: 32px; background: #f8fafc;">
+
+              <!-- KPI GRID -->
+              <div id="rdaKpiGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; margin-bottom: 32px;">
+                <!-- Menor 1 -->
+                <div class="rda-kpi-card">
+                  <div class="rda-icon-box" style="background: #f0fdfa; color: #0d9488;">
+                    <span class="material-symbols-rounded">child_care</span>
+                  </div>
+                  <div style="font-size: 12px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">Menores de 1 Año</div>
+                  <div id="kpiMenor1" style="font-size: 40px; font-weight: 900; color: #0f172a; letter-spacing: -0.04em;">0%</div>
+                  <div id="kpiMenor1Dosis" style="font-size: 13px; font-weight: 700; color: #64748b; margin-top: 8px;">— aplicaciones</div>
+                </div>
+
+                <!-- 1 Año -->
+                <div class="rda-kpi-card">
+                  <div class="rda-icon-box" style="background: #f0f9ff; color: #0284c7;">
+                    <span class="material-symbols-rounded">face</span>
+                  </div>
+                  <div style="font-size: 12px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">Niños de 1 Año</div>
+                  <div id="kpi1Ano" style="font-size: 40px; font-weight: 900; color: #0f172a; letter-spacing: -0.04em;">0%</div>
+                  <div id="kpi1AnoDosis" style="font-size: 13px; font-weight: 700; color: #64748b; margin-top: 8px;">— aplicaciones</div>
+                </div>
+
+                <!-- 4 Años -->
+                <div class="rda-kpi-card">
+                  <div class="rda-icon-box" style="background: #f5f3ff; color: #7c3aed;">
+                    <span class="material-symbols-rounded">school</span>
+                  </div>
+                  <div style="font-size: 12px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">Niños de 4 Años</div>
+                  <div id="kpi4Anos" style="font-size: 40px; font-weight: 900; color: #0f172a; letter-spacing: -0.04em;">0%</div>
+                  <div id="kpi4AnosDosis" style="font-size: 13px; font-weight: 700; color: #64748b; margin-top: 8px;">— aplicaciones</div>
+                </div>
+
+                <!-- Población -->
+                <div class="rda-kpi-card">
+                  <div class="rda-icon-box" style="background: #fff7ed; color: #ea580c;">
+                    <span class="material-symbols-rounded">groups</span>
+                  </div>
+                  <div style="font-size: 12px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">Meta Poblacional</div>
+                  <div id="kpiPoblacion" style="font-size: 40px; font-weight: 900; color: #0f172a; letter-spacing: -0.04em;">0</div>
+                  <div id="kpiUnidades" style="font-size: 13px; font-weight: 700; color: #64748b; margin-top: 8px;">— unidades</div>
+                </div>
+              </div>
+
+              <!-- ANALYSIS SECTION -->
+              <div style="display: grid; grid-template-columns: 350px 1fr; gap: 24px; margin-bottom: 32px;">
+                <!-- Doughnut Analysis -->
+                <div style="background: #fff; border-radius: 24px; padding: 24px; border: 1px solid #e2e8f0; display: flex; flex-direction: column;">
+                  <h3 style="margin: 0 0 20px 0; font-size: 14px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em;">Balance de Cobertura</h3>
+                  <div style="flex: 1; min-height: 280px; position: relative;">
+                    <canvas id="chartDoughnut"></canvas>
+                  </div>
+                  <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #f1f5f9;">
+                    <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.6;">Proporción relativa del cumplimiento de esquemas básicos por grupo de edad.</p>
+                  </div>
+                </div>
+
+                <!-- Horizontal Histogram (Detailed Analysis) -->
+                <div style="background: #fff; border-radius: 24px; padding: 24px; border: 1px solid #e2e8f0; display: flex; flex-direction: column;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+                    <h3 id="chartBarTitle" style="margin: 0; font-size: 14px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em;">Análisis Comparativo</h3>
+                    <div style="display: flex; gap: 12px;">
+                      <span style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #0d9488;">
+                        <span style="width: 8px; height: 8px; border-radius: 2px; background: #0d9488;"></span> < 1 Año
+                      </span>
+                      <span style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #0284c7;">
+                        <span style="width: 8px; height: 8px; border-radius: 2px; background: #0284c7;"></span> 1 Año
+                      </span>
+                      <span style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #7c3aed;">
+                        <span style="width: 8px; height: 8px; border-radius: 2px; background: #7c3aed;"></span> 4 Años
+                      </span>
+                    </div>
+                  </div>
+                  <div style="flex: 1; min-height: 320px; position: relative;">
+                    <canvas id="chartBar"></canvas>
+                  </div>
+                </div>
+              </div>
+
+              <!-- DATA TABLE -->
+              <div style="background: #fff; border-radius: 24px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="padding: 24px 32px; background: #fff; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
+                  <h3 style="margin: 0; font-size: 16px; font-weight: 900; color: #0f172a;">Detalle por Unidad Médica</h3>
+                  <span id="rdaTableCount" style="font-size: 12px; font-weight: 800; color: #64748b; background: #f8fafc; padding: 6px 14px; border-radius: 10px; border: 1px solid #e2e8f0;">0 unidades</span>
+                </div>
+                <div style="overflow-x: auto;">
+                  <table id="rdaDetailTable" style="width: 100%; border-collapse: collapse; min-width: 900px;">
+                    <thead>
+                      <tr style="background: #f8fafc;">
+                        <th style="padding: 16px 24px; text-align: left; font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="clues">CLUES ↕</th>
+                        <th style="padding: 16px 24px; text-align: left; font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="nombre">Nombre ↕</th>
+                        <th style="padding: 16px 24px; text-align: left; font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="municipio">Municipio ↕</th>
+                        <th style="padding: 16px 24px; text-align: center; font-size: 11px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="menor1">< 1 Año ↕</th>
+                        <th style="padding: 16px 24px; text-align: center; font-size: 11px; font-weight: 900; color: #0284c7; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="uno">1 Año ↕</th>
+                        <th style="padding: 16px 24px; text-align: center; font-size: 11px; font-weight: 900; color: #7c3aed; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="cuatro">4 Años ↕</th>
+                        <th style="padding: 16px 24px; text-align: center; font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="pob">Meta ↕</th>
+                        <th style="padding: 16px 24px; text-align: center; font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="dosis">Avance ↕</th>
+                      </tr>
+                    </thead>
+                    <tbody id="rdaDetailTbody">
+                      <tr><td colspan="7" style="padding: 80px; text-align: center; color: #94a3b8; font-weight: 600;">Cargando análisis de datos...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div><!-- /rdaDashboardContent -->
+
+            <!-- HIDDEN: Template PDF -->
+            <div id="rdaPdfTemplate" style="position: absolute; left: -9999px; top: 0; width: 1000px; background: #fff;"></div>
+
+          </div><!-- /rdaDashboardPanel -->
+        </div><!-- /rdaDashboardOverlay -->
 
       </div>
     </div>
@@ -2739,245 +2890,6 @@
     <button id="btnCancelEditBIO"></button>
   </div>
 
-  <!-- ==================================================================================== -->
-  <!-- 💉 RDA 2026 DASHBOARD EJECUTIVO (Premium Redesign v2) -->
-  <!-- ==================================================================================== -->
-  <!-- ==================================================================================== -->
-  <!-- 💉 INDICADORES VACUNAS 2026 (Premium Executive Design) -->
-  <!-- ==================================================================================== -->
-  <div id="rdaDashboardOverlay" style="
-    position: fixed; inset: 0; z-index: 9999;
-    display: flex; align-items: flex-start; justify-content: center;
-    padding: 12px;
-    background: rgba(15, 23, 42, 0.7);
-    opacity: 0; visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-    overflow: hidden;
-  ">
-    <style>
-      #rdaFilterMunicipio option, #rdaFilterUnidad option { background: #fff; color: #1e293b; }
-      .rda-kpi-card {
-        background: #fff; border-radius: 20px; padding: 24px;
-        border: 1px solid #e2e8f0; position: relative;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
-        transition: transform 0.2s, box-shadow 0.2s;
-      }
-      .rda-kpi-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-      .rda-icon-box {
-        width: 48px; height: 48px; border-radius: 14px;
-        display: flex; align-items: center; justify-content: center;
-        margin-bottom: 16px;
-      }
-    </style>
-
-    <div id="rdaDashboardPanel" style="
-      width: 100%; max-width: 1440px; height: 100%;
-      display: flex; flex-direction: column;
-      background: #f8fafc;
-      border-radius: 28px;
-      overflow: hidden;
-      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
-      transform: scale(0.98);
-      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    ">
-
-      <!-- ═══════════ TOP BAR (Title + Actions) ═══════════ -->
-      <div style="
-        flex-shrink: 0; padding: 24px 32px;
-        background: #fff; border-bottom: 1px solid #e2e8f0;
-        display: flex; align-items: center; justify-content: space-between;
-      ">
-        <div style="display: flex; align-items: center; gap: 16px;">
-          <div style="width: 52px; height: 52px; border-radius: 16px; background: #0f172a; display: flex; align-items: center; justify-content: center; color: #67e8f9;">
-            <span class="material-symbols-rounded" style="font-size: 28px;">analytics</span>
-          </div>
-          <div>
-            <h2 style="margin: 0; font-size: 22px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em;">Indicadores vacunas 2026</h2>
-            <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
-              <span id="rdaScopeLabel" style="font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Jurisdicción Sanitaria 1</span>
-              <span id="rdaCierreLabel" style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: #f1f5f9; color: #0f172a; border: 1px solid #e2e8f0;">Avance al cierre de ...</span>
-            </div>
-          </div>
-        </div>
-
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <!-- Filtros inline -->
-          <div style="display: flex; align-items: center; gap: 8px; margin-right: 16px; background: #f1f5f9; padding: 6px; border-radius: 14px;">
-            <select id="rdaFilterMunicipio" style="
-              height: 38px; padding: 0 16px; min-width: 180px;
-              border-radius: 10px; border: 1px solid #e2e8f0;
-              background: #fff; color: #0f172a;
-              font-size: 13px; font-weight: 700; outline: none; cursor: pointer;
-            ">
-              <option value="">Todos los municipios</option>
-            </select>
-
-            <select id="rdaFilterUnidad" style="
-              display: none; height: 38px; padding: 0 16px; min-width: 220px;
-              border-radius: 10px; border: 1px solid #e2e8f0;
-              background: #fff; color: #0f172a;
-              font-size: 13px; font-weight: 700; outline: none; cursor: pointer;
-            ">
-              <option value="">Todas las unidades</option>
-            </select>
-          </div>
-
-          <!-- Botones Acción -->
-          <div style="position: relative;" id="rdaExportContainer">
-            <button id="btnExportRdaToggle" style="
-              height: 48px; padding: 0 20px;
-              border-radius: 14px; border: none;
-              background: #0f172a; color: #fff; font-size: 14px; font-weight: 800;
-              display: flex; align-items: center; gap: 10px;
-              cursor: pointer; transition: all 0.2s;
-            ">
-              <span class="material-symbols-rounded" style="font-size: 20px;">download</span>
-              Exportar
-              <span class="material-symbols-rounded" style="font-size: 18px;">expand_more</span>
-            </button>
-            <div id="rdaExportDropdown" style="
-              display: none; position: absolute; top: 100%; right: 0; margin-top: 8px;
-              background: #fff; border-radius: 16px; min-width: 240px;
-              box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
-              border: 1px solid #e2e8f0; overflow: hidden; z-index: 100;
-            ">
-              <button class="rda-export-opt" data-export="individual" style="width: 100%; padding: 16px; border: none; background: transparent; text-align: left; font-size: 14px; font-weight: 700; color: #1e293b; cursor: pointer; display: flex; align-items: center; gap: 12px;">
-                <span class="material-symbols-rounded" style="color: #0d9488;">picture_as_pdf</span>
-                Reporte PDF Individual
-              </button>
-              <button class="rda-export-opt" data-export="masivo" style="width: 100%; padding: 16px; border: none; background: transparent; text-align: left; font-size: 14px; font-weight: 700; color: #1e293b; cursor: pointer; display: flex; align-items: center; gap: 12px;">
-                <span class="material-symbols-rounded" style="color: #4338ca;">folder_zip</span>
-                Archivo ZIP Masivo
-              </button>
-            </div>
-          </div>
-
-          <button id="btnCloseRda" style="
-            width: 48px; height: 48px; border-radius: 14px; border: 1px solid #e2e8f0;
-            background: #fff; color: #64748b;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: all 0.2s;
-          ">
-            <span class="material-symbols-rounded" style="font-size: 24px;">close</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- ═══════════ CONTENT ═══════════ -->
-      <div id="rdaDashboardContent" style="flex: 1; overflow-y: auto; padding: 32px; background: #f8fafc;">
-
-        <!-- KPI GRID -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; margin-bottom: 32px;">
-          <!-- Menor 1 -->
-          <div class="rda-kpi-card">
-            <div class="rda-icon-box" style="background: #f0fdfa; color: #0d9488;">
-              <span class="material-symbols-rounded">child_care</span>
-            </div>
-            <div style="font-size: 12px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">Menores de 1 Año</div>
-            <div id="kpiMenor1" style="font-size: 40px; font-weight: 900; color: #0f172a; letter-spacing: -0.04em;">0%</div>
-            <div id="kpiMenor1Dosis" style="font-size: 13px; font-weight: 700; color: #64748b; margin-top: 8px;">— aplicaciones</div>
-          </div>
-
-          <!-- 1 Año -->
-          <div class="rda-kpi-card">
-            <div class="rda-icon-box" style="background: #f0f9ff; color: #0284c7;">
-              <span class="material-symbols-rounded">face</span>
-            </div>
-            <div style="font-size: 12px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">Niños de 1 Año</div>
-            <div id="kpi1Ano" style="font-size: 40px; font-weight: 900; color: #0f172a; letter-spacing: -0.04em;">0%</div>
-            <div id="kpi1AnoDosis" style="font-size: 13px; font-weight: 700; color: #64748b; margin-top: 8px;">— aplicaciones</div>
-          </div>
-
-          <!-- 4 Años -->
-          <div class="rda-kpi-card">
-            <div class="rda-icon-box" style="background: #f5f3ff; color: #7c3aed;">
-              <span class="material-symbols-rounded">school</span>
-            </div>
-            <div style="font-size: 12px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">Niños de 4 Años</div>
-            <div id="kpi4Anos" style="font-size: 40px; font-weight: 900; color: #0f172a; letter-spacing: -0.04em;">0%</div>
-            <div id="kpi4AnosDosis" style="font-size: 13px; font-weight: 700; color: #64748b; margin-top: 8px;">— aplicaciones</div>
-          </div>
-
-          <!-- Población -->
-          <div class="rda-kpi-card">
-            <div class="rda-icon-box" style="background: #fff7ed; color: #ea580c;">
-              <span class="material-symbols-rounded">groups</span>
-            </div>
-            <div style="font-size: 12px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">Meta Poblacional</div>
-            <div id="kpiPoblacion" style="font-size: 40px; font-weight: 900; color: #0f172a; letter-spacing: -0.04em;">0</div>
-            <div id="kpiUnidades" style="font-size: 13px; font-weight: 700; color: #64748b; margin-top: 8px;">— unidades</div>
-          </div>
-        </div>
-
-        <!-- ANALYSIS SECTION -->
-        <div style="display: grid; grid-template-columns: 350px 1fr; gap: 24px; margin-bottom: 32px;">
-          <!-- Doughnut Analysis -->
-          <div style="background: #fff; border-radius: 24px; padding: 24px; border: 1px solid #e2e8f0; display: flex; flex-direction: column;">
-            <h3 style="margin: 0 0 20px 0; font-size: 14px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em;">Balance de Cobertura</h3>
-            <div style="flex: 1; min-height: 280px; position: relative;">
-              <canvas id="chartDoughnut"></canvas>
-            </div>
-            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #f1f5f9;">
-              <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.6;">Proporción relativa del cumplimiento de esquemas básicos por grupo de edad.</p>
-            </div>
-          </div>
-
-          <!-- Horizontal Histogram (Detailed Analysis) -->
-          <div style="background: #fff; border-radius: 24px; padding: 24px; border: 1px solid #e2e8f0; display: flex; flex-direction: column;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
-              <h3 id="chartBarTitle" style="margin: 0; font-size: 14px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em;">Análisis Comparativo</h3>
-              <div style="display: flex; gap: 12px;">
-                <span style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #0d9488;">
-                  <span style="width: 8px; height: 8px; border-radius: 2px; background: #0d9488;"></span> < 1 Año
-                </span>
-                <span style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #0284c7;">
-                  <span style="width: 8px; height: 8px; border-radius: 2px; background: #0284c7;"></span> 1 Año
-                </span>
-                <span style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #7c3aed;">
-                  <span style="width: 8px; height: 8px; border-radius: 2px; background: #7c3aed;"></span> 4 Años
-                </span>
-              </div>
-            </div>
-            <div style="flex: 1; min-height: 320px; position: relative;">
-              <canvas id="chartBar"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <!-- DATA TABLE -->
-        <div style="background: #fff; border-radius: 24px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-          <div style="padding: 24px 32px; background: #fff; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
-            <h3 style="margin: 0; font-size: 16px; font-weight: 900; color: #0f172a;">Detalle por Unidad Médica</h3>
-            <span id="rdaTableCount" style="font-size: 12px; font-weight: 800; color: #64748b; background: #f8fafc; padding: 6px 14px; border-radius: 10px; border: 1px solid #e2e8f0;">0 unidades</span>
-          </div>
-          <div style="overflow-x: auto;">
-            <table id="rdaDetailTable" style="width: 100%; border-collapse: collapse; min-width: 900px;">
-              <thead>
-                <tr style="background: #f8fafc;">
-                  <th style="padding: 16px 24px; text-align: left; font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="clues">CLUES ↕</th>
-                  <th style="padding: 16px 24px; text-align: left; font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="nombre">Nombre ↕</th>
-                  <th style="padding: 16px 24px; text-align: left; font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="municipio">Municipio ↕</th>
-                  <th style="padding: 16px 24px; text-align: center; font-size: 11px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="menor1">< 1 Año ↕</th>
-                  <th style="padding: 16px 24px; text-align: center; font-size: 11px; font-weight: 900; color: #0284c7; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="uno">1 Año ↕</th>
-                  <th style="padding: 16px 24px; text-align: center; font-size: 11px; font-weight: 900; color: #7c3aed; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="cuatro">4 Años ↕</th>
-                  <th style="padding: 16px 24px; text-align: center; font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="pob">Meta ↕</th>
-                  <th style="padding: 16px 24px; text-align: center; font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="dosis">Avance ↕</th>
-                </tr>
-              </thead>
-              <tbody id="rdaDetailTbody">
-                <tr><td colspan="7" style="padding: 80px; text-align: center; color: #94a3b8; font-weight: 600;">Cargando análisis de datos...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-      </div><!-- /rdaDashboardContent -->
-
-      <!-- HIDDEN: Template PDF -->
-      <div id="rdaPdfTemplate" style="position: absolute; left: -9999px; top: 0; width: 1000px; background: #fff;"></div>
-
-    </div><!-- /rdaDashboardPanel -->
-  </div><!-- /rdaDashboardOverlay -->
 
   <!-- UPLOAD COMPONENT (Hidden, triggered by Admin Button) -->
   <input type="file" id="rdaCsvInput" accept=".csv" class="hidden">
