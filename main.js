@@ -3468,11 +3468,8 @@ async function supabaseRequest(action = "", payload) {
           promedio_frascos: Number(it.promedio_frascos || 0),
           existencia_actual_frascos: Number(it.existencia_actual_frascos || 0),
           pedido_frascos: Number(it.pedido_frascos || 0),
-<<<<<<< HEAD
           tipo_pedido: payload.tipo_pedido || "MENSUAL",
-=======
           alerta_multiplo: it.alerta_multiplo || "NO",
->>>>>>> e87b101 (Fix admin create user email payload and lotes municipal matching, fix button icon)
           capturado_por: payload.nombre || USER.nombre || USER.usuario
         }));
 
@@ -5671,28 +5668,17 @@ async function loadBatchesForSession(user) {
     // 1. Lotes
     const allLotes = (lotesResult && lotesResult.ok && lotesResult.data) ? lotesResult.data : [];
     // FILTRO DE LOTES SEGURO Y ANTIMALCRIADEZ DE JS
+    const userMuni = normalizeTextKey_(user.municipio || AppState.municipio);
     UNIT_BATCHES = allLotes.filter(l => {
-<<<<<<< HEAD
       if (AppState.rol === "ADMIN" || AppState.rol === "JURISDICCIONAL" || !AppState.municipio) {
         return true;
       }
       if (!l.municipio) return false;
 
-      const cleanStr = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
-
-      const loteMuni = cleanStr(l.municipio);
-      const userMuni = cleanStr(AppState.municipio);
-
-      if (loteMuni === "*" || loteMuni === "TODOS") return true;
-
-      const loteMuniArray = loteMuni.split(/[,;]/).map(m => m.trim());
-      return loteMuniArray.includes(userMuni);
-=======
       const loteMuni = normalizeTextKey_(l.municipio);
       return loteMuni === "*" || 
              loteMuni === "TODOS" || 
-             (userMuni && loteMuni.includes(userMuni));
->>>>>>> e87b101 (Fix admin create user email payload and lotes municipal matching, fix button icon)
+             loteMuni.includes(userMuni);
     });
 
     // 2. Catálogo Maestro (Para integridad de exportación)
