@@ -3467,8 +3467,8 @@ async function supabaseRequest(action = "", payload) {
           min_dosis: Number(it.min_dosis || 0),
           promedio_frascos: Number(it.promedio_frascos || 0),
           multiplo: Number(it.multiplo || 1),
-          existencia: Number(it.existencia_actual_frascos || 0),
-          solicitud: Number(it.pedido_frascos || 0),
+          existencia_actual_frascos: Number(it.existencia_actual_frascos || 0),
+          pedido_frascos: Number(it.pedido_frascos || 0),
           observaciones: it.observaciones || "",
           usuario: USER.usuario,
           capturado_por: payload.nombre || USER.nombre || USER.usuario
