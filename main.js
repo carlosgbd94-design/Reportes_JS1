@@ -5670,16 +5670,24 @@ async function loadBatchesForSession(user) {
     const allLotes = (lotesResult && lotesResult.ok && lotesResult.data) ? lotesResult.data : [];
     // FILTRO DE LOTES SEGURO Y ANTIMALCRIADEZ DE JS
     const userMuni = normalizeTextKey_(user.municipio || AppState.municipio);
+    const seenLotes = new Set();
     UNIT_BATCHES = allLotes.filter(l => {
+      let isMatch = false;
       if (AppState.rol === "ADMIN" || AppState.rol === "JURISDICCIONAL" || !AppState.municipio) {
-        return true;
+        isMatch = true;
+      } else if (l.municipio) {
+        const loteMuni = normalizeTextKey_(l.municipio);
+        isMatch = loteMuni === "*" || loteMuni === "TODOS" || loteMuni.includes(userMuni);
       }
-      if (!l.municipio) return false;
 
-      const loteMuni = normalizeTextKey_(l.municipio);
-      return loteMuni === "*" || 
-             loteMuni === "TODOS" || 
-             loteMuni.includes(userMuni);
+      if (isMatch) {
+        const uniqueKey = `${l.biologico}_${l.lote}`;
+        if (!seenLotes.has(uniqueKey)) {
+          seenLotes.add(uniqueKey);
+          return true;
+        }
+      }
+      return false;
     });
 
     // 2. Catálogo Maestro (Para integridad de exportación)
