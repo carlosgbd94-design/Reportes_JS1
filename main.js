@@ -9169,6 +9169,7 @@ if (bSaveSR) bSaveSR.onclick = async () => {
 
   const items = [];
   let hasInvalid = false;
+  let missingDate = false;
   document.querySelectorAll("#srCaptureTbody tr").forEach(tr => {
     const row = tr._cache || {};
     const bio = (row.bioSelect || tr.querySelector(".sr-bio-select"))?.value;
@@ -9177,8 +9178,9 @@ if (bSaveSR) bSaveSR.onclick = async () => {
     const recep = (row.recepcionInput || tr.querySelector(".sr-recepcion-input"))?.value;
 
     if (!bio && !lote && !cant) return;
-    if (!bio || !lote || cant === "" || Number(cant) < 0) {
+    if (!bio || !lote || cant === "" || Number(cant) < 0 || !recep) {
       hasInvalid = true;
+      if (!recep && bio) missingDate = true;
       tr.style.background = "rgba(239, 68, 68, 0.1)";
     } else {
       tr.style.background = "";
@@ -9186,7 +9188,10 @@ if (bSaveSR) bSaveSR.onclick = async () => {
     }
   });
 
-  if (hasInvalid) return showToast("Corrige las filas en rojo", false, "warn");
+  if (hasInvalid) {
+    if (missingDate) return showToast("Falta seleccionar la fecha de recepción en una o más filas marcadas", false, "warn");
+    return showToast("Corrige las filas en rojo", false, "warn");
+  }
   if (!items.length) return showToast("Captura al menos un biológico", false, "warn");
   if (HAS_TODAY_SR && !EDIT_SR) return showToast("Ya existe una captura de hoy", false, "warn");
 
@@ -9280,6 +9285,8 @@ if (bSaveBIO) bSaveBIO.onclick = async () => {
     return String(str || "").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
   };
 
+  const warningMsgs = [];
+
   for (const item of items) {
     const normKey = normalizeStr(item.biologico);
 
@@ -9303,8 +9310,18 @@ if (bSaveBIO) bSaveBIO.onclick = async () => {
     const totalVal = existenciaVal + pedidoVal;
 
     if (promedioVal > 0 && totalVal < promedioVal) {
-      return showToast(`El stock total (Existencia + Pedido = ${totalVal}) para ${item.biologico} debe ser al menos igual al promedio mensual (${promedioVal}).`, false, "warn");
+      const isExento = ["VPH", "INFLUENZA", "COVID-19", "COVID 19", "VARICELA", "HEPATITIS A"].includes(normKey);
+      if (!isExento) {
+        warningMsgs.push(`- ${item.biologico}: Stock final estimado (${totalVal}) es menor al promedio mensual (${promedioVal})`);
+      }
     }
+  }
+
+  if (warningMsgs.length > 0) {
+    const confirmText = "Atención: Está solicitando vacunas por debajo del promedio mensual para los siguientes biológicos:\n\n" + 
+                        warningMsgs.join("\n") + 
+                        "\n\n¿Estás seguro de querer guardar este pedido bajo tu propia responsabilidad?";
+    if (!confirm(confirmText)) return;
   }
 
   await AppService.runCapture({
