@@ -5,6 +5,9 @@
 // Arquitectura basada en Servicios (Service Layer) y Estado Reactivo (AppState).
 
 // SUPABASE CONFIG (CORE SERVICE)
+if (window.location.hash && window.location.hash.includes('type=recovery')) {
+  window.location.href = "reset.html" + window.location.hash;
+}
 const SUPABASE_URL = "https://utclfqjietlxzlorxhrs.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Y2xmcWppZXRseHpsb3J4aHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNTYyNTQsImV4cCI6MjA5MTkzMjI1NH0.EgDK7xkSZHZyUlGF5m2C7bZjrfkx1M8cBXzxIFedDa4";
 window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -6879,17 +6882,15 @@ function buildUserFromPerfil(uid, email, perfil) {
   if (rol === "ADMIN" || rol === "JURISDICCIONAL") {
     municipiosAllowed = ["*"]; // Acceso total
   } else if (rol === "MUNICIPAL") {
-    // Soporte para múltiples municipios (separados por coma o punto y coma)
-    const rawMuni = (perfil && (perfil.municipio || perfil.municipios_allowed)) || "";
-    const canonicalMunis = ["QUERÉTARO", "EL MARQUÉS", "CORREGIDORA", "HUIMILPAN"];
-    const getCanonicalMuni = (m) => {
-      const norm = normalizeText(m);
-      return canonicalMunis.find(x => normalizeText(x) === norm) || String(m).trim().toUpperCase();
-    };
-    municipiosAllowed = String(rawMuni)
-      .split(/[;,]/)
-      .map(x => getCanonicalMuni(x))
-      .filter(Boolean);
+    // Soporte para múltiples municipios
+    const rawMuni = (perfil && (perfil.municipios_allowed || perfil.municipio)) || "";
+    let muniList = [];
+    if (Array.isArray(rawMuni)) {
+      muniList = rawMuni;
+    } else {
+      muniList = String(rawMuni).split(/[;,]/);
+    }
+    municipiosAllowed = muniList.map(x => normalizeTextKey_(x)).filter(Boolean);
   }
 
   // 🛡️ Regla de CLUES para Administrativos: Si no tienen CLUES o tienen placeholders, se les asigna la de la Jurisdicción
