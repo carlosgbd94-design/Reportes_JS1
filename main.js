@@ -3466,10 +3466,11 @@ async function supabaseRequest(action = "", payload) {
           max_dosis: Number(it.max_dosis || 0),
           min_dosis: Number(it.min_dosis || 0),
           promedio_frascos: Number(it.promedio_frascos || 0),
-          existencia_actual_frascos: Number(it.existencia_actual_frascos || 0),
-          pedido_frascos: Number(it.pedido_frascos || 0),
-          tipo_pedido: payload.tipo_pedido || "MENSUAL",
-          alerta_multiplo: it.alerta_multiplo || "NO",
+          multiplo: Number(it.multiplo || 1),
+          existencia: Number(it.existencia_actual_frascos || 0),
+          solicitud: Number(it.pedido_frascos || 0),
+          observaciones: it.observaciones || "",
+          usuario: USER.usuario,
           capturado_por: payload.nombre || USER.nombre || USER.usuario
         }));
 
