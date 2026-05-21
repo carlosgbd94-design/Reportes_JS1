@@ -6883,12 +6883,16 @@ function buildUserFromPerfil(uid, email, perfil) {
     municipiosAllowed = ["*"]; // Acceso total
   } else if (rol === "MUNICIPAL") {
     // Soporte para múltiples municipios
-    const rawMuni = (perfil && (perfil.municipios_allowed || perfil.municipio)) || "";
+    let rawMuni = (perfil && perfil.municipio) ? perfil.municipio : "";
+    if (perfil && perfil.municipios_allowed && perfil.municipios_allowed.length > 0 && perfil.municipios_allowed !== "[]") {
+      rawMuni = perfil.municipios_allowed;
+    }
+    
     let muniList = [];
     if (Array.isArray(rawMuni)) {
       muniList = rawMuni;
     } else {
-      muniList = String(rawMuni).split(/[;,]/);
+      muniList = String(rawMuni).replace(/[\[\]{}"']/g, '').split(/[;,]/);
     }
     municipiosAllowed = muniList.map(x => normalizeTextKey_(x)).filter(Boolean);
   }
@@ -12212,25 +12216,25 @@ function syncCommandHub() {
     const isSaveDisabled = !isValidDate || hubSave.disabled || (realSaveBtn && realSaveBtn.disabled);
     if (isSaveDisabled) {
       hubSave.classList.remove("save-chip-premium", "bg-primary", "hover:bg-primary-action", "text-white", "shadow-lg", "shadow-primary/20");
-      hubSave.classList.add("bg-slate-300", "text-slate-700", "border-2", "border-slate-400", "cursor-not-allowed", "shadow-none", "rounded-[30px]", "px-[28px]", "py-[14px]", "font-[900]", "text-[13px]", "uppercase", "tracking-[0.1em]", "flex", "items-center", "gap-[12px]", "transition-all", "duration-400");
+      hubSave.classList.add("text-slate-600", "cursor-not-allowed", "opacity-60", "flex", "items-center", "gap-[8px]", "font-bold", "text-[13px]", "uppercase", "tracking-wide", "transition-all", "duration-400");
       hubSave.onclick = () => {
         const alertMsg = (realSaveBtn && realSaveBtn.getAttribute("data-alert")) ? "Corrige las alertas antes de guardar" : "No es posible guardar en este momento";
         showToast(alertMsg, false, "warn");
       };
       hubSave.querySelectorAll("span").forEach(span => {
         if (span.classList.contains("material-symbols-rounded")) {
-          span.className = "material-symbols-rounded text-slate-700";
+          span.className = "material-symbols-rounded text-slate-600 text-[20px]";
         } else {
-          span.className = "text-slate-700";
+          span.className = "text-slate-600";
         }
       });
     } else {
-      hubSave.classList.remove("bg-slate-300", "text-slate-700", "border-2", "border-slate-400", "cursor-not-allowed", "shadow-none", "rounded-[30px]", "px-[28px]", "py-[14px]", "font-[900]", "text-[13px]", "uppercase", "tracking-[0.1em]", "flex", "items-center", "gap-[12px]", "transition-all", "duration-400");
+      hubSave.classList.remove("text-slate-600", "cursor-not-allowed", "opacity-60", "flex", "items-center", "gap-[8px]", "font-bold", "text-[13px]", "uppercase", "tracking-wide", "transition-all", "duration-400");
       hubSave.classList.add("save-chip-premium", "bg-primary", "hover:bg-primary-action", "text-white", "shadow-lg", "shadow-primary/20");
       hubSave.onclick = () => realSaveBtn && realSaveBtn.click();
       hubSave.querySelectorAll("span").forEach(span => {
         if (span.classList.contains("material-symbols-rounded")) {
-          span.className = "material-symbols-rounded";
+          span.className = "material-symbols-rounded text-[20px]";
         } else {
           span.className = "";
         }
