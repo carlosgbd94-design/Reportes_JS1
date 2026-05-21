@@ -6884,9 +6884,14 @@ function buildUserFromPerfil(uid, email, perfil) {
   } else if (rol === "MUNICIPAL") {
     // Soporte para múltiples municipios (separados por coma o punto y coma)
     const rawMuni = (perfil && (perfil.municipio || perfil.municipios_allowed)) || "";
+    const canonicalMunis = ["QUERÉTARO", "EL MARQUÉS", "CORREGIDORA", "HUIMILPAN"];
+    const getCanonicalMuni = (m) => {
+      const norm = normalizeText(m);
+      return canonicalMunis.find(x => normalizeText(x) === norm) || String(m).trim().toUpperCase();
+    };
     municipiosAllowed = String(rawMuni)
       .split(/[;,]/)
-      .map(x => normalizeText(x))
+      .map(x => getCanonicalMuni(x))
       .filter(Boolean);
   }
 
