@@ -12223,9 +12223,9 @@ function syncCommandHub() {
       };
       hubSave.querySelectorAll("span").forEach(span => {
         if (span.classList.contains("material-symbols-rounded")) {
-          span.className = "material-symbols-rounded text-slate-600 text-[20px]";
+          span.className = "material-symbols-rounded text-slate-500 text-[24px]";
         } else {
-          span.className = "text-slate-600";
+          span.className = "hidden";
         }
       });
     } else {
