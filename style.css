@@ -7594,15 +7594,38 @@ input, textarea, select, [contenteditable] {
     position: fixed;
     z-index: 900;
     right: 16px;
-    bottom: 32px;
+    bottom: 100px; /* Moved up to avoid bottom navigation */
     top: auto;
     transform: none;
-    flex-direction: row;
-    border-radius: 24px;
+    flex-direction: column;
+    border-radius: 30px;
     padding: 8px;
   }
   .command-hub.visible {
     right: 16px;
+  }
+
+  /* Minimalist Save Button */
+  .command-hub .save-chip-premium,
+  .command-hub .edit-btn-premium,
+  .command-hub .cancel-btn-premium {
+    padding: 12px;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    justify-content: center;
+  }
+  
+  /* Hide button text, only keep the icon */
+  .command-hub .save-chip-premium span:not(.material-symbols-rounded),
+  .command-hub .edit-btn-premium span:not(.material-symbols-rounded),
+  .command-hub .cancel-btn-premium span:not(.material-symbols-rounded) {
+    display: none;
+  }
+
+  /* Hide status chip on mobile to save space */
+  .command-hub .status-chip-v5 {
+    display: none !important;
   }
 }
 
