@@ -55,7 +55,7 @@
 body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #f8fafc;
+  background-color: #e2e8f0;
   color: var(--md-sys-color-on-surface);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -69,7 +69,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background-color: #f1f5f9;
+  background-color: #e2e8f0;
   /* Usamos degradados radiales nativos: 0% carga de GPU */
   background-image: 
     radial-gradient(circle at 0% 0%, rgba(14, 165, 233, 0.04) 0%, transparent 50%),
@@ -662,6 +662,65 @@ label {
 .modern-input-group:focus-within input::placeholder {
     transition: opacity 0.2s ease;
     opacity: 0 !important; /* Makes placeholder disappear on focus as requested */
+}
+
+/* --- MODERN FLOATING LABELS ENGINE --- */
+.modern-input-group {
+  position: relative;
+}
+
+.modern-input-group :is(input, select):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not(.notifSearchInput) {
+  height: 60px !important;
+  padding-top: 20px !important;
+  padding-bottom: 6px !important;
+  padding-left: 56px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  background-color: #ffffff !important;
+  border: 2px solid #cbd5e1 !important;
+  border-radius: 16px !important;
+}
+
+/* Floating Label selector styling inside .modern-input-group */
+.modern-input-group label {
+  position: absolute;
+  left: 56px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  opacity: 0.55;
+  pointer-events: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 0 !important;
+  z-index: 4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 70px);
+}
+
+/* Floating transition on focus or filled input */
+.modern-input-group input:focus ~ label,
+.modern-input-group input:not(:placeholder-shown) ~ label {
+  top: 12px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+  color: var(--md-sys-color-primary);
+  transform: translateY(0);
+}
+
+/* Icon adjust when focused */
+.modern-input-group .input-icon {
+  top: 50%;
+  transform: translateY(-50%);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.modern-input-group:focus-within .input-icon {
+  transform: translateY(-50%) scale(1.15);
 }
 
 input:focus,
@@ -7256,6 +7315,201 @@ input, textarea, select, [contenteditable] {
   pointer-events: none;
   visibility: hidden;
 }
+}
+
+.IntegratedHint.tone-bad {
+    background: #fef2f2 !important; /* Red 50 */
+    border-color: #fecaca !important; /* Red 200 */
+    color: #991b1b !important; /* Red 900 */
+}
+
+.IntegratedHint.tone-ok {
+    background: #f0fdf4 !important; /* Green 50 */
+    border-color: #bbf7d0 !important; /* Green 200 */
+    color: #166534 !important; /* Green 900 */
+}
+
+.hint-icon-bg {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(0, 0, 0, 0.04) !important;
+    flex-shrink: 0 !important;
+}
+
+.IntegratedHint.tone-warn .hint-icon-bg { background: rgba(245, 158, 11, 0.1) !important; }
+.IntegratedHint.tone-bad .hint-icon-bg { background: rgba(239, 68, 68, 0.1) !important; }
+.IntegratedHint.tone-ok .hint-icon-bg { background: rgba(16, 185, 129, 0.1) !important; }
+
+.hint-eyebrow {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    margin-bottom: 2px !important;
+    display: block !important;
+    opacity: 0.8;
+}
+
+.hint-message {
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 1.4 !important;
+}
+
+.hint-message b {
+    font-weight: 700 !important;
+}
+
+
+
+
+/* --- NAVEGACIÓN PREMIUM (LIQUID MIST OPTICS) --- */
+.nav-container {
+  display: flex;
+  background: #f8fafc; /* Fondo sutilmente grisáceo para contraste */
+  padding: 6px;
+  border-radius: 26px;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.04),
+    inset 0 2px 10px rgba(0, 0, 0, 0.01);
+  position: relative;
+  gap: 4px;
+  width: fit-content;
+  margin: 12px auto;
+  z-index: 10;
+}
+
+.nav-indicator.liquid-glass {
+  position: absolute;
+  top: 6px;
+  height: calc(100% - 12px);
+  background: transparent;
+  border-radius: 20px;
+  transition: all 0.7s cubic-bezier(0.5, 1.5, 0.5, 1);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.liquid-glass--bend {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  backdrop-filter: blur(8px); /* Mayor desenfoque para el efecto esmerilado */
+  -webkit-backdrop-filter: blur(8px);
+  filter: url(#glass-blur);
+  z-index: 1;
+}
+
+.liquid-glass--face {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.45); /* Efecto lechoso/esmerilado */
+  box-shadow: 
+    0 15px 35px rgba(0, 0, 0, 0.08),
+    inset 0 2px 10px rgba(255, 255, 255, 0.8),
+    inset 0 0 2px 1px rgba(0, 0, 0, 0.02);
+  z-index: 2;
+}
+
+.liquid-glass--edge {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 
+    inset 4px 4px 8px rgba(255, 255, 255, 1),
+    inset -4px -4px 8px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  z-index: 3;
+}
+
+.nav-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 24px;
+  height: 48px;
+  color: #64748b !important; /* Slate suave */
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  z-index: 10;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.nav-tab.active {
+  color: #0f172a !important; /* Casi negro para contraste */
+}
+
+.nav-tab .material-symbols-rounded {
+  font-size: 24px;
+  color: #94a3b8;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Acentos cromáticos para que la refracción se note sobre blanco */
+.nav-tab.active .material-symbols-rounded {
+  transform: scale(1.1);
+  font-variation-settings: 'FILL' 1;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+}
+
+/* Colores temáticos por icono para máxima refracción */
+.nav-tab.active[onclick*="'CAPTURE'"] .material-symbols-rounded { color: #0ea5e9; }      /* Cyan */
+.nav-tab.active[onclick*="'HISTORY'"] .material-symbols-rounded { color: #f43f5e; }      /* Rose */
+.nav-tab.active[onclick*="'PINOL'"] .material-symbols-rounded { color: #10b981; }        /* Emerald */
+.nav-tab.active[onclick*="'LOTES'"] .material-symbols-rounded { color: #f59e0b; }        /* Amber */
+.nav-tab.active[onclick*="'NOTIFICATIONS'"] .material-symbols-rounded { color: #8b5cf6; } /* Violet */
+.nav-tab.active[onclick*="'SECURITY'"] .material-symbols-rounded { color: #6366f1; }      /* Indigo */
+
+/* Colores para Perfil Unidad (Captura) */
+.nav-tab.active[onclick*="'SR'"] .material-symbols-rounded { color: #0284c7; }   /* Blue (Biológicos) */
+.nav-tab.active[onclick*="'CONS'"] .material-symbols-rounded { color: #059669; } /* Green (Consumibles) */
+.nav-tab.active[onclick*="'BIO'"] .material-symbols-rounded { color: #e11d48; }  /* Red (Pedido) */
+.nav-tab.active[onclick*="'PINOL'"] .material-symbols-rounded { color: #d97706; } /* Orange (Pinol) */
+
+/* ==========================================================================
+   COMMAND HUB & PREMIUM ACTION CHIPS
+   ========================================================================== */
+/* TRACKER STICKY (NUEVO) */
+.command-hub-tracker {
+  position: sticky;
+  top: 180px;
+  overflow: visible;
+  pointer-events: auto;
+}
+
+.command-hub {
+  position: relative;
+  width: max-content;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 900;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    0 20px 40px rgba(0, 51, 102, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
 
 .command-hub.visible {
   opacity: 1;
@@ -7265,8 +7519,6 @@ input, textarea, select, [contenteditable] {
 }
 
 .save-chip-premium {
-  background: linear-gradient(135deg, #0061f2 0%, #003870 100%);
-  color: white !important;
   border-radius: 30px;
   padding: 14px 28px;
   font-weight: 900;
@@ -7277,7 +7529,6 @@ input, textarea, select, [contenteditable] {
   align-items: center;
   gap: 12px;
   border: none;
-  box-shadow: 0 10px 20px rgba(0, 97, 242, 0.2);
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   white-space: nowrap;
@@ -7285,7 +7536,6 @@ input, textarea, select, [contenteditable] {
 
 .save-chip-premium:hover {
   transform: scale(1.05) translateY(-2px);
-  box-shadow: 0 15px 30px rgba(0, 97, 242, 0.3);
 }
 
 .save-chip-premium:active {
@@ -7402,5 +7652,16 @@ input, textarea, select, [contenteditable] {
   100% { transform: scale(1); opacity: 1; }
 }
 
+/* FORCE-HIDE CAPTURE SUMMARY FOR UNIDAD ROLE */
+body[data-role="UNIDAD"] #panelCaptureSummary,
+body[data-role="UNIDAD"] .panelCaptureSummary {
+    display: none !important;
+}
 
-
+/* Premium Glass & Contrast: Diffuse shadows for main capture panels */
+#formSR div.bg-white,
+#formCONS div.bg-white,
+#formBIO div.bg-white,
+#formPINOL div.bg-white {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+}

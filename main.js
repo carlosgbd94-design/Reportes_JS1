@@ -28,7 +28,7 @@ async function handleLoginFlow(email, password) {
       password: password
     });
 
-    if (error) throw new Error("Credenciales incorrectas.");
+    if (error) throw new Error("Supabase dice: " + error.message);
 
     const { data: perfil, error: perfilError } = await window.supabase
       .from('perfiles')
@@ -150,7 +150,8 @@ const _InternalState = {
   // Legacy LIVE_STATE & APP_STATE keys
   pinolPendientes: null, summaryCapturadas: null, summaryFaltantes: null,
   todayExistenciaCaptured: null, todayConsCaptured: null, lastHistoryRows: null,
-  todayCache: null, lastLoginUser: "", initialized: false
+  todayCache: null, lastLoginUser: "", initialized: false,
+  get rol() { return this.user?.rol; }
 };
 
 const AppState = new Proxy(_InternalState, {
@@ -3465,11 +3466,9 @@ async function supabaseRequest(action = "", payload) {
           max_dosis: Number(it.max_dosis || 0),
           min_dosis: Number(it.min_dosis || 0),
           promedio_frascos: Number(it.promedio_frascos || 0),
-          multiplo: Number(it.multiplo || 1),
-          existencia: Number(it.existencia_actual_frascos || 0),
-          solicitud: Number(it.pedido_frascos || 0),
-          observaciones: it.observaciones || "",
-          usuario: USER.usuario,
+          existencia_actual_frascos: Number(it.existencia_actual_frascos || 0),
+          pedido_frascos: Number(it.pedido_frascos || 0),
+          tipo_pedido: payload.tipo_pedido || "MENSUAL",
           capturado_por: payload.nombre || USER.nombre || USER.usuario
         }));
 
@@ -3478,7 +3477,7 @@ async function supabaseRequest(action = "", payload) {
         // PURGAR PREVIAMENTE PARA EVITAR DUPLICADOS AL EDITAR
         await supabase.from('biologicos_pedido').delete()
           .eq('clues', finalClues)
-          .eq('fecha_captura', payload.fecha || todayYmdLocal());
+          .eq('fecha_pedido_programada', payload.fecha || todayYmdLocal());
 
         const { error } = await supabase.from('biologicos_pedido').insert(records);
         if (error) {
@@ -3669,14 +3668,12 @@ async function supabaseRequest(action = "", payload) {
         }
 
         try {
-          const [resParams, resSaved, resCalendar] = await Promise.all([
+          const [resParams, resCalendar] = await Promise.all([
             query,
-            supabase.from('biologicos_pedido').select('*').eq('clues', clues || 'NOT_FOUND').eq('fecha_captura', today),
             supabase.from('calendario_pedidos').select('*').eq('anio_mes', today.substring(0, 7)).eq('activo', 'SI')
           ]);
 
           if (resParams.error) console.warn("[biogetform] params warning:", resParams.error);
-          if (resSaved.error) console.warn("[biogetform] saved warning:", resSaved.error);
           if (resCalendar.error) console.warn("[biogetform] calendar warning:", resCalendar.error);
 
           // Lógica de ventana: Primero calendario, luego inteligente
@@ -3702,18 +3699,38 @@ async function supabaseRequest(action = "", payload) {
           const canCaptureLocal = hoyYmd >= windowStartYmd && hoyYmd <= windowEndYmd;
           const isCaptureDayLocal = hoyYmd === windowTargetYmd;
 
+          // Consulta de pedidos existentes usando windowTargetYmd (alineación de fecha)
+          const resSaved = await supabase.from('biologicos_pedido')
+            .select('*')
+            .eq('clues', clues || 'NOT_FOUND')
+            .eq('fecha_pedido_programada', windowTargetYmd);
+
+          if (resSaved.error) console.warn("[biogetform] saved warning:", resSaved.error);
+
+          const savedMap = {};
+          if (resSaved.data) {
+            resSaved.data.forEach(item => {
+              savedMap[item.biologico] = item;
+            });
+          }
+
+          const mappedRows = (resParams.data || []).map(p => {
+            const savedItem = savedMap[p.biologico];
+            return {
+              biologico: p.biologico,
+              multiplo: p.multiplo,
+              min_dosis: p.min_dosis,
+              max_dosis: p.max_dosis,
+              promedio_frascos: p.promedio_frascos,
+              existencia_actual_frascos: savedItem ? savedItem.existencia_actual_frascos : null,
+              pedido_frascos: savedItem ? savedItem.pedido_frascos : null
+            };
+          });
+
           return {
             ok: true,
             data: {
-              rows: (resParams.data || []).map(p => ({
-                biologico: p.biologico,
-                multiplo: p.multiplo,
-                min_dosis: p.min_dosis,
-                max_dosis: p.max_dosis,
-                promedio_frascos: p.promedio_frascos,
-                existencia_actual_frascos: null,
-                pedido_frascos: null
-              })),
+              rows: mappedRows,
               hasSavedBio: resSaved.data && resSaved.data.length > 0,
               isCaptureDay: isCaptureDayLocal,
               fechaPedidoProgramada: windowTargetYmd,
@@ -3757,7 +3774,7 @@ async function supabaseRequest(action = "", payload) {
         const [resSR, resCons, resBio, resUnits, resCalendar] = await Promise.all([
           supabase.from('biologicos_existencia').select('clues, capturado_por').eq('fecha', fecha),
           supabase.from('consumibles').select('clues, capturado_por').in('fecha', consDates),
-          supabase.from('biologicos_pedido').select('clues, capturado_por, tipo_pedido').eq('fecha_captura', fecha),
+          supabase.from('biologicos_pedido').select('clues, capturado_por, tipo_pedido').eq('fecha_pedido_programada', fecha),
           unitsQuery,
           supabase.from('calendario_pedidos').select('*').eq('anio_mes', currentMonth).eq('activo', 'SI').maybeSingle()
         ]);
@@ -4355,6 +4372,15 @@ async function supabaseRequest(action = "", payload) {
             .order('biologico', { ascending: true });
           if (error) throw error;
           return { ok: true, data: data || [], meta: { fecha: targetFecha, tipo } };
+        } else if (tipo === "BIO") {
+          const { data, error } = await window.supabase
+            .from('biologicos_pedido')
+            .select('*')
+            .eq('clues', payload.clues)
+            .eq('fecha_pedido_programada', targetFecha)
+            .order('biologico', { ascending: true });
+          if (error) throw error;
+          return { ok: true, data: data || [], meta: { fecha: targetFecha, tipo } };
         } else {
           const { data, error } = await window.supabase
             .from('consumibles')
@@ -4462,8 +4488,9 @@ async function supabaseRequest(action = "", payload) {
         const role = String((USER && USER.rol) || "").trim().toUpperCase();
         const userClues = String(USER?.clues || "");
         const userMunicipios = (USER?.municipio || "").split(",").map(m => m.trim().toUpperCase());
+        const category = payload.category || "Evidencia_de_capacitaciones";
 
-        let { data: filesData, error: filesErr } = await supabase.rpc('get_evidences_list');
+        let { data: filesData, error: filesErr } = await supabase.rpc('get_evidences_list_by_category', { category_name: category });
         if (filesErr) throw filesErr;
 
         // --- FILTRADO DE JERARQUÍA (Senior Logic) ---
@@ -4606,25 +4633,24 @@ async function supabaseRequest(action = "", payload) {
 
         const { data, error } = await supabase
           .from('biologicos_pedido')
-          .select('fecha_captura, fecha_pedido_programada')
-          .gte('fecha_captura', start)
-          .lte('fecha_captura', end);
+          .select('fecha_pedido_programada, tipo_pedido')
+          .gte('fecha_pedido_programada', start)
+          .lte('fecha_pedido_programada', end);
 
         if (error) throw error;
 
-        // Formatear fechas únicas y detectar tipo
-        const uniqueDates = Array.from(new Set((data || []).map(d => d.fecha_captura))).sort();
-        const targetBioWindow = calculateBioIntelligentWindow(parseInt(year), parseInt(month) - 1);
-        const windowStartYmd = dateToLocalYmd(targetBioWindow.start);
-        const windowEndYmd = dateToLocalYmd(targetBioWindow.end);
-
-        const result = uniqueDates.map(d => {
-          const isMensual = d >= windowStartYmd && d <= windowEndYmd;
-          return {
-            date: d,
-            type: isMensual ? "MENSUAL" : "EXTRAORDINARIO"
-          };
+        // Agrupar por fecha_pedido_programada y obtener el tipo real
+        const map = new Map();
+        (data || []).forEach(d => {
+          if (d.fecha_pedido_programada) {
+            map.set(d.fecha_pedido_programada, d.tipo_pedido || "MENSUAL");
+          }
         });
+
+        const result = Array.from(map.entries()).map(([date, type]) => ({
+          date,
+          type
+        })).sort((a, b) => a.date.localeCompare(b.date));
 
         return { ok: true, data: result };
       }
@@ -5639,10 +5665,22 @@ async function loadBatchesForSession(user) {
 
     // 1. Lotes
     const allLotes = (lotesResult && lotesResult.ok && lotesResult.data) ? lotesResult.data : [];
-    const userMuni = normalizeTextKey_(user.municipio);
+    // FILTRO DE LOTES SEGURO Y ANTIMALCRIADEZ DE JS
     UNIT_BATCHES = allLotes.filter(l => {
-      const loteMuni = normalizeTextKey_(l.municipio);
-      return loteMuni === "*" || loteMuni === userMuni || loteMuni === "TODOS";
+      if (AppState.rol === "ADMIN" || AppState.rol === "JURISDICCIONAL" || !AppState.municipio) {
+        return true;
+      }
+      if (!l.municipio) return false;
+
+      const cleanStr = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+
+      const loteMuni = cleanStr(l.municipio);
+      const userMuni = cleanStr(AppState.municipio);
+
+      if (loteMuni === "*" || loteMuni === "TODOS") return true;
+
+      const loteMuniArray = loteMuni.split(/[,;]/).map(m => m.trim());
+      return loteMuniArray.includes(userMuni);
     });
 
     // 2. Catálogo Maestro (Para integridad de exportación)
@@ -7138,15 +7176,8 @@ function updateCaptureStateBanner() {
   };
 
   if (activeTab === "SR") {
-    if (HAS_TODAY_SR && TODAY_CACHE && TODAY_CACHE.sr) {
-      if (EDIT_SR) {
-        setTone("warn", "edit_square", "Modo Edición", `<b>MODO EDICIÓN ACTIVO:</b> estás corrigiendo la existencia de biológicos de hoy.`);
-      } else {
-        setTone("ok", "task_alt", "Reporte Completo", `<b>YA CAPTURADO HOY:</b> la existencia de biológicos ya fue registrada${(TODAY_CACHE.sr && TODAY_CACHE.sr.editado === "SI") ? " y editada" : ""}. Si necesitas corregirla, usa el botón <b>Editar existencia de hoy</b>.`);
-      }
-    } else {
-      setTone("warn", "schedule", "Pendiente de Captura", `<b>AÚN SIN CAPTURA:</b> la existencia de biológicos todavía no se ha registrado hoy.`);
-    }
+    // SR has its own static info header — hide the dynamic banner to avoid duplication
+    box.classList.add("hidden");
     return;
   }
 
@@ -7251,8 +7282,8 @@ function renderBioRows(rows) {
             style="padding-left: 38px !important;"
             type="number"
             min="0"
-            step="1"
-            inputmode="numeric"
+            step="any"
+            inputmode="decimal"
             data-i="${i}"
             data-kind="existencia"
             value="${r.existencia_actual_frascos ?? ""}"
@@ -7376,8 +7407,20 @@ async function updateExportFechaHint() {
           opt.textContent = `${d.date} (${d.type === "MENSUAL" ? "Pedido Mensual" : "Extraordinario"})`;
           exactSelect.appendChild(opt);
         });
-        exactBox.style.display = "block";
-        $("exportFechaHint").textContent = res.data.length > 1 ? "Múltiples capturas detectadas. Elige una." : "1 captura detectada para este mes.";
+
+        const hasMensual = res.data.some(d => d.type === "MENSUAL");
+        const hasExtra = res.data.some(d => d.type === "EXTRAORDINARIO");
+
+        if (hasMensual && hasExtra) {
+          exactBox.style.display = "block";
+          $("exportFechaHint").textContent = "Múltiples tipos de pedido detectados (Ordinario y Extraordinario). Selecciona el corte exacto.";
+        } else {
+          exactBox.style.display = "none";
+          $("exportFechaHint").textContent = "Un solo tipo de pedido detectado para este mes.";
+        }
+      } else {
+        exactBox.style.display = "none";
+        $("exportFechaHint").textContent = "No se encontraron registros de pedido para este mes.";
       }
     }
 
@@ -7480,7 +7523,7 @@ function refreshBioAlerts(force = false) {
 
     const multiplo = requires5 ? 5 : 1;
 
-    if (!Number.isInteger(existencia) || !Number.isInteger(pedido) || existencia < 0 || pedido < 0) {
+    if (isNaN(existencia) || !Number.isInteger(pedido) || existencia < 0 || pedido < 0) {
       msgs.push("Cantidades inválidas.");
       level = "bad";
       hasStrongAlert = true;
@@ -7775,31 +7818,36 @@ async function loadBioForm() {
   const bioDayAlert = $("bioDayAlert");
 
   if (bioDayAlert) {
-    bioDayAlert.className = "bioDayAlert show";
-
     if (BIO_STATE.isInsideWindow) {
       if (BIO_STATE.isCaptureDay) {
         if (bioHint) bioHint.textContent = "Día objetivo de pedido mensual.";
-        bioDayAlert.className = "bioDayAlert show border-emerald-500/30 bg-emerald-50/50";
+        bioDayAlert.className = "bioDayAlert show bg-blue-50 border-2 border-blue-200 text-blue-700";
         const icon = bioDayAlert.querySelector(".bioDayIcon");
-        if (icon) icon.className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600";
+        if (icon) icon.className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-100 text-blue-700";
         const msg = bioDayAlert.querySelector(".bioDayMsg");
         if (msg) msg.innerHTML = `<b>PEDIDO MENSUAL:</b> captura habilitada hoy (fecha objetivo). Ventana: ${BIO_STATE.captureWindowStart} al ${BIO_STATE.captureWindowEnd}.`;
       } else {
         if (bioHint) bioHint.textContent = "Captura de pedido mensual habilitada.";
-        bioDayAlert.className = "bioDayAlert show border-emerald-500/30 bg-emerald-50/50";
+        bioDayAlert.className = "bioDayAlert show bg-blue-50 border-2 border-blue-200 text-blue-700";
         const icon = bioDayAlert.querySelector(".bioDayIcon");
-        if (icon) icon.className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600";
+        if (icon) icon.className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-100 text-blue-700";
         const msg = bioDayAlert.querySelector(".bioDayMsg");
         if (msg) msg.innerHTML = `<b>PEDIDO MENSUAL:</b> te encuentras dentro de la ventana operativa (${BIO_STATE.captureWindowStart} al ${BIO_STATE.captureWindowEnd}).`;
       }
-    } else {
-      if (bioHint) bioHint.textContent = "Fuera de ventana oficial.";
-      bioDayAlert.className = "bioDayAlert show border-amber-500/30 bg-amber-50/50";
+    } else if (isExtraordinary) {
+      if (bioHint) bioHint.textContent = "Apertura extraordinaria activa.";
+      bioDayAlert.className = "bioDayAlert show bg-amber-50 border-2 border-amber-300 text-amber-800";
       const icon = bioDayAlert.querySelector(".bioDayIcon");
-      if (icon) icon.className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-500/10 text-amber-600";
+      if (icon) icon.className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-100 text-amber-800";
       const msg = bioDayAlert.querySelector(".bioDayMsg");
-      if (msg) msg.innerHTML = `<b>PEDIDO EXTRAORDINARIO:</b> hoy te encuentras fuera de la ventana oficial (${BIO_STATE.captureWindowStart} al ${BIO_STATE.captureWindowEnd}).`;
+      if (msg) msg.innerHTML = `<b>PEDIDO EXTRAORDINARIO:</b> hoy te encuentras fuera del periodo ordinario, pero habilitado por instrucción administrativa. Ventana ordinaria era del ${BIO_STATE.captureWindowStart} al ${BIO_STATE.captureWindowEnd}.`;
+    } else {
+      if (bioHint) bioHint.textContent = "Ventana de captura cerrada.";
+      bioDayAlert.className = "bioDayAlert show bg-red-50 border-2 border-red-200 text-red-700";
+      const icon = bioDayAlert.querySelector(".bioDayIcon");
+      if (icon) icon.className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-red-100 text-red-700";
+      const msg = bioDayAlert.querySelector(".bioDayMsg");
+      if (msg) msg.innerHTML = `<b>VENTANA CERRADA:</b> la ventana operativa ordinaria (${BIO_STATE.captureWindowStart} al ${BIO_STATE.captureWindowEnd}) ha concluido.`;
     }
   }
 
@@ -8128,6 +8176,7 @@ function hasCONSNumericChanges() {
 }
 
 function renderCaptureSummary(data) {
+  if (!document.getElementById("panelCaptureSummary")) return;
   const fecha = data?.fecha || "";
   const tipo = data?.tipo || "SR";
 
@@ -8262,6 +8311,17 @@ function setLoggedInUI(user, status) {
     mainPanel: "CAP"
   });
 
+  // DOM ERADICATION FOR UNIDAD ROLE
+  if (AppState.rol === "UNIDAD" || (typeof USER !== 'undefined' && USER.rol === "UNIDAD")) {
+    const forbiddenPanels = [
+      document.getElementById("panelCaptureSummary"),
+      // Add any other strictly ADMIN-only parent containers here if necessary
+    ];
+    forbiddenPanels.forEach(p => {
+      if (p) p.remove(); // Physically destroys the node from the HTML
+    });
+  }
+
   if ($("who")) $("who").textContent = `${user.clues || "—"} — ${user.unidad || "—"}`;
   if ($("userNameFull")) $("userNameFull").textContent = user.nombre || user.usuario || "Usuario";
   if ($("rolTxt")) $("rolTxt").textContent = (user.rol || "UNIDAD").replace(/^Perfil:\s*/i, "");
@@ -8362,17 +8422,8 @@ function setLoggedInUI(user, status) {
   closeTopNotifDropdown();
 
   if ($("tabCONS")) {
-    $("tabCONS").disabled = isUnidad
-      ? !(STATUS && STATUS.canCaptureConsumibles)
-      : true;
-
-    $("tabCONS").title = isUnidad
-      ? (
-        $("tabCONS").disabled
-          ? "Disponible solo jueves o por apertura extraordinaria"
-          : ""
-      )
-      : "";
+    $("tabCONS").disabled = false;
+    $("tabCONS").title = "";
   }
 
   if (isUnidad) {
@@ -8523,109 +8574,113 @@ function setLoggedOutUI() {
 }
 
 function activateMain(tab) {
-    const pCapSummary = document.getElementById("panelCaptureSummary");
-    if (pCapSummary && AppState.rol === "UNIDAD") {
-        pCapSummary.style.display = "none !important";
-        pCapSummary.classList.add("hidden");
-    }
+  const pCapSummary = document.getElementById("panelCaptureSummary");
+  if (pCapSummary && AppState.rol === "UNIDAD") {
+    pCapSummary.style.display = "none !important";
+    pCapSummary.classList.add("hidden");
+  }
 
-    if (tab === AppState.mainTab) return;
-    AppState.mainTab = tab;
+  if (tab === AppState.mainTab) return;
+  AppState.mainTab = tab;
 
-    const mainTabs = document.querySelectorAll('.main-nav-tab');
-    mainTabs.forEach(btn => {
-        if (btn.getAttribute('onclick')?.includes(`activateMain('${tab}')`)) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
-    });
-
-    const pWelcome = document.getElementById("panelWelcome");
-    const pAdmin = document.getElementById("panelADMIN");
-    const pCap = document.getElementById("panelCAP");
-    const pSec = document.getElementById("panelSEC");
-    const pRda = document.getElementById("rdaDashboardOverlay");
-
-    if (pWelcome) pWelcome.style.display = (tab === "WELCOME") ? "block" : "none";
-    if (pAdmin) pAdmin.style.display = (tab === "ADMIN") ? "block" : "none";
-    if (pSec) pSec.style.display = (tab === "SEC") ? "block" : "none";
-
-    if (pCap) {
-        pCap.removeAttribute("style");
-        if (tab === "CAP") {
-            pCap.classList.remove("hidden");
-            pCap.style.display = "block";
-        } else {
-            pCap.classList.add("hidden");
-            pCap.style.display = "none";
-        }
-    }
-    if (pCapSummary) {
-        pCapSummary.removeAttribute("style");
-        // Strict Role Gate: Hidden for UNIDAD at all times
-        if (tab === "CAP" && AppState.rol !== "UNIDAD") {
-            pCapSummary.classList.remove("hidden");
-            pCapSummary.style.display = "block";
-        } else {
-            pCapSummary.classList.add("hidden");
-            pCapSummary.style.setProperty("display", "none", "important");
-        }
-    }
-
-    if (pRda) {
-        if (tab === "RDA" || (tab === "ADMIN" && AppState.opsTab === "RDA")) {
-            pRda.classList.remove("hidden");
-            pRda.style.display = "flex";
-        } else {
-            pRda.classList.add("hidden");
-            pRda.style.display = "none";
-        }
-    }
-
-    // --- ARCHITECTURAL FIX: HIDE LOOSE SIBLING FORMS ---
-    // Corrected to the ACTUAL DOM IDs used in index.html
-    const looseForms = ["formSR", "formCONS", "formBIO", "formPINOL", "panelDIST"];
-    
-    if (tab !== "CAP" && tab !== "ADMIN") {
-        // Lock them down with !important
-        looseForms.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.setAttribute("style", "display: none !important;");
-        });
+  const mainTabs = document.querySelectorAll('.main-nav-tab');
+  mainTabs.forEach(btn => {
+    if (btn.getAttribute('onclick')?.includes(`activateMain('${tab}')`)) {
+      btn.classList.add('active');
     } else {
-        // Unlock them safely (removes !important but keeps them hidden natively)
-        looseForms.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.setAttribute("style", "display: none;");
-        });
+      btn.classList.remove('active');
     }
+  });
 
-    const floatingHub = document.querySelector('.command-hub') || document.getElementById('commandHub');
-    if (floatingHub) {
-        if (tab !== "CAP") {
-            floatingHub.setAttribute("style", "display: none !important;");
-        } else {
-            floatingHub.removeAttribute("style");
-        }
-    }
+  const pWelcome = document.getElementById("panelWelcome");
+  const pAdmin = document.getElementById("panelADMIN");
+  const pCap = document.getElementById("panelCAP");
+  const pSec = document.getElementById("panelSEC");
+  const pRda = document.getElementById("rdaDashboardOverlay");
 
+  if (pWelcome) pWelcome.style.display = (tab === "WELCOME") ? "block" : "none";
+  if (pAdmin) pAdmin.style.display = (tab === "ADMIN") ? "block" : "none";
+  if (pSec) pSec.style.display = (tab === "SEC") ? "block" : "none";
+
+  if (pCap) {
+    pCap.removeAttribute("style");
     if (tab === "CAP") {
-        if (AppState.rol !== "UNIDAD") {
-            activateOpsTab("CAPTURE");
-        } else {
-            // Restore the specifically selected capture form for UNIDAD
-            if (typeof activateCapture === 'function') {
-                const currentCap = AppState.capTab || "SR";
-                AppState.capTab = null; // Force DOM refresh
-                activateCapture(currentCap);
-            }
-        }
-    } else if (tab === "ADMIN") {
-        activateOpsTab(AppState.opsTab);
-    } else if (tab === "RDA") {
-        if (typeof loadAndRender === 'function') loadAndRender();
+      pCap.classList.remove("hidden");
+      pCap.style.display = "block";
+    } else {
+      pCap.classList.add("hidden");
+      pCap.style.display = "none";
     }
+  }
+  if (pCapSummary) {
+    if (AppState.rol === "UNIDAD") {
+      pCapSummary.classList.add("hidden");
+      pCapSummary.style.setProperty("display", "none", "important");
+    } else {
+      pCapSummary.removeAttribute("style");
+      if (tab === "CAP") {
+        pCapSummary.classList.remove("hidden");
+        pCapSummary.style.display = "block";
+      } else {
+        pCapSummary.classList.add("hidden");
+        pCapSummary.style.setProperty("display", "none", "important");
+      }
+    }
+  }
+
+  if (pRda) {
+    if (tab === "RDA" || (tab === "ADMIN" && AppState.opsTab === "RDA")) {
+      pRda.classList.remove("hidden");
+      pRda.style.display = "flex";
+    } else {
+      pRda.classList.add("hidden");
+      pRda.style.display = "none";
+    }
+  }
+
+  // --- ARCHITECTURAL FIX: HIDE LOOSE SIBLING FORMS ---
+  // Corrected to the ACTUAL DOM IDs used in index.html
+  const looseForms = ["formSR", "formCONS", "formBIO", "formPINOL", "panelDIST"];
+
+  if (tab !== "CAP" && tab !== "ADMIN") {
+    // Lock them down with !important
+    looseForms.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.setAttribute("style", "display: none !important;");
+    });
+  } else {
+    // Unlock them safely (removes !important but keeps them hidden natively)
+    looseForms.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.setAttribute("style", "display: none;");
+    });
+  }
+
+  const floatingHub = document.querySelector('.command-hub') || document.getElementById('commandHub');
+  if (floatingHub) {
+    if (tab !== "CAP") {
+      floatingHub.setAttribute("style", "display: none !important;");
+    } else {
+      floatingHub.removeAttribute("style");
+    }
+  }
+
+  if (tab === "CAP") {
+    if (AppState.rol !== "UNIDAD") {
+      activateOpsTab("CAPTURE");
+    } else {
+      // Restore the specifically selected capture form for UNIDAD
+      if (typeof activateCapture === 'function') {
+        const currentCap = AppState.capTab || "SR";
+        AppState.capTab = null; // Force DOM refresh
+        activateCapture(currentCap);
+      }
+    }
+  } else if (tab === "ADMIN") {
+    activateOpsTab(AppState.opsTab);
+  } else if (tab === "RDA") {
+    if (typeof loadAndRender === 'function') loadAndRender();
+  }
 }
 
 function activateCapture(tab) {
@@ -8734,165 +8789,170 @@ window.addEventListener('resize', () => {
 /**
  * ACTIVATE OPS TAB (Final Refactor - High Fidelity)
  */
-window.activateOpsTab = function(tab) {
-    // Normalization bridge: Map inputs to normalized tab keys
-    if (tab === "NOTIFS" || tab === "NOTIF") tab = "NOTIFICATIONS";
-    if (tab === "ADMIN" || tab === "SEC") tab = "SECURITY";
+window.activateOpsTab = function (tab) {
+  // Normalization bridge: Map inputs to normalized tab keys
+  if (tab === "NOTIFS" || tab === "NOTIF") tab = "NOTIFICATIONS";
+  if (tab === "ADMIN" || tab === "SEC") tab = "SECURITY";
 
-    if (tab === "CAPTURE" && AppState.rol === "UNIDAD") {
-        if (typeof activateUnidadTab === 'function') activateUnidadTab("CAPTURE");
-        return;
-    }
-    if (tab === "RDA" && AppState.rol === "UNIDAD") {
-        if (typeof activateUnidadTab === 'function') activateUnidadTab("RDA");
-        return;
-    }
+  if (tab === "CAPTURE" && AppState.rol === "UNIDAD") {
+    if (typeof activateUnidadTab === 'function') activateUnidadTab("CAPTURE");
+    return;
+  }
+  if (tab === "RDA" && AppState.rol === "UNIDAD") {
+    if (typeof activateUnidadTab === 'function') activateUnidadTab("RDA");
+    return;
+  }
 
-    const sameTab = AppState.opsTab === tab;
-    AppState.opsTab = tab;
+  const sameTab = AppState.opsTab === tab;
+  AppState.opsTab = tab;
 
-    // Sync AppState.mainTab to prevent async summary panel leaks
-    if (tab === "NOTIFICATIONS") {
-        AppState.mainTab = "NOTIFS";
-    } else if (tab === "SECURITY") {
-        AppState.mainTab = "ADMIN";
-    } else {
-        AppState.mainTab = "CAP";
-    }
+  // Sync AppState.mainTab to prevent async summary panel leaks
+  if (tab === "NOTIFICATIONS") {
+    AppState.mainTab = "NOTIFS";
+  } else if (tab === "SECURITY") {
+    AppState.mainTab = "ADMIN";
+  } else {
+    AppState.mainTab = "CAP";
+  }
 
-    // 1. UI: Botonera y animación (CORREGIDO AL ID REAL)
-    const container = document.getElementById("panelAdminOpsTabs");
-    if (container) {
-        const navContainer = container.querySelector(".nav-container");
-        if (navContainer) {
-            navContainer.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
-        }
-        
-        const buttonIds = {
-            "CAPTURE": "tabOPS_CAPTURE",
-            "HISTORY": "tabOPS_HISTORY",
-            "RDA": "tabOPS_RDA",
-            "PINOL": "tabOPS_PINOL",
-            "LOTES": "tabLOTES",
-            "NOTIFICATIONS": "tabOPS_NOTIFS",
-            "SECURITY": "tabOPS_ADMIN"
-        };
-        const targetId = buttonIds[tab];
-        if (targetId) {
-            const btn = document.getElementById(targetId);
-            if (btn) btn.classList.add("active");
-        }
-        
-        if (typeof syncTabGroupIndicator === 'function') {
-            syncTabGroupIndicator("#panelAdminOpsTabs .nav-container");
-        }
+  // 1. UI: Botonera y animación (CORREGIDO AL ID REAL)
+  const container = document.getElementById("panelAdminOpsTabs");
+  if (container) {
+    const navContainer = container.querySelector(".nav-container");
+    if (navContainer) {
+      navContainer.querySelectorAll(".nav-tab").forEach(b => b.classList.remove("active"));
     }
 
-    // 2. PANELES: Apagado forzoso termonuclear de todos los paneles de esta sección
-    const panelIds = {
-        "CAPTURE": "panelCaptureSummary",
-        "HISTORY": "panelHISTORY",
-        "RDA": "rdaDashboardOverlay",
-        "PINOL": "panelPINOLADMIN",
-        "LOTES": "panelLOTES",
-        "NOTIFICATIONS": "panelNOTIFS",
-        "SECURITY": "panelADMIN"
+    const buttonIds = {
+      "CAPTURE": "tabOPS_CAPTURE",
+      "HISTORY": "tabOPS_HISTORY",
+      "RDA": "tabOPS_RDA",
+      "PINOL": "tabOPS_PINOL",
+      "LOTES": "tabLOTES",
+      "NOTIFICATIONS": "tabOPS_NOTIFS",
+      "SECURITY": "tabOPS_ADMIN"
     };
-
-    Object.keys(panelIds).forEach(k => {
-        const el = document.getElementById(panelIds[k]);
-        if (el) {
-            el.classList.add("hidden");
-            el.style.setProperty("display", "none", "important");
-        }
-    });
-
-    // Encendido exclusivo del panel seleccionado
-    const activePanelId = panelIds[tab];
-    if (activePanelId) {
-        const activePanel = document.getElementById(activePanelId);
-        if (activePanel) {
-            activePanel.classList.remove("hidden");
-            const dType = (tab === "RDA") ? "flex" : "block";
-            activePanel.style.setProperty("display", dType, "important");
-        }
+    const targetId = buttonIds[tab];
+    if (targetId) {
+      const btn = document.getElementById(targetId);
+      if (btn) btn.classList.add("active");
     }
 
-    // Standard mainTab cleanups to keep UI in sync
-    const isCapTab = (AppState.mainTab === "CAP");
-    const looseForms = ["formSR", "formCONS", "formBIO", "formPINOL", "panelDIST"];
-    looseForms.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            if (!isCapTab) {
-                el.setAttribute("style", "display: none !important;");
-            } else {
-                el.setAttribute("style", "display: none;");
-            }
-        }
-    });
-
-    const floatingHub = document.querySelector('.command-hub') || document.getElementById('commandHub');
-    if (floatingHub) {
-        if (!isCapTab) {
-            floatingHub.setAttribute("style", "display: none !important;");
-        } else {
-            floatingHub.removeAttribute("style");
-        }
+    if (typeof syncTabGroupIndicator === 'function') {
+      syncTabGroupIndicator("#panelAdminOpsTabs .nav-container");
     }
+  }
 
-    // 3. DATOS: Carga de información
-    if (!sameTab) {
-        if (tab === "CAPTURE") {
-            if (typeof runSinglePanelTask === 'function') runSinglePanelTask("ops-tab-capture", () => reloadCaptureSummarySilent());
-        }
-        if (tab === "HISTORY") {
-            if (typeof runSinglePanelTask === 'function') runSinglePanelTask("ops-tab-history", () => reloadHistorySilent());
-        }
-        if (tab === "PINOL") {
-            if (typeof runSinglePanelTask === 'function') runSinglePanelTask("ops-tab-pinol", () => refreshPinol());
-        }
-        if (tab === "RDA") {
-            if (typeof loadAndRender === 'function') loadAndRender();
-        }
-        if (tab === "LOTES") {
-            if (typeof activateLotesAdmin === 'function') activateLotesAdmin();
-        }
-        if (tab === "NOTIFICATIONS") {
-            if (AppState.rol !== "UNIDAD" && typeof initNotificationCenter === 'function') {
-                initNotificationCenter().catch(err => console.error("initNotificationCenter error:", err));
-            }
-            if (typeof loadNotifications === 'function') {
-                loadNotifications({ silent: false }).catch(err => {
-                    console.error("loadNotifications error:", err);
-                    if (typeof showToast === 'function') showToast("No se pudieron cargar las notificaciones", false);
-                });
-            }
-        }
+  // 2. PANELES: Apagado forzoso termonuclear de todos los paneles de esta sección
+  const panelIds = {
+    "CAPTURE": "panelCaptureSummary",
+    "HISTORY": "panelHISTORY",
+    "RDA": "rdaDashboardOverlay",
+    "PINOL": "panelPINOLADMIN",
+    "LOTES": "panelLOTES",
+    "NOTIFICATIONS": "panelNOTIFS",
+    "SECURITY": "panelADMIN"
+  };
+
+  Object.keys(panelIds).forEach(k => {
+    const el = document.getElementById(panelIds[k]);
+    if (el) {
+      el.classList.add("hidden");
+      el.style.setProperty("display", "none", "important");
     }
+  });
+
+  // Encendido exclusivo del panel seleccionado
+  const activePanelId = panelIds[tab];
+  if (activePanelId) {
+    const activePanel = document.getElementById(activePanelId);
+    if (activePanel) {
+      if (activePanelId === "panelCaptureSummary" && AppState.rol === "UNIDAD") {
+        activePanel.classList.add("hidden");
+        activePanel.style.setProperty("display", "none", "important");
+        return;
+      }
+      activePanel.classList.remove("hidden");
+      const dType = (tab === "RDA") ? "flex" : "block";
+      activePanel.style.setProperty("display", dType, "important");
+    }
+  }
+
+  // Standard mainTab cleanups to keep UI in sync
+  const isCapTab = (AppState.mainTab === "CAP");
+  const looseForms = ["formSR", "formCONS", "formBIO", "formPINOL", "panelDIST"];
+  looseForms.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (!isCapTab) {
+        el.setAttribute("style", "display: none !important;");
+      } else {
+        el.setAttribute("style", "display: none;");
+      }
+    }
+  });
+
+  const floatingHub = document.querySelector('.command-hub') || document.getElementById('commandHub');
+  if (floatingHub) {
+    if (!isCapTab) {
+      floatingHub.setAttribute("style", "display: none !important;");
+    } else {
+      floatingHub.removeAttribute("style");
+    }
+  }
+
+  // 3. DATOS: Carga de información
+  if (!sameTab) {
+    if (tab === "CAPTURE") {
+      if (typeof runSinglePanelTask === 'function') runSinglePanelTask("ops-tab-capture", () => reloadCaptureSummarySilent());
+    }
+    if (tab === "HISTORY") {
+      if (typeof runSinglePanelTask === 'function') runSinglePanelTask("ops-tab-history", () => reloadHistorySilent());
+    }
+    if (tab === "PINOL") {
+      if (typeof runSinglePanelTask === 'function') runSinglePanelTask("ops-tab-pinol", () => refreshPinol());
+    }
+    if (tab === "RDA") {
+      if (typeof loadAndRender === 'function') loadAndRender();
+    }
+    if (tab === "LOTES") {
+      if (typeof activateLotesAdmin === 'function') activateLotesAdmin();
+    }
+    if (tab === "NOTIFICATIONS") {
+      if (AppState.rol !== "UNIDAD" && typeof initNotificationCenter === 'function') {
+        initNotificationCenter().catch(err => console.error("initNotificationCenter error:", err));
+      }
+      if (typeof loadNotifications === 'function') {
+        loadNotifications({ silent: false }).catch(err => {
+          console.error("loadNotifications error:", err);
+          if (typeof showToast === 'function') showToast("No se pudieron cargar las notificaciones", false);
+        });
+      }
+    }
+  }
 };
 
 function activateUnidadTab(tab) {
-    if (tab === AppState.opsTab) return;
-    AppState.opsTab = tab;
+  if (tab === AppState.opsTab) return;
+  AppState.opsTab = tab;
 
-    const container = document.querySelector('#panelUnidadOpsTabs .nav-container');
-    if (container) {
-        container.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
-        let targetId = (tab === "RDA") ? "tabUNIDAD_RDA" : "tabUNIDAD_CAPTURE";
-        const btn = document.getElementById(targetId);
-        if (btn) btn.classList.add('active');
-        if (typeof syncTabGroupIndicator === 'function') syncTabGroupIndicator('#panelUnidadOpsTabs .nav-container');
-    }
+  const container = document.querySelector('#panelUnidadOpsTabs .nav-container');
+  if (container) {
+    container.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+    let targetId = (tab === "RDA") ? "tabUNIDAD_RDA" : "tabUNIDAD_CAPTURE";
+    const btn = document.getElementById(targetId);
+    if (btn) btn.classList.add('active');
+    if (typeof syncTabGroupIndicator === 'function') syncTabGroupIndicator('#panelUnidadOpsTabs .nav-container');
+  }
 
-    console.log("[Navigation] UNIDAD requested main section:", tab);
+  console.log("[Navigation] UNIDAD requested main section:", tab);
 
-    if (tab === "CAPTURE") {
-        activateMain("CAP");
-        if (typeof reloadCaptureSummarySilent === 'function') runSinglePanelTask("ops-tab-capture", () => reloadCaptureSummarySilent());
-    } else if (tab === "RDA") {
-        activateMain("RDA");
-    }
+  if (tab === "CAPTURE") {
+    activateMain("CAP");
+    if (typeof reloadCaptureSummarySilent === 'function') runSinglePanelTask("ops-tab-capture", () => reloadCaptureSummarySilent());
+  } else if (tab === "RDA") {
+    activateMain("RDA");
+  }
 }
 window.activateUnidadTab = activateUnidadTab;
 
@@ -8961,21 +9021,28 @@ async function reloadCaptureSummary(force = false) {
         commitPanelFilterState("captureSummary", `${fecha}__${tipo}`);
       }
 
-      // STRICT ASYNC GUARD WITH ROLE GATE
-      if (AppState.mainTab === "CAP" && AppState.rol !== "UNIDAD" && AppState.opsTab === "CAPTURE") {
-          if (hasRecords) {
-              if (panel) {
-                  panel.classList.remove("hidden");
-                  panel.style.display = "block";
-              }
-          } else {
-              if (panel) { panel.style.display = "none"; }
-          }
-      } else {
+      if (AppState.rol === "UNIDAD") {
+        if (panel) {
+          panel.classList.add("hidden");
+          panel.style.setProperty("display", "none", "important");
+        }
+        return data;
+      }
+
+      if (AppState.mainTab === "CAP" && AppState.opsTab === "CAPTURE") {
+        if (hasRecords) {
           if (panel) {
-              panel.classList.add("hidden");
-              panel.style.setProperty("display", "none", "important");
+            panel.classList.remove("hidden");
+            panel.style.display = "block";
           }
+        } else {
+          if (panel) { panel.style.display = "none"; }
+        }
+      } else {
+        if (panel) {
+          panel.classList.add("hidden");
+          panel.style.setProperty("display", "none", "important");
+        }
       }
 
       return data;
@@ -9018,21 +9085,28 @@ async function reloadCaptureSummarySilent(force = false) {
         commitPanelFilterState("captureSummary", `${fecha}__${tipo}`);
       }
 
-      // STRICT ASYNC GUARD WITH ROLE GATE
-      if (AppState.mainTab === "CAP" && AppState.rol !== "UNIDAD" && AppState.opsTab === "CAPTURE") {
-          if (hasRecords) {
-              if (panel) {
-                  panel.classList.remove("hidden");
-                  panel.style.display = "block";
-              }
-          } else {
-              if (panel) { panel.style.display = "none"; }
-          }
-      } else {
+      if (AppState.rol === "UNIDAD") {
+        if (panel) {
+          panel.classList.add("hidden");
+          panel.style.setProperty("display", "none", "important");
+        }
+        return data;
+      }
+
+      if (AppState.mainTab === "CAP" && AppState.opsTab === "CAPTURE") {
+        if (hasRecords) {
           if (panel) {
-              panel.classList.add("hidden");
-              panel.style.setProperty("display", "none", "important");
+            panel.classList.remove("hidden");
+            panel.style.display = "block";
           }
+        } else {
+          if (panel) { panel.style.display = "none"; }
+        }
+      } else {
+        if (panel) {
+          panel.classList.add("hidden");
+          panel.style.setProperty("display", "none", "important");
+        }
       }
 
       return data;
@@ -9193,23 +9267,38 @@ if (bSaveBIO) bSaveBIO.onclick = async () => {
   const nombre = $("nombreBIO")?.value.trim() || "";
   const items = collectBioItems();
 
-  // Validaciones pro-activas de stock
-  const warningRows = [];
-  const bioStateByKey = Object.fromEntries((BIO_STATE.rows || []).map(r => [String(r.biologico).toUpperCase(), r]));
+  // --- REGLAS MATEMÁTICAS ESTRICTAS (PHASE 2) ---
+  const criticalBioNames = ["HEXAVALENTE", "NEUMOCOCICA 13", "NEUMOCOCICA 20", "SRP", "ROTAVIRUS"];
+  const normalizeStr = (str) => {
+    return String(str || "").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  };
 
-  items.forEach(item => {
-    const key = String(item.biologico).toUpperCase();
-    const r = bioStateByKey[key];
-    if (!r) return;
-    if (["INFLUENZA", "COVID-19", "VPH", "VARICELA"].some(k => key.includes(k))) return;
+  for (const item of items) {
+    const normKey = normalizeStr(item.biologico);
 
-    const total = Number(item.existencia_actual_frascos || 0) + Number(item.pedido_frascos || 0);
-    if (r.promedio_frascos > 0 && total < r.promedio_frascos) {
-      warningRows.push(`• ${r.biologico}: stock insuficiente vs promedio.`);
+    // REGLA A: Múltiplos de 5 para biológicos críticos (Hexavalente, Neumocócicas, SRP, Rotavirus)
+    const isCritical = criticalBioNames.some(cName => {
+      const normCritical = cName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+      return normKey === normCritical; // <-- Igualdad estricta (Evita falsos positivos con .includes)
+    });
+
+    if (isCritical) {
+      const pedidoVal = Number(item.pedido_frascos || 0);
+      if (pedidoVal % 5 !== 0) {
+        return showToast(`El pedido para ${item.biologico} debe ser múltiplo de 5 (se ingresó ${pedidoVal}).`, false, "warn");
+      }
     }
-  });
 
-  if (warningRows.length && !(await openBioConfirm(warningRows))) return;
+    // REGLA B: Umbral de stock mínimo (Existencia + Pedido >= Promedio)
+    const existenciaVal = Number(item.existencia_actual_frascos || 0);
+    const pedidoVal = Number(item.pedido_frascos || 0);
+    const promedioVal = Number(item.promedio_frascos || 0);
+    const totalVal = existenciaVal + pedidoVal;
+
+    if (promedioVal > 0 && totalVal < promedioVal) {
+      return showToast(`El stock total (Existencia + Pedido = ${totalVal}) para ${item.biologico} debe ser al menos igual al promedio mensual (${promedioVal}).`, false, "warn");
+    }
+  }
 
   await AppService.runCapture({
     btnId: "btnSaveBIO",
@@ -9225,7 +9314,9 @@ if (bSaveBIO) bSaveBIO.onclick = async () => {
         nombre,
         items,
         tipo_pedido: BIO_STATE.isInsideWindow ? "MENSUAL" : "EXTRAORDINARIO",
-        sin_pedido: $("chkNoPedido")?.checked || false
+        sin_pedido: $("chkNoPedido")?.checked || false,
+        fecha: BIO_STATE.fechaPedidoProgramada,
+        fechaPedidoProgramada: BIO_STATE.fechaPedidoProgramada
       });
       if (res.ok) await loadBioForm(true);
       return res;
@@ -9331,9 +9422,9 @@ if ($("btnDoExport")) $("btnDoExport").onclick = async () => {
 
     let fIni = "";
     if (tipo === "BIO") {
-      const exactBox = $("exportBioExactDateBox");
-      if (exactBox && exactBox.style.display !== "none" && $("exportBioExactDate").value) {
-        fIni = $("exportBioExactDate").value;
+      const exactSelect = $("exportBioExactDate");
+      if (exactSelect && exactSelect.value) {
+        fIni = exactSelect.value;
       } else {
         const mm = $("exportMonth") ? $("exportMonth").value : "01";
         const yy = $("exportYear") ? $("exportYear").value : "2024";
@@ -9383,19 +9474,54 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
   const sheetName = tipo === "SR" ? "EXISTENCIAS" : (tipo === "CONS" ? "CONSUMIBLES" : "PEDIDOS");
   const ws = wb.addWorksheet(sheetName, { views: [{ showGridLines: false }] });
 
-  const unidadesSet = new Set();
+  let arrClues = [];
   const mapUnidades = {};
 
-  data.forEach(d => {
-    unidadesSet.add(d.clues);
-    if (d.unidades && d.unidades.nombre) {
-      mapUnidades[d.clues] = d.unidades.nombre.toUpperCase();
-    } else {
-      mapUnidades[d.clues] = (d.unidad || "UNIDAD DESCONOCIDA").toUpperCase();
+  if (tipo === "BIO") {
+    // Buscar todos los municipios a consultar
+    let targetMuns = selectedMunicipios || [];
+    if (targetMuns.length === 0) {
+      const dataMuns = Array.from(new Set(data.map(d => d.municipio).filter(Boolean)));
+      targetMuns = dataMuns;
     }
-  });
 
-  const arrClues = Array.from(unidadesSet).sort();
+    // Si aún está vacío y el usuario es MUNICIPAL, usar su municipio
+    if (targetMuns.length === 0 && USER && USER.municipio) {
+      targetMuns = String(USER.municipio).split(",").map(m => m.trim());
+    }
+
+    if (targetMuns.length > 0) {
+      try {
+        const { data: dbUnits, error: dbUnitsErr } = await supabase
+          .from('unidades')
+          .select('clues, unidad')
+          .in('municipio', targetMuns)
+          .order('clues');
+
+        if (!dbUnitsErr && dbUnits && dbUnits.length > 0) {
+          dbUnits.forEach(u => {
+            mapUnidades[u.clues] = u.unidad.toUpperCase();
+          });
+          arrClues = dbUnits.map(u => u.clues);
+        }
+      } catch (err) {
+        console.error("Error fetching units for export:", err);
+      }
+    }
+  }
+
+  if (arrClues.length === 0) {
+    const unidadesSet = new Set();
+    data.forEach(d => {
+      unidadesSet.add(d.clues);
+      if (d.unidades && d.unidades.nombre) {
+        mapUnidades[d.clues] = d.unidades.nombre.toUpperCase();
+      } else {
+        mapUnidades[d.clues] = (d.unidad || "UNIDAD DESCONOCIDA").toUpperCase();
+      }
+    });
+    arrClues = Array.from(unidadesSet).sort();
+  }
 
   let insumos = [];
   if (tipo === "CONS") {
@@ -9493,7 +9619,7 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
   });
 
   if (tipo !== "CONS") {
-    ws.getCell(headerRowIdx, colIndex).value = "TOTAL";
+    ws.getCell(headerRowIdx, colIndex).value = tipo === "BIO" ? "TOTAL MUNICIPAL" : "TOTAL";
     ws.getCell(headerRowIdx, colIndex).fill = headerFill;
     ws.getCell(headerRowIdx, colIndex).font = fontWhite;
     ws.getCell(headerRowIdx, colIndex).alignment = { vertical: 'middle', horizontal: 'center' };
@@ -9525,16 +9651,14 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
       if (tipo === "CONS") {
         matchingRecords.forEach(d => { val += Number(d[insumo.key] || 0); });
       } else if (tipo === "SR") {
-        // Acceso directo a la columna del biológico en la tabla ancha (biologicos_existencia)
         matchingRecords.forEach(d => { val += Number(d[insumo.key] || 0); });
       } else {
-        // Filtrado por nombre en la tabla larga (biologicos_pedido)
         matchingRecords.filter(d => String(d.biologico).toUpperCase() === String(insumo.label).toUpperCase())
-          .forEach(d => { val += Number(d.frascos || d.solicitud || 0); });
+          .forEach(d => { val += Number(d.solicitud || d.frascos || d.pedido_frascos || 0); });
       }
 
       rowTotal += val;
-      ws.getCell(rowCursor, cIdx).value = val || '';
+      ws.getCell(rowCursor, cIdx).value = Number(val);
       ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '40' + insumo.color } };
       ws.getCell(rowCursor, cIdx).border = borderAll;
       ws.getCell(rowCursor, cIdx).alignment = { horizontal: 'center' };
@@ -9542,7 +9666,7 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
     });
 
     if (tipo !== "CONS") {
-      ws.getCell(rowCursor, cIdx).value = rowTotal || '';
+      ws.getCell(rowCursor, cIdx).value = Number(rowTotal);
       ws.getCell(rowCursor, cIdx).border = borderAll;
       ws.getCell(rowCursor, cIdx).alignment = { horizontal: 'center', vertical: 'middle' };
       ws.getCell(rowCursor, cIdx).font = { bold: true };
@@ -9800,8 +9924,8 @@ async function refreshConsumiblesStatusUi() {
 
   if ($("tabCONS")) {
     const can = !!(STATUS && STATUS.canCaptureConsumibles);
-    $("tabCONS").disabled = !can;
-    $("tabCONS").title = can ? (STATUS.consumiblesReason || "Abierto") : "Cerrado: Solo jueves o por apertura extraordinaria";
+    $("tabCONS").disabled = false;
+    $("tabCONS").title = can ? (STATUS.consumiblesReason || "Abierto") : "";
 
     // Mostrar leyenda de motivo si está abierto
     if (can && (STATUS.consumiblesReason && !STATUS.consumiblesReason.includes("Jueves"))) {
@@ -10031,7 +10155,9 @@ async function listPinol(force = false) {
       shouldCache: (data) => Array.isArray(data)
     });
 
-  return Array.isArray(data) ? data : [];
+  const result = Array.isArray(data) ? data : [];
+  window._pinolCache = result; // Expose for syncCommandHub PINOL state machine
+  return result;
 }
 
 function openPinolEntregaModal(item) {
@@ -11041,7 +11167,12 @@ async function openLiveView(clues, unidad, municipio) {
     const fechaFormatted = formatAppDate(fecha);
 
     // 2. Títulos
-    if ($("liveViewUnidad")) $("liveViewUnidad").textContent = (tipo === "SR" ? "Existencia: " : "Consumibles: ") + unidad;
+    if ($("liveViewUnidad")) {
+      let titlePrefix = "Existencia: ";
+      if (tipo === "CONS") titlePrefix = "Consumibles: ";
+      else if (tipo === "BIO") titlePrefix = "Pedido BIO: ";
+      $("liveViewUnidad").textContent = titlePrefix + unidad;
+    }
     if ($("liveViewMunicipio")) {
       $("liveViewMunicipio").innerHTML =
         escapeHtml(municipio) + " &nbsp;|&nbsp; " + escapeHtml(clues) +
@@ -11099,6 +11230,39 @@ async function openLiveView(clues, unidad, municipio) {
               `;
         }).join("");
         renderLiveCharts(semStats, cadStats);
+      }
+    } else if (tipo === "BIO") {
+      if (headRow) {
+        headRow.innerHTML = `
+             <th style="padding: 16px 24px; text-align: left;">Biológico</th>
+             <th style="padding: 16px 24px; text-align: center;">Existencia (Frascos)</th>
+             <th style="padding: 16px 24px; text-align: center;">Pedido (Frascos)</th>
+             <th style="padding: 16px 24px; text-align: center;">Promedio</th>
+             <th style="padding: 16px 24px; text-align: center;">Dosis Mín/Máx</th>
+             <th style="padding: 16px 24px; text-align: left;">Capturado Por</th>
+           `;
+      }
+
+      if (!res.data || !res.data.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay pedido de biológicos para esta fecha.</td></tr>';
+        renderLiveCharts({ pronto: 0, normal: 0, lejana: 0 }, { m3: 0, m6: 0, m12: 0, more: 0 });
+      } else {
+        const items = res.data;
+        tbody.innerHTML = items.map(r => `
+             <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
+               <td style="padding:14px 24px; font-weight:800; color:#0f172a;">${escapeHtml(r.biologico || "—")}</td>
+               <td style="padding:14px 24px; text-align:center;">
+                 <span class="live-view-count-badge bg-slate-100 text-slate-800">${r.existencia_actual_frascos ?? r.existencia ?? 0}</span>
+               </td>
+               <td style="padding:14px 24px; text-align:center;">
+                 <span class="live-view-count-badge">${r.pedido_frascos ?? r.solicitud ?? 0}</span>
+               </td>
+               <td style="padding:14px 24px; text-align:center; font-weight:700; color:#475569;">${r.promedio_frascos ?? 0}</td>
+               <td style="padding:14px 24px; text-align:center; font-weight:600; color:#64748b;">${r.min_dosis ?? 0} / ${r.max_dosis ?? 0}</td>
+               <td style="padding:14px 24px; color:#475569; font-size:12px; font-weight:600;">${escapeHtml(r.capturado_por || "—")}</td>
+             </tr>
+           `).join("");
+        renderLiveCharts({ pronto: 0, normal: 1, lejana: 0 }, { m3: 0, m6: 0, m12: 0, more: 1 });
       }
     } else {
       // Tipo CONSUMIBLES
@@ -11279,6 +11443,7 @@ document.addEventListener("input", e => {
 // PANEL DE ARCHIVOS (VISUALIZADOR DROPDOWN)
 // ==========================================
 let ARCHIVOS_DATA = [];
+let CURRENT_EVIDENCE_CATEGORY = "Evidencia_de_capacitaciones";
 
 function getArchivosDropdownRefs() {
   return {
@@ -11371,7 +11536,32 @@ document.addEventListener("keydown", ev => {
 
 $("btnRefreshArchivos")?.addEventListener("click", renderArchivosView);
 $("archivosSearch")?.addEventListener("input", filterArchivosGrid);
-$("archivosCategoria")?.addEventListener("change", filterArchivosGrid);
+
+function syncEvidenceExplorerTabs() {
+  const tabs = document.querySelectorAll(".evidence-tab");
+  tabs.forEach(tab => {
+    const cat = tab.getAttribute("data-category");
+    if (cat === CURRENT_EVIDENCE_CATEGORY) {
+      tab.className = "evidence-tab px-4 py-2 text-xs font-bold rounded-lg transition-all bg-white text-primary shadow-sm border border-slate-200";
+    } else {
+      tab.className = "evidence-tab px-4 py-2 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-50";
+    }
+  });
+}
+
+function initEvidenceTabs() {
+  const tabs = document.querySelectorAll(".evidence-tab");
+  tabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      CURRENT_EVIDENCE_CATEGORY = tab.getAttribute("data-category");
+      syncEvidenceExplorerTabs();
+      renderArchivosView();
+    });
+  });
+  syncEvidenceExplorerTabs();
+}
+
+initEvidenceTabs();
 
 async function renderArchivosView() {
   try {
@@ -11382,7 +11572,7 @@ async function renderArchivosView() {
       await loadUnitCatalog();
     }
 
-    const res = await apiCall({ action: "listfiles" });
+    const res = await apiCall({ action: "listfiles", category: CURRENT_EVIDENCE_CATEGORY });
     if (res && res.ok) {
       ARCHIVOS_DATA = res.data;
       filterArchivosGrid();
@@ -11401,7 +11591,7 @@ function filterArchivosGrid() {
   const container = $("archivosContainer");
   if (!container) return;
 
-  const catFilt = ($("archivosCategoria")?.value || "").toLowerCase();
+  const catFilt = (CURRENT_EVIDENCE_CATEGORY || "").toLowerCase();
   const txtFilt = ($("archivosSearch")?.value || "").toLowerCase();
   const role = String((typeof USER !== "undefined" && USER && USER.rol) ? USER.rol : "").toUpperCase();
   const myClues = (typeof USER !== "undefined" && USER && USER.clues) ? USER.clues : "";
@@ -11815,11 +12005,25 @@ function applyRolePermissions(role) {
 
   // Especial: Ajustes de UI que no son solo ocultar (placeholders, etc)
   const isUnidad = normalizedRole === "UNIDAD";
+  const isMunicipal = normalizedRole === "MUNICIPAL";
   if ($("archivosSearch")) {
     $("archivosSearch").placeholder = isUnidad ? "Buscar por fecha..." : "Buscar por Clues o Unidad...";
   }
-  if ($("archivosCategoria")) {
-    $("archivosCategoria").style.display = isUnidad ? "none" : "block";
+  const tabContainer = $("archivosTabsContainer");
+  if (tabContainer) {
+    if (isUnidad) {
+      tabContainer.style.display = "none";
+      CURRENT_EVIDENCE_CATEGORY = "Supervision";
+      syncEvidenceExplorerTabs();
+    } else {
+      tabContainer.style.display = "flex";
+    }
+  }
+  const btnOpenUpload = $("btnOpenUpload");
+  if (btnOpenUpload) {
+    const tooltipText = isMunicipal ? "Cargar Supervisiones" : "Subir archivos";
+    btnOpenUpload.setAttribute("title", tooltipText);
+    btnOpenUpload.setAttribute("data-tooltip", tooltipText);
   }
 }
 
@@ -11850,7 +12054,7 @@ function syncCommandHub() {
   // 1. Visibilidad Global (Solo en paneles de captura)
   const isCapture = (mainPanel === "CAP");
   const isUnidad = (typeof USER !== "undefined" && USER?.rol === "UNIDAD");
-  
+
   if (isCapture && isUnidad) {
     hub.classList.add("visible");
   } else {
@@ -11878,15 +12082,75 @@ function syncCommandHub() {
   const hubStatus = document.getElementById("hubStatusChip");
   const hubStatusText = document.getElementById("hubStatusText");
 
+  // Gatekeeper Logic
+  let isValidDate = true;
+  let reasonInvalid = "";
+
+  if (captureTab === "SR") {
+    const day = new Date().getDay();
+    const isValidSR = (day === 4 || day === 5);
+    if (!isValidSR) {
+      isValidDate = false;
+      reasonInvalid = "El reporte de biológicos solo se puede capturar en jueves o viernes.";
+    }
+  } else if (captureTab === "CONS") {
+    if (!(STATUS && STATUS.canCaptureConsumibles)) {
+      isValidDate = false;
+      reasonInvalid = "El reporte de consumibles solo se puede capturar en jueves o por apertura extraordinaria.";
+    }
+  } else if (captureTab === "BIO") {
+    if (typeof BIO_STATE !== "undefined" && !BIO_STATE.canCapture) {
+      isValidDate = false;
+      reasonInvalid = "La ventana de pedidos de biológico se encuentra cerrada.";
+    }
+  }
+  // PINOL: always valid date (no window restriction for solicitudes)
+
   // Lógica del Status Chip (¿Está guardado hoy?)
   let isSaved = false;
   if (captureTab === "SR") isSaved = !!HAS_TODAY_SR;
   if (captureTab === "CONS") isSaved = !!HAS_TODAY_CONS;
   if (captureTab === "BIO") isSaved = !!HAS_SAVED_BIO;
+  if (captureTab === "PINOL") {
+    // Pinol state machine: check for pending solicitud from this unit
+    try {
+      const pinolItems = typeof listPinol === "function" ? (window._pinolCache || []) : [];
+      const pending = pinolItems.filter(x => String(x?.estatus || "").toUpperCase() === "PENDIENTE");
+      const fulfilled = pinolItems.filter(x => ["ENTREGADO", "RECIBIDO"].includes(String(x?.estatus || "").toUpperCase()));
+      if (pending.length > 0) {
+        isSaved = true; // Has an active request
+      } else if (fulfilled.length > 0) {
+        isSaved = true;
+      }
+    } catch (e) { /* silent */ }
+  }
 
   if (hubStatus && hubStatusText) {
     hubStatus.style.display = "flex";
-    if (isSaved) {
+    if (!isValidDate) {
+      hubStatus.className = "status-chip-v5";
+      hubStatusText.textContent = "Captura Cerrada";
+    } else if (captureTab === "PINOL") {
+      // PINOL state machine for status chip
+      try {
+        const pinolItems = window._pinolCache || [];
+        const pending = pinolItems.filter(x => String(x?.estatus || "").toUpperCase() === "PENDIENTE");
+        const fulfilled = pinolItems.filter(x => ["ENTREGADO", "RECIBIDO"].includes(String(x?.estatus || "").toUpperCase()));
+        if (pending.length > 0) {
+          hubStatus.className = "status-chip-v5 pending";
+          hubStatusText.textContent = "Solicitud Pendiente";
+        } else if (fulfilled.length > 0) {
+          hubStatus.className = "status-chip-v5 saved";
+          hubStatusText.textContent = "Solicitud Atendida";
+        } else {
+          hubStatus.className = "status-chip-v5 pending";
+          hubStatusText.textContent = "Sin Solicitud";
+        }
+      } catch (e) {
+        hubStatus.className = "status-chip-v5 pending";
+        hubStatusText.textContent = "Sin Solicitud";
+      }
+    } else if (isSaved) {
       hubStatus.className = "status-chip-v5 saved";
       hubStatusText.textContent = "Reporte Guardado";
     } else {
@@ -11917,8 +12181,36 @@ function syncCommandHub() {
   if (realCancelBtn && realCancelBtn.style.display !== "none") hubCancel.style.display = "flex";
   else hubCancel.style.display = "none";
 
-  // 4. Bind Actions
-  hubSave.onclick = () => realSaveBtn && realSaveBtn.click();
+  if (hubSave) {
+    const isSaveDisabled = !isValidDate || hubSave.disabled || (realSaveBtn && realSaveBtn.disabled);
+    if (isSaveDisabled) {
+      hubSave.classList.remove("save-chip-premium", "bg-primary", "hover:bg-primary-action", "text-white", "shadow-lg", "shadow-primary/20");
+      hubSave.classList.add("bg-slate-300", "text-slate-700", "border-2", "border-slate-400", "cursor-not-allowed", "shadow-none", "rounded-[30px]", "px-[28px]", "py-[14px]", "font-[900]", "text-[13px]", "uppercase", "tracking-[0.1em]", "flex", "items-center", "gap-[12px]", "transition-all", "duration-400");
+      hubSave.onclick = () => {
+        const alertMsg = (realSaveBtn && realSaveBtn.getAttribute("data-alert")) ? "Corrige las alertas antes de guardar" : "No es posible guardar en este momento";
+        showToast(alertMsg, false, "warn");
+      };
+      hubSave.querySelectorAll("span").forEach(span => {
+        if (span.classList.contains("material-symbols-rounded")) {
+          span.className = "material-symbols-rounded text-slate-700";
+        } else {
+          span.className = "text-slate-700";
+        }
+      });
+    } else {
+      hubSave.classList.remove("bg-slate-300", "text-slate-700", "border-2", "border-slate-400", "cursor-not-allowed", "shadow-none", "rounded-[30px]", "px-[28px]", "py-[14px]", "font-[900]", "text-[13px]", "uppercase", "tracking-[0.1em]", "flex", "items-center", "gap-[12px]", "transition-all", "duration-400");
+      hubSave.classList.add("save-chip-premium", "bg-primary", "hover:bg-primary-action", "text-white", "shadow-lg", "shadow-primary/20");
+      hubSave.onclick = () => realSaveBtn && realSaveBtn.click();
+      hubSave.querySelectorAll("span").forEach(span => {
+        if (span.classList.contains("material-symbols-rounded")) {
+          span.className = "material-symbols-rounded";
+        } else {
+          span.className = "";
+        }
+      });
+    }
+  }
+
   if (hubEdit) hubEdit.onclick = () => realEditBtn && realEditBtn.click();
   if (hubCancel) hubCancel.onclick = () => realCancelBtn && realCancelBtn.click();
 }
