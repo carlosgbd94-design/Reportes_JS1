@@ -4613,13 +4613,66 @@ async function supabaseRequest(action = "", payload) {
       }
 
       case "adminresetpassword": {
-        const inputHash = await hashPassword(payload.newPassword);
-        const { error } = await supabase
-          .from('usuarios_legacy')
-          .update({ password: inputHash })
-          .eq('usuario', payload.usuario);
-        if (error) throw error;
-        return { ok: true };
+        const { data: { session } } = await supabase.auth.getSession();
+        const sessionToken = session?.access_token || TOKEN || AppState.token;
+
+        const { data, error } = await supabase.functions.invoke('admin-reset-password', {
+          body: {
+            usuario: payload.usuario
+          },
+          headers: {
+            Authorization: `Bearer ${sessionToken}`
+          }
+        });
+
+        if (error) {
+          console.error("Edge Function Error Details:", error);
+          let detailedMsg = error.message;
+          if (error.context && typeof error.context.json === 'function') {
+            try {
+              const body = await error.context.json();
+              if (body && body.error) detailedMsg = body.error;
+            } catch (e) {}
+          }
+          throw new Error(detailedMsg || "Error al comunicarse con la función de reset");
+        }
+
+        if (!data.ok) {
+          throw new Error(data.error || "No se pudo resetear la contraseña");
+        }
+
+        return { ok: true, message: data.message };
+      }
+      case "admindeleteuser": {
+        const { data: { session } } = await supabase.auth.getSession();
+        const sessionToken = session?.access_token || TOKEN || AppState.token;
+
+        const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+          body: {
+            usuario: payload.usuario
+          },
+          headers: {
+            Authorization: `Bearer ${sessionToken}`
+          }
+        });
+
+        if (error) {
+          console.error("Edge Function Error Details:", error);
+          let detailedMsg = error.message;
+          if (error.context && typeof error.context.json === 'function') {
+            try {
+              const body = await error.context.json();
+              if (body && body.error) detailedMsg = body.error;
+            } catch (e) {}
+          }
+          throw new Error(detailedMsg || "Error al comunicarse con la función de eliminación");
+        }
+
+        if (!data.ok) {
+          throw new Error(data.error || "No se pudo eliminar el usuario");
+        }
+
+        return { ok: true, message: data.message };
       }
 
       case "adminsetactive": {
@@ -7722,8 +7775,9 @@ function openBioConfirm(warningRows) {
     let overlay = $("bioConfirmOverlay");
     
     if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.id = "bioConfirmOverlay";
+      console.warn("bioConfirmOverlay no encontrado");
+      resolve(false);
+      return;
     }
     
     // Siempre asegurar que el overlay sea hijo directo del body
@@ -7732,34 +7786,9 @@ function openBioConfirm(warningRows) {
       document.body.appendChild(overlay);
     }
     
-    overlay.className = "bio-modal-overlay";
-    
     overlay.onclick = (e) => {
        if (e.target === overlay) closeBioConfirm(false);
     };
-
-    overlay.innerHTML = `
-        <div class="bio-modal-box">
-          <div class="bio-modal-header">
-             <div class="bio-modal-icon-wrap">
-                <span class="material-symbols-rounded">warning</span>
-             </div>
-             <div>
-                <h3 class="bio-modal-title">Atención Logística</h3>
-                <p class="bio-modal-subtitle">Promedios por debajo de la meta</p>
-             </div>
-          </div>
-          <div class="bio-modal-body">
-             <p class="bio-modal-intro">Estás solicitando vacunas por debajo del promedio mensual estandarizado para los siguientes biológicos:</p>
-             <div id="bioConfirmList" class="bio-modal-list"></div>
-             <p class="bio-modal-question">¿Estás seguro de querer guardar este pedido bajo tu propia responsabilidad?</p>
-          </div>
-          <div class="bio-modal-footer">
-             <button id="btnBioConfirmCancel" class="bio-btn-cancel">Cancelar</button>
-             <button id="btnBioConfirmAccept" class="bio-btn-accept">Sí, guardar pedido</button>
-          </div>
-        </div>
-    `;
 
     const btnCancel = overlay.querySelector("#btnBioConfirmCancel");
     const btnAccept = overlay.querySelector("#btnBioConfirmAccept");
@@ -7775,11 +7804,11 @@ function openBioConfirm(warningRows) {
        list.innerHTML = warningRows
         .map(row => {
             let text = row.replace(/^•\s*/, "").replace(/^-/, "").trim();
-            text = text.replace(/\((\d+)\)/g, '<span class="bio-modal-badge">($1)</span>');
+            text = text.replace(/\((\d+)\)/g, '<span class="font-black text-status-warning ml-1">($1)</span>');
             return `
-            <div class="bio-modal-list-item">
-                <span class="material-symbols-rounded">priority_high</span>
-                <span>${text}</span>
+            <div class="flex items-start gap-3 py-1.5">
+                <span class="material-symbols-rounded text-[18px] text-status-warning shrink-0 mt-0.5">priority_high</span>
+                <span class="text-[13px] font-bold text-surface-onVariant/90 leading-snug">${text}</span>
             </div>`;
         })
         .join("");

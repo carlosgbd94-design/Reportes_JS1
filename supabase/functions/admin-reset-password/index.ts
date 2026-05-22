@@ -42,7 +42,6 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
     
     if (authError || !user) {
-      console.error("Error al validar token:", authError);
       throw new Error(`Token inválido o sesión expirada: ${authError?.message || 'Error desconocido'}`);
     }
 
@@ -57,68 +56,62 @@ serve(async (req) => {
       .single();
 
     if (!callerProfile || callerProfile.rol !== 'ADMIN') {
-      throw new Error('Solo los administradores pueden crear nuevos usuarios');
+      throw new Error('Solo los administradores pueden resetear contraseñas');
     }
 
     // 4. Leer Payload
     const payload = await req.json();
-    const { email: authEmail, usuario: internalID, municipio, clues, unidad, rol } = payload;
+    const { usuario: internalID } = payload;
     
-    if (!authEmail || !internalID || !rol) {
-      throw new Error('El correo de acceso, el ID de usuario y el rol son obligatorios');
+    if (!internalID) {
+      throw new Error('El ID de usuario es obligatorio');
     }
 
-    const email = authEmail.trim().toLowerCase();
+    // Buscar el usuario real en 'perfiles' para obtener su Auth ID
+    const { data: targetProfile, error: targetError } = await supabaseAdmin
+      .from('perfiles')
+      .select('id, email')
+      .eq('usuario', internalID)
+      .single();
+
+    if (targetError || !targetProfile) {
+      throw new Error('No se encontró el perfil del usuario en la base de datos');
+    }
+
     const tempPassword = 'JS1-2026-Temp';
 
-    // 5. Crear usuario en Auth
-    const { data: newAuthUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email: email,
-      password: tempPassword,
-      email_confirm: true,
-      user_metadata: { 
-        usuario_id: internalID,
-        rol: rol.toUpperCase(),
-        force_password_change: true 
+    // 5. Actualizar usuario en Auth
+    const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(
+      targetProfile.id,
+      { 
+        password: tempPassword,
+        user_metadata: { force_password_change: true }
       }
-    });
+    );
 
-    if (createError) throw createError;
+    if (updateAuthError) {
+      throw new Error(`Error al resetear la contraseña en Auth: ${updateAuthError.message}`);
+    }
 
-    const newUserId = newAuthUser.user.id;
+    // 6. Actualizar en tabla perfiles (marcar must_change = true)
+    const { error: updatePerfilError } = await supabaseAdmin
+      .from('perfiles')
+      .update({ must_change: true })
+      .eq('id', targetProfile.id);
 
-    // 6. Upsert en tabla perfiles (sobreescribir si el trigger ya lo creó)
-    console.log(`[Admin] Creando perfil para UID: ${newUserId}, ID Interno: ${internalID}`);
-    const { error: perfilError } = await supabaseAdmin.from('perfiles').upsert({
-      id: newUserId,
-      usuario: internalID, // Guardar el ID interno (ej: CLUES_MUNICIPIO)
-      rol: rol.toUpperCase(),
-      municipio: municipio || '',
-      clues: clues || '',
-      unidad: unidad || '',
-      activo: 'SI',
-      must_change: true
-    });
+    if (updatePerfilError) console.error("Error al actualizar perfiles:", updatePerfilError);
 
-    if (perfilError) console.error("Error crítico en perfiles:", perfilError);
-
-    // 7. Upsert en tabla usuarios_legacy
+    // 7. Actualizar en tabla usuarios_legacy
     const legacyHash = await hashPassword(tempPassword);
-    const { error: legacyError } = await supabaseAdmin.from('usuarios_legacy').upsert({
-      usuario: internalID, // Guardar el ID interno
-      password: legacyHash,
-      rol: rol.toUpperCase(),
-      municipio: municipio || '',
-      clues: clues || '',
-      unidad: unidad || '',
-      activo: 'SI',
-      must_change: true
-    }, { onConflict: 'usuario' });
+    const { error: legacyError } = await supabaseAdmin
+      .from('usuarios_legacy')
+      .update({ password: legacyHash, must_change: true })
+      .eq('usuario', internalID);
 
-    if (legacyError) console.error("Error crítico en legacy:", legacyError);
+    if (legacyError) console.error("Error al actualizar legacy:", legacyError);
 
     return new Response(
-      JSON.stringify({ ok: true, message: 'Usuario creado exitosamente con contraseña JS1-2026-Temp' }),
+      JSON.stringify({ ok: true, message: 'Contraseña reiniciada a JS1-2026-Temp exitosamente' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
 
