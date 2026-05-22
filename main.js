@@ -3765,21 +3765,20 @@ async function supabaseRequest(action = "", payload) {
         // 🛡️ Aplicar Jerarquía en el catálogo de unidades para el resumen
         const role = String(USER?.rol || "").toUpperCase();
         let unitsQuery = supabase.from('unidades').select('*').eq('activo', 'SI');
-        if (role === "MUNICIPAL") {
-          const allowed = USER.municipiosAllowed || [];
-          if (allowed.length > 0) unitsQuery = unitsQuery.in('municipio', allowed);
-        }
 
         // 🛡️ Logística de Ventanas: Traemos también el calendario por si hay apertura manual
         const currentMonth = fecha.substring(0, 7); // YYYY-MM
-
-        const [resSR, resCons, resBio, resUnits, resCalendar] = await Promise.all([
-          supabase.from('biologicos_existencia').select('clues, capturado_por').eq('fecha', fecha),
-          supabase.from('consumibles').select('clues, capturado_por').in('fecha', consDates),
-          supabase.from('biologicos_pedido').select('clues, capturado_por, tipo_pedido').eq('fecha_pedido_programada', fecha),
+        const consPromises = consDates.map(d => supabase.rpc('get_captures_cons_bypass', { p_fecha: d }));
+        
+        const [resSR, resBio, resUnits, resCalendar, ...resConsArray] = await Promise.all([
+          supabase.rpc('get_captures_sr_bypass', { p_fecha: fecha }),
+          supabase.rpc('get_captures_bio_bypass', { p_fecha: fecha }),
           unitsQuery,
-          supabase.from('calendario_pedidos').select('*').eq('anio_mes', currentMonth).eq('activo', 'SI').maybeSingle()
+          supabase.from('calendario_pedidos').select('*').eq('anio_mes', currentMonth).eq('activo', 'SI').maybeSingle(),
+          ...consPromises
         ]);
+
+        const resCons = { data: resConsArray.flatMap(r => r.data || []) };
 
         let capturedClues = [];
         let captureRecords = [];
@@ -3787,11 +3786,21 @@ async function supabaseRequest(action = "", payload) {
         else if (tipo === "CONS") captureRecords = resCons.data || [];
         else if (tipo === "BIO") captureRecords = resBio.data || [];
 
-        capturedClues = [...new Set(captureRecords.map(x => x.clues || x.CLUES))];
+        console.log(`[admincaptureoverview DEBUG] Registros de captura encontrados en DB para ${tipo}:`, captureRecords);
 
-        const allUnits = resUnits.data || [];
-        const capturadas = allUnits.filter(u => capturedClues.includes(u.clues || u.CLUES));
-        const faltantes = allUnits.filter(u => !capturedClues.includes(u.clues || u.CLUES));
+        // Asegurarnos de mapear tanto .clues como .CLUES por seguridad, normalizados a mayúsculas
+        capturedClues = [...new Set(captureRecords.map(x => String(x.clues || x.CLUES || "").trim().toUpperCase()))];
+
+        let allUnits = resUnits.data || [];
+        console.log(`[admincaptureoverview DEBUG] Unidades activas traídas desde BD: ${allUnits.length}`);
+        // Filtramos localmente usando canSeeMunicipio_ para evitar fallos de acentos y mayúsculas en Supabase
+        if (role === "MUNICIPAL") {
+          allUnits = allUnits.filter(u => canSeeMunicipio_(USER, u.municipio));
+          console.log(`[admincaptureoverview DEBUG] Unidades MUNICIPAL después de filtro: ${allUnits.length}`);
+        }
+
+        const capturadas = allUnits.filter(u => capturedClues.includes(String(u.clues || u.CLUES || "").trim().toUpperCase()));
+        const faltantes = allUnits.filter(u => !capturedClues.includes(String(u.clues || u.CLUES || "").trim().toUpperCase()));
 
         return {
           ok: true,
@@ -3841,23 +3850,26 @@ async function supabaseRequest(action = "", payload) {
         const role = String(USER?.rol || "").toUpperCase();
         let unitsQuery = supabase.from('unidades').select('*').eq('activo', 'SI');
 
-        if (role === "MUNICIPAL") {
-          const allowed = USER.municipiosAllowed || [];
-          if (allowed.length > 0) {
-            unitsQuery = unitsQuery.in('municipio', allowed);
-          }
+        if (role === "UNIDAD") {
+          unitsQuery = unitsQuery.eq('clues', USER.clues);
         }
+        
+        const { data: unitsData, error: unitsError } = await unitsQuery;
+        if (unitsError) throw unitsError;
+        
+        let units = unitsData || [];
+        if (role === "MUNICIPAL") {
+          units = units.filter(u => canSeeMunicipio_(USER, u.municipio));
+        }
+        const unitCluesSet = new Set(units.map(u => u.clues));
 
-        const [resBio, resCons, resUnits] = await Promise.all([
+        const [resBio, resCons] = await Promise.all([
           supabase.from('biologicos_existencia').select('clues, fecha').gte('fecha', fechaInicio).lte('fecha', fechaFin),
-          supabase.from('consumibles').select('clues, fecha').gte('fecha', fechaInicio).lte('fecha', fechaFin),
-          unitsQuery
+          supabase.from('consumibles').select('clues, fecha').gte('fecha', fechaInicio).lte('fecha', fechaFin)
         ]);
 
         const rawBioAll = resBio.data || [];
         const rawConsAll = resCons.data || [];
-        const units = resUnits.data || [];
-        const unitCluesSet = new Set(units.map(u => u.clues));
 
         // Filtrar en memoria para asegurar que solo vemos lo de nuestras unidades permitidas
         const rawBio = rawBioAll.filter(r => unitCluesSet.has(r.clues));
@@ -4068,21 +4080,25 @@ async function supabaseRequest(action = "", payload) {
             if (global_avg > 100) global_avg = 100;
 
             if (role === "MUNICIPAL" || role === "ADMIN" || role === "JURISDICCIONAL") {
-              const allowedMunis = (role === "MUNICIPAL") ? (USER.municipiosAllowed || []) : [];
-
-              if (allowedMunis.length > 0) {
-                // Para MUNICIPAL: Solo contar lo que pertenezca a sus municipios
+                // Para MUNICIPAL: Traer unidades y filtrar localmente
                 const [resMuniUnits, resMuniSR, resMuniCons] = await Promise.all([
-                  supabase.from('unidades').select('clues', { count: 'exact', head: true }).eq('activo', 'SI').in('municipio', allowedMunis),
-                  supabase.from('biologicos_existencia').select('clues', { count: 'exact', head: true }).gte('fecha', monthStartStr).lte('fecha', today),
-                  supabase.from('consumibles').select('clues', { count: 'exact', head: true }).gte('fecha', monthStartStr).lte('fecha', today)
+                  supabase.from('unidades').select('clues, municipio').eq('activo', 'SI'),
+                  supabase.from('biologicos_existencia').select('clues').gte('fecha', monthStartStr).lte('fecha', today),
+                  supabase.from('consumibles').select('clues').gte('fecha', monthStartStr).lte('fecha', today)
                 ]);
-                // Nota: resMuniSR y resMuniCons no están filtrados por municipio en la DB porque no tienen la columna.
-                // El promedio será aproximado o requeriría un RPC. Usamos el promedio global como base para supervisores por ahora.
-                municipal_avg = global_avg;
-              } else {
-                municipal_avg = global_avg;
-              }
+
+                let muniUnitsList = (resMuniUnits.data || []).filter(u => canSeeMunicipio_(USER, u.municipio));
+                let allowedClues = muniUnitsList.map(u => u.clues);
+
+                let reportSRCount = (resMuniSR.data || []).filter(row => allowedClues.includes(row.clues)).length;
+                let reportConsCount = (resMuniCons.data || []).filter(row => allowedClues.includes(row.clues)).length;
+
+                let reportesSemanales = reportSRCount + reportConsCount;
+                let totalUnidadesActivas = muniUnitsList.length;
+                let totalExpectedMuni = totalUnidadesActivas * totalExpectedPerUnit;
+
+                municipal_avg = totalExpectedMuni > 0 ? Math.round((reportesSemanales / totalExpectedMuni) * 100) : 0;
+                if (municipal_avg > 100) municipal_avg = 100;
             }
             compliance_pct = (role === "MUNICIPAL") ? municipal_avg : global_avg;
           }
@@ -4140,14 +4156,9 @@ async function supabaseRequest(action = "", payload) {
 
       case "unitcatalog": {
         const role = String(USER?.rol || "").toUpperCase();
-        // 🧪 Flexibilizar query (quitar activo='SI' temporalmente por si la columna no existe o es distinta)
         let query = supabase.from('unidades').select('*').order('municipio').order('clues');
 
-        // 🛡️ Aplicar Jerarquía
-        if (role === "MUNICIPAL") {
-          const allowed = USER.municipiosAllowed || [];
-          if (allowed.length > 0) query = query.in('municipio', allowed);
-        } else if (role === "UNIDAD") {
+        if (role === "UNIDAD") {
           query = query.eq('clues', USER.clues);
         }
 
@@ -4156,7 +4167,13 @@ async function supabaseRequest(action = "", payload) {
           console.error("[DB] Error en unitcatalog:", error);
           throw error;
         }
-        return { ok: true, data };
+        
+        let filteredData = data || [];
+        if (role === "MUNICIPAL") {
+          filteredData = filteredData.filter(u => canSeeMunicipio_(USER, u.municipio));
+        }
+        
+        return { ok: true, data: filteredData };
       }
 
       case "biogetexportoptions": {
@@ -4178,23 +4195,22 @@ async function supabaseRequest(action = "", payload) {
           .from(table)
           .select('*')
           .gte('fecha', payload.fechaInicio)
-          .lte('fecha', payload.fechaFin);
+          .lte('fecha', payload.fechaFin)
+          .order('fecha', { ascending: false });
 
-        // 🛡️ Aplicar Jerarquía
-        if (role === "MUNICIPAL") {
-          const allowed = USER.municipiosAllowed || [];
-          if (allowed.length > 0) query = query.in('municipio', allowed);
+        if (role === "UNIDAD") {
+          query = query.eq('clues', USER.clues);
         }
 
         const { data, error } = await query;
         if (error) throw error;
+        
+        let filteredData = data || [];
+        if (role === "MUNICIPAL") {
+          filteredData = filteredData.filter(row => canSeeMunicipio_(USER, row.municipio));
+        }
 
-        const requestedMunis = (payload.municipios || []).map(m => String(m).toUpperCase());
-        const filtered = requestedMunis.length > 0
-          ? (data || []).filter(d => requestedMunis.includes(String(d.municipio || "").toUpperCase()))
-          : data;
-
-        return { ok: true, data: filtered };
+        return { ok: true, data: filteredData };
       }
 
       case "bioexportmatrix": {
@@ -4207,19 +4223,18 @@ async function supabaseRequest(action = "", payload) {
           query = query.eq('fecha_pedido_programada', payload.fechaInicio);
         }
 
-        // 🛡️ Aplicar Jerarquía
-        if (role === "MUNICIPAL") {
-          const allowed = USER.municipiosAllowed || [];
-          if (allowed.length > 0) query = query.in('municipio', allowed);
-        }
-
         const { data, error } = await query;
         if (error) throw error;
+        
+        let filteredData = data || [];
+        if (role === "MUNICIPAL") {
+          filteredData = filteredData.filter(row => canSeeMunicipio_(USER, row.municipio));
+        }
 
         const requestedMunis = (payload.municipios || []).map(m => String(m).toUpperCase());
         const filtered = requestedMunis.length > 0
-          ? (data || []).filter(d => requestedMunis.includes(String(d.municipio || "").toUpperCase()))
-          : data;
+          ? filteredData.filter(d => requestedMunis.includes(String(d.municipio || "").toUpperCase()))
+          : filteredData;
 
         return { ok: true, data: filtered };
       }
@@ -6894,7 +6909,7 @@ function buildUserFromPerfil(uid, email, perfil) {
     } else {
       muniList = String(rawMuni).replace(/[\[\]{}"']/g, '').split(/[;,]/);
     }
-    municipiosAllowed = muniList.map(x => normalizeTextKey_(x)).filter(Boolean);
+    municipiosAllowed = muniList.map(x => x.trim()).filter(Boolean);
   }
 
   // 🛡️ Regla de CLUES para Administrativos: Si no tienen CLUES o tienen placeholders, se les asigna la de la Jurisdicción
@@ -6989,11 +7004,12 @@ async function getTodayReports(fecha = "", force = false) {
 }
 
 window.getCaptureOverview = async function (fecha, tipo, force = false) {
+  console.log(`[getCaptureOverview DEBUG] Llamado con fecha=${fecha}, tipo=${tipo}`);
   if (!TOKEN) return null;
 
   const safeFecha = String(fecha || todayYmdLocal()).trim();
   const safeTipo = String(tipo || "SR").trim().toUpperCase();
-  const cacheKey = buildCacheKey("CAPTURE_OVERVIEW", `${safeFecha}::${safeTipo}`);
+  const cacheKey = buildCacheKey("CAPTURE_OVERVIEW_V2", `${safeFecha}::${safeTipo}`);
 
   const fetchOverview = async () => {
     const r = await apiCall({
@@ -8190,6 +8206,7 @@ function hasCONSNumericChanges() {
 }
 
 function renderCaptureSummary(data) {
+  console.log("[renderCaptureSummary DEBUG] Iniciando render con datos:", data);
   if (!document.getElementById("panelCaptureSummary")) return;
   const fecha = data?.fecha || "";
   const tipo = data?.tipo || "SR";
@@ -12214,32 +12231,31 @@ function syncCommandHub() {
 
   if (hubSave) {
     const isSaveDisabled = !isValidDate || hubSave.disabled || (realSaveBtn && realSaveBtn.disabled);
+    hubSave.disabled = isSaveDisabled;
+
+    // Remove legacy Tailwind classes and ensure base class
+    hubSave.classList.remove("save-chip-premium", "bg-primary", "hover:bg-primary-action", "text-white", "shadow-lg", "shadow-primary/20", "text-slate-600", "opacity-60");
+    if (!hubSave.classList.contains("hub-action-btn-primary")) {
+      hubSave.classList.add("hub-action-btn-primary");
+    }
+
     if (isSaveDisabled) {
-      hubSave.classList.remove("save-chip-premium", "bg-primary", "hover:bg-primary-action", "text-white", "shadow-lg", "shadow-primary/20");
-      hubSave.classList.add("text-slate-600", "cursor-not-allowed", "opacity-60", "flex", "items-center", "gap-[8px]", "font-bold", "text-[13px]", "uppercase", "tracking-wide", "transition-all", "duration-400");
       hubSave.onclick = () => {
         const alertMsg = (realSaveBtn && realSaveBtn.getAttribute("data-alert")) ? "Corrige las alertas antes de guardar" : "No es posible guardar en este momento";
         showToast(alertMsg, false, "warn");
       };
-      hubSave.querySelectorAll("span").forEach(span => {
-        if (span.classList.contains("material-symbols-rounded")) {
-          span.className = "material-symbols-rounded text-slate-500 text-[24px]";
-        } else {
-          span.className = "hidden";
-        }
-      });
     } else {
-      hubSave.classList.remove("text-slate-600", "cursor-not-allowed", "opacity-60", "flex", "items-center", "gap-[8px]", "font-bold", "text-[13px]", "uppercase", "tracking-wide", "transition-all", "duration-400");
-      hubSave.classList.add("save-chip-premium", "bg-primary", "hover:bg-primary-action", "text-white", "shadow-lg", "shadow-primary/20");
       hubSave.onclick = () => realSaveBtn && realSaveBtn.click();
-      hubSave.querySelectorAll("span").forEach(span => {
-        if (span.classList.contains("material-symbols-rounded")) {
-          span.className = "material-symbols-rounded text-[20px]";
-        } else {
-          span.className = "";
-        }
-      });
     }
+    
+    // Minimalist design: always hide text, show only icon
+    hubSave.querySelectorAll("span").forEach(span => {
+      if (span.classList.contains("material-symbols-rounded")) {
+        span.className = "material-symbols-rounded text-[24px]";
+      } else {
+        span.className = "hidden";
+      }
+    });
   }
 
   if (hubEdit) hubEdit.onclick = () => realEditBtn && realEditBtn.click();

@@ -6510,6 +6510,15 @@ body.bioConfirmOpen {
     box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1) !important;
 }
 
+.btn-save-premium:disabled {
+    background: rgba(15, 23, 42, 0.05) !important;
+    color: rgba(15, 23, 42, 0.3) !important;
+    border: 1px dashed rgba(15, 23, 42, 0.15) !important;
+    box-shadow: none !important;
+    transform: none !important;
+    cursor: not-allowed !important;
+}
+
 .overlay {
   position: fixed;
   inset: 0;
@@ -7542,6 +7551,35 @@ input, textarea, select, [contenteditable] {
   transform: scale(0.95);
 }
 
+.save-chip-premium:disabled {
+  background: rgba(148, 163, 184, 0.2) !important;
+  color: rgba(71, 85, 105, 0.6) !important;
+  border: 1px dashed rgba(100, 116, 139, 0.3) !important;
+  box-shadow: none !important;
+  transform: none !important;
+  cursor: not-allowed !important;
+}
+
+.hub-action-btn-primary {
+  background-color: #003870 !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 51, 102, 0.2) !important;
+  transition: all 0.3s ease;
+}
+
+.hub-action-btn-primary:hover {
+  background-color: #1e293b !important;
+}
+
+.hub-action-btn-primary:disabled {
+  background: rgba(148, 163, 184, 0.2) !important;
+  color: rgba(71, 85, 105, 0.6) !important;
+  border: 1px dashed rgba(100, 116, 139, 0.3) !important;
+  box-shadow: none !important;
+  transform: none !important;
+  cursor: not-allowed !important;
+}
+
 .edit-btn-premium {
   background: #ffffff;
   color: #003870 !important;
@@ -7585,49 +7623,7 @@ input, textarea, select, [contenteditable] {
   color: white !important;
 }
 
-@media (max-width: 1024px) {
-  .command-hub-tracker {
-    position: static;
-    transform: none;
-  }
-  .command-hub {
-    position: fixed;
-    z-index: 900;
-    right: 16px;
-    bottom: 100px; /* Moved up to avoid bottom navigation */
-    top: auto;
-    transform: none;
-    flex-direction: column;
-    border-radius: 30px;
-    padding: 8px;
-  }
-  .command-hub.visible {
-    right: 16px;
-  }
 
-  /* Minimalist Save Button */
-  .command-hub .save-chip-premium,
-  .command-hub .edit-btn-premium,
-  .command-hub .cancel-btn-premium {
-    padding: 12px;
-    border-radius: 50%;
-    width: 48px;
-    height: 48px;
-    justify-content: center;
-  }
-  
-  /* Hide button text, only keep the icon */
-  .command-hub .save-chip-premium span:not(.material-symbols-rounded),
-  .command-hub .edit-btn-premium span:not(.material-symbols-rounded),
-  .command-hub .cancel-btn-premium span:not(.material-symbols-rounded) {
-    display: none;
-  }
-
-  /* Hide status chip on mobile to save space */
-  .command-hub .status-chip-v5 {
-    display: none !important;
-  }
-}
 
 /* STATUS CHIP V5 (Dentro del Hub) */
 .status-chip-v5 {

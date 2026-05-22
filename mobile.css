@@ -593,3 +593,17 @@
     background: white !important;
     border: 1px solid rgba(0, 0, 0, 0.05) !important;
 }
+  justify-content: center !important;
+}
+
+/* Hide button text, only keep the icon */
+.touch-ui .command-hub .save-chip-premium span:not(.material-symbols-rounded),
+.touch-ui .command-hub .edit-btn-premium span:not(.material-symbols-rounded),
+.touch-ui .command-hub .cancel-btn-premium span:not(.material-symbols-rounded) {
+  display: none !important;
+}
+
+/* Hide status chip on mobile to save space */
+.touch-ui .command-hub .status-chip-v5 {
+  display: none !important;
+}
