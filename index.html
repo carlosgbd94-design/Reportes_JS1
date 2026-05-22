@@ -395,10 +395,10 @@
 
         <!-- 🧱 BLOCK 1: WELCOME & KPI HUB -->
         <div
-          class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] transition-shadow hover:shadow-[0_16px_32px_rgba(0,51,102,0.08)] overflow-hidden"
+          class="bg-white rounded-[32px] p-5 md:p-6 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] transition-shadow hover:shadow-[0_16px_32px_rgba(0,51,102,0.08)] overflow-hidden"
           id="welcomeBlock">
           <!-- 👤 PREMIUM WELCOME HUB (Balanced & Harmonious) -->
-          <div class="flex flex-col md:flex-row justify-center items-center gap-8 md:gap-12 relative">
+          <div class="flex flex-col md:flex-row justify-center items-center gap-5 md:gap-8 relative">
 
             <!-- Welcome Area -->
             <div class="flex flex-col text-left items-start flex-1">
@@ -412,9 +412,9 @@
             <div class="hidden md:block w-px h-12 bg-outline-variant/40"></div>
 
             <!-- Compliance KPI (Redesigned) -->
-            <div class="flex items-center justify-center gap-4 flex-wrap w-full md:w-auto min-h-[92px]">
-              <div id="bCumplimiento" data-tone="bad"
-                class="flex items-center gap-6 px-8 h-[92px] w-full md:w-auto min-w-[280px] rounded-2xl bg-white border border-outline-variant/50 shadow-sm transition-all hover:shadow-md group cursor-help relative overflow-hidden">
+            <div class="flex items-center justify-center gap-4 flex-wrap w-full md:w-auto h-full">
+              <div id="bCumplimiento" data-tone="bad" style="min-height: 120px;"
+                class="flex items-center gap-6 px-8 w-full md:w-auto min-w-[240px] rounded-2xl bg-white border border-outline-variant/50 shadow-sm transition-all hover:shadow-md group cursor-help relative overflow-hidden">
 
                 <!-- Progress Icon with Pulse Background -->
                 <div class="w-14 h-14 rounded-xl bg-primary/5 flex items-center justify-center shrink-0 relative z-10"
@@ -431,27 +431,26 @@
 
                 <!-- Glass Reflection Effect -->
                 <div
-                  class="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  class="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 opacity-0 transition-opacity pointer-events-none">
                 </div>
               </div>
 
-              <!-- 💡 CRYSTALLINE INSIGHT HUB (Dato Curioso - Simplified for Perf) -->
-              <div id="factCard"
-                class="flex items-center gap-5 px-6 h-[92px] rounded-2xl bg-indigo-50 border border-indigo-100 transition-transform hover:scale-[1.01] group cursor-help relative overflow-hidden flex-1 max-w-[600px] min-w-[320px] contain-layout">
-
-                <!-- Crystalline Icon Hub (Simplified) -->
-                <div
-                  class="w-12 h-12 rounded-xl bg-white border border-indigo-100 flex items-center justify-center shrink-0 relative z-10 shadow-sm">
-                  <span class="material-symbols-rounded text-[24px] text-indigo-600" id="factIcon">auto_awesome</span>
+              <!-- 💎 CRYSTALLINE INSIGHT HUB (Dato Curioso - Dynamic) -->
+              <div id="factCard" style="min-height: 120px; transition: background-color 0.5s ease, border-color 0.5s ease;"
+                class="flex items-center gap-5 px-8 rounded-2xl border relative overflow-hidden flex-1 max-w-[600px] min-w-[320px] contain-layout">
+  
+                <!-- Icon Hub -->
+                <div id="factIconContainer" style="transition: border-color 0.5s ease;"
+                  class="w-14 h-14 rounded-xl bg-white border flex items-center justify-center shrink-0 relative z-10 shadow-sm">
+                  <span class="material-symbols-rounded text-[28px]" id="factIcon" style="transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);">auto_awesome</span>
                 </div>
-
-                <div class="flex flex-col leading-tight relative z-10 overflow-hidden">
+  
+                <div class="flex flex-col leading-tight relative z-10 overflow-hidden w-full">
                   <div class="flex items-center gap-2 mb-1">
-                    <div class="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
-                    <span class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600/50"
-                      id="factTitle">Cargando...</span>
+                    <div id="factDot" class="w-1.5 h-1.5 rounded-full" style="transition: background-color 0.5s ease;"></div>
+                    <span class="text-[10px] font-black uppercase tracking-[0.2em]" id="factTitle" style="transition: color 0.5s ease;">Cargando...</span>
                   </div>
-                  <span id="factBody" class="text-[13px] font-bold text-indigo-950 pr-4 leading-snug">—</span>
+                  <span id="factBody" class="text-[13px] font-bold pr-4 leading-snug" style="transition: opacity 0.3s ease, color 0.5s ease;">...</span>
                 </div>
 
                 <!-- Hidden Tag/ID compatibility -->

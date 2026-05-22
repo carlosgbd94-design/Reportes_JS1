@@ -117,23 +117,74 @@ const FACTS = [
   { icon: "query_stats", tag: "Cobertura", title: "Identificación de rezagos", body: "Los reportes periódicos permiten detectar zonas con menor cobertura de vacunación." },
   { icon: "settings", tag: "Operación", title: "Preparación diaria", body: "Revisar insumos y biológicos antes de iniciar actividades evita interrupciones durante la jornada." },
   { icon: "settings", tag: "Operación", title: "Orden en refrigerador", body: "Mantener un orden claro facilita localizar rápidamente cada biológico." },
-  { icon: "settings", tag: "Operación", title: "Comunicación", body: "La coordinación entre unidad y jurisdicción mejora la distribución de biológicos." }
+  { icon: "settings", tag: "Operación", title: "Comunicación", body: "La coordinación entre unidad y jurisdicción mejora la distribución de biológicos." },
+  { icon: "lightbulb", tag: "Innovación", title: "Temperatura óptima", body: "La mayoría de las vacunas mantienen su potencia al almacenarse estrictamente entre +2°C y +8°C." },
+  { icon: "coronavirus", tag: "Inmunidad", title: "Efecto rebaño", body: "Al vacunar a gran parte de la comunidad, protegemos indirectamente a quienes no pueden recibir la vacuna." },
+  { icon: "public", tag: "Salud Global", title: "Erradicación", body: "La viruela fue declarada mundialmente erradicada en 1980 gracias a campañas de vacunación sistemática." },
+  { icon: "verified", tag: "Calidad", title: "Verificación cruzada", body: "Verificar el lote y la caducidad entre dos personas (doble chequeo) reduce errores operativos en un 80%." },
+  { icon: "thermostat", tag: "Cadena fría", title: "Inercia térmica", body: "Usar botellas de agua en los estantes inferiores del refri ayuda a mantener el frío ante un apagón." }
 ];
 let factIdx = Math.floor(Math.random() * FACTS.length);
 let FACTS_TIMER = null;
 
+const tagThemes = {
+  "Cadena fría": { bg: "#f0f9ff", border: "#e0f2fe", icon: "#0284c7", text: "#0c4a6e", title: "#0ea5e9" }, // Light blue
+  "Frascos": { bg: "#f5f3ff", border: "#ede9fe", icon: "#7c3aed", text: "#4c1d95", title: "#8b5cf6" }, // Violet
+  "Aplicación": { bg: "#ecfdf5", border: "#d1fae5", icon: "#059669", text: "#064e3b", title: "#10b981" }, // Emerald
+  "Seguridad": { bg: "#fef2f2", border: "#fee2e2", icon: "#dc2626", text: "#7f1d1d", title: "#ef4444" }, // Red
+  "Inventario": { bg: "#fff7ed", border: "#ffedd5", icon: "#ea580c", text: "#7c2d12", title: "#f97316" }, // Orange
+  "Planeación": { bg: "#f0fdf4", border: "#dcfce7", icon: "#16a34a", text: "#14532d", title: "#22c55e" }, // Green
+  "Registro": { bg: "#f8fafc", border: "#f1f5f9", icon: "#475569", text: "#0f172a", title: "#64748b" }, // Slate
+  "Cobertura": { bg: "#eff6ff", border: "#dbeafe", icon: "#2563eb", text: "#1e3a8a", title: "#3b82f6" }, // Blue
+  "Operación": { bg: "#faf5ff", border: "#f3e8ff", icon: "#9333ea", text: "#3b0764", title: "#a855f7" }, // Purple
+  "Innovación": { bg: "#fefce8", border: "#fef08a", icon: "#ca8a04", text: "#713f12", title: "#eab308" }, // Yellow
+  "Inmunidad": { bg: "#f0fdfa", border: "#ccfbf1", icon: "#0d9488", text: "#134e4a", title: "#14b8a6" }, // Teal
+  "Salud Global": { bg: "#fdf4ff", border: "#fae8ff", icon: "#c026d3", text: "#701a75", title: "#d946ef" }, // Fuchsia
+  "Calidad": { bg: "#f0f9ff", border: "#e0f2fe", icon: "#0284c7", text: "#0c4a6e", title: "#0ea5e9" }
+};
+const defaultTheme = { bg: "#f8fafc", border: "#f1f5f9", icon: "#475569", text: "#0f172a", title: "#64748b" };
+
 function renderFact() {
   if (!FACTS || !FACTS.length) return;
-  const tagEl = document.getElementById("factTag"), titleEl = document.getElementById("factTitle"), bodyEl = document.getElementById("factBody"), iconEl = document.getElementById("factIcon");
-  if (!tagEl || !titleEl || !bodyEl || !iconEl) return;
+  const card = document.getElementById("factCard"), iconCont = document.getElementById("factIconContainer"), iconEl = document.getElementById("factIcon"), dot = document.getElementById("factDot"), titleEl = document.getElementById("factTitle"), bodyEl = document.getElementById("factBody"), tagEl = document.getElementById("factTag");
+  if (!card || !iconCont || !iconEl || !dot || !titleEl || !bodyEl || !tagEl) return;
+  
   const f = FACTS[factIdx % FACTS.length];
   const tagIconMap = { "Cadena fría": "ac_unit", "Frascos": "science", "Inventario": "inventory_2", "Planeación": "analytics", "Registro": "edit_note", "Cobertura": "query_stats", "Operación": "settings" };
   const curIcon = tagIconMap[f.tag] || f.icon || "syringe";
-  tagEl.innerHTML = '<span class="material-symbols-rounded" style="font-size:18px; margin-right:8px;">' + curIcon + '</span>' + (f.tag || "");
-  titleEl.textContent = f.title || "";
-  bodyEl.textContent = f.body || "";
-  iconEl.textContent = f.icon || "syringe";
-  factIdx = (factIdx + 1) % FACTS.length;
+  const theme = tagThemes[f.tag] || defaultTheme;
+
+  // 1. Fade out body & shrink rotate icon
+  bodyEl.style.opacity = 0;
+  iconEl.style.transform = "scale(0.3) rotate(-45deg)";
+  iconEl.style.opacity = 0;
+
+  setTimeout(() => {
+    // 2. Update Content & Colors
+    card.style.backgroundColor = theme.bg;
+    card.style.borderColor = theme.border;
+    iconCont.style.borderColor = theme.border;
+    iconEl.style.color = theme.icon;
+    dot.style.backgroundColor = theme.title;
+    titleEl.style.color = theme.title;
+    bodyEl.style.color = theme.text;
+
+    tagEl.innerHTML = '<span class="material-symbols-rounded" style="font-size:18px; margin-right:8px;">' + curIcon + '</span>' + (f.tag || "");
+    titleEl.textContent = f.tag || "";
+    bodyEl.textContent = f.body || "";
+    iconEl.textContent = curIcon;
+    
+    // 3. Pop icon in & fade text
+    bodyEl.style.opacity = 1;
+    iconEl.style.transform = "scale(1.2) rotate(10deg)";
+    iconEl.style.opacity = 1;
+    
+    // Settle icon
+    setTimeout(() => { iconEl.style.transform = "scale(1) rotate(0deg)"; }, 250);
+  }, 300);
+
+  // Selección 100% aleatoria para mayor dinamismo
+  factIdx = Math.floor(Math.random() * FACTS.length);
 }
 
 function startFactsRotation() {
@@ -6177,7 +6228,10 @@ window.addSRRow = function (data = null) {
         </div>
       </td>
       <td class="p-4 py-3 text-center" data-label="Acción">
-        <div class="flex justify-center items-center w-full">
+        <div class="flex justify-center items-center w-full gap-2">
+          <button type="button" class="md-clone-btn group text-slate-400 hover:text-primary transition-colors" title="Agregar recepción" onclick="cloneSRRow(this);">
+            <span class="material-symbols-rounded text-[22px]">post_add</span>
+          </button>
           <button type="button" class="md-delete-btn group" title="Eliminar este lote" onclick="this.closest('tr').remove();">
             <svg viewBox="0 0 24 24" class="w-6 h-6">
               <path class="trash-lid transition-transform duration-200 group-hover:-translate-y-1" fill="currentColor" d="M15 4V3H9v1H4v2h16V4h-5z" />
@@ -6208,6 +6262,32 @@ window.addSRRow = function (data = null) {
     window.updatePermanenciaHint(tr);
   }
 }
+
+window.cloneSRRow = function(btn) {
+  const originalRow = btn.closest("tr");
+  if (!originalRow) return;
+
+  const bioSelect = originalRow.querySelector(".sr-bio-select");
+  const loteSelect = originalRow.querySelector(".sr-lote-select");
+  
+  const data = {
+    biologico: bioSelect ? bioSelect.value : "",
+    lote: loteSelect ? loteSelect.value : "",
+    fecha_recepcion: "",
+    cantidad: ""
+  };
+
+  addSRRow(data);
+  const tbody = document.getElementById("srCaptureTbody");
+  const newRow = tbody.lastElementChild;
+  
+  originalRow.insertAdjacentElement('afterend', newRow);
+  
+  setTimeout(() => {
+    const inputReq = newRow.querySelector(".sr-recepcion-input");
+    if(inputReq) inputReq.focus();
+  }, 100);
+};
 
 window.updatePermanenciaHint = function (tr) {
   const cache = tr._cache || {};
@@ -7637,53 +7717,97 @@ function refreshBioAlerts(force = false) {
 
 let BIO_CONFIRM_RESOLVER = null;
 
+function openBioConfirm(warningRows) {
+  return new Promise((resolve) => {
+    let overlay = $("bioConfirmOverlay");
+    
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "bioConfirmOverlay";
+    }
+    
+    // Siempre asegurar que el overlay sea hijo directo del body
+    // para escapar de cualquier stacking context y asegurar el z-index
+    if (overlay.parentNode !== document.body) {
+      document.body.appendChild(overlay);
+    }
+    
+    overlay.className = "bio-modal-overlay";
+    
+    overlay.onclick = (e) => {
+       if (e.target === overlay) closeBioConfirm(false);
+    };
+
+    overlay.innerHTML = `
+        <div class="bio-modal-box">
+          <div class="bio-modal-header">
+             <div class="bio-modal-icon-wrap">
+                <span class="material-symbols-rounded">warning</span>
+             </div>
+             <div>
+                <h3 class="bio-modal-title">Atención Logística</h3>
+                <p class="bio-modal-subtitle">Promedios por debajo de la meta</p>
+             </div>
+          </div>
+          <div class="bio-modal-body">
+             <p class="bio-modal-intro">Estás solicitando vacunas por debajo del promedio mensual estandarizado para los siguientes biológicos:</p>
+             <div id="bioConfirmList" class="bio-modal-list"></div>
+             <p class="bio-modal-question">¿Estás seguro de querer guardar este pedido bajo tu propia responsabilidad?</p>
+          </div>
+          <div class="bio-modal-footer">
+             <button id="btnBioConfirmCancel" class="bio-btn-cancel">Cancelar</button>
+             <button id="btnBioConfirmAccept" class="bio-btn-accept">Sí, guardar pedido</button>
+          </div>
+        </div>
+    `;
+
+    const btnCancel = overlay.querySelector("#btnBioConfirmCancel");
+    const btnAccept = overlay.querySelector("#btnBioConfirmAccept");
+    
+    if (btnCancel) btnCancel.onclick = () => closeBioConfirm(false);
+    if (btnAccept) btnAccept.onclick = () => closeBioConfirm(true);
+
+    BIO_CONFIRM_RESOLVER = resolve;
+
+    const list = overlay.querySelector("#bioConfirmList");
+    
+    if (list) {
+       list.innerHTML = warningRows
+        .map(row => {
+            let text = row.replace(/^•\s*/, "").replace(/^-/, "").trim();
+            text = text.replace(/\((\d+)\)/g, '<span class="bio-modal-badge">($1)</span>');
+            return `
+            <div class="bio-modal-list-item">
+                <span class="material-symbols-rounded">priority_high</span>
+                <span>${text}</span>
+            </div>`;
+        })
+        .join("");
+    }
+
+    // Disparar animación
+    requestAnimationFrame(() => {
+        overlay.classList.add("show");
+        document.body.classList.add("bioConfirmOpen");
+    });
+
+    if (btnCancel) btnCancel.focus();
+  });
+}
+
 function closeBioConfirm(result) {
   const overlay = $("bioConfirmOverlay");
   if (!overlay) return;
+  
   overlay.classList.remove("show");
-  overlay.setAttribute("aria-hidden", "true");
   document.body.classList.remove("bioConfirmOpen");
-
 
   const resolver = BIO_CONFIRM_RESOLVER;
   BIO_CONFIRM_RESOLVER = null;
 
   if (typeof resolver === "function") {
-    resolver(!!result);
+    setTimeout(() => resolver(!!result), 400); // 400ms to match CSS transition
   }
-}
-
-function openBioConfirm(warningRows) {
-  return new Promise((resolve) => {
-    const overlay = $("bioConfirmOverlay");
-    const list = $("bioConfirmList");
-    const intro = $("bioConfirmIntro");
-
-    if (!overlay || !list || !intro) {
-      resolve(window.confirm(
-        "La validación detectó que no estás solicitando biológico suficiente en algunos renglones:\n\n" +
-        warningRows.join("\n") +
-        "\n\n¿Deseas continuar con el guardado de pedido?"
-      ));
-      return;
-    }
-
-    BIO_CONFIRM_RESOLVER = resolve;
-
-    intro.textContent = "La validación detectó que no estás solicitando biológico suficiente en algunos renglones:";
-    list.innerHTML = warningRows
-      .map(row => `<div class="bioConfirmItem">${escapeHtml(row.replace(/^•\s*/, ""))}</div>`)
-      .join("");
-
-    overlay.classList.add("show");
-    overlay.setAttribute("aria-hidden", "false");
-    document.body.classList.add("bioConfirmOpen");
-
-    const btnCancel = $("btnBioConfirmCancel");
-    const btnAccept = $("btnBioConfirmAccept");
-
-    if (btnCancel) btnCancel.focus();
-  });
 }
 
 function collectBioItems() {
@@ -7919,7 +8043,7 @@ function setFormLocked(formId, locked) {
     if (el.id === "aguja_0600403711") return; // ya es automático
     // No bloquear el botón de "Agregar otro lote" si es necesario, 
     // pero sí los de eliminar.
-    if (el.classList.contains("md-delete-btn") || el.tagName === "INPUT" || el.tagName === "SELECT") {
+    if (el.classList.contains("md-delete-btn") || el.classList.contains("md-clone-btn") || el.tagName === "INPUT" || el.tagName === "SELECT") {
       el.disabled = !!locked;
     }
     // El botón de "Agregar otro lote" (btnAddSRRow) también debe bloquearse
@@ -8095,13 +8219,91 @@ function normalizeTodayReports(data) {
 
 async function reloadTodayState() {
   try {
-    const today = await getTodayReports(todayYmdLocal());
+    const todayStr = todayYmdLocal();
+    let today = await getTodayReports(todayStr);
+    
+    const dow = new Date().getDay();
+    let isPrefill = false;
+
+    // Persistencia Viernes (edita Jueves)
+    if ((!today || !today.sr) && dow === 5) {
+      const dYesterday = new Date();
+      dYesterday.setDate(dYesterday.getDate() - 1);
+      const yesterdayStr = dYesterday.toISOString().split('T')[0];
+      const yesterday = await getTodayReports(yesterdayStr, true);
+      
+      if (yesterday && yesterday.sr) {
+        if(!today) today = {};
+        today.sr = yesterday.sr;
+      }
+    }
+
+    // Pre-llenado semanal
+    if (!today || !today.sr) {
+       // Visual feedback on Friday if empty
+       if (dow === 5) {
+           const titleContainer = document.querySelector("#panelSR h1, #panelSR h2");
+           if (titleContainer && !document.querySelector(".chip-pending")) {
+               titleContainer.insertAdjacentHTML("beforeend", `<span class="chip-pending ml-4" style="vertical-align: middle;"><span class="material-symbols-rounded">pending_actions</span> Captura pendiente</span>`);
+           }
+       }
+       
+       const prefillData = await execPrefillSemanal(todayStr);
+       if (prefillData) {
+           if(!today) today = {};
+           today.sr = prefillData;
+           isPrefill = true;
+       }
+    }
+    
     console.log("reloadTodayState today:", today);
     hydrateTodayForms(today);
+
+    if (isPrefill) {
+       if (typeof alert === "function") {
+           alert("Se cargó la última existencia de biológico del día " + today.sr.fecha);
+       }
+       EDIT_SR = false; // It's an INSERT
+    } else {
+       window.PREFILL_SNAPSHOT = null; 
+    }
   } catch (e) {
     console.error("reloadTodayState error:", e);
   }
 }
+
+window.PREFILL_SNAPSHOT = null;
+
+async function execPrefillSemanal(todayStr) {
+   if (!USER || !USER.clues || !window.supabase) return null;
+   try {
+       const { data: lastReports } = await window.supabase
+           .from('biologicos_existencia')
+           .select('fecha')
+           .eq('clues', USER.clues)
+           .order('fecha', { ascending: false })
+           .limit(1);
+           
+       if (lastReports && lastReports.length > 0) {
+           const lastDate = lastReports[0].fecha;
+           const t1 = new Date(lastDate).getTime();
+           const t2 = new Date(todayStr).getTime();
+           const diffDays = (t2 - t1) / (1000 * 3600 * 24);
+           
+           if (diffDays > 1) {
+               const oldReport = await getTodayReports(lastDate, true);
+               if (oldReport && oldReport.sr) {
+                   window.PREFILL_SNAPSHOT = JSON.stringify(oldReport.sr.items || []);
+                   return oldReport.sr;
+               }
+           }
+       }
+   } catch(err) {
+       console.error("execPrefillSemanal error:", err);
+   }
+   return null;
+}
+
 
 function hydrateTodayForms(todayData) {
   const normalized = normalizeTodayReports(todayData || {});
@@ -8524,19 +8726,53 @@ function updateDynamicGreeting(timeGreeting = null, customSubtitle = null) {
 
   const weatherEmoji = CURRENT_WEATHER.emoji || "";
   const weatherTemp = CURRENT_WEATHER.temp !== null ? `${CURRENT_WEATHER.temp}°C` : "";
+  const weatherText = CURRENT_WEATHER.text || "";
+  const weatherBg = CURRENT_WEATHER.bg || "";
+  
+  const theme = CURRENT_WEATHER.theme || 'dark-bg';
+  const isDarkText = theme === 'light-bg';
+  
+  const textTitleClass = isDarkText ? 'text-primary' : 'text-white';
+  const textSubClass = isDarkText ? 'text-primary/70' : 'text-white/80';
+  const textResumenClass = isDarkText ? 'text-primary/60' : 'text-white/70';
 
+  const parentEl = welcomeEl.parentElement;
+  if (parentEl) {
+    parentEl.classList.add("weather-hero-block");
+    parentEl.setAttribute("data-theme", theme);
+    parentEl.style.setProperty('--weather-bg', `url('${weatherBg}')`);
+    
+    // Style the 'Resumen Operativo' span if it exists
+    const resumenSpan = parentEl.querySelector("span.uppercase");
+    if (resumenSpan) {
+      resumenSpan.className = `text-[10px] font-black uppercase tracking-[0.25em] mb-2 block relative z-10 transition-colors duration-500 ${textResumenClass}`;
+    }
+  }
+
+  welcomeEl.classList.remove("text-3xl", "sm:text-5xl");
+  welcomeEl.classList.add("text-2xl", "sm:text-[32px]", "w-full", "relative", "z-10");
   welcomeEl.innerHTML = `
-      <div class="flex flex-col leading-none items-start text-left">
-        <div class="flex items-center gap-4 flex-wrap">
-          <span class="text-primary font-black tracking-tighter">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 w-full mt-1">
+        <div class="flex flex-col gap-0.5">
+          <span class="${textTitleClass} font-black tracking-tighter transition-colors duration-500 leading-none">
             ${title}
           </span>
-          <div class="h-8 w-px bg-outline-variant/40 hidden sm:block"></div>
-          <span class="text-[18px] sm:text-[24px] font-black text-primary/70 flex items-center gap-2">
-            ${weatherEmoji} ${weatherTemp}
+          <span class="text-[11.5px] sm:text-[13px] font-bold ${textSubClass} mt-1 block tracking-tight transition-colors duration-500 max-w-[280px] leading-snug">
+            ${subtitle}
           </span>
         </div>
-        <span class="text-[13px] sm:text-[15px] font-bold text-primary/70 mt-3 block tracking-tight">${subtitle}</span>
+        
+        <div class="flex items-center gap-4 text-right shrink-0">
+          <div class="h-8 w-px ${isDarkText ? 'bg-primary/20' : 'bg-white/20'} hidden md:block transition-colors duration-500"></div>
+          <div class="flex flex-col items-end">
+            <span class="text-[22px] sm:text-[28px] font-black ${textTitleClass} flex items-center gap-2 drop-shadow-sm transition-colors duration-500 leading-none">
+              ${weatherTemp} ${weatherEmoji}
+            </span>
+            <span class="text-[10px] sm:text-[11px] font-bold ${isDarkText ? 'text-primary/80' : 'text-white/90'} uppercase tracking-widest mt-1 drop-shadow-sm transition-colors duration-500" style="line-height:1;">
+              ${weatherText}
+            </span>
+          </div>
+        </div>
       </div>
     `;
 }
@@ -9218,6 +9454,30 @@ if (bSaveSR) bSaveSR.onclick = async () => {
     return showToast("Corrige las filas en rojo", false, "warn");
   }
   if (!items.length) return showToast("Captura al menos un biológico", false, "warn");
+  
+  if (window.PREFILL_SNAPSHOT) {
+      try {
+          const currentSnapshot = JSON.stringify(items.map(item => ({
+              biologico: String(item.biologico).trim().toUpperCase(),
+              lote: String(item.lote).trim().toUpperCase(),
+              cantidad: Number(item.cantidad)
+          })));
+          
+          const prevItems = JSON.parse(window.PREFILL_SNAPSHOT);
+          const prevSnapshot = JSON.stringify(prevItems.map(item => ({
+              biologico: String(item.biologico).trim().toUpperCase(),
+              lote: String(item.lote).trim().toUpperCase(),
+              cantidad: Number(item.cantidad)
+          })));
+
+          if (currentSnapshot === prevSnapshot) {
+              if (!confirm("¿Estás seguro que quieres enviar la existencia sin cambios respecto al reporte anterior?")) {
+                  return; // Cancels save
+              }
+          }
+      } catch(e) { console.error("Snapshot compare error", e); }
+  }
+
   if (HAS_TODAY_SR && !EDIT_SR) return showToast("Ya existe una captura de hoy", false, "warn");
 
   await AppService.runCapture({
@@ -9343,10 +9603,8 @@ if (bSaveBIO) bSaveBIO.onclick = async () => {
   }
 
   if (warningMsgs.length > 0) {
-    const confirmText = "Atención: Está solicitando vacunas por debajo del promedio mensual para los siguientes biológicos:\n\n" + 
-                        warningMsgs.join("\n") + 
-                        "\n\n¿Estás seguro de querer guardar este pedido bajo tu propia responsabilidad?";
-    if (!confirm(confirmText)) return;
+    const confirmed = await openBioConfirm(warningMsgs);
+    if (!confirmed) return;
   }
 
   await AppService.runCapture({
@@ -10887,16 +11145,25 @@ function startRealtimeUX() {
  */
 async function initWeather() {
   try {
-    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=20.5881&longitude=-100.3899&current=temperature_2m,weather_code`);
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=20.5881&longitude=-100.3899&current_weather=true&timezone=America/Mexico_City`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
-    if (data && data.current) {
-      const temp = Math.round(data.current.temperature_2m);
-      const code = data.current.weather_code;
-      const emoji = getWeatherEmoji(code);
+    if (data && data.current_weather) {
+      const temp = Math.round(data.current_weather.temperature);
+      const code = data.current_weather.weathercode;
+      const isDay = data.current_weather.is_day === 1;
+      
+      const details = getWeatherDetails(code, isDay);
 
-      CURRENT_WEATHER = { temp, emoji, code };
+      CURRENT_WEATHER = { 
+        temp, 
+        emoji: details.emoji, 
+        text: details.text, 
+        bg: details.bg, 
+        theme: details.theme,
+        code 
+      };
 
       // Update legacy headers if they exist
       const hdr1 = $("hdrClima");
@@ -10912,24 +11179,41 @@ async function initWeather() {
     }
   } catch (e) {
     console.warn("initWeather failed:", e);
-    CURRENT_WEATHER = { temp: 24, emoji: "🌤️", code: 1 };
+    CURRENT_WEATHER = { temp: 24, emoji: "🌤️", text: "Despejado", bg: "https://images.unsplash.com/photo-1601297183305-6df142704ea2?auto=format&fit=crop&q=80&w=600", theme: "light-bg", code: 1 };
     if (USER) updateDynamicGreeting();
   }
 }
 
-function getWeatherEmoji(code) {
-  if (code === null) return "🌡️";
-  // Open-Meteo WMO Weather interpretation codes (WW)
-  if (code === 0) return "☀️"; // Clear sky
-  if ([1, 2].includes(code)) return "🌤️"; // Mainly clear, partly cloudy
-  if (code === 3) return "☁️"; // Overcast
-  if ([45, 48].includes(code)) return "🌫️"; // Fog and depositing rime fog
-  if ([51, 53, 55].includes(code)) return "🌦️"; // Drizzle: Light, moderate, and dense intensity
-  if ([61, 63, 65].includes(code)) return "🌧️"; // Rain: Slight, moderate and heavy intensity
-  if ([71, 73, 75].includes(code)) return "❄️"; // Snow fall: Slight, moderate, and heavy intensity
-  if ([80, 81, 82].includes(code)) return "🌦️"; // Rain showers: Slight, moderate, and violent
-  if ([95, 96, 99].includes(code)) return "⛈️"; // Thunderstorm: Slight or moderate
-  return "🌤️";
+function getWeatherDetails(code, isDay) {
+  if (code === null) return { emoji: "🌡️", text: "Desconocido", bg: "", theme: "dark-bg" };
+  
+  const bgs = {
+    clearDay: "https://images.unsplash.com/photo-1601297183305-6df142704ea2?auto=format&fit=crop&q=80&w=600",
+    clearNight: "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&q=80&w=600",
+    cloudyDay: "https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&q=80&w=600",
+    cloudyNight: "https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&q=80&w=600", // Placeholder for night clouds
+    rain: "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&q=80&w=600",
+    snow: "https://images.unsplash.com/photo-1478265409131-1f65c88f965c?auto=format&fit=crop&q=80&w=600",
+    thunder: "https://images.unsplash.com/photo-1605727216801-e27ce1d0ce49?auto=format&fit=crop&q=80&w=600",
+    fog: "https://images.unsplash.com/photo-1487621167305-5d248087c724?auto=format&fit=crop&q=80&w=600"
+  };
+
+  let theme = "dark-bg";
+  if (isDay && [0, 1, 2, 3].includes(code)) {
+    theme = "light-bg";
+  }
+
+  if (code === 0) return { emoji: isDay ? "☀️" : "🌙", text: isDay ? "Despejado" : "Noche clara", bg: isDay ? bgs.clearDay : bgs.clearNight, theme };
+  if ([1, 2].includes(code)) return { emoji: isDay ? "🌤️" : "☁️", text: isDay ? "Parcialmente nublado" : "Nubes dispersas", bg: isDay ? bgs.cloudyDay : bgs.cloudyNight, theme };
+  if (code === 3) return { emoji: "☁️", text: "Nublado", bg: isDay ? bgs.cloudyDay : bgs.cloudyNight, theme };
+  if ([45, 48].includes(code)) return { emoji: "🌫️", text: "Niebla", bg: bgs.fog, theme };
+  if ([51, 53, 55].includes(code)) return { emoji: "🌦️", text: "Llovizna", bg: bgs.rain, theme };
+  if ([61, 63, 65].includes(code)) return { emoji: "🌧️", text: "Lluvia", bg: bgs.rain, theme };
+  if ([71, 73, 75].includes(code)) return { emoji: "❄️", text: "Nieve", bg: bgs.snow, theme };
+  if ([80, 81, 82].includes(code)) return { emoji: "🌦️", text: "Chubascos", bg: bgs.rain, theme };
+  if ([95, 96, 99].includes(code)) return { emoji: "⛈️", text: "Tormenta", bg: bgs.thunder, theme };
+  
+  return { emoji: "🌤️", text: "Clima", bg: bgs.clearDay, theme: "light-bg" };
 }
 
 // Esperar a que el DOM esté listo antes de arrancar
