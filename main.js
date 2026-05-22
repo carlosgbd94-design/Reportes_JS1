@@ -7485,6 +7485,7 @@ function refreshBioAlerts(force = false) {
   const sinPedido = $("chkNoPedido") ? $("chkNoPedido").checked : false;
 
   BIO_STATE.rows.forEach((r, i) => {
+    if (!BIO_STATE.cache) return;
     const cached = BIO_STATE.cache[i];
     if (!cached) return;
 
