@@ -596,14 +596,30 @@
   justify-content: center !important;
 }
 
-/* Hide button text, only keep the icon */
-.touch-ui .command-hub .save-chip-premium span:not(.material-symbols-rounded),
-.touch-ui .command-hub .edit-btn-premium span:not(.material-symbols-rounded),
-.touch-ui .command-hub .cancel-btn-premium span:not(.material-symbols-rounded) {
-  display: none !important;
-}
-
-/* Hide status chip on mobile to save space */
-.touch-ui .command-hub .status-chip-v5 {
-  display: none !important;
+/* Diseño minimalista para el Command Hub en móviles (solo íconos) */
+@media (max-width: 768px) {
+  /* Ocultar texto de los botones */
+  .command-hub .save-chip-premium span:not(.material-symbols-rounded),
+  .command-hub .edit-btn-premium span:not(.material-symbols-rounded),
+  .command-hub .cancel-btn-premium span:not(.material-symbols-rounded) {
+    display: none !important;
+  }
+  
+  /* Convertir botones a círculos perfectos de 48x48 */
+  .command-hub .save-chip-premium,
+  .command-hub .edit-btn-premium,
+  .command-hub .cancel-btn-premium {
+    width: 48px !important;
+    height: 48px !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  /* Ocultar chip de estado para ahorrar espacio */
+  .command-hub .status-chip-v5 {
+    display: none !important;
+  }
 }
