@@ -12235,7 +12235,7 @@ function syncCommandHub() {
     hubSave.disabled = isSaveDisabled;
 
     // Remove legacy Tailwind classes and ensure base class
-    hubSave.classList.remove("save-chip-premium", "bg-primary", "hover:bg-primary-action", "text-white", "shadow-lg", "shadow-primary/20", "text-slate-600", "opacity-60");
+    hubSave.classList.remove("bg-primary", "hover:bg-primary-action", "text-white", "shadow-lg", "shadow-primary/20", "text-slate-600", "opacity-60");
     if (!hubSave.classList.contains("hub-action-btn-primary")) {
       hubSave.classList.add("hub-action-btn-primary");
     }
