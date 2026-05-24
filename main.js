@@ -224,6 +224,29 @@ Object.defineProperty(window, 'TOKEN', { get: () => AppState.token, set: (v) => 
 Object.defineProperty(window, 'STATUS', { get: () => AppState.status, set: (v) => AppState.status = v, configurable: true });
 const LIVE_STATE = AppState;
 const APP_STATE = AppState;
+
+/**
+ * Catálogo de Biológicos Prioritarios para Alertas de Desabasto
+ * priority: 1 (Crítica), 2 (Advertencia)
+ */
+const PRIORITY_VACCINES = {
+  "BCG": { priority: 1 },
+  "HEPATITIS B": { priority: 1 },
+  "HEPATITIS A": { priority: 1 },
+  "HEXAVALENTE": { priority: 1 },
+  "SRP": { priority: 1 },
+  "SR": { priority: 1 },
+  "DPT": { priority: 1 },
+  "NEUMOCÓCICA 13V": { priority: 1 },
+  "NEUMOCÓCICA 13": { priority: 1 }, // alias
+  "NEUMOCÓCICA 20V": { priority: 1 }, // placeholder future
+  "TDPa": { priority: 1 },
+  "ROTAVIRUS": { priority: 1 },
+  "VSR": { priority: 1 },
+  "INFLUENZA": { priority: 2, seasonal: true },
+  "COVID-19": { priority: 2, seasonal: true }
+};
+
 window.apiCall = (action, payload) => AppService.call(action, payload);
 const $ = (id) => DOM.get(id);
 window.$ = $; // Alias global experto
@@ -1156,17 +1179,27 @@ function buildNotificationsHtml(items = []) {
       type === "SUCCESS" ? "verified" :
         type === "WARN" || type === "WARNING" ? "warning" :
           type === "ERROR" ? "error" :
+            type === "ALERTA_DESABASTO" ? "error_outline" :
             "notifications"
     );
+
+    const isDesabasto = type === "ALERTA_DESABASTO";
+    const isDesabastoActive = isDesabasto && meta?.status === "activa";
+    const desabastoTag = isDesabasto 
+      ? `<span style="background:var(--md-sys-color-error-container); color:var(--md-sys-color-on-error-container); padding:2px 8px; border-radius:8px; font-size:10px; font-weight:800; display:inline-flex; align-items:center; gap:4px; margin-left:6px;"><span class="material-symbols-rounded" style="font-size:12px; animation: pulse 2s infinite;">error_outline</span> DESABASTO</span>`
+      : "";
 
     const cardClass = [
       "notifCard",
       isRead ? "read" : "unread",
-      pinolConfirmed ? "flowClosed" : ""
+      pinolConfirmed ? "flowClosed" : "",
+      (isDesabasto && !isDesabastoActive) ? "flowClosed" : "" 
     ].join(" ").trim();
+    
+    const extraStyle = isDesabastoActive ? "border-left: 4px solid var(--md-sys-color-error);" : (isDesabasto ? "border-left: 4px solid var(--md-sys-color-outline-variant);" : "");
 
     return `
-      <div class="${cardClass}" data-id="${escapeAttr(item.id || "")}">
+      <div class="${cardClass}" data-id="${escapeAttr(item.id || "")}" style="${extraStyle}">
         <div class="notifCardContent">
           <div class="notifHeaderRow">
             <div class="notifMainInfo">
@@ -1175,6 +1208,7 @@ function buildNotificationsHtml(items = []) {
                 ${escapeHtml(item.title || "Notificación")}
                 ${pinolTag}
                 ${frascosTag}
+                ${desabastoTag}
               </div>
               <div class="notifMeta">
                 ${formatNotifDate(item.created_ts)}
@@ -1182,11 +1216,15 @@ function buildNotificationsHtml(items = []) {
             </div>
             
             <div class="notifCompactActions">
+              ${isDesabastoActive
+        ? `<button type="button" class="notifMiniBtn" title="Marcar como Verificado" style="background:var(--md-sys-color-surface-variant); color:var(--md-sys-color-on-surface-variant);" onclick="resolveDesabastoFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">check_circle</span></button>`
+        : ``
+      }
               ${showConfirmPinol
         ? `<button type="button" class="notifMiniBtn good" title="Confirmar" onclick="confirmPinolReceiptFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">task_alt</span></button>`
         : ``
       }
-              ${!showConfirmPinol && !pinolConfirmed && !isPinolAck && !isRead
+              ${!showConfirmPinol && !pinolConfirmed && !isPinolAck && !isRead && !isDesabasto
         ? `<button type="button" class="notifMiniBtn primary" title="Leída" onclick="markNotificationReadFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">done</span></button>`
         : ``
       }
@@ -1194,7 +1232,9 @@ function buildNotificationsHtml(items = []) {
             </div>
           </div>
           
-          <div class="notifBody snippet">${formatNotifBody(item.title, item.message)}</div>
+          <div class="notifBody snippet">${formatNotifBody(item.title, item.message)}
+            ${(isDesabastoActive && meta?.missing?.length) ? `<div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:4px;">${meta.missing.map(v => `<span style="background:var(--md-sys-color-error-container); color:var(--md-sys-color-on-error-container); padding:2px 6px; border-radius:6px; font-size:9px; font-weight:700;">${v}</span>`).join("")}</div>` : ''}
+          </div>
         </div>
       </div>
     `;
@@ -3378,7 +3418,7 @@ async function supabaseRequest(action = "", payload) {
         const clues = payload.clues || USER.clues;
         const municipio = payload.municipio || USER.municipio;
         const unidad = payload.unidad || USER.unidad;
-        const nombreResp = payload.nombre || USER.nombre || USER.usuario;
+        const nombreResp = String(payload.nombre || USER.nombre || USER.usuario || "").toUpperCase();
 
         // 1. Obtener catálogo de lotes para autocompletado de caducidad
         const { data: catLotes } = await supabase.from('lotes').select('biologico, lote, caducidad');
@@ -3461,6 +3501,33 @@ async function supabaseRequest(action = "", payload) {
 
         console.log("[Capture Logic] SR Guardado correctamente.");
 
+        // --- Generar Alerta de Desabasto ---
+        if (payload.missingVaccines && payload.missingVaccines.length > 0) {
+          const missList = payload.missingVaccines;
+          const notifId = 'NOTIF:DESABASTO:' + btoa(clues + ":" + fecha + ":" + Date.now());
+          
+          await supabase.from('notificaciones').insert({
+            id: notifId,
+            tipo: 'alerta_desabasto',
+            created_ts: new Date().toISOString(),
+            created_date: todayYmdLocal(),
+            from_usuario: 'SISTEMA',
+            from_rol: 'SYS',
+            target_scope: 'MUNICIPIO',
+            target_municipio: municipio,
+            title: 'Alerta de Desabasto',
+            message: `La unidad ${unidad} no cuenta con existencias de ${missList.length} biológico(s) prioritario(s).`,
+            status: 'UNREAD',
+            meta_json: JSON.stringify({
+              clues: clues,
+              unidad: unidad,
+              missing: missList,
+              status: 'activa'
+            })
+          });
+          console.log("[Capture Logic] Alerta de desabasto generada.");
+        }
+
         return { ok: true };
       }
 
@@ -3485,7 +3552,7 @@ async function supabaseRequest(action = "", payload) {
           jeringa_reconst_5ml_0605500438: Number(payload.jeringa_reconst_5ml_0605500438 || 0),
           jeringa_aplic_05ml_0605502657: Number(payload.jeringa_aplic_05ml_0605502657 || 0),
           aguja_0600403711: Number(payload.aguja_0600403711 || payload.aguja_06004037 || 0),
-          capturado_por: payload.nombre || USER.nombre || USER.usuario,
+          capturado_por: String(payload.nombre || USER.nombre || USER.usuario || "").toUpperCase(),
           editado: payload.editado || 'NO'
         };
 
@@ -3522,15 +3589,19 @@ async function supabaseRequest(action = "", payload) {
           promedio_frascos: Number(it.promedio_frascos || 0),
           existencia_actual_frascos: Number(it.existencia_actual_frascos || 0),
           pedido_frascos: Number(it.pedido_frascos || 0),
-          capturado_por: payload.nombre || USER.nombre || USER.usuario
+          capturado_por: String(payload.nombre || USER.nombre || USER.usuario || "").toUpperCase()
         }));
 
         console.log("[Capture Logic] Preparando guardado de BIO para:", { clues: finalClues, fecha: payload.fecha || todayYmdLocal() });
 
-        // PURGAR PREVIAMENTE PARA EVITAR DUPLICADOS AL EDITAR
-        await supabase.from('biologicos_pedido').delete()
-          .eq('clues', finalClues)
-          .eq('fecha_pedido_programada', payload.fecha || todayYmdLocal());
+        // PURGAR PREVIAMENTE PARA EVITAR DUPLICADOS AL EDITAR (Incluyendo Legacy)
+        let deleteQuery = supabase.from('biologicos_pedido').delete().eq('clues', finalClues);
+        if (payload.windowStartYmd && payload.windowEndYmd) {
+           deleteQuery = deleteQuery.or(`fecha_pedido_programada.eq.${payload.fechaPedidoProgramada || todayYmdLocal()},and(fecha_captura.gte.${payload.windowStartYmd},fecha_captura.lte.${payload.windowEndYmd},tipo_pedido.in.(MENSUAL,null))`);
+        } else {
+           deleteQuery = deleteQuery.eq('fecha_pedido_programada', payload.fechaPedidoProgramada || todayYmdLocal());
+        }
+        await deleteQuery;
 
         const { error } = await supabase.from('biologicos_pedido').insert(records);
         if (error) {
@@ -3752,11 +3823,12 @@ async function supabaseRequest(action = "", payload) {
           const canCaptureLocal = hoyYmd >= windowStartYmd && hoyYmd <= windowEndYmd;
           const isCaptureDayLocal = hoyYmd === windowTargetYmd;
 
-          // Consulta de pedidos existentes usando windowTargetYmd (alineación de fecha)
+          // Consulta de pedidos existentes (Robusta para legacy dentro de la misma ventana)
           const resSaved = await supabase.from('biologicos_pedido')
             .select('*')
             .eq('clues', clues || 'NOT_FOUND')
-            .eq('fecha_pedido_programada', windowTargetYmd);
+            .or(`fecha_pedido_programada.eq.${windowTargetYmd},and(fecha_captura.gte.${windowStartYmd},fecha_captura.lte.${windowEndYmd},tipo_pedido.in.(MENSUAL,null))`)
+            .order('timestamp', { ascending: false });
 
           if (resSaved.error) console.warn("[biogetform] saved warning:", resSaved.error);
 
@@ -3801,16 +3873,25 @@ async function supabaseRequest(action = "", payload) {
       case "admincaptureoverview": {
         const { fecha, tipo } = payload;
 
-        let consDates = [fecha];
-        if (tipo === "CONS") {
-          const d = new Date(`${fecha}T12:00:00`);
-          if (d.getDay() === 4) { // Jueves
-            const ayer = new Date(d);
-            ayer.setDate(d.getDate() - 1);
-            if (isMexicanHoliday(d)) {
-              consDates.push(dateToLocalYmd(ayer));
-            }
-          }
+        // Calcular rango de fechas
+        const dateObj = new Date(`${fecha}T12:00:00`);
+        let fIniStr = fecha;
+        let fFinStr = fecha;
+
+        if (tipo === "SR" || tipo === "CONS") {
+          const day = dateObj.getDay();
+          const diffToMonday = day === 0 ? -6 : 1 - day;
+          const monday = new Date(dateObj);
+          monday.setDate(dateObj.getDate() + diffToMonday);
+          const sunday = new Date(monday);
+          sunday.setDate(monday.getDate() + 6);
+          fIniStr = dateToLocalYmd(monday);
+          fFinStr = dateToLocalYmd(sunday);
+        } else if (tipo === "BIO") {
+          const firstDay = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+          const lastDay = new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0);
+          fIniStr = dateToLocalYmd(firstDay);
+          fFinStr = dateToLocalYmd(lastDay);
         }
 
         // 🛡️ Aplicar Jerarquía en el catálogo de unidades para el resumen
@@ -3818,20 +3899,16 @@ async function supabaseRequest(action = "", payload) {
         let unitsQuery = supabase.from('unidades').select('*').eq('activo', 'SI');
 
         // 🛡️ Logística de Ventanas: Traemos también el calendario por si hay apertura manual
-        const currentMonth = fecha.substring(0, 7); // YYYY-MM
-        const consPromises = consDates.map(d => supabase.rpc('get_captures_cons_bypass', { p_fecha: d }));
+        const currentMonth = fIniStr.substring(0, 7); // YYYY-MM
         
-        const [resSR, resBio, resUnits, resCalendar, ...resConsArray] = await Promise.all([
-          supabase.rpc('get_captures_sr_bypass', { p_fecha: fecha }),
-          supabase.rpc('get_captures_bio_bypass', { p_fecha: fecha }),
+        const [resSR, resBio, resUnits, resCalendar, resCons] = await Promise.all([
+          supabase.rpc('get_captures_sr_range_bypass', { p_fecha_inicio: fIniStr, p_fecha_fin: fFinStr }),
+          supabase.rpc('get_captures_bio_range_bypass', { p_fecha_inicio: fIniStr, p_fecha_fin: fFinStr }),
           unitsQuery,
           supabase.from('calendario_pedidos').select('*').eq('anio_mes', currentMonth).eq('activo', 'SI').maybeSingle(),
-          ...consPromises
+          supabase.rpc('get_captures_cons_range_bypass', { p_fecha_inicio: fIniStr, p_fecha_fin: fFinStr })
         ]);
 
-        const resCons = { data: resConsArray.flatMap(r => r.data || []) };
-
-        let capturedClues = [];
         let captureRecords = [];
         if (tipo === "SR") captureRecords = resSR.data || [];
         else if (tipo === "CONS") captureRecords = resCons.data || [];
@@ -3839,8 +3916,38 @@ async function supabaseRequest(action = "", payload) {
 
         console.log(`[admincaptureoverview DEBUG] Registros de captura encontrados en DB para ${tipo}:`, captureRecords);
 
+        // Agrupar fechas/tipos de pedidos si es BIO
+        let availableWindows = [];
+        let activeWindow = null;
+
+        if (tipo === "BIO") {
+          const windowsMap = new Map();
+          captureRecords.forEach(r => {
+            const wKey = `${r.tipo_pedido || 'MENSUAL'}_${r.fecha}`;
+            if (!windowsMap.has(wKey)) {
+              windowsMap.set(wKey, { tipo_pedido: r.tipo_pedido || 'MENSUAL', fecha: r.fecha });
+            }
+          });
+          availableWindows = Array.from(windowsMap.values()).sort((a, b) => a.fecha.localeCompare(b.fecha));
+          
+          if (availableWindows.length > 0) {
+            // Si el frontend envia una ventana seleccionada (TODO en UI), usar esa
+            // Por ahora, mostrar MENSUAL si hay, o la primera
+            const targetWindow = payload.targetWindow; 
+            if (targetWindow) {
+               activeWindow = availableWindows.find(w => w.fecha === targetWindow.fecha && w.tipo_pedido === targetWindow.tipo_pedido);
+            }
+            if (!activeWindow) {
+               activeWindow = availableWindows.find(w => w.tipo_pedido === 'MENSUAL') || availableWindows[0];
+            }
+            
+            // Filtrar captures solo para la ventana activa
+            captureRecords = captureRecords.filter(r => r.fecha === activeWindow.fecha && (r.tipo_pedido || 'MENSUAL') === activeWindow.tipo_pedido);
+          }
+        }
+
         // Asegurarnos de mapear tanto .clues como .CLUES por seguridad, normalizados a mayúsculas
-        capturedClues = [...new Set(captureRecords.map(x => String(x.clues || x.CLUES || "").trim().toUpperCase()))];
+        let capturedClues = [...new Set(captureRecords.map(x => String(x.clues || x.CLUES || "").trim().toUpperCase()))];
 
         let allUnits = resUnits.data || [];
         console.log(`[admincaptureoverview DEBUG] Unidades activas traídas desde BD: ${allUnits.length}`);
@@ -3856,12 +3963,16 @@ async function supabaseRequest(action = "", payload) {
         return {
           ok: true,
           data: {
-            fecha,
+            fecha: fecha, // Mantenemos la fecha original que el usuario selecciono
+            fIniStr,
+            fFinStr,
             tipo,
             total_unidades: allUnits.length,
             total_capturadas: capturadas.length,
             total_faltantes: faltantes.length,
             calendar_override: resCalendar.data || null,
+            available_windows: availableWindows,
+            active_window: activeWindow,
             capturadas: capturadas.map(u => {
               const cClues = u.clues || u.CLUES;
               const record = captureRecords.find(r => (r.clues || r.CLUES) === cClues);
@@ -4241,22 +4352,19 @@ async function supabaseRequest(action = "", payload) {
       case "export": {
         const role = String(USER?.rol || "").toUpperCase();
         const tipo = (payload.tipo || "SR").toUpperCase();
-        const table = tipo === "SR" ? "biologicos_existencia" : "consumibles";
-        let query = supabase
-          .from(table)
-          .select('*')
-          .gte('fecha', payload.fechaInicio)
-          .lte('fecha', payload.fechaFin)
-          .order('fecha', { ascending: false });
+        const rpcName = tipo === "SR" ? "get_export_sr_range_bypass" : "get_export_cons_range_bypass";
+        
+        const { data, error } = await supabase.rpc(rpcName, {
+          p_fecha_inicio: payload.fechaInicio,
+          p_fecha_fin: payload.fechaFin
+        });
 
-        if (role === "UNIDAD") {
-          query = query.eq('clues', USER.clues);
-        }
-
-        const { data, error } = await query;
         if (error) throw error;
         
         let filteredData = data || [];
+        if (role === "UNIDAD") {
+          filteredData = filteredData.filter(row => row.clues === USER.clues);
+        }
         if (role === "MUNICIPAL") {
           filteredData = filteredData.filter(row => canSeeMunicipio_(USER, row.municipio));
         }
@@ -4266,18 +4374,19 @@ async function supabaseRequest(action = "", payload) {
 
       case "bioexportmatrix": {
         const role = String(USER?.rol || "").toUpperCase();
-        let query = supabase
-          .from('biologicos_pedido')
-          .select('*');
+        
+        const { data, error } = await supabase.rpc("get_export_bio_range_bypass", {
+          p_fecha_inicio: payload.fechaInicio,
+          p_fecha_fin: payload.fechaFin
+        });
 
-        if (payload.fechaInicio) {
-          query = query.eq('fecha_pedido_programada', payload.fechaInicio);
-        }
-
-        const { data, error } = await query;
         if (error) throw error;
         
         let filteredData = data || [];
+        
+        if (role === "UNIDAD") {
+          filteredData = filteredData.filter(row => row.clues === USER.clues);
+        }
         if (role === "MUNICIPAL") {
           filteredData = filteredData.filter(row => canSeeMunicipio_(USER, row.municipio));
         }
@@ -4418,6 +4527,27 @@ async function supabaseRequest(action = "", payload) {
         return { ok: true };
       }
 
+      case "resolvedesabasto": {
+        // Obtenemos la notificación primero para actualizar meta_json
+        const { data: notif } = await supabase.from('notificaciones').select('meta_json').eq('id', payload.id).single();
+        if (!notif) throw new Error("Notificación no encontrada");
+        
+        let meta = {};
+        try { meta = JSON.parse(notif.meta_json || "{}"); } catch(e) {}
+        meta.status = "resuelta";
+
+        const { error } = await supabase
+          .from('notificaciones')
+          .update({
+             is_read: 'SI',
+             read_ts: new Date().toISOString(),
+             meta_json: JSON.stringify(meta)
+          })
+          .eq('id', payload.id);
+        if (error) throw error;
+        return { ok: true };
+      }
+
       case "deletenotification": {
         const { error } = await supabase
           .from('notificaciones')
@@ -4431,33 +4561,71 @@ async function supabaseRequest(action = "", payload) {
         const targetFecha = payload.fecha || todayYmdLocal();
         const tipo = (payload.tipo || "SR").toUpperCase();
 
+        const dateObj = new Date(`${targetFecha}T12:00:00`);
+        let fIniStr = targetFecha;
+        let fFinStr = targetFecha;
+
+        if (tipo === "SR" || tipo === "CONS") {
+          const day = dateObj.getDay();
+          const diffToMonday = day === 0 ? -6 : 1 - day;
+          const monday = new Date(dateObj);
+          monday.setDate(dateObj.getDate() + diffToMonday);
+          const sunday = new Date(monday);
+          sunday.setDate(monday.getDate() + 6);
+          fIniStr = dateToLocalYmd(monday);
+          fFinStr = dateToLocalYmd(sunday);
+        } else if (tipo === "BIO") {
+          const firstDay = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+          const lastDay = new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0);
+          fIniStr = dateToLocalYmd(firstDay);
+          fFinStr = dateToLocalYmd(lastDay);
+        }
+
         if (tipo === "SR") {
           const { data, error } = await window.supabase
             .from('existencia_detalle')
             .select('*')
             .eq('clues', payload.clues)
-            .eq('fecha', targetFecha)
-            .order('biologico', { ascending: true });
+            .gte('fecha', fIniStr)
+            .lte('fecha', fFinStr)
+            .order('fecha', { ascending: false });
           if (error) throw error;
-          return { ok: true, data: data || [], meta: { fecha: targetFecha, tipo } };
+          
+          let filteredData = [];
+          if (data && data.length > 0) {
+            const latestDate = data[0].fecha;
+            filteredData = data.filter(r => r.fecha === latestDate);
+            filteredData.sort((a,b) => (a.biologico || "").localeCompare(b.biologico || ""));
+          }
+          return { ok: true, data: filteredData, meta: { fecha: filteredData.length ? filteredData[0].fecha : targetFecha, tipo } };
         } else if (tipo === "BIO") {
           const { data, error } = await window.supabase
             .from('biologicos_pedido')
             .select('*')
             .eq('clues', payload.clues)
-            .eq('fecha_pedido_programada', targetFecha)
-            .order('biologico', { ascending: true });
+            .gte('fecha_pedido_programada', fIniStr)
+            .lte('fecha_pedido_programada', fFinStr)
+            .order('fecha_pedido_programada', { ascending: false });
           if (error) throw error;
-          return { ok: true, data: data || [], meta: { fecha: targetFecha, tipo } };
+          
+          let filteredData = [];
+          if (data && data.length > 0) {
+            const latestDate = data[0].fecha_pedido_programada;
+            filteredData = data.filter(r => r.fecha_pedido_programada === latestDate);
+            filteredData.sort((a,b) => (a.biologico || "").localeCompare(b.biologico || ""));
+          }
+          return { ok: true, data: filteredData, meta: { fecha: filteredData.length ? filteredData[0].fecha_pedido_programada : targetFecha, tipo } };
         } else {
           const { data, error } = await window.supabase
             .from('consumibles')
             .select('*')
             .eq('clues', payload.clues)
-            .eq('fecha', targetFecha)
+            .gte('fecha', fIniStr)
+            .lte('fecha', fFinStr)
+            .order('fecha', { ascending: false })
             .limit(1);
           if (error) throw error;
-          return { ok: true, data: data || [], meta: { fecha: targetFecha, tipo } };
+          return { ok: true, data: data || [], meta: { fecha: data && data.length ? data[0].fecha : targetFecha, tipo } };
         }
       }
 
@@ -7983,6 +8151,8 @@ async function loadBioForm() {
     fechaPedidoFriendly: windowTargetFriendly,
     captureWindowStart: windowStartFriendly,
     captureWindowEnd: windowEndFriendly,
+    captureWindowStartYmd: windowStartYmd,
+    captureWindowEndYmd: windowEndYmd,
     captureWindowStatus: windowStatus,
     diffDays: 0
   };
@@ -8289,10 +8459,10 @@ async function reloadTodayState() {
     hydrateTodayForms(today);
 
     if (isPrefill) {
-       if (typeof alert === "function") {
-           alert("Se cargó la última existencia de biológico del día " + today.sr.fecha);
-       }
-       EDIT_SR = false; // It's an INSERT
+       await openPrefillNotice(today.sr.fecha_prefill || today.sr.fecha);
+       EDIT_SR = false; // Es un insert nuevo para "hoy"
+       HAS_TODAY_SR = false; // Desbloqueamos el form para que lo guarden de nuevo
+       applyCaptureLockState(); // Refrescar los botones y el estado locked
     } else {
        window.PREFILL_SNAPSHOT = null; 
     }
@@ -8302,6 +8472,81 @@ async function reloadTodayState() {
 }
 
 window.PREFILL_SNAPSHOT = null;
+
+function openPrefillNotice(dateStr) {
+  return new Promise((resolve) => {
+    let overlay = $("prefillNoticeOverlay");
+    if (!overlay) return resolve();
+    if (overlay.parentNode !== document.body) {
+      document.body.appendChild(overlay);
+    }
+    const msgEl = $("prefillNoticeMsg");
+    if (msgEl) {
+      if (dateStr && dateStr !== "undefined") {
+          msgEl.innerHTML = "Hemos precargado tu última captura del día <b style='color: #0284c7;'>" + dateStr + "</b> para ahorrarte tiempo.";
+      } else {
+          msgEl.innerHTML = "Hemos precargado tu última captura de biológicos para ahorrarte tiempo.";
+      }
+    }
+    overlay.onclick = (e) => {
+       if (e.target === overlay) {
+           closePrefillNotice();
+           resolve();
+       }
+    };
+    const btnAccept = overlay.querySelector("#btnPrefillNoticeAccept");
+    if (btnAccept) {
+       btnAccept.onclick = () => {
+           closePrefillNotice();
+           resolve();
+       };
+    }
+    requestAnimationFrame(() => {
+        overlay.classList.add("show");
+    });
+  });
+}
+function closePrefillNotice() {
+  const overlay = $("prefillNoticeOverlay");
+  if (overlay) overlay.classList.remove("show");
+}
+
+function openPrefillConfirm() {
+  return new Promise((resolve) => {
+    let overlay = $("prefillConfirmOverlay");
+    if (!overlay) return resolve(true);
+    if (overlay.parentNode !== document.body) {
+      document.body.appendChild(overlay);
+    }
+    overlay.onclick = (e) => {
+       if (e.target === overlay) {
+           closePrefillConfirm();
+           resolve(false);
+       }
+    };
+    const btnCancel = overlay.querySelector("#btnPrefillConfirmCancel");
+    const btnAccept = overlay.querySelector("#btnPrefillConfirmAccept");
+    if (btnCancel) {
+       btnCancel.onclick = () => {
+           closePrefillConfirm();
+           resolve(false);
+       };
+    }
+    if (btnAccept) {
+       btnAccept.onclick = () => {
+           closePrefillConfirm();
+           resolve(true);
+       };
+    }
+    requestAnimationFrame(() => {
+        overlay.classList.add("show");
+    });
+  });
+}
+function closePrefillConfirm() {
+  const overlay = $("prefillConfirmOverlay");
+  if (overlay) overlay.classList.remove("show");
+}
 
 async function execPrefillSemanal(todayStr) {
    if (!USER || !USER.clues || !window.supabase) return null;
@@ -8323,6 +8568,7 @@ async function execPrefillSemanal(todayStr) {
                const oldReport = await getTodayReports(lastDate, true);
                if (oldReport && oldReport.sr) {
                    window.PREFILL_SNAPSHOT = JSON.stringify(oldReport.sr.items || []);
+                   oldReport.sr.fecha_prefill = lastDate;
                    return oldReport.sr;
                }
            }
@@ -8447,7 +8693,63 @@ function renderCaptureSummary(data) {
   const titleEl = document.getElementById("captureSummaryTitle");
   if (titleEl) {
     const tipoTxt = tipo === "CONS" ? "Consumibles" : (tipo === "BIO" ? "Pedido de biológico" : "Existencia de biológicos");
-    titleEl.textContent = `Resumen de captura de ${tipoTxt} - ${formatAppDate(fecha)}`;
+    let t = `Resumen de captura de ${tipoTxt}`;
+    if ((tipo === "SR" || tipo === "CONS") && data.fIniStr && data.fFinStr) {
+       t += ` (Semana del ${formatAppDate(data.fIniStr)} al ${formatAppDate(data.fFinStr)})`;
+    } else if (tipo === "BIO" && fecha) {
+       const dateObj = new Date(`${fecha}T12:00:00`);
+       const monthName = dateObj.toLocaleString('es-MX', { month: 'long' });
+       t += ` (${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${dateObj.getFullYear()})`;
+    }
+    titleEl.textContent = t;
+  }
+
+  // Lógica de Selector de Pedidos Extraordinarios
+  let windowSelectorContainer = document.getElementById("captureSummaryWindowContainer");
+  if (!windowSelectorContainer) {
+    windowSelectorContainer = document.createElement("div");
+    windowSelectorContainer.id = "captureSummaryWindowContainer";
+    windowSelectorContainer.className = "mt-2 mb-4 max-w-sm";
+    const headerRow = titleEl ? titleEl.parentNode : document.getElementById("panelCaptureSummary");
+    headerRow.parentNode.insertBefore(windowSelectorContainer, headerRow.nextSibling);
+  }
+  
+  if (data.available_windows && data.available_windows.length > 1) {
+    let optionsHtml = data.available_windows.map(w => {
+       const isSelected = data.active_window && data.active_window.fecha === w.fecha && data.active_window.tipo_pedido === w.tipo_pedido;
+       return `<option value="${w.fecha}|${w.tipo_pedido}" ${isSelected ? 'selected' : ''}>${w.tipo_pedido} (Ventana: ${formatAppDate(w.fecha)})</option>`;
+    }).join("");
+    
+    windowSelectorContainer.innerHTML = `
+      <label class="text-[11px] font-black text-primary/50 uppercase tracking-widest block mb-2 ml-1">Múltiples pedidos detectados, selecciona uno:</label>
+      <div class="modern-input-group">
+        <span class="input-icon material-symbols-rounded">filter_list</span>
+        <select id="captureSummaryWindowSelect">
+          ${optionsHtml}
+        </select>
+      </div>
+    `;
+    
+    const selectEl = document.getElementById("captureSummaryWindowSelect");
+    selectEl.onchange = (e) => {
+       const [selFecha, selTipo] = e.target.value.split("|");
+       const payload = {
+         action: "adminCaptureOverview",
+         fecha: data.fecha,
+         tipo: data.tipo,
+         targetWindow: { fecha: selFecha, tipo_pedido: selTipo }
+       };
+       showOverlay("Cargando ventana...", "Resumen");
+       supabaseRequest("admincaptureoverview", payload).then(res => {
+         hideOverlay();
+         if (res && res.ok) renderCaptureSummary(res.data);
+       }).catch(err => {
+         hideOverlay();
+         console.error("Error al cargar ventana:", err);
+       });
+    };
+  } else {
+    windowSelectorContainer.innerHTML = "";
   }
 
   // Lógica de Ventana Inteligente para Pedido
@@ -8525,13 +8827,12 @@ function renderCaptureSummary(data) {
           <td data-label="Municipio">${escapeHtml(r.municipio || "")}</td>
           <td data-label="CLUES">${escapeHtml(r.clues || "")}</td>
           <td data-label="Unidad">${escapeHtml(r.unidad || "")}</td>
-          <td data-label="Capturó">
-            ${escapeHtml(r.capturado_por || "SISTEMA")}
-            ${r.tipo_pedido ? `<br><small class="opacity-60 font-black uppercase text-[10px] tracking-tighter">${r.tipo_pedido}</small>` : ""}
-          </td>
           <td data-label="Estatus">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; min-width:140px">
-              <span class="statusOk" style="font-size:13px">${r.editado === "SI" ? "Editado" : "Capturado"}</span>
+              <div>
+                <span class="statusOk" style="font-size:13px">${r.editado === "SI" ? "Editado" : "Capturado"}</span>
+                ${r.tipo_pedido ? `<div style="margin-top:4px"><small class="opacity-60 font-black uppercase text-[10px] tracking-tighter">${r.tipo_pedido}</small></div>` : ""}
+              </div>
               <button class="miniBtn ghostBtn" style="padding:6px; border-radius:12px; background:white; border:1px solid var(--md-sys-color-outline-variant); box-shadow:var(--md-shadow-1)" onclick="openLiveView('${r.clues}','${escapeHtml(r.unidad)}','${escapeHtml(r.municipio)}')" title="Ver inventario en vivo">
                  <span class="material-symbols-rounded" style="font-size:18px; color:var(--md-sys-color-primary)">visibility</span>
               </button>
@@ -8729,6 +9030,8 @@ function updateDynamicGreeting(timeGreeting = null, customSubtitle = null) {
     return dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
   };
 
+  const longDate = getLongDateSpanish();
+
   if (!title) {
     const hora = new Date().getHours();
     if (hora < 12) {
@@ -8739,8 +9042,7 @@ function updateDynamicGreeting(timeGreeting = null, customSubtitle = null) {
       title = "¡Buenas noches!";
     }
 
-    const longDate = getLongDateSpanish();
-    title += ` <span class="text-[0.45em] opacity-40 font-medium tracking-tight ml-4 hidden sm:inline-block">hoy es ${longDate}</span>`;
+
 
     if (!subtitle) {
       if (hora < 12) subtitle = "Qué bueno verte por aquí, iniciamos con éxito.";
@@ -8761,9 +9063,12 @@ function updateDynamicGreeting(timeGreeting = null, customSubtitle = null) {
   const theme = CURRENT_WEATHER.theme || 'dark-bg';
   const isDarkText = theme === 'light-bg';
   
-  const textTitleClass = isDarkText ? 'text-primary' : 'text-white';
-  const textSubClass = isDarkText ? 'text-primary/70' : 'text-white/80';
-  const textResumenClass = isDarkText ? 'text-primary/60' : 'text-white/70';
+  // Usar estilos inline (rgba) directos asegura que siempre haya contraste perfecto
+  // porque evita fallas si Tailwind no compiló las clases text-white/80 o text-primary/70
+  const colorTitle = isDarkText ? '#1e293b' : '#ffffff';
+  const colorSub = isDarkText ? 'rgba(30, 41, 59, 0.7)' : 'rgba(255, 255, 255, 0.8)';
+  const colorResumen = isDarkText ? 'rgba(30, 41, 59, 0.6)' : 'rgba(255, 255, 255, 0.7)';
+  const colorDivider = isDarkText ? 'rgba(30, 41, 59, 0.2)' : 'rgba(255, 255, 255, 0.2)';
 
   const parentEl = welcomeEl.parentElement;
   if (parentEl) {
@@ -8771,33 +9076,36 @@ function updateDynamicGreeting(timeGreeting = null, customSubtitle = null) {
     parentEl.setAttribute("data-theme", theme);
     parentEl.style.setProperty('--weather-bg', `url('${weatherBg}')`);
     
-    // Style the 'Resumen Operativo' span if it exists
     const resumenSpan = parentEl.querySelector("span.uppercase");
     if (resumenSpan) {
-      resumenSpan.className = `text-[10px] font-black uppercase tracking-[0.25em] mb-2 block relative z-10 transition-colors duration-500 ${textResumenClass}`;
+      resumenSpan.className = `text-[10px] font-black uppercase tracking-[0.25em] mb-2 block relative z-10 transition-colors duration-500`;
+      resumenSpan.style.color = colorResumen;
     }
   }
 
   welcomeEl.classList.remove("text-3xl", "sm:text-5xl");
-  welcomeEl.classList.add("text-2xl", "sm:text-[32px]", "w-full", "relative", "z-10");
+  welcomeEl.classList.add("text-2xl", "sm:text-[32px]", "w-full", "relative", "z-10", "pt-1");
   welcomeEl.innerHTML = `
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 w-full mt-1">
-        <div class="flex flex-col gap-0.5">
-          <span class="${textTitleClass} font-black tracking-tighter transition-colors duration-500 leading-none">
+      <div class="flex items-end justify-between w-full">
+        <div class="flex flex-col">
+          <h1 class="text-[26px] sm:text-[36px] font-black tracking-tight leading-none flex items-center flex-wrap gap-x-4 gap-y-2 drop-shadow-sm transition-colors duration-500" style="color: ${colorTitle};">
             ${title}
-          </span>
-          <span class="text-[11.5px] sm:text-[13px] font-bold ${textSubClass} mt-1 block tracking-tight transition-colors duration-500 max-w-[280px] leading-snug">
+            <span class="text-[14px] sm:text-[15px] font-semibold opacity-80 tracking-normal hidden sm:inline-block" style="color: ${colorTitle};">
+              • hoy es ${longDate}
+            </span>
+          </h1>
+          <p class="text-[14px] sm:text-[15px] font-medium mt-2 max-w-[450px] leading-relaxed drop-shadow-sm transition-colors duration-500" style="color: ${colorSub};">
             ${subtitle}
-          </span>
+          </p>
         </div>
         
         <div class="flex items-center gap-4 text-right shrink-0">
-          <div class="h-8 w-px ${isDarkText ? 'bg-primary/20' : 'bg-white/20'} hidden md:block transition-colors duration-500"></div>
+          <div class="h-8 w-px hidden md:block transition-colors duration-500" style="background-color: ${colorDivider};"></div>
           <div class="flex flex-col items-end">
-            <span class="text-[22px] sm:text-[28px] font-black ${textTitleClass} flex items-center gap-2 drop-shadow-sm transition-colors duration-500 leading-none">
+            <span class="text-[24px] sm:text-[32px] font-black flex items-center gap-2 drop-shadow-sm transition-colors duration-500 leading-none" style="color: ${colorTitle};">
               ${weatherTemp} ${weatherEmoji}
             </span>
-            <span class="text-[10px] sm:text-[11px] font-bold ${isDarkText ? 'text-primary/80' : 'text-white/90'} uppercase tracking-widest mt-1 drop-shadow-sm transition-colors duration-500" style="line-height:1;">
+            <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest mt-1.5 drop-shadow-sm transition-colors duration-500" style="line-height:1; color: ${colorSub};">
               ${weatherText}
             </span>
           </div>
@@ -9500,7 +9808,8 @@ if (bSaveSR) bSaveSR.onclick = async () => {
           })));
 
           if (currentSnapshot === prevSnapshot) {
-              if (!confirm("¿Estás seguro que quieres enviar la existencia sin cambios respecto al reporte anterior?")) {
+              const confirmed = await openPrefillConfirm();
+              if (!confirmed) {
                   return; // Cancels save
               }
           }
@@ -9652,7 +9961,9 @@ if (bSaveBIO) bSaveBIO.onclick = async () => {
         tipo_pedido: BIO_STATE.isInsideWindow ? "MENSUAL" : "EXTRAORDINARIO",
         sin_pedido: $("chkNoPedido")?.checked || false,
         fecha: BIO_STATE.fechaPedidoProgramada,
-        fechaPedidoProgramada: BIO_STATE.fechaPedidoProgramada
+        fechaPedidoProgramada: BIO_STATE.fechaPedidoProgramada,
+        windowStartYmd: BIO_STATE.captureWindowStartYmd,
+        windowEndYmd: BIO_STATE.captureWindowEndYmd
       });
       if (res.ok) await loadBioForm(true);
       return res;
@@ -9757,20 +10068,23 @@ if ($("btnDoExport")) $("btnDoExport").onclick = async () => {
     const tipo = $("exportTipo").value || "SR";
 
     let fIni = "";
+    let fFin = "";
     if (tipo === "BIO") {
       const exactSelect = $("exportBioExactDate");
       if (exactSelect && exactSelect.value) {
         fIni = exactSelect.value;
+        fFin = fIni;
       } else {
         const mm = $("exportMonth") ? $("exportMonth").value : "01";
         const yy = $("exportYear") ? $("exportYear").value : "2024";
         fIni = `${yy}-${mm}-01`;
+        const lastDay = new Date(parseInt(yy), parseInt(mm), 0);
+        fFin = dateToLocalYmd(lastDay);
       }
     } else {
       fIni = $("exportFechaInicio").value || todayYmdLocal();
+      fFin = $("exportFechaFin").value || fIni;
     }
-
-    const fFin = (tipo === "BIO" ? fIni : ($("exportFechaFin").value || fIni));
 
     const res = await apiCall({
       action: tipo === "BIO" ? "bioExportMatrix" : "export",
@@ -11482,7 +11796,8 @@ function formatAppDate(dateStr) {
   if (!dateStr || dateStr === "—") return "—";
   try {
     // Intentar parsear fecha ISO o similar
-    const d = new Date(dateStr);
+    const normalizedStr = dateStr.includes("T") ? dateStr : `${dateStr}T12:00:00`;
+    const d = new Date(normalizedStr);
     if (isNaN(d.getTime())) return dateStr;
 
     const day = String(d.getDate()).padStart(2, '0');
@@ -11531,19 +11846,37 @@ async function openLiveView(clues, unidad, municipio) {
     // 2. Títulos
     if ($("liveViewUnidad")) {
       let titlePrefix = "Existencia: ";
-      if (tipo === "CONS") titlePrefix = "Consumibles: ";
-      else if (tipo === "BIO") titlePrefix = "Pedido BIO: ";
+      let tableTitle = "Detalle de Existencia Actual";
+      if (tipo === "CONS") { titlePrefix = "Consumibles: "; tableTitle = "Detalle de Consumibles"; }
+      else if (tipo === "BIO") { titlePrefix = "Pedido BIO: "; tableTitle = "Detalle del Pedido"; }
       $("liveViewUnidad").textContent = titlePrefix + unidad;
+      if ($("liveViewTableTitle")) $("liveViewTableTitle").textContent = tableTitle;
     }
     if ($("liveViewMunicipio")) {
       $("liveViewMunicipio").innerHTML =
         escapeHtml(municipio) + " &nbsp;|&nbsp; " + escapeHtml(clues) +
-        `<span style="margin-left:12px; font-size:11px; background:#e8f0fe; color:#003366; padding:2px 10px; border-radius:20px; font-weight:700;">📅 ${fechaFormatted}</span>`;
+        `<span style="margin-left:12px; font-size:11px; background:#e8f0fe; color:#003366; padding:2px 10px; border-radius:20px; font-weight:700;" id="liveViewDateBadge">📅 ${fechaFormatted}</span>`;
     }
 
     // 3. Petición real
     const res = await apiCall("adminGetUnitDetail", { clues, fecha, tipo });
     if (!res || !res.ok) throw new Error((res && res.error) || "Sin respuesta del servidor");
+
+    // 3.5 Actualizar la fecha y capturista
+    let capturistaStr = "—";
+    if (res.data && res.data.length > 0) {
+      capturistaStr = res.data[0].capturado_por || "SISTEMA";
+    }
+
+    if (res.meta && res.meta.fecha && res.meta.fecha !== fecha) {
+      const realFechaFormatted = formatAppDate(res.meta.fecha);
+      const badge = document.getElementById("liveViewDateBadge");
+      if (badge) badge.textContent = `📅 ${realFechaFormatted}`;
+    }
+
+    if ($("liveViewMunicipio")) {
+      $("liveViewMunicipio").insertAdjacentHTML('beforeend', `<span style="margin-left:8px; font-size:11px; background:#f1f5f9; color:#475569; padding:2px 10px; border-radius:20px; font-weight:700;">👤 Capturó: ${escapeHtml(capturistaStr)}</span>`);
+    }
 
     // 4. Renderizar según tipo
     if (tipo === "SR") {
@@ -11554,18 +11887,52 @@ async function openLiveView(clues, unidad, municipio) {
              <th style="padding: 16px 24px; text-align: left;">Lote</th>
              <th style="padding: 16px 24px; text-align: center;">Existencia</th>
              <th style="padding: 16px 24px; text-align: center;">Caducidad</th>
-             <th style="padding: 16px 24px; text-align: center;">Semaforización</th>
-             <th style="padding: 16px 24px; text-align: center;">Última Rec.</th>
+             <th style="padding: 16px 24px; text-align: center;">Vigencia</th>
+             <th style="padding: 16px 24px; text-align: center;">Red de Frío</th>
            `;
       }
 
       if (!res.data || !res.data.length) {
         tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay registros detallados para esta fecha.</td></tr>';
-        renderLiveCharts({ pronto: 0, normal: 0, lejana: 0 }, { m3: 0, m6: 0, m12: 0, more: 0 });
+        renderLiveCharts("SR", null, null);
       } else {
         const items = res.data;
         let semStats = { pronto: 0, normal: 0, lejana: 0 };
         let cadStats = { m3: 0, m6: 0, m12: 0, more: 0 };
+
+        const getPermanenciaStatus = (recepcionIso) => {
+          if (!recepcionIso) return { html: `<span style="color:#94a3b8; font-size:11px;">Sin fecha</span>` };
+          const dRec = new Date(recepcionIso);
+          const now = new Date();
+          dRec.setHours(0,0,0,0); now.setHours(0,0,0,0);
+          const diffDays = Math.floor((now - dRec) / (1000 * 60 * 60 * 24));
+          
+          const formatTime = (d) => {
+            const m = Math.floor(d / 30); const rd = d % 30;
+            let p = [];
+            if (m > 0) p.push(`${m}m`);
+            if (rd > 0 || m === 0) p.push(`${rd}d`);
+            return p.join(' ');
+          };
+
+          let tone = "good", icon = "check_circle", text = formatTime(diffDays);
+          if (diffDays > 90) { tone = "bad"; icon = "error"; text = "Límite excedido"; }
+          else if (diffDays >= 60) { tone = "warn"; icon = "warning"; text = "Alerta: " + text; }
+          
+          let bg = tone === "bad" ? "#fef2f2" : tone === "warn" ? "#fffbeb" : "#f0fdf4";
+          let color = tone === "bad" ? "#ef4444" : tone === "warn" ? "#d97706" : "#10b981";
+          
+          return {
+            html: `
+              <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+                <span style="font-size:11px; color:#64748b; font-weight:700;">${formatAppDate(recepcionIso)}</span>
+                <span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:12px; background:${bg}; color:${color}; font-size:10px; font-weight:800; border: 1px solid ${color}40;">
+                  <span class="material-symbols-rounded" style="font-size:12px;">${icon}</span> ${text}
+                </span>
+              </div>
+            `
+          };
+        };
 
         tbody.innerHTML = items.map(r => {
           const status = getSemaforoStatus(r.caducidad);
@@ -11575,6 +11942,8 @@ async function openLiveView(clues, unidad, municipio) {
           else if (diffMonths <= 6) cadStats.m6++;
           else if (diffMonths <= 12) cadStats.m12++;
           else cadStats.more++;
+
+          const perm = getPermanenciaStatus(r.fecha_recepcion);
 
           return `
                 <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
@@ -11587,11 +11956,13 @@ async function openLiveView(clues, unidad, municipio) {
                   <td style="padding:14px 24px; text-align:center;">
                     <span class="status-pill-pro ${status.key}">${status.label}</span>
                   </td>
-                  <td style="padding:14px 24px; font-weight:600; text-align:center; color:#94a3b8; font-size: 11px;">${formatAppDate(r.fecha_recepcion)}</td>
+                  <td style="padding:14px 24px; text-align:center;">
+                    ${perm.html}
+                  </td>
                 </tr>
               `;
         }).join("");
-        renderLiveCharts(semStats, cadStats);
+        renderLiveCharts("SR", semStats, cadStats);
       }
     } else if (tipo === "BIO") {
       if (headRow) {
@@ -11601,13 +11972,12 @@ async function openLiveView(clues, unidad, municipio) {
              <th style="padding: 16px 24px; text-align: center;">Pedido (Frascos)</th>
              <th style="padding: 16px 24px; text-align: center;">Promedio</th>
              <th style="padding: 16px 24px; text-align: center;">Dosis Mín/Máx</th>
-             <th style="padding: 16px 24px; text-align: left;">Capturado Por</th>
            `;
       }
 
       if (!res.data || !res.data.length) {
         tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay pedido de biológicos para esta fecha.</td></tr>';
-        renderLiveCharts({ pronto: 0, normal: 0, lejana: 0 }, { m3: 0, m6: 0, m12: 0, more: 0 });
+        renderLiveCharts("BIO", null, null);
       } else {
         const items = res.data;
         tbody.innerHTML = items.map(r => `
@@ -11621,10 +11991,15 @@ async function openLiveView(clues, unidad, municipio) {
                </td>
                <td style="padding:14px 24px; text-align:center; font-weight:700; color:#475569;">${r.promedio_frascos ?? 0}</td>
                <td style="padding:14px 24px; text-align:center; font-weight:600; color:#64748b;">${r.min_dosis ?? 0} / ${r.max_dosis ?? 0}</td>
-               <td style="padding:14px 24px; color:#475569; font-size:12px; font-weight:600;">${escapeHtml(r.capturado_por || "—")}</td>
              </tr>
            `).join("");
-        renderLiveCharts({ pronto: 0, normal: 1, lejana: 0 }, { m3: 0, m6: 0, m12: 0, more: 1 });
+        let sumExistencia = 0, sumPedido = 0;
+        let topBio = items.map(r => ({ bio: r.biologico, cant: r.pedido_frascos ?? r.solicitud ?? 0 })).sort((a,b)=>b.cant-a.cant).slice(0,4);
+        items.forEach(r => {
+          sumExistencia += (r.existencia_actual_frascos ?? r.existencia ?? 0);
+          sumPedido += (r.pedido_frascos ?? r.solicitud ?? 0);
+        });
+        renderLiveCharts("BIO", { existencia: sumExistencia, pedido: sumPedido }, topBio);
       }
     } else {
       // Tipo CONSUMIBLES
@@ -11632,18 +12007,17 @@ async function openLiveView(clues, unidad, municipio) {
         headRow.innerHTML = `
              <th style="padding: 16px 24px; text-align: left;">Insumo / Concepto</th>
              <th style="padding: 16px 24px; text-align: center;">Cantidad / Dosis</th>
-             <th style="padding: 16px 24px; text-align: left;" colspan="4">Detalles adicionales</th>
            `;
       }
 
       if (!res.data || !res.data.length) {
         tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay reporte de consumibles hoy.</td></tr>';
-        renderLiveCharts({ pronto: 0, normal: 0, lejana: 0 }, { m3: 0, m6: 0, m12: 0, more: 0 });
+        renderLiveCharts("CONS", null, null);
       } else {
         const c = res.data[0];
         const rows = [
-          { label: "Surtimiento SRP (Dosis)", val: c.srp_dosis || 0 },
-          { label: "Surtimiento SR (Dosis)", val: c.sr_dosis || 0 },
+          { label: "Existencia SRP (Dosis)", val: c.srp_dosis || 0 },
+          { label: "Existencia SR (Dosis)", val: c.sr_dosis || 0 },
           { label: "Jeringa de 5 ml", val: c.jeringa_reconst_5ml_0605500438 || 0 },
           { label: "Jeringa de 0.5 ml", val: c.jeringa_aplic_05ml_0605502657 || 0 },
           { label: "Aguja", val: c.aguja_0600403711 || 0 }
@@ -11654,10 +12028,11 @@ async function openLiveView(clues, unidad, municipio) {
                <td style="padding:16px 24px; text-align:center;">
                  <span class="live-view-count-badge">${r.val || 0}</span>
                </td>
-               <td colspan="4" style="padding:16px 24px; color:#94a3b8; font-size:12px; font-weight:600;">Reportado por ${escapeHtml(c.capturado_por || "—")}</td>
              </tr>
            `).join("");
-        renderLiveCharts({ pronto: 0, normal: 0, lejana: 1 }, { m3: 0, m6: 0, m12: 0, more: 1 });
+        let srp = c.srp_dosis || 0, sr = c.sr_dosis || 0;
+        let j5 = c.jeringa_reconst_5ml_0605500438 || 0, j05 = c.jeringa_aplic_05ml_0605502657 || 0, ag = c.aguja_0600403711 || 0;
+        renderLiveCharts("CONS", { j5, j05, ag }, { srp, sr });
       }
     }
 
@@ -11729,54 +12104,96 @@ function getSemaforoStatus(val) {
   return { key: "lejana", label: "Vigente", color: "#10b981" };
 }
 
-function renderLiveCharts(sem, cad) {
+function renderLiveCharts(tipo, leftData, rightData) {
   try {
-    const ctxSem = $("chartSemaforo")?.getContext("2d");
-    const ctxCad = $("chartCaducidad")?.getContext("2d");
-    if (!ctxSem || !ctxCad) return;
+    const ctxLeft = $("liveChartLeft")?.getContext("2d");
+    const ctxRight = $("liveChartRight")?.getContext("2d");
+    if (!ctxLeft || !ctxRight) return;
 
     if (CHART_SEM) CHART_SEM.destroy();
     if (CHART_CAD) CHART_CAD.destroy();
 
-    CHART_SEM = new Chart(ctxSem, {
-      type: 'doughnut',
-      data: {
-        labels: ['Próxima', 'Media', 'Vigente'],
-        datasets: [{
-          data: [sem.pronto, sem.normal, sem.lejana],
-          backgroundColor: ['#f87171', '#fbbf24', '#4ade80'],
-          borderWidth: 0,
-          hoverOffset: 4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { position: 'right', labels: { boxWidth: 8, font: { size: 9, weight: '700' } } } }
-      }
-    });
+    const setDOM = (kL, tL, dL, kR, tR, dR) => {
+      if($("liveChartLeftKicker")) $("liveChartLeftKicker").textContent = kL;
+      if($("liveChartLeftTitle")) $("liveChartLeftTitle").textContent = tL;
+      if($("liveChartLeftDesc")) $("liveChartLeftDesc").textContent = dL;
+      if($("liveChartRightKicker")) $("liveChartRightKicker").textContent = kR;
+      if($("liveChartRightTitle")) $("liveChartRightTitle").textContent = tR;
+      if($("liveChartRightDesc")) $("liveChartRightDesc").textContent = dR;
+    };
 
-    CHART_CAD = new Chart(ctxCad, {
-      type: 'bar',
-      data: {
-        labels: ['< 3m', '3-6m', '6-12m', '> 12m'],
-        datasets: [{
-          label: 'Lotes',
-          data: [cad.m3, cad.m6, cad.m12, cad.more],
-          backgroundColor: '#3b82f6',
-          borderRadius: 6
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 8 } }, grid: { display: false } },
-          x: { ticks: { font: { size: 8, weight: '700' } }, grid: { display: false } }
+    if (tipo === "SR") {
+      setDOM("Salud del Inventario", "Estado Semafórico", "Distribución por vigencia", "Riesgo de Caducidad", "Próximos Vencimientos", "Análisis de tiempo");
+      let sem = leftData || { pronto:0, normal:0, lejana:0 };
+      let cad = rightData || { m3:0, m6:0, m12:0, more:0 };
+      
+      CHART_SEM = new Chart(ctxLeft, {
+        type: 'doughnut',
+        data: {
+          labels: ['Próxima', 'Media', 'Vigente'],
+          datasets: [{ data: [sem.pronto, sem.normal, sem.lejana], backgroundColor: ['#f87171', '#fbbf24', '#4ade80'], borderWidth: 0, hoverOffset: 4 }]
         },
-        plugins: { legend: { display: false } }
-      }
-    });
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 8, font: { size: 9, weight: '700' } } } } }
+      });
+
+      CHART_CAD = new Chart(ctxRight, {
+        type: 'bar',
+        data: {
+          labels: ['< 3m', '3-6m', '6-12m', '> 12m'],
+          datasets: [{ label: 'Lotes', data: [cad.m3, cad.m6, cad.m12, cad.more], backgroundColor: '#3b82f6', borderRadius: 6 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 8 } }, grid: { display: false } }, x: { ticks: { font: { size: 8, weight: '700' } }, grid: { display: false } } }, plugins: { legend: { display: false } } }
+      });
+
+    } else if (tipo === "BIO") {
+      setDOM("Balance Global", "Relación de Inventario", "Total Existencia vs Pedido", "Volumen Solicitado", "Top Biológicos", "Mayor cantidad de frascos");
+      let ex = leftData?.existencia || 0;
+      let pd = leftData?.pedido || 0;
+      let top = rightData || [];
+      
+      CHART_SEM = new Chart(ctxLeft, {
+        type: 'doughnut',
+        data: {
+          labels: ['Existencia Actual', 'Pedido Solicitado'],
+          datasets: [{ data: [ex, pd], backgroundColor: ['#94a3b8', '#8b5cf6'], borderWidth: 0, hoverOffset: 4 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 8, font: { size: 9, weight: '700' } } } } }
+      });
+
+      let topLabels = top.map(t => t.bio);
+      let topCant = top.map(t => t.cant);
+      CHART_CAD = new Chart(ctxRight, {
+        type: 'bar',
+        data: {
+          labels: topLabels.length ? topLabels : ['Sin datos'],
+          datasets: [{ label: 'Frascos', data: topCant.length ? topCant : [0], backgroundColor: '#c084fc', borderRadius: 6 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { font: { size: 8 } }, grid: { display: false } }, x: { ticks: { font: { size: 8, weight: '700' }, maxRotation: 45, minRotation: 45 }, grid: { display: false } } }, plugins: { legend: { display: false } } }
+      });
+
+    } else if (tipo === "CONS") {
+      setDOM("Distribución", "Insumos Reportados", "Proporción de material", "Dosis Reportadas", "Existencia Dosis", "SRP vs SR");
+      let j5 = leftData?.j5 || 0, j05 = leftData?.j05 || 0, ag = leftData?.ag || 0;
+      let srp = rightData?.srp || 0, sr = rightData?.sr || 0;
+
+      CHART_SEM = new Chart(ctxLeft, {
+        type: 'doughnut',
+        data: {
+          labels: ['Jeringa 5ml', 'Jeringa 0.5ml', 'Agujas'],
+          datasets: [{ data: [j5, j05, ag], backgroundColor: ['#38bdf8', '#0ea5e9', '#0284c7'], borderWidth: 0, hoverOffset: 4 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 8, font: { size: 9, weight: '700' } } } } }
+      });
+
+      CHART_CAD = new Chart(ctxRight, {
+        type: 'bar',
+        data: {
+          labels: ['SRP', 'SR'],
+          datasets: [{ label: 'Dosis', data: [srp, sr], backgroundColor: '#059669', borderRadius: 6 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { font: { size: 8 } }, grid: { display: false } }, x: { ticks: { font: { size: 10, weight: '900' } }, grid: { display: false } } }, plugins: { legend: { display: false } } }
+      });
+    }
   } catch (err) {
     console.warn("Chart error:", err);
   }

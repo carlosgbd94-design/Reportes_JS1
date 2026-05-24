@@ -865,6 +865,54 @@
             </div>
           </div>
 
+          <!-- ✅ NOTIFICACIÓN PRECARGA DE BIOLÓGICO -->
+          <div id="prefillNoticeOverlay"
+            class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
+            aria-hidden="true">
+            <div class="bg-white border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100" style="width: 100%; max-width: 420px; min-width: 300px;">
+              <div class="p-8 pb-6 border-b border-outline-variant/20 flex flex-col items-center text-center" style="background: linear-gradient(to bottom right, rgba(2, 132, 199, 0.08), transparent);">
+                <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4 shadow-sm" style="background-color: #e0f2fe; color: #0284c7;">
+                  <span class="material-symbols-rounded text-[32px]">info</span>
+                </div>
+                <div class="text-[20px] font-extrabold text-primary tracking-tight mb-2">Información Recuperada</div>
+                <div class="text-[14px] font-medium text-surface-onVariant/80 leading-relaxed" id="prefillNoticeMsg">
+                  Hemos precargado tu última captura de biológicos para ahorrarte tiempo.
+                </div>
+              </div>
+              <div class="flex items-center justify-center p-5 bg-white">
+                <button class="px-8 h-[46px] rounded-xl font-bold flex items-center justify-center transition-all shadow-md w-full border-none cursor-pointer" id="btnPrefillNoticeAccept" type="button" style="background-color: #0ea5e9; color: white;">
+                  Entendido
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ✅ CONFIRMACIÓN DE GUARDADO SIN CAMBIOS -->
+          <div id="prefillConfirmOverlay"
+            class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
+            aria-hidden="true">
+            <div class="bg-white border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100" style="width: 100%; max-width: 450px; min-width: 300px;">
+              <div class="p-8 pb-6 border-b border-outline-variant/20" style="background: linear-gradient(to bottom right, rgba(217, 119, 6, 0.08), transparent);">
+                <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] mb-3" style="color: #d97706;">
+                  <span class="material-symbols-rounded text-base">warning</span>
+                  Validación preventiva
+                </div>
+                <div class="text-[20px] font-extrabold text-primary tracking-tight mb-2">Guardado sin modificaciones</div>
+                <div class="text-[13px] font-medium text-surface-onVariant/80 leading-relaxed">
+                  Estás guardando la existencia sin modificación alguna respecto a la captura anterior.<br><br><strong style="color: #475569;">¿Deseas continuar?</strong>
+                </div>
+              </div>
+              <div class="flex items-center justify-end gap-3 p-6 bg-surface-variant/20 border-t border-outline-variant/30">
+                <button class="bg-transparent text-primary px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer hover:bg-primary/5" id="btnPrefillConfirmCancel" type="button">
+                  <span class="material-symbols-rounded text-[20px]">close</span> Cancelar
+                </button>
+                <button class="px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all shadow-md3-1 border-none cursor-pointer" id="btnPrefillConfirmAccept" type="button" style="background-color: #d97706; color: white;">
+                  <span class="material-symbols-rounded text-[20px]">done_all</span> Sí, continuar
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- PINOL -->
           <div id="formPINOL" style="display:none" class="flex flex-col gap-8">
             <!-- Info Insumo Superior -->
@@ -1278,7 +1326,6 @@
                         <th>Municipio</th>
                         <th>CLUES</th>
                         <th>Unidad</th>
-                        <th>Capturó</th>
                         <th>Estatus</th>
                       </tr>
                     </thead>
@@ -2748,6 +2795,39 @@
   </div>
   </div>
 
+  <!-- ? MODAL CONFIRMACION DESABASTO -->
+  <div class="modalOverlay" id="desabastoConfirmModal">
+    <div class="modal"
+      style="width: 100%; max-width: 480px; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+      <div class="modalHead">
+        <div class="modalEyebrow" style="background: #fef2f2; color: #dc2626; padding: 6px 14px; border-radius: 12px; display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 11px; text-transform: uppercase; margin-bottom: 12px;">
+          <span class="material-symbols-rounded" style="font-size:16px;">error</span> Alerta de Desabasto
+        </div>
+        <div class="modalTitle" style="font-weight:900; margin-bottom:8px;">Faltan biológicos esenciales</div>
+        <div class="modalSub" style="color:var(--md-sys-color-on-surface-variant); line-height:1.5;">
+          No reportas existencia de los siguientes biológicos:
+        </div>
+      </div>
+      <div class="modalBody" style="padding-top:16px;">
+        <div id="desabastoList" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
+          <!-- Chips renderizados dinámicamente -->
+        </div>
+        <div class="modalNote" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a;">
+          <span class="material-symbols-rounded" style="font-size:18px;">info</span>
+          <div>¿Deseas continuar? Esto enviará una alerta a tu supervisor municipal para notificar el desabasto.</div>
+        </div>
+      </div>
+      <div class="modalFooter" style="margin-top:32px; display:flex; justify-content:flex-end; gap:12px;">
+        <button class="ghostBtn" type="button" onclick="closeDesabastoModal()" style="font-weight:700; border:none; background:transparent;">
+          Regresar a Corregir
+        </button>
+        <button class="btn" id="btnConfirmDesabasto" type="button" style="background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); font-weight:800;">
+          Sí, Continuar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div class="appFooter">
     &copy; <span id="footerYear">2026</span> JS1 Reportes | Desarrollado por <a href="mailto:carlosgbd94@gmail.com"
       style="color:inherit;text-decoration:underline;">carlosgbd94@gmail.com</a>
@@ -2784,29 +2864,29 @@
 
           <div
             style="background: #fff; border-radius: 24px; padding: 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 20px;">
-            <div style="width: 100px; height: 100px; flex-shrink: 0;">
-              <canvas id="chartSemaforo"></canvas>
+            <div id="liveChartLeftContainer" style="width: 100px; height: 100px; flex-shrink: 0; position: relative;">
+              <canvas id="liveChartLeft"></canvas>
             </div>
             <div style="flex: 1;">
-              <div
+              <div id="liveChartLeftKicker"
                 style="font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">
                 Salud del Inventario</div>
-              <div style="font-size: 18px; font-weight: 900; color: #0f172a;">Estado Semafórico</div>
-              <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">Distribución por vigencia</div>
+              <div id="liveChartLeftTitle" style="font-size: 18px; font-weight: 900; color: #0f172a;">Estado Semafórico</div>
+              <div id="liveChartLeftDesc" style="font-size: 12px; color: #94a3b8; margin-top: 2px;">Distribución por vigencia</div>
             </div>
           </div>
 
           <div
             style="background: #fff; border-radius: 24px; padding: 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 20px;">
-            <div style="width: 140px; height: 100px; flex-shrink: 0;">
-              <canvas id="chartCaducidad"></canvas>
+            <div id="liveChartRightContainer" style="width: 140px; height: 100px; flex-shrink: 0; position: relative;">
+              <canvas id="liveChartRight"></canvas>
             </div>
             <div style="flex: 1;">
-              <div
+              <div id="liveChartRightKicker"
                 style="font-size: 10px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">
                 Riesgo de Caducidad</div>
-              <div style="font-size: 18px; font-weight: 900; color: #0f172a;">Próximos Vencimientos</div>
-              <div style="font-size: 12px; color: #94a3b8; margin-top: 2px;">Análisis de tiempo</div>
+              <div id="liveChartRightTitle" style="font-size: 18px; font-weight: 900; color: #0f172a;">Próximos Vencimientos</div>
+              <div id="liveChartRightDesc" style="font-size: 12px; color: #94a3b8; margin-top: 2px;">Análisis de tiempo</div>
             </div>
           </div>
 
@@ -2817,7 +2897,7 @@
           style="background: #fff; border-radius: 24px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);">
           <div
             style="padding: 16px 24px; background: #fff; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between;">
-            <div style="font-size: 14px; font-weight: 900; color: #0f172a;">Detalle de Existencia Actual</div>
+            <div id="liveViewTableTitle" style="font-size: 14px; font-weight: 900; color: #0f172a;">Detalle de Existencia Actual</div>
             <div
               style="font-size: 11px; font-weight: 700; color: #64748b; background: #f1f5f9; padding: 4px 12px; border-radius: 8px;">
               Vista Operativa</div>
