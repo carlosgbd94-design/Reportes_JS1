@@ -863,6 +863,29 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
                 return Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim());
             });
 
+            // Helper para cargar logo
+            const loadLogoBase64 = () => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = 'Anonymous';
+                    img.src = 'https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/Seseq_vertical_2025.png';
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        resolve({
+                            data: canvas.toDataURL('image/png'),
+                            ratio: img.width / img.height
+                        });
+                    };
+                    img.onerror = () => resolve(null);
+                });
+            };
+            
+            const logoData = await loadLogoBase64();
+
             // 4. Inicializar jsPDF en formato Carta Horizontal (Landscape)
             // Dimensiones Carta: 11 x 8.5 in -> 279.4 x 215.9 mm
             const doc = new jsPDF({
@@ -873,43 +896,49 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
 
             // 5. Configurar diseño visual del encabezado (Premium Aesthetic)
             const marginX = 15;
-            let currentY = 15;
+            let currentY = 0;
 
-            // Franja superior de marca institucional
+            // Franja superior de marca institucional (Edge to Edge)
             doc.setFillColor(15, 23, 42); // Slate 900
-            doc.rect(marginX, currentY, 249.4, 3, 'F');
-            currentY += 8;
+            doc.rect(0, 0, 279.4, 6, 'F');
+            doc.setFillColor(13, 148, 136); // Teal 600 accent
+            doc.rect(0, 6, 279.4, 1.5, 'F');
+            
+            currentY = 18;
+
+            let textStartX = marginX;
+            if (logoData) {
+                // Logo Seseq (Manteniendo Relación de Aspecto)
+                const logoH = 26;
+                const logoW = logoH * logoData.ratio;
+                doc.addImage(logoData.data, 'PNG', marginX, currentY, logoW, logoH, undefined, 'FAST');
+                textStartX = marginX + logoW + 8;
+            }
 
             // Título Principal
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(22);
+            doc.setFontSize(24);
             doc.setTextColor(15, 23, 42);
-            doc.text("Indicadores RDA 2026", marginX, currentY);
-
-            // Avance del Cierre
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(11);
-            doc.setTextColor(13, 148, 136); // Teal 600
-            doc.text(`AVANCE AL CIERRE: ${maxMesLabel}`, 264.4, currentY, { align: 'right' });
-            currentY += 5;
+            doc.text("Indicadores RDA 2026", textStartX, currentY + 8);
 
             // Subtítulo
             doc.setFont('helvetica', 'normal');
-            doc.setFontSize(10);
+            doc.setFontSize(11);
             doc.setTextColor(100, 116, 139); // Slate 500
-            doc.text(`${esquemaTexto.toUpperCase()}  |  ${muni.toUpperCase()}`, marginX, currentY);
+            doc.text(`${esquemaTexto.toUpperCase()}  |  ${muni.toUpperCase()}`, textStartX, currentY + 16);
 
-            // Subtítulo Secundario Derecha
+            // Avance del Cierre (Derecha)
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(8);
-            doc.setTextColor(148, 163, 184); // Slate 400
-            doc.text("JS1 QUERÉTARO - REPORTE DE GESTIÓN", 264.4, currentY, { align: 'right' });
-            currentY += 8;
+            doc.setFontSize(12);
+            doc.setTextColor(13, 148, 136); // Teal 600
+            doc.text(`AVANCE AL CIERRE: ${maxMesLabel}`, 264.4, currentY + 8, { align: 'right' });
+            
+            currentY = 52;
 
-            // 6. Sección de Gráficas (Lado a lado con bordes suaves)
-            const chartSectionHeight = 55;
-            const cardWidthA = 80;
-            const cardWidthB = 154.4;
+            // 6. Sección de Gráficas (Lado a lado, más amplias para mejor distribución)
+            const chartSectionHeight = 70;
+            const cardWidthA = 85;
+            const cardWidthB = 149.4; // Ajuste para el margen derecho
             const gap = 15;
 
             // Tarjeta A (Gráfica de Avance)
@@ -919,13 +948,13 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             doc.roundedRect(marginX, currentY, cardWidthA, chartSectionHeight, 4, 4, 'D');
 
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(8);
+            doc.setFontSize(9);
             doc.setTextColor(100, 116, 139);
-            doc.text("DISTRIBUCIÓN DE AVANCE", marginX + 5, currentY + 7);
+            doc.text("DISTRIBUCIÓN DE AVANCE", marginX + 6, currentY + 8);
 
             if (imgAvanceBase64) {
                 // Centrado dinámico dentro de la tarjeta
-                doc.addImage(imgAvanceBase64, 'PNG', marginX + 10, currentY + 11, 60, 40, undefined, 'FAST');
+                doc.addImage(imgAvanceBase64, 'PNG', marginX + 10, currentY + 12, 65, 53, undefined, 'FAST');
             }
 
             // Tarjeta B (Gráfica Top Unidades)
@@ -935,15 +964,15 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             doc.roundedRect(marginX + cardWidthA + gap, currentY, cardWidthB, chartSectionHeight, 4, 4, 'D');
 
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(8);
+            doc.setFontSize(9);
             doc.setTextColor(100, 116, 139);
-            doc.text("TOP UNIDADES / MUNICIPIOS DE LA JURISDICCIÓN", marginX + cardWidthA + gap + 5, currentY + 7);
+            doc.text("TOP UNIDADES / MUNICIPIOS DE LA JURISDICCIÓN", marginX + cardWidthA + gap + 6, currentY + 8);
 
             if (imgTopBase64) {
-                doc.addImage(imgTopBase64, 'PNG', marginX + cardWidthA + gap + 10, currentY + 11, 134.4, 40, undefined, 'FAST');
+                doc.addImage(imgTopBase64, 'PNG', marginX + cardWidthA + gap + 10, currentY + 12, 129.4, 53, undefined, 'FAST');
             }
 
-            currentY += chartSectionHeight + 8;
+            currentY += chartSectionHeight + 10;
 
             // 7. Renderizar Tabla Vectorial Completa con jsPDF-autotable
             doc.autoTable({
@@ -951,11 +980,11 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
                 body: tableRows,
                 startY: currentY,
                 margin: { left: marginX, right: marginX },
-                theme: 'grid',
+                theme: 'striped',
                 styles: {
-                    fontSize: 8,
+                    fontSize: 9, // Letra un poco más grande
                     font: 'helvetica',
-                    cellPadding: 3,
+                    cellPadding: 4, // Más padding para que la tabla llene el espacio
                     valign: 'middle'
                 },
                 headStyles: {
@@ -965,7 +994,7 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
                     halign: 'center'
                 },
                 columnStyles: {
-                    0: { halign: 'left', font: 'courier', fontStyle: 'bold', cellWidth: 25 },
+                    0: { halign: 'left', font: 'helvetica', fontStyle: 'bold', cellWidth: 25 },
                     1: { halign: 'left', fontStyle: 'bold', cellWidth: 55 },
                     2: { halign: 'left', cellWidth: 30 }
                 },
