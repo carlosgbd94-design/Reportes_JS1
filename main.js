@@ -8459,7 +8459,15 @@ async function reloadTodayState() {
     hydrateTodayForms(today);
 
     if (isPrefill) {
-       await openPrefillNotice(today.sr.fecha_prefill || today.sr.fecha);
+       const prefillDate = today.sr.fecha_prefill || today.sr.fecha;
+       const userClues = (window.USER && window.USER.clues) ? window.USER.clues : 'unknown';
+       const ackKey = `prefill_ack_${userClues}_${todayStr}`;
+       
+       if (!localStorage.getItem(ackKey)) {
+           await openPrefillNotice(prefillDate);
+           localStorage.setItem(ackKey, 'true');
+       }
+
        EDIT_SR = false; // Es un insert nuevo para "hoy"
        HAS_TODAY_SR = false; // Desbloqueamos el form para que lo guarden de nuevo
        applyCaptureLockState(); // Refrescar los botones y el estado locked
