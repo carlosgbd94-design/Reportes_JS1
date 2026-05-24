@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Propuestas - Pedido de Biológico</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+    
+    :root {
+      --primary: #0f172a;
+      --surface: #ffffff;
+      --bg: #e8ecf1;
+      --border: #cbd5e1;
+      --text: #1e293b;
+      --muted: #64748b;
+      
+      --good-bg: #dcfce7; --good-txt: #166534;
+      --warn-bg: #fef9c3; --warn-txt: #854d0e;
+      --camp-bg: #e0e7ff; --camp-txt: #3730a3;
+      --extra-bg: #fee2e2; --extra-txt: #991b1b;
+    }
+
+    body {
+      margin: 0; font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+    }
+
+    /* === SIDEBAR (CONTROLES) === */
+    .sidebar {
+      width: 320px;
+      background: #ffffff;
+      border-right: 1px solid var(--border);
+      padding: 32px 24px;
+      height: 100vh; position: sticky; top: 0;
+      box-shadow: 4px 0 24px rgba(0,0,0,0.03);
+    }
+    .sidebar h1 { margin: 0 0 16px; font-size: 18px; font-weight: 900; }
+    .sidebar p { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+    
+    .btn-option {
+      width: 100%; text-align: left; background: #f8fafc; border: 1px solid var(--border);
+      padding: 16px; border-radius: 12px; margin-bottom: 12px; cursor: pointer;
+      font-family: inherit; font-weight: 700; color: var(--text); transition: all 0.2s;
+    }
+    .btn-option:hover { background: #e2e8f0; }
+    .btn-option.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .btn-option span { display: block; font-size: 11px; font-weight: 400; opacity: 0.8; margin-top: 4px; }
+
+    /* === CONTENIDO === */
+    .content { flex: 1; padding: 40px; display: flex; flex-direction: column; align-items: center; }
+    
+    .panel {
+      width: 100%; max-width: 1100px;
+      background: var(--surface); border-radius: 24px;
+      padding: 32px; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.04);
+      border: 1px solid rgba(0,0,0,0.04);
+      transition: all 0.3s ease;
+    }
+
+    /* === SOLUCIÓN AL INPUT === */
+    /* Aquí corregimos el alineamiento vertical para que ícono, texto y label queden perfectos */
+    .input-header {
+      display: flex; gap: 24px; margin-bottom: 32px; align-items: flex-end;
+    }
+    .fixed-input-group {
+      position: relative; flex: 1;
+    }
+    .fixed-input-group input {
+      width: 100%; height: 60px;
+      padding: 24px 16px 8px 56px; /* Espacio exacto para el texto abajo y el label arriba */
+      font-size: 15px; font-weight: 700; font-family: inherit;
+      border: 2px solid var(--border); border-radius: 16px;
+      outline: none; transition: all 0.2s; box-sizing: border-box;
+      line-height: 1.2;
+    }
+    .fixed-input-group input:focus { border-color: var(--primary); }
+    .fixed-input-group .icon {
+      position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+      font-size: 20px; color: var(--muted); pointer-events: none;
+    }
+    .fixed-input-group label {
+      position: absolute; left: 56px; top: 12px;
+      font-size: 10px; font-weight: 800; letter-spacing: 0.05em;
+      color: var(--primary); opacity: 0.7; pointer-events: none;
+    }
+
+    /* CHIP STYLES */
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 100px;
+      font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .chip.good { background: var(--good-bg); color: var(--good-txt); }
+    .chip.camp { background: var(--camp-bg); color: var(--camp-txt); } /* Nueva alerta para VPH/Influenza */
+    .chip.extra { background: var(--extra-bg); color: var(--extra-txt); }
+
+    /* =========================================
+       PROPUESTA 1: Tabla Clean (Neo-Minimalista)
+       ========================================= */
+    .theme-clean .data-table { width: 100%; border-collapse: collapse; }
+    .theme-clean th { 
+      text-align: left; padding: 16px; font-size: 10px; font-weight: 900; 
+      text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--bg);
+    }
+    .theme-clean td { padding: 16px; border-bottom: 1px solid var(--bg); vertical-align: middle; }
+    .theme-clean tr:hover td { background: #f8fafc; }
+    .theme-clean .input-cell input {
+      width: 70px; height: 44px; text-align: center; font-size: 16px; font-weight: 900;
+      border: 2px solid var(--border); border-radius: 12px; outline: none;
+    }
+    .theme-clean .input-cell input:focus { border-color: var(--primary); }
+
+    /* =========================================
+       PROPUESTA 2: High Contrast (Corporativo)
+       ========================================= */
+    .theme-corp .panel { border: 2px solid var(--primary); box-shadow: 4px 4px 0 var(--primary); }
+    .theme-corp .data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .theme-corp th {
+      background: var(--primary); color: #fff; padding: 14px; text-align: left;
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+    }
+    .theme-corp th:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+    .theme-corp th:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+    .theme-corp td { padding: 16px 14px; border-bottom: 1px solid var(--border); font-weight: 600; }
+    .theme-corp .input-cell input {
+      width: 80px; height: 48px; text-align: center; font-size: 16px; font-weight: 900;
+      border: 2px solid #cbd5e1; border-radius: 8px; background: #f8fafc;
+    }
+
+    /* =========================================
+       PROPUESTA 3: Card List (Dashboard Moderno)
+       ========================================= */
+    .theme-cards .data-table { display: none; } /* Ocultamos tabla nativa */
+    .theme-cards .card-list { display: flex; flex-direction: column; gap: 12px; position: relative; }
+    
+    .theme-cards .card-sticky-header {
+      display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1.5fr; align-items: center;
+      position: sticky; top: -40px; z-index: 10;
+      background: rgba(232, 236, 241, 0.95); backdrop-filter: blur(12px);
+      padding: 16px 24px; border-bottom: 2px solid var(--border);
+      font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase;
+      margin: -12px -24px 0 -24px;
+    }
+
+    .theme-cards .bio-card {
+      display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1.5fr; align-items: center;
+      background: #ffffff; border: 1px solid var(--border); border-radius: 16px;
+      padding: 16px 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+      transition: transform 0.2s;
+    }
+    .theme-cards .bio-card:hover { border-color: var(--primary); transform: translateX(4px); }
+    .theme-cards .bio-name { font-size: 15px; font-weight: 800; color: var(--primary); }
+    .theme-cards .bio-stat { display: flex; flex-direction: column; gap: 4px; }
+    .theme-cards .bio-stat-lbl { font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; }
+    .theme-cards .input-cell input {
+      width: 80px; height: 48px; text-align: center; font-size: 18px; font-weight: 900;
+      border: 2px solid var(--bg); border-radius: 12px; background: var(--bg);
+    }
+    
+    .theme-cards .metric-pill {
+      display: inline-block; padding: 4px 8px; background: #f1f5f9; border-radius: 6px;
+      font-size: 12px; font-weight: 700; color: var(--muted);
+    }
+    
+    /* Utility */
+    .flex-center { display: flex; align-items: center; gap: 8px; }
+    .font-bold { font-weight: 700; }
+    .text-muted { color: var(--muted); }
+  </style>
+</head>
+<body class="theme-clean">
+
+  <div class="sidebar">
+    <h1>Diseño de Pedidos</h1>
+    <p>Selecciona una propuesta para visualizar los cambios. El input superior ya tiene la corrección de alineación vertical.</p>
+
+    <button class="btn-option active" onclick="setTheme('theme-clean', this)">
+      1. Neo-Minimalista (Clean)
+      <span>Tabla limpia, sin bordes verticales, muy aireado y fácil de leer.</span>
+    </button>
+    <button class="btn-option" onclick="setTheme('theme-corp', this)">
+      2. Corporativo Alto Contraste
+      <span>Cabecera oscura, bordes fuertes. Ideal para máxima claridad institucional.</span>
+    </button>
+    <button class="btn-option" onclick="setTheme('theme-cards', this)">
+      3. Modern Card List
+      <span>Transforma la tabla en tarjetas horizontales (Dashboards 2024). Incluye cabecera sticky.</span>
+    </button>
+  </div>
+
+  <div class="content">
+    <div class="panel">
+      
+      <!-- Input corregido: Ícono y texto perfectamente alineados -->
+      <div class="input-header">
+        <div class="fixed-input-group">
+          <span class="icon">👤</span>
+          <input type="text" value="Dr. Carlos" placeholder=" ">
+          <label>Nombre de quien captura el pedido</label>
+        </div>
+        <div class="fixed-input-group">
+          <span class="icon">📅</span>
+          <input type="text" value="Mayo 2026" disabled style="background: #f8fafc; border-style: dashed;">
+          <label>Mes de Pedido</label>
+        </div>
+      </div>
+
+      <hr style="border: none; border-top: 1px solid #e2e8f0; margin-bottom: 24px;">
+
+      <!-- VISTA DE TABLA (Usada por Opción 1 y 2) -->
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Biológico</th>
+            <th style="text-align:center;">Existencia</th>
+            <th style="text-align:center;">Pedido</th>
+            <th>Validación Lógica</th>
+            <th style="text-align:center;">Promedio</th>
+            <th style="text-align:center;">Mín/Máx</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Biológico Normal: Correcto -->
+          <tr>
+            <td class="font-bold">HEPATITIS B</td>
+            <td align="center" class="text-muted">1</td>
+            <td align="center" class="input-cell"><input type="number" value="1"></td>
+            <td><div class="chip good">✓ CORRECTO</div></td>
+            <td align="center" class="text-muted font-bold">1</td>
+            <td align="center" class="text-muted">11 / 11</td>
+          </tr>
+          <!-- Biológico Normal: Extraordinaria -->
+          <tr>
+            <td class="font-bold">HEXAVALENTE</td>
+            <td align="center" class="text-muted">1</td>
+            <td align="center" class="input-cell"><input type="number" value="50"></td>
+            <td><div class="chip extra">! EXTRAORDINARIA</div></td>
+            <td align="center" class="text-muted font-bold">4</td>
+            <td align="center" class="text-muted">1 / 11</td>
+          </tr>
+          <!-- Biológico de CAMPAÑA: No es extraordinaria -->
+          <tr>
+            <td class="font-bold" style="color: #3730a3;">INFLUENZA <br><span style="font-size:10px; opacity:0.6;">(Campaña)</span></td>
+            <td align="center" class="text-muted">0</td>
+            <td align="center" class="input-cell"><input type="number" value="200"></td>
+            <td><div class="chip camp">★ BIOLÓGICO DE CAMPAÑA</div></td>
+            <td align="center" class="text-muted font-bold">-</td>
+            <td align="center" class="text-muted">-</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- VISTA DE TARJETAS (Usada solo por Opción 3) -->
+      <div class="card-list" style="display: none;">
+        
+        <!-- Sticky Header para dar contexto al hacer scroll -->
+        <div class="card-sticky-header">
+          <div>Biológico</div>
+          <div>Existencia</div>
+          <div>Promedio</div>
+          <div>Mín / Máx</div>
+          <div>Pedido</div>
+          <div style="text-align:right;">Validación Lógica</div>
+        </div>
+
+        <div class="bio-card">
+          <div class="bio-name">HEPATITIS B</div>
+          <div class="font-bold text-muted">1 frasco</div>
+          <div><span class="metric-pill">1 fr.</span></div>
+          <div><span class="metric-pill">11 / 11</span></div>
+          <div class="input-cell"><input type="number" value="1"></div>
+          <div style="text-align:right;"><div class="chip good">✓ CORRECTO</div></div>
+        </div>
+        
+        <div class="bio-card" style="border-color: #fee2e2; background: #fffcfc;">
+          <div class="bio-name">HEXAVALENTE</div>
+          <div class="font-bold text-muted">1 frasco</div>
+          <div><span class="metric-pill">4 fr.</span></div>
+          <div><span class="metric-pill">1 / 11</span></div>
+          <div class="input-cell"><input type="number" value="50"></div>
+          <div style="text-align:right;"><div class="chip extra">! EXTRAORDINARIA</div></div>
+        </div>
+
+        <div class="bio-card" style="border-color: #e0e7ff; background: #fbfbff;">
+          <div class="bio-name" style="color: #3730a3;">INFLUENZA</div>
+          <div class="font-bold text-muted">0 frascos</div>
+          <div class="text-muted" style="font-size: 12px;">N/A (Campaña)</div>
+          <div class="text-muted" style="font-size: 12px;">N/A</div>
+          <div class="input-cell"><input type="number" value="200"></div>
+          <div style="text-align:right;"><div class="chip camp">★ CAMPAÑA</div></div>
+        </div>
+        
+        <div class="bio-card" style="border-color: #e0e7ff; background: #fbfbff;">
+          <div class="bio-name" style="color: #3730a3;">VPH</div>
+          <div class="font-bold text-muted">5 frascos</div>
+          <div class="text-muted" style="font-size: 12px;">N/A (Campaña)</div>
+          <div class="text-muted" style="font-size: 12px;">N/A</div>
+          <div class="input-cell"><input type="number" value="50"></div>
+          <div style="text-align:right;"><div class="chip camp">★ CAMPAÑA</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function setTheme(themeName, btn) {
+      document.body.className = themeName;
+      document.querySelectorAll('.btn-option').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Toggle logic for cards vs table
+      if (themeName === 'theme-cards') {
+        document.querySelector('.data-table').style.display = 'none';
+        document.querySelector('.card-list').style.display = 'flex';
+      } else {
+        document.querySelector('.data-table').style.display = 'table';
+        document.querySelector('.card-list').style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>

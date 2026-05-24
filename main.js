@@ -6689,10 +6689,10 @@ document.addEventListener("DOMContentLoaded", () => {
   paintPublicClock();
   startPublicClockTimer();
 
-  // Scroll-aware sticky headers for tables
+  // Scroll-aware sticky headers for tables and card lists
   document.addEventListener("scroll", (e) => {
     const wrap = e.target;
-    if (wrap && wrap.classList && wrap.classList.contains("tableWrap")) {
+    if (wrap && wrap.classList && (wrap.classList.contains("tableWrap") || wrap.classList.contains("overflow-y-auto"))) {
       const isScrolled = wrap.scrollTop > 2;
       if (wrap.classList.contains("is-scrolled") !== isScrolled) {
         wrap.classList.toggle("is-scrolled", isScrolled);
@@ -7594,74 +7594,63 @@ function renderBioRows(rows) {
   if (!tbody) return;
 
   if (!rows || !rows.length) {
-    tbody.innerHTML = `<tr><td colspan="7" class="muted">No hay configuración para esta unidad</td></tr>`;
+    tbody.innerHTML = `<div class="p-8 text-center text-surface-onVariant/60 font-medium">No hay configuración para esta unidad</div>`;
     return;
   }
 
-  tbody.innerHTML = rows.map((r, i) => `
-    <tr class="transition-colors hover:bg-surface-variant/5">
-      <td class="p-4 py-3 bioNameCell">
-        <div class="bioName font-black text-primary tracking-tight text-[14px]">
-          💉 ${escapeHtml(r.biologico || "")}
-        </div>
-      </td>
-      <td class="p-4 py-3 bioInputCell bioExistenciaCell">
-        <div class="relative group">
-          <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-rounded text-slate-400 text-[18px] pointer-events-none transition-colors group-focus-within:text-primary">inventory_2</span>
-          <input
-            class="bioInput w-full bg-slate-50 border-2 border-slate-400 rounded-xl pr-3 py-2 text-[15px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all placeholder:text-slate-400/50"
-            style="padding-left: 38px !important;"
-            type="number"
-            min="0"
-            step="any"
-            inputmode="decimal"
-            data-i="${i}"
-            data-kind="existencia"
-            value="${r.existencia_actual_frascos ?? ""}"
-            placeholder="0"
-          >
-        </div>
-      </td>
-      <td class="p-4 py-3 bioInputCell bioPedidoCell">
-        <div class="relative group">
-          <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-rounded text-primary/40 text-[18px] pointer-events-none transition-colors group-focus-within:text-primary">add_box</span>
-          <input
-            class="bioInput w-full bg-slate-50 border-2 border-primary/40 rounded-xl pr-3 py-2 text-[15px] font-black text-primary focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(37,99,235,0.1)] outline-none transition-all placeholder:text-primary/30"
-            style="padding-left: 38px !important;"
-            type="number"
-            min="0"
-            step="1"
-            inputmode="numeric"
-            data-i="${i}"
-            data-kind="pedido"
-            value="${r.pedido_frascos ?? ""}"
-            placeholder="0"
-          >
-        </div>
-      </td>
-      <td class="p-4 py-3 bioValidationCell">
+  tbody.innerHTML = rows.map((r, i) => {
+    const isCamp = [
+      "INFLUENZA",
+      "COVID-19",
+      "COVID 19",
+      "VPH",
+      "HEPATITIS A",
+      "VARICELA"
+    ].includes(String(r.biologico || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase());
+    return `
+    <div class="bio-card" id="bioCard_${i}">
+      <div class="bio-name">
+        💉 ${escapeHtml(r.biologico || "")}
+      </div>
+      <div class="text-center">
+        <input
+          class="bioInput"
+          style="width: 80px; height: 48px; text-align: center; font-size: 18px; font-weight: 900; border: 2px solid #e2e8f0; border-radius: 12px; background: #f8fafc; outline: none;"
+          type="number" min="0" step="any" inputmode="decimal"
+          data-i="${i}" data-kind="existencia"
+          value="${r.existencia_actual_frascos ?? ""}" placeholder="0">
+      </div>
+      <div class="text-center">
+        <input
+          class="bioInput"
+          style="width: 80px; height: 48px; text-align: center; font-size: 18px; font-weight: 900; border: 2px solid #e2e8f0; border-radius: 12px; background: #f8fafc; outline: none; color: #0f172a;"
+          type="number" min="0" step="1" inputmode="numeric"
+          data-i="${i}" data-kind="pedido"
+          value="${r.pedido_frascos ?? ""}" placeholder="0">
+      </div>
+      <div class="text-center">
+        <span class="bio-metric-pill">${isCamp ? "N/A" : (r.promedio_frascos ?? "") + " fr."}</span>
+      </div>
+      <div class="text-center">
+        <span class="bio-metric-pill">${isCamp ? "N/A" : (r.min_dosis ?? "") + " / " + (r.max_dosis ?? "")}</span>
+      </div>
+      <div class="text-center" style="display: flex; justify-content: flex-end; padding-right: 12px;">
         <div id="bioAlert_${i}" class="bioAlertWrap flex justify-center"></div>
-      </td>
-      <td class="p-4 py-3 text-center bioMetricCell bioPromedioCell">
-        <div class="bioMetric bioPromedioValue font-black text-surface-on/70 text-[13px]">${r.promedio_frascos ?? ""}</div>
-      </td>
-      <td class="p-4 py-3 text-center bioMetricCell">
-        <div class="bioMetric font-bold text-surface-on/60 text-[13px]">${r.max_dosis ?? ""}</div>
-      </td>
-      <td class="p-4 py-3 text-center bioMetricCell">
-        <div class="bioMetric font-bold text-surface-on/60 text-[13px]">${r.min_dosis ?? ""}</div>
-      </td>
-    </tr>
-  `).join("");
+      </div>
+    </div>
+  `}).join("");
 
   // Performance Update: Cache DOM references once to avoid querySelector in refreshBioAlerts
-  BIO_STATE.cache = rows.map((_, i) => ({
-    pedido: tbody.querySelector(`input[data-i="${i}"][data-kind="pedido"]`),
-    existencia: tbody.querySelector(`input[data-i="${i}"][data-kind="existencia"]`),
-    alert: document.getElementById(`bioAlert_${i}`)
-  }));
-
-  refreshBioAlerts();
+  // Usamos document.getElementById en un setTimeout mínimo para asegurar el render
+  setTimeout(() => {
+    BIO_STATE.cache = rows.map((_, i) => ({
+      card: document.getElementById(`bioCard_${i}`),
+      pedido: document.querySelector(`input[data-i="${i}"][data-kind="pedido"]`),
+      existencia: document.querySelector(`input[data-i="${i}"][data-kind="existencia"]`),
+      alert: document.getElementById(`bioAlert_${i}`)
+    }));
+    refreshBioAlerts();
+  }, 10);
 
   tbody.querySelectorAll("input").forEach(inp => {
     inp.addEventListener("blur", () => {
@@ -7790,11 +7779,16 @@ function refreshBioAlerts(force = false) {
     const cached = BIO_STATE.cache[i];
     if (!cached) return;
 
+    const card = cached.card;
     const pedidoEl = cached.pedido;
     const existenciaEl = cached.existencia;
     const td = cached.alert;
 
     if (!pedidoEl || !existenciaEl || !td) return;
+
+    if (card) {
+      card.classList.remove("card-extra", "card-camp", "card-warn", "card-good");
+    }
 
     const pedidoRaw = String(pedidoEl.value || "").trim();
     const existenciaRaw = String(existenciaEl.value || "").trim();
@@ -7812,7 +7806,6 @@ function refreshBioAlerts(force = false) {
       "COVID-19",
       "COVID 19",
       "VPH",
-      "HEPATITIS A",
       "VARICELA"
     ].includes(bioKey);
 
@@ -7820,14 +7813,8 @@ function refreshBioAlerts(force = false) {
       isCurrentUnitCaravana() && bioKey === "BCG";
 
     if (pedidoRaw === "" && existenciaRaw === "") {
-      const html = `
-          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-outline-variant/30 bg-surface-variant/50 text-surface-onVariant/70 shadow-sm">
-            <span class="material-symbols-rounded text-base">hourglass_empty</span>
-            <span class="text-[11px] font-bold uppercase tracking-wider">Pendiente</span>
-          </div>
-        `;
+      const html = `<div class="bio-chip text-surface-onVariant/60" style="background:#f1f5f9;">Pendiente</div>`;
       if (td.innerHTML !== html) {
-        td.className = "bioAlertWrap flex items-center justify-center h-full";
         td.innerHTML = html;
       }
       return;
@@ -7844,7 +7831,6 @@ function refreshBioAlerts(force = false) {
     const faltantePromedio = Math.max(0, promedio - totalDisponible);
 
     // 🛡️ REGLA SENIOR: Bloqueo en múltiplos de 5 para biológicos críticos
-    // Solo estos biológicos bloquean el guardado si no son múltiplos de 5
     const requires5 = [
       "HEXAVALENTE",
       "ROTAVIRUS",
@@ -7863,21 +7849,16 @@ function refreshBioAlerts(force = false) {
     }
 
     if (sinValidacionOperativa) {
-      const html = `
-          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-blue-200 bg-blue-50 text-blue-700 shadow-sm">
-            <span class="material-symbols-rounded text-base">info</span>
-            <span class="text-[11px] font-bold uppercase tracking-wider">Extraordinaria</span>
-          </div>
-        `;
+      if (card) card.classList.add("card-camp");
+      const html = `<div class="bio-chip camp"><div class="bio-chip-icon">★</div> CAMPAÑA</div>`;
       if (td.innerHTML !== html) {
-        td.className = "bioAlertWrap flex items-center justify-center h-full whitespace-normal";
         td.innerHTML = html;
       }
       return;
     }
 
     if (multiplo > 1 && pedido > 0 && (pedido % multiplo !== 0)) {
-      msgs.push(`El pedido debe ser múltiplo de ${multiplo}.`);
+      msgs.push(`Debe ser múltiplo de ${multiplo}.`);
       level = "bad";
       hasStrongAlert = true;
       hasBlockingError = true;
@@ -7887,10 +7868,7 @@ function refreshBioAlerts(force = false) {
     const threshold = sinPedido ? existencia : totalDisponible;
     if (!omitirAdvertenciaPorCaravana && promedio > 0 && threshold < promedio) {
       const diff = promedio - threshold;
-      msgs.push(sinPedido
-        ? `Existencia (${threshold}) menor al promedio (${promedio}). Faltan ${diff} frascos.`
-        : `Total (${threshold}) menor al promedio (${promedio}). Faltan ${diff} frascos.`
-      );
+      msgs.push(`Faltan ${diff} fr.`);
       if (level !== "bad") {
         level = "warn";
         hasStrongAlert = true;
@@ -7898,30 +7876,25 @@ function refreshBioAlerts(force = false) {
     }
 
     if (!msgs.length) {
-      const html = `
-          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm">
-            <span class="material-symbols-rounded text-base">check_circle</span>
-            <span class="text-[11px] font-bold uppercase tracking-wider">Correcto</span>
-          </div>
-        `;
+      if (card) card.classList.add("card-good");
+      const html = `<div class="bio-chip good"><div class="bio-chip-icon">✓</div> CORRECTO</div>`;
       if (td.innerHTML !== html) {
-        td.className = "bioAlertWrap flex items-center justify-center h-full whitespace-normal";
         td.innerHTML = html;
       }
     } else {
-      const tone = level === "bad" ? "rose" : "amber";
-      const icon = level === "bad" ? "error" : "warning";
-      const text = level === "bad" ? "Error" : "Atención";
-
+      if (level === "bad" && card) card.classList.add("card-extra");
+      if (level === "warn" && card) card.classList.add("card-warn");
+      
+      const chipClass = level === "bad" ? "extra" : "warn";
+      const iconChar = level === "bad" ? "✕" : "!";
+      const textLabel = level === "bad" ? "ERROR" : "ADVERTENCIA";
       const html = `
-          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-${tone}-200 bg-${tone}-50 text-${tone}-700 shadow-sm">
-            <span class="material-symbols-rounded text-base animate-pulse">${icon}</span>
-            <span class="text-[11px] font-bold uppercase tracking-wider">${text}</span>
+          <div class="flex flex-col items-center gap-1">
+            <div class="bio-chip ${chipClass}"><div class="bio-chip-icon">${iconChar}</div> ${textLabel}</div>
+            <div class="text-[10px] font-bold text-red-800/80 leading-tight text-center">${msgs.join("<br>")}</div>
           </div>
-          <div class="text-[10px] font-bold text-${tone}-800/80 px-2 leading-tight text-center max-w-full">${msgs.join("<br>")}</div>
         `;
       if (td.innerHTML !== html) {
-        td.className = "bioAlertWrap flex flex-col gap-1 items-center justify-center h-full whitespace-normal py-2";
         td.innerHTML = html;
       }
     }

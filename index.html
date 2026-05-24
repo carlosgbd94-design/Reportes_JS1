@@ -38,17 +38,9 @@
   </style>
 </head>
 
-<body class="bg-surface-container min-h-screen relative overflow-x-hidden">
+<body class="min-h-screen relative overflow-x-hidden">
 
-
-
-  <!-- 🎨 DYNAMIC BACKGROUND ENGINE (High Performance Aura) -->
-  <div class="AuraContainer">
-    <div class="AuraBlob Blob-1"></div>
-    <div class="AuraBlob Blob-2"></div>
-    <div class="AuraBlob Blob-3"></div>
-    <div class="AuraBlob Blob-4"></div>
-  </div>
+  <!-- 🎨 PREMIUM INSTITUTIONAL BACKGROUND -->
   <!-- 💎 HIGH-PERFORMANCE HEADER LIQUID GLASS -->
 
 
@@ -711,11 +703,12 @@
               <div class="flex flex-col lg:flex-row items-center gap-6">
                 <!-- Campo de Nombre Premium -->
                 <div class="flex-1 w-full">
-                  <div class="modern-input-group">
-                    <span class="input-icon material-symbols-rounded">person</span>
+                  <div style="position: relative; width: 100%;">
+                    <span class="material-symbols-rounded" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); font-size: 20px; color: #64748b; pointer-events: none; z-index: 2;">person</span>
                     <input id="nombreBIO" placeholder=" "
-                      class="w-full h-[58px] rounded-2xl pr-6 text-[15px] font-bold outline-none shadow-md">
-                    <label for="nombreBIO">Nombre de quien captura el pedido</label>
+                      style="width: 100%; height: 60px; padding: 24px 16px 8px 56px; font-size: 15px; font-weight: 700; line-height: 1.2; box-sizing: border-box;"
+                      class="rounded-[16px] border-2 border-slate-200 outline-none shadow-md focus:border-primary transition-all">
+                    <label for="nombreBIO" style="position: absolute; left: 56px; top: 12px; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; color: #0f172a; opacity: 0.7; pointer-events: none; text-transform: uppercase;">Nombre de quien captura el pedido</label>
                   </div>
                 </div>
 
@@ -776,41 +769,23 @@
               </div>
             </div>
 
-            <div
-              class="overflow-x-auto rounded-[20px] border border-outline-variant/30 shadow-[0_2px_8px_rgba(0,0,0,0.02)] mt-2 max-h-[560px] w-full">
-              <table class="w-full border-collapse text-left text-[13px] whitespace-nowrap">
-                <colgroup>
-                  <col style="width:18%">
-                  <col style="width:10%">
-                  <col style="width:10%">
-                  <col style="width:38%">
-                  <col style="width:8%">
-                  <col style="width:8%">
-                  <col style="width:8%">
-                </colgroup>
-                <thead>
-                  <tr
-                    class="bg-surface-variant text-surface-onVariant uppercase tracking-[0.05em] font-extrabold border-b border-outline-variant/30 sticky top-0 z-10">
-                    <th class="p-4 py-3">Biológico</th>
-                    <th class="p-4 py-3 text-center">Existencia<br><span
-                        class="text-[10px] font-semibold opacity-70 tracking-widest uppercase">frascos</span></th>
-                    <th class="p-4 py-3 text-center">Pedido<br><span
-                        class="text-[10px] font-semibold opacity-70 tracking-widest uppercase">frascos</span></th>
-                    <th class="p-4 py-3 whitespace-normal">Validación</th>
-                    <th class="p-4 py-3 text-center">Promedio<br><span
-                        class="text-[10px] font-semibold opacity-70 tracking-widest uppercase">frascos</span></th>
-                    <th class="p-4 py-3 text-center">Máx<br><span
-                        class="text-[10px] font-semibold opacity-70 tracking-widest uppercase">dosis</span></th>
-                    <th class="p-4 py-3 text-center">Mín<br><span
-                        class="text-[10px] font-semibold opacity-70 tracking-widest uppercase">dosis</span></th>
-                  </tr>
-                </thead>
-                <tbody id="bioTbody" class="bg-white">
-                  <tr>
-                    <td colspan="7" class="p-4 py-6 text-center text-surface-onVariant/60 font-medium">Cargando…</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div class="overflow-hidden rounded-[20px] border border-outline-variant/30 shadow-[0_2px_8px_rgba(0,0,0,0.02)] mt-2 w-full bg-white relative">
+              <div class="max-h-[560px] overflow-y-auto w-full p-4" style="scrollbar-width: thin; background: #f8fafc;">
+                
+                <div class="bio-card-sticky-header mb-3">
+                  <div class="pl-2">Biológico</div>
+                  <div class="text-center">Existencia</div>
+                  <div class="text-center">Pedido</div>
+                  <div class="text-center">Promedio</div>
+                  <div class="text-center">Mín / Máx</div>
+                  <div class="text-center pr-2">Validación Lógica</div>
+                </div>
+
+                <div id="bioTbody" class="bio-card-list">
+                  <div class="p-8 text-center text-surface-onVariant/60 font-medium">Cargando biológicos...</div>
+                </div>
+
+              </div>
             </div>
 
             <div class="mt-4 p-4 rounded-xl bg-surface-on/5 border border-surface-on/10 text-sm text-surface-onVariant">

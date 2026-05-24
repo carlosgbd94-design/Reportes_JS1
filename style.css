@@ -64,42 +64,26 @@ body {
   position: relative;
 }
 
-/* 🎨 ULTRA-PERFORMANCE NEBULA (Zero-Lag Edition) */
-.AuraContainer {
+body::before {
+  content: '';
   position: fixed;
   inset: 0;
-  z-index: -1;
-  background-color: #e2e8f0;
-  /* Usamos degradados radiales nativos: 0% carga de GPU */
-  background-image: 
-    radial-gradient(circle at 0% 0%, rgba(14, 165, 233, 0.04) 0%, transparent 50%),
-    radial-gradient(circle at 100% 100%, rgba(99, 102, 241, 0.04) 0%, transparent 50%);
+  background: 
+    radial-gradient(circle at 15% 50%, rgba(15, 23, 42, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 85% 30%, rgba(14, 165, 233, 0.08) 0%, transparent 50%);
+  filter: blur(60px);
+  z-index: -2;
   pointer-events: none;
-  contain: strict;
 }
 
-@keyframes auraOrbit {
-  0% { transform: translate3d(0, 0, 0); }
-  100% { transform: translate3d(2%, 2%, 0); }
-}
-
-.AuraBlob {
-  position: absolute;
-  width: 40vw;
-  height: 40vw;
-  background: radial-gradient(circle, rgba(14, 165, 233, 0.04) 0%, transparent 70%);
-  border-radius: 50%;
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
   z-index: -1;
   pointer-events: none;
-  /* 🚀 ULTRA-LIGHT: No will-change, no continuous animation by default */
-  transform: translate3d(0,0,0);
-  backface-visibility: hidden;
 }
-
-.Blob-1 { top: -15%; left: -15%; }
-.Blob-2 { top: -15%; right: -15%; background: radial-gradient(circle, rgba(99, 102, 241, 0.04) 0%, transparent 70%); }
-.Blob-3 { bottom: -15%; left: -15%; background: radial-gradient(circle, rgba(99, 102, 241, 0.03) 0%, transparent 70%); }
-.Blob-4 { bottom: -15%; right: -15%; }
 
 
 
@@ -671,14 +655,17 @@ label {
 
 .modern-input-group :is(input, select):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not(.notifSearchInput) {
   height: 60px !important;
-  padding-top: 20px !important;
-  padding-bottom: 6px !important;
+  padding-top: 24px !important;
+  padding-bottom: 8px !important;
   padding-left: 56px !important;
   font-size: 15px !important;
   font-weight: 700 !important;
   background-color: #ffffff !important;
   border: 2px solid #cbd5e1 !important;
   border-radius: 16px !important;
+  display: flex;
+  align-items: center;
+  line-height: 1.2 !important;
 }
 
 /* Floating Label selector styling inside .modern-input-group */
@@ -1445,17 +1432,11 @@ label,
 }
 
 #btnLogout {
-  background: linear-gradient(135deg, rgba(239, 68, 68, .14), rgba(0, 0, 0, .05));
-  border-color: rgba(239, 68, 68, .24);
-  color: #b91c1c !important;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #btnLogout:hover {
-  background: linear-gradient(135deg, rgba(239, 68, 68, .20), rgba(0, 0, 0, .07));
-  border-color: rgba(239, 68, 68, .34);
-  color: #991b1b !important;
-  transform: translateY(-4px) scale(1.1);
+  transform: translateY(-2px);
 }
 
 #btnTopNotifications {
@@ -8146,3 +8127,88 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
   z-index: 1;
   pointer-events: none;
 }
+
+/* =========================================
+   PEDIDO DE BIOLÓGICO - MODERN CARD LIST
+   ========================================= */
+.bio-card-list { 
+  display: flex; flex-direction: column; gap: 12px; position: relative; 
+  padding: 4px;
+}
+
+.bio-card-sticky-header {
+  display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1.5fr; align-items: center; gap: 8px;
+  position: sticky; top: -1px; z-index: 20;
+  background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px);
+  padding: 16px 24px; border-bottom: 2px solid #e2e8f0;
+  font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase;
+  margin: -4px -4px 12px -4px;
+  border-radius: 12px 12px 0 0;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.is-scrolled .bio-card-sticky-header {
+  background: #002147 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  border-bottom-color: rgba(255, 255, 255, 0.20);
+}
+
+.bio-card {
+  display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1.5fr; align-items: center; gap: 8px;
+  background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px;
+  padding: 16px 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bio-card:hover { 
+  border-color: var(--md-sys-color-primary, #0f172a); 
+  transform: translateX(4px); 
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+}
+
+.bio-name { font-size: 15px; font-weight: 800; color: var(--md-sys-color-primary, #0f172a); }
+
+.bio-metric-pill {
+  display: inline-block; padding: 4px 10px; background: #f1f5f9; border-radius: 6px;
+  font-size: 12px; font-weight: 700; color: #64748b;
+}
+
+.bio-chip {
+  background: #f8fafc;
+  padding: 4px 14px 4px 4px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e2e8f0;
+  letter-spacing: 0.05em; 
+  text-transform: uppercase;
+}
+.bio-chip-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  font-weight: 900;
+}
+.bio-chip.good { color: #15803d; border-color: #dcfce7; background: #f0fdf4; }
+.bio-chip.good .bio-chip-icon { background: #16a34a; }
+.bio-chip.warn { color: #b45309; border-color: #fef08a; background: #fefce8; }
+.bio-chip.warn .bio-chip-icon { background: #ca8a04; }
+.bio-chip.extra { color: #b91c1c; border-color: #fecaca; background: #fef2f2; }
+.bio-chip.extra .bio-chip-icon { background: #dc2626; }
+.bio-chip.camp { color: #3730a3; border-color: #c7d2fe; background: #e0e7ff; }
+.bio-chip.camp .bio-chip-icon { background: #4f46e5; }
+
+/* Overrides for specific card themes */
+.bio-card.card-extra { border-color: #fca5a5 !important; background: #fef2f2 !important; }
+.bio-card.card-warn { border-color: #fef08a !important; background: #fefce8 !important; }
+.bio-card.card-camp { border-color: #a5b4fc !important; background: #eef2ff !important; }
+.bio-card.card-good { border-color: #bbf7d0 !important; background: #f0fdf4 !important; }

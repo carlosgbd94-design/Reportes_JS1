@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backgrounds Premium (Originales)</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+    
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow-x: hidden;
+      color: #1a1c20;
+    }
+
+    /* ==========================================================================
+       OPCIÓN 1: AMBIENT GLASS (Ruido + Malla Suave Corporativa)
+       ========================================================================== */
+    .bg-ambient-glass {
+      background-color: #e2e8f0;
+      position: relative;
+    }
+    .bg-ambient-glass::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(circle at 15% 50%, rgba(15, 23, 42, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 85% 30%, rgba(14, 165, 233, 0.08) 0%, transparent 50%);
+      filter: blur(60px);
+      z-index: -2;
+    }
+    .bg-ambient-glass::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    /* ==========================================================================
+       OPCIÓN 2: TITANIUM MATTE (Metálico ultra-minimalista)
+       ========================================================================== */
+    .bg-titanium-matte {
+      background: linear-gradient(135deg, #eef2f6 0%, #e2e8f0 100%);
+      position: relative;
+    }
+    .bg-titanium-matte::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        45deg,
+        rgba(255,255,255,0.4) 0px,
+        rgba(255,255,255,0.4) 1px,
+        transparent 1px,
+        transparent 4px
+      );
+      opacity: 0.5;
+      z-index: -1;
+    }
+
+    /* ==========================================================================
+       OPCIÓN 3: ARCHITECTURAL SLICE (Capas de papel con sombras)
+       ========================================================================== */
+    .bg-arch-slice {
+      background-color: #f8fafc;
+      background-image: 
+        linear-gradient(105deg, transparent 40%, rgba(15, 23, 42, 0.02) 40.2%, rgba(15, 23, 42, 0.02) 45%, transparent 45.2%),
+        linear-gradient(105deg, transparent 60%, rgba(15, 23, 42, 0.03) 60.2%, rgba(15, 23, 42, 0.03) 100%);
+      position: relative;
+    }
+    .bg-arch-slice::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 100%;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.02) 0%, transparent 15%);
+      z-index: -1;
+    }
+
+    /* ==========================================================================
+       OPCIÓN 4: DEEP OBSIDIAN (Contraste Extremo)
+       ========================================================================== */
+    .bg-deep-obsidian {
+      background-color: #020617; /* Slate 950 */
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(30, 41, 59, 0.8) 0%, transparent 70%),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+    }
+
+    /* ==========================================================================
+       OPCIÓN 5: CLINICAL NEUMORPHISM (Soft UI)
+       ========================================================================== */
+    .bg-clinical-neu {
+      background-color: #ebf0f5;
+      position: relative;
+    }
+    .bg-clinical-neu::before {
+      content: '';
+      position: absolute;
+      top: 5%; left: 5%; width: 40vw; height: 40vw;
+      background: #ffffff;
+      filter: blur(80px);
+      border-radius: 50%;
+      z-index: -2;
+      opacity: 0.6;
+    }
+    .bg-clinical-neu::after {
+      content: '';
+      position: absolute;
+      bottom: 5%; right: 5%; width: 50vw; height: 50vw;
+      background: rgba(14, 165, 233, 0.1);
+      filter: blur(100px);
+      border-radius: 50%;
+      z-index: -2;
+    }
+
+    /* === UI DE PREVIEW === */
+    .sidebar {
+      width: 360px;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(0,0,0,0.05);
+      box-shadow: 4px 0 32px rgba(0,0,0,0.05);
+      padding: 40px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      z-index: 100;
+    }
+
+    .sidebar h1 {
+      font-size: 20px;
+      font-weight: 900;
+      color: #0f172a;
+      margin: 0 0 8px;
+      letter-spacing: -0.02em;
+    }
+    .sidebar p.sub {
+      font-size: 12px;
+      color: #64748b;
+      margin: 0 0 24px;
+      line-height: 1.5;
+    }
+
+    .btn-option {
+      background: transparent;
+      border: 2px solid transparent;
+      padding: 16px 20px;
+      border-radius: 16px;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 800;
+      font-size: 14px;
+      color: #334155;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-option::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: #f1f5f9;
+      z-index: -1;
+      border-radius: 14px;
+      transition: all 0.3s;
+    }
+
+    .btn-option:hover::before {
+      background: #e2e8f0;
+    }
+
+    .btn-option.active {
+      color: #0f172a;
+      border-color: #0f172a;
+    }
+    .btn-option.active::before {
+      background: #ffffff;
+      box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+    }
+
+    .btn-option span {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: #64748b;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px;
+      perspective: 1000px;
+    }
+
+    /* Panel falso simulando el sistema real */
+    .panel-preview {
+      background: #ffffff;
+      border: 1px solid rgba(0,0,0,0.04);
+      border-radius: 32px;
+      padding: 48px;
+      width: 100%;
+      max-width: 800px;
+      box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.1);
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Si el fondo es oscuro, el panel debe resaltar de cierta forma */
+    body.bg-deep-obsidian .panel-preview {
+      box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.5);
+      border-color: rgba(255,255,255,0.1);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .panel-icon {
+      width: 56px; height: 56px;
+      border-radius: 16px;
+      background: #f1f5f9;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+    }
+
+    .panel-preview h2 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+
+    .panel-preview p.desc {
+      color: #475569;
+      line-height: 1.6;
+      margin-bottom: 40px;
+      font-size: 15px;
+    }
+
+    .fake-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .fake-input {
+      height: 64px;
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 16px;
+      position: relative;
+    }
+    .fake-input::after {
+      content: '';
+      position: absolute;
+      left: 20px; top: 50%; transform: translateY(-50%);
+      width: 100px; height: 12px;
+      background: #cbd5e1;
+      border-radius: 6px;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+<body class="bg-ambient-glass">
+
+  <div class="sidebar">
+    <h1>Backgrounds Premium</h1>
+    <p class="sub">Diseños de nivel arquitectónico, corporativo y de alta gama. Selecciona para previsualizar.</p>
+    
+    <button class="btn-option active" onclick="setBg('bg-ambient-glass', this)">
+      1. Ambient Glass (Recomendado)
+      <span>Ruido sutil + destellos de color institucionales inyectados en cristal mate. Extremadamente premium.</span>
+    </button>
+    
+    <button class="btn-option" onclick="setBg('bg-titanium-matte', this)">
+      2. Titanium Matte
+      <span>Efecto de metal cepillado ultra-minimalista. Muy sobrio, evoca precisión y limpieza.</span>
+    </button>
+    
+    <button class="btn-option" onclick="setBg('bg-arch-slice', this)">
+      3. Architectural Slice
+      <span>Geometría asimétrica de gran escala. Da la ilusión de capas de papel o muros blancos.</span>
+    </button>
+    
+    <button class="btn-option" onclick="setBg('bg-deep-obsidian', this)">
+      4. Deep Obsidian (Dark Bg)
+      <span>Fondo casi negro. Los paneles blancos "explotan" visualmente. Estilo Enterprise Dashboard.</span>
+    </button>
+    
+    <button class="btn-option" onclick="setBg('bg-clinical-neu', this)">
+      5. Clinical Neumorphism
+      <span>Luces y sombras suaves con un tono gélido (hielo). Transmite total higiene y claridad visual.</span>
+    </button>
+  </div>
+
+  <div class="content">
+    <div class="panel-preview">
+      <div class="panel-header">
+        <div class="panel-icon">📊</div>
+        <h2>Panel de Simulación</h2>
+      </div>
+      <p class="desc">Este panel blanco interactúa con el fondo. Observa cómo el contraste, los bordes y las sombras cambian de personalidad dependiendo de la sofisticación del fondo seleccionado detrás de él.</p>
+      
+      <div class="fake-inputs">
+        <div class="fake-input"></div>
+        <div class="fake-input"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function setBg(className, btn) {
+      document.body.className = '';
+      document.body.classList.add(className);
+      
+      document.querySelectorAll('.btn-option').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+  </script>
+
+</body>
+</html>
