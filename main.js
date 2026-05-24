@@ -10157,52 +10157,47 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
   let insumos = [];
   if (tipo === "CONS") {
     insumos = [
-      { key: "srp_dosis", label: "DOSIS DE SRP", color: "A75985" },
-      { key: "sr_dosis", label: "DOSIS DE SR", color: "5C4B92" },
-      { key: "jeringa_reconst_5ml_0605500438", label: "JERINGA DE RECONSTITUCIÓN 5 mL", color: "EAD1DC" },
-      { key: "jeringa_aplic_05ml_0605502657", label: "JERINGA DE APLICACIÓN 0.5 mL", color: "E2B7A8" },
-      { key: "aguja_0600403711", label: "AGUJA", color: "E1955D" }
+      { key: "srp_dosis", label: "DOSIS DE SRP", color: "207373", lightColor: "9EC7C7" },
+      { key: "sr_dosis", label: "DOSIS DE SR", color: "52731D", lightColor: "BDD1A1" },
+      { key: "jeringa_reconst_5ml_0605500438", label: "JERINGA DE RECONSTITUCIÓN 5 mL", color: "595959", lightColor: "CCCCCC" },
+      { key: "jeringa_aplic_05ml_0605502657", label: "JERINGA DE APLICACIÓN 0.5 mL", color: "1A428A", lightColor: "A3B7DC" },
+      { key: "aguja_0600403711", label: "AGUJA", color: "D96B27", lightColor: "EFAF87" }
     ];
   } else {
     insumos = [
-      { key: "bcg", label: "BCG", color: "4A86E8" },
-      { key: "hepatitis_b", label: "HEPATITIS B", color: "CC0000" },
-      { key: "hexavalente", label: "HEXAVALENTE", color: "93C47D" },
-      { key: "dpt", label: "DPT", color: "F1C232" },
-      { key: "rotavirus", label: "ROTAVIRUS", color: "3D85C6" },
-      { key: "neumococica_13", label: "NEUMOCÓCICA 13", color: "1155CC" },
-      { key: "neumococica_20", label: "NEUMOCÓCICA 20", color: "0B5394" },
-      { key: "srp", label: "SRP", color: "A64D79" },
-      { key: "sr", label: "SR", color: "741B47" },
-      { key: "vph", label: "VPH", color: "76A5AF" },
-      { key: "varicela", label: "VARICELA", color: "45818E" },
-      { key: "hepatitis_a", label: "HEPATITIS A", color: "8E7CC3" },
-      { key: "td", label: "TD", color: "999999" },
-      { key: "tdpa", label: "TDPA", color: "E69138" },
-      { key: "covid_19", label: "COVID-19", color: "B6D7A8" },
-      { key: "influenza", label: "INFLUENZA", color: "20B2AA" },
-      { key: "vsr", label: "VSR", color: "C90076" }
+      { key: "bcg", label: "BCG", color: "3A86B7", lightColor: "A5CBE3" },
+      { key: "hepatitis_b", label: "HEPATITIS B", color: "198A43", lightColor: "9AD4B2" },
+      { key: "hexavalente", label: "HEXAVALENTE", color: "753480", lightColor: "C3A5CA" },
+      { key: "dpt", label: "DPT", color: "595959", lightColor: "CCCCCC" },
+      { key: "rotavirus", label: "ROTAVIRUS", color: "D4A31C", lightColor: "ECD799" },
+      { key: "neumococica_13", label: "NEUMOCÓCICA 13", color: "843414", lightColor: "D6AA99" },
+      { key: "neumococica_20", label: "NEUMOCÓCICA 20", color: "843414", lightColor: "D6AA99" },
+      { key: "srp", label: "SRP", color: "207373", lightColor: "9EC7C7" },
+      { key: "sr", label: "SR", color: "52731D", lightColor: "BDD1A1" },
+      { key: "vph", label: "VPH", color: "A8224F", lightColor: "E1A6BB" },
+      { key: "varicela", label: "VARICELA", color: "45818E", lightColor: "A9CBD3" },
+      { key: "hepatitis_a", label: "HEPATITIS A", color: "8E7CC3", lightColor: "D1C7E8" },
+      { key: "td", label: "TD", color: "D96B27", lightColor: "EFAF87" },
+      { key: "tdpa", label: "TDPA", color: "4D2314", lightColor: "C0A298" },
+      { key: "covid_19", label: "COVID-19", color: "B6D7A8", lightColor: "DFECD8" },
+      { key: "influenza", label: "INFLUENZA", color: "1A428A", lightColor: "A3B7DC" },
+      { key: "vsr", label: "VSR", color: "C90076", lightColor: "E899CC" }
     ];
   }
 
   const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2F3E46' } };
-  const fontWhite = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Arial', size: 12 };
+  const fontWhite = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Arial Nova', size: 11 };
   const borderAll = {
-    top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' }
+    top: { style: 'thin', color: { argb: 'FFD9D9D9' } }, left: { style: 'thin', color: { argb: 'FFD9D9D9' } }, bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } }, right: { style: 'thin', color: { argb: 'FFD9D9D9' } }
   };
 
-  let headerRowText = tipo === "SR" ? "EXISTENCIA DE BIOLÓGICO" : (tipo === "CONS" ? "CONSUMIBLES SR/SRP" : "PEDIDO BIOLÓGICO");
+  let headerRowText = tipo === "SR" ? "EXISTENCIA DE BIOLÓGICO" : (tipo === "CONS" ? "CONSUMIBLES SR/SRP" : "PEDIDO DE BIOLÓGICO");
 
-  ws.getCell('A1').value = 'REPORTE';
+  ws.getCell('A1').value = headerRowText;
   ws.getCell('A1').fill = headerFill;
-  ws.getCell('A1').font = fontWhite;
+  ws.getCell('A1').font = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Arial Nova', size: 14 };
   ws.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
-  ws.mergeCells('A1:B1');
-  ws.getCell('C1').value = headerRowText;
-  ws.getCell('C1').font = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Arial', size: 18 };
-  ws.getCell('C1').fill = headerFill;
-  ws.getCell('C1').alignment = { vertical: 'middle', horizontal: 'center' };
-  ws.mergeCells(1, 3, 1, 3 + arrClues.length);
+  ws.mergeCells(1, 1, 1, 2 + arrClues.length);
   ws.getRow(1).height = 50;
 
   let munisLabel = "TODOS";
@@ -10249,14 +10244,12 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
     colIndex++;
   });
 
-  if (tipo !== "CONS") {
-    ws.getCell(headerRowIdx, colIndex).value = tipo === "BIO" ? "TOTAL MUNICIPAL" : "TOTAL";
-    ws.getCell(headerRowIdx, colIndex).fill = headerFill;
-    ws.getCell(headerRowIdx, colIndex).font = fontWhite;
-    ws.getCell(headerRowIdx, colIndex).alignment = { vertical: 'middle', horizontal: 'center' };
-    ws.getCell(headerRowIdx, colIndex).border = borderAll;
-    colIndex++;
-  }
+  ws.getCell(headerRowIdx, colIndex).value = "TOTAL";
+  ws.getCell(headerRowIdx, colIndex).fill = headerFill;
+  ws.getCell(headerRowIdx, colIndex).font = fontWhite;
+  ws.getCell(headerRowIdx, colIndex).alignment = { vertical: 'middle', horizontal: 'center' };
+  ws.getCell(headerRowIdx, colIndex).border = borderAll;
+  colIndex++;
 
   ws.getColumn(1).width = 30;
   headerRow.height = 40;
@@ -10266,11 +10259,13 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
   insumos.forEach(insumo => {
     let cIdx = 1;
     const fgColor = { argb: 'FF' + insumo.color.replace('#', '') };
+    const bgColor = { argb: 'FF' + (insumo.lightColor || insumo.color).replace('#', '') };
 
     ws.getCell(rowCursor, cIdx).value = insumo.label;
     ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor };
-    ws.getCell(rowCursor, cIdx).font = { color: { argb: 'FFFFFFFF' }, bold: true };
+    ws.getCell(rowCursor, cIdx).font = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Arial Nova', size: 11 };
     ws.getCell(rowCursor, cIdx).border = borderAll;
+    ws.getCell(rowCursor, cIdx).alignment = { vertical: 'middle', horizontal: 'left' };
 
     let rowTotal = 0;
     cIdx++;
@@ -10290,18 +10285,18 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
 
       rowTotal += val;
       ws.getCell(rowCursor, cIdx).value = Number(val);
-      ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '40' + insumo.color } };
+      ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor: bgColor };
       ws.getCell(rowCursor, cIdx).border = borderAll;
-      ws.getCell(rowCursor, cIdx).alignment = { horizontal: 'center' };
+      ws.getCell(rowCursor, cIdx).alignment = { horizontal: 'center', vertical: 'middle' };
+      ws.getCell(rowCursor, cIdx).font = { name: 'Arial Nova', size: 11, bold: true };
       cIdx++;
     });
 
-    if (tipo !== "CONS") {
-      ws.getCell(rowCursor, cIdx).value = Number(rowTotal);
-      ws.getCell(rowCursor, cIdx).border = borderAll;
-      ws.getCell(rowCursor, cIdx).alignment = { horizontal: 'center', vertical: 'middle' };
-      ws.getCell(rowCursor, cIdx).font = { bold: true };
-    }
+    ws.getCell(rowCursor, cIdx).value = Number(rowTotal);
+    ws.getCell(rowCursor, cIdx).border = borderAll;
+    ws.getCell(rowCursor, cIdx).alignment = { horizontal: 'center', vertical: 'middle' };
+    ws.getCell(rowCursor, cIdx).font = { name: 'Arial Nova', size: 11, bold: true };
+    ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor: bgColor };
     rowCursor++;
   });
 
@@ -10310,7 +10305,20 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `Reporte_${tipo}_${fIni}.xlsx`;
+  const todayStr = new Date().toISOString().split('T')[0];
+  let exportFileName = `Reporte_${tipo}_${fIni}.xlsx`;
+  if (tipo === "BIO") {
+    const [yyyy, mm] = (fIni || "").split('-');
+    const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    const mesNombre = mm ? (months[parseInt(mm, 10) - 1] || mm) : "";
+    exportFileName = `Pedido de biologico ${mesNombre} ${yyyy} - Exportado ${todayStr}.xlsx`;
+  } else if (tipo === "CONS") {
+    exportFileName = (fIni !== fFin && fFin) ? `Reporte de consumibles ${fIni} al ${fFin}.xlsx` : `Reporte de consumibles ${fIni}.xlsx`;
+  } else if (tipo === "SR") {
+    exportFileName = `Existencia de biologico ${fIni}.xlsx`;
+  }
+
+  a.download = exportFileName;
   a.click();
   window.URL.revokeObjectURL(url);
 }
@@ -12302,9 +12310,9 @@ function syncEvidenceExplorerTabs() {
   tabs.forEach(tab => {
     const cat = tab.getAttribute("data-category");
     if (cat === CURRENT_EVIDENCE_CATEGORY) {
-      tab.className = "evidence-tab px-4 py-2 text-xs font-bold rounded-lg transition-all bg-white text-primary shadow-sm border border-slate-200";
+      tab.className = "evidence-tab flex-1 h-12 flex items-center justify-center rounded-2xl transition-all bg-primary text-white shadow-md border-transparent scale-105 z-10";
     } else {
-      tab.className = "evidence-tab px-4 py-2 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-50";
+      tab.className = "evidence-tab flex-1 h-12 flex items-center justify-center rounded-2xl transition-all bg-white text-slate-500 hover:text-primary hover:bg-primary/5 shadow-sm border border-slate-200";
     }
   });
 }
@@ -12388,12 +12396,10 @@ function filterArchivosGrid() {
 
     // ✅ REGLA: MUNICIPAL solo ve archivos de CLUES de su municipio
     if (isMunicipal && allowedCluesSet) {
-      // Extraer CLUES del path (formato: CLUES_NombreUnidad)
       const cluesFromPath = cluMun.split("_")[0];
       if (!allowedCluesSet.has(cluesFromPath)) return false;
     }
 
-    // ADMIN y JURISDICCIONAL ven todo
     return true;
   });
 
@@ -12416,31 +12422,161 @@ function filterArchivosGrid() {
     return;
   }
 
-  container.innerHTML = filtered.map(f => {
+  // Helper para extraer datos enriquecidos del path
+  const enrichFile = (f) => {
     const url = `${SUPABASE_URL}/storage/v1/object/public/evidencias/${encodeURIComponent(f.name)}`;
     const parts = f.name.split("/");
-    const fileName = parts[2];
-    const cluesUnidad = parts[1];
+    const fileName = parts[2] || "Desconocido";
+    const cluesUnidadStr = parts[1] || "";
+    const cluesId = cluesUnidadStr.split("_")[0] || "Desconocido";
     const dObj = new Date(f.created_at);
+    const dateStr = dObj.toLocaleDateString();
+    
+    // Buscar municipio de la CLUES (usando UNIT_CATALOG si está disponible)
+    let municipio = "DESCONOCIDO";
+    if (typeof UNIT_CATALOG !== 'undefined' && Array.isArray(UNIT_CATALOG)) {
+      const uInfo = UNIT_CATALOG.find(u => u.clues === cluesId);
+      if (uInfo && uInfo.municipio) municipio = uInfo.municipio;
+    }
 
-    return `<div class="bg-surface-variant/10 border border-outline-variant/20 rounded-md p-3 flex items-center gap-3 transition-all hover:bg-surface-variant/30 group">
-                  <div class="w-10 h-10 rounded bg-primary/5 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/10">
-                     <span class="material-symbols-rounded text-primary text-[20px]">description</span>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                     <p class="font-bold text-[12px] text-primary truncate leading-tight" title="${fileName}">${fileName}</p>
-                     <div class="flex items-center gap-2 mt-0.5">
-                        <span class="text-[9px] font-bold text-outline-variant uppercase tracking-wider truncate max-w-[150px]">${cluesUnidad.replace(/_/g, ' ')}</span>
-                        <span class="text-[9px] text-outline opacity-60">•</span>
-                        <span class="text-[9px] text-outline font-medium">${dObj.toLocaleDateString()}</span>
-                     </div>
-                  </div>
-                  <a href="${url}" target="_blank" class="flex-shrink-0 w-8 h-8 rounded bg-primary text-white flex items-center justify-center transition-all hover:scale-110" title="Ver archivo">
-                    <span class="material-symbols-rounded text-[18px]">visibility</span>
-                  </a>
-               </div>`;
+    return { ...f, url, fileName, cluesId, cluesUnidadStr, dateStr, dObj, municipio };
+  };
 
-  }).join("");
+  const enrichedFiles = filtered.map(enrichFile);
+
+  // Generador de tarjeta de archivo
+  const fileCardHTML = (file) => `
+    <div class="bg-white border border-outline-variant/30 rounded-lg p-3 flex items-center gap-3 transition-all hover:bg-slate-50 hover:border-primary/20 hover:shadow-sm group mt-2">
+      <div class="w-10 h-10 rounded bg-primary/5 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/10">
+        <span class="material-symbols-rounded text-primary text-[20px]">description</span>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-[12px] text-primary truncate leading-tight" title="${file.fileName}">${file.fileName}</p>
+        <div class="flex items-center gap-2 mt-0.5">
+          <span class="text-[9px] font-bold text-outline-variant uppercase tracking-wider truncate max-w-[150px]">${file.cluesUnidadStr.replace(/_/g, ' ')}</span>
+          <span class="text-[9px] text-outline opacity-60">•</span>
+          <span class="text-[9px] text-outline font-medium">${file.dateStr}</span>
+        </div>
+      </div>
+      <a href="${file.url}" target="_blank" class="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center transition-all hover:bg-primary hover:text-white" title="Ver archivo">
+        <span class="material-symbols-rounded text-[18px]">visibility</span>
+      </a>
+    </div>
+  `;
+
+  // Generador de acordeón de fecha
+  const dateAccordionHTML = (dateStr, filesArray) => `
+    <details class="group bg-slate-50/50 rounded-xl border border-slate-200 mt-3 overflow-hidden" open>
+      <summary class="flex items-center justify-between p-3 cursor-pointer hover:bg-slate-100 transition-colors list-none select-none">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+             <span class="material-symbols-rounded text-[18px]">calendar_today</span>
+          </div>
+          <div>
+            <h5 class="text-[12px] font-bold text-primary leading-none">${dateStr}</h5>
+            <span class="text-[9px] text-slate-500 font-medium">${filesArray.length} archivos</span>
+          </div>
+        </div>
+        <span class="material-symbols-rounded text-slate-400 group-open:rotate-180 transition-transform text-[18px]">expand_more</span>
+      </summary>
+      <div class="px-3 pb-3 pt-0 border-t border-slate-100 flex flex-col">
+        ${filesArray.map(f => fileCardHTML(f)).join("")}
+      </div>
+    </details>
+  `;
+
+  // Generador de acordeón de unidad (CLUES)
+  const cluesAccordionHTML = (cluesId, cluesUnidadStr, filesByDate) => {
+    let dateHTMLs = "";
+    // Ordenar fechas descendente
+    const sortedDates = Object.keys(filesByDate).sort((a, b) => {
+       const d1 = filesByDate[a][0].dObj;
+       const d2 = filesByDate[b][0].dObj;
+       return d2 - d1;
+    });
+    sortedDates.forEach(dateStr => {
+      dateHTMLs += dateAccordionHTML(dateStr, filesByDate[dateStr]);
+    });
+
+    return `
+      <details class="group bg-white rounded-2xl border border-slate-200 mb-4 overflow-hidden shadow-sm">
+        <summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors list-none select-none">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+               <span class="material-symbols-rounded">folder_open</span>
+            </div>
+            <div>
+              <h4 class="text-[13px] font-bold text-primary leading-tight">${cluesId}</h4>
+              <span class="text-[10px] text-slate-500 font-medium">${cluesUnidadStr.replace(/_/g, ' ')}</span>
+            </div>
+          </div>
+          <span class="material-symbols-rounded text-slate-400 group-open:rotate-180 transition-transform">expand_more</span>
+        </summary>
+        <div class="px-4 pb-4 pt-1 bg-slate-50/30 flex flex-col gap-1 border-t border-slate-100">
+          ${dateHTMLs}
+        </div>
+      </details>
+    `;
+  };
+
+  let finalHTML = "";
+
+  if (isUnidad) {
+    // UNIDAD: No hay carpetas de CLUES. Solo subcarpetas de fechas.
+    const byDate = {};
+    enrichedFiles.forEach(f => {
+      if (!byDate[f.dateStr]) byDate[f.dateStr] = [];
+      byDate[f.dateStr].push(f);
+    });
+
+    const sortedDates = Object.keys(byDate).sort((a, b) => byDate[b][0].dObj - byDate[a][0].dObj);
+    finalHTML = sortedDates.map(dateStr => dateAccordionHTML(dateStr, byDate[dateStr])).join("");
+  } 
+  else if (isMunicipal) {
+    // MUNICIPAL: Carpetas por CLUES, sin dividir por Municipio
+    const byClues = {};
+    enrichedFiles.forEach(f => {
+      if (!byClues[f.cluesId]) byClues[f.cluesId] = { cluesUnidadStr: f.cluesUnidadStr, dates: {} };
+      if (!byClues[f.cluesId].dates[f.dateStr]) byClues[f.cluesId].dates[f.dateStr] = [];
+      byClues[f.cluesId].dates[f.dateStr].push(f);
+    });
+
+    // Ordenar CLUES alfabéticamente
+    const sortedClues = Object.keys(byClues).sort();
+    sortedClues.forEach(cluesId => {
+      finalHTML += cluesAccordionHTML(cluesId, byClues[cluesId].cluesUnidadStr, byClues[cluesId].dates);
+    });
+  } 
+  else {
+    // ADMIN/JURISDICCIONAL: Separación por Municipio -> Carpetas de CLUES -> Carpetas de Fecha
+    const byMun = {};
+    enrichedFiles.forEach(f => {
+      const m = f.municipio;
+      if (!byMun[m]) byMun[m] = {};
+      if (!byMun[m][f.cluesId]) byMun[m][f.cluesId] = { cluesUnidadStr: f.cluesUnidadStr, dates: {} };
+      if (!byMun[m][f.cluesId].dates[f.dateStr]) byMun[m][f.cluesId].dates[f.dateStr] = [];
+      byMun[m][f.cluesId].dates[f.dateStr].push(f);
+    });
+
+    const sortedMuns = Object.keys(byMun).sort();
+    sortedMuns.forEach(mun => {
+      finalHTML += `
+        <div class="mb-6">
+          <div class="flex items-center gap-2 mb-3 px-1">
+            <span class="material-symbols-rounded text-orange-400 text-[18px]">location_on</span>
+            <h3 class="text-[13px] font-black text-slate-700 uppercase tracking-widest">${mun}</h3>
+          </div>
+      `;
+      const cluesObj = byMun[mun];
+      const sortedClues = Object.keys(cluesObj).sort();
+      sortedClues.forEach(cluesId => {
+        finalHTML += cluesAccordionHTML(cluesId, cluesObj[cluesId].cluesUnidadStr, cluesObj[cluesId].dates);
+      });
+      finalHTML += `</div>`;
+    });
+  }
+
+  container.innerHTML = finalHTML;
 }
 
 /**
