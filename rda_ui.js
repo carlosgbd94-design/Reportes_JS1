@@ -24,7 +24,7 @@ const SCHEME_KPIS = {
     ],
     mayores: [
         { label: 'Neumo 13', icon: 'elderly', bg: '#f0fdfa', fg: '#0d9488', key: 'am_neumo13' },
-        { label: 'Neumo 20', icon: 'elderly_3', bg: '#f0f9ff', fg: '#0284c7', key: 'am_neumo20' },
+        { label: 'Neumo 20', icon: 'elderly', bg: '#f0f9ff', fg: '#0284c7', key: 'am_neumo20' },
         { label: 'Td Mayores', icon: 'healing', bg: '#f5f3ff', fg: '#7c3aed', key: 'am_td' }
     ],
     embarazadas: [
@@ -102,6 +102,8 @@ function initRDADashboard() {
             renderDashboard();
         });
     });
+
+    initRDAMobileDashboard();
 }
 
 async function loadAndRender() {
@@ -109,7 +111,9 @@ async function loadAndRender() {
         showSkeletons(); 
         await fetchRDAData(); 
         populateFilters(); 
+        populateMobileFilters();
         renderDashboard(); 
+        renderMobileDashboard();
     }
     catch (e) { 
         console.error('[RDA]', e); 
@@ -1182,3 +1186,187 @@ window.refreshRDADashboard = () => {
 };
 window.loadAndRender = loadAndRender;
 window.addEventListener('DOMContentLoaded', () => initRDADashboard());
+
+// 📱 MOBILE SPECIFIC LOGIC
+function initRDAMobileDashboard() {
+    document.querySelectorAll('.rda-scheme-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.rda-scheme-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            _rdaState.esquema = e.target.dataset.scheme;
+            renderMobileDashboard();
+            // Sync with desktop scheme so states are matched
+            const desktopScheme = document.getElementById('rdaFilterEsquema');
+            if (desktopScheme) desktopScheme.value = _rdaState.esquema;
+        });
+    });
+
+    document.getElementById('rdaMobileMuni')?.addEventListener('change', () => {
+        populateMobileFilters();
+        renderMobileDashboard();
+    });
+    document.getElementById('rdaMobileUnidad')?.addEventListener('change', () => renderMobileDashboard());
+}
+
+window.closeRdaMobile = function() {
+    if (AppState.rol === "UNIDAD") {
+        if (typeof activateUnidadTab === 'function') activateUnidadTab('CAPTURE');
+    } else {
+        if (typeof activateOpsTab === 'function') activateOpsTab('CAPTURE');
+    }
+};
+
+function populateMobileFilters() {
+    const { unidades } = _rdaCache;
+    const muniSel = document.getElementById('rdaMobileMuni');
+    const uniSel = document.getElementById('rdaMobileUnidad');
+    if (!muniSel || !unidades) return;
+
+    const role = String((typeof USER !== 'undefined' && USER?.rol) || 'UNIDAD').toUpperCase();
+    const allowed = (typeof USER !== 'undefined' && Array.isArray(USER?.municipiosAllowed)) ? USER.municipiosAllowed : [];
+
+    let municipios = [...new Set(unidades.map(u => (u.municipio || '').toUpperCase().trim()))].filter(Boolean).sort();
+
+    if (role === 'ADMIN' || role === 'JURISDICCIONAL') {
+        muniSel.disabled = false;
+        if (muniSel.options.length <= 1) {
+            muniSel.innerHTML = '<option value="">Todos los municipios</option>' + municipios.map(m => `<option value="${m}">${m}</option>`).join('');
+            muniSel.value = '';
+        }
+    } else if (role === 'MUNICIPAL') {
+        municipios = municipios.filter(m => {
+            const mNorm = m.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+            return allowed.some(a => mNorm.includes(a) || a.includes(mNorm));
+        });
+        if (muniSel.options.length <= 1) {
+            muniSel.innerHTML = municipios.map(m => `<option value="${m}">${m}</option>`).join('');
+            muniSel.value = municipios.length > 0 ? municipios[0] : '';
+            muniSel.disabled = municipios.length <= 1;
+        }
+    } else if (role === 'UNIDAD') {
+        muniSel.style.display = 'none';
+        if (uniSel) uniSel.style.display = 'none';
+        return; 
+    }
+
+    const muni = muniSel.value || '';
+    if (role !== 'UNIDAD' && uniSel) {
+        if (!muni) {
+            uniSel.innerHTML = '<option value="">Todas las unidades</option>';
+            uniSel.disabled = true;
+        } else {
+            uniSel.disabled = false;
+            const units = unidades.filter(u => (u.municipio || '').toUpperCase().trim() === muni.toUpperCase().trim())
+                                  .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+            const currUni = uniSel.value;
+            uniSel.innerHTML = '<option value="">Todas las unidades</option>' + units.map(u => `<option value="${u.clues}">${u.nombre || u.clues}</option>`).join('');
+            uniSel.value = currUni || '';
+        }
+    }
+}
+
+function renderMobileDashboard() {
+    const rdaMob = document.getElementById("rdaMobileDashboard");
+    const isMobileOpen = rdaMob && !rdaMob.classList.contains("translate-y-full");
+    if (!isMobileOpen && window.innerWidth >= 768) return; // Only process if potentially active or animating in
+
+    const { unidades } = _rdaCache;
+    if (!unidades) return;
+
+    const muniFilter = document.getElementById('rdaMobileMuni')?.value || '';
+    const uniFilter = document.getElementById('rdaMobileUnidad')?.value || '';
+    const esquema = _rdaState.esquema || 'basico';
+    const conf = SCHEME_KPIS[esquema] || SCHEME_KPIS['basico'];
+
+    let fUnits = unidades;
+    if (muniFilter) fUnits = fUnits.filter(u => (u.municipio || '').toUpperCase().trim() === muniFilter.toUpperCase().trim());
+    if (uniFilter) fUnits = fUnits.filter(u => u.clues === uniFilter);
+
+    const countEl = document.getElementById('rdaMobileCount');
+    if (countEl) countEl.innerText = fUnits.length;
+
+    let aggr = {};
+    Object.keys(conf.cols).forEach(k => aggr[k] = 0);
+    fUnits.forEach(u => {
+        Object.keys(conf.cols).forEach(k => {
+            let v = u[k];
+            if (k === 'rotavirus_12m') v = u.rotavirus_rn; 
+            if (k === 'srp_18m') v = u.srp_1a;
+            aggr[k] += (Number(v) || 0);
+        });
+    });
+
+    const valA = aggr[conf.kpi[0].key];
+    const valB = aggr[conf.kpi[1].key];
+    const coverage = valB > 0 ? ((valA / valB) * 100).toFixed(1) : "0.0";
+    
+    const kpiGrid = document.getElementById('rdaMobileKpiGrid');
+    if (kpiGrid) {
+        kpiGrid.innerHTML = \`
+            <div class="rda-kpi-mobile-card relative overflow-hidden group">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-primary/5 rounded-full blur-xl group-hover:bg-primary/10 transition-colors"></div>
+                <div class="kpi-icon bg-primary/10 text-primary">
+                    <span class="material-symbols-rounded">\${conf.kpi[0].icon || 'vaccines'}</span>
+                </div>
+                <div class="kpi-label">\${conf.kpi[0].label}</div>
+                <div class="kpi-value text-primary">\${valA.toLocaleString('es-MX')}</div>
+                <div class="kpi-meta">Dosis Aplicadas</div>
+            </div>
+            <div class="rda-kpi-mobile-card relative overflow-hidden group">
+                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-colors"></div>
+                <div class="kpi-icon bg-emerald-500/10 text-emerald-600">
+                    <span class="material-symbols-rounded">percent</span>
+                </div>
+                <div class="kpi-label">Avance vs \${conf.kpi[1].label}</div>
+                <div class="kpi-value text-emerald-600">\${coverage}%</div>
+                <div class="kpi-meta">Eficiencia global</div>
+            </div>
+        \`;
+    }
+
+    const listEl = document.getElementById('rdaMobileList');
+    if (listEl) {
+        let listHtml = '';
+        fUnits.forEach(u => {
+            let vA = 0, vB = 0;
+            if (conf.kpi[0]) {
+                let k = conf.kpi[0].key;
+                if (k === 'rotavirus_12m') k = 'rotavirus_rn';
+                if (k === 'srp_18m') k = 'srp_1a';
+                vA = Number(u[k]) || 0;
+            }
+            if (conf.kpi[1]) {
+                let k = conf.kpi[1].key;
+                if (k === 'rotavirus_12m') k = 'rotavirus_rn';
+                if (k === 'srp_18m') k = 'srp_1a';
+                vB = Number(u[k]) || 0;
+            }
+            
+            let cvg = vB > 0 ? ((vA / vB) * 100).toFixed(1) : "0.0";
+            let colorCvg = cvg >= 80 ? "text-emerald-600" : (cvg >= 50 ? "text-orange-500" : "text-red-500");
+
+            listHtml += \`
+                <div class="rda-unit-mobile-card">
+                    <div class="unit-header">
+                        <div>
+                            <div class="unit-title">\${u.nombre || u.clues}</div>
+                            <div class="unit-clues">\${u.clues}</div>
+                        </div>
+                        <div class="unit-doses">\${vA.toLocaleString('es-MX')}</div>
+                    </div>
+                    <div class="unit-metrics">
+                        <div class="metric-item">
+                            <span class="metric-label">Avance (\${conf.kpi[1].label})</span>
+                            <span class="metric-value \${colorCvg}">\${cvg}%</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-label">Municipio</span>
+                            <span class="metric-value text-slate-700 truncate">\${u.municipio || '-'}</span>
+                        </div>
+                    </div>
+                </div>
+            \`;
+        });
+        listEl.innerHTML = listHtml;
+    }
+}

@@ -388,4 +388,35 @@
     });
     glassObserver.observe(document.body, { childList: true, subtree: true });
 
+    // ─── TABLES TO CARDS: AUTO DATA-LABEL INJECTION ───
+    const injectTableDataLabels = () => {
+        const tables = document.querySelectorAll('table');
+        tables.forEach(table => {
+            const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+            if (!headers.length) return;
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                cells.forEach((cell, index) => {
+                    if (headers[index] && !cell.hasAttribute('data-label')) {
+                        cell.setAttribute('data-label', headers[index]);
+                    }
+                });
+            });
+        });
+    };
+
+    // Run injection initially and on dom changes (e.g., when adding a row)
+    injectTableDataLabels();
+    const tableObserver = new MutationObserver((mutations) => {
+        let shouldInject = false;
+        mutations.forEach(m => {
+            if (m.addedNodes.length && m.target.tagName === 'TBODY') {
+                shouldInject = true;
+            }
+        });
+        if (shouldInject) injectTableDataLabels();
+    });
+    tableObserver.observe(document.body, { childList: true, subtree: true });
+
 })();

@@ -9214,13 +9214,31 @@ function activateMain(tab) {
     }
   }
 
+  const pRdaMob = document.getElementById("rdaMobileDashboard");
+  const isMobileRda = tab === "RDA" && (document.body.classList.contains("touch-ui") || window.innerWidth < 768);
+
   if (pRda) {
-    if (tab === "RDA" || (tab === "ADMIN" && AppState.opsTab === "RDA")) {
+    if ((tab === "RDA" || (tab === "ADMIN" && AppState.opsTab === "RDA")) && !isMobileRda) {
       pRda.classList.remove("hidden");
-      pRda.style.display = "flex";
+      pRda.style.setProperty("display", "flex", "important");
     } else {
       pRda.classList.add("hidden");
-      pRda.style.display = "none";
+      pRda.style.setProperty("display", "none", "important");
+    }
+  }
+
+  if (pRdaMob) {
+    if (isMobileRda) {
+      pRdaMob.classList.remove("hidden");
+      pRdaMob.style.setProperty("display", "flex", "important");
+      requestAnimationFrame(() => pRdaMob.classList.remove("translate-y-full"));
+    } else {
+      pRdaMob.classList.add("translate-y-full");
+      setTimeout(() => {
+        if (pRdaMob.classList.contains("translate-y-full")) {
+          pRdaMob.style.setProperty("display", "none", "important");
+        }
+      }, 300);
     }
   }
 
@@ -9439,6 +9457,8 @@ window.activateOpsTab = function (tab) {
     "NOTIFICATIONS": "panelNOTIFS",
     "SECURITY": "panelADMIN"
   };
+  
+  const isMobileRda = tab === "RDA" && (document.body.classList.contains("touch-ui") || window.innerWidth < 768);
 
   Object.keys(panelIds).forEach(k => {
     const el = document.getElementById(panelIds[k]);
@@ -9448,8 +9468,15 @@ window.activateOpsTab = function (tab) {
     }
   });
 
+  // Explicitly hide mobile dashboard too
+  const rdaMob = document.getElementById("rdaMobileDashboard");
+  if (rdaMob && tab !== "RDA") {
+    rdaMob.classList.add("translate-y-full");
+    setTimeout(() => { if (rdaMob.classList.contains("translate-y-full")) rdaMob.style.setProperty("display", "none", "important"); }, 300);
+  }
+
   // Encendido exclusivo del panel seleccionado
-  const activePanelId = panelIds[tab];
+  const activePanelId = isMobileRda ? "rdaMobileDashboard" : panelIds[tab];
   if (activePanelId) {
     const activePanel = document.getElementById(activePanelId);
     if (activePanel) {
@@ -9459,8 +9486,14 @@ window.activateOpsTab = function (tab) {
         return;
       }
       activePanel.classList.remove("hidden");
-      const dType = (tab === "RDA") ? "flex" : "block";
-      activePanel.style.setProperty("display", dType, "important");
+      
+      if (activePanelId === "rdaMobileDashboard") {
+        activePanel.style.setProperty("display", "flex", "important");
+        requestAnimationFrame(() => activePanel.classList.remove("translate-y-full"));
+      } else {
+        const dType = (tab === "RDA") ? "flex" : "block";
+        activePanel.style.setProperty("display", dType, "important");
+      }
     }
   }
 
@@ -10279,7 +10312,8 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
       } else if (tipo === "SR") {
         matchingRecords.forEach(d => { val += Number(d[insumo.key] || 0); });
       } else {
-        matchingRecords.filter(d => String(d.biologico).toUpperCase() === String(insumo.label).toUpperCase())
+        const norm = (s) => String(s || "").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        matchingRecords.filter(d => norm(d.biologico) === norm(insumo.label))
           .forEach(d => { val += Number(d.solicitud || d.frascos || d.pedido_frascos || 0); });
       }
 

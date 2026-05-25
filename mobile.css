@@ -59,6 +59,8 @@
 .touch-ui #logoCluster {
     padding-left: 12px !important;
     padding-right: 12px !important;
+    max-width: 60% !important;
+    flex-shrink: 1 !important;
 }
 
 .touch-ui #logoA,
@@ -67,8 +69,16 @@
 }
 
 .touch-ui #logoCluster .GlassContent {
-    padding: 8px 16px !important;
-    gap: 12px !important;
+    padding: 8px 12px !important;
+    gap: 8px !important;
+    overflow: hidden !important;
+}
+
+.touch-ui #logoCluster h1 {
+    font-size: 15px !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
 }
 
 .touch-ui #userControlsGroup {
@@ -194,8 +204,8 @@
 
 /* PATCH: Header Mobile Fix */
 .touch-ui #mainHeader>div {
-    flex-wrap: wrap !important;
-    justify-content: center !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
     gap: 8px !important;
     padding: 8px !important;
 }
@@ -206,7 +216,7 @@
 }
 
 .touch-ui #logoCluster h1 {
-    font-size: 14px !important;
+    font-size: 15px !important;
 }
 
 .touch-ui #logoCluster p {
@@ -593,33 +603,298 @@
     background: white !important;
     border: 1px solid rgba(0, 0, 0, 0.05) !important;
 }
-  justify-content: center !important;
+
+/* ═══════════════════════════════════════════════════════════════════════
+   COMMAND HUB FLOATING (MOBILE ONLY)
+   ═══════════════════════════════════════════════════════════════════════ */
+.touch-ui .command-hub-tracker {
+    position: fixed !important;
+    top: auto !important;
+    bottom: 110px !important; /* Above the dock */
+    right: 20px !important;
+    left: auto !important;
+    width: auto !important;
+    height: auto !important;
+    z-index: 100000 !important;
+    pointer-events: none !important;
 }
 
-/* Diseño minimalista para el Command Hub en móviles (solo íconos) */
-@media (max-width: 768px) {
-  /* Ocultar texto de los botones */
-  .command-hub .save-chip-premium span:not(.material-symbols-rounded),
-  .command-hub .edit-btn-premium span:not(.material-symbols-rounded),
-  .command-hub .cancel-btn-premium span:not(.material-symbols-rounded) {
+.touch-ui .command-hub {
+    flex-direction: column-reverse !important;
+    gap: 12px !important;
+    pointer-events: auto !important;
+    align-items: flex-end !important;
+}
+
+.touch-ui .command-hub .save-chip-premium span:not(.material-symbols-rounded),
+.touch-ui .command-hub .edit-btn-premium span:not(.material-symbols-rounded),
+.touch-ui .command-hub .cancel-btn-premium span:not(.material-symbols-rounded) {
     display: none !important;
-  }
-  
-  /* Convertir botones a círculos perfectos de 48x48 */
-  .command-hub .save-chip-premium,
-  .command-hub .edit-btn-premium,
-  .command-hub .cancel-btn-premium {
-    width: 48px !important;
-    height: 48px !important;
+}
+
+.touch-ui .command-hub .save-chip-premium,
+.touch-ui .command-hub .edit-btn-premium,
+.touch-ui .command-hub .cancel-btn-premium {
+    width: 56px !important;
+    height: 56px !important;
     border-radius: 50% !important;
     padding: 0 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-  }
-  
-  /* Ocultar chip de estado para ahorrar espacio */
-  .command-hub .status-chip-v5 {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+}
+
+.touch-ui .command-hub .status-chip-v5 {
     display: none !important;
-  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   NATIVE MOBILE RDA DASHBOARD
+   ═══════════════════════════════════════════════════════════════════════ */
+/* Hide the dock and command hub if RDA Mobile is open */
+.touch-ui body:has(#rdaMobileDashboard:not(.translate-y-full)) #mobileCaptureDock,
+.touch-ui body:has(#rdaMobileDashboard:not(.translate-y-full)) .command-hub-tracker,
+.touch-ui body:has(#rdaMobileDashboard:not(.translate-y-full)) .command-hub {
+    display: none !important;
+}
+
+#rdaMobileDashboard {
+    /* Smooth slide up animation */
+    will-change: transform;
+    height: 100dvh;
+}
+
+.rda-no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.rda-no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.rda-scheme-btn {
+    padding: 10px 16px;
+    border-radius: 14px;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 800;
+    border: none;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.rda-scheme-btn.active {
+    background: var(--primary, #003366);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 51, 102, 0.2);
+}
+
+.rda-kpi-mobile-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.rda-kpi-mobile-card .kpi-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.rda-kpi-mobile-card .kpi-icon span {
+    font-size: 20px;
+}
+
+.rda-kpi-mobile-card .kpi-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #64748b;
+    margin-bottom: 4px;
+    line-height: 1.2;
+}
+
+.rda-kpi-mobile-card .kpi-value {
+    font-size: 20px;
+    font-weight: 900;
+    color: #0f172a;
+}
+
+.rda-kpi-mobile-card .kpi-meta {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+.rda-unit-mobile-card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+    border: 1px solid #f1f5f9;
+}
+
+.rda-unit-mobile-card .unit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed #e2e8f0;
+}
+
+.rda-unit-mobile-card .unit-title {
+    font-size: 14px;
+    font-weight: 900;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.rda-unit-mobile-card .unit-clues {
+    font-size: 10px;
+    font-weight: 800;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 3px 8px;
+    border-radius: 6px;
+    margin-top: 6px;
+    display: inline-block;
+}
+
+.rda-unit-mobile-card .unit-doses {
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--primary, #003366);
+    background: rgba(0, 51, 102, 0.05);
+    padding: 6px 10px;
+    border-radius: 10px;
+    text-align: right;
+}
+
+.rda-unit-mobile-card .unit-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.rda-unit-mobile-card .metric-item {
+    display: flex;
+    flex-direction: column;
+    background: #f8fafc;
+    padding: 8px 10px;
+    border-radius: 10px;
+}
+
+.rda-unit-mobile-card .metric-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: #94a3b8;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.rda-unit-mobile-card .metric-value {
+    font-size: 13px;
+    font-weight: 900;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   TABLES TO CARDS (VERTICAL REDUCTION REFACTOR)
+   ═══════════════════════════════════════════════════════════════════════ */
+.touch-ui #srCaptureTable {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+.touch-ui #srCaptureTable thead {
+    display: none !important; /* Hide table headers completely for card view */
+}
+
+.touch-ui #srCaptureTable tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    background: transparent !important;
+}
+
+.touch-ui #srCaptureTable tr {
+    display: flex !important;
+    flex-direction: column !important;
+    background: #ffffff !important;
+    border-radius: 24px !important;
+    padding: 16px !important;
+    box-shadow: 0 4px 15px rgba(0, 51, 102, 0.08) !important;
+    border: 1px solid rgba(0, 51, 102, 0.05) !important;
+    margin-bottom: 0 !important;
+}
+
+.touch-ui #srCaptureTable td {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 10px 0 !important;
+    border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+    min-width: 0 !important;
+    width: 100% !important;
+}
+
+.touch-ui #srCaptureTable td:last-child {
+    border-bottom: none !important;
+}
+
+.touch-ui #srCaptureTable td::before {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin-right: 12px;
+}
+
+/* Specifically adapt inputs in cards to be right-aligned */
+.touch-ui #srCaptureTable td select,
+.touch-ui #srCaptureTable td input {
+    width: 60% !important;
+    max-width: 200px !important;
+    text-align: right !important;
+    background: #f8fafc !important;
+}
+
+/* Bio name cell in cards should be prominent */
+.touch-ui #srCaptureTable td.bioNameCell,
+.touch-ui #srCaptureTbody td:first-child {
+    width: 100% !important;
+    font-size: 16px !important;
+    font-weight: 900 !important;
+    color: #0f172a !important;
+    padding-bottom: 16px !important;
+    border-bottom: 2px dashed rgba(0,0,0,0.05) !important;
+}
+
+.touch-ui #srCaptureTable td.bioNameCell::before,
+.touch-ui #srCaptureTbody td:first-child::before {
+    display: none !important;
+}
+
+/* Action button at bottom of card */
+.touch-ui #srCaptureTable td:last-child button {
+    width: 100% !important;
+    margin-top: 8px !important;
 }

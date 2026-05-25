@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="tailwind_compiled.css">
   
   <!-- Mobile Adaptation Layer (MAL) -->
-  <link rel="stylesheet" href="mobile.css">
+  <link rel="stylesheet" href="mobile.css?v=2026.4">
   <script src="mobile.js" defer></script>
   <style>
     #tabOPS_RDA.active span.material-symbols-rounded,
@@ -2034,7 +2034,9 @@
           </style>
 
           <div id="rdaDashboardPanel" class="bg-white rounded-[24px] shadow-sm border border-slate-200 p-6 md:p-8 w-full flex flex-col relative z-50">
-
+            <button class="rda-mobile-close-btn" onclick="if(typeof activateUnidadTab === 'function') { activateUnidadTab('CAPTURE') } else { activateOpsTab('CAPTURE') }">
+              <span class="material-symbols-rounded">close</span>
+            </button>
             <!-- ═══════════ TOP BAR (Title + Actions) ═══════════ -->
             <div style="
               flex-shrink: 0; padding: 24px 32px;
@@ -2953,6 +2955,64 @@
       <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="22" xChannelSelector="R" yChannelSelector="G" />
     </filter>
   </svg>
+
+  <!-- 📱 NATIVE MOBILE RDA DASHBOARD -->
+  <div id="rdaMobileDashboard" class="fixed inset-0 z-[99999] bg-[#f8fafc] flex flex-col transform translate-y-full transition-transform duration-300" style="display: none;">
+    <!-- Mobile Header -->
+    <div class="flex-none bg-white px-5 py-4 flex items-center justify-between shadow-[0_4px_20px_-10px_rgba(0,0,0,0.1)] relative z-20 rounded-b-[24px]">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary to-[#0f172a] flex items-center justify-center text-white shadow-lg shadow-primary/20">
+          <span class="material-symbols-rounded text-[22px]">analytics</span>
+        </div>
+        <div>
+          <h2 class="text-[17px] font-black text-slate-800 leading-tight">Indicadores</h2>
+          <p class="text-[10px] font-bold text-primary uppercase tracking-[0.15em] mt-0.5">RDA 2026</p>
+        </div>
+      </div>
+      <button class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 active:scale-95 transition-transform" onclick="closeRdaMobile()">
+        <span class="material-symbols-rounded">close</span>
+      </button>
+    </div>
+
+    <!-- Scrollable Content -->
+    <div class="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth pb-24 px-5 pt-6 relative" id="rdaMobileContent">
+      <!-- Filters (Muni / Unidad) -->
+      <div class="flex flex-col gap-3 mb-6">
+        <select id="rdaMobileMuni" class="w-full h-11 bg-white border border-slate-200 rounded-xl px-4 text-[13px] font-bold text-slate-700 outline-none shadow-sm focus:border-primary/50">
+          <option value="">Todos los municipios</option>
+        </select>
+        <select id="rdaMobileUnidad" class="w-full h-11 bg-white border border-slate-200 rounded-xl px-4 text-[13px] font-bold text-slate-700 outline-none shadow-sm focus:border-primary/50">
+          <option value="">Todas las unidades</option>
+        </select>
+      </div>
+
+      <!-- Swipeable Scheme Selector -->
+      <div class="flex overflow-x-auto gap-3 pb-4 mb-2 -mx-5 px-5 snap-x snap-mandatory rda-no-scrollbar" id="rdaMobileEsquemas">
+        <button class="rda-scheme-btn active snap-start shrink-0" data-scheme="basico">Esquema Básico</button>
+        <button class="rda-scheme-btn snap-start shrink-0" data-scheme="adultos">Adolescentes y Adultos</button>
+        <button class="rda-scheme-btn snap-start shrink-0" data-scheme="mayores">Adultos Mayores</button>
+        <button class="rda-scheme-btn snap-start shrink-0" data-scheme="embarazadas">Embarazadas</button>
+        <button class="rda-scheme-btn snap-start shrink-0" data-scheme="invernal">Temp. Invernal</button>
+      </div>
+
+      <!-- KPI Grid (2 Columns) -->
+      <div id="rdaMobileKpiGrid" class="grid grid-cols-2 gap-3 mb-8">
+        <!-- Injected via JS -->
+      </div>
+
+      <!-- List Title -->
+      <div class="flex items-center justify-between mb-4 px-1">
+        <h3 class="text-[15px] font-black text-slate-800">Detalle por Unidad</h3>
+        <span id="rdaMobileCount" class="text-[11px] font-bold px-3 py-1 bg-slate-200 text-slate-700 rounded-lg">0</span>
+      </div>
+
+      <!-- Cards List -->
+      <div id="rdaMobileList" class="flex flex-col gap-4">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+  </div>
+
   <!-- 🛠️ TECHNICAL LOGIC CONTAINER (Hidden from UI, required for JS references) -->
   <div id="legacyLogicContainer" style="display: none !important;">
     <button id="btnSaveSR"></button>
