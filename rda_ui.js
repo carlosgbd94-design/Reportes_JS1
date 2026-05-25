@@ -1244,9 +1244,19 @@ function populateMobileFilters() {
             muniSel.disabled = municipios.length <= 1;
         }
     } else if (role === 'UNIDAD') {
-        muniSel.style.display = 'none';
-        if (uniSel) uniSel.style.display = 'none';
-        return; 
+        const userClues = (typeof USER !== 'undefined' && USER?.clues) || '';
+        const matchUnit = unidades.find(u => u.clues === userClues);
+        if (matchUnit) {
+            muniSel.innerHTML = `<option value="${(matchUnit.municipio || '').toUpperCase().trim()}">${matchUnit.municipio}</option>`;
+            muniSel.value = (matchUnit.municipio || '').toUpperCase().trim();
+            if (uniSel) {
+                uniSel.innerHTML = `<option value="${matchUnit.clues}">${matchUnit.nombre || matchUnit.clues}</option>`;
+                uniSel.value = matchUnit.clues;
+            }
+        }
+        muniSel.disabled = true;
+        if (uniSel) uniSel.disabled = true;
+        return;
     }
 
     const muni = muniSel.value || '';
@@ -1267,16 +1277,15 @@ function populateMobileFilters() {
 
 function renderMobileDashboard() {
     const rdaMob = document.getElementById("rdaMobileDashboard");
-    const isMobileOpen = rdaMob && !rdaMob.classList.contains("translate-y-full");
-    if (!isMobileOpen && window.innerWidth >= 768) return; // Only process if potentially active or animating in
+    if (!rdaMob) return;
 
-    const { unidades } = _rdaCache;
-    if (!unidades) return;
+    const { unidades, maxMes } = _rdaCache;
+    if (!unidades || !unidades.length) return;
 
     const muniFilter = document.getElementById('rdaMobileMuni')?.value || '';
     const uniFilter = document.getElementById('rdaMobileUnidad')?.value || '';
     const esquema = _rdaState.esquema || 'basico';
-    const conf = SCHEME_KPIS[esquema] || SCHEME_KPIS['basico'];
+    const kpiList = SCHEME_KPIS[esquema] || SCHEME_KPIS['basico'];
 
     let fUnits = unidades;
     if (muniFilter) fUnits = fUnits.filter(u => (u.municipio || '').toUpperCase().trim() === muniFilter.toUpperCase().trim());
@@ -1285,88 +1294,152 @@ function renderMobileDashboard() {
     const countEl = document.getElementById('rdaMobileCount');
     if (countEl) countEl.innerText = fUnits.length;
 
-    let aggr = {};
-    Object.keys(conf.cols).forEach(k => aggr[k] = 0);
-    fUnits.forEach(u => {
-        Object.keys(conf.cols).forEach(k => {
-            let v = u[k];
-            if (k === 'rotavirus_12m') v = u.rotavirus_rn; 
-            if (k === 'srp_18m') v = u.srp_1a;
-            aggr[k] += (Number(v) || 0);
-        });
-    });
+    // === Aggregate data exactly like renderDashboard ===
+    let agg = {
+        pob_menor_1: 0, pob_1_ano: 0, pob_4_anos: 0, pob_total: 0,
+        bcg_dosis: 0, hepb_0_7_dosis: 0, hexa_3_dosis: 0, rota_2_dosis: 0, neumo_2_dosis: 0,
+        hexa_ref_dosis: 0, neumo_ref_dosis: 0, srp_2_dosis: 0, dpt_4_dosis: 0,
+        adol_hb: 0, adol_sr: 0, adol_vph: 0, adol_td: 0, adol_tdpa: 0,
+        am_neumo13: 0, am_neumo20: 0, am_td: 0,
+        emb_tdpa: 0, emb_vsr: 0,
+        inv_influenza: 0, inv_covid: 0,
+        total_unidades: fUnits.length
+    };
 
-    const valA = aggr[conf.kpi[0].key];
-    const valB = aggr[conf.kpi[1].key];
-    const coverage = valB > 0 ? ((valA / valB) * 100).toFixed(1) : "0.0";
-    
+    for (const u of fUnits) {
+        agg.pob_menor_1 += u.pob_menor_1 || 0;
+        agg.pob_1_ano += u.pob_1_ano || 0;
+        agg.pob_4_anos += u.pob_4_anos || 0;
+        agg.bcg_dosis += u.bcg_dosis || 0;
+        agg.hepb_0_7_dosis += u.hepb_0_7_dosis || 0;
+        agg.hexa_3_dosis += u.hexa_3_dosis || 0;
+        agg.rota_2_dosis += u.rota_2_dosis || 0;
+        agg.neumo_2_dosis += u.neumo_2_dosis || 0;
+        agg.hexa_ref_dosis += u.hexa_ref_dosis || 0;
+        agg.neumo_ref_dosis += u.neumo_ref_dosis || 0;
+        agg.srp_2_dosis += u.srp_2_dosis || 0;
+        agg.dpt_4_dosis += u.dpt_4_dosis || 0;
+        agg.adol_hb += u.adol_hb || 0;
+        agg.adol_sr += u.adol_sr || 0;
+        agg.adol_vph += u.adol_vph || 0;
+        agg.adol_td += u.adol_td || 0;
+        agg.adol_tdpa += u.adol_tdpa || 0;
+        agg.am_neumo13 += u.am_neumo13 || 0;
+        agg.am_neumo20 += u.am_neumo20 || 0;
+        agg.am_td += u.am_td || 0;
+        agg.emb_tdpa += u.emb_tdpa || 0;
+        agg.emb_vsr += u.emb_vsr || 0;
+        agg.inv_influenza += u.inv_influenza || 0;
+        agg.inv_covid += u.inv_covid || 0;
+    }
+    agg.pob_total = agg.pob_menor_1 + agg.pob_1_ano + agg.pob_4_anos;
+
+    // Coberturas (same formula as desktop)
+    const factorMenor1 = (agg.pob_menor_1 * 0.0833) * maxMes;
+    const factorUno = (agg.pob_1_ano * 0.0833) * maxMes;
+    const factorCuatro = (agg.pob_4_anos * 0.0833) * maxMes;
+    const sumaDosisMenor1 = agg.bcg_dosis + agg.hepb_0_7_dosis + agg.hexa_3_dosis + agg.rota_2_dosis + agg.neumo_2_dosis;
+    const sumaDosisUno = agg.hexa_ref_dosis + agg.neumo_ref_dosis + agg.srp_2_dosis;
+    const sumaDosisCuatro = agg.dpt_4_dosis;
+    agg.cobertura_menor1 = factorMenor1 > 0 ? Math.round((((sumaDosisMenor1 / 4.0) / factorMenor1) * 100) * 10) / 10 : 0;
+    agg.cobertura_uno = factorUno > 0 ? Math.round(((sumaDosisUno / factorUno) * 100) * 10) / 10 : 0;
+    agg.cobertura_cuatro = factorCuatro > 0 ? Math.round(((sumaDosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
+
+    // === Render KPI Cards ===
     const kpiGrid = document.getElementById('rdaMobileKpiGrid');
     if (kpiGrid) {
-        kpiGrid.innerHTML = \`
-            <div class="rda-kpi-mobile-card relative overflow-hidden group">
-                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-primary/5 rounded-full blur-xl group-hover:bg-primary/10 transition-colors"></div>
-                <div class="kpi-icon bg-primary/10 text-primary">
-                    <span class="material-symbols-rounded">\${conf.kpi[0].icon || 'vaccines'}</span>
+        let kpiHtml = '';
+        kpiList.forEach(k => {
+            let valText = '';
+            let subText = '';
+            let valNum = 0;
+
+            if (esquema === 'basico') {
+                if (k.key === 'menor1') {
+                    valNum = agg.cobertura_menor1;
+                    valText = `${valNum}%`;
+                    subText = `${sumaDosisMenor1.toLocaleString('es-MX')} dosis`;
+                } else if (k.key === 'uno') {
+                    valNum = agg.cobertura_uno;
+                    valText = `${valNum}%`;
+                    subText = `${sumaDosisUno.toLocaleString('es-MX')} dosis`;
+                } else if (k.key === 'cuatro') {
+                    valNum = agg.cobertura_cuatro;
+                    valText = `${valNum}%`;
+                    subText = `${agg.dpt_4_dosis.toLocaleString('es-MX')} dosis`;
+                } else if (k.key === 'pob') {
+                    valText = agg.pob_total.toLocaleString('es-MX');
+                    subText = `${agg.total_unidades} unidades`;
+                }
+            } else {
+                valNum = agg[k.key] || 0;
+                valText = valNum.toLocaleString('es-MX');
+                subText = 'dosis aplicadas';
+            }
+
+            let valColor = '#0f172a';
+            if (esquema === 'basico' && k.key !== 'pob') {
+                valColor = valNum >= 80 ? '#059669' : valNum >= 50 ? '#d97706' : '#dc2626';
+            }
+
+            kpiHtml += `
+                <div class="rda-kpi-mobile-card" style="border-left: 3px solid ${k.fg};">
+                    <div class="kpi-icon" style="background: ${k.bg}; color: ${k.fg};">
+                        <span class="material-symbols-rounded">${k.icon}</span>
+                    </div>
+                    <div class="kpi-label">${k.label}</div>
+                    <div class="kpi-value" style="color: ${valColor};">${valText}</div>
+                    <div class="kpi-meta">${subText}</div>
                 </div>
-                <div class="kpi-label">\${conf.kpi[0].label}</div>
-                <div class="kpi-value text-primary">\${valA.toLocaleString('es-MX')}</div>
-                <div class="kpi-meta">Dosis Aplicadas</div>
-            </div>
-            <div class="rda-kpi-mobile-card relative overflow-hidden group">
-                <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-colors"></div>
-                <div class="kpi-icon bg-emerald-500/10 text-emerald-600">
-                    <span class="material-symbols-rounded">percent</span>
-                </div>
-                <div class="kpi-label">Avance vs \${conf.kpi[1].label}</div>
-                <div class="kpi-value text-emerald-600">\${coverage}%</div>
-                <div class="kpi-meta">Eficiencia global</div>
-            </div>
-        \`;
+            `;
+        });
+        kpiGrid.innerHTML = kpiHtml;
     }
 
+    // === Render Unit List ===
     const listEl = document.getElementById('rdaMobileList');
     if (listEl) {
         let listHtml = '';
         fUnits.forEach(u => {
-            let vA = 0, vB = 0;
-            if (conf.kpi[0]) {
-                let k = conf.kpi[0].key;
-                if (k === 'rotavirus_12m') k = 'rotavirus_rn';
-                if (k === 'srp_18m') k = 'srp_1a';
-                vA = Number(u[k]) || 0;
+            // Show the main KPI value per unit (first non-pob KPI)
+            const mainKpi = kpiList.find(k => k.key !== 'pob') || kpiList[0];
+            let mainVal = 0;
+            if (esquema === 'basico') {
+                if (mainKpi.key === 'menor1') {
+                    const uDosis = (u.bcg_dosis||0) + (u.hepb_0_7_dosis||0) + (u.hexa_3_dosis||0) + (u.rota_2_dosis||0) + (u.neumo_2_dosis||0);
+                    mainVal = uDosis;
+                } else if (mainKpi.key === 'uno') {
+                    mainVal = (u.hexa_ref_dosis||0) + (u.neumo_ref_dosis||0) + (u.srp_2_dosis||0);
+                } else if (mainKpi.key === 'cuatro') {
+                    mainVal = u.dpt_4_dosis || 0;
+                }
+            } else {
+                mainVal = Number(u[mainKpi.key]) || 0;
             }
-            if (conf.kpi[1]) {
-                let k = conf.kpi[1].key;
-                if (k === 'rotavirus_12m') k = 'rotavirus_rn';
-                if (k === 'srp_18m') k = 'srp_1a';
-                vB = Number(u[k]) || 0;
-            }
-            
-            let cvg = vB > 0 ? ((vA / vB) * 100).toFixed(1) : "0.0";
-            let colorCvg = cvg >= 80 ? "text-emerald-600" : (cvg >= 50 ? "text-orange-500" : "text-red-500");
 
-            listHtml += \`
+            listHtml += `
                 <div class="rda-unit-mobile-card">
                     <div class="unit-header">
                         <div>
-                            <div class="unit-title">\${u.nombre || u.clues}</div>
-                            <div class="unit-clues">\${u.clues}</div>
+                            <div class="unit-title">${u.nombre || u.clues}</div>
+                            <div class="unit-clues">${u.clues}</div>
                         </div>
-                        <div class="unit-doses">\${vA.toLocaleString('es-MX')}</div>
+                        <div class="unit-doses">${mainVal.toLocaleString('es-MX')}</div>
                     </div>
                     <div class="unit-metrics">
                         <div class="metric-item">
-                            <span class="metric-label">Avance (\${conf.kpi[1].label})</span>
-                            <span class="metric-value \${colorCvg}">\${cvg}%</span>
+                            <span class="metric-label">${mainKpi.label}</span>
+                            <span class="metric-value text-slate-700">${mainVal.toLocaleString('es-MX')} dosis</span>
                         </div>
                         <div class="metric-item">
                             <span class="metric-label">Municipio</span>
-                            <span class="metric-value text-slate-700 truncate">\${u.municipio || '-'}</span>
+                            <span class="metric-value text-slate-700 truncate">${u.municipio || '-'}</span>
                         </div>
                     </div>
                 </div>
-            \`;
+            `;
         });
         listEl.innerHTML = listHtml;
     }
 }
+
