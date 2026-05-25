@@ -148,7 +148,7 @@ function renderFact() {
   if (!FACTS || !FACTS.length) return;
   const card = document.getElementById("factCard"), iconCont = document.getElementById("factIconContainer"), iconEl = document.getElementById("factIcon"), dot = document.getElementById("factDot"), titleEl = document.getElementById("factTitle"), bodyEl = document.getElementById("factBody"), tagEl = document.getElementById("factTag");
   if (!card || !iconCont || !iconEl || !dot || !titleEl || !bodyEl || !tagEl) return;
-  
+
   const f = FACTS[factIdx % FACTS.length];
   const tagIconMap = { "Cadena fría": "ac_unit", "Frascos": "science", "Inventario": "inventory_2", "Planeación": "analytics", "Registro": "edit_note", "Cobertura": "query_stats", "Operación": "settings" };
   const curIcon = tagIconMap[f.tag] || f.icon || "syringe";
@@ -173,12 +173,12 @@ function renderFact() {
     titleEl.textContent = f.tag || "";
     bodyEl.textContent = f.body || "";
     iconEl.textContent = curIcon;
-    
+
     // 3. Pop icon in & fade text
     bodyEl.style.opacity = 1;
     iconEl.style.transform = "scale(1.2) rotate(10deg)";
     iconEl.style.opacity = 1;
-    
+
     // Settle icon
     setTimeout(() => { iconEl.style.transform = "scale(1) rotate(0deg)"; }, 250);
   }, 300);
@@ -441,6 +441,8 @@ document.addEventListener("DOMContentLoaded", () => {
       } else if ($("exportOverlay")?.classList.contains("show")) {
         if (typeof closeExportModal === "function") closeExportModal();
         else $("exportOverlay").classList.remove("show");
+      } else if ($("pinolObsModal") && !$("pinolObsModal").classList.contains("pointer-events-none")) {
+        closePinolObsModal();
       } else if ($("pinolEntregaModal")?.classList.contains("show")) {
         $("pinolEntregaModal").classList.remove("show");
       } else if ($("liveViewOverlay")?.classList.contains("show")) {
@@ -1180,12 +1182,12 @@ function buildNotificationsHtml(items = []) {
         type === "WARN" || type === "WARNING" ? "warning" :
           type === "ERROR" ? "error" :
             type === "ALERTA_DESABASTO" ? "error_outline" :
-            "notifications"
+              "notifications"
     );
 
     const isDesabasto = type === "ALERTA_DESABASTO";
     const isDesabastoActive = isDesabasto && meta?.status === "activa";
-    const desabastoTag = isDesabasto 
+    const desabastoTag = isDesabasto
       ? `<span style="background:var(--md-sys-color-error-container); color:var(--md-sys-color-on-error-container); padding:2px 8px; border-radius:8px; font-size:10px; font-weight:800; display:inline-flex; align-items:center; gap:4px; margin-left:6px;"><span class="material-symbols-rounded" style="font-size:12px; animation: pulse 2s infinite;">error_outline</span> DESABASTO</span>`
       : "";
 
@@ -1193,9 +1195,9 @@ function buildNotificationsHtml(items = []) {
       "notifCard",
       isRead ? "read" : "unread",
       pinolConfirmed ? "flowClosed" : "",
-      (isDesabasto && !isDesabastoActive) ? "flowClosed" : "" 
+      (isDesabasto && !isDesabastoActive) ? "flowClosed" : ""
     ].join(" ").trim();
-    
+
     const extraStyle = isDesabastoActive ? "border-left: 4px solid var(--md-sys-color-error);" : (isDesabasto ? "border-left: 4px solid var(--md-sys-color-outline-variant);" : "");
 
     return `
@@ -3505,7 +3507,7 @@ async function supabaseRequest(action = "", payload) {
         if (payload.missingVaccines && payload.missingVaccines.length > 0) {
           const missList = payload.missingVaccines;
           const notifId = 'NOTIF:DESABASTO:' + btoa(clues + ":" + fecha + ":" + Date.now());
-          
+
           await supabase.from('notificaciones').insert({
             id: notifId,
             tipo: 'alerta_desabasto',
@@ -3597,9 +3599,9 @@ async function supabaseRequest(action = "", payload) {
         // PURGAR PREVIAMENTE PARA EVITAR DUPLICADOS AL EDITAR (Incluyendo Legacy)
         let deleteQuery = supabase.from('biologicos_pedido').delete().eq('clues', finalClues);
         if (payload.windowStartYmd && payload.windowEndYmd) {
-           deleteQuery = deleteQuery.or(`fecha_pedido_programada.eq.${payload.fechaPedidoProgramada || todayYmdLocal()},and(fecha_captura.gte.${payload.windowStartYmd},fecha_captura.lte.${payload.windowEndYmd},tipo_pedido.in.(MENSUAL,null))`);
+          deleteQuery = deleteQuery.or(`fecha_pedido_programada.eq.${payload.fechaPedidoProgramada || todayYmdLocal()},and(fecha_captura.gte.${payload.windowStartYmd},fecha_captura.lte.${payload.windowEndYmd},tipo_pedido.in.(MENSUAL,null))`);
         } else {
-           deleteQuery = deleteQuery.eq('fecha_pedido_programada', payload.fechaPedidoProgramada || todayYmdLocal());
+          deleteQuery = deleteQuery.eq('fecha_pedido_programada', payload.fechaPedidoProgramada || todayYmdLocal());
         }
         await deleteQuery;
 
@@ -3900,7 +3902,7 @@ async function supabaseRequest(action = "", payload) {
 
         // 🛡️ Logística de Ventanas: Traemos también el calendario por si hay apertura manual
         const currentMonth = fIniStr.substring(0, 7); // YYYY-MM
-        
+
         const [resSR, resBio, resUnits, resCalendar, resCons] = await Promise.all([
           supabase.rpc('get_captures_sr_range_bypass', { p_fecha_inicio: fIniStr, p_fecha_fin: fFinStr }),
           supabase.rpc('get_captures_bio_range_bypass', { p_fecha_inicio: fIniStr, p_fecha_fin: fFinStr }),
@@ -3929,18 +3931,18 @@ async function supabaseRequest(action = "", payload) {
             }
           });
           availableWindows = Array.from(windowsMap.values()).sort((a, b) => a.fecha.localeCompare(b.fecha));
-          
+
           if (availableWindows.length > 0) {
             // Si el frontend envia una ventana seleccionada (TODO en UI), usar esa
             // Por ahora, mostrar MENSUAL si hay, o la primera
-            const targetWindow = payload.targetWindow; 
+            const targetWindow = payload.targetWindow;
             if (targetWindow) {
-               activeWindow = availableWindows.find(w => w.fecha === targetWindow.fecha && w.tipo_pedido === targetWindow.tipo_pedido);
+              activeWindow = availableWindows.find(w => w.fecha === targetWindow.fecha && w.tipo_pedido === targetWindow.tipo_pedido);
             }
             if (!activeWindow) {
-               activeWindow = availableWindows.find(w => w.tipo_pedido === 'MENSUAL') || availableWindows[0];
+              activeWindow = availableWindows.find(w => w.tipo_pedido === 'MENSUAL') || availableWindows[0];
             }
-            
+
             // Filtrar captures solo para la ventana activa
             captureRecords = captureRecords.filter(r => r.fecha === activeWindow.fecha && (r.tipo_pedido || 'MENSUAL') === activeWindow.tipo_pedido);
           }
@@ -4015,10 +4017,10 @@ async function supabaseRequest(action = "", payload) {
         if (role === "UNIDAD") {
           unitsQuery = unitsQuery.eq('clues', USER.clues);
         }
-        
+
         const { data: unitsData, error: unitsError } = await unitsQuery;
         if (unitsError) throw unitsError;
-        
+
         let units = unitsData || [];
         if (role === "MUNICIPAL") {
           units = units.filter(u => canSeeMunicipio_(USER, u.municipio));
@@ -4242,25 +4244,25 @@ async function supabaseRequest(action = "", payload) {
             if (global_avg > 100) global_avg = 100;
 
             if (role === "MUNICIPAL" || role === "ADMIN" || role === "JURISDICCIONAL") {
-                // Para MUNICIPAL: Traer unidades y filtrar localmente
-                const [resMuniUnits, resMuniSR, resMuniCons] = await Promise.all([
-                  supabase.from('unidades').select('clues, municipio').eq('activo', 'SI'),
-                  supabase.from('biologicos_existencia').select('clues').gte('fecha', monthStartStr).lte('fecha', today),
-                  supabase.from('consumibles').select('clues').gte('fecha', monthStartStr).lte('fecha', today)
-                ]);
+              // Para MUNICIPAL: Traer unidades y filtrar localmente
+              const [resMuniUnits, resMuniSR, resMuniCons] = await Promise.all([
+                supabase.from('unidades').select('clues, municipio').eq('activo', 'SI'),
+                supabase.from('biologicos_existencia').select('clues').gte('fecha', monthStartStr).lte('fecha', today),
+                supabase.from('consumibles').select('clues').gte('fecha', monthStartStr).lte('fecha', today)
+              ]);
 
-                let muniUnitsList = (resMuniUnits.data || []).filter(u => canSeeMunicipio_(USER, u.municipio));
-                let allowedClues = muniUnitsList.map(u => u.clues);
+              let muniUnitsList = (resMuniUnits.data || []).filter(u => canSeeMunicipio_(USER, u.municipio));
+              let allowedClues = muniUnitsList.map(u => u.clues);
 
-                let reportSRCount = (resMuniSR.data || []).filter(row => allowedClues.includes(row.clues)).length;
-                let reportConsCount = (resMuniCons.data || []).filter(row => allowedClues.includes(row.clues)).length;
+              let reportSRCount = (resMuniSR.data || []).filter(row => allowedClues.includes(row.clues)).length;
+              let reportConsCount = (resMuniCons.data || []).filter(row => allowedClues.includes(row.clues)).length;
 
-                let reportesSemanales = reportSRCount + reportConsCount;
-                let totalUnidadesActivas = muniUnitsList.length;
-                let totalExpectedMuni = totalUnidadesActivas * totalExpectedPerUnit;
+              let reportesSemanales = reportSRCount + reportConsCount;
+              let totalUnidadesActivas = muniUnitsList.length;
+              let totalExpectedMuni = totalUnidadesActivas * totalExpectedPerUnit;
 
-                municipal_avg = totalExpectedMuni > 0 ? Math.round((reportesSemanales / totalExpectedMuni) * 100) : 0;
-                if (municipal_avg > 100) municipal_avg = 100;
+              municipal_avg = totalExpectedMuni > 0 ? Math.round((reportesSemanales / totalExpectedMuni) * 100) : 0;
+              if (municipal_avg > 100) municipal_avg = 100;
             }
             compliance_pct = (role === "MUNICIPAL") ? municipal_avg : global_avg;
           }
@@ -4329,12 +4331,12 @@ async function supabaseRequest(action = "", payload) {
           console.error("[DB] Error en unitcatalog:", error);
           throw error;
         }
-        
+
         let filteredData = data || [];
         if (role === "MUNICIPAL") {
           filteredData = filteredData.filter(u => canSeeMunicipio_(USER, u.municipio));
         }
-        
+
         return { ok: true, data: filteredData };
       }
 
@@ -4353,14 +4355,14 @@ async function supabaseRequest(action = "", payload) {
         const role = String(USER?.rol || "").toUpperCase();
         const tipo = (payload.tipo || "SR").toUpperCase();
         const rpcName = tipo === "SR" ? "get_export_sr_range_bypass" : "get_export_cons_range_bypass";
-        
+
         const { data, error } = await supabase.rpc(rpcName, {
           p_fecha_inicio: payload.fechaInicio,
           p_fecha_fin: payload.fechaFin
         });
 
         if (error) throw error;
-        
+
         let filteredData = data || [];
         if (role === "UNIDAD") {
           filteredData = filteredData.filter(row => row.clues === USER.clues);
@@ -4374,16 +4376,16 @@ async function supabaseRequest(action = "", payload) {
 
       case "bioexportmatrix": {
         const role = String(USER?.rol || "").toUpperCase();
-        
+
         const { data, error } = await supabase.rpc("get_export_bio_range_bypass", {
           p_fecha_inicio: payload.fechaInicio,
           p_fecha_fin: payload.fechaFin
         });
 
         if (error) throw error;
-        
+
         let filteredData = data || [];
-        
+
         if (role === "UNIDAD") {
           filteredData = filteredData.filter(row => row.clues === USER.clues);
         }
@@ -4531,17 +4533,17 @@ async function supabaseRequest(action = "", payload) {
         // Obtenemos la notificación primero para actualizar meta_json
         const { data: notif } = await supabase.from('notificaciones').select('meta_json').eq('id', payload.id).single();
         if (!notif) throw new Error("Notificación no encontrada");
-        
+
         let meta = {};
-        try { meta = JSON.parse(notif.meta_json || "{}"); } catch(e) {}
+        try { meta = JSON.parse(notif.meta_json || "{}"); } catch (e) { }
         meta.status = "resuelta";
 
         const { error } = await supabase
           .from('notificaciones')
           .update({
-             is_read: 'SI',
-             read_ts: new Date().toISOString(),
-             meta_json: JSON.stringify(meta)
+            is_read: 'SI',
+            read_ts: new Date().toISOString(),
+            meta_json: JSON.stringify(meta)
           })
           .eq('id', payload.id);
         if (error) throw error;
@@ -4590,12 +4592,12 @@ async function supabaseRequest(action = "", payload) {
             .lte('fecha', fFinStr)
             .order('fecha', { ascending: false });
           if (error) throw error;
-          
+
           let filteredData = [];
           if (data && data.length > 0) {
             const latestDate = data[0].fecha;
             filteredData = data.filter(r => r.fecha === latestDate);
-            filteredData.sort((a,b) => (a.biologico || "").localeCompare(b.biologico || ""));
+            filteredData.sort((a, b) => (a.biologico || "").localeCompare(b.biologico || ""));
           }
           return { ok: true, data: filteredData, meta: { fecha: filteredData.length ? filteredData[0].fecha : targetFecha, tipo } };
         } else if (tipo === "BIO") {
@@ -4607,12 +4609,12 @@ async function supabaseRequest(action = "", payload) {
             .lte('fecha_pedido_programada', fFinStr)
             .order('fecha_pedido_programada', { ascending: false });
           if (error) throw error;
-          
+
           let filteredData = [];
           if (data && data.length > 0) {
             const latestDate = data[0].fecha_pedido_programada;
             filteredData = data.filter(r => r.fecha_pedido_programada === latestDate);
-            filteredData.sort((a,b) => (a.biologico || "").localeCompare(b.biologico || ""));
+            filteredData.sort((a, b) => (a.biologico || "").localeCompare(b.biologico || ""));
           }
           return { ok: true, data: filteredData, meta: { fecha: filteredData.length ? filteredData[0].fecha_pedido_programada : targetFecha, tipo } };
         } else {
@@ -4800,7 +4802,7 @@ async function supabaseRequest(action = "", payload) {
             try {
               const body = await error.context.json();
               if (body && body.error) detailedMsg = body.error;
-            } catch (e) {}
+            } catch (e) { }
           }
           throw new Error(detailedMsg || "Error al comunicarse con la función de reset");
         }
@@ -4831,7 +4833,7 @@ async function supabaseRequest(action = "", payload) {
             try {
               const body = await error.context.json();
               if (body && body.error) detailedMsg = body.error;
-            } catch (e) {}
+            } catch (e) { }
           }
           throw new Error(detailedMsg || "Error al comunicarse con la función de eliminación");
         }
@@ -6484,13 +6486,13 @@ window.addSRRow = function (data = null) {
   }
 }
 
-window.cloneSRRow = function(btn) {
+window.cloneSRRow = function (btn) {
   const originalRow = btn.closest("tr");
   if (!originalRow) return;
 
   const bioSelect = originalRow.querySelector(".sr-bio-select");
   const loteSelect = originalRow.querySelector(".sr-lote-select");
-  
+
   const data = {
     biologico: bioSelect ? bioSelect.value : "",
     lote: loteSelect ? loteSelect.value : "",
@@ -6501,12 +6503,12 @@ window.cloneSRRow = function(btn) {
   addSRRow(data);
   const tbody = document.getElementById("srCaptureTbody");
   const newRow = tbody.lastElementChild;
-  
+
   originalRow.insertAdjacentElement('afterend', newRow);
-  
+
   setTimeout(() => {
     const inputReq = newRow.querySelector(".sr-recepcion-input");
-    if(inputReq) inputReq.focus();
+    if (inputReq) inputReq.focus();
   }, 100);
 };
 
@@ -7203,7 +7205,7 @@ function buildUserFromPerfil(uid, email, perfil) {
     if (perfil && perfil.municipios_allowed && perfil.municipios_allowed.length > 0 && perfil.municipios_allowed !== "[]") {
       rawMuni = perfil.municipios_allowed;
     }
-    
+
     let muniList = [];
     if (Array.isArray(rawMuni)) {
       muniList = rawMuni;
@@ -7884,7 +7886,7 @@ function refreshBioAlerts(force = false) {
     } else {
       if (level === "bad" && card) card.classList.add("card-extra");
       if (level === "warn" && card) card.classList.add("card-warn");
-      
+
       const chipClass = level === "bad" ? "extra" : "warn";
       const iconChar = level === "bad" ? "✕" : "!";
       const textLabel = level === "bad" ? "ERROR" : "ADVERTENCIA";
@@ -7914,39 +7916,39 @@ let BIO_CONFIRM_RESOLVER = null;
 function openBioConfirm(warningRows) {
   return new Promise((resolve) => {
     let overlay = $("bioConfirmOverlay");
-    
+
     if (!overlay) {
       console.warn("bioConfirmOverlay no encontrado");
       resolve(false);
       return;
     }
-    
+
     // Siempre asegurar que el overlay sea hijo directo del body
     // para escapar de cualquier stacking context y asegurar el z-index
     if (overlay.parentNode !== document.body) {
       document.body.appendChild(overlay);
     }
-    
+
     overlay.onclick = (e) => {
-       if (e.target === overlay) closeBioConfirm(false);
+      if (e.target === overlay) closeBioConfirm(false);
     };
 
     const btnCancel = overlay.querySelector("#btnBioConfirmCancel");
     const btnAccept = overlay.querySelector("#btnBioConfirmAccept");
-    
+
     if (btnCancel) btnCancel.onclick = () => closeBioConfirm(false);
     if (btnAccept) btnAccept.onclick = () => closeBioConfirm(true);
 
     BIO_CONFIRM_RESOLVER = resolve;
 
     const list = overlay.querySelector("#bioConfirmList");
-    
+
     if (list) {
-       list.innerHTML = warningRows
+      list.innerHTML = warningRows
         .map(row => {
-            let text = row.replace(/^•\s*/, "").replace(/^-/, "").trim();
-            text = text.replace(/\((\d+)\)/g, '<span class="font-black text-status-warning ml-1">($1)</span>');
-            return `
+          let text = row.replace(/^•\s*/, "").replace(/^-/, "").trim();
+          text = text.replace(/\((\d+)\)/g, '<span class="font-black text-status-warning ml-1">($1)</span>');
+          return `
             <div class="flex items-start gap-3 py-1.5">
                 <span class="material-symbols-rounded text-[18px] text-status-warning shrink-0 mt-0.5">priority_high</span>
                 <span class="text-[13px] font-bold text-surface-onVariant/90 leading-snug">${text}</span>
@@ -7957,8 +7959,8 @@ function openBioConfirm(warningRows) {
 
     // Disparar animación
     requestAnimationFrame(() => {
-        overlay.classList.add("show");
-        document.body.classList.add("bioConfirmOpen");
+      overlay.classList.add("show");
+      document.body.classList.add("bioConfirmOpen");
     });
 
     if (btnCancel) btnCancel.focus();
@@ -7968,7 +7970,7 @@ function openBioConfirm(warningRows) {
 function closeBioConfirm(result) {
   const overlay = $("bioConfirmOverlay");
   if (!overlay) return;
-  
+
   overlay.classList.remove("show");
   document.body.classList.remove("bioConfirmOpen");
 
@@ -8393,7 +8395,7 @@ async function reloadTodayState() {
   try {
     const todayStr = todayYmdLocal();
     let today = await getTodayReports(todayStr);
-    
+
     const dow = new Date().getDay();
     let isPrefill = false;
 
@@ -8403,49 +8405,49 @@ async function reloadTodayState() {
       dYesterday.setDate(dYesterday.getDate() - 1);
       const yesterdayStr = dYesterday.toISOString().split('T')[0];
       const yesterday = await getTodayReports(yesterdayStr, true);
-      
+
       if (yesterday && yesterday.sr) {
-        if(!today) today = {};
+        if (!today) today = {};
         today.sr = yesterday.sr;
       }
     }
 
     // Pre-llenado semanal
     if (!today || !today.sr) {
-       // Visual feedback on Friday if empty
-       if (dow === 5) {
-           const titleContainer = document.querySelector("#panelSR h1, #panelSR h2");
-           if (titleContainer && !document.querySelector(".chip-pending")) {
-               titleContainer.insertAdjacentHTML("beforeend", `<span class="chip-pending ml-4" style="vertical-align: middle;"><span class="material-symbols-rounded">pending_actions</span> Captura pendiente</span>`);
-           }
-       }
-       
-       const prefillData = await execPrefillSemanal(todayStr);
-       if (prefillData) {
-           if(!today) today = {};
-           today.sr = prefillData;
-           isPrefill = true;
-       }
+      // Visual feedback on Friday if empty
+      if (dow === 5) {
+        const titleContainer = document.querySelector("#panelSR h1, #panelSR h2");
+        if (titleContainer && !document.querySelector(".chip-pending")) {
+          titleContainer.insertAdjacentHTML("beforeend", `<span class="chip-pending ml-4" style="vertical-align: middle;"><span class="material-symbols-rounded">pending_actions</span> Captura pendiente</span>`);
+        }
+      }
+
+      const prefillData = await execPrefillSemanal(todayStr);
+      if (prefillData) {
+        if (!today) today = {};
+        today.sr = prefillData;
+        isPrefill = true;
+      }
     }
-    
+
     console.log("reloadTodayState today:", today);
     hydrateTodayForms(today);
 
     if (isPrefill) {
-       const prefillDate = today.sr.fecha_prefill || today.sr.fecha;
-       const userClues = (window.USER && window.USER.clues) ? window.USER.clues : 'unknown';
-       const ackKey = `prefill_ack_${userClues}_${todayStr}`;
-       
-       if (!localStorage.getItem(ackKey)) {
-           await openPrefillNotice(prefillDate);
-           localStorage.setItem(ackKey, 'true');
-       }
+      const prefillDate = today.sr.fecha_prefill || today.sr.fecha;
+      const userClues = (window.USER && window.USER.clues) ? window.USER.clues : 'unknown';
+      const ackKey = `prefill_ack_${userClues}_${todayStr}`;
 
-       EDIT_SR = false; // Es un insert nuevo para "hoy"
-       HAS_TODAY_SR = false; // Desbloqueamos el form para que lo guarden de nuevo
-       applyCaptureLockState(); // Refrescar los botones y el estado locked
+      if (!localStorage.getItem(ackKey)) {
+        await openPrefillNotice(prefillDate);
+        localStorage.setItem(ackKey, 'true');
+      }
+
+      EDIT_SR = false; // Es un insert nuevo para "hoy"
+      HAS_TODAY_SR = false; // Desbloqueamos el form para que lo guarden de nuevo
+      applyCaptureLockState(); // Refrescar los botones y el estado locked
     } else {
-       window.PREFILL_SNAPSHOT = null; 
+      window.PREFILL_SNAPSHOT = null;
     }
   } catch (e) {
     console.error("reloadTodayState error:", e);
@@ -8464,26 +8466,26 @@ function openPrefillNotice(dateStr) {
     const msgEl = $("prefillNoticeMsg");
     if (msgEl) {
       if (dateStr && dateStr !== "undefined") {
-          msgEl.innerHTML = "Hemos precargado tu última captura del día <b style='color: #0284c7;'>" + dateStr + "</b> para ahorrarte tiempo.";
+        msgEl.innerHTML = "Hemos precargado tu última captura del día <b style='color: #0284c7;'>" + dateStr + "</b> para ahorrarte tiempo.";
       } else {
-          msgEl.innerHTML = "Hemos precargado tu última captura de biológicos para ahorrarte tiempo.";
+        msgEl.innerHTML = "Hemos precargado tu última captura de biológicos para ahorrarte tiempo.";
       }
     }
     overlay.onclick = (e) => {
-       if (e.target === overlay) {
-           closePrefillNotice();
-           resolve();
-       }
+      if (e.target === overlay) {
+        closePrefillNotice();
+        resolve();
+      }
     };
     const btnAccept = overlay.querySelector("#btnPrefillNoticeAccept");
     if (btnAccept) {
-       btnAccept.onclick = () => {
-           closePrefillNotice();
-           resolve();
-       };
+      btnAccept.onclick = () => {
+        closePrefillNotice();
+        resolve();
+      };
     }
     requestAnimationFrame(() => {
-        overlay.classList.add("show");
+      overlay.classList.add("show");
     });
   });
 }
@@ -8500,27 +8502,27 @@ function openPrefillConfirm() {
       document.body.appendChild(overlay);
     }
     overlay.onclick = (e) => {
-       if (e.target === overlay) {
-           closePrefillConfirm();
-           resolve(false);
-       }
+      if (e.target === overlay) {
+        closePrefillConfirm();
+        resolve(false);
+      }
     };
     const btnCancel = overlay.querySelector("#btnPrefillConfirmCancel");
     const btnAccept = overlay.querySelector("#btnPrefillConfirmAccept");
     if (btnCancel) {
-       btnCancel.onclick = () => {
-           closePrefillConfirm();
-           resolve(false);
-       };
+      btnCancel.onclick = () => {
+        closePrefillConfirm();
+        resolve(false);
+      };
     }
     if (btnAccept) {
-       btnAccept.onclick = () => {
-           closePrefillConfirm();
-           resolve(true);
-       };
+      btnAccept.onclick = () => {
+        closePrefillConfirm();
+        resolve(true);
+      };
     }
     requestAnimationFrame(() => {
-        overlay.classList.add("show");
+      overlay.classList.add("show");
     });
   });
 }
@@ -8530,34 +8532,34 @@ function closePrefillConfirm() {
 }
 
 async function execPrefillSemanal(todayStr) {
-   if (!USER || !USER.clues || !window.supabase) return null;
-   try {
-       const { data: lastReports } = await window.supabase
-           .from('biologicos_existencia')
-           .select('fecha')
-           .eq('clues', USER.clues)
-           .order('fecha', { ascending: false })
-           .limit(1);
-           
-       if (lastReports && lastReports.length > 0) {
-           const lastDate = lastReports[0].fecha;
-           const t1 = new Date(lastDate).getTime();
-           const t2 = new Date(todayStr).getTime();
-           const diffDays = (t2 - t1) / (1000 * 3600 * 24);
-           
-           if (diffDays > 1) {
-               const oldReport = await getTodayReports(lastDate, true);
-               if (oldReport && oldReport.sr) {
-                   window.PREFILL_SNAPSHOT = JSON.stringify(oldReport.sr.items || []);
-                   oldReport.sr.fecha_prefill = lastDate;
-                   return oldReport.sr;
-               }
-           }
-       }
-   } catch(err) {
-       console.error("execPrefillSemanal error:", err);
-   }
-   return null;
+  if (!USER || !USER.clues || !window.supabase) return null;
+  try {
+    const { data: lastReports } = await window.supabase
+      .from('biologicos_existencia')
+      .select('fecha')
+      .eq('clues', USER.clues)
+      .order('fecha', { ascending: false })
+      .limit(1);
+
+    if (lastReports && lastReports.length > 0) {
+      const lastDate = lastReports[0].fecha;
+      const t1 = new Date(lastDate).getTime();
+      const t2 = new Date(todayStr).getTime();
+      const diffDays = (t2 - t1) / (1000 * 3600 * 24);
+
+      if (diffDays > 1) {
+        const oldReport = await getTodayReports(lastDate, true);
+        if (oldReport && oldReport.sr) {
+          window.PREFILL_SNAPSHOT = JSON.stringify(oldReport.sr.items || []);
+          oldReport.sr.fecha_prefill = lastDate;
+          return oldReport.sr;
+        }
+      }
+    }
+  } catch (err) {
+    console.error("execPrefillSemanal error:", err);
+  }
+  return null;
 }
 
 
@@ -8676,11 +8678,11 @@ function renderCaptureSummary(data) {
     const tipoTxt = tipo === "CONS" ? "Consumibles" : (tipo === "BIO" ? "Pedido de biológico" : "Existencia de biológicos");
     let t = `Resumen de captura de ${tipoTxt}`;
     if ((tipo === "SR" || tipo === "CONS") && data.fIniStr && data.fFinStr) {
-       t += ` (Semana del ${formatAppDate(data.fIniStr)} al ${formatAppDate(data.fFinStr)})`;
+      t += ` (Semana del ${formatAppDate(data.fIniStr)} al ${formatAppDate(data.fFinStr)})`;
     } else if (tipo === "BIO" && fecha) {
-       const dateObj = new Date(`${fecha}T12:00:00`);
-       const monthName = dateObj.toLocaleString('es-MX', { month: 'long' });
-       t += ` (${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${dateObj.getFullYear()})`;
+      const dateObj = new Date(`${fecha}T12:00:00`);
+      const monthName = dateObj.toLocaleString('es-MX', { month: 'long' });
+      t += ` (${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${dateObj.getFullYear()})`;
     }
     titleEl.textContent = t;
   }
@@ -8694,13 +8696,13 @@ function renderCaptureSummary(data) {
     const headerRow = titleEl ? titleEl.parentNode : document.getElementById("panelCaptureSummary");
     headerRow.parentNode.insertBefore(windowSelectorContainer, headerRow.nextSibling);
   }
-  
+
   if (data.available_windows && data.available_windows.length > 1) {
     let optionsHtml = data.available_windows.map(w => {
-       const isSelected = data.active_window && data.active_window.fecha === w.fecha && data.active_window.tipo_pedido === w.tipo_pedido;
-       return `<option value="${w.fecha}|${w.tipo_pedido}" ${isSelected ? 'selected' : ''}>${w.tipo_pedido} (Ventana: ${formatAppDate(w.fecha)})</option>`;
+      const isSelected = data.active_window && data.active_window.fecha === w.fecha && data.active_window.tipo_pedido === w.tipo_pedido;
+      return `<option value="${w.fecha}|${w.tipo_pedido}" ${isSelected ? 'selected' : ''}>${w.tipo_pedido} (Ventana: ${formatAppDate(w.fecha)})</option>`;
     }).join("");
-    
+
     windowSelectorContainer.innerHTML = `
       <label class="text-[11px] font-black text-primary/50 uppercase tracking-widest block mb-2 ml-1">Múltiples pedidos detectados, selecciona uno:</label>
       <div class="modern-input-group">
@@ -8710,24 +8712,24 @@ function renderCaptureSummary(data) {
         </select>
       </div>
     `;
-    
+
     const selectEl = document.getElementById("captureSummaryWindowSelect");
     selectEl.onchange = (e) => {
-       const [selFecha, selTipo] = e.target.value.split("|");
-       const payload = {
-         action: "adminCaptureOverview",
-         fecha: data.fecha,
-         tipo: data.tipo,
-         targetWindow: { fecha: selFecha, tipo_pedido: selTipo }
-       };
-       showOverlay("Cargando ventana...", "Resumen");
-       supabaseRequest("admincaptureoverview", payload).then(res => {
-         hideOverlay();
-         if (res && res.ok) renderCaptureSummary(res.data);
-       }).catch(err => {
-         hideOverlay();
-         console.error("Error al cargar ventana:", err);
-       });
+      const [selFecha, selTipo] = e.target.value.split("|");
+      const payload = {
+        action: "adminCaptureOverview",
+        fecha: data.fecha,
+        tipo: data.tipo,
+        targetWindow: { fecha: selFecha, tipo_pedido: selTipo }
+      };
+      showOverlay("Cargando ventana...", "Resumen");
+      supabaseRequest("admincaptureoverview", payload).then(res => {
+        hideOverlay();
+        if (res && res.ok) renderCaptureSummary(res.data);
+      }).catch(err => {
+        hideOverlay();
+        console.error("Error al cargar ventana:", err);
+      });
     };
   } else {
     windowSelectorContainer.innerHTML = "";
@@ -9040,10 +9042,10 @@ function updateDynamicGreeting(timeGreeting = null, customSubtitle = null) {
   const weatherTemp = CURRENT_WEATHER.temp !== null ? `${CURRENT_WEATHER.temp}°C` : "";
   const weatherText = CURRENT_WEATHER.text || "";
   const weatherBg = CURRENT_WEATHER.bg || "";
-  
+
   const theme = CURRENT_WEATHER.theme || 'dark-bg';
   const isDarkText = theme === 'light-bg';
-  
+
   // Usar estilos inline (rgba) directos asegura que siempre haya contraste perfecto
   // porque evita fallas si Tailwind no compiló las clases text-white/80 o text-primary/70
   const colorTitle = isDarkText ? '#1e293b' : '#ffffff';
@@ -9056,7 +9058,7 @@ function updateDynamicGreeting(timeGreeting = null, customSubtitle = null) {
     parentEl.classList.add("weather-hero-block");
     parentEl.setAttribute("data-theme", theme);
     parentEl.style.setProperty('--weather-bg', `url('${weatherBg}')`);
-    
+
     const resumenSpan = parentEl.querySelector("span.uppercase");
     if (resumenSpan) {
       resumenSpan.className = `text-[10px] font-black uppercase tracking-[0.25em] mb-2 block relative z-10 transition-colors duration-500`;
@@ -9457,7 +9459,7 @@ window.activateOpsTab = function (tab) {
     "NOTIFICATIONS": "panelNOTIFS",
     "SECURITY": "panelADMIN"
   };
-  
+
   const isMobileRda = tab === "RDA" && (document.body.classList.contains("touch-ui") || window.innerWidth < 768);
 
   Object.keys(panelIds).forEach(k => {
@@ -9486,7 +9488,7 @@ window.activateOpsTab = function (tab) {
         return;
       }
       activePanel.classList.remove("hidden");
-      
+
       if (activePanelId === "rdaMobileDashboard") {
         activePanel.style.setProperty("display", "flex", "important");
         requestAnimationFrame(() => activePanel.classList.remove("translate-y-full"));
@@ -9805,29 +9807,29 @@ if (bSaveSR) bSaveSR.onclick = async () => {
     return showToast("Corrige las filas en rojo", false, "warn");
   }
   if (!items.length) return showToast("Captura al menos un biológico", false, "warn");
-  
-  if (window.PREFILL_SNAPSHOT) {
-      try {
-          const currentSnapshot = JSON.stringify(items.map(item => ({
-              biologico: String(item.biologico).trim().toUpperCase(),
-              lote: String(item.lote).trim().toUpperCase(),
-              cantidad: Number(item.cantidad)
-          })));
-          
-          const prevItems = JSON.parse(window.PREFILL_SNAPSHOT);
-          const prevSnapshot = JSON.stringify(prevItems.map(item => ({
-              biologico: String(item.biologico).trim().toUpperCase(),
-              lote: String(item.lote).trim().toUpperCase(),
-              cantidad: Number(item.cantidad)
-          })));
 
-          if (currentSnapshot === prevSnapshot) {
-              const confirmed = await openPrefillConfirm();
-              if (!confirmed) {
-                  return; // Cancels save
-              }
-          }
-      } catch(e) { console.error("Snapshot compare error", e); }
+  if (window.PREFILL_SNAPSHOT) {
+    try {
+      const currentSnapshot = JSON.stringify(items.map(item => ({
+        biologico: String(item.biologico).trim().toUpperCase(),
+        lote: String(item.lote).trim().toUpperCase(),
+        cantidad: Number(item.cantidad)
+      })));
+
+      const prevItems = JSON.parse(window.PREFILL_SNAPSHOT);
+      const prevSnapshot = JSON.stringify(prevItems.map(item => ({
+        biologico: String(item.biologico).trim().toUpperCase(),
+        lote: String(item.lote).trim().toUpperCase(),
+        cantidad: Number(item.cantidad)
+      })));
+
+      if (currentSnapshot === prevSnapshot) {
+        const confirmed = await openPrefillConfirm();
+        if (!confirmed) {
+          return; // Cancels save
+        }
+      }
+    } catch (e) { console.error("Snapshot compare error", e); }
   }
 
   if (HAS_TODAY_SR && !EDIT_SR) return showToast("Ya existe una captura de hoy", false, "warn");
@@ -10297,7 +10299,7 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
     const labelFontColor = insumo.fontColor || 'FF000000';
     ws.getCell(rowCursor, cIdx).value = insumo.label;
     ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor };
-    ws.getCell(rowCursor, cIdx).font = { color: { argb: labelFontColor }, bold: true, name: 'Arial Nova', size: 11 };
+    ws.getCell(rowCursor, cIdx).font = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Arial Nova', size: 11 };
     ws.getCell(rowCursor, cIdx).border = borderAll;
     ws.getCell(rowCursor, cIdx).alignment = { vertical: 'middle', horizontal: 'left' };
 
@@ -10323,14 +10325,14 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
       ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor: bgColor };
       ws.getCell(rowCursor, cIdx).border = borderAll;
       ws.getCell(rowCursor, cIdx).alignment = { horizontal: 'center', vertical: 'middle' };
-      ws.getCell(rowCursor, cIdx).font = { color: { argb: 'FF000000' }, name: 'Arial Nova', size: 11, bold: true };
+      ws.getCell(rowCursor, cIdx).font = { name: 'Arial Nova', size: 11, bold: true };
       cIdx++;
     });
 
     ws.getCell(rowCursor, cIdx).value = Number(rowTotal);
     ws.getCell(rowCursor, cIdx).border = borderAll;
     ws.getCell(rowCursor, cIdx).alignment = { horizontal: 'center', vertical: 'middle' };
-    ws.getCell(rowCursor, cIdx).font = { color: { argb: 'FF000000' }, name: 'Arial Nova', size: 11, bold: true };
+    ws.getCell(rowCursor, cIdx).font = { name: 'Arial Nova', size: 11, bold: true };
     ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor: bgColor };
     rowCursor++;
   });
@@ -10977,6 +10979,52 @@ async function refreshPinolBadgeOnly() {
   }
 }
 
+function formatPinolDate(isoString) {
+  if (!isoString) return "";
+  const d = new Date(isoString);
+  if (isNaN(d)) return isoString;
+  const meses = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
+  const dia = String(d.getDate()).padStart(2, '0');
+  const mes = meses[d.getMonth()];
+  const anio = d.getFullYear();
+  return `${dia}/${mes}/${anio}`;
+}
+
+function showPinolObsModal(text) {
+  const modal = $("pinolObsModal");
+  const inner = $("pinolObsModalInner");
+  const textEl = $("pinolObsText");
+  if (!modal || !inner || !textEl) return;
+  textEl.textContent = text || "";
+  modal.classList.remove("pointer-events-none", "opacity-0");
+  inner.classList.remove("scale-95");
+}
+
+function closePinolObsModal() {
+  const modal = $("pinolObsModal");
+  const inner = $("pinolObsModalInner");
+  if (!modal || !inner) return;
+  modal.classList.add("pointer-events-none", "opacity-0");
+  inner.classList.add("scale-95");
+}
+
+async function deletePinolRow(id) {
+  if (!confirm("¿Estás seguro de que deseas eliminar esta solicitud permanentemente?")) return;
+  showOverlay("Eliminando solicitud...", "Pinol");
+  try {
+    const { error } = await window.supabase.from("pinol_solicitudes").delete().eq("id", id);
+    if (error) throw error;
+    showToast("Solicitud eliminada", true, "good");
+    invalidatePinolCache();
+    await refreshPinol();
+  } catch (e) {
+    showToast("Error al eliminar", false, "bad");
+    console.error(e);
+  } finally {
+    hideOverlay();
+  }
+}
+
 async function refreshPinol() {
   if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL")) return;
 
@@ -11090,26 +11138,48 @@ async function refreshPinol() {
     </span>
   `;
       }
+      const obsText = String(x?.observaciones || "").trim();
+      const obsHtml = obsText ? `<button type="button" class="ghostBtn" onclick="showPinolObsModal('${escapeHtml(escapeAttr(obsText))}')" title="Ver observación" style="margin: 0 auto; display: flex;"><span class="material-symbols-rounded">chat</span></button>` : `<span class="muted text-center block">—</span>`;
+      
+      const fechaSoliFormateada = formatPinolDate(x?.fecha_solicitud);
+      const fechaEntrega = x?.fecha_entrega || x?.editado_ts || "";
+      const fechaEntregaFormateada = formatPinolDate(fechaEntrega);
+
+      let deleteHtml = "";
+      if (USER && USER.rol === "ADMIN") {
+         deleteHtml = `<button class="miniBtn ghostBtn btnPinolDelete" data-id="${escapeAttr(x?.id || "")}" style="color:#ef4444;" title="Eliminar"><span class="material-symbols-rounded">delete</span></button>`;
+      }
+
+      let actionContent = "";
+      if (estatus === "PENDIENTE") {
+        actionContent += `<button class="miniBtn btnPinolDeliver" data-id="${escapeAttr(x?.id || "")}">
+      <span class="material-symbols-rounded">local_shipping</span> Entregar
+    </button>`;
+      }
+      
+      if (deleteHtml) {
+        actionContent += deleteHtml;
+      }
+
+      if (!actionContent) {
+        actionContent = `<span class="muted block text-center">—</span>`;
+      }
+
       return `
         <tr>
-          <td>${escapeHtml(x?.fecha_solicitud || "")}</td>
+          <td>${escapeHtml(fechaSoliFormateada)}</td>
           <td>${escapeHtml(x?.municipio || "")}</td>
           <td>${escapeHtml(x?.clues || "")}</td>
           <td>${escapeHtml(x?.unidad || "")}</td>
-          <td>${Number(x?.existencia_actual_botellas || 0)}</td>
-          <td>${Number(x?.solicitud_botellas || 0)}</td>
-          <td>${escapeHtml(x?.observaciones || "")}</td>
-          <td>${escapeHtml(x?.capturado_por || "")}</td>
-          <td>${escapeHtml(x?.fecha_entrega || "")}</td>
-          <td>${escapeHtml(x?.entregado_por || "")}</td>
+          <td class="text-center">${Number(x?.existencia_actual_botellas || 0)}</td>
+          <td class="text-center">${Number(x?.solicitud_botellas || 0)}</td>
+          <td>${obsHtml}</td>
+          <td>${escapeHtml(fechaEntregaFormateada)}</td>
           <td>${estatusHtml}</td>
           <td>
-            ${estatus === "PENDIENTE"
-          ? `<button class="miniBtn btnPinolDeliver" data-id="${escapeAttr(x?.id || "")}">
-    <span class="material-symbols-rounded">local_shipping</span> Entregar
-  </button>`
-          : `<span class="muted">—</span>`
-        }
+            <div class="flex items-center justify-center gap-2">
+              ${actionContent}
+            </div>
           </td>
         </tr>
       `;
@@ -11131,6 +11201,13 @@ async function refreshPinol() {
         }
 
         openPinolEntregaModal(item);
+      };
+    });
+
+    document.querySelectorAll(".btnPinolDelete").forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.getAttribute("data-id");
+        if (id) deletePinolRow(id);
       };
     });
 
@@ -11520,16 +11597,16 @@ async function initWeather() {
       const temp = Math.round(data.current_weather.temperature);
       const code = data.current_weather.weathercode;
       const isDay = data.current_weather.is_day === 1;
-      
+
       const details = getWeatherDetails(code, isDay);
 
-      CURRENT_WEATHER = { 
-        temp, 
-        emoji: details.emoji, 
-        text: details.text, 
-        bg: details.bg, 
+      CURRENT_WEATHER = {
+        temp,
+        emoji: details.emoji,
+        text: details.text,
+        bg: details.bg,
         theme: details.theme,
-        code 
+        code
       };
 
       // Update legacy headers if they exist
@@ -11553,7 +11630,7 @@ async function initWeather() {
 
 function getWeatherDetails(code, isDay) {
   if (code === null) return { emoji: "🌡️", text: "Desconocido", bg: "", theme: "dark-bg" };
-  
+
   const bgs = {
     clearDay: "https://images.unsplash.com/photo-1601297183305-6df142704ea2?auto=format&fit=crop&q=80&w=600",
     clearNight: "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&q=80&w=600",
@@ -11579,7 +11656,7 @@ function getWeatherDetails(code, isDay) {
   if ([71, 73, 75].includes(code)) return { emoji: "❄️", text: "Nieve", bg: bgs.snow, theme };
   if ([80, 81, 82].includes(code)) return { emoji: "🌦️", text: "Chubascos", bg: bgs.rain, theme };
   if ([95, 96, 99].includes(code)) return { emoji: "⛈️", text: "Tormenta", bg: bgs.thunder, theme };
-  
+
   return { emoji: "🌤️", text: "Clima", bg: bgs.clearDay, theme: "light-bg" };
 }
 
@@ -11928,9 +12005,9 @@ async function openLiveView(clues, unidad, municipio) {
           if (!recepcionIso) return { html: `<span style="color:#94a3b8; font-size:11px;">Sin fecha</span>` };
           const dRec = new Date(recepcionIso);
           const now = new Date();
-          dRec.setHours(0,0,0,0); now.setHours(0,0,0,0);
+          dRec.setHours(0, 0, 0, 0); now.setHours(0, 0, 0, 0);
           const diffDays = Math.floor((now - dRec) / (1000 * 60 * 60 * 24));
-          
+
           const formatTime = (d) => {
             const m = Math.floor(d / 30); const rd = d % 30;
             let p = [];
@@ -11942,10 +12019,10 @@ async function openLiveView(clues, unidad, municipio) {
           let tone = "good", icon = "check_circle", text = formatTime(diffDays);
           if (diffDays > 90) { tone = "bad"; icon = "error"; text = "Límite excedido"; }
           else if (diffDays >= 60) { tone = "warn"; icon = "warning"; text = "Alerta: " + text; }
-          
+
           let bg = tone === "bad" ? "#fef2f2" : tone === "warn" ? "#fffbeb" : "#f0fdf4";
           let color = tone === "bad" ? "#ef4444" : tone === "warn" ? "#d97706" : "#10b981";
-          
+
           return {
             html: `
               <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
@@ -12018,7 +12095,7 @@ async function openLiveView(clues, unidad, municipio) {
              </tr>
            `).join("");
         let sumExistencia = 0, sumPedido = 0;
-        let topBio = items.map(r => ({ bio: r.biologico, cant: r.pedido_frascos ?? r.solicitud ?? 0 })).sort((a,b)=>b.cant-a.cant).slice(0,4);
+        let topBio = items.map(r => ({ bio: r.biologico, cant: r.pedido_frascos ?? r.solicitud ?? 0 })).sort((a, b) => b.cant - a.cant).slice(0, 4);
         items.forEach(r => {
           sumExistencia += (r.existencia_actual_frascos ?? r.existencia ?? 0);
           sumPedido += (r.pedido_frascos ?? r.solicitud ?? 0);
@@ -12138,19 +12215,19 @@ function renderLiveCharts(tipo, leftData, rightData) {
     if (CHART_CAD) CHART_CAD.destroy();
 
     const setDOM = (kL, tL, dL, kR, tR, dR) => {
-      if($("liveChartLeftKicker")) $("liveChartLeftKicker").textContent = kL;
-      if($("liveChartLeftTitle")) $("liveChartLeftTitle").textContent = tL;
-      if($("liveChartLeftDesc")) $("liveChartLeftDesc").textContent = dL;
-      if($("liveChartRightKicker")) $("liveChartRightKicker").textContent = kR;
-      if($("liveChartRightTitle")) $("liveChartRightTitle").textContent = tR;
-      if($("liveChartRightDesc")) $("liveChartRightDesc").textContent = dR;
+      if ($("liveChartLeftKicker")) $("liveChartLeftKicker").textContent = kL;
+      if ($("liveChartLeftTitle")) $("liveChartLeftTitle").textContent = tL;
+      if ($("liveChartLeftDesc")) $("liveChartLeftDesc").textContent = dL;
+      if ($("liveChartRightKicker")) $("liveChartRightKicker").textContent = kR;
+      if ($("liveChartRightTitle")) $("liveChartRightTitle").textContent = tR;
+      if ($("liveChartRightDesc")) $("liveChartRightDesc").textContent = dR;
     };
 
     if (tipo === "SR") {
       setDOM("Salud del Inventario", "Estado Semafórico", "Distribución por vigencia", "Riesgo de Caducidad", "Próximos Vencimientos", "Análisis de tiempo");
-      let sem = leftData || { pronto:0, normal:0, lejana:0 };
-      let cad = rightData || { m3:0, m6:0, m12:0, more:0 };
-      
+      let sem = leftData || { pronto: 0, normal: 0, lejana: 0 };
+      let cad = rightData || { m3: 0, m6: 0, m12: 0, more: 0 };
+
       CHART_SEM = new Chart(ctxLeft, {
         type: 'doughnut',
         data: {
@@ -12174,7 +12251,7 @@ function renderLiveCharts(tipo, leftData, rightData) {
       let ex = leftData?.existencia || 0;
       let pd = leftData?.pedido || 0;
       let top = rightData || [];
-      
+
       CHART_SEM = new Chart(ctxLeft, {
         type: 'doughnut',
         data: {
@@ -12466,7 +12543,7 @@ function filterArchivosGrid() {
     const cluesId = cluesUnidadStr.split("_")[0] || "Desconocido";
     const dObj = new Date(f.created_at);
     const dateStr = dObj.toLocaleDateString();
-    
+
     // Buscar municipio de la CLUES (usando UNIT_CATALOG si está disponible)
     let municipio = "DESCONOCIDO";
     if (typeof UNIT_CATALOG !== 'undefined' && Array.isArray(UNIT_CATALOG)) {
@@ -12525,9 +12602,9 @@ function filterArchivosGrid() {
     let dateHTMLs = "";
     // Ordenar fechas descendente
     const sortedDates = Object.keys(filesByDate).sort((a, b) => {
-       const d1 = filesByDate[a][0].dObj;
-       const d2 = filesByDate[b][0].dObj;
-       return d2 - d1;
+      const d1 = filesByDate[a][0].dObj;
+      const d2 = filesByDate[b][0].dObj;
+      return d2 - d1;
     });
     sortedDates.forEach(dateStr => {
       dateHTMLs += dateAccordionHTML(dateStr, filesByDate[dateStr]);
@@ -12566,7 +12643,7 @@ function filterArchivosGrid() {
 
     const sortedDates = Object.keys(byDate).sort((a, b) => byDate[b][0].dObj - byDate[a][0].dObj);
     finalHTML = sortedDates.map(dateStr => dateAccordionHTML(dateStr, byDate[dateStr])).join("");
-  } 
+  }
   else if (isMunicipal) {
     // MUNICIPAL: Carpetas por CLUES, sin dividir por Municipio
     const byClues = {};
@@ -12581,7 +12658,7 @@ function filterArchivosGrid() {
     sortedClues.forEach(cluesId => {
       finalHTML += cluesAccordionHTML(cluesId, byClues[cluesId].cluesUnidadStr, byClues[cluesId].dates);
     });
-  } 
+  }
   else {
     // ADMIN/JURISDICCIONAL: Separación por Municipio -> Carpetas de CLUES -> Carpetas de Fecha
     const byMun = {};
@@ -13130,7 +13207,7 @@ function syncCommandHub() {
     } else {
       hubSave.onclick = () => realSaveBtn && realSaveBtn.click();
     }
-    
+
     // Minimalist design: always hide text, show only icon
     hubSave.querySelectorAll("span").forEach(span => {
       if (span.classList.contains("material-symbols-rounded")) {

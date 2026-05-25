@@ -1525,7 +1525,7 @@
 
             <div
               class="tableWrap pinolTableDesktop mt-6 overflow-x-auto w-full rounded-2xl border border-outline-variant/30 shadow-sm relative z-0">
-              <table class="w-full text-left border-collapse min-w-[1400px]">
+              <table class="w-full text-left border-collapse">
                 <thead>
                   <tr
                     class="bg-surface-variant text-surface-onVariant uppercase tracking-[0.05em] font-extrabold text-xs border-b border-outline-variant/30">
@@ -1535,10 +1535,8 @@
                     <th class="p-4">Unidad</th>
                     <th class="p-4 text-center">Exist. (Bot.)</th>
                     <th class="p-4 text-center">Solicitó (828 mL)</th>
-                    <th class="p-4">Observaciones</th>
-                    <th class="p-4">Capturó</th>
+                    <th class="p-4 text-center">Observaciones</th>
                     <th class="p-4">Entrega</th>
-                    <th class="p-4">Entregó</th>
                     <th class="p-4">Estatus</th>
                     <th class="p-4 text-center">Acción</th>
                   </tr>
@@ -2241,6 +2239,21 @@
           style="font-size: 13px; font-weight: 700; color: #535f70; margin-top: 10px; opacity: 0.8;">
           Por favor espera mientras se completa la operación.
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ MODAL OBSERVACIONES PINOL -->
+  <div id="pinolObsModal" class="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-primary/20 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-[400px] border border-outline-variant/30 transform scale-95 transition-all duration-300 flex flex-col overflow-hidden" id="pinolObsModalInner">
+      <div class="px-5 py-4 border-b border-outline-variant/30 flex justify-between items-center bg-surface-variant/30">
+        <div class="font-black text-primary flex items-center gap-2"><span class="material-symbols-rounded text-primary/60">chat</span> Observación</div>
+        <button type="button" class="text-primary/40 hover:text-primary transition-colors cursor-pointer bg-transparent border-none outline-none" onclick="closePinolObsModal()">
+          <span class="material-symbols-rounded text-[20px]">close</span>
+        </button>
+      </div>
+      <div class="p-6">
+        <p id="pinolObsText" class="text-[14px] font-medium text-slate-700 m-0 leading-relaxed"></p>
       </div>
     </div>
   </div>
