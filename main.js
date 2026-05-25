@@ -10190,36 +10190,36 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
   let insumos = [];
   if (tipo === "CONS") {
     insumos = [
-      { key: "srp_dosis", label: "DOSIS DE SRP", color: "207373", lightColor: "9EC7C7" },
-      { key: "sr_dosis", label: "DOSIS DE SR", color: "52731D", lightColor: "BDD1A1" },
-      { key: "jeringa_reconst_5ml_0605500438", label: "JERINGA DE RECONSTITUCIÓN 5 mL", color: "595959", lightColor: "CCCCCC" },
-      { key: "jeringa_aplic_05ml_0605502657", label: "JERINGA DE APLICACIÓN 0.5 mL", color: "1A428A", lightColor: "A3B7DC" },
-      { key: "aguja_0600403711", label: "AGUJA", color: "D96B27", lightColor: "EFAF87" }
+      { key: "srp_dosis", label: "DOSIS DE SRP", color: "B23A48", lightColor: "F3B7CA", fontColor: "FFFFFFFF" },
+      { key: "sr_dosis", label: "DOSIS DE SR", color: "7B5EA7", lightColor: "C1B3D5", fontColor: "FFFFFFFF" },
+      { key: "jeringa_reconst_5ml_0605500438", label: "JERINGA DE RECONSTITUCIÓN 5 mL", color: "595959", lightColor: "CCCCCC", fontColor: "FFFFFFFF" },
+      { key: "jeringa_aplic_05ml_0605502657", label: "JERINGA DE APLICACIÓN 0.5 mL", color: "1A428A", lightColor: "A3B7DC", fontColor: "FFFFFFFF" },
+      { key: "aguja_0600403711", label: "AGUJA", color: "D96B27", lightColor: "EFAF87", fontColor: "FF000000" }
     ];
   } else {
     insumos = [
-      { key: "bcg", label: "BCG", color: "3A86B7", lightColor: "A5CBE3" },
-      { key: "hepatitis_b", label: "HEPATITIS B", color: "198A43", lightColor: "9AD4B2" },
-      { key: "hexavalente", label: "HEXAVALENTE", color: "753480", lightColor: "C3A5CA" },
-      { key: "dpt", label: "DPT", color: "595959", lightColor: "CCCCCC" },
-      { key: "rotavirus", label: "ROTAVIRUS", color: "D4A31C", lightColor: "ECD799" },
-      { key: "neumococica_13", label: "NEUMOCÓCICA 13", color: "843414", lightColor: "D6AA99" },
-      { key: "neumococica_20", label: "NEUMOCÓCICA 20", color: "843414", lightColor: "D6AA99" },
-      { key: "srp", label: "SRP", color: "207373", lightColor: "9EC7C7" },
-      { key: "sr", label: "SR", color: "52731D", lightColor: "BDD1A1" },
-      { key: "vph", label: "VPH", color: "A8224F", lightColor: "E1A6BB" },
-      { key: "varicela", label: "VARICELA", color: "45818E", lightColor: "A9CBD3" },
-      { key: "hepatitis_a", label: "HEPATITIS A", color: "8E7CC3", lightColor: "D1C7E8" },
-      { key: "td", label: "TD", color: "D96B27", lightColor: "EFAF87" },
-      { key: "tdpa", label: "TDPA", color: "4D2314", lightColor: "C0A298" },
-      { key: "covid_19", label: "COVID-19", color: "B6D7A8", lightColor: "DFECD8" },
-      { key: "influenza", label: "INFLUENZA", color: "1A428A", lightColor: "A3B7DC" },
-      { key: "vsr", label: "VSR", color: "C90076", lightColor: "E899CC" }
+      { key: "bcg", label: "BCG", color: "3A86B7", lightColor: "A5CBE3", fontColor: "FFFFFFFF" },
+      { key: "hepatitis_b", label: "HEPATITIS B", color: "C43D3D", lightColor: "E8B2B2", fontColor: "FFFFFFFF" },
+      { key: "hexavalente", label: "HEXAVALENTE", color: "9ACD32", lightColor: "CDE69A", fontColor: "FF000000" },
+      { key: "dpt", label: "DPT", color: "E9C46A", lightColor: "F3E0AF", fontColor: "FF000000" },
+      { key: "rotavirus", label: "ROTAVIRUS", color: "264653", lightColor: "93BCCD", fontColor: "FFFFFFFF" },
+      { key: "neumococica_13", label: "NEUMOCÓCICA 13", color: "3D405B", lightColor: "ACAFC8", fontColor: "FFFFFFFF" },
+      { key: "neumococica_20", label: "NEUMOCÓCICA 20", color: "3D405B", lightColor: "ACAFC8", fontColor: "FFFFFFFF" },
+      { key: "srp", label: "SRP", color: "B23A48", lightColor: "F3B7CA", fontColor: "FFFFFFFF" },
+      { key: "sr", label: "SR", color: "7B5EA7", lightColor: "C1B3D5", fontColor: "FFFFFFFF" },
+      { key: "vph", label: "VPH", color: "2A9D8F", lightColor: "A4E6DE", fontColor: "FF000000" },
+      { key: "varicela", label: "VARICELA", color: "8ED1C2", lightColor: "BEE4DC", fontColor: "FF000000" },
+      { key: "hepatitis_a", label: "HEPATITIS A", color: "BDBDBD", lightColor: "DBDBDB", fontColor: "FF000000" },
+      { key: "td", label: "TD", color: "9E9E9E", lightColor: "C0C0C0", fontColor: "FF000000" },
+      { key: "tdpa", label: "TDPA", color: "E76F51", lightColor: "F3B9AB", fontColor: "FFFFFFFF" },
+      { key: "covid_19", label: "COVID-19", color: "4A4A4A", lightColor: "BCBCBC", fontColor: "FFFFFFFF" },
+      { key: "influenza", label: "INFLUENZA", color: "F1BDAD", lightColor: "F4CBBE", fontColor: "FF000000" },
+      { key: "vsr", label: "VSR", color: "D8B4A0", lightColor: "EBD8CD", fontColor: "FF000000" }
     ];
   }
 
   const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2F3E46' } };
-  const fontWhite = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Arial Nova', size: 11 };
+  const fontWhite = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Roboto', size: 11 };
   const borderAll = {
     top: { style: 'thin', color: { argb: 'FFD9D9D9' } }, left: { style: 'thin', color: { argb: 'FFD9D9D9' } }, bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } }, right: { style: 'thin', color: { argb: 'FFD9D9D9' } }
   };
@@ -10228,7 +10228,7 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
 
   ws.getCell('A1').value = headerRowText;
   ws.getCell('A1').fill = headerFill;
-  ws.getCell('A1').font = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Arial Nova', size: 14 };
+  ws.getCell('A1').font = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Roboto', size: 14 };
   ws.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
   ws.mergeCells(1, 1, 1, 2 + arrClues.length);
   ws.getRow(1).height = 50;
@@ -10294,9 +10294,10 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
     const fgColor = { argb: 'FF' + insumo.color.replace('#', '') };
     const bgColor = { argb: 'FF' + (insumo.lightColor || insumo.color).replace('#', '') };
 
+    const labelFontColor = insumo.fontColor || 'FF000000';
     ws.getCell(rowCursor, cIdx).value = insumo.label;
     ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor };
-    ws.getCell(rowCursor, cIdx).font = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Arial Nova', size: 11 };
+    ws.getCell(rowCursor, cIdx).font = { color: { argb: labelFontColor }, bold: true, name: 'Roboto', size: 11 };
     ws.getCell(rowCursor, cIdx).border = borderAll;
     ws.getCell(rowCursor, cIdx).alignment = { vertical: 'middle', horizontal: 'left' };
 
@@ -10322,14 +10323,14 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
       ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor: bgColor };
       ws.getCell(rowCursor, cIdx).border = borderAll;
       ws.getCell(rowCursor, cIdx).alignment = { horizontal: 'center', vertical: 'middle' };
-      ws.getCell(rowCursor, cIdx).font = { name: 'Arial Nova', size: 11, bold: true };
+      ws.getCell(rowCursor, cIdx).font = { color: { argb: 'FF000000' }, name: 'Roboto', size: 11, bold: true };
       cIdx++;
     });
 
     ws.getCell(rowCursor, cIdx).value = Number(rowTotal);
     ws.getCell(rowCursor, cIdx).border = borderAll;
     ws.getCell(rowCursor, cIdx).alignment = { horizontal: 'center', vertical: 'middle' };
-    ws.getCell(rowCursor, cIdx).font = { name: 'Arial Nova', size: 11, bold: true };
+    ws.getCell(rowCursor, cIdx).font = { color: { argb: 'FF000000' }, name: 'Roboto', size: 11, bold: true };
     ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor: bgColor };
     rowCursor++;
   });
