@@ -10219,7 +10219,7 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
   }
 
   const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2F3E46' } };
-  const fontWhite = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Roboto', size: 11 };
+  const fontWhite = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Arial Nova', size: 11 };
   const borderAll = {
     top: { style: 'thin', color: { argb: 'FFD9D9D9' } }, left: { style: 'thin', color: { argb: 'FFD9D9D9' } }, bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } }, right: { style: 'thin', color: { argb: 'FFD9D9D9' } }
   };
@@ -10228,7 +10228,7 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
 
   ws.getCell('A1').value = headerRowText;
   ws.getCell('A1').fill = headerFill;
-  ws.getCell('A1').font = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Roboto', size: 14 };
+  ws.getCell('A1').font = { color: { argb: 'FFFFFFFF' }, bold: true, name: 'Arial Nova', size: 14 };
   ws.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
   ws.mergeCells(1, 1, 1, 2 + arrClues.length);
   ws.getRow(1).height = 50;
@@ -10297,7 +10297,7 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
     const labelFontColor = insumo.fontColor || 'FF000000';
     ws.getCell(rowCursor, cIdx).value = insumo.label;
     ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor };
-    ws.getCell(rowCursor, cIdx).font = { color: { argb: labelFontColor }, bold: true, name: 'Roboto', size: 11 };
+    ws.getCell(rowCursor, cIdx).font = { color: { argb: labelFontColor }, bold: true, name: 'Arial Nova', size: 11 };
     ws.getCell(rowCursor, cIdx).border = borderAll;
     ws.getCell(rowCursor, cIdx).alignment = { vertical: 'middle', horizontal: 'left' };
 
@@ -10323,14 +10323,14 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
       ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor: bgColor };
       ws.getCell(rowCursor, cIdx).border = borderAll;
       ws.getCell(rowCursor, cIdx).alignment = { horizontal: 'center', vertical: 'middle' };
-      ws.getCell(rowCursor, cIdx).font = { color: { argb: 'FF000000' }, name: 'Roboto', size: 11, bold: true };
+      ws.getCell(rowCursor, cIdx).font = { color: { argb: 'FF000000' }, name: 'Arial Nova', size: 11, bold: true };
       cIdx++;
     });
 
     ws.getCell(rowCursor, cIdx).value = Number(rowTotal);
     ws.getCell(rowCursor, cIdx).border = borderAll;
     ws.getCell(rowCursor, cIdx).alignment = { horizontal: 'center', vertical: 'middle' };
-    ws.getCell(rowCursor, cIdx).font = { color: { argb: 'FF000000' }, name: 'Roboto', size: 11, bold: true };
+    ws.getCell(rowCursor, cIdx).font = { color: { argb: 'FF000000' }, name: 'Arial Nova', size: 11, bold: true };
     ws.getCell(rowCursor, cIdx).fill = { type: 'pattern', pattern: 'solid', fgColor: bgColor };
     rowCursor++;
   });
