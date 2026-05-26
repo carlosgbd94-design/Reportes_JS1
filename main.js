@@ -409,7 +409,16 @@ document.addEventListener("DOMContentLoaded", () => {
     togglePass.addEventListener("click", () => {
       const isPass = passInput.type === "password";
       passInput.type = isPass ? "text" : "password";
-      togglePass.textContent = isPass ? "visibility" : "visibility_off";
+      
+      // Activar animación 3D Flip
+      togglePass.classList.remove("animate-spin-flip");
+      void togglePass.offsetWidth; // Forzar reflow para reiniciar la animación
+      togglePass.classList.add("animate-spin-flip");
+      
+      // Cambiar el ícono a la mitad de la animación (150ms)
+      setTimeout(() => {
+        togglePass.textContent = isPass ? "visibility" : "visibility_off";
+      }, 150);
     });
   }
 
@@ -7617,7 +7626,7 @@ function renderBioRows(rows) {
       <div class="text-center">
         <input
           class="bioInput"
-          style="width: 80px; height: 48px; text-align: center; font-size: 18px; font-weight: 900; border: 2px solid #e2e8f0; border-radius: 12px; background: #f8fafc; outline: none;"
+          style="width: 80px; height: 48px; text-align: center; font-size: 18px; font-weight: 900; border: 2px solid #cbd5e1; border-radius: 12px; background: #ffffff; outline: none; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"
           type="number" min="0" step="any" inputmode="decimal"
           data-i="${i}" data-kind="existencia"
           value="${r.existencia_actual_frascos ?? ""}" placeholder="0">
@@ -7625,7 +7634,7 @@ function renderBioRows(rows) {
       <div class="text-center">
         <input
           class="bioInput"
-          style="width: 80px; height: 48px; text-align: center; font-size: 18px; font-weight: 900; border: 2px solid #e2e8f0; border-radius: 12px; background: #f8fafc; outline: none; color: #0f172a;"
+          style="width: 80px; height: 48px; text-align: center; font-size: 18px; font-weight: 900; border: 2px solid #cbd5e1; border-radius: 12px; background: #ffffff; outline: none; color: #0f172a; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"
           type="number" min="0" step="1" inputmode="numeric"
           data-i="${i}" data-kind="pedido"
           value="${r.pedido_frascos ?? ""}" placeholder="0">
@@ -8113,6 +8122,17 @@ async function loadBioForm() {
   const isExtraordinary = !!(STATUS && STATUS.isExtraordinary);
   const canCaptureLocal = isInsideWindow || isExtraordinary;
   const isCaptureDayLocal = hoyYmd === windowTargetYmd;
+
+  // Si la ventana está cerrada, limpiar el formulario y no permitir edición
+  if (!canCaptureLocal) {
+    if (r.data && r.data.rows) {
+      r.data.rows.forEach(row => {
+        row.existencia_actual_frascos = "";
+        row.pedido_frascos = "";
+      });
+    }
+    r.data.hasSavedBio = false;
+  }
 
   let windowStatus = "EXTRAORDINARY";
   if (isInsideWindow) windowStatus = "OPEN";

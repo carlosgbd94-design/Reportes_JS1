@@ -8156,15 +8156,15 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
 
 .bio-card {
   display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr 1.5fr; align-items: center; gap: 8px;
-  background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px;
-  padding: 16px 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+  background: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px;
+  padding: 16px 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.04);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .bio-card:hover { 
   border-color: var(--md-sys-color-primary, #0f172a); 
   transform: translateX(4px); 
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
 }
 
 .bio-name { font-size: 15px; font-weight: 800; color: var(--md-sys-color-primary, #0f172a); }
@@ -8208,7 +8208,20 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
 .bio-chip.camp .bio-chip-icon { background: #4f46e5; }
 
 /* Overrides for specific card themes */
-.bio-card.card-extra { border-color: #fca5a5 !important; background: #fef2f2 !important; }
-.bio-card.card-warn { border-color: #fef08a !important; background: #fefce8 !important; }
-.bio-card.card-camp { border-color: #a5b4fc !important; background: #eef2ff !important; }
-.bio-card.card-good { border-color: #bbf7d0 !important; background: #f0fdf4 !important; }
+.bio-card.card-extra { border-color: #f87171 !important; background: #fee2e2 !important; }
+.bio-card.card-warn { border-color: #facc15 !important; background: #fef9c3 !important; }
+.bio-card.card-camp { border-color: #818cf8 !important; background: #e0e7ff !important; }
+.bio-card.card-good { border-color: #4ade80 !important; background: #dcfce7 !important; }
+
+/* Custom button for adding biological lot - based on primary #003366 */
+.btn-add-lote {
+  background-color: #d6e3ff !important; /* primary-container solid */
+  color: #003366 !important; /* primary */
+  border: 2px solid #a8c4f0 !important;
+  transition: all 0.2s ease-in-out;
+}
+.btn-add-lote:hover {
+  background-color: #b8d0f5 !important;
+  border-color: #7aabea !important;
+  transform: translateY(-2px);
+}

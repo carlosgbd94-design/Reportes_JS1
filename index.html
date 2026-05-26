@@ -41,7 +41,44 @@
 
 <body class="min-h-screen relative overflow-x-hidden">
 
-  <!-- 🎨 PREMIUM INSTITUTIONAL BACKGROUND -->
+  <!-- 🎨 PREMIUM INSTITUTIONAL BACKGROUND (Mezcla de Opción 3 y 5 en Tema Claro) -->
+  <div id="mainAppBackground" style="position: fixed; inset: 0; z-index: -3; pointer-events: none; overflow: hidden; background-color: #f8fafc;">
+      <!-- Opción 3: Patrón de Mosaico (Muy Sutil) -->
+      <div style="position: absolute; inset: -50%; background-image: url('https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png'); background-size: 150px; background-repeat: repeat; opacity: 0.02; transform: rotate(-25deg);"></div>
+      
+      <!-- Degradado de Luz -->
+      <div style="position: absolute; inset: 0; background: radial-gradient(circle at 15% 50%, rgba(14, 165, 233, 0.04) 0%, transparent 40%), radial-gradient(circle at 85% 30%, rgba(15, 23, 42, 0.03) 0%, transparent 40%);"></div>
+
+      <!-- Opción 5: Red Tech (Líneas y Nodos en versión Light) -->
+      <svg style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.15;">
+          <line x1="15%" y1="20%" x2="45%" y2="55%" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="4 6" />
+          <line x1="45%" y1="55%" x2="80%" y2="35%" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="4 6" />
+          <line x1="80%" y1="35%" x2="70%" y2="75%" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="4 6" />
+          <line x1="70%" y1="75%" x2="30%" y2="80%" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="4 6" />
+          <line x1="30%" y1="80%" x2="15%" y2="20%" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="4 6" />
+          <line x1="45%" y1="55%" x2="70%" y2="75%" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="4 6" />
+      </svg>
+      <!-- Nodos animados -->
+      <style>
+          .tech-node-light {
+              position: absolute;
+              background-image: url('https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png');
+              background-size: contain; background-repeat: no-repeat; background-position: center;
+              animation: twinkleLight 5s infinite alternate ease-in-out;
+              transform: translate(-50%, -50%);
+              will-change: opacity, transform; /* GPU Acceleration */
+          }
+          @keyframes twinkleLight { 
+              0% { opacity: 0.05; transform: translate(-50%, -50%) scale(0.95); } 
+              100% { opacity: 0.25; transform: translate(-50%, -50%) scale(1.05); } 
+          }
+      </style>
+      <div class="tech-node-light" style="width: 50px; height: 50px; left: 15%; top: 20%; animation-delay: 0s;"></div>
+      <div class="tech-node-light" style="width: 80px; height: 80px; left: 45%; top: 55%; animation-delay: 1s;"></div>
+      <div class="tech-node-light" style="width: 40px; height: 40px; left: 80%; top: 35%; animation-delay: 2s;"></div>
+      <div class="tech-node-light" style="width: 60px; height: 60px; left: 70%; top: 75%; animation-delay: 1.5s;"></div>
+      <div class="tech-node-light" style="width: 55px; height: 55px; left: 30%; top: 80%; animation-delay: 0.5s;"></div>
+  </div>
   <!-- 💎 HIGH-PERFORMANCE HEADER LIQUID GLASS -->
 
 
@@ -77,7 +114,7 @@
           <!-- JS1 Branding Text -->
           <div class="flex flex-col flex-none justify-center transition-all duration-300">
             <h1 class="text-lg sm:text-2xl font-black text-primary m-0 leading-none flex items-center gap-1 sm:gap-2">
-              JS1 <span class="font-medium opacity-50 hidden sm:inline">Reportes</span>
+              JS1 <span class="font-medium hidden sm:inline" style="color: #64748b !important;">Reportes</span>
             </h1>
             <p class="hidden sm:block text-[9px] text-primary/60 m-0 mt-1 font-black uppercase tracking-widest leading-none">
               Plataforma Institucional</p>
@@ -229,58 +266,450 @@
   </div>
 
 
-  <!-- 🔐 INSTITUTIONAL LOGIN OVERLAY (Floating Minimalist) -->
-  <div id="loginWrapper"
-    class="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-transparent overflow-hidden">
+  <style>
+    /* CSS para el Login Split en Desktop (no depende de Tailwind compilado) */
+    @media (min-width: 1024px) {
+        #loginWrapper { justify-content: flex-end !important; padding: 0 !important; background-color: #ffffff !important; }
+        .split-desktop-left { display: flex !important; }
+        #cardLogin { width: 45% !important; max-width: none !important; height: 100% !important; border-radius: 0 !important; box-shadow: none !important; background-color: #ffffff !important; }
+        #cardLogin .GlassContent { background-color: #ffffff !important; backdrop-filter: none !important; border: none !important; max-width: 480px !important; align-items: flex-start !important; text-align: left !important; }
+        
+        .mobile-only { display: none !important; }
+        .desktop-only { display: flex !important; }
+        .desktop-only-block { display: block !important; }
+        
+        .modern-input-group.desktop-input { border: 1px solid #e2e8f0 !important; border-radius: 1rem !important; background-color: #f8fafc !important; }
+        .modern-input-group.desktop-input:focus-within { border-color: #0ea5e9 !important; background-color: #ffffff !important; box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1) !important; }
+        .modern-input-group.desktop-input span.input-icon { color: #94a3b8 !important; font-size: 22px !important; left: 1rem !important; margin-top: -2px !important; }
+        .modern-input-group.desktop-input:focus-within span.input-icon { color: #0ea5e9 !important; }
+        .modern-input-group.desktop-input input { padding-left: 3.5rem !important; background-color: transparent !important; border: none !important; box-shadow: none !important; outline: none !important; }
+        .modern-input-group.desktop-input span#togglePassword { color: #94a3b8 !important; }
+        .modern-input-group.desktop-input span#togglePassword:hover { color: #0ea5e9 !important; }
+        
+        #btnForgotPassword { margin-top: 0 !important; text-transform: none !important; font-size: 0.9rem !important; font-weight: 500 !important; letter-spacing: normal !important; color: #0ea5e9 !important; text-align: right !important; width: auto !important; }
+        #btnForgotPassword:hover { color: #0284c7 !important; }
+        
+        #btnLogin.desktop-btn { margin-top: 0 !important; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important; color: #ffffff !important; border-radius: 0.75rem !important; padding: 1.1rem !important; height: auto !important;}
+        #btnLogin.desktop-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.2) !important; }
+        
+        .desktop-footer { border-top: 1px solid #f1f5f9 !important; text-align: left !important; }
+        .desktop-footer p { color: #94a3b8 !important; font-size: 0.85rem !important; letter-spacing: normal !important;}
+        
+        .password-options-desktop { display: flex !important; justify-content: space-between !important; align-items: center !important; margin-bottom: 2rem !important; font-size: 0.9rem !important; margin-top: 0.5rem !important; }
+    }
+    
+    @media (max-width: 1023px) {
+        .split-desktop-left { display: none !important; }
+        .desktop-only { display: none !important; }
+        .desktop-only-block { display: none !important; }
+    }
+
+    /* FIX GLOBAL: Diseño de input box 100% resistente a bugs y autocompletado de Chrome en TODAS las pantallas */
+    .modern-input-group {
+        border: 2px solid #e2e8f0 !important;
+        border-radius: 14px !important;
+        background-color: #f8fafc !important;
+        box-shadow: none !important;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important;
+        position: relative !important;
+        display: flex !important;
+        align-items: center !important;
+        height: 56px !important;
+        margin-bottom: 1rem !important;
+        overflow: visible !important;
+        transform: none !important;
+    }
+    .modern-input-group:focus-within {
+        border-color: #0ea5e9 !important;
+        background-color: #ffffff !important;
+        box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15) !important;
+        transform: none !important;
+    }
+    .modern-input-group input,
+    .modern-input-group input:focus,
+    .modern-input-group input:active,
+    .modern-input-group input:-webkit-autofill,
+    .modern-input-group input:-webkit-autofill:hover, 
+    .modern-input-group input:-webkit-autofill:focus {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+        -webkit-box-shadow: 0 0 0 1000px #f8fafc inset !important;
+        -webkit-text-fill-color: #0f172a !important;
+        transition: background-color 5000s ease-in-out 0s !important;
+        color: #0f172a !important;
+        padding-left: 3.5rem !important;
+        padding-right: 3rem !important;
+        height: 100% !important;
+        width: 100% !important;
+        font-size: 15px !important;
+        border-radius: 12px !important;
+        margin: 0 !important;
+        transform: none !important;
+    }
+    .modern-input-group:focus-within input:-webkit-autofill,
+    .modern-input-group:focus-within input:-webkit-autofill:hover, 
+    .modern-input-group:focus-within input:-webkit-autofill:focus {
+        -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+    }
+
+    /* FIX GLOBAL: El usuario pide que la animación del ojito sea solo al CLIC, no hover. Desactivamos el ripple de hover */
+    #togglePassword::before {
+        display: none !important;
+    }
+    #togglePassword:hover {
+        transform: translateY(-50%) !important;
+        color: #0ea5e9 !important;
+    }
+  </style>
+
+  <!-- 🔐 INSTITUTIONAL LOGIN OVERLAY (Floating Minimalist + Split Desktop) -->
+  <style>
+    /* ESTILOS EXCLUSIVOS PARA DESKTOP (Split Screen) */
+    @media (min-width: 1024px) {
+        #loginWrapper {
+            justify-content: flex-end !important;
+            padding: 0 !important;
+            background-color: #ffffff !important;
+            animation: none !important;
+            transform: none !important;
+        }
+        #desktopSplitLeft {
+            display: flex !important;
+            animation: none !important;
+        }
+        #cardLogin {
+            width: 45% !important;
+            max-width: none !important;
+            height: 100vh !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            background-color: #ffffff !important;
+            border: none !important;
+            margin: 0 !important;
+            transform: none !important;
+            animation: none !important;
+            transition: none !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        #cardLoginContent {
+            background: transparent !important;
+            backdrop-filter: none !important;
+            border: none !important;
+            max-width: 440px !important;
+            width: 100% !important;
+            align-items: center !important;
+            text-align: center !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+            transform: none !important;
+            animation: none !important;
+            transition: none !important;
+            margin: 0 auto !important;
+        }
+        
+        /* Ocultar elementos puros de móvil */
+        #mobileLogo, #mobileTitle, #mobileSubtitle, #btnLoginIconMobile, #btnTextMobile {
+            display: none !important;
+        }
+        
+        /* Mostrar y centrar elementos puros de desktop */
+        #desktopLogo { 
+            display: flex !important; 
+            justify-content: center !important; 
+            width: 100% !important; 
+        }
+        #desktopWelcome { 
+            display: block !important; 
+            text-align: center !important; 
+        }
+        #btnTextDesktop { display: flex !important; justify-content: center; align-items: center; }
+        #desktopRememberMe { display: flex !important; }
+        
+        /* Contenedor del Formulario */
+        #loginForm {
+            display: flex !important;
+            flex-direction: column !important;
+            width: 100% !important;
+        }
+        #inputsContainer { order: 1 !important; }
+        #passwordOptionsContainer { 
+            order: 2 !important; 
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            margin-top: -0.5rem !important;
+            margin-bottom: 2rem !important;
+            width: 100% !important;
+        }
+        #btnLogin { order: 3 !important; }
+
+        /* Botón Olvidé Contraseña Desktop */
+        #btnForgotPassword {
+            margin-top: 0 !important;
+            text-transform: none !important;
+            font-size: 0.9rem !important;
+            font-weight: 500 !important;
+            letter-spacing: normal !important;
+            color: #0ea5e9 !important;
+            text-align: right !important;
+            width: auto !important;
+        }
+        #btnForgotPassword:hover { color: #0284c7 !important; }
+        
+
+        .modern-input-group span.input-icon {
+            color: #94a3b8 !important;
+            font-size: 22px !important;
+            position: absolute !important;
+            left: 1rem !important;
+            z-index: 2 !important;
+            pointer-events: none !important;
+        }
+        .modern-input-group:focus-within span.input-icon {
+            color: #0ea5e9 !important;
+        }
+
+        /* Animación del ojito (Notable y Moderna - Ripple Splash + 3D Flip) */
+        @keyframes spinFlip {
+            0% { transform: translateY(-50%) rotateY(0deg) scale(1); }
+            50% { transform: translateY(-50%) rotateY(90deg) scale(0.8); }
+            100% { transform: translateY(-50%) rotateY(0deg) scale(1); }
+        }
+        .animate-spin-flip {
+            animation: spinFlip 0.3s ease-in-out !important;
+        }
+        #togglePassword {
+            z-index: 5 !important;
+            color: #94a3b8 !important;
+            transition: color 0.3s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+            padding: 8px !important;
+            border-radius: 50% !important;
+            background: transparent !important;
+            position: absolute !important;
+            left: auto !important; /* Solución al estiramiento (conflicto con input-icon) */
+            right: 0.5rem !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin: 0 !important;
+            flex-shrink: 0 !important;
+            width: 38px !important;
+            height: 38px !important;
+            pointer-events: auto !important;
+            outline: none !important;
+            border: none !important;
+        }
+        /* Fondo expansivo (Ripple) */
+        #togglePassword::before {
+            content: '' !important;
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            width: 0 !important;
+            height: 0 !important;
+            background-color: #e0f2fe !important;
+            border-radius: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            transition: width 0.3s ease, height 0.3s ease !important;
+            z-index: -1 !important;
+        }
+        #togglePassword:hover::before {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        #togglePassword:hover {
+            color: #0284c7 !important;
+            transform: translateY(-50%) scale(1.15) !important; /* Escala con rebote */
+        }
+        #togglePassword:active {
+            transform: translateY(-50%) scale(0.9) !important;
+        }
+        
+        /* Checkbox Moderno "Recordarme" */
+        #desktopRememberMe input[type="checkbox"] {
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            width: 18px !important;
+            height: 18px !important;
+            min-width: 18px !important;
+            min-height: 18px !important;
+            border: 2px solid #cbd5e1 !important;
+            border-radius: 5px !important;
+            background-color: #ffffff !important;
+            cursor: pointer !important;
+            position: relative !important;
+            outline: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            display: inline-block !important;
+        }
+        #desktopRememberMe input[type="checkbox"]:hover {
+            border-color: #94a3b8 !important;
+        }
+        #desktopRememberMe input[type="checkbox"]:checked {
+            background-color: #0ea5e9 !important;
+            border-color: #0ea5e9 !important;
+        }
+        #desktopRememberMe input[type="checkbox"]:checked::after {
+            content: '' !important;
+            position: absolute !important;
+            left: 5px !important;
+            top: 2px !important;
+            width: 4px !important;
+            height: 9px !important;
+            border: solid white !important;
+            border-width: 0 2px 2px 0 !important;
+            transform: rotate(45deg) !important;
+        }
+        
+        /* Botón Entrar Desktop */
+        #btnLogin {
+            margin-top: 0 !important;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+            color: #ffffff !important;
+            border-radius: 12px !important;
+            border: none !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+        }
+        #btnLogin * {
+            color: #ffffff !important;
+        }
+        #btnLogin:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.2) !important;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+        }
+        
+        /* Footer Desktop */
+        #loginFooter {
+            border-top: 1px solid #f1f5f9 !important;
+            text-align: center !important;
+            margin-top: 2rem !important;
+        }
+        #loginFooter p {
+            color: #94a3b8 !important;
+            font-size: 0.85rem !important;
+            letter-spacing: 0.1em !important;
+        }
+
+        /* Animación Option 2 (Partículas) para el panel izquierdo */
+        .particle-logo {
+            position: absolute; bottom: -150px;
+            background-image: url('https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png');
+            background-size: contain; background-repeat: no-repeat; background-position: center;
+            opacity: 0.1; animation: floatUp linear infinite;
+            filter: grayscale(100%) brightness(10);
+            pointer-events: none;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.15; }
+            90% { opacity: 0.15; }
+            100% { transform: translateY(-120vh) rotate(360deg); opacity: 0; }
+        }
+    }
+  </style>
+
+  <div id="loginWrapper" class="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-transparent overflow-hidden transition-all duration-500">
+
+    <!-- PANEL IZQUIERDO SPLIT SCREEN (SOLO DESKTOP - CSS INLINE PURO) -->
+    <div id="desktopSplitLeft" style="display: none; position: absolute; top: 0; bottom: 0; left: 0; width: 55%; flex-direction: column; justify-content: flex-end; padding: 4rem; overflow: hidden; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
+        <!-- Opción 2: Flujo Dinámico (Burbujas/Partículas de Logotipo) -->
+        <div style="position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1;">
+            <div class="particle-logo" style="width: 45px; height: 45px; left: 10%; animation-duration: 18s; animation-delay: -5s; filter: grayscale(100%) brightness(10) blur(2px);"></div>
+            <div class="particle-logo" style="width: 30px; height: 30px; left: 25%; animation-duration: 22s; animation-delay: -15s;"></div>
+            <div class="particle-logo" style="width: 55px; height: 55px; left: 40%; animation-duration: 15s; animation-delay: -2s; filter: grayscale(100%) brightness(10) blur(4px);"></div>
+            <div class="particle-logo" style="width: 25px; height: 25px; left: 55%; animation-duration: 25s; animation-delay: -18s;"></div>
+            <div class="particle-logo" style="width: 65px; height: 65px; left: 70%; animation-duration: 14s; animation-delay: -8s; filter: grayscale(100%) brightness(10) blur(1px);"></div>
+            <div class="particle-logo" style="width: 35px; height: 35px; left: 85%; animation-duration: 20s; animation-delay: -12s;"></div>
+            <div class="particle-logo" style="width: 50px; height: 50px; left: 15%; animation-duration: 17s; animation-delay: -10s;"></div>
+            <div class="particle-logo" style="width: 40px; height: 40px; left: 65%; animation-duration: 19s; animation-delay: -4s; filter: grayscale(100%) brightness(10) blur(3px);"></div>
+            <div class="particle-logo" style="width: 60px; height: 60px; left: 90%; animation-duration: 16s; animation-delay: -20s;"></div>
+            <div class="particle-logo" style="width: 28px; height: 28px; left: 5%; animation-duration: 23s; animation-delay: -1s; filter: grayscale(100%) brightness(10) blur(2px);"></div>
+            <div class="particle-logo" style="width: 48px; height: 48px; left: 45%; animation-duration: 16s; animation-delay: -11s;"></div>
+            <div class="particle-logo" style="width: 33px; height: 33px; left: 80%; animation-duration: 21s; animation-delay: -7s; filter: grayscale(100%) brightness(10) blur(1px);"></div>
+        </div>
+        
+        <div style="position: relative; z-index: 10; color: white; padding-bottom: 2.5rem;">
+            <h2 style="font-size: 2.8rem; font-weight: 600; margin-bottom: 1rem; line-height: 1.1; text-shadow: 0 4px 10px rgba(0,0,0,0.3);">Plataforma Institucional</h2>
+            <p style="font-size: 1.15rem; color: #cbd5e1; max-width: 480px; line-height: 1.6; font-weight: 300; margin: 0;">Centralizando la inteligencia y el análisis de datos en salud pública. Una visión integral para fortalecer la toma de decisiones en la Jurisdicción Sanitaria No. 1.</p>
+        </div>
+    </div>
 
     <!-- Premium Single Card Design -->
     <div class="GlassContainer relative z-10 w-full max-w-[440px]" style="--corner-radius: 40px;" id="cardLogin">
-      <div class="GlassContent liquidGL p-10 sm:p-14 flex flex-col items-center text-center">
+      <div class="GlassContent liquidGL p-10 sm:p-14 flex flex-col items-center text-center" id="cardLoginContent">
 
-        <div
-          class="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mb-8 shadow-xl border border-white/30 backdrop-blur-md">
-          <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png"
-            class="h-12 w-auto" alt="Logo JS1">
+        <!-- LOGO MÓVIL ORIGINAL -->
+        <div id="mobileLogo" class="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mb-8 shadow-xl border border-white/30 backdrop-blur-md">
+          <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" class="h-12 w-auto" alt="Logo JS1">
         </div>
 
-        <h1 class="text-3xl font-black text-primary m-0 tracking-tighter">
-          JS1 <span class="opacity-40 font-medium">Reportes</span>
+        <h1 id="mobileTitle" class="text-3xl font-black text-primary m-0 tracking-tighter">
+          JS1 <span class="font-medium" style="color: #64748b !important;">Reportes</span>
         </h1>
-        <p class="text-[10px] font-black uppercase tracking-[0.2em] mt-2 mb-10 opacity-60">Plataforma Institucional de
-          Gestión</p>
+        <p id="mobileSubtitle" class="text-[10px] font-black uppercase tracking-[0.2em] mt-2 mb-10 opacity-60">Plataforma Institucional de Gestión</p>
 
-        <form id="loginForm" autocomplete="on" class="w-full space-y-6">
-          <div class="space-y-4">
+        <!-- LOGO DESKTOP (Nuevo diseño Bicolor) -->
+        <div id="desktopLogo" style="display: none; align-items: center; gap: 12px; margin-bottom: 2rem;">
+            <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" alt="JS1 Logo" style="width: 50px; height: auto;">
+            <div style="font-size: 1.8rem; font-weight: 700; letter-spacing: -0.5px;">
+                <span style="color: #0f172a;">JS1</span><span style="color: #64748b !important; font-weight: 500;"> Reportes</span>
+            </div>
+        </div>
+
+        <div id="desktopWelcome" style="display: none; margin-bottom: 2rem; text-align: left; width: 100%;">
+            <h1 style="font-size: 2.2rem; font-weight: 600; color: #0f172a; margin-bottom: 0.5rem; letter-spacing: -0.5px; line-height: 1.2;">Bienvenido de nuevo</h1>
+            <p style="font-size: 1.05rem; color: #64748b; font-weight: 300; margin: 0;">Por favor, ingresa a tu cuenta para continuar.</p>
+        </div>
+
+        <form id="loginForm" autocomplete="on" class="w-full">
+          <div id="inputsContainer" class="space-y-4 mb-6 w-full">
             <!-- Usuario -->
             <div class="modern-input-group">
               <span class="input-icon material-symbols-rounded">person</span>
-              <input id="usuario" name="username" class="h-14 rounded-2xl w-full text-[15px] font-bold"
-                autocomplete="username" placeholder="Correo electrónico">
+              <input id="usuario" name="username" class="h-14 rounded-2xl w-full text-[15px] font-bold" autocomplete="username" placeholder="Correo electrónico">
             </div>
 
             <!-- Contraseña -->
             <div class="modern-input-group">
               <span class="input-icon material-symbols-rounded">lock</span>
-              <input id="password" name="password" type="password" class="h-14 rounded-2xl w-full text-[15px] font-bold"
-                autocomplete="current-password" placeholder="••••••••">
-              <span
-                class="material-symbols-rounded absolute right-4 top-1/2 -translate-y-1/2 text-primary/30 cursor-pointer hover:text-primary transition-colors text-[18px] z-10"
-                id="togglePassword">visibility_off</span>
+              <input id="password" name="password" type="password" class="h-14 rounded-2xl w-full text-[15px] font-bold" autocomplete="current-password" placeholder="••••••••">
+              <span class="material-symbols-rounded absolute right-4 top-1/2 -translate-y-1/2 text-primary/30 cursor-pointer hover:text-primary transition-colors text-[18px] z-10" id="togglePassword">visibility_off</span>
             </div>
           </div>
 
-          <button type="submit" id="btnLogin" class="btn-premium-action w-full !mt-10 h-16 text-base tracking-widest">
-            ENTRAR
-            <span class="material-symbols-rounded ml-2">login</span>
-          </button>
+          <!-- Opciones de Contraseña (Contenedor Responsivo) -->
+          <div id="passwordOptionsContainer" style="display: flex; flex-direction: column; width: 100%; align-items: center;">
+              <label id="desktopRememberMe" style="display: none; align-items: center; gap: 0.5rem; color: #475569; cursor: pointer; font-size: 0.9rem;">
+                  <input type="checkbox" style="width: 16px; height: 16px; accent-color: #0ea5e9; cursor: pointer;">
+                  Recordarme
+              </label>
 
-          <button type="button" id="btnForgotPassword"
-            class="mt-8 text-[11px] font-black uppercase tracking-[0.2em] text-primary/40 hover:text-primary transition-all w-full text-center bg-transparent border-none cursor-pointer">
-            ¿Olvidaste tu contraseña?
+              <!-- El BOTÓN ORIGINAL -->
+              <button type="button" id="btnForgotPassword" class="text-[11px] font-black uppercase tracking-[0.2em] text-primary/40 hover:text-primary transition-all w-full text-center bg-transparent border-none cursor-pointer" style="margin-top: 2rem;">
+                ¿Olvidaste tu contraseña?
+              </button>
+          </div>
+
+          <button type="submit" id="btnLogin" class="btn-premium-action w-full h-16 text-base tracking-widest mt-8">
+            <span id="btnTextMobile">ENTRAR</span>
+            <span id="btnTextDesktop" style="display: none; align-items: center; gap: 8px;">
+                ENTRAR
+                <span class="material-symbols-rounded" style="font-size: 22px;">arrow_forward</span>
+            </span>
+            <span class="material-symbols-rounded ml-2" id="btnLoginIconMobile">login</span>
           </button>
         </form>
 
-        <footer class="mt-8 border-t border-primary/5 pt-4 text-center w-full">
+        <footer class="mt-8 border-t border-primary/5 pt-4 text-center w-full" id="loginFooter">
           <p class="text-[9px] text-primary/30 font-black uppercase tracking-[0.2em]">Jurisdicción Sanitaria No. 1</p>
         </footer>
       </div>
@@ -553,8 +982,8 @@
           <!-- SR (EXISTENCIA DE BIOLÓGICOS) -->
           <div id="formSR" style="display:none">
             <!-- Info Header Grande (Estilo Consumibles/Pinol) -->
-            <div class="flex items-center gap-6 p-6 rounded-[32px] bg-primary/5 border-2 border-primary/20 shadow-sm mb-2 mt-4">
-              <div class="w-16 h-16 rounded-2xl bg-white flex items-center justify-center text-4xl shadow-md shrink-0">
+            <div class="flex items-center gap-6 p-6 rounded-[32px] shadow-md mb-2 mt-4 relative z-10" style="background-color: #f0f9ff; border: 2px solid #bae6fd;">
+              <div class="w-16 h-16 rounded-2xl bg-white border border-[#e0f2fe] flex items-center justify-center text-4xl shadow-sm shrink-0">
                 📦
               </div>
               <div class="flex-1">
@@ -603,21 +1032,21 @@
             </div>
 
             <div
-              class="flex items-center gap-4 mt-2 px-1 opacity-50 hover:opacity-100 transition-opacity cursor-default">
-              <span class="text-[9px] font-black text-slate-400 uppercase tracking-[0.1em]">Semaforización de
+              class="flex items-center gap-4 mt-2 px-1 opacity-90 hover:opacity-100 transition-opacity cursor-default">
+              <span class="text-[9px] font-black text-slate-500 uppercase tracking-[0.1em]">Semaforización de
                 permanencia:</span>
-              <div class="flex items-center gap-1.5 text-[9px] font-bold text-slate-500">
+              <div class="flex items-center gap-1.5 text-[9px] font-bold text-slate-600">
                 <div class="w-1.5 h-1.5 rounded-full bg-[#fde68a] border border-[#92400e]/20"></div>
                 Próximo (>2 meses)
               </div>
-              <div class="flex items-center gap-1.5 text-[9px] font-bold text-slate-500">
+              <div class="flex items-center gap-1.5 text-[9px] font-bold text-slate-600">
                 <div class="w-1.5 h-1.5 rounded-full bg-[#fecaca] border border-[#991b1b]/20 animate-pulse"></div>
                 Excedido (>3 meses)
               </div>
             </div>
 
             <button
-              class="bg-primary/10 text-primary border-none rounded-xl h-[46px] font-semibold text-[14px] flex items-center justify-center gap-2.5 transition-all hover:bg-primary/20 cursor-pointer w-full mt-4"
+              class="bg-primary/30 text-primary border-2 border-primary/20 rounded-xl h-[46px] font-bold text-[14px] flex items-center justify-center gap-2.5 transition-all hover:bg-primary/40 hover:border-primary/40 hover:-translate-y-0.5 cursor-pointer w-full mt-4"
               id="btnAddSRRow">
               <span class="material-symbols-rounded text-[20px]">add_circle</span> Agregar otro lote/biológico
             </button>
@@ -633,8 +1062,8 @@
           <div id="formCONS" style="display:none" class="flex flex-col gap-8">
             <!-- Info Header Grande (Estilo Pinol Original) -->
             <div
-              class="flex items-center gap-6 p-6 rounded-[32px] bg-primary/5 border-2 border-primary/20 shadow-sm mb-2">
-              <div class="w-16 h-16 rounded-2xl bg-white flex items-center justify-center text-4xl shadow-md shrink-0">
+              class="flex items-center gap-6 p-6 rounded-[32px] shadow-md mb-2 relative z-10" style="background-color: #f0f9ff; border: 2px solid #bae6fd;">
+              <div class="w-16 h-16 rounded-2xl bg-white border border-[#e0f2fe] flex items-center justify-center text-4xl shadow-sm shrink-0">
                 💉
               </div>
               <div class="flex-1">
@@ -719,12 +1148,11 @@
               <div class="flex flex-col lg:flex-row items-center gap-6">
                 <!-- Campo de Nombre Premium -->
                 <div class="flex-1 w-full">
-                  <div style="position: relative; width: 100%;">
-                    <span class="material-symbols-rounded" style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); font-size: 20px; color: #64748b; pointer-events: none; z-index: 2;">person</span>
+                  <div class="modern-input-group">
+                    <span class="input-icon material-symbols-rounded">person</span>
                     <input id="nombreBIO" placeholder=" "
-                      style="width: 100%; height: 60px; padding: 24px 16px 8px 56px; font-size: 15px; font-weight: 700; line-height: 1.2; box-sizing: border-box;"
-                      class="rounded-[16px] border-2 border-slate-200 outline-none shadow-md focus:border-primary transition-all">
-                    <label for="nombreBIO" style="position: absolute; left: 56px; top: 12px; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; color: #0f172a; opacity: 0.7; pointer-events: none; text-transform: uppercase;">Nombre de quien captura el pedido</label>
+                      class="w-full h-[58px] rounded-2xl pr-6 text-[15px] font-bold outline-none shadow-md">
+                    <label for="nombreBIO">Nombre de quien captura el pedido</label>
                   </div>
                 </div>
 
@@ -908,8 +1336,8 @@
           <div id="formPINOL" style="display:none" class="flex flex-col gap-8">
             <!-- Info Insumo Superior -->
             <div
-              class="flex items-center gap-6 p-6 rounded-[32px] bg-primary/5 border-2 border-primary/20 shadow-sm mb-2">
-              <div class="w-16 h-16 rounded-2xl bg-white flex items-center justify-center text-4xl shadow-md shrink-0">
+              class="flex items-center gap-6 p-6 rounded-[32px] shadow-md mb-2 relative z-10" style="background-color: #f0f9ff; border: 2px solid #bae6fd;">
+              <div class="w-16 h-16 rounded-2xl bg-white border border-[#e0f2fe] flex items-center justify-center text-4xl shadow-sm shrink-0">
                 🧴
               </div>
               <div class="flex-1">

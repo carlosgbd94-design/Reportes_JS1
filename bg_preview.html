@@ -1,337 +1,272 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Backgrounds Premium (Originales)</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-    
-    body {
-      margin: 0;
-      font-family: 'Inter', sans-serif;
-      min-height: 100vh;
-      display: flex;
-      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-      overflow-x: hidden;
-      color: #1a1c20;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opciones de Background - JS1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; transition: background 0.5s ease; overflow-x: hidden; }
+        
+        /* Controles de UI (Panel flotante) */
+        .controls-panel {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px);
+            padding: 15px 30px; border-radius: 50px; border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.2); z-index: 9999;
+            display: flex; gap: 10px; align-items: center; justify-content: center;
+            flex-wrap: wrap; width: max-content; max-width: 90vw;
+        }
+        .btn-option {
+            padding: 8px 16px; border-radius: 30px; border: 1px solid #e2e8f0;
+            background: white; color: #475569; font-weight: 600; font-size: 14px;
+            cursor: pointer; transition: all 0.3s ease;
+        }
+        .btn-option:hover { border-color: #0ea5e9; color: #0ea5e9; box-shadow: 0 4px 12px rgba(14,165,233,0.15); }
+        .btn-option.active { background: #0f172a; color: white; border-color: #0f172a; box-shadow: 0 4px 15px rgba(15,23,42,0.3); }
 
-    /* ==========================================================================
-       OPCIÓN 1: AMBIENT GLASS (Ruido + Malla Suave Corporativa)
-       ========================================================================== */
-    .bg-ambient-glass {
-      background-color: #e2e8f0;
-      position: relative;
-    }
-    .bg-ambient-glass::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: 
-        radial-gradient(circle at 15% 50%, rgba(15, 23, 42, 0.08) 0%, transparent 50%),
-        radial-gradient(circle at 85% 30%, rgba(14, 165, 233, 0.08) 0%, transparent 50%);
-      filter: blur(60px);
-      z-index: -2;
-    }
-    .bg-ambient-glass::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
-      z-index: -1;
-      pointer-events: none;
-    }
+        /* Contenedor de Backgrounds */
+        #bg-container { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+        
+        .bg-layer { position: absolute; inset: 0; opacity: 0; transition: opacity 0.8s ease; visibility: hidden; }
+        .bg-layer.active { opacity: 1; visibility: visible; }
 
-    /* ==========================================================================
-       OPCIÓN 2: TITANIUM MATTE (Metálico ultra-minimalista)
-       ========================================================================== */
-    .bg-titanium-matte {
-      background: linear-gradient(135deg, #eef2f6 0%, #e2e8f0 100%);
-      position: relative;
-    }
-    .bg-titanium-matte::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: repeating-linear-gradient(
-        45deg,
-        rgba(255,255,255,0.4) 0px,
-        rgba(255,255,255,0.4) 1px,
-        transparent 1px,
-        transparent 4px
-      );
-      opacity: 0.5;
-      z-index: -1;
-    }
+        /* =========================================
+           OPCIÓN 1: Corporate Elegance (Marca de Agua)
+           ========================================= */
+        #opt1 { background-color: #f8fafc; overflow: hidden; }
+        #opt1 .grid-overlay {
+            position: absolute; inset: 0;
+            background-size: 30px 30px;
+            background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
+            opacity: 0.6;
+        }
+        #opt1 .watermark-logo {
+            position: absolute; bottom: -5%; right: -5%;
+            width: 900px; height: auto; opacity: 0.03;
+            transform: rotate(-15deg); filter: grayscale(100%);
+        }
+        #opt1 .gradient-light {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 20% 0%, rgba(14,165,233,0.04) 0%, transparent 60%);
+        }
 
-    /* ==========================================================================
-       OPCIÓN 3: ARCHITECTURAL SLICE (Capas de papel con sombras)
-       ========================================================================== */
-    .bg-arch-slice {
-      background-color: #f8fafc;
-      background-image: 
-        linear-gradient(105deg, transparent 40%, rgba(15, 23, 42, 0.02) 40.2%, rgba(15, 23, 42, 0.02) 45%, transparent 45.2%),
-        linear-gradient(105deg, transparent 60%, rgba(15, 23, 42, 0.03) 60.2%, rgba(15, 23, 42, 0.03) 100%);
-      position: relative;
-    }
-    .bg-arch-slice::after {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0; height: 100%;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.02) 0%, transparent 15%);
-      z-index: -1;
-    }
+        /* =========================================
+           OPCIÓN 2: Dynamic Floating (Partículas)
+           ========================================= */
+        #opt2 { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); overflow: hidden; }
+        .particle-logo {
+            position: absolute; bottom: -150px;
+            background-image: url('https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png');
+            background-size: contain; background-repeat: no-repeat; background-position: center;
+            opacity: 0.1; animation: floatUp linear infinite;
+            filter: grayscale(100%) brightness(10);
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.15; }
+            90% { opacity: 0.15; }
+            100% { transform: translateY(-120vh) rotate(360deg); opacity: 0; }
+        }
 
-    /* ==========================================================================
-       OPCIÓN 4: DEEP OBSIDIAN (Contraste Extremo)
-       ========================================================================== */
-    .bg-deep-obsidian {
-      background-color: #020617; /* Slate 950 */
-      background-image: 
-        radial-gradient(circle at 50% 0%, rgba(30, 41, 59, 0.8) 0%, transparent 70%),
-        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
-    }
+        /* =========================================
+           OPCIÓN 3: Seamless Isometric Pattern
+           ========================================= */
+        #opt3 { background-color: #ffffff; }
+        #opt3 .pattern-tiled {
+            position: absolute; inset: -50%;
+            background-image: url('https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png');
+            background-size: 150px;
+            background-repeat: repeat;
+            opacity: 0.02;
+            transform: rotate(-25deg);
+        }
+        #opt3 .vignette {
+            position: absolute; inset: 0;
+            background: radial-gradient(circle, transparent 30%, rgba(255,255,255,0.95) 100%);
+        }
 
-    /* ==========================================================================
-       OPCIÓN 5: CLINICAL NEUMORPHISM (Soft UI)
-       ========================================================================== */
-    .bg-clinical-neu {
-      background-color: #ebf0f5;
-      position: relative;
-    }
-    .bg-clinical-neu::before {
-      content: '';
-      position: absolute;
-      top: 5%; left: 5%; width: 40vw; height: 40vw;
-      background: #ffffff;
-      filter: blur(80px);
-      border-radius: 50%;
-      z-index: -2;
-      opacity: 0.6;
-    }
-    .bg-clinical-neu::after {
-      content: '';
-      position: absolute;
-      bottom: 5%; right: 5%; width: 50vw; height: 50vw;
-      background: rgba(14, 165, 233, 0.1);
-      filter: blur(100px);
-      border-radius: 50%;
-      z-index: -2;
-    }
+        /* =========================================
+           OPCIÓN 4: Glassmorphic Orbs (Tendencia UI)
+           ========================================= */
+        #opt4 { background-color: #f1f5f9; overflow: hidden; }
+        .orb {
+            position: absolute; border-radius: 50%;
+            background-image: url('https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png');
+            background-size: cover; background-position: center; background-repeat: no-repeat;
+            filter: blur(80px); opacity: 0.4;
+            animation: pulseOrb 12s infinite alternate ease-in-out;
+        }
+        .orb-1 { width: 600px; height: 600px; top: -150px; left: -100px; animation-delay: 0s; }
+        .orb-2 { width: 700px; height: 700px; bottom: -250px; right: -150px; animation-delay: -5s; opacity: 0.3; }
+        .orb-3 { width: 500px; height: 500px; top: 30%; left: 60%; animation-delay: -2s; opacity: 0.2; }
+        @keyframes pulseOrb {
+            0% { transform: scale(1) translate(0, 0); }
+            100% { transform: scale(1.1) translate(60px, -40px); }
+        }
+        #opt4 .glass-overlay {
+            position: absolute; inset: 0;
+            backdrop-filter: blur(50px);
+            background: rgba(255,255,255,0.4);
+        }
 
-    /* === UI DE PREVIEW === */
-    .sidebar {
-      width: 360px;
-      background: rgba(255,255,255,0.95);
-      backdrop-filter: blur(20px);
-      border-right: 1px solid rgba(0,0,0,0.05);
-      box-shadow: 4px 0 32px rgba(0,0,0,0.05);
-      padding: 40px 32px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      z-index: 100;
-    }
-
-    .sidebar h1 {
-      font-size: 20px;
-      font-weight: 900;
-      color: #0f172a;
-      margin: 0 0 8px;
-      letter-spacing: -0.02em;
-    }
-    .sidebar p.sub {
-      font-size: 12px;
-      color: #64748b;
-      margin: 0 0 24px;
-      line-height: 1.5;
-    }
-
-    .btn-option {
-      background: transparent;
-      border: 2px solid transparent;
-      padding: 16px 20px;
-      border-radius: 16px;
-      text-align: left;
-      cursor: pointer;
-      font-family: inherit;
-      font-weight: 800;
-      font-size: 14px;
-      color: #334155;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .btn-option::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: #f1f5f9;
-      z-index: -1;
-      border-radius: 14px;
-      transition: all 0.3s;
-    }
-
-    .btn-option:hover::before {
-      background: #e2e8f0;
-    }
-
-    .btn-option.active {
-      color: #0f172a;
-      border-color: #0f172a;
-    }
-    .btn-option.active::before {
-      background: #ffffff;
-      box-shadow: 0 8px 24px rgba(15,23,42,0.08);
-    }
-
-    .btn-option span {
-      display: block;
-      font-size: 11px;
-      font-weight: 500;
-      color: #64748b;
-      margin-top: 6px;
-      line-height: 1.4;
-    }
-
-    .content {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 60px;
-      perspective: 1000px;
-    }
-
-    /* Panel falso simulando el sistema real */
-    .panel-preview {
-      background: #ffffff;
-      border: 1px solid rgba(0,0,0,0.04);
-      border-radius: 32px;
-      padding: 48px;
-      width: 100%;
-      max-width: 800px;
-      box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.1);
-      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    /* Si el fondo es oscuro, el panel debe resaltar de cierta forma */
-    body.bg-deep-obsidian .panel-preview {
-      box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.5);
-      border-color: rgba(255,255,255,0.1);
-    }
-
-    .panel-header {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 32px;
-    }
-    .panel-icon {
-      width: 56px; height: 56px;
-      border-radius: 16px;
-      background: #f1f5f9;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 24px;
-    }
-
-    .panel-preview h2 {
-      margin: 0;
-      font-size: 24px;
-      font-weight: 900;
-      color: #0f172a;
-      letter-spacing: -0.02em;
-    }
-
-    .panel-preview p.desc {
-      color: #475569;
-      line-height: 1.6;
-      margin-bottom: 40px;
-      font-size: 15px;
-    }
-
-    .fake-inputs {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-    }
-
-    .fake-input {
-      height: 64px;
-      background: #f8fafc;
-      border: 2px solid #e2e8f0;
-      border-radius: 16px;
-      position: relative;
-    }
-    .fake-input::after {
-      content: '';
-      position: absolute;
-      left: 20px; top: 50%; transform: translateY(-50%);
-      width: 100px; height: 12px;
-      background: #cbd5e1;
-      border-radius: 6px;
-      opacity: 0.5;
-    }
-  </style>
+        /* =========================================
+           OPCIÓN 5: Minimalist Constellation (Tech)
+           ========================================= */
+        #opt5 { background-color: #020617; }
+        .constellation {
+            position: absolute; inset: 0;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(14, 165, 233, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 85% 30%, rgba(14, 165, 233, 0.05) 0%, transparent 40%);
+        }
+        .tech-logo {
+            position: absolute;
+            background-image: url('https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png');
+            background-size: contain; background-repeat: no-repeat; background-position: center;
+            opacity: 0.2; filter: brightness(0) invert(1);
+            animation: twinkle 4s infinite alternate;
+            transform: translate(-50%, -50%);
+        }
+        @keyframes twinkle { 0% { opacity: 0.1; } 100% { opacity: 0.4; filter: brightness(0) invert(1) drop-shadow(0 0 10px #0ea5e9); } }
+        /* Line connections via SVG */
+        #opt5 svg { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.15; pointer-events: none; }
+        #opt5 svg line { stroke: #0ea5e9; stroke-width: 1.5; stroke-dasharray: 4 6; }
+    </style>
 </head>
-<body class="bg-ambient-glass">
+<body>
 
-  <div class="sidebar">
-    <h1>Backgrounds Premium</h1>
-    <p class="sub">Diseños de nivel arquitectónico, corporativo y de alta gama. Selecciona para previsualizar.</p>
-    
-    <button class="btn-option active" onclick="setBg('bg-ambient-glass', this)">
-      1. Ambient Glass (Recomendado)
-      <span>Ruido sutil + destellos de color institucionales inyectados en cristal mate. Extremadamente premium.</span>
-    </button>
-    
-    <button class="btn-option" onclick="setBg('bg-titanium-matte', this)">
-      2. Titanium Matte
-      <span>Efecto de metal cepillado ultra-minimalista. Muy sobrio, evoca precisión y limpieza.</span>
-    </button>
-    
-    <button class="btn-option" onclick="setBg('bg-arch-slice', this)">
-      3. Architectural Slice
-      <span>Geometría asimétrica de gran escala. Da la ilusión de capas de papel o muros blancos.</span>
-    </button>
-    
-    <button class="btn-option" onclick="setBg('bg-deep-obsidian', this)">
-      4. Deep Obsidian (Dark Bg)
-      <span>Fondo casi negro. Los paneles blancos "explotan" visualmente. Estilo Enterprise Dashboard.</span>
-    </button>
-    
-    <button class="btn-option" onclick="setBg('bg-clinical-neu', this)">
-      5. Clinical Neumorphism
-      <span>Luces y sombras suaves con un tono gélido (hielo). Transmite total higiene y claridad visual.</span>
-    </button>
-  </div>
-
-  <div class="content">
-    <div class="panel-preview">
-      <div class="panel-header">
-        <div class="panel-icon">📊</div>
-        <h2>Panel de Simulación</h2>
-      </div>
-      <p class="desc">Este panel blanco interactúa con el fondo. Observa cómo el contraste, los bordes y las sombras cambian de personalidad dependiendo de la sofisticación del fondo seleccionado detrás de él.</p>
-      
-      <div class="fake-inputs">
-        <div class="fake-input"></div>
-        <div class="fake-input"></div>
-      </div>
+    <!-- Selector de Opciones -->
+    <div class="controls-panel">
+        <span class="text-sm font-bold text-slate-800 mr-2 uppercase tracking-widest text-[10px]">Patrones Originales:</span>
+        <button class="btn-option active" onclick="setBg(1)">1. Elegancia Corporativa</button>
+        <button class="btn-option" onclick="setBg(2)">2. Flujo Dinámico (Dark)</button>
+        <button class="btn-option" onclick="setBg(3)">3. Mosaico Limpio</button>
+        <button class="btn-option" onclick="setBg(4)">4. Glassmorfismo Abstracto</button>
+        <button class="btn-option" onclick="setBg(5)">5. Red Tecnológica (Dark)</button>
     </div>
-  </div>
 
-  <script>
-    function setBg(className, btn) {
-      document.body.className = '';
-      document.body.classList.add(className);
-      
-      document.querySelectorAll('.btn-option').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-    }
-  </script>
+    <!-- UI de Muestra (Para ver contraste) -->
+    <div class="relative z-10 flex flex-col items-center justify-center min-h-screen pointer-events-none">
+        <div id="mockCard" class="bg-white/80 backdrop-blur-xl p-10 rounded-[32px] shadow-2xl border border-white/50 text-center max-w-sm w-full transition-all duration-500" style="pointer-events: auto;">
+            <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" alt="Logo" class="w-16 mx-auto mb-6">
+            <h2 id="mockTitle" class="text-3xl font-black text-slate-900 mb-2 transition-colors duration-500">JS1 <span class="text-slate-500 font-medium" id="mockSubtitle">Reportes</span></h2>
+            <p id="mockText" class="text-slate-500 mb-8 transition-colors duration-500 text-sm">Visualiza cómo resalta tu tarjeta de login sobre estos fondos personalizados.</p>
+            
+            <div id="mockInput" class="h-14 w-full border-2 border-slate-200 rounded-2xl mb-4 bg-slate-50/50 flex items-center px-4 transition-colors duration-500">
+                <span class="material-symbols-rounded text-slate-400"></span>
+            </div>
+            <div id="mockBtn" class="h-14 w-full bg-slate-900 rounded-2xl mt-6 transition-colors duration-500"></div>
+        </div>
+    </div>
 
+    <!-- Capas de Background -->
+    <div id="bg-container">
+        
+        <!-- Opción 1: Marca de agua elegante -->
+        <div id="opt1" class="bg-layer active">
+            <div class="grid-overlay"></div>
+            <div class="gradient-light"></div>
+            <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" class="watermark-logo" alt="Watermark">
+        </div>
+
+        <!-- Opción 2: Burbujas/Partículas Dark -->
+        <div id="opt2" class="bg-layer">
+            <!-- JS inyecta partículas -->
+        </div>
+
+        <!-- Opción 3: Tiled (Mosaico) -->
+        <div id="opt3" class="bg-layer">
+            <div class="pattern-tiled"></div>
+            <div class="vignette"></div>
+        </div>
+
+        <!-- Opción 4: Glassmorfismo Abstracto -->
+        <div id="opt4" class="bg-layer">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+            <div class="glass-overlay"></div>
+        </div>
+
+        <!-- Opción 5: Red Tech -->
+        <div id="opt5" class="bg-layer">
+            <div class="constellation"></div>
+            <svg>
+                <line x1="20%" y1="30%" x2="50%" y2="60%" />
+                <line x1="50%" y1="60%" x2="80%" y2="40%" />
+                <line x1="80%" y1="40%" x2="70%" y2="80%" />
+                <line x1="70%" y1="80%" x2="30%" y2="70%" />
+                <line x1="30%" y1="70%" x2="20%" y2="30%" />
+            </svg>
+            <div class="tech-logo" style="width: 45px; height: 45px; left: 20%; top: 30%; animation-delay: 0s;"></div>
+            <div class="tech-logo" style="width: 70px; height: 70px; left: 50%; top: 60%; animation-delay: 1s;"></div>
+            <div class="tech-logo" style="width: 35px; height: 35px; left: 80%; top: 40%; animation-delay: 2s;"></div>
+            <div class="tech-logo" style="width: 55px; height: 55px; left: 70%; top: 80%; animation-delay: 1.5s;"></div>
+            <div class="tech-logo" style="width: 50px; height: 50px; left: 30%; top: 70%; animation-delay: 0.5s;"></div>
+        </div>
+
+    </div>
+
+    <script>
+        function setBg(optNum) {
+            // Actualizar estado de botones
+            document.querySelectorAll('.btn-option').forEach((btn, index) => {
+                if (index + 1 === optNum) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Transicionar capas
+            document.querySelectorAll('.bg-layer').forEach(layer => {
+                layer.classList.remove('active');
+            });
+            document.getElementById('opt' + optNum).classList.add('active');
+
+            // Adaptar la tarjeta de UI (Light Mode vs Dark Mode)
+            const card = document.getElementById('mockCard');
+            const title = document.getElementById('mockTitle');
+            const subtitle = document.getElementById('mockSubtitle');
+            const text = document.getElementById('mockText');
+            const input = document.getElementById('mockInput');
+            const btn = document.getElementById('mockBtn');
+
+            if(optNum === 2 || optNum === 5) {
+                // Tema Oscuro (Para fondos oscuros)
+                card.className = "bg-slate-900/60 backdrop-blur-xl p-10 rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-700/50 text-center max-w-sm w-full transition-all duration-500";
+                title.classList.replace('text-slate-900', 'text-white');
+                subtitle.classList.replace('text-slate-500', 'text-slate-400');
+                text.classList.replace('text-slate-500', 'text-slate-400');
+                input.className = "h-14 w-full border-2 border-slate-700 rounded-2xl mb-4 bg-slate-800/50 flex items-center px-4 transition-colors duration-500";
+                btn.className = "h-14 w-full bg-sky-500 rounded-2xl mt-6 transition-colors duration-500";
+            } else {
+                // Tema Claro (Para fondos claros)
+                card.className = "bg-white/80 backdrop-blur-xl p-10 rounded-[32px] shadow-2xl border border-white/50 text-center max-w-sm w-full transition-all duration-500";
+                title.classList.replace('text-white', 'text-slate-900');
+                subtitle.classList.replace('text-slate-400', 'text-slate-500');
+                text.classList.replace('text-slate-400', 'text-slate-500');
+                input.className = "h-14 w-full border-2 border-slate-200 rounded-2xl mb-4 bg-slate-50/50 flex items-center px-4 transition-colors duration-500";
+                btn.className = "h-14 w-full bg-slate-900 rounded-2xl mt-6 transition-colors duration-500";
+            }
+        }
+
+        // Script para inicializar partículas (Opción 2)
+        const opt2 = document.getElementById('opt2');
+        for(let i=0; i<18; i++) {
+            let p = document.createElement('div');
+            p.className = 'particle-logo';
+            let size = Math.random() * 50 + 20; 
+            p.style.width = size + 'px';
+            p.style.height = size + 'px';
+            p.style.left = Math.random() * 100 + 'vw';
+            p.style.animationDuration = (Math.random() * 20 + 10) + 's';
+            p.style.animationDelay = (Math.random() * -20) + 's'; // Delay negativo para que arranquen esparcidas
+            if(Math.random() > 0.6) p.style.filter = 'grayscale(100%) brightness(10) blur(3px)';
+            opt2.appendChild(p);
+        }
+    </script>
 </body>
 </html>
