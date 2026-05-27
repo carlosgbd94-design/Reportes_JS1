@@ -4868,9 +4868,9 @@ async function supabaseRequest(action = "", payload) {
           .from('pinol_solicitudes')
           .update({
             estatus: 'ENTREGADO',
-            editado: 'SI',
-            editado_por: USER.usuario,
-            editado_ts: new Date().toISOString()
+            entregado_por: USER.usuario,
+            timestamp_entrega: new Date().toISOString(),
+            fecha_entrega: todayYmdLocal()
           })
           .eq('id', payload.id);
 
