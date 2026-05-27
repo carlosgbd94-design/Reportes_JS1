@@ -3705,7 +3705,7 @@ async function supabaseRequest(action = "", payload) {
               if (canSeeMunicipio_(USER, p.municipio)) {
                 virtualNotifs.push({
                   id: 'VNOTIF:PINOL:' + p.id,
-                  created_ts: p.editado_ts || p.timestamp_solicitud,
+                  created_ts: p.timestamp_entrega || p.timestamp_solicitud,
                   title: 'Pedido de pinol entregado',
                   message: `Pinol entregado:\nFecha de solicitud: ${p.fecha_solicitud}\nUnidad: ${p.unidad || unitMap[p.clues] || 'Unidad Desconocida'}`,
                   is_read: (p.estatus === 'RECIBIDO') ? 'SI' : 'NO', // Si la unidad ya recibió, marcar como leída para el supervisor
@@ -4436,8 +4436,8 @@ async function supabaseRequest(action = "", payload) {
           observaciones: d.observaciones || "",
           capturado_por: d.capturado_por,
           estatus: d.estatus,
-          fecha_entrega: d.editado_ts,
-          entregado_por: d.editado_por,
+          fecha_entrega: d.fecha_entrega || d.timestamp_entrega,
+          entregado_por: d.entregado_por,
           recibido_ts: d.recibido_ts
         }));
 
@@ -11176,7 +11176,7 @@ async function refreshPinol() {
       const obsHtml = obsText ? `<button type="button" class="ghostBtn" onclick="showPinolObsModal('${escapeHtml(escapeAttr(obsText))}')" title="Ver observación" style="margin: 0 auto; display: flex;"><span class="material-symbols-rounded">chat</span></button>` : `<span class="muted text-center block">—</span>`;
       
       const fechaSoliFormateada = formatPinolDate(x?.fecha_solicitud);
-      const fechaEntrega = x?.fecha_entrega || x?.editado_ts || "";
+      const fechaEntrega = x?.fecha_entrega || x?.timestamp_entrega || "";
       const fechaEntregaFormateada = formatPinolDate(fechaEntrega);
 
       let deleteHtml = "";
