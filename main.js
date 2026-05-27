@@ -7222,6 +7222,20 @@ function buildUserFromPerfil(uid, email, perfil) {
       muniList = String(rawMuni).replace(/[\[\]{}"']/g, '').split(/[;,]/);
     }
     municipiosAllowed = muniList.map(x => x.trim()).filter(Boolean);
+
+    // Auto-fix: Sincronizar municipios_allowed en BD si está vacío y hay múltiples
+    if (municipiosAllowed.length > 1) {
+      const dbArr = (perfil && perfil.municipios_allowed) || [];
+      if (!dbArr || !dbArr.length || (Array.isArray(dbArr) && dbArr.length === 0)) {
+        window.supabase?.from('perfiles')
+          .update({ municipios_allowed: municipiosAllowed })
+          .eq('id', uid)
+          .then(res => {
+            if (res.error) console.warn("[buildUser] No se pudo sincronizar municipios_allowed:", res.error);
+            else console.log("[buildUser] ✅ municipios_allowed sincronizado:", municipiosAllowed);
+          });
+      }
+    }
   }
 
   // 🛡️ Regla de CLUES para Administrativos: Si no tienen CLUES o tienen placeholders, se les asigna la de la Jurisdicción

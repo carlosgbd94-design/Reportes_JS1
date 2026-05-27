@@ -811,8 +811,36 @@ function renderTable(fUnits, esquema) {
 
     if (countEl) countEl.textContent = `${rows.length} unidades`;
     
-    const badge = v => {
-        if (esquema !== 'basico') return `<span style="font-weight:800;color:#0f172a">${v.toLocaleString('es-MX')}</span>`;
+    const badge = (v, vName) => {
+        if (esquema !== 'basico') {
+            let bg = '#e2e8f0';
+            let fg = '#0f172a';
+            const nameMap = {
+                'BCG': { bg: '#A5CBE3', fg: '#3A86B7' },
+                'HepB': { bg: '#E8B2B2', fg: '#C43D3D' },
+                'Hexavalente': { bg: '#CDE69A', fg: '#9ACD32' },
+                'Rotavirus': { bg: '#93BCCD', fg: '#264653' },
+                'Neumo 13': { bg: '#ACAFC8', fg: '#3D405B' },
+                'Neumo 20': { bg: '#ACAFC8', fg: '#3D405B' },
+                'SRP': { bg: '#F3B7CA', fg: '#B23A48' },
+                'DPT': { bg: '#F3E0AF', fg: '#E9C46A' },
+                'Influenza': { bg: '#F4CBBE', fg: '#C26750' },
+                'VPH': { bg: '#A4E6DE', fg: '#2A9D8F' },
+                'Td': { bg: '#C0C0C0', fg: '#5C5C5C' },
+                'Td Mayores': { bg: '#C0C0C0', fg: '#5C5C5C' },
+                'Tdpa': { bg: '#F3B9AB', fg: '#E76F51' },
+                'SR': { bg: '#C1B3D5', fg: '#7B5EA7' },
+                'Varicela': { bg: '#BEE4DC', fg: '#8ED1C2' },
+                'VSR': { bg: '#EBD8CD', fg: '#A66B50' },
+                'COVID-19': { bg: '#BCBCBC', fg: '#4A4A4A' },
+                'HepA': { bg: '#DBDBDB', fg: '#BDBDBD' }
+            };
+            if (vName && nameMap[vName]) {
+                bg = nameMap[vName].bg;
+                fg = nameMap[vName].fg;
+            }
+            return `<span style="display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;background:${bg};color:${fg}">${v.toLocaleString('es-MX')}</span>`;
+        }
         const bg = v >= 80 ? '#dcfce7' : v >= 50 ? '#fef3c7' : '#fee2e2';
         const fg = v >= 80 ? '#166534' : v >= 50 ? '#92400e' : '#991b1b';
         return `<span style="display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;background:${bg};color:${fg}">${v}%</span>`;
@@ -822,10 +850,10 @@ function renderTable(fUnits, esquema) {
         ? `<tr><td colspan="${4 + vCols.length + (showMeta ? 1 : 0)}" style="padding:40px;text-align:center;color:#94a3b8;font-weight:600;">Sin datos</td></tr>`
         : rows.map(r => `
             <tr style="border-bottom:1px solid #f1f5f9;">
-                <td style="padding:16px 24px;font-size:11px;font-weight:700;color:#64748b;font-family:monospace">${r.clues}</td>
+                <td style="padding:16px 24px;font-size:11px;font-weight:700;color:#64748b;">${r.clues}</td>
                 <td style="padding:16px 24px;font-size:11px;font-weight:800;color:#0f172a">${r.nombre}</td>
                 <td style="padding:16px 24px;font-size:11px;color:#64748b;font-weight:600;">${r.municipio}</td>
-                ${vCols.map(c => `<td style="padding:8px 12px;text-align:center">${badge(r[c.s])}</td>`).join('')}
+                ${vCols.map(c => `<td style="padding:8px 12px;text-align:center">${badge(r[c.s], c.n)}</td>`).join('')}
                 ${showMeta ? `<td style="padding:16px 24px;text-align:center;font-size:11px;font-weight:800;color:#64748b">${r.pob.toLocaleString('es-MX')}</td>` : ''}
                 <td style="padding:16px 24px;text-align:center;font-size:11px;font-weight:800;color:#0f172a">${r.dosis.toLocaleString('es-MX')}</td>
             </tr>

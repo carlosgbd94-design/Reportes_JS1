@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diseños de Login Premium</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Space+Mono:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .section { min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; padding: 2rem; border-bottom: 2px solid #000; }
+        .section-title { position: absolute; top: 20px; left: 20px; font-size: 1rem; font-weight: bold; background: #000; color: #fff; padding: 5px 10px; z-index: 100; text-transform: uppercase; letter-spacing: 2px; }
+
+        /* =========================================
+           1. GLASSMORPHISM CON MALLA DE DEGRADADO 
+           ========================================= */
+        #design-glass {
+            background: radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                        radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                        radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+            background-color: #0b0f19;
+            color: #fff;
+        }
+        .glass-login {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 3rem;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .glass-login h2 { margin-bottom: 2rem; font-weight: 600; font-size: 2rem; }
+        .glass-login input {
+            width: 100%; padding: 1rem; margin-bottom: 1.5rem;
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff; border-radius: 12px; outline: none; transition: 0.3s;
+        }
+        .glass-login input:focus { border-color: #a78bfa; background: rgba(255,255,255,0.1); }
+        .glass-login button {
+            width: 100%; padding: 1rem; border: none; border-radius: 12px;
+            background: linear-gradient(135deg, #a78bfa 0%, #ec4899 100%);
+            color: white; font-weight: bold; cursor: pointer; font-size: 1rem; transition: transform 0.2s;
+        }
+        .glass-login button:hover { transform: translateY(-2px); }
+
+        /* =========================================
+           2. CYBERPUNK / NEON
+           ========================================= */
+        #design-cyber {
+            background-color: #09090b;
+            background-image: 
+                linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            font-family: 'Space Mono', monospace;
+            color: #0ff;
+        }
+        .cyber-login {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #0ff;
+            padding: 3rem;
+            width: 100%; max-width: 450px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2), inset 0 0 20px rgba(0, 255, 255, 0.1);
+            position: relative;
+        }
+        .cyber-login::before {
+            content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(45deg, #f0f, #0ff, #f0f); z-index: -1;
+            filter: blur(10px); opacity: 0.5;
+        }
+        .cyber-login h2 { text-transform: uppercase; letter-spacing: 4px; margin-bottom: 2rem; color: #f0f; text-shadow: 0 0 10px #f0f; }
+        .cyber-login input {
+            width: 100%; padding: 1rem; margin-bottom: 1.5rem;
+            background: transparent; border: none; border-bottom: 2px solid #0ff;
+            color: #fff; outline: none; font-family: 'Space Mono'; transition: 0.3s;
+        }
+        .cyber-login input:focus { border-bottom-color: #f0f; box-shadow: 0 10px 10px -10px #f0f; }
+        .cyber-login button {
+            width: 100%; padding: 1rem; border: 2px solid #0ff; background: transparent;
+            color: #0ff; font-weight: bold; cursor: pointer; text-transform: uppercase;
+            letter-spacing: 2px; transition: 0.3s; font-family: 'Space Mono';
+        }
+        .cyber-login button:hover { background: #0ff; color: #000; box-shadow: 0 0 15px #0ff; }
+
+        /* =========================================
+           3. BRUTALISMO MODERNO
+           ========================================= */
+        #design-brutal {
+            background-color: #facc15; /* Amarillo brillante */
+            color: #000;
+        }
+        .brutal-login {
+            background: #fff;
+            border: 4px solid #000;
+            padding: 3rem;
+            width: 100%; max-width: 400px;
+            box-shadow: 12px 12px 0px #000;
+            transition: 0.2s;
+        }
+        .brutal-login:hover { box-shadow: 16px 16px 0px #000; transform: translate(-2px, -2px); }
+        .brutal-login h2 { font-weight: 800; font-size: 2.5rem; text-transform: uppercase; margin-bottom: 2rem; }
+        .brutal-login label { font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 0.5rem; }
+        .brutal-login input {
+            width: 100%; padding: 1rem; margin-bottom: 1.5rem;
+            background: #f4f4f5; border: 3px solid #000;
+            font-size: 1rem; outline: none; transition: 0.2s; font-family: 'Inter'; font-weight: bold;
+        }
+        .brutal-login input:focus { background: #e4e4e7; box-shadow: 4px 4px 0px #000; }
+        .brutal-login button {
+            width: 100%; padding: 1rem; border: 3px solid #000; background: #000;
+            color: #fff; font-weight: 800; font-size: 1.2rem; cursor: pointer;
+            text-transform: uppercase; transition: 0.2s;
+        }
+        .brutal-login button:hover { background: #fff; color: #000; box-shadow: 6px 6px 0px #000; transform: translate(-2px, -2px); }
+
+        /* =========================================
+           4. MINIMALISMO ELEGANTE (SPLIT SCREEN)
+           ========================================= */
+        #design-elegant { padding: 0; }
+        .split-container { display: flex; width: 100%; height: 100vh; }
+        .split-left { 
+            flex: 1; 
+            background: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop') center/cover;
+            display: none;
+        }
+        @media(min-width: 768px) { .split-left { display: block; } }
+        .split-right {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            background: #ffffff; color: #18181b; padding: 2rem;
+        }
+        .elegant-login { width: 100%; max-width: 380px; }
+        .elegant-login h2 { font-family: 'Playfair Display', serif; font-size: 3rem; margin-bottom: 0.5rem; }
+        .elegant-login p { color: #71717a; margin-bottom: 2.5rem; }
+        .elegant-login input {
+            width: 100%; padding: 1rem 0; margin-bottom: 2rem;
+            background: transparent; border: none; border-bottom: 1px solid #d4d4d8;
+            font-size: 1rem; outline: none; transition: 0.3s;
+        }
+        .elegant-login input:focus { border-bottom-color: #000; }
+        .elegant-login button {
+            width: 100%; padding: 1rem; border: none; border-radius: 4px;
+            background: #000; color: #fff; font-weight: 600; cursor: pointer; transition: 0.3s;
+        }
+        .elegant-login button:hover { background: #27272a; }
+
+        /* =========================================
+           5. AURORA DARK MODE (FLOTANTE)
+           ========================================= */
+        #design-aurora {
+            background-color: #020617;
+            position: relative; overflow: hidden;
+            color: #f8fafc;
+        }
+        .aurora-blob {
+            position: absolute; filter: blur(80px); border-radius: 50%; z-index: 0; opacity: 0.6;
+        }
+        .blob-1 { top: -10%; left: 20%; width: 400px; height: 400px; background: #3b82f6; }
+        .blob-2 { bottom: -10%; right: 20%; width: 500px; height: 500px; background: #10b981; }
+        .aurora-login {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 3.5rem; border-radius: 32px;
+            width: 100%; max-width: 420px; z-index: 1;
+        }
+        .aurora-login h2 { font-size: 2rem; margin-bottom: 2.5rem; text-align: center; font-weight: 300; }
+        .aurora-input-group { position: relative; margin-bottom: 1.5rem; }
+        .aurora-input-group input {
+            width: 100%; padding: 1.2rem;
+            background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; color: #fff; outline: none; transition: 0.3s;
+        }
+        .aurora-input-group input:focus { border-color: #3b82f6; background: rgba(0,0,0,0.4); }
+        .aurora-login button {
+            width: 100%; padding: 1.2rem; margin-top: 1rem; border: none; border-radius: 16px;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            color: white; font-weight: 600; font-size: 1.1rem; cursor: pointer; transition: 0.3s;
+        }
+        .aurora-login button:hover { opacity: 0.9; transform: scale(1.02); }
+
+    </style>
+</head>
+<body>
+
+    <!-- DISEÑO 1: GLASSMORPHISM -->
+    <div class="section" id="design-glass">
+        <div class="section-title">1. Glassmorphism / Mesh</div>
+        <div class="glass-login">
+            <h2>Bienvenido de nuevo</h2>
+            <form onsubmit="event.preventDefault();">
+                <input type="email" placeholder="Correo electrónico" required>
+                <input type="password" placeholder="Contraseña" required>
+                <button type="submit">Iniciar Sesión</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- DISEÑO 2: CYBERPUNK -->
+    <div class="section" id="design-cyber">
+        <div class="section-title">2. Cyberpunk / Neón</div>
+        <div class="cyber-login">
+            <h2>SYS.LOGIN</h2>
+            <form onsubmit="event.preventDefault();">
+                <input type="text" placeholder="ID DE USUARIO" required>
+                <input type="password" placeholder="CLAVE DE ACCESO" required>
+                <button type="submit">AUTENTICAR</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- DISEÑO 3: BRUTALISMO -->
+    <div class="section" id="design-brutal">
+        <div class="section-title">3. Brutalismo</div>
+        <div class="brutal-login">
+            <h2>Entrar.</h2>
+            <form onsubmit="event.preventDefault();">
+                <label>Email</label>
+                <input type="email" placeholder="tu@email.com" required>
+                <label>Password</label>
+                <input type="password" placeholder="••••••••" required>
+                <button type="submit">INGRESAR AHORA</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- DISEÑO 4: ELEGANCIA EDITORIAL -->
+    <div class="section" id="design-elegant">
+        <div class="section-title">4. Elegancia Editorial</div>
+        <div class="split-container">
+            <div class="split-left"></div>
+            <div class="split-right">
+                <div class="elegant-login">
+                    <h2>Bienvenido.</h2>
+                    <p>Por favor, introduce tus credenciales para continuar al portal.</p>
+                    <form onsubmit="event.preventDefault();">
+                        <input type="email" placeholder="Correo electrónico" required>
+                        <input type="password" placeholder="Contraseña" required>
+                        <button type="submit">Iniciar sesión</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DISEÑO 5: AURORA FLOTANTE -->
+    <div class="section" id="design-aurora">
+        <div class="section-title">5. Aurora Dark Mode</div>
+        <div class="aurora-blob blob-1"></div>
+        <div class="aurora-blob blob-2"></div>
+        <div class="aurora-login">
+            <h2>Acceso a JS1</h2>
+            <form onsubmit="event.preventDefault();">
+                <div class="aurora-input-group">
+                    <input type="email" placeholder="Usuario" required>
+                </div>
+                <div class="aurora-input-group">
+                    <input type="password" placeholder="Contraseña" required>
+                </div>
+                <button type="submit">Continuar</button>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>
