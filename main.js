@@ -10922,13 +10922,7 @@ async function markPinolDelivered(id, comentario = "") {
     }
 
     showToast("Solicitud marcada como entregada");
-    pushLiveEvent(
-      "Pinol entregado",
-      "Se notificó a la unidad que su solicitud fue entregada.",
-      "good",
-      "panelPINOLADMIN",
-      { cooldownMs: 1400 }
-    );
+
 
     await refreshAfterMutation({
       touchPinol: true
