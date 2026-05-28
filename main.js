@@ -4049,7 +4049,7 @@ async function supabaseRequest(action = "", payload) {
         const [resBio, resCons, resPedidos] = await Promise.all([
           supabase.from('biologicos_existencia').select('clues, fecha').gte('fecha', fechaInicio).lte('fecha', fechaFin),
           supabase.from('consumibles').select('clues, fecha').gte('fecha', fechaInicio).lte('fecha', fechaFin),
-          supabase.from('biologicos_existencia').select('clues').gte('fecha', `${mes}-01`).lte('fecha', `${yyyy}-${mm}-31`).eq('tipo_pedido', 'MENSUAL')
+          supabase.from('biologicos_pedido').select('clues').gte('fecha_captura', `${mes}-01`).lte('fecha_captura', `${yyyy}-${mm}-31`).eq('tipo_pedido', 'MENSUAL')
         ]);
 
         const rawBioAll = resBio.data || [];
@@ -4263,7 +4263,7 @@ async function supabaseRequest(action = "", payload) {
             supabase.from('unidades').select('clues, unidad, municipio').eq('activo', 'SI'),
             supabase.from('biologicos_existencia').select('clues, fecha').gte('fecha', monthStartStr).lte('fecha', today),
             supabase.from('consumibles').select('clues, fecha').gte('fecha', monthStartStr).lte('fecha', today),
-            supabase.from('biologicos_existencia').select('clues').gte('fecha', monthStartStr).lte('fecha', today).eq('tipo_pedido', 'MENSUAL')
+            supabase.from('biologicos_pedido').select('clues').gte('fecha_captura', monthStartStr).lte('fecha_captura', today).eq('tipo_pedido', 'MENSUAL')
           ]);
 
           const units = resUnits.data || [];
@@ -11848,11 +11848,14 @@ function renderHistoryMetrics(data) {
         if (idx === 0) rankBadge = `<span class="rank-badge rank-1">1</span>`;
         else if (idx === 1) rankBadge = `<span class="rank-badge rank-2">2</span>`;
         else if (idx === 2) rankBadge = `<span class="rank-badge rank-3">3</span>`;
+        else if (idx === 3) rankBadge = `<span class="rank-badge rank-4">4</span>`;
+        else if (idx === 4) rankBadge = `<span class="rank-badge rank-5">5</span>`;
 
         let bPct = r.eBio > 0 ? (r.bio_semanas_ok / r.eBio) * 100 : 100;
         let cPct = r.eCons > 0 ? (r.cons_semanas_ok / r.eCons) * 100 : 100;
+        const hasPedido = !!(r.pedido_mensual || r.has_pedido || r.pedido || r.pedido_capturado || r.is_pedido_done);
         let pedidoIcon = !r.isPedidoRequired ? `<span class="material-symbols-rounded text-slate-400 text-[14px]">horizontal_rule</span>` : 
-                         (r.pedido_mensual ? `<span class="material-symbols-rounded text-green-500 text-[14px]" title="Pedido Registrado">check_circle</span>` : `<span class="material-symbols-rounded text-red-500 text-[14px]" title="Falta Pedido">cancel</span>`);
+                         (hasPedido ? `<span class="material-symbols-rounded text-[14px]" style="color: #22c55e !important;" title="Pedido Registrado">check_circle</span>` : `<span class="material-symbols-rounded text-[14px]" style="color: #ef4444 !important;" title="Falta Pedido">cancel</span>`);
 
         html += `
           <tr>
@@ -11895,11 +11898,14 @@ function renderHistoryMetrics(data) {
       if (idx === 0) rankBadge = `<span class="rank-badge rank-1">1</span>`;
       else if (idx === 1) rankBadge = `<span class="rank-badge rank-2">2</span>`;
       else if (idx === 2) rankBadge = `<span class="rank-badge rank-3">3</span>`;
+      else if (idx === 3) rankBadge = `<span class="rank-badge rank-4">4</span>`;
+      else if (idx === 4) rankBadge = `<span class="rank-badge rank-5">5</span>`;
 
       let bPct = r.eBio > 0 ? (r.bio_semanas_ok / r.eBio) * 100 : 100;
       let cPct = r.eCons > 0 ? (r.cons_semanas_ok / r.eCons) * 100 : 100;
+      const hasPedido = !!(r.pedido_mensual || r.has_pedido || r.pedido || r.pedido_capturado || r.is_pedido_done);
       let pedidoIcon = !r.isPedidoRequired ? `<span class="material-symbols-rounded text-slate-400 text-[14px]">horizontal_rule</span>` : 
-                       (r.pedido_mensual ? `<span class="material-symbols-rounded text-green-500 text-[14px]" title="Pedido Registrado">check_circle</span>` : `<span class="material-symbols-rounded text-red-500 text-[14px]" title="Falta Pedido">cancel</span>`);
+                       (hasPedido ? `<span class="material-symbols-rounded text-[14px]" style="color: #22c55e !important;" title="Pedido Registrado">check_circle</span>` : `<span class="material-symbols-rounded text-[14px]" style="color: #ef4444 !important;" title="Falta Pedido">cancel</span>`);
 
       html += `
         <tr>

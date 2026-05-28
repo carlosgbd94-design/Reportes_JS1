@@ -8311,12 +8311,12 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
 }
 
 /* Heights and Colors for 5-Step Podium */
-.podium-step.p-1 { height: 180px !important; z-index: 5; border-color: #ffd700 !important; background: linear-gradient(to bottom, #fffbeb, #fef3c7) !important; animation: float-subtle 3s ease-in-out infinite; }
+.podium-step.p-1 { height: 220px !important; z-index: 5; border-color: #ffd700 !important; background: linear-gradient(to bottom, #fffbeb, #fef3c7) !important; animation: float-subtle 3s ease-in-out infinite; }
 .podium-step.p-1 .podium-medal { animation: medal-shine 2s ease-in-out infinite; }
-.podium-step.p-2 { height: 155px !important; z-index: 4; border-color: #cbd5e1 !important; background: linear-gradient(to bottom, #f8fafc, #f1f5f9) !important; }
-.podium-step.p-3 { height: 140px !important; z-index: 3; border-color: #fed7aa !important; background: linear-gradient(to bottom, #fff7ed, #ffedd5) !important; }
-.podium-step.p-4 { height: 125px !important; z-index: 2; border-color: #99f6e4 !important; background: linear-gradient(to bottom, #f0fdfa, #ccfbf1) !important; }
-.podium-step.p-5 { height: 110px !important; z-index: 1; border-color: #bbf7d0 !important; background: linear-gradient(to bottom, #f0fdf4, #dcfce7) !important; }
+.podium-step.p-2 { height: 195px !important; z-index: 4; border-color: #cbd5e1 !important; background: linear-gradient(to bottom, #f8fafc, #f1f5f9) !important; }
+.podium-step.p-3 { height: 180px !important; z-index: 3; border-color: #fed7aa !important; background: linear-gradient(to bottom, #fff7ed, #ffedd5) !important; }
+.podium-step.p-4 { height: 165px !important; z-index: 2; border-color: #99f6e4 !important; background: linear-gradient(to bottom, #f0fdfa, #ccfbf1) !important; }
+.podium-step.p-5 { height: 150px !important; z-index: 1; border-color: #bbf7d0 !important; background: linear-gradient(to bottom, #f0fdf4, #dcfce7) !important; }
 
 /* Leaderboard custom rank colors */
 .rank-4 { background: linear-gradient(135deg, #4ecdc4 0%, #556270 100%) !important; color: white !important; box-shadow: 0 4px 10px rgba(78,205,196,0.3) !important; }
