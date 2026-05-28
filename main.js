@@ -409,12 +409,12 @@ document.addEventListener("DOMContentLoaded", () => {
     togglePass.addEventListener("click", () => {
       const isPass = passInput.type === "password";
       passInput.type = isPass ? "text" : "password";
-      
+
       // Activar animación 3D Flip
       togglePass.classList.remove("animate-spin-flip");
       void togglePass.offsetWidth; // Forzar reflow para reiniciar la animación
       togglePass.classList.add("animate-spin-flip");
-      
+
       // Cambiar el ícono a la mitad de la animación (150ms)
       setTimeout(() => {
         togglePass.textContent = isPass ? "visibility" : "visibility_off";
@@ -4036,20 +4036,20 @@ async function supabaseRequest(action = "", payload) {
         const today = todayYmdLocal();
         const [yyyy, mm] = mes.split("-");
         const isCurrentMonth = today.startsWith(mes);
-        
+
         const fechaInicio = `${mes}-01`;
         let fechaFin;
         if (isCurrentMonth) {
           fechaFin = today;
         } else {
-          const date = new Date(yyyy, mm, 0); 
+          const date = new Date(yyyy, mm, 0);
           fechaFin = dateToLocalYmd(date);
         }
 
         const [resBio, resCons, resPedidos] = await Promise.all([
           supabase.from('biologicos_existencia').select('clues, fecha').gte('fecha', fechaInicio).lte('fecha', fechaFin),
           supabase.from('consumibles').select('clues, fecha').gte('fecha', fechaInicio).lte('fecha', fechaFin),
-          supabase.from('biologicos_pedido').select('clues').gte('fecha_captura', `${mes}-01`).lte('fecha_captura', `${yyyy}-${mm}-31`).eq('tipo_pedido', 'MENSUAL')
+          supabase.from('biologicos_pedido').select('clues').gte('fecha_captura', fechaInicio).lte('fecha_captura', fechaFin).eq('tipo_pedido', 'MENSUAL')
         ]);
 
         const rawBioAll = resBio.data || [];
@@ -4118,7 +4118,7 @@ async function supabaseRequest(action = "", payload) {
         });
 
         rawPedidos.forEach(r => {
-           if (metricsMap[r.clues]) metricsMap[r.clues].pedido_mensual = true;
+          if (metricsMap[r.clues]) metricsMap[r.clues].pedido_mensual = true;
         });
 
         rawCons.concat(rawBio).forEach(r => {
@@ -4136,15 +4136,15 @@ async function supabaseRequest(action = "", payload) {
 
           const bPct = eBio > 0 ? (m.bio_semanas_ok / eBio) * 100 : 100;
           const cPct = eCons > 0 ? (m.cons_semanas_ok / eCons) * 100 : 100;
-          
+
           let pPct = 100;
           let isPedidoRequired = false;
           const dToday = new Date(today + "T12:00:00");
           const midMonth = new Date(`${mes}-15T12:00:00`);
-          
+
           if (!isCurrentMonth || dToday >= midMonth) {
-              isPedidoRequired = true;
-              pPct = m.pedido_mensual ? 100 : 0;
+            isPedidoRequired = true;
+            pPct = m.pedido_mensual ? 100 : 0;
           }
 
           let score = 0;
@@ -4172,16 +4172,16 @@ async function supabaseRequest(action = "", payload) {
         });
 
         rows.sort((a, b) => {
-            if (b.score !== a.score) return b.score - a.score;
-            if (a.ultima_captura !== b.ultima_captura) {
-                return a.ultima_captura < b.ultima_captura ? 1 : -1;
-            }
-            return a.unidad.localeCompare(b.unidad);
+          if (b.score !== a.score) return b.score - a.score;
+          if (a.ultima_captura !== b.ultima_captura) {
+            return a.ultima_captura < b.ultima_captura ? 1 : -1;
+          }
+          return a.unidad.localeCompare(b.unidad);
         });
 
         return { ok: true, data: { rows, role } };
       }
-            case "unitstatus": {
+      case "unitstatus": {
         const today = todayYmdLocal();
         const clues = USER.clues;
         const role = (USER.rol || "UNIDAD").trim().toUpperCase();
@@ -6905,7 +6905,7 @@ function syncAguja() {
 
   if (!j05 || !j50 || !dst) return;
 
-  const v = Number(j05.value || 0) + Number(j50.value || 0);
+  const v = Number(j50.value || 0);
   dst.value = String(v);
 }
 
@@ -7610,7 +7610,7 @@ function paintStatusChips(status) {
     container.classList.remove("good", "ok", "warn", "bad");
     container.classList.add(tone);
     container.setAttribute("data-tone", tone);
-    
+
     if (status.userRank !== undefined) {
       updateCumplimientoMedalTone(status.userRank, status.userTier);
     } else {
@@ -9960,7 +9960,7 @@ async function reloadHistorySilent(force = false) {
 
     try {
       const mes = $("histMesEvaluacion")?.value || todayYmdLocal().substring(0, 7);
-      
+
       const data = await smartLoader(
         () => getHistoryMetrics(mes, null, !!force),
         "Consultando histórico...",
@@ -9971,7 +9971,7 @@ async function reloadHistorySilent(force = false) {
         renderHistoryMetrics(data);
         commitPanelFilterState("historyMetrics", filterKey);
       } else {
-        if($("historyTbody")) $("historyTbody").innerHTML = `<tr><td colspan="6" class="p-6 text-center text-red-500 font-bold">Error al cargar ranking.</td></tr>`;
+        if ($("historyTbody")) $("historyTbody").innerHTML = `<tr><td colspan="6" class="p-6 text-center text-red-500 font-bold">Error al cargar ranking.</td></tr>`;
       }
       return data;
     } catch (e) {
@@ -10102,13 +10102,14 @@ if (bSaveCONS) bSaveCONS.onclick = async () => {
     mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true },
     action: () => {
       saveUxValue(UX_KEYS.consName, nombre);
-      return AppService.call(EDIT_CONS ? "updateConsumibles" : "saveConsumibles", {
+      return AppService.call("saveConsumibles", {
         nombre,
         srp_dosis: safeNum("srp_dosis"),
         sr_dosis: safeNum("sr_dosis"),
         jeringa_reconst_5ml_0605500438: safeNum("jeringa_reconst_5ml_0605500438"),
         jeringa_aplic_05ml_0605502657: safeNum("jeringa_aplic_05ml_0605502657"),
-        aguja_0600403711: safeNum("aguja_0600403711")
+        aguja_0600403711: safeNum("aguja_0600403711"),
+        editado: EDIT_CONS ? "SI" : "NO"
       });
     }
   });
@@ -10254,6 +10255,16 @@ $("btnEditSR").onclick = () => {
 };
 $("btnCancelEditSR").onclick = () => {
   resetExistencia();
+  showToast("Edición cancelada");
+};
+$("btnEditCONS").onclick = () => {
+  if (!TODAY_CACHE || !TODAY_CACHE.cons) return;
+  loadCONSIntoForm(TODAY_CACHE.cons);
+  setEditModeCONS(true);
+  showToast("Modo edición activado (Consumibles)", true, "warn");
+};
+$("btnCancelEditCONS").onclick = () => {
+  resetCONS();
   showToast("Edición cancelada");
 };
 $("btnEditBIO").onclick = () => {
@@ -11341,14 +11352,14 @@ async function refreshPinol() {
       }
       const obsText = String(x?.observaciones || "").trim();
       const obsHtml = obsText ? `<button type="button" class="ghostBtn" onclick="showPinolObsModal('${escapeHtml(escapeAttr(obsText))}')" title="Ver observación" style="margin: 0 auto; display: flex;"><span class="material-symbols-rounded">chat</span></button>` : `<span class="muted text-center block">—</span>`;
-      
+
       const fechaSoliFormateada = formatPinolDate(x?.fecha_solicitud);
       const fechaEntrega = x?.fecha_entrega || x?.timestamp_entrega || "";
       const fechaEntregaFormateada = formatPinolDate(fechaEntrega);
 
       let deleteHtml = "";
       if (USER && USER.rol === "ADMIN") {
-         deleteHtml = `<button class="miniBtn ghostBtn btnPinolDelete" data-id="${escapeAttr(x?.id || "")}" style="color:#ef4444;" title="Eliminar"><span class="material-symbols-rounded">delete</span></button>`;
+        deleteHtml = `<button class="miniBtn ghostBtn btnPinolDelete" data-id="${escapeAttr(x?.id || "")}" style="color:#ef4444;" title="Eliminar"><span class="material-symbols-rounded">delete</span></button>`;
       }
 
       let actionContent = "";
@@ -11357,7 +11368,7 @@ async function refreshPinol() {
       <span class="material-symbols-rounded">local_shipping</span> Entregar
     </button>`;
       }
-      
+
       if (deleteHtml) {
         actionContent += deleteHtml;
       }
@@ -11475,7 +11486,7 @@ async function getYearlyMedals(year, clues) {
     try {
       const data = await getHistoryMetrics(m, null, false);
       if (!data || !data.rows) return;
-      
+
       const rows = [...data.rows];
       const isCurrentMonth = m === todayYmdLocal().substring(0, 7);
       const currentDayOfMonth = new Date().getDate();
@@ -11491,8 +11502,8 @@ async function getYearlyMedals(year, clues) {
           const hasPedido = r.pedido_mensual || r.has_pedido || r.pedido || r.pedido_capturado || r.is_pedido_done;
           pPct = hasPedido ? 100 : 0;
         }
-        r.score = r.isPedidoRequired ? 
-          Math.round((bPct * 0.4) + (cPct * 0.4) + (pPct * 0.2)) : 
+        r.score = r.isPedidoRequired ?
+          Math.round((bPct * 0.4) + (cPct * 0.4) + (pPct * 0.2)) :
           Math.round((bPct * 0.5) + (cPct * 0.5));
         if (r.score > 100) r.score = 100;
       });
@@ -11547,7 +11558,7 @@ async function getYearlyMuniMedals(year, municipio) {
     try {
       const data = await getHistoryMetrics(m, null, false);
       if (!data || !data.rows) return;
-      
+
       const rows = [...data.rows];
       const isCurrentMonth = m === todayYmdLocal().substring(0, 7);
       const currentDayOfMonth = new Date().getDate();
@@ -11563,8 +11574,8 @@ async function getYearlyMuniMedals(year, municipio) {
           const hasPedido = r.pedido_mensual || r.has_pedido || r.pedido || r.pedido_capturado || r.is_pedido_done;
           pPct = hasPedido ? 100 : 0;
         }
-        r.score = r.isPedidoRequired ? 
-          Math.round((bPct * 0.4) + (cPct * 0.4) + (pPct * 0.2)) : 
+        r.score = r.isPedidoRequired ?
+          Math.round((bPct * 0.4) + (cPct * 0.4) + (pPct * 0.2)) :
           Math.round((bPct * 0.5) + (cPct * 0.5));
         if (r.score > 100) r.score = 100;
       });
@@ -11619,9 +11630,9 @@ function renderUnitMedals(medals) {
   const container = $("bCumplimientoMedals");
   if (!container) return;
   container.innerHTML = "";
-  
+
   if (!medals || !medals.length) return;
-  
+
   const monthNames = {
     "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr", "05": "May", "06": "Jun",
     "07": "Jul", "08": "Ago", "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dic"
@@ -11634,7 +11645,7 @@ function renderUnitMedals(medals) {
     let color = "";
     let icon = "military_tech";
     let title = "";
-    
+
     if (m.score === 100 || m.tier === "diamante") {
       color = "text-cyan-400";
       icon = "diamond";
@@ -11668,11 +11679,11 @@ function renderUnitMedals(medals) {
 function updateCumplimientoMedalTone(userRank, userTier = "") {
   const container = $("bCumplimiento");
   if (!container) return;
-  
+
   container.classList.remove("podium-gold-chip", "podium-silver-chip", "podium-bronze-chip", "podium-steel-chip", "podium-emerald-chip", "podium-diamond-chip");
-  
+
   const normalizedTier = String(userTier || "").trim().toLowerCase();
-  
+
   if (normalizedTier === "diamante") {
     container.classList.add("podium-diamond-chip");
   } else {
@@ -11743,9 +11754,9 @@ function renderHistoryMetrics(data) {
         muniScores[muni].scoreSum += r.score;
         muniScores[muni].count++;
       });
-      const muniArr = Object.keys(muniScores).map(m => ({ 
-        municipio: m, 
-        avg: Math.round(muniScores[m].scoreSum / muniScores[m].count) 
+      const muniArr = Object.keys(muniScores).map(m => ({
+        municipio: m,
+        avg: Math.round(muniScores[m].scoreSum / muniScores[m].count)
       })).sort((a, b) => b.avg - a.avg);
 
       if (muniArr.length >= 3) {
@@ -11777,7 +11788,7 @@ function renderHistoryMetrics(data) {
       const top5 = [...activeRows].slice(0, 5);
       const order = [4, 2, 0, 1, 3]; // 5th, 3rd, 1st, 2nd, 4th
       let podiumHtml = "";
-      
+
       order.forEach(i => {
         if (top5[i]) {
           const item = top5[i];
@@ -11854,8 +11865,8 @@ function renderHistoryMetrics(data) {
         let bPct = r.eBio > 0 ? (r.bio_semanas_ok / r.eBio) * 100 : 100;
         let cPct = r.eCons > 0 ? (r.cons_semanas_ok / r.eCons) * 100 : 100;
         const hasPedido = !!(r.pedido_mensual || r.has_pedido || r.pedido || r.pedido_capturado || r.is_pedido_done);
-        let pedidoIcon = !r.isPedidoRequired ? `<span class="material-symbols-rounded text-slate-400 text-[14px]">horizontal_rule</span>` : 
-                         (hasPedido ? `<span class="material-symbols-rounded text-[14px]" style="color: #22c55e !important;" title="Pedido Registrado">check_circle</span>` : `<span class="material-symbols-rounded text-[14px]" style="color: #ef4444 !important;" title="Falta Pedido">cancel</span>`);
+        let pedidoIcon = !r.isPedidoRequired ? `<span class="material-symbols-rounded text-slate-400 text-[14px]">horizontal_rule</span>` :
+          (hasPedido ? `<span class="material-symbols-rounded text-[14px]" style="color: #22c55e !important;" title="Pedido Registrado">check_circle</span>` : `<span class="material-symbols-rounded text-[14px]" style="color: #ef4444 !important;" title="Falta Pedido">cancel</span>`);
 
         html += `
           <tr>
@@ -11904,8 +11915,8 @@ function renderHistoryMetrics(data) {
       let bPct = r.eBio > 0 ? (r.bio_semanas_ok / r.eBio) * 100 : 100;
       let cPct = r.eCons > 0 ? (r.cons_semanas_ok / r.eCons) * 100 : 100;
       const hasPedido = !!(r.pedido_mensual || r.has_pedido || r.pedido || r.pedido_capturado || r.is_pedido_done);
-      let pedidoIcon = !r.isPedidoRequired ? `<span class="material-symbols-rounded text-slate-400 text-[14px]">horizontal_rule</span>` : 
-                       (hasPedido ? `<span class="material-symbols-rounded text-[14px]" style="color: #22c55e !important;" title="Pedido Registrado">check_circle</span>` : `<span class="material-symbols-rounded text-[14px]" style="color: #ef4444 !important;" title="Falta Pedido">cancel</span>`);
+      let pedidoIcon = !r.isPedidoRequired ? `<span class="material-symbols-rounded text-slate-400 text-[14px]">horizontal_rule</span>` :
+        (hasPedido ? `<span class="material-symbols-rounded text-[14px]" style="color: #22c55e !important;" title="Pedido Registrado">check_circle</span>` : `<span class="material-symbols-rounded text-[14px]" style="color: #ef4444 !important;" title="Falta Pedido">cancel</span>`);
 
       html += `
         <tr>
