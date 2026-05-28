@@ -5535,8 +5535,7 @@ async function prewarmOpsData() {
 
   const summaryFecha = $("summaryFecha")?.value || todayYmdLocal();
   const summaryTipo = $("summaryTipo")?.value || "SR";
-  const histInicio = $("histFechaInicio")?.value || todayYmdLocal();
-  const histFin = $("histFechaFin")?.value || todayYmdLocal();
+  const histMes = $("histMesEvaluacion")?.value || todayYmdLocal().substring(0, 7);
 
   const jobs = [];
 
@@ -5553,7 +5552,7 @@ async function prewarmOpsData() {
   if (!OPS_PREWARM_DONE.history) {
     OPS_PREWARM_DONE.history = true;
     jobs.push(
-      getHistoryMetrics(histInicio, histFin, false).catch((e) => {
+      getHistoryMetrics(histMes, null, false).catch((e) => {
         OPS_PREWARM_DONE.history = false;
         console.warn("Prewarm history falló:", e);
       })
@@ -7394,43 +7393,7 @@ window.getCaptureOverview = async function (fecha, tipo, force = false) {
   return data || null;
 };
 
-window.getHistoryMetrics = async function (fechaInicio, fechaFin, force = false) {
-  if (!TOKEN) return null;
-
-  const inicio = String(fechaInicio || todayYmdLocal()).trim();
-  const fin = String(fechaFin || todayYmdLocal()).trim();
-  const cacheKey = buildCacheKey("HISTORY_METRICS", `${inicio}::${fin}`);
-
-  const fetchMetrics = async () => {
-    const r = await apiCall({
-      action: "historyMetrics",
-      token: TOKEN,
-      fechaInicio: inicio,
-      fechaFin: fin
-    });
-
-    if (!r) {
-      throw new Error("Sin respuesta del servidor en historyMetrics.");
-    }
-
-    if (!r.ok) {
-      throw new Error(r.error || "Error al cargar métricas históricas.");
-    }
-
-    return r.data || null;
-  };
-
-  const data = force
-    ? await fetchMetrics()
-    : await getCachedOrFetch({
-      key: cacheKey,
-      ttl: CACHE_TTL.HISTORY_METRICS,
-      fetcher: fetchMetrics,
-      shouldCache: (data) => data != null
-    });
-
-  return data || null;
-};
+// Old getHistoryMetrics removed — unified in the new version at line ~11291
 
 
 /**
@@ -11612,9 +11575,8 @@ async function watchHistoryRealtimeLight() {
   LIVE_STATE.historyWatching = true;
 
   try {
-    const inicio = $("histFechaInicio")?.value || todayYmdLocal();
-    const fin = $("histFechaFin")?.value || todayYmdLocal();
-    const data = await getHistoryMetrics(inicio, fin);
+    const mes = $("histMesEvaluacion")?.value || todayYmdLocal().substring(0, 7);
+    const data = await getHistoryMetrics(mes, null);
     if (!data) return;
 
     const rows = Array.isArray(data.rows) ? data.rows.length : 0;
