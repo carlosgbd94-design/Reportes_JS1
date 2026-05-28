@@ -3183,6 +3183,27 @@ async function saveMyPasswordFlow() {
 
     if (error) throw error;
 
+    // 🔐 Sincronizar cambio con las tablas perfiles y usuarios_legacy
+    try {
+      const legacyHash = await hashPassword(newPassword);
+      
+      // Actualizar tabla perfiles
+      await window.supabase
+        .from('perfiles')
+        .update({ must_change: false })
+        .eq('id', USER.id);
+
+      // Actualizar tabla usuarios_legacy
+      if (USER.usuario) {
+        await window.supabase
+          .from('usuarios_legacy')
+          .update({ password: legacyHash, must_change: false })
+          .eq('usuario', USER.usuario);
+      }
+    } catch (dbErr) {
+      console.warn("[Auth Sync] No se pudieron sincronizar las tablas de la base de datos:", dbErr);
+    }
+
     showToast("Contraseña actualizada con éxito", true, "good");
 
     const wasForced = FORCE_PASSWORD_CHANGE;
@@ -7410,8 +7431,8 @@ async function whoami() {
     // 5. Construir USER de forma canónica y persistir
     USER = buildUserFromPerfil(session.user.id, session.user.email, perfil);
 
-    // 🛡️ Verificar cambio obligatorio desde metadata de Auth
-    if (session.user.user_metadata?.force_password_change) {
+    // 🛡️ Verificar cambio obligatorio desde metadata fresca de Auth o base de datos
+    if (user.user_metadata?.force_password_change || perfil.must_change) {
       USER.mustChange = true;
     }
 
