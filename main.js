@@ -3186,12 +3186,15 @@ async function saveMyPasswordFlow() {
     // 🔐 Sincronizar cambio con las tablas perfiles y usuarios_legacy
     try {
       const legacyHash = await hashPassword(newPassword);
+      const userUid = USER.uid || USER.id || (await window.supabase.auth.getUser()).data.user?.id;
       
       // Actualizar tabla perfiles
-      await window.supabase
-        .from('perfiles')
-        .update({ must_change: false })
-        .eq('id', USER.id);
+      if (userUid) {
+        await window.supabase
+          .from('perfiles')
+          .update({ must_change: false })
+          .eq('id', userUid);
+      }
 
       // Actualizar tabla usuarios_legacy
       if (USER.usuario) {
