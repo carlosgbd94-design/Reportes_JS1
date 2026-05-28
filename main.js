@@ -5722,13 +5722,7 @@ function bindMetricsUiEvents() {
     }
   });
 
-  $("histFechaInicio")?.addEventListener("change", () => {
-    OPS_PREWARM_DONE.history = false;
-    resetPanelFilterState("historyMetrics");
-    debouncedReloadHistory();
-  });
-
-  $("histFechaFin")?.addEventListener("change", () => {
+  $("histMesEvaluacion")?.addEventListener("change", () => {
     OPS_PREWARM_DONE.history = false;
     resetPanelFilterState("historyMetrics");
     debouncedReloadHistory();
@@ -8925,6 +8919,11 @@ function setLoggedInUI(user, status) {
     token: (typeof TOKEN !== "undefined") ? TOKEN : "",
     mainPanel: "CAP"
   });
+
+  const fechaHoy = todayYmdLocal();
+  if ($("histMesEvaluacion") && !$("histMesEvaluacion").value) {
+    $("histMesEvaluacion").value = fechaHoy.substring(0, 7);
+  }
 
   // DOM ERADICATION FOR UNIDAD ROLE
   if (AppState.rol === "UNIDAD" || (typeof USER !== 'undefined' && USER.rol === "UNIDAD")) {
