@@ -612,12 +612,16 @@ function showToast(msg, ok = true, type = null, options = {}) {
 }
 /** ===== UTILS PORTED FROM BACKEND ===== **/
 function normalizeTextKey_(v) {
-  return String(v ?? "")
+  let s = String(v ?? "")
     .trim()
     .toUpperCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, " ");
+  if (s === "MARQUES" || s === "EL MARQUES") {
+    return "EL MARQUES";
+  }
+  return s;
 }
 
 function fixUtf8Text_(v) {
@@ -3221,35 +3225,87 @@ function closeForgotModal() {
   if (ov) ov.classList.remove("show");
 }
 
-async function requestPasswordResetFlow() {
-  const email = $("forgotUsuario") ? $("forgotUsuario").value.trim() : "";
+function maskEmailAddress(email) {
+  if (!email || !email.includes("@")) return email;
+  const parts = email.split("@");
+  const local = parts[0];
+  const domain = parts[1];
+  if (local.length <= 3) {
+    return local.charAt(0) + "***" + "@" + domain;
+  }
+  return local.substring(0, 3) + "***" + local.substring(local.length - 2) + "@" + domain;
+}
 
-  if (!email) {
-    showToast("Ingresa tu correo institucional", false);
+async function requestPasswordResetFlow() {
+  let emailOrUser = $("forgotUsuario") ? $("forgotUsuario").value.trim() : "";
+
+  if (!emailOrUser) {
+    showToast("Ingresa tu usuario o correo institucional", false, "warn");
     return;
   }
 
-  // Primero cerramos el modal para que no estorbe la pantalla de carga global
-  closeForgotModal();
+  // Si no contiene '@', asumimos que es un usuario y buscamos su correo en usuarios_legacy
+  let finalEmail = emailOrUser;
+  if (!emailOrUser.includes("@")) {
+    // Cerramos el modal antes de mostrar overlay de carga
+    closeForgotModal();
+    showOverlay("Buscando correo de usuario...", "Verificando");
+    try {
+      const { data, error } = await window.supabase
+        .from('usuarios_legacy')
+        .select('email')
+        .ilike('usuario', emailOrUser)
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (!data || !data.email) {
+        hideOverlay();
+        showToast("El usuario no tiene un correo registrado o no existe", false, "bad");
+        // Volvemos a abrir el modal
+        openForgotModal();
+        if ($("forgotUsuario")) $("forgotUsuario").value = emailOrUser;
+        return;
+      }
+      finalEmail = data.email;
+    } catch (e) {
+      console.error("Error al buscar usuario:", e);
+      hideOverlay();
+      showToast("Error al verificar el usuario. Reintenta.", false, "bad");
+      openForgotModal();
+      if ($("forgotUsuario")) $("forgotUsuario").value = emailOrUser;
+      return;
+    } finally {
+      hideOverlay();
+    }
+  } else {
+    // Si ya era un correo, cerramos el modal
+    closeForgotModal();
+  }
 
   // Mostramos la pantalla de carga global del sistema
   showOverlay("Estamos enviando el enlace de recuperación…", "Recuperando acceso");
 
   try {
     // Usamos el cliente global window.supabase inicializado en main.js
-    const { data, error } = await window.supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://carlosgbd94-design.github.io/Reportes_JS1/reset.html',
+    const { data, error } = await window.supabase.auth.resetPasswordForEmail(finalEmail, {
+      redirectTo: window.location.origin + window.location.pathname.replace('index.html', '') + 'reset.html',
     });
 
     if (error) {
-      showToast(error.message || "No se pudo enviar el enlace", false);
+      showToast(error.message || "No se pudo enviar el enlace", false, "bad");
+      openForgotModal();
+      if ($("forgotUsuario")) $("forgotUsuario").value = emailOrUser;
       return;
     }
 
-    showToast("Se envió el enlace de recuperación a tu correo");
+    const masked = maskEmailAddress(finalEmail);
+    showToast(`Se envió un correo de recuperación al correo ${masked}`, true, "good");
   } catch (e) {
     console.error(e);
-    showToast("Error al solicitar recuperación", false);
+    showToast("Error al solicitar recuperación", false, "bad");
+    openForgotModal();
+    if ($("forgotUsuario")) $("forgotUsuario").value = emailOrUser;
   } finally {
     hideOverlay();
   }
@@ -4391,6 +4447,8 @@ async function supabaseRequest(action = "", payload) {
             };
           }).sort((a, b) => b.score - a.score);
 
+          const selectedMuni = (payload.selectedMunicipio || "").trim().toUpperCase();
+
           if (role === "UNIDAD") {
             const userUnit = unitScores.find(u => u.clues === clues);
             compliance_pct = userUnit ? userUnit.score : 0;
@@ -4405,23 +4463,29 @@ async function supabaseRequest(action = "", payload) {
             const muniInfo = muniList.find(m => m.municipio === myMuni);
             municipal_avg = muniInfo ? muniInfo.score : 0;
 
-          } else if (role === "MUNICIPAL") {
-            const allowed = Array.isArray(USER.municipiosAllowed) ? USER.municipiosAllowed : [];
-            const targetMuni = allowed.length > 0 ? allowed[0].toUpperCase() : userMuniStr.toUpperCase();
-            const muniInfo = muniList.find(m => m.municipio === targetMuni);
-
-            compliance_pct = muniInfo ? muniInfo.score : 0;
-            userTier = muniInfo ? muniInfo.tier : "riesgo";
-            municipal_avg = compliance_pct;
-
-            // Find rank among the 4 municipalities
-            userRank = muniList.findIndex(m => m.municipio === targetMuni) + 1;
-            if (userRank === 0) userRank = undefined;
           } else {
-            // ADMIN / JURISDICCIONAL
-            compliance_pct = global_avg;
-            userTier = undefined;
-            userRank = undefined;
+            // MUNICIPAL, ADMIN, JURISDICCIONAL
+            let targetMuni = "";
+            if (selectedMuni && selectedMuni !== "TODOS") {
+              targetMuni = selectedMuni;
+            } else if (role === "MUNICIPAL") {
+              const allowed = Array.isArray(USER.municipiosAllowed) ? USER.municipiosAllowed : [];
+              targetMuni = allowed.length > 0 ? allowed[0].toUpperCase() : userMuniStr.toUpperCase();
+            }
+
+            if (targetMuni) {
+              const muniInfo = muniList.find(m => m.municipio === targetMuni);
+              compliance_pct = muniInfo ? muniInfo.score : 0;
+              userTier = muniInfo ? muniInfo.tier : "riesgo";
+              municipal_avg = compliance_pct;
+              userRank = muniList.findIndex(m => m.municipio === targetMuni) + 1;
+              if (userRank === 0) userRank = undefined;
+            } else {
+              // Global average (ADMIN/JURISDICCIONAL with TODOS)
+              compliance_pct = global_avg;
+              userTier = undefined;
+              userRank = undefined;
+            }
           }
 
         } catch (e) {
@@ -5729,6 +5793,15 @@ function bindAuthUiEvents() {
     $("btnForgotSend").onclick = () => requestPasswordResetFlow();
   }
 
+  if ($("forgotUsuario")) {
+    $("forgotUsuario").onkeydown = (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        requestPasswordResetFlow();
+      }
+    };
+  }
+
   if ($("btnSaveMyPassword")) {
     $("btnSaveMyPassword").onclick = () => saveMyPasswordFlow();
   }
@@ -7023,11 +7096,15 @@ function capitalizeFirstLetter(text = "") {
  * 🧹 normalizeText — Elimina acentos y normaliza a mayúsculas para comparaciones seguras
  */
 function normalizeText(text = "") {
-  return String(text || "")
+  let s = String(text || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toUpperCase();
+  if (s === "MARQUES" || s === "EL MARQUES") {
+    return "EL MARQUES";
+  }
+  return s;
 }
 
 function formatDayBadgeMx(ymd = "") {
@@ -7447,7 +7524,8 @@ function canSeeMunicipio_(user, targetMuni) {
 
 async function unitStatus() {
   if (!TOKEN) return null;
-  const r = await apiCall({ action: "unitStatus", token: TOKEN });
+  const selectedMuni = $("histMunicipioFilter")?.value || "";
+  const r = await apiCall({ action: "unitStatus", token: TOKEN, selectedMunicipio: selectedMuni });
   if (!r || !r.ok) return null;
   return r.data;
 }
@@ -11950,6 +12028,16 @@ function renderHistoryMetrics(data) {
       `;
     });
     if (tbody) tbody.innerHTML = html;
+  }
+
+  // Trigger confetti if there is a top score of 90% or more
+  if (activeRows.length > 0 && activeRows.some(r => r.score >= 90) && typeof confetti === "function") {
+    confetti({
+      particleCount: 150,
+      spread: 80,
+      origin: { y: 0.6 },
+      colors: ['#ffd700', '#cbd5e1', '#cd7f32', '#06b6d4', '#10b981']
+    });
   }
 }
 

@@ -389,7 +389,10 @@
       $('btnUpdate').disabled = true;
 
       try {
-        const { error } = await supabaseClient.auth.updateUser({ password: p1 });
+        const { error } = await supabaseClient.auth.updateUser({ 
+          password: p1,
+          data: { force_password_change: false }
+        });
 
         if (error) {
           showToast("No se pudo actualizar: " + error.message);
