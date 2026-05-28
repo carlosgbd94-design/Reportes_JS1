@@ -4185,7 +4185,7 @@ async function supabaseRequest(action = "", payload) {
         const today = todayYmdLocal();
         const clues = USER.clues;
         const role = (USER.rol || "UNIDAD").trim().toUpperCase();
-        const municipio = USER.municipio;
+        const userMuniStr = USER.municipio || "";
 
         // 1. Verificar Apertura Manual (Consumibles)
         const { data: consOverride, error: consErr } = await supabase
@@ -4234,13 +4234,14 @@ async function supabaseRequest(action = "", payload) {
           }
         }
 
-        // 5. CÁLCULO DE CUMPLIMIENTO MENSUAL (v6.1 High Performance)
+        // 5. CÁLCULO DE CUMPLIMIENTO MENSUAL
         let compliance_pct = 0;
         let municipal_avg = 0;
         let global_avg = 0;
+        let userRank = undefined;
+        let userTier = undefined;
 
         try {
-          // Calcular días esperados del mes hasta hoy
           const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
           const dateIter = new Date(startOfMonth);
           const endIter = new Date();
@@ -4251,63 +4252,178 @@ async function supabaseRequest(action = "", payload) {
 
           while (dateIter <= endIter) {
             if (isBusinessDay(dateIter)) expectedSR++;
-            if (dateIter.getDay() === 4) expectedCons++; // Jueves
+            if (dateIter.getDay() === 4) expectedCons++;
             dateIter.setDate(dateIter.getDate() + 1);
           }
 
           const totalExpectedPerUnit = expectedSR + expectedCons;
 
-          if (role === "UNIDAD") {
-            const [resSR, resCons] = await Promise.all([
-              supabase.from('biologicos_existencia').select('clues', { count: 'exact', head: true }).eq('clues', clues).gte('fecha', monthStartStr).lte('fecha', today),
-              supabase.from('consumibles').select('clues', { count: 'exact', head: true }).eq('clues', clues).gte('fecha', monthStartStr).lte('fecha', today)
-            ]);
+          // Fetch all active units and their captures for the month
+          const [resUnits, resBio, resCons, resPedidos] = await Promise.all([
+            supabase.from('unidades').select('clues, unidad, municipio').eq('activo', 'SI'),
+            supabase.from('biologicos_existencia').select('clues, fecha').gte('fecha', monthStartStr).lte('fecha', today),
+            supabase.from('consumibles').select('clues, fecha').gte('fecha', monthStartStr).lte('fecha', today),
+            supabase.from('biologicos_existencia').select('clues').gte('fecha', monthStartStr).lte('fecha', today).eq('tipo_pedido', 'MENSUAL')
+          ]);
 
-            const actualSR = resSR.count || 0;
-            const actualCons = resCons.count || 0;
-            const totalActual = actualSR + actualCons;
+          const units = resUnits.data || [];
+          const rawBio = resBio.data || [];
+          const rawCons = resCons.data || [];
+          const rawPedidos = resPedidos.data || [];
 
-            compliance_pct = totalExpectedPerUnit > 0 ? Math.round((totalActual / totalExpectedPerUnit) * 100) : 0;
-            if (compliance_pct > 100) compliance_pct = 100;
+          const expectedDatesCons = getExpectedDatesList(monthStartStr, today, "CONS");
+          const expectedDatesBio = getExpectedDatesList(monthStartStr, today, "BIO");
 
-          } else {
-            // Cálculos Agregados para otros roles (Aproximación por masa de reportes)
-            const [resTotalUnits, resSRCount, resConsCount] = await Promise.all([
-              supabase.from('unidades').select('clues', { count: 'exact', head: true }).eq('activo', 'SI'),
-              supabase.from('biologicos_existencia').select('clues', { count: 'exact', head: true }).gte('fecha', monthStartStr).lte('fecha', today),
-              supabase.from('consumibles').select('clues', { count: 'exact', head: true }).gte('fecha', monthStartStr).lte('fecha', today)
-            ]);
-
-            const totalActiveUnitsGlobal = resTotalUnits.count || 0;
-            const totalExpectedGlobal = totalActiveUnitsGlobal * totalExpectedPerUnit;
-            const totalCapturedGlobal = (resSRCount.count || 0) + (resConsCount.count || 0);
-
-            global_avg = totalExpectedGlobal > 0 ? Math.round((totalCapturedGlobal / totalExpectedGlobal) * 100) : 0;
-            if (global_avg > 100) global_avg = 100;
-
-            if (role === "MUNICIPAL" || role === "ADMIN" || role === "JURISDICCIONAL") {
-              // Para MUNICIPAL: Traer unidades y filtrar localmente
-              const [resMuniUnits, resMuniSR, resMuniCons] = await Promise.all([
-                supabase.from('unidades').select('clues, municipio').eq('activo', 'SI'),
-                supabase.from('biologicos_existencia').select('clues').gte('fecha', monthStartStr).lte('fecha', today),
-                supabase.from('consumibles').select('clues').gte('fecha', monthStartStr).lte('fecha', today)
-              ]);
-
-              let muniUnitsList = (resMuniUnits.data || []).filter(u => canSeeMunicipio_(USER, u.municipio));
-              let allowedClues = muniUnitsList.map(u => u.clues);
-
-              let reportSRCount = (resMuniSR.data || []).filter(row => allowedClues.includes(row.clues)).length;
-              let reportConsCount = (resMuniCons.data || []).filter(row => allowedClues.includes(row.clues)).length;
-
-              let reportesSemanales = reportSRCount + reportConsCount;
-              let totalUnidadesActivas = muniUnitsList.length;
-              let totalExpectedMuni = totalUnidadesActivas * totalExpectedPerUnit;
-
-              municipal_avg = totalExpectedMuni > 0 ? Math.round((reportesSemanales / totalExpectedMuni) * 100) : 0;
-              if (municipal_avg > 100) municipal_avg = 100;
+          function getExpectedDatesList(start, end, tipo) {
+            const dates = [];
+            let curr = new Date(start + "T12:00:00");
+            const stop = new Date(end + "T12:00:00");
+            while (curr <= stop) {
+              const dow = curr.getDay();
+              const ymd = dateToLocalYmd(curr);
+              if (tipo === "CONS" && dow === 4) dates.push(ymd);
+              if (tipo === "BIO" && dow === 5) dates.push(ymd);
+              curr.setDate(curr.getDate() + 1);
             }
-            compliance_pct = (role === "MUNICIPAL") ? municipal_avg : global_avg;
+            return dates;
           }
+
+          const metricsMap = {};
+          units.forEach(u => {
+            metricsMap[u.clues] = {
+              clues: u.clues,
+              municipio: u.municipio,
+              unidad: u.unidad,
+              bio_semanas_ok: 0,
+              cons_semanas_ok: 0,
+              pedido_mensual: false
+            };
+          });
+
+          expectedDatesCons.forEach(targetJueves => {
+            const dJue = new Date(`${targetJueves}T12:00:00`);
+            const targetWindow = [targetJueves];
+            if (isMexicanHoliday(dJue)) {
+              const dMie = new Date(dJue);
+              dMie.setDate(dJue.getDate() - 1);
+              targetWindow.push(dateToLocalYmd(dMie));
+            }
+            units.forEach(u => {
+              if (rawCons.some(r => r.clues === u.clues && targetWindow.includes(r.fecha))) {
+                metricsMap[u.clues].cons_semanas_ok++;
+              }
+            });
+          });
+
+          expectedDatesBio.forEach(targetViernes => {
+            const dVie = new Date(`${targetViernes}T12:00:00`);
+            const dJue = new Date(dVie); dJue.setDate(dVie.getDate() - 1);
+            const targetWindow = [targetViernes, dateToLocalYmd(dJue)];
+            units.forEach(u => {
+              if (rawBio.some(r => r.clues === u.clues && targetWindow.includes(r.fecha))) {
+                metricsMap[u.clues].bio_semanas_ok++;
+              }
+            });
+          });
+
+          rawPedidos.forEach(r => {
+            if (metricsMap[r.clues]) metricsMap[r.clues].pedido_mensual = true;
+          });
+
+          const isCurrentMonth = today.startsWith(currentMonth);
+          const dToday = new Date(today + "T12:00:00");
+          const midMonth = new Date(`${currentMonth}-15T12:00:00`);
+          const isPedidoRequired = !isCurrentMonth || dToday >= midMonth;
+
+          let unitScores = units.map(u => {
+            const m = metricsMap[u.clues];
+            const eBio = expectedDatesBio.length;
+            const eCons = expectedDatesCons.length;
+
+            const bPct = eBio > 0 ? (m.bio_semanas_ok / eBio) * 100 : 100;
+            const cPct = eCons > 0 ? (m.cons_semanas_ok / eCons) * 100 : 100;
+            const pPct = isPedidoRequired ? (m.pedido_mensual ? 100 : 0) : 100;
+
+            let score = 0;
+            if (isPedidoRequired) {
+              score = Math.round((bPct * 0.4) + (cPct * 0.4) + (pPct * 0.2));
+            } else {
+              score = Math.round((bPct * 0.5) + (cPct * 0.5));
+            }
+            if (score > 100) score = 100;
+
+            let tier = "riesgo";
+            if (score === 100) tier = "diamante";
+            else if (score >= 90) tier = "oro";
+            else if (score >= 70) tier = "plata";
+
+            return {
+              clues: u.clues,
+              municipio: u.municipio,
+              score,
+              tier
+            };
+          });
+
+          // Calculate Global Average
+          const globalSum = unitScores.reduce((sum, item) => sum + item.score, 0);
+          global_avg = unitScores.length > 0 ? Math.round(globalSum / unitScores.length) : 0;
+
+          // Group by municipality to calculate averages
+          const muniGroups = {};
+          unitScores.forEach(item => {
+            const muni = String(item.municipio || "OTROS").trim().toUpperCase();
+            if (!muniGroups[muni]) muniGroups[muni] = { sum: 0, count: 0 };
+            muniGroups[muni].sum += item.score;
+            muniGroups[muni].count++;
+          });
+
+          const muniList = Object.keys(muniGroups).map(m => {
+            const score = Math.round(muniGroups[m].sum / muniGroups[m].count);
+            let tier = "riesgo";
+            if (score === 100) tier = "diamante";
+            else if (score >= 90) tier = "oro";
+            else if (score >= 70) tier = "plata";
+            return {
+              municipio: m,
+              score,
+              tier
+            };
+          }).sort((a, b) => b.score - a.score);
+
+          if (role === "UNIDAD") {
+            const userUnit = unitScores.find(u => u.clues === clues);
+            compliance_pct = userUnit ? userUnit.score : 0;
+            userTier = userUnit ? userUnit.tier : "riesgo";
+
+            // Find rank among all units
+            unitScores.sort((a, b) => b.score - a.score);
+            userRank = unitScores.findIndex(u => u.clues === clues) + 1;
+            if (userRank === 0) userRank = undefined;
+
+            const myMuni = String(USER.municipio || "").trim().toUpperCase();
+            const muniInfo = muniList.find(m => m.municipio === myMuni);
+            municipal_avg = muniInfo ? muniInfo.score : 0;
+
+          } else if (role === "MUNICIPAL") {
+            const allowed = Array.isArray(USER.municipiosAllowed) ? USER.municipiosAllowed : [];
+            const targetMuni = allowed.length > 0 ? allowed[0].toUpperCase() : userMuniStr.toUpperCase();
+            const muniInfo = muniList.find(m => m.municipio === targetMuni);
+
+            compliance_pct = muniInfo ? muniInfo.score : 0;
+            userTier = muniInfo ? muniInfo.tier : "riesgo";
+            municipal_avg = compliance_pct;
+
+            // Find rank among the 4 municipalities
+            userRank = muniList.findIndex(m => m.municipio === targetMuni) + 1;
+            if (userRank === 0) userRank = undefined;
+          } else {
+            // ADMIN / JURISDICCIONAL
+            compliance_pct = global_avg;
+            userTier = undefined;
+            userRank = undefined;
+          }
+
         } catch (e) {
           console.error("[unitstatus] Error calculando cumplimiento mensual:", e);
         }
@@ -4324,6 +4440,8 @@ async function supabaseRequest(action = "", payload) {
             bioReason: bioReason,
             isExtraordinary: !!(consOverride || (bioOverride && today >= bioOverride.habilitar_desde && today <= bioOverride.habilitar_hasta)),
             compliance_pct,
+            userRank,
+            userTier,
             municipal_avg,
             global_avg
           }
@@ -5726,6 +5844,19 @@ function bindMetricsUiEvents() {
     resetPanelFilterState("historyMetrics");
     debouncedReloadHistory();
   });
+
+  $("histSepararMunicipio")?.addEventListener("change", () => {
+    OPS_PREWARM_DONE.history = false;
+    resetPanelFilterState("historyMetrics");
+    debouncedReloadHistory();
+  });
+
+  $("histMunicipioFilter")?.addEventListener("change", () => {
+    OPS_PREWARM_DONE.history = false;
+    resetPanelFilterState("historyMetrics");
+    debouncedReloadHistory();
+    refreshConsumiblesStatusUi();
+  });
 }
 
 function bindCaptureUtilityEvents() {
@@ -5792,7 +5923,9 @@ function buildCaptureSummaryFilterKey() {
 
 function buildHistoryFilterKey() {
   const mes = $("histMesEvaluacion")?.value || todayYmdLocal().substring(0, 7);
-  return `${mes}`;
+  const selectedMuni = $("histMunicipioFilter")?.value || "TODOS";
+  const separarMuni = $("histSepararMunicipio")?.checked ? "1" : "0";
+  return `${mes}__${selectedMuni}__${separarMuni}`;
 }
 
 function shouldReloadPanelByFilters(panelName, nextKey, force = false) {
@@ -7477,6 +7610,13 @@ function paintStatusChips(status) {
     container.classList.remove("good", "ok", "warn", "bad");
     container.classList.add(tone);
     container.setAttribute("data-tone", tone);
+    
+    if (status.userRank !== undefined) {
+      updateCumplimientoMedalTone(status.userRank, status.userTier);
+    } else {
+      updateCumplimientoMedalTone(undefined, undefined);
+    }
+
     // Update icon background for premium look if colored
     if (iconBg && ["good", "warn", "bad"].includes(tone)) {
       iconBg.style.backgroundColor = "rgba(255, 255, 255, 0.25)";
@@ -8871,6 +9011,45 @@ function renderCaptureSummary(data) {
   renderFaltantesOnly(faltantes);
 }
 
+function populateHistoryMunicipioFilter(user) {
+  const container = $("filterMunicipioContainer");
+  const select = $("histMunicipioFilter");
+  if (!container || !select) return;
+
+  const role = String(user.rol || "").toUpperCase();
+  const allowed = Array.isArray(user.municipiosAllowed) ? user.municipiosAllowed : [];
+
+  if (role === "ADMIN" || role === "JURISDICCIONAL") {
+    // Admin/Jurisdiccional see all 4 municipalities, plus a "Todos" option
+    select.innerHTML = `
+      <option value="TODOS">Todos los municipios</option>
+      <option value="QUERÉTARO">Querétaro</option>
+      <option value="CORREGIDORA">Corregidora</option>
+      <option value="EL MARQUÉS">El Marqués</option>
+      <option value="HUIMILPAN">Huimilpan</option>
+    `;
+    container.style.display = "flex";
+  } else if (role === "MUNICIPAL" && allowed.length > 0) {
+    if (allowed.length > 1) {
+      // Municipal user with multiple municipalities
+      let html = "";
+      allowed.forEach(m => {
+        html += `<option value="${m.toUpperCase()}">${m}</option>`;
+      });
+      select.innerHTML = html;
+      container.style.display = "flex";
+    } else {
+      // Municipal user with only 1 municipality: hide selector but set value
+      select.innerHTML = `<option value="${allowed[0].toUpperCase()}">${allowed[0]}</option>`;
+      container.style.display = "none";
+    }
+  } else {
+    // Unidad or other roles: hide
+    select.innerHTML = "";
+    container.style.display = "none";
+  }
+}
+
 function setLoggedInUI(user, status) {
   USER = user;
   document.body.setAttribute("data-role", USER.rol);
@@ -8947,6 +9126,7 @@ function setLoggedInUI(user, status) {
 
   updateDynamicGreeting();
   applyRolePermissions(role);
+  populateHistoryMunicipioFilter(user);
 
 
   if (STATUS) {
@@ -11271,74 +11451,446 @@ async function getHistoryMetrics(mes, _ignored, force = false) {
   });
 }
 
+
+let YEARLY_MEDALS_CACHE = {};
+
+async function getYearlyMedals(year, clues) {
+  const cacheKey = year + "__" + clues;
+  if (YEARLY_MEDALS_CACHE[cacheKey]) {
+    return YEARLY_MEDALS_CACHE[cacheKey];
+  }
+
+  const months = [];
+  const currentYear = new Date().getFullYear();
+  const currentMonthNum = new Date().getMonth() + 1;
+  const limitMonth = (year == currentYear) ? currentMonthNum : 12;
+
+  for (let m = 1; m <= limitMonth; m++) {
+    const monthStr = year + "-" + String(m).padStart(2, '0');
+    months.push(monthStr);
+  }
+
+  const medals = [];
+  const promises = months.map(async (m) => {
+    try {
+      const data = await getHistoryMetrics(m, null, false);
+      if (!data || !data.rows) return;
+      
+      const rows = [...data.rows];
+      const isCurrentMonth = m === todayYmdLocal().substring(0, 7);
+      const currentDayOfMonth = new Date().getDate();
+      const elapsedWeeks = isCurrentMonth ? Math.max(1, Math.ceil(currentDayOfMonth / 7)) : 5;
+
+      rows.forEach(r => {
+        const dynamicEBio = isCurrentMonth ? Math.min(elapsedWeeks, r.eBio || 4) : (r.eBio || 4);
+        const dynamicECons = isCurrentMonth ? Math.min(elapsedWeeks, r.eCons || 4) : (r.eCons || 4);
+        let bPct = dynamicEBio > 0 ? (r.bio_semanas_ok / dynamicEBio) * 100 : 100;
+        let cPct = dynamicECons > 0 ? (r.cons_semanas_ok / dynamicECons) * 100 : 100;
+        let pPct = 100;
+        if (r.isPedidoRequired) {
+          const hasPedido = r.pedido_mensual || r.has_pedido || r.pedido || r.pedido_capturado || r.is_pedido_done;
+          pPct = hasPedido ? 100 : 0;
+        }
+        r.score = r.isPedidoRequired ? 
+          Math.round((bPct * 0.4) + (cPct * 0.4) + (pPct * 0.2)) : 
+          Math.round((bPct * 0.5) + (cPct * 0.5));
+        if (r.score > 100) r.score = 100;
+      });
+
+      rows.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        const capA = (a.bio_semanas_ok || 0) + (a.cons_semanas_ok || 0);
+        const capB = (b.bio_semanas_ok || 0) + (b.cons_semanas_ok || 0);
+        if (capB !== capA) return capB - capA;
+        return (a.municipio || "").localeCompare(b.municipio || "");
+      });
+
+      const index = rows.findIndex(r => r.clues === clues);
+      if (index >= 0 && index < 5) {
+        medals.push({
+          month: m,
+          rank: index + 1,
+          score: rows[index].score
+        });
+      }
+    } catch (err) {
+      console.error("Error loading medals for month " + m + ":", err);
+    }
+  });
+
+  await Promise.all(promises);
+  medals.sort((a, b) => a.month.localeCompare(b.month));
+  YEARLY_MEDALS_CACHE[cacheKey] = medals;
+  return medals;
+}
+
+let MUNI_MEDALS_CACHE = {};
+
+async function getYearlyMuniMedals(year, municipio) {
+  const cacheKey = year + "__" + municipio;
+  if (MUNI_MEDALS_CACHE[cacheKey]) {
+    return MUNI_MEDALS_CACHE[cacheKey];
+  }
+
+  const months = [];
+  const currentYear = new Date().getFullYear();
+  const currentMonthNum = new Date().getMonth() + 1;
+  const limitMonth = (year == currentYear) ? currentMonthNum : 12;
+
+  for (let m = 1; m <= limitMonth; m++) {
+    const monthStr = year + "-" + String(m).padStart(2, '0');
+    months.push(monthStr);
+  }
+
+  const medals = [];
+  const promises = months.map(async (m) => {
+    try {
+      const data = await getHistoryMetrics(m, null, false);
+      if (!data || !data.rows) return;
+      
+      const rows = [...data.rows];
+      const isCurrentMonth = m === todayYmdLocal().substring(0, 7);
+      const currentDayOfMonth = new Date().getDate();
+      const elapsedWeeks = isCurrentMonth ? Math.max(1, Math.ceil(currentDayOfMonth / 7)) : 5;
+
+      rows.forEach(r => {
+        const dynamicEBio = isCurrentMonth ? Math.min(elapsedWeeks, r.eBio || 4) : (r.eBio || 4);
+        const dynamicECons = isCurrentMonth ? Math.min(elapsedWeeks, r.eCons || 4) : (r.eCons || 4);
+        let bPct = dynamicEBio > 0 ? (r.bio_semanas_ok / dynamicEBio) * 100 : 100;
+        let cPct = dynamicECons > 0 ? (r.cons_semanas_ok / dynamicECons) * 100 : 100;
+        let pPct = 100;
+        if (r.isPedidoRequired) {
+          const hasPedido = r.pedido_mensual || r.has_pedido || r.pedido || r.pedido_capturado || r.is_pedido_done;
+          pPct = hasPedido ? 100 : 0;
+        }
+        r.score = r.isPedidoRequired ? 
+          Math.round((bPct * 0.4) + (cPct * 0.4) + (pPct * 0.2)) : 
+          Math.round((bPct * 0.5) + (cPct * 0.5));
+        if (r.score > 100) r.score = 100;
+      });
+
+      // Group by municipality
+      const muniGroups = {};
+      rows.forEach(r => {
+        const mName = String(r.municipio || "").trim().toUpperCase();
+        if (!mName) return;
+        if (!muniGroups[mName]) {
+          muniGroups[mName] = { scoreSum: 0, count: 0 };
+        }
+        muniGroups[mName].scoreSum += r.score;
+        muniGroups[mName].count++;
+      });
+
+      // Calculate averages
+      const muniList = Object.keys(muniGroups).map(name => {
+        return {
+          municipio: name,
+          score: Math.round(muniGroups[name].scoreSum / muniGroups[name].count)
+        };
+      }).sort((a, b) => b.score - a.score);
+
+      const index = muniList.findIndex(x => x.municipio === municipio.toUpperCase());
+      if (index >= 0) {
+        const score = muniList[index].score;
+        let tier = "riesgo";
+        if (score === 100) tier = "diamante";
+        else if (score >= 90) tier = "oro";
+        else if (score >= 70) tier = "plata";
+
+        medals.push({
+          month: m,
+          rank: index + 1,
+          score: score,
+          tier: tier
+        });
+      }
+    } catch (err) {
+      console.error("Error loading medals for month " + m + ":", err);
+    }
+  });
+
+  await Promise.all(promises);
+  medals.sort((a, b) => a.month.localeCompare(b.month));
+  MUNI_MEDALS_CACHE[cacheKey] = medals;
+  return medals;
+}
+
+function renderUnitMedals(medals) {
+  const container = $("bCumplimientoMedals");
+  if (!container) return;
+  container.innerHTML = "";
+  
+  if (!medals || !medals.length) return;
+  
+  const monthNames = {
+    "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr", "05": "May", "06": "Jun",
+    "07": "Jul", "08": "Ago", "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dic"
+  };
+
+  medals.forEach(m => {
+    const monthParts = m.month.split("-");
+    const mm = monthParts[1];
+    const label = monthNames[mm] || mm;
+    let color = "";
+    let icon = "military_tech";
+    let title = "";
+    
+    if (m.score === 100 || m.tier === "diamante") {
+      color = "text-cyan-400";
+      icon = "diamond";
+      title = "Liga Diamante (100% de Excelencia) - " + label;
+    } else if (m.rank === 1) {
+      color = "text-yellow-500";
+      icon = "workspace_premium";
+      title = "Medalla de Oro (1er Lugar) - " + label;
+    } else if (m.rank === 2) {
+      color = "text-slate-400";
+      icon = "military_tech";
+      title = "Medalla de Plata (2do Lugar) - " + label;
+    } else if (m.rank === 3) {
+      color = "text-amber-600";
+      icon = "military_tech";
+      title = "Medalla de Bronce (3er Lugar) - " + label;
+    } else if (m.rank === 4) {
+      color = "text-cyan-500";
+      icon = "workspace_premium";
+      title = "Medalla de Acero (4to Lugar) - " + label;
+    } else if (m.rank === 5) {
+      color = "text-emerald-500";
+      icon = "military_tech";
+      title = "Medalla de Jade (5to Lugar) - " + label;
+    }
+
+    container.innerHTML += '<span class="material-symbols-rounded ' + color + ' text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="' + title + '">' + icon + '</span>';
+  });
+}
+
+function updateCumplimientoMedalTone(userRank, userTier = "") {
+  const container = $("bCumplimiento");
+  if (!container) return;
+  
+  container.classList.remove("podium-gold-chip", "podium-silver-chip", "podium-bronze-chip", "podium-steel-chip", "podium-emerald-chip", "podium-diamond-chip");
+  
+  const normalizedTier = String(userTier || "").trim().toLowerCase();
+  
+  if (normalizedTier === "diamante") {
+    container.classList.add("podium-diamond-chip");
+  } else {
+    if (userRank === 1) container.classList.add("podium-gold-chip");
+    else if (userRank === 2) container.classList.add("podium-silver-chip");
+    else if (userRank === 3) container.classList.add("podium-bronze-chip");
+    else if (userRank === 4) container.classList.add("podium-steel-chip");
+    else if (userRank === 5) container.classList.add("podium-emerald-chip");
+  }
+}
+
 function renderHistoryMetrics(data) {
   const rows = data?.rows || [];
   const role = data?.role || "UNIDAD";
   const tbody = $("historyTbody");
-  
-  if ($("histTotalUnidades")) $("histTotalUnidades").textContent = rows.length;
 
-  const diamantes = rows.filter(r => r.tier === "diamante").length;
-  const riesgos = rows.filter(r => r.tier === "riesgo").length;
+  // Filter by selected municipality in histMunicipioFilter
+  const selectedMuni = $("histMunicipioFilter")?.value || "TODOS";
+  let activeRows = [...rows];
+  if (selectedMuni && selectedMuni !== "TODOS") {
+    activeRows = rows.filter(r => String(r.municipio || "").toUpperCase() === selectedMuni);
+  }
+
+  const targetYmd = $("histMesEvaluacion")?.value || todayYmdLocal().substring(0, 7);
+  const yearParts = targetYmd.split("-");
+  const year = yearParts[0];
+
+  // Fetch and render yearly medals on bCumplimientoMedals
+  if (USER && USER.rol === "UNIDAD" && USER.clues) {
+    getYearlyMedals(year, USER.clues).then(medals => {
+      renderUnitMedals(medals);
+    });
+  } else if (USER && (USER.rol === "MUNICIPAL" || selectedMuni !== "TODOS")) {
+    const targetMuni = USER.rol === "MUNICIPAL" ? (USER.municipio || "").split(",")[0].trim() : selectedMuni;
+    getYearlyMuniMedals(year, targetMuni).then(medals => {
+      renderUnitMedals(medals);
+    });
+  } else {
+    const medalsContainer = $("bCumplimientoMedals");
+    if (medalsContainer) medalsContainer.innerHTML = "";
+  }
+
+  // Update dynamic KPIs based on activeRows
+  if ($("histTotalUnidades")) $("histTotalUnidades").textContent = activeRows.length;
+
+  const diamantes = activeRows.filter(r => r.tier === "diamante").length;
+  const riesgos = activeRows.filter(r => r.tier === "riesgo").length;
 
   if ($("histTotalDiamante")) $("histTotalDiamante").textContent = diamantes;
   if ($("histTotalRiesgo")) $("histTotalRiesgo").textContent = riesgos;
 
-  if (!rows.length) {
-    if(tbody) tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-surface-onVariant/60">Sin datos para ese periodo</td></tr>`;
+  if (!activeRows.length) {
+    if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-surface-onVariant/60">Sin datos para ese periodo</td></tr>`;
     if ($("adminPodiumArea")) $("adminPodiumArea").style.display = "none";
     return;
   }
 
+  const separarMuni = $("histSepararMunicipio")?.checked;
+
+  // Render Podium Area
   if ((role === "ADMIN" || role === "JURISDICCIONAL") && $("adminPodiumArea")) {
+    if (separarMuni) {
+      // 3-step Municipality Average Podium using all rows (global comparison)
       const muniScores = {};
       rows.forEach(r => {
-          if(!muniScores[r.municipio]) muniScores[r.municipio] = { scoreSum: 0, count: 0 };
-          muniScores[r.municipio].scoreSum += r.score;
-          muniScores[r.municipio].count++;
+        const muni = r.municipio || "OTROS";
+        if (!muniScores[muni]) muniScores[muni] = { scoreSum: 0, count: 0 };
+        muniScores[muni].scoreSum += r.score;
+        muniScores[muni].count++;
       });
       const muniArr = Object.keys(muniScores).map(m => ({ 
-          municipio: m, 
-          avg: Math.round(muniScores[m].scoreSum / muniScores[m].count) 
-      })).sort((a,b) => b.avg - a.avg);
+        municipio: m, 
+        avg: Math.round(muniScores[m].scoreSum / muniScores[m].count) 
+      })).sort((a, b) => b.avg - a.avg);
 
       if (muniArr.length >= 3) {
-          $("adminPodiumArea").style.display = "block";
-          $("adminPodiumArea").innerHTML = `
-            <div class="podium-container">
-              <div class="podium-step p-2">
-                <div class="podium-medal"><span class="material-symbols-rounded" style="color: #94a3b8">military_tech</span></div>
-                <div class="podium-score">${muniArr[1].avg}%</div>
-                <div class="podium-name">${muniArr[1].municipio}</div>
-              </div>
-              <div class="podium-step p-1">
-                <div class="podium-medal"><span class="material-symbols-rounded" style="color: #f59e0b">workspace_premium</span></div>
-                <div class="podium-score">${muniArr[0].avg}%</div>
-                <div class="podium-name">${muniArr[0].municipio}</div>
-              </div>
-              <div class="podium-step p-3">
-                <div class="podium-medal"><span class="material-symbols-rounded" style="color: #d97706">military_tech</span></div>
-                <div class="podium-score">${muniArr[2].avg}%</div>
-                <div class="podium-name">${muniArr[2].municipio}</div>
-              </div>
+        $("adminPodiumArea").style.display = "block";
+        $("adminPodiumArea").innerHTML = `
+          <div class="podium-container">
+            <div class="podium-step p-2">
+              <div class="podium-medal"><span class="material-symbols-rounded" style="color: #94a3b8">military_tech</span></div>
+              <div class="podium-score">${muniArr[1].avg}%</div>
+              <div class="podium-name">${muniArr[1].municipio}</div>
+            </div>
+            <div class="podium-step p-1">
+              <div class="podium-medal"><span class="material-symbols-rounded" style="color: #f59e0b">workspace_premium</span></div>
+              <div class="podium-score">${muniArr[0].avg}%</div>
+              <div class="podium-name">${muniArr[0].municipio}</div>
+            </div>
+            <div class="podium-step p-3">
+              <div class="podium-medal"><span class="material-symbols-rounded" style="color: #d97706">military_tech</span></div>
+              <div class="podium-score">${muniArr[2].avg}%</div>
+              <div class="podium-name">${muniArr[2].municipio}</div>
+            </div>
+          </div>
+        `;
+      } else {
+        $("adminPodiumArea").style.display = "none";
+      }
+    } else {
+      // 5-step Unit Podium using filtered activeRows
+      const top5 = [...activeRows].slice(0, 5);
+      const order = [4, 2, 0, 1, 3]; // 5th, 3rd, 1st, 2nd, 4th
+      let podiumHtml = "";
+      
+      order.forEach(i => {
+        if (top5[i]) {
+          const item = top5[i];
+          const place = i + 1;
+          let medalColor = "";
+          let medalIcon = "military_tech";
+          if (place === 1) { medalColor = "#ffd700"; medalIcon = "workspace_premium"; }
+          else if (place === 2) { medalColor = "#cbd5e1"; }
+          else if (place === 3) { medalColor = "#fed7aa"; }
+          else if (place === 4) { medalColor = "#99f6e4"; medalIcon = "workspace_premium"; }
+          else if (place === 5) { medalColor = "#bbf7d0"; }
+
+          podiumHtml += `
+            <div class="podium-step p-${place}">
+              <div class="podium-medal"><span class="material-symbols-rounded" style="color: ${medalColor}">${medalIcon}</span></div>
+              <div class="podium-score">${item.score}%</div>
+              <div class="podium-name" title="${escapeHtml(item.unidad)}">${escapeHtml(item.unidad)}</div>
+              <div class="text-[9px] text-slate-400 mt-1 uppercase truncate max-w-[120px]" title="${escapeHtml(item.municipio)}">${escapeHtml(item.municipio)}</div>
             </div>
           `;
+        }
+      });
+
+      if (top5.length > 0) {
+        $("adminPodiumArea").style.display = "block";
+        $("adminPodiumArea").innerHTML = `<div class="podium-container">${podiumHtml}</div>`;
       } else {
-          $("adminPodiumArea").style.display = "none";
+        $("adminPodiumArea").style.display = "none";
       }
+    }
   } else if ($("adminPodiumArea")) {
-      $("adminPodiumArea").style.display = "none";
+    $("adminPodiumArea").style.display = "none";
   }
 
   const tierIcons = {
-      diamante: '<span class="material-symbols-rounded medal-icon tier-diamante" title="Diamante">diamond</span>',
-      oro: '<span class="material-symbols-rounded medal-icon tier-oro" title="Oro">workspace_premium</span>',
-      plata: '<span class="material-symbols-rounded medal-icon tier-plata" title="Plata">military_tech</span>',
-      riesgo: '<span class="material-symbols-rounded medal-icon tier-riesgo" title="En Riesgo">warning</span>'
+    diamante: '<span class="material-symbols-rounded medal-icon tier-diamante" title="Diamante">diamond</span>',
+    oro: '<span class="material-symbols-rounded medal-icon tier-oro" title="Oro">workspace_premium</span>',
+    plata: '<span class="material-symbols-rounded medal-icon tier-plata" title="Plata">military_tech</span>',
+    riesgo: '<span class="material-symbols-rounded medal-icon tier-riesgo" title="En Riesgo">warning</span>'
   };
 
-  let html = "";
-  rows.forEach((r, idx) => {
+  if (separarMuni) {
+    // Group units by municipality and render groups
+    const groups = {};
+    activeRows.forEach(r => {
+      const muni = r.municipio || "OTROS";
+      if (!groups[muni]) groups[muni] = [];
+      groups[muni].push(r);
+    });
+
+    let html = "";
+    Object.keys(groups).sort().forEach(muniName => {
+      const muniRows = groups[muniName];
+      muniRows.sort((a, b) => b.score - a.score || a.unidad.localeCompare(b.unidad));
+
+      const avgScore = Math.round(muniRows.reduce((sum, row) => sum + row.score, 0) / muniRows.length);
+
+      html += `
+        <tr class="bg-slate-100/50 font-bold border-b border-slate-200">
+          <td colspan="6" class="p-3 text-primary font-black uppercase text-[12px] tracking-wider">
+            Municipio: ${escapeHtml(muniName)} <span class="ml-2 text-slate-500 font-bold">(Promedio: ${avgScore}%)</span>
+          </td>
+        </tr>
+      `;
+
+      muniRows.forEach((r, idx) => {
+        let rankBadge = `<span class="rank-badge">${idx + 1}</span>`;
+        if (idx === 0) rankBadge = `<span class="rank-badge rank-1">1</span>`;
+        else if (idx === 1) rankBadge = `<span class="rank-badge rank-2">2</span>`;
+        else if (idx === 2) rankBadge = `<span class="rank-badge rank-3">3</span>`;
+
+        let bPct = r.eBio > 0 ? (r.bio_semanas_ok / r.eBio) * 100 : 100;
+        let cPct = r.eCons > 0 ? (r.cons_semanas_ok / r.eCons) * 100 : 100;
+        let pedidoIcon = !r.isPedidoRequired ? `<span class="material-symbols-rounded text-slate-400 text-[14px]">horizontal_rule</span>` : 
+                         (r.pedido_mensual ? `<span class="material-symbols-rounded text-green-500 text-[14px]" title="Pedido Registrado">check_circle</span>` : `<span class="material-symbols-rounded text-red-500 text-[14px]" title="Falta Pedido">cancel</span>`);
+
+        html += `
+          <tr>
+            <td class="text-center">${rankBadge}</td>
+            <td class="text-center">${tierIcons[r.tier]}</td>
+            <td class="font-bold text-slate-700">${escapeHtml(r.municipio)}</td>
+            <td>
+              <div class="font-bold text-primary">${escapeHtml(r.unidad)}</div>
+              <div class="text-[10px] text-slate-400">CLUES: ${escapeHtml(r.clues)}</div>
+            </td>
+            <td class="text-center">
+              <span class="font-black text-[16px] text-slate-700">${r.score}%</span>
+            </td>
+            <td>
+              <div class="flex items-center gap-3 text-[10px] font-bold text-slate-500 w-full max-w-[250px]">
+                  <div class="flex-1">
+                      BIO (${r.bio_semanas_ok}/${r.eBio})
+                      <div class="lb-progress-wrap"><div class="lb-progress-fill lb-fill-${r.tier}" style="width: ${bPct}%"></div></div>
+                  </div>
+                  <div class="flex-1">
+                      CONS (${r.cons_semanas_ok}/${r.eCons})
+                      <div class="lb-progress-wrap"><div class="lb-progress-fill lb-fill-${r.tier}" style="width: ${cPct}%"></div></div>
+                  </div>
+                  <div class="flex flex-col items-center justify-center w-10 ml-2" title="Pedido Mensual">
+                      <span class="text-[9px]">PED</span>
+                      ${pedidoIcon}
+                  </div>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+    });
+    if (tbody) tbody.innerHTML = html;
+  } else {
+    // Render standard rows sorted by score descending
+    let html = "";
+    activeRows.forEach((r, idx) => {
       let rankBadge = `<span class="rank-badge">${idx + 1}</span>`;
       if (idx === 0) rankBadge = `<span class="rank-badge rank-1">1</span>`;
       else if (idx === 1) rankBadge = `<span class="rank-badge rank-2">2</span>`;
@@ -11379,8 +11931,9 @@ function renderHistoryMetrics(data) {
           </td>
         </tr>
       `;
-  });
-  if(tbody) tbody.innerHTML = html;
+    });
+    if (tbody) tbody.innerHTML = html;
+  }
 }
 
 async function watchPinolRealtime() {
