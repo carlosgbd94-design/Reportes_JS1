@@ -4012,14 +4012,11 @@ async function supabaseRequest(action = "", payload) {
         };
       }
       case "historymetrics": {
-        const fechaInicio = payload.fechaInicio || payload.inicio;
-        const fechaFin = payload.fechaFin || payload.fin;
-
-        if (!fechaInicio || fechaInicio === "undefined" || !fechaFin || fechaFin === "undefined") {
+        const mes = payload.mes;
+        if (!mes || mes === "undefined") {
           return { ok: true, data: { rows: [] } };
         }
 
-        // 🛡️ Aplicar Jerarquía
         const role = String(USER?.rol || "").toUpperCase();
         let unitsQuery = supabase.from('unidades').select('*').eq('activo', 'SI');
 
@@ -4036,37 +4033,42 @@ async function supabaseRequest(action = "", payload) {
         }
         const unitCluesSet = new Set(units.map(u => u.clues));
 
-        const [resBio, resCons] = await Promise.all([
+        const today = todayYmdLocal();
+        const [yyyy, mm] = mes.split("-");
+        const isCurrentMonth = today.startsWith(mes);
+        
+        const fechaInicio = `${mes}-01`;
+        let fechaFin;
+        if (isCurrentMonth) {
+          fechaFin = today;
+        } else {
+          const date = new Date(yyyy, mm, 0); 
+          fechaFin = dateToLocalYmd(date);
+        }
+
+        const [resBio, resCons, resPedidos] = await Promise.all([
           supabase.from('biologicos_existencia').select('clues, fecha').gte('fecha', fechaInicio).lte('fecha', fechaFin),
-          supabase.from('consumibles').select('clues, fecha').gte('fecha', fechaInicio).lte('fecha', fechaFin)
+          supabase.from('consumibles').select('clues, fecha').gte('fecha', fechaInicio).lte('fecha', fechaFin),
+          supabase.from('biologicos_existencia').select('clues').gte('fecha', `${mes}-01`).lte('fecha', `${yyyy}-${mm}-31`).eq('tipo_pedido', 'MENSUAL')
         ]);
 
         const rawBioAll = resBio.data || [];
         const rawConsAll = resCons.data || [];
+        const rawPedidosAll = resPedidos.data || [];
 
-        // Filtrar en memoria para asegurar que solo vemos lo de nuestras unidades permitidas
         const rawBio = rawBioAll.filter(r => unitCluesSet.has(r.clues));
         const rawCons = rawConsAll.filter(r => unitCluesSet.has(r.clues));
+        const rawPedidos = rawPedidosAll.filter(r => unitCluesSet.has(r.clues));
 
-        // 2. Calcular días esperados (Logística Senior)
         const getExpectedDates = (start, end, tipo) => {
           const dates = [];
           let curr = new Date(start + "T12:00:00");
           const stop = new Date(end + "T12:00:00");
-
           while (curr <= stop) {
             const dow = curr.getDay();
             const ymd = dateToLocalYmd(curr);
-
-            if (tipo === "CONS") {
-              // Jueves es el día estándar
-              if (dow === 4) dates.push(ymd);
-            } else {
-              // Biológicos: Viernes es el día de corte semanal (o el que se decida)
-              // Según LOGICA_SISTEMA es diaria, pero para métricas históricas se suele medir por semana.
-              // Si el usuario no especificó cambio en métricas de BIO, mantenemos Viernes (Día 5).
-              if (dow === 5) dates.push(ymd);
-            }
+            if (tipo === "CONS" && dow === 4) dates.push(ymd); // Jueves
+            if (tipo === "BIO" && dow === 5) dates.push(ymd); // Viernes
             curr.setDate(curr.getDate() + 1);
           }
           return dates;
@@ -4075,80 +4077,111 @@ async function supabaseRequest(action = "", payload) {
         const expectedDatesCons = getExpectedDates(fechaInicio, fechaFin, "CONS");
         const expectedDatesBio = getExpectedDates(fechaInicio, fechaFin, "BIO");
 
-        // 3. Agrupar capturas por unidad y ventana
         const metricsMap = {};
         units.forEach(u => {
           metricsMap[u.clues] = {
             municipio: u.municipio || u.MUNICIPIO,
             clues: u.clues || u.CLUES,
             unidad: u.unidad || u.UNIDAD,
-            bio_capturas: 0,
-            cons_capturas: 0,
-            ultima_cons: "—"
+            bio_semanas_ok: 0,
+            cons_semanas_ok: 0,
+            pedido_mensual: false,
+            ultima_captura: "—"
           };
         });
 
-        // Consumibles: Una captura por cada ventana esperada
         expectedDatesCons.forEach(targetJueves => {
           const dJue = new Date(`${targetJueves}T12:00:00`);
           const targetWindow = [targetJueves];
-
-          // Si el jueves es festivo, permitimos también el miércoles
           if (isMexicanHoliday(dJue)) {
             const dMie = new Date(dJue);
             dMie.setDate(dJue.getDate() - 1);
             targetWindow.push(dateToLocalYmd(dMie));
           }
-
           units.forEach(u => {
-            const hasCapture = rawCons.some(r => r.clues === u.clues && targetWindow.includes(r.fecha));
-            if (hasCapture) metricsMap[u.clues].cons_capturas++;
+            if (rawCons.some(r => r.clues === u.clues && targetWindow.includes(r.fecha))) {
+              metricsMap[u.clues].cons_semanas_ok++;
+            }
           });
         });
 
-        // Biológicos: Seguimos lógica similar por Viernes
         expectedDatesBio.forEach(targetViernes => {
+          const dVie = new Date(`${targetViernes}T12:00:00`);
+          const dJue = new Date(dVie); dJue.setDate(dVie.getDate() - 1);
+          const targetWindow = [targetViernes, dateToLocalYmd(dJue)];
+
           units.forEach(u => {
-            const hasCapture = rawBio.some(r => r.clues === u.clues && r.fecha === targetViernes);
-            if (hasCapture) metricsMap[u.clues].bio_capturas++;
+            if (rawBio.some(r => r.clues === u.clues && targetWindow.includes(r.fecha))) {
+              metricsMap[u.clues].bio_semanas_ok++;
+            }
           });
         });
 
-        // Última fecha de consumibles para visualización
-        rawCons.forEach(r => {
+        rawPedidos.forEach(r => {
+           if (metricsMap[r.clues]) metricsMap[r.clues].pedido_mensual = true;
+        });
+
+        rawCons.concat(rawBio).forEach(r => {
           if (metricsMap[r.clues]) {
-            if (metricsMap[r.clues].ultima_cons === "—" || r.fecha > metricsMap[r.clues].ultima_cons) {
-              metricsMap[r.clues].ultima_cons = r.fecha;
+            if (metricsMap[r.clues].ultima_captura === "—" || r.fecha > metricsMap[r.clues].ultima_captura) {
+              metricsMap[r.clues].ultima_captura = r.fecha;
             }
           }
         });
 
-        // 4. Calcular % final
-        const rows = units.map(u => {
+        let rows = units.map(u => {
           const m = metricsMap[u.clues];
           const eBio = expectedDatesBio.length;
           const eCons = expectedDatesCons.length;
 
-          const bPct = eBio > 0 ? Math.round((m.bio_capturas / eBio) * 100) : 100;
-          const cPct = eCons > 0 ? Math.round((m.cons_capturas / eCons) * 100) : 100;
-          const operPct = Math.round((bPct + cPct) / 2);
+          const bPct = eBio > 0 ? (m.bio_semanas_ok / eBio) * 100 : 100;
+          const cPct = eCons > 0 ? (m.cons_semanas_ok / eCons) * 100 : 100;
+          
+          let pPct = 100;
+          let isPedidoRequired = false;
+          const dToday = new Date(today + "T12:00:00");
+          const midMonth = new Date(`${mes}-15T12:00:00`);
+          
+          if (!isCurrentMonth || dToday >= midMonth) {
+              isPedidoRequired = true;
+              pPct = m.pedido_mensual ? 100 : 0;
+          }
+
+          let score = 0;
+          if (isPedidoRequired) {
+            score = (bPct * 0.4) + (cPct * 0.4) + (pPct * 0.2);
+          } else {
+            score = (bPct * 0.5) + (cPct * 0.5);
+          }
+
+          score = Math.round(score);
+
+          let tier = "riesgo";
+          if (score === 100) tier = "diamante";
+          else if (score >= 90) tier = "oro";
+          else if (score >= 70) tier = "plata";
 
           return {
             ...m,
-            bio_cumplimiento: Math.min(bPct, 100),
-            cons_cumplimiento: Math.min(cPct, 100),
-            cumplimiento_operativo: Math.min(operPct, 100),
-            bio_faltas: Math.max(0, eBio - m.bio_capturas),
-            cons_faltas: Math.max(0, eCons - m.cons_capturas),
-            total_capturado: m.bio_capturas + m.cons_capturas,
-            total_faltas: Math.max(0, (eBio + eCons) - (m.bio_capturas + m.cons_capturas))
+            score,
+            tier,
+            eBio,
+            eCons,
+            isPedidoRequired
           };
         });
 
-        return { ok: true, data: { rows, expectedBio: expectedDatesBio.length, expectedCons: expectedDatesCons.length } };
-      }
+        rows.sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            if (a.ultima_captura !== b.ultima_captura) {
+                return a.ultima_captura < b.ultima_captura ? 1 : -1;
+            }
+            return a.unidad.localeCompare(b.unidad);
+        });
 
-      case "unitstatus": {
+        return { ok: true, data: { rows, role } };
+      }
+            case "unitstatus": {
         const today = todayYmdLocal();
         const clues = USER.clues;
         const role = (USER.rol || "UNIDAD").trim().toUpperCase();
@@ -5765,9 +5798,8 @@ function buildCaptureSummaryFilterKey() {
 }
 
 function buildHistoryFilterKey() {
-  const inicio = $("histFechaInicio")?.value || todayYmdLocal();
-  const fin = $("histFechaFin")?.value || todayYmdLocal();
-  return `${inicio}__${fin}`;
+  const mes = $("histMesEvaluacion")?.value || todayYmdLocal().substring(0, 7);
+  return `${mes}`;
 }
 
 function shouldReloadPanelByFilters(panelName, nextKey, force = false) {
@@ -9785,23 +9817,20 @@ async function reloadHistorySilent(force = false) {
     if (!TOKEN) return null;
 
     try {
-      const inicio = $("histFechaInicio")?.value || todayYmdLocal();
-      const fin = $("histFechaFin")?.value || todayYmdLocal();
-
+      const mes = $("histMesEvaluacion")?.value || todayYmdLocal().substring(0, 7);
+      
       const data = await smartLoader(
-        () => getHistoryMetrics(inicio, fin, !!force),
-        {
-          delay: 220,
-          message: "Cargando métricas…",
-          title: "Histórico"
-        }
+        () => getHistoryMetrics(mes, null, !!force),
+        "Consultando histórico...",
+        "Calculando ranking..."
       );
 
-      if (data) {
+      if (data && data.ok !== false) {
         renderHistoryMetrics(data);
-        commitPanelFilterState("historyMetrics", `${inicio}__${fin}`);
+        commitPanelFilterState("historyMetrics", filterKey);
+      } else {
+        if($("historyTbody")) $("historyTbody").innerHTML = `<tr><td colspan="6" class="p-6 text-center text-red-500 font-bold">Error al cargar ranking.</td></tr>`;
       }
-
       return data;
     } catch (e) {
       console.error("reloadHistorySilent error:", e);
@@ -11260,43 +11289,24 @@ document.addEventListener("visibilitychange", () => {
 
 
 
-async function getHistoryMetrics(fechaInicio, fechaFin, force = false) {
+async function getHistoryMetrics(mes, _ignored, force = false) {
   if (!TOKEN) return null;
 
-  const inicio = fechaInicio || todayYmdLocal();
-  const fin = fechaFin || todayYmdLocal();
-  const cacheKey = buildCacheKey("HISTORY_METRICS", `${inicio}::${fin}`);
+  const m = mes || todayYmdLocal().substring(0, 7);
+  const cacheKey = buildCacheKey("HISTORY_METRICS", `${m}`);
 
-  const data = force
-    ? await (async () => {
-      const r = await apiCall({
-        action: "historyMetrics",
-        token: TOKEN,
-        fechaInicio: inicio,
-        fechaFin: fin
-      });
+  const fetcher = async () => {
+    const r = await apiCall({ action: "historyMetrics", token: TOKEN, mes: m });
+    if (!r || !r.ok) return null;
+    return r.data || null;
+  };
 
-      if (!r || !r.ok) return null;
-      return r.data || null;
-    })()
-    : await getCachedOrFetch({
-      key: cacheKey,
-      ttl: CACHE_TTL.HISTORY_METRICS,
-      fetcher: async () => {
-        const r = await apiCall({
-          action: "historyMetrics",
-          token: TOKEN,
-          fechaInicio: inicio,
-          fechaFin: fin
-        });
-
-        if (!r || !r.ok) return null;
-        return r.data || null;
-      },
-      shouldCache: (data) => data != null
-    });
-
-  return data || null;
+  return force ? await fetcher() : await getCachedOrFetch({
+    key: cacheKey,
+    ttl: CACHE_TTL.HISTORY_METRICS,
+    fetcher,
+    shouldCache: (data) => data != null
+  });
 }
 
 function renderHistoryMetrics(data) {
@@ -11410,13 +11420,6 @@ function renderHistoryMetrics(data) {
   });
   if(tbody) tbody.innerHTML = html;
 }
-
-
-
-
-
-
-
 
 async function watchPinolRealtime() {
   if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL")) return;
