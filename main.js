@@ -11301,40 +11301,114 @@ async function getHistoryMetrics(fechaInicio, fechaFin, force = false) {
 
 function renderHistoryMetrics(data) {
   const rows = data?.rows || [];
+  const role = data?.role || "UNIDAD";
   const tbody = $("historyTbody");
+  
+  if ($("histTotalUnidades")) $("histTotalUnidades").textContent = rows.length;
 
-  const avgBIO = rows.length ? Math.round(rows.reduce((a, b) => a + Number(b.bio_cumplimiento || 0), 0) / rows.length) : 0;
-  const avgCONS = rows.length ? Math.round(rows.reduce((a, b) => a + Number(b.cons_cumplimiento || 0), 0) / rows.length) : 0;
+  const diamantes = rows.filter(r => r.tier === "diamante").length;
+  const riesgos = rows.filter(r => r.tier === "riesgo").length;
 
-  $("histTotalUnidades").textContent = rows.length;
-  $("histPromSR").textContent = `${avgBIO}%`;
-  $("histPromCONS").textContent = `${avgCONS}%`;
-
-  // Semáforo automático
-  if ($("kpiCardHistSR")) $("kpiCardHistSR").className = "kpiCard " + getComplianceTone(avgBIO);
-  if ($("kpiCardHistCONS")) $("kpiCardHistCONS").className = "kpiCard " + getComplianceTone(avgCONS);
+  if ($("histTotalDiamante")) $("histTotalDiamante").textContent = diamantes;
+  if ($("histTotalRiesgo")) $("histTotalRiesgo").textContent = riesgos;
 
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="11" class="muted">Sin datos para ese periodo</td></tr>`;
+    if(tbody) tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-surface-onVariant/60">Sin datos para ese periodo</td></tr>`;
+    if ($("adminPodiumArea")) $("adminPodiumArea").style.display = "none";
     return;
   }
 
-  tbody.innerHTML = rows.map(r => `
-    <tr>
-      <td>${escapeHtml(r.municipio || "")}</td>
-      <td>${escapeHtml(r.clues || "")}</td>
-      <td>${escapeHtml(r.unidad || "")}</td>
-      <td>${Number(r.cumplimiento_operativo || 0)}%</td>
-      <td>${Number(r.bio_cumplimiento || 0)}%</td>
-      <td>${Number(r.bio_capturas || 0)}</td>
-      <td>${Number(r.bio_faltas || 0)}</td>
-      <td>${Number(r.cons_cumplimiento || 0)}%</td>
-      <td>${Number(r.cons_capturas || 0)}</td>
-      <td>${Number(r.cons_faltas || 0)}</td>
-      <td>${escapeHtml(r.ultima_cons || "—")}</td>
-    </tr>
-  `).join("");
+  if ((role === "ADMIN" || role === "JURISDICCIONAL") && $("adminPodiumArea")) {
+      const muniScores = {};
+      rows.forEach(r => {
+          if(!muniScores[r.municipio]) muniScores[r.municipio] = { scoreSum: 0, count: 0 };
+          muniScores[r.municipio].scoreSum += r.score;
+          muniScores[r.municipio].count++;
+      });
+      const muniArr = Object.keys(muniScores).map(m => ({ 
+          municipio: m, 
+          avg: Math.round(muniScores[m].scoreSum / muniScores[m].count) 
+      })).sort((a,b) => b.avg - a.avg);
 
+      if (muniArr.length >= 3) {
+          $("adminPodiumArea").style.display = "block";
+          $("adminPodiumArea").innerHTML = `
+            <div class="podium-container">
+              <div class="podium-step p-2">
+                <div class="podium-medal"><span class="material-symbols-rounded" style="color: #94a3b8">military_tech</span></div>
+                <div class="podium-score">${muniArr[1].avg}%</div>
+                <div class="podium-name">${muniArr[1].municipio}</div>
+              </div>
+              <div class="podium-step p-1">
+                <div class="podium-medal"><span class="material-symbols-rounded" style="color: #f59e0b">workspace_premium</span></div>
+                <div class="podium-score">${muniArr[0].avg}%</div>
+                <div class="podium-name">${muniArr[0].municipio}</div>
+              </div>
+              <div class="podium-step p-3">
+                <div class="podium-medal"><span class="material-symbols-rounded" style="color: #d97706">military_tech</span></div>
+                <div class="podium-score">${muniArr[2].avg}%</div>
+                <div class="podium-name">${muniArr[2].municipio}</div>
+              </div>
+            </div>
+          `;
+      } else {
+          $("adminPodiumArea").style.display = "none";
+      }
+  } else if ($("adminPodiumArea")) {
+      $("adminPodiumArea").style.display = "none";
+  }
+
+  const tierIcons = {
+      diamante: '<span class="material-symbols-rounded medal-icon tier-diamante" title="Diamante">diamond</span>',
+      oro: '<span class="material-symbols-rounded medal-icon tier-oro" title="Oro">workspace_premium</span>',
+      plata: '<span class="material-symbols-rounded medal-icon tier-plata" title="Plata">military_tech</span>',
+      riesgo: '<span class="material-symbols-rounded medal-icon tier-riesgo" title="En Riesgo">warning</span>'
+  };
+
+  let html = "";
+  rows.forEach((r, idx) => {
+      let rankBadge = `<span class="rank-badge">${idx + 1}</span>`;
+      if (idx === 0) rankBadge = `<span class="rank-badge rank-1">1</span>`;
+      else if (idx === 1) rankBadge = `<span class="rank-badge rank-2">2</span>`;
+      else if (idx === 2) rankBadge = `<span class="rank-badge rank-3">3</span>`;
+
+      let bPct = r.eBio > 0 ? (r.bio_semanas_ok / r.eBio) * 100 : 100;
+      let cPct = r.eCons > 0 ? (r.cons_semanas_ok / r.eCons) * 100 : 100;
+      let pedidoIcon = !r.isPedidoRequired ? `<span class="material-symbols-rounded text-slate-400 text-[14px]">horizontal_rule</span>` : 
+                       (r.pedido_mensual ? `<span class="material-symbols-rounded text-green-500 text-[14px]" title="Pedido Registrado">check_circle</span>` : `<span class="material-symbols-rounded text-red-500 text-[14px]" title="Falta Pedido">cancel</span>`);
+
+      html += `
+        <tr>
+          <td class="text-center">${rankBadge}</td>
+          <td class="text-center">${tierIcons[r.tier]}</td>
+          <td class="font-bold text-slate-700">${escapeHtml(r.municipio)}</td>
+          <td>
+            <div class="font-bold text-primary">${escapeHtml(r.unidad)}</div>
+            <div class="text-[10px] text-slate-400">CLUES: ${escapeHtml(r.clues)}</div>
+          </td>
+          <td class="text-center">
+            <span class="font-black text-[16px] text-slate-700">${r.score}%</span>
+          </td>
+          <td>
+            <div class="flex items-center gap-3 text-[10px] font-bold text-slate-500 w-full max-w-[250px]">
+                <div class="flex-1">
+                    BIO (${r.bio_semanas_ok}/${r.eBio})
+                    <div class="lb-progress-wrap"><div class="lb-progress-fill lb-fill-${r.tier}" style="width: ${bPct}%"></div></div>
+                </div>
+                <div class="flex-1">
+                    CONS (${r.cons_semanas_ok}/${r.eCons})
+                    <div class="lb-progress-wrap"><div class="lb-progress-fill lb-fill-${r.tier}" style="width: ${cPct}%"></div></div>
+                </div>
+                <div class="flex flex-col items-center justify-center w-10 ml-2" title="Pedido Mensual">
+                    <span class="text-[9px]">PED</span>
+                    ${pedidoIcon}
+                </div>
+            </div>
+          </td>
+        </tr>
+      `;
+  });
+  if(tbody) tbody.innerHTML = html;
 }
 
 
