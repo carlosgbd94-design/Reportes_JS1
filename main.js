@@ -11572,7 +11572,7 @@ async function getYearlyMuniMedals(year, municipio) {
       // Group by municipality
       const muniGroups = {};
       rows.forEach(r => {
-        const mName = String(r.municipio || "").trim().toUpperCase();
+        const mName = normalizeText(r.municipio || "");
         if (!mName) return;
         if (!muniGroups[mName]) {
           muniGroups[mName] = { scoreSum: 0, count: 0 };
@@ -11589,7 +11589,7 @@ async function getYearlyMuniMedals(year, municipio) {
         };
       }).sort((a, b) => b.score - a.score);
 
-      const index = muniList.findIndex(x => x.municipio === municipio.toUpperCase());
+      const index = muniList.findIndex(x => normalizeText(x.municipio) === normalizeText(municipio));
       if (index >= 0) {
         const score = muniList[index].score;
         let tier = "riesgo";
@@ -11693,7 +11693,7 @@ function renderHistoryMetrics(data) {
   const selectedMuni = $("histMunicipioFilter")?.value || "TODOS";
   let activeRows = [...rows];
   if (selectedMuni && selectedMuni !== "TODOS") {
-    activeRows = rows.filter(r => String(r.municipio || "").toUpperCase() === selectedMuni);
+    activeRows = rows.filter(r => normalizeText(r.municipio) === normalizeText(selectedMuni));
   }
 
   const targetYmd = $("histMesEvaluacion")?.value || todayYmdLocal().substring(0, 7);
