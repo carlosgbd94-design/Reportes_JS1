@@ -8845,13 +8845,13 @@ function renderCaptureSummary(data) {
           <td data-label="CLUES">${escapeHtml(r.clues || "")}</td>
           <td data-label="Unidad">${escapeHtml(r.unidad || "")}</td>
           <td data-label="Estatus">
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; min-width:140px">
-              <div>
-                <span class="statusOk" style="font-size:13px">${r.editado === "SI" ? "Editado" : "Capturado"}</span>
-                ${r.tipo_pedido ? `<div style="margin-top:4px"><small class="opacity-60 font-black uppercase text-[10px] tracking-tighter">${r.tipo_pedido}</small></div>` : ""}
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%">
+              <div style="display:flex; align-items:center; gap:8px">
+                <span class="material-symbols-rounded" style="color: #22c55e; font-size: 24px; vertical-align: middle;" title="${r.editado === 'SI' ? 'Editado' : 'Capturado'}">check_circle</span>
+                ${r.tipo_pedido ? `<span class="opacity-60 font-black uppercase text-[10px] tracking-tighter" style="background:#f1f5f9; padding:2px 6px; border-radius:6px">${r.tipo_pedido}</span>` : ""}
               </div>
-              <button class="miniBtn ghostBtn" style="padding:6px; border-radius:12px; background:white; border:1px solid var(--md-sys-color-outline-variant); box-shadow:var(--md-shadow-1)" onclick="openLiveView('${r.clues}','${escapeHtml(r.unidad)}','${escapeHtml(r.municipio)}')" title="Ver inventario en vivo">
-                 <span class="material-symbols-rounded" style="font-size:18px; color:var(--md-sys-color-primary)">visibility</span>
+              <button class="live-view-btn-v2" onclick="openLiveView('${r.clues}','${escapeHtml(r.unidad)}','${escapeHtml(r.municipio)}')" title="Ver inventario en vivo">
+                 <span class="material-symbols-rounded">visibility</span>
               </button>
             </div>
           </td>
@@ -8871,7 +8871,9 @@ function renderCaptureSummary(data) {
           <td data-label="Municipio">${escapeHtml(r.municipio || "")}</td>
           <td data-label="CLUES">${escapeHtml(r.clues || "")}</td>
           <td data-label="Unidad">${escapeHtml(r.unidad || "")}</td>
-          <td data-label="Estatus"><span class="statusPending">Pendiente</span></td>
+          <td data-label="Estatus" style="text-align: center;">
+            <span class="material-symbols-rounded" style="color: var(--warn); font-size: 24px; vertical-align: middle;" title="Pendiente">pending</span>
+          </td>
         </tr>
       `).join("");
   }
@@ -12017,7 +12019,7 @@ async function openLiveView(clues, unidad, municipio) {
              <th style="padding: 16px 24px; text-align: center;">Existencia</th>
              <th style="padding: 16px 24px; text-align: center;">Caducidad</th>
              <th style="padding: 16px 24px; text-align: center;">Vigencia</th>
-             <th style="padding: 16px 24px; text-align: center;">Red de Frío</th>
+             <th style="padding: 16px 24px; text-align: center; white-space: nowrap; min-width: 190px;">Periodo de almacenamiento</th>
            `;
       }
 
@@ -12045,7 +12047,7 @@ async function openLiveView(clues, unidad, municipio) {
           };
 
           let tone = "good", icon = "check_circle", text = formatTime(diffDays);
-          if (diffDays > 90) { tone = "bad"; icon = "error"; text = "Límite excedido"; }
+          if (diffDays > 90) { tone = "bad"; icon = "error"; text = "Límite excedido (" + formatTime(diffDays) + ")"; }
           else if (diffDays >= 60) { tone = "warn"; icon = "warning"; text = "Alerta: " + text; }
 
           let bg = tone === "bad" ? "#fef2f2" : tone === "warn" ? "#fffbeb" : "#f0fdf4";
@@ -12054,8 +12056,8 @@ async function openLiveView(clues, unidad, municipio) {
           return {
             html: `
               <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-                <span style="font-size:11px; color:#64748b; font-weight:700;">${formatAppDate(recepcionIso)}</span>
-                <span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:12px; background:${bg}; color:${color}; font-size:10px; font-weight:800; border: 1px solid ${color}40;">
+                <span style="font-size:11px; color:#64748b; font-weight:700; white-space: nowrap;">${formatAppDate(recepcionIso)}</span>
+                <span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:12px; background:${bg}; color:${color}; font-size:10px; font-weight:800; border: 1px solid ${color}40; white-space: nowrap;">
                   <span class="material-symbols-rounded" style="font-size:12px;">${icon}</span> ${text}
                 </span>
               </div>
@@ -12085,7 +12087,7 @@ async function openLiveView(clues, unidad, municipio) {
                   <td style="padding:14px 24px; text-align:center;">
                     <span class="status-pill-pro ${status.key}">${status.label}</span>
                   </td>
-                  <td style="padding:14px 24px; text-align:center;">
+                  <td style="padding:14px 24px; text-align:center; min-width: 190px;">
                     ${perm.html}
                   </td>
                 </tr>

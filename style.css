@@ -2888,7 +2888,7 @@ tr.lote-row-bad.imminent {
 
 .captureSummaryGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
   gap: 12px;
   margin-top: 14px;
   align-items: start;
@@ -8225,3 +8225,288 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
   border-color: #7aabea !important;
   transform: translateY(-2px);
 }
+
+/* ==========================================================
+   GAMIFICATION & LEADERBOARD (TIERS)
+   ========================================================== */
+
+.medal-icon {
+  font-size: 24px;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.tier-diamante { background-image: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); animation: shimmer-medal 2s infinite linear; background-size: 200% auto; }
+.tier-oro { background-image: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
+.tier-plata { background-image: linear-gradient(135deg, #94a3b8 0%, #cbd5e1 100%); }
+.tier-riesgo { background-image: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); }
+
+@keyframes shimmer-medal {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+.lb-progress-wrap { width: 100%; height: 6px; background-color: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+.lb-progress-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+.lb-fill-diamante { background: linear-gradient(90deg, #00f2fe, #4facfe); }
+.lb-fill-oro { background: linear-gradient(90deg, #f6d365, #fda085); }
+.lb-fill-plata { background: linear-gradient(90deg, #94a3b8, #cbd5e1); }
+.lb-fill-riesgo { background: linear-gradient(90deg, #ff0844, #ffb199); }
+
+.leaderboard-table th { background-color: #f1f5f9 !important; color: #475569 !important; font-weight: 800 !important; text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px !important; }
+.leaderboard-table tr { transition: all 0.2s ease; }
+.leaderboard-table tr:hover { background-color: #f8fafc !important; transform: scale(1.005); box-shadow: 0 4px 12px rgba(0,0,0,0.03); z-index: 10; position: relative; }
+
+.rank-badge { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; font-weight: 900; font-size: 12px; background: #e2e8f0; color: #475569; }
+.rank-1 { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); color: white; box-shadow: 0 4px 10px rgba(253,160,133,0.3); }
+.rank-2 { background: linear-gradient(135deg, #94a3b8 0%, #cbd5e1 100%); color: white; box-shadow: 0 4px 10px rgba(148,163,184,0.3); }
+.rank-3 { background: linear-gradient(135deg, #d4aa70 0%, #b87b41 100%); color: white; box-shadow: 0 4px 10px rgba(184,123,65,0.3); }
+
+.podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 16px; margin-top: 32px; padding-bottom: 8px; }
+.podium-step { display: flex; flex-direction: column; align-items: center; background: linear-gradient(to bottom, #ffffff, #f8fafc); border: 1px solid #e2e8f0; border-bottom: none; border-radius: 16px 16px 0 0; padding: 16px; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); width: 130px; text-align: center; position: relative; transition: transform 0.3s ease; }
+.podium-step:hover { transform: translateY(-5px); }
+.podium-step.p-1 { height: 160px; z-index: 3; border-color: #fde68a; background: linear-gradient(to bottom, #fffbeb, #fef3c7); }
+.podium-step.p-2 { height: 130px; z-index: 2; }
+.podium-step.p-3 { height: 110px; z-index: 1; border-color: #fed7aa; background: linear-gradient(to bottom, #fff7ed, #ffedd5); }
+.podium-score { font-size: 26px; font-weight: 900; color: #0f172a; margin-top: auto; line-height: 1; letter-spacing: -0.05em; }
+.podium-name { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-top: 8px; letter-spacing: 0.05em; }
+.podium-medal { font-size: 32px; margin-bottom: 8px; }
+
+
+/* Podium Animations - GPU Accelerated */
+.podium-step {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+.podium-step:hover {
+  transform: translateY(-5px);
+}
+@keyframes medal-shine {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes float-subtle {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+  100% { transform: translateY(0); }
+}
+.podium-step.p-1 {
+  animation: float-subtle 3s ease-in-out infinite;
+}
+.podium-step.p-1 .podium-medal {
+  animation: medal-shine 2s ease-in-out infinite;
+}
+.podium-row-highlight {
+  animation: row-reveal 0.5s ease-out forwards;
+  will-change: transform, opacity;
+}
+@keyframes row-reveal {
+  0% { opacity: 0; transform: translateX(-10px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+/* Heights and Colors for 5-Step Podium */
+.podium-step.p-1 { height: 180px !important; z-index: 5; border-color: #ffd700 !important; background: linear-gradient(to bottom, #fffbeb, #fef3c7) !important; animation: float-subtle 3s ease-in-out infinite; }
+.podium-step.p-1 .podium-medal { animation: medal-shine 2s ease-in-out infinite; }
+.podium-step.p-2 { height: 155px !important; z-index: 4; border-color: #cbd5e1 !important; background: linear-gradient(to bottom, #f8fafc, #f1f5f9) !important; }
+.podium-step.p-3 { height: 140px !important; z-index: 3; border-color: #fed7aa !important; background: linear-gradient(to bottom, #fff7ed, #ffedd5) !important; }
+.podium-step.p-4 { height: 125px !important; z-index: 2; border-color: #99f6e4 !important; background: linear-gradient(to bottom, #f0fdfa, #ccfbf1) !important; }
+.podium-step.p-5 { height: 110px !important; z-index: 1; border-color: #bbf7d0 !important; background: linear-gradient(to bottom, #f0fdf4, #dcfce7) !important; }
+
+/* Leaderboard custom rank colors */
+.rank-4 { background: linear-gradient(135deg, #4ecdc4 0%, #556270 100%) !important; color: white !important; box-shadow: 0 4px 10px rgba(78,205,196,0.3) !important; }
+.rank-5 { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important; color: white !important; box-shadow: 0 4px 10px rgba(56,239,125,0.3) !important; }
+
+/* Custom dynamic chip states for bCumplimiento */
+.podium-gold-chip {
+  border: 2px solid #d97706 !important;
+  background: linear-gradient(135deg, #ffffff 0%, #fffbeb 60%, #fef3c7 100%) !important;
+  box-shadow: 0 10px 30px -5px rgba(217, 119, 6, 0.25), inset 0 0 0 1px rgba(254, 243, 199, 0.8) !important;
+  animation: glow-gold 3s infinite alternate;
+}
+.podium-silver-chip {
+  border: 2px solid #64748b !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 60%, #e2e8f0 100%) !important;
+  box-shadow: 0 10px 30px -5px rgba(100, 116, 139, 0.2), inset 0 0 0 1px rgba(241, 245, 249, 0.8) !important;
+  animation: glow-silver 3s infinite alternate;
+}
+.podium-bronze-chip {
+  border: 2px solid #b45309 !important;
+  background: linear-gradient(135deg, #ffffff 0%, #fff7ed 60%, #ffedd5 100%) !important;
+  box-shadow: 0 10px 30px -5px rgba(180, 83, 9, 0.2), inset 0 0 0 1px rgba(255, 247, 237, 0.8) !important;
+  animation: glow-bronze 3s infinite alternate;
+}
+.podium-steel-chip {
+  border: 2px solid #0d9488 !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f0fdfa 60%, #ccfbf1 100%) !important;
+  box-shadow: 0 10px 30px -5px rgba(13, 148, 136, 0.15) !important;
+}
+.podium-emerald-chip {
+  border: 2px solid #059669 !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 60%, #dcfce7 100%) !important;
+  box-shadow: 0 10px 30px -5px rgba(5, 150, 105, 0.15) !important;
+}
+.podium-diamond-chip {
+  border: 2px solid #06b6d4 !important;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 30%, #fae8ff 70%, #f0f9ff 100%) !important;
+  box-shadow: 0 12px 35px -5px rgba(6, 182, 212, 0.35), inset 0 0 8px rgba(255, 255, 255, 0.8) !important;
+  animation: glow-diamond 3s infinite alternate;
+}
+
+/* Glass shine overlay animation across all premium podium cards */
+.podium-gold-chip::before, 
+.podium-silver-chip::before, 
+.podium-bronze-chip::before, 
+.podium-diamond-chip::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0) 100%);
+  transform: skewX(-25deg);
+  animation: shine-effect 4.5s infinite ease-in-out;
+  pointer-events: none;
+  z-index: 5;
+}
+
+@keyframes shine-effect {
+  0% { left: -150%; }
+  35% { left: 150%; }
+  100% { left: 150%; }
+}
+
+@keyframes glow-gold {
+  0% { box-shadow: 0 6px 20px rgba(217, 119, 6, 0.15), inset 0 0 0 1px rgba(254, 243, 199, 0.8); }
+  100% { box-shadow: 0 12px 32px rgba(217, 119, 6, 0.35), inset 0 0 0 1px rgba(254, 243, 199, 0.8); }
+}
+
+@keyframes glow-silver {
+  0% { box-shadow: 0 6px 20px rgba(100, 116, 139, 0.1), inset 0 0 0 1px rgba(241, 245, 249, 0.8); }
+  100% { box-shadow: 0 12px 32px rgba(100, 116, 139, 0.25), inset 0 0 0 1px rgba(241, 245, 249, 0.8); }
+}
+
+@keyframes glow-bronze {
+  0% { box-shadow: 0 6px 20px rgba(180, 83, 9, 0.1), inset 0 0 0 1px rgba(255, 247, 237, 0.8); }
+  100% { box-shadow: 0 12px 32px rgba(180, 83, 9, 0.25), inset 0 0 0 1px rgba(255, 247, 237, 0.8); }
+}
+
+@keyframes glow-diamond {
+  0% { box-shadow: 0 6px 22px rgba(6, 182, 212, 0.2), inset 0 0 8px rgba(255, 255, 255, 0.6); }
+  100% { box-shadow: 0 14px 38px rgba(6, 182, 212, 0.45), inset 0 0 12px rgba(255, 255, 255, 0.9); }
+}
+
+/* =========================================================================
+   VISTA EN VIVO BUTTON REDESIGN (Diseño 2 - Sombra Flotante)
+   ========================================================================= */
+.live-view-btn-v2 {
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  min-height: 38px !important;
+  border-radius: 50% !important;
+  border: none !important;
+  background: #ffffff !important;
+  color: var(--md-sys-color-primary, #003366) !important;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 4px 10px rgba(0, 51, 102, 0.15) !important;
+  outline: none !important;
+}
+
+.live-view-btn-v2 span {
+  font-size: 20px !important;
+  color: inherit !important;
+  transition: transform 0.25s ease !important;
+  font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24 !important;
+}
+
+.live-view-btn-v2:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 15px rgba(0, 51, 102, 0.2) !important;
+  color: #0055ff !important;
+}
+
+.live-view-btn-v2:hover span {
+  transform: scale(1.1) !important;
+}
+
+.live-view-btn-v2:active {
+  transform: translateY(0) scale(0.95) !important;
+  box-shadow: 0 2px 5px rgba(0, 51, 102, 0.1) !important;
+}
+
+/* =========================================================================
+   RESPONSIVE SUMMARY TABLES (Minimalist Adaptability)
+   ========================================================================= */
+@media (max-width: 768px) {
+  /* Ocultar cabeceras de tabla */
+  #panelCaptureSummary .summaryTable thead {
+    display: none !important;
+  }
+  
+  /* Convertir filas en tarjetas */
+  #panelCaptureSummary .summaryTable,
+  #panelCaptureSummary .summaryTable tbody,
+  #panelCaptureSummary .summaryTable tr {
+    display: block !important;
+    width: 100% !important;
+  }
+  
+  #panelCaptureSummary .summaryTable tr {
+    background: #ffffff !important;
+    border-radius: 20px !important;
+    padding: 14px 16px !important;
+    margin-bottom: 16px !important;
+    box-shadow: 0 4px 15px rgba(0, 51, 102, 0.05) !important;
+    border: 1px solid rgba(0, 51, 102, 0.04) !important;
+  }
+  
+  #panelCaptureSummary .summaryTable td {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 8px 0 !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+    font-size: 13px !important;
+    text-align: right !important;
+  }
+  
+  #panelCaptureSummary .summaryTable td:last-child {
+    border-bottom: none !important;
+  }
+  
+  #panelCaptureSummary .summaryTable td::before {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    text-align: left;
+    margin-right: 12px;
+  }
+  
+  /* Formateo del estatus en pantallas pequeñas */
+  #panelCaptureSummary .summaryTable td[data-label="Estatus"] {
+    justify-content: space-between !important;
+  }
+  
+  #panelCaptureSummary .summaryTable td[data-label="Estatus"] > div {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-left: 0 !important;
+  }
+}
+
