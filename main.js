@@ -804,25 +804,51 @@ const NOTIF_PREF_KEYS = {
   groups: "js1_notif_groups"
 };
 
+let NOTIFICATIONS_CHANNEL = null;
+
+function initNotificationsRealtime() {
+  if (!window.supabase || !TOKEN || !USER) return;
+
+  if (NOTIFICATIONS_CHANNEL) {
+    try {
+      window.supabase.removeChannel(NOTIFICATIONS_CHANNEL);
+    } catch (e) {
+      console.warn("[Realtime] Error removing channel:", e);
+    }
+    NOTIFICATIONS_CHANNEL = null;
+  }
+
+  console.log("[Realtime] Iniciando suscripción a la tabla notificaciones...");
+  
+  NOTIFICATIONS_CHANNEL = window.supabase
+    .channel('public-notificaciones-changes')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'notificaciones' },
+      (payload) => {
+        console.log("[Realtime] Cambio detectado:", payload.eventType, payload.new?.id || payload.old?.id);
+        loadNotifications({ silent: true }).catch(() => {});
+      }
+    )
+    .subscribe((status) => {
+      console.log("[Realtime] Canal notificaciones estado:", status);
+    });
+}
+
 function startNotificationsAutoRefresh() {
   stopNotificationsAutoRefresh();
-
-  NOTIF_AUTO_REFRESH_TIMER = setInterval(() => {
-    const role = String((USER && USER.rol) || "").trim().toUpperCase();
-
-    if (!TOKEN || !USER || !role) return;
-    if (document.hidden) return;
-
-    loadNotifications({ silent: true }).catch(err => {
-      console.warn("auto notif refresh error:", err);
-    });
-  }, 45000);
+  initNotificationsRealtime();
 }
 
 function stopNotificationsAutoRefresh() {
-  if (NOTIF_AUTO_REFRESH_TIMER) {
-    clearInterval(NOTIF_AUTO_REFRESH_TIMER);
-    NOTIF_AUTO_REFRESH_TIMER = null;
+  if (NOTIFICATIONS_CHANNEL) {
+    console.log("[Realtime] Removiendo suscripción a notificaciones...");
+    try {
+      window.supabase.removeChannel(NOTIFICATIONS_CHANNEL);
+    } catch (e) {
+      console.warn("[Realtime] Error removing channel:", e);
+    }
+    NOTIFICATIONS_CHANNEL = null;
   }
 }
 
@@ -3767,14 +3793,33 @@ async function supabaseRequest(action = "", payload) {
 
         console.log(`[Notif DEBUG] Starting fetch for ${usuario} (${role})`);
 
-        // 1. Test de existencia/RLS: ¿Vemos algo en la tabla?
-        const { data: testData } = await supabase.from('notificaciones').select('id').limit(1);
-        console.log(`[Notif DEBUG] RLS Test (can see any id?):`, !!testData && testData.length > 0);
+        // 1. Construir filtros OR para optimización en base de datos
+        const orClauses = ["target_scope.eq.GLOBAL"];
+        if (usuario) {
+          orClauses.push(`target_usuario.eq."${usuario}"`);
+        }
+        if (role) {
+          orClauses.push(`and(target_scope.eq.ROLE,target_usuario.eq."${role}")`);
+        }
+        if (clues) {
+          orClauses.push(`target_clues.eq."${clues}"`);
+        }
+        const mList = Array.isArray(USER?.municipiosAllowed) ? USER.municipiosAllowed : [];
+        mList.forEach(muni => {
+          if (muni) {
+            orClauses.push(`target_municipio.eq."${muni.toUpperCase().trim()}"`);
+          }
+        });
 
-        // 2. Obtener masa bruta (Sin orden ni filtros complejos de DB para evitar 400)
-        const { data: rawNotifs, error: notifErr } = await supabase.from('notificaciones')
+        const orFilterString = orClauses.join(',');
+        console.log(`[Notif DEBUG] PostgREST OR Filter:`, orFilterString);
+
+        // 2. Obtener masa filtrada desde Supabase
+        const { data: rawNotifs, error: notifErr } = await supabase
+          .from('notificaciones')
           .select('*')
-          .limit(300); // Traemos más para asegurar volumen
+          .or(orFilterString)
+          .limit(300);
 
         if (notifErr) {
           console.error(`[Notif DEBUG] Fetch error:`, notifErr);
