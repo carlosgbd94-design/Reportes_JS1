@@ -11394,19 +11394,26 @@ function showPinolObsModal(text, event) {
 
   if (triggerEl) {
     const rect = triggerEl.getBoundingClientRect();
-    const modalWidth = 280;
+    const modalWidth = 340; // matches index.html layout
 
-    let left = rect.left;
-    if (left + modalWidth > window.innerWidth) {
-      left = rect.right - modalWidth;
+    // Center of the trigger button
+    const btnCenterX = rect.left + rect.width / 2;
+
+    let left = btnCenterX - modalWidth / 2;
+    if (left < 16) {
+      left = 16;
+    } else if (left + modalWidth > window.innerWidth - 16) {
+      left = window.innerWidth - modalWidth - 16;
     }
 
-    let top = rect.bottom + 8;
-    if (rect.bottom + 160 > window.innerHeight) {
-      top = rect.top - 140;
-      modal.style.transformOrigin = "bottom left";
+    const originXPercent = ((btnCenterX - left) / modalWidth) * 100;
+
+    let top = rect.bottom + 12;
+    if (rect.bottom + 180 > window.innerHeight) {
+      top = rect.top - 160;
+      modal.style.transformOrigin = `${originXPercent}% 100%`;
     } else {
-      modal.style.transformOrigin = "top left";
+      modal.style.transformOrigin = `${originXPercent}% 0%`;
     }
 
     modal.style.left = `${left}px`;
