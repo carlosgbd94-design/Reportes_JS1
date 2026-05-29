@@ -11401,13 +11401,11 @@ function showPinolObsModal(text, event) {
       left = rect.right - modalWidth;
     }
 
-    let top = rect.top + window.scrollY;
-    // Position below if space permits, otherwise above
-    if (rect.bottom + 150 > window.innerHeight) {
-      top = rect.top + window.scrollY - 130;
+    let top = rect.bottom + 8;
+    if (rect.bottom + 160 > window.innerHeight) {
+      top = rect.top - 140;
       modal.style.transformOrigin = "bottom left";
     } else {
-      top = rect.bottom + window.scrollY + 8;
       modal.style.transformOrigin = "top left";
     }
 
@@ -11416,6 +11414,8 @@ function showPinolObsModal(text, event) {
   }
 
   modal.classList.remove("pointer-events-none", "opacity-0");
+  modal.style.opacity = "1";
+  modal.style.pointerEvents = "auto";
   modal.style.transform = "scale(1)";
 
   const outsideClickListener = (e) => {
@@ -11433,6 +11433,8 @@ function closePinolObsModal() {
   const modal = $("pinolObsModal");
   if (!modal) return;
   modal.classList.add("pointer-events-none", "opacity-0");
+  modal.style.opacity = "0";
+  modal.style.pointerEvents = "none";
   modal.style.transform = "scale(0.95)";
 }
 
