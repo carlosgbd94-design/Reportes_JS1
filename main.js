@@ -4791,6 +4791,13 @@ async function supabaseRequest(action = "", payload) {
 
         if (USER.rol === 'UNIDAD') {
           query = query.eq('clues', USER.clues);
+        } else if (USER.rol === 'MUNICIPAL' || USER.rol === 'JURISDICCIONAL') {
+          const mList = Array.isArray(USER?.municipiosAllowed) ? USER.municipiosAllowed : [];
+          if (mList.length > 0) {
+            query = query.in('municipio', mList);
+          } else if (USER.municipio) {
+            query = query.eq('municipio', USER.municipio);
+          }
         }
 
         const { data, error } = await query;
@@ -9670,44 +9677,89 @@ async function runPostLoginInit(user) {
 // 🛑 Duplicado de hydrateSessionUi eliminado.
 
 
-function setLoggedOutUI() {
+function resetApplicationState() {
+  console.log("[State Cleanup] Resetting application state...");
+  
+  // 1. Reset variables
   USER = null;
   STATUS = null;
   TOKEN = "";
   TODAY_CACHE = null;
-
-  stopRealtimeUX();
-
+  HAS_TODAY_SR = false;
+  HAS_TODAY_CONS = false;
+  HAS_SAVED_BIO = false;
+  window._pinolCache = [];
+  
   Object.assign(AppState, {
     user: null,
     status: null,
     token: "",
     todayCache: null,
     mainPanel: "CAP",
+    mainTab: "",
     captureTab: "SR",
     opsTab: "SUMMARY"
   });
+
+  // 2. Hide all major layout panels and forms in index.html
+  const panelsToHide = [
+    "panelWelcome", "panelADMIN", "panelCAP", "panelSEC", "rdaDashboardOverlay",
+    "formSR", "formCONS", "formBIO", "formPINOL", "pinolFlowBanner",
+    "panelCaptureSummary", "panelHistoryMetrics", "panelPINOLADMIN",
+    "panelUNIDADADMIN", "panelLotesAdmin", "panelConfigOverride", "panelUsersAdmin"
+  ];
+  
+  panelsToHide.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.display = "none";
+      el.classList.add("hidden");
+    }
+  });
+
+  // 3. Clear active navigation styling classes
+  const classesToRemove = ["active", "liveAccent", "notifHot"];
+  document.querySelectorAll('.main-nav-tab, .nav-tab, .nav-item').forEach(el => {
+    classesToRemove.forEach(cls => el.classList.remove(cls));
+  });
+
+  // 4. Reset forms/inputs to clean state
+  document.querySelectorAll("input, textarea, select").forEach(el => {
+    if (el.type === "checkbox" || el.type === "radio") {
+      el.checked = false;
+    } else {
+      el.value = "";
+    }
+    el.disabled = false;
+    el.style.opacity = "1";
+  });
+
+  // 5. Reset notifications and badges
+  resetNotifCounter();
+  clearLiveFeed();
+  if ($("bGuardado")) $("bGuardado").style.display = "none";
+  if ($("pinolBadgeMain")) $("pinolBadgeMain").style.display = "none";
+  if ($("pinolBadgeTab")) $("pinolBadgeTab").style.display = "none";
+}
+
+function setLoggedOutUI() {
+  resetApplicationState();
+  stopRealtimeUX();
+
   localStorage.removeItem("JS1_TOKEN");
   if ($("loginStatus")) $("loginStatus").textContent = "—";
   showRightColumn(false);
 
-  if ($("bGuardado")) $("bGuardado").style.display = "none";
-  if ($("pinolBadgeMain")) $("pinolBadgeMain").style.display = "none";
-  if ($("pinolBadgeTab")) $("pinolBadgeTab").style.display = "none";
-
   $("tabOPS_PINOL")?.classList.remove("liveAccent", "notifHot");
   $("tabCAP")?.classList.remove("liveAccent", "notifHot");
-
+ 
   if ($("tabOPS_PINOL")) $("tabOPS_PINOL").title = "Pinol";
   if ($("tabCAP")) $("tabCAP").title = "Captura";
-
+ 
   LIVE_STATE.pinolWatching = false;
   LIVE_STATE.summaryWatching = false;
   LIVE_STATE.unidadWatching = false;
   LIVE_STATE.historyWatching = false;
-
-  resetNotifCounter();
-  clearLiveFeed();
 
   // 🚪 Cerrar dropdowns de perfil y notificaciones al salir
   const profileDropdown = document.getElementById("profileDropdown");
