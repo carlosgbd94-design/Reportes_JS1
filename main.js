@@ -2396,8 +2396,9 @@ function openTopNotifDropdown() {
 
   if (!box) return;
 
+  // 1. Preparar bloque de diseño pero ocultar visualmente para evitar el flash
+  box.style.visibility = "hidden";
   box.style.display = "block";
-  box.classList.add("open");
 
   // Cerrar Explorador si está abierto
   const archBox = document.getElementById("archivosDropdown");
@@ -2414,7 +2415,12 @@ function openTopNotifDropdown() {
     currentVisible.length
   );
 
+  // 2. Posicionar de inmediato
   positionTopNotifDropdown();
+
+  // 3. Hacer visible e iniciar la animación en la posición correcta
+  box.style.visibility = "visible";
+  box.classList.add("open");
 }
 
 function closeTopNotifDropdown() {
