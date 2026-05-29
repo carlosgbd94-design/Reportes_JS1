@@ -805,6 +805,7 @@ const NOTIF_PREF_KEYS = {
 };
 
 let NOTIFICATIONS_CHANNEL = null;
+let PINOL_SOLICITUDES_CHANNEL = null;
 
 function initNotificationsRealtime() {
   if (!window.supabase || !TOKEN || !USER) return;
@@ -835,9 +836,45 @@ function initNotificationsRealtime() {
     });
 }
 
+function initPinolRealtime() {
+  if (!window.supabase || !TOKEN || !USER) return;
+
+  if (PINOL_SOLICITUDES_CHANNEL) {
+    try {
+      window.supabase.removeChannel(PINOL_SOLICITUDES_CHANNEL);
+    } catch (e) {
+      console.warn("[Realtime] Error removing pinol channel:", e);
+    }
+    PINOL_SOLICITUDES_CHANNEL = null;
+  }
+
+  console.log("[Realtime] Iniciando suscripción a la tabla pinol_solicitudes...");
+  
+  PINOL_SOLICITUDES_CHANNEL = window.supabase
+    .channel('public-pinol-solicitudes-changes')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'pinol_solicitudes' },
+      (payload) => {
+        console.log("[Realtime] Cambio detectado en pinol_solicitudes:", payload.eventType);
+        invalidatePinolCache();
+        listPinol(true).then(() => {
+          applyPinolFormLock();
+          syncCommandHub();
+        }).catch(err => {
+          console.warn("[Realtime] Error al actualizar pinol en realtime:", err);
+        });
+      }
+    )
+    .subscribe((status) => {
+      console.log("[Realtime] Canal pinol_solicitudes estado:", status);
+    });
+}
+
 function startNotificationsAutoRefresh() {
   stopNotificationsAutoRefresh();
   initNotificationsRealtime();
+  initPinolRealtime();
 }
 
 function stopNotificationsAutoRefresh() {
@@ -849,6 +886,15 @@ function stopNotificationsAutoRefresh() {
       console.warn("[Realtime] Error removing channel:", e);
     }
     NOTIFICATIONS_CHANNEL = null;
+  }
+  if (PINOL_SOLICITUDES_CHANNEL) {
+    console.log("[Realtime] Removiendo suscripción a pinol_solicitudes...");
+    try {
+      window.supabase.removeChannel(PINOL_SOLICITUDES_CHANNEL);
+    } catch (e) {
+      console.warn("[Realtime] Error removing pinol channel:", e);
+    }
+    PINOL_SOLICITUDES_CHANNEL = null;
   }
 }
 
