@@ -1755,6 +1755,10 @@ async function confirmPinolReceiptFlow(notificationId) {
 
     applyLocalPinolReceiptConfirm(notificationId);
 
+    try {
+      await refreshAfterMutation({ touchPinol: true });
+    } catch (e) { /* silent */ }
+
     showToast("Recepción confirmada correctamente");
   } catch (e) {
     console.error("confirmPinolReceiptFlow error:", e);
@@ -5559,6 +5563,69 @@ function invalidatePinolCache() {
   dropCacheByPrefix(buildCacheKey("PINOL_LIST", ""));
 }
 
+function getPinolFlowStatus() {
+  if (!USER || USER.rol !== "UNIDAD") return "NONE";
+  const items = window._pinolCache || [];
+  const myActive = items.filter(x =>
+    String(x?.clues || "") === String(USER.clues) &&
+    ["PENDIENTE", "ENTREGADO"].includes(String(x?.estatus || "").toUpperCase())
+  );
+  if (myActive.length === 0) return "NONE";
+  const hasDelivered = myActive.some(x => String(x?.estatus || "").toUpperCase() === "ENTREGADO");
+  if (hasDelivered) return "DELIVERED";
+  return "PENDING";
+}
+
+function updatePinolFormBanner(status) {
+  const banner = document.getElementById("pinolFlowBanner");
+  if (!banner) return;
+  if (status === "NONE") {
+    banner.style.display = "none";
+    banner.className = "";
+    banner.innerHTML = "";
+  } else if (status === "PENDING") {
+    banner.style.display = "flex";
+    banner.className = "pinol-flow-banner pending";
+    banner.innerHTML = `
+      <span class="material-symbols-rounded" style="font-size: 20px;">hourglass_empty</span>
+      <div>
+        Tu solicitud está en curso. El área municipal aún no ha surtido el insumo.
+      </div>
+    `;
+  } else if (status === "DELIVERED") {
+    banner.style.display = "flex";
+    banner.className = "pinol-flow-banner delivered";
+    banner.innerHTML = `
+      <span class="material-symbols-rounded" style="font-size: 20px;">local_shipping</span>
+      <div>
+        El insumo fue enviado. Revisa tus notificaciones y marca como recibido para habilitar una nueva solicitud.
+      </div>
+    `;
+  }
+}
+
+function applyPinolFormLock() {
+  const status = getPinolFlowStatus();
+  const form = document.getElementById("formPINOL");
+  const btn = document.getElementById("btnSavePINOL");
+  if (!form) return;
+
+  const locked = (status !== "NONE");
+
+  form.querySelectorAll("input, textarea, select").forEach(el => {
+    el.disabled = locked;
+    el.style.opacity = locked ? "0.5" : "1";
+  });
+  
+  if (btn) {
+    btn.disabled = locked;
+    btn.style.display = locked ? "none" : "";
+  }
+
+  updatePinolFormBanner(status);
+}
+
+
 const INFLIGHT_FETCHES = new Map();
 
 async function getCachedOrFetch({
@@ -5669,6 +5736,12 @@ async function refreshAfterMutation(options = {}) {
     }
 
     if (touchPinol) {
+      try {
+        await listPinol(true);
+      } catch (e) { /* silent */ }
+      applyPinolFormLock();
+      syncCommandHub();
+
       if (typeof refreshPinolBadgeOnly === "function") {
         await refreshPinolBadgeOnly().catch(() => { });
       }
@@ -13975,22 +14048,36 @@ function syncCommandHub() {
     } else if (captureTab === "PINOL") {
       // PINOL state machine for status chip
       try {
-        const pinolItems = window._pinolCache || [];
-        const pending = pinolItems.filter(x => String(x?.estatus || "").toUpperCase() === "PENDIENTE");
-        const fulfilled = pinolItems.filter(x => ["ENTREGADO", "RECIBIDO"].includes(String(x?.estatus || "").toUpperCase()));
-        if (pending.length > 0) {
-          hubStatus.className = "status-chip-v5 pending";
-          hubStatusText.textContent = "Solicitud Pendiente";
-        } else if (fulfilled.length > 0) {
-          hubStatus.className = "status-chip-v5 saved";
-          hubStatusText.textContent = "Solicitud Atendida";
+        if (USER && USER.rol === "UNIDAD") {
+          const flowStatus = getPinolFlowStatus();
+          if (flowStatus === "PENDING") {
+            hubStatus.className = "status-chip-v5 pinol-pending";
+            hubStatusText.textContent = "Solicitud en curso";
+          } else if (flowStatus === "DELIVERED") {
+            hubStatus.className = "status-chip-v5 pinol-delivered";
+            hubStatusText.textContent = "Envío realizado";
+          } else {
+            hubStatus.className = "status-chip-v5";
+            hubStatusText.textContent = "Sin solicitud";
+          }
         } else {
-          hubStatus.className = "status-chip-v5 pending";
-          hubStatusText.textContent = "Sin Solicitud";
+          const pinolItems = window._pinolCache || [];
+          const pending = pinolItems.filter(x => String(x?.estatus || "").toUpperCase() === "PENDIENTE");
+          const fulfilled = pinolItems.filter(x => ["ENTREGADO", "RECIBIDO"].includes(String(x?.estatus || "").toUpperCase()));
+          if (pending.length > 0) {
+            hubStatus.className = "status-chip-v5 pending";
+            hubStatusText.textContent = "Solicitudes Pendientes";
+          } else if (fulfilled.length > 0) {
+            hubStatus.className = "status-chip-v5 saved";
+            hubStatusText.textContent = "Atendidas";
+          } else {
+            hubStatus.className = "status-chip-v5";
+            hubStatusText.textContent = "Sin solicitudes";
+          }
         }
       } catch (e) {
-        hubStatus.className = "status-chip-v5 pending";
-        hubStatusText.textContent = "Sin Solicitud";
+        hubStatus.className = "status-chip-v5";
+        hubStatusText.textContent = "Sin solicitud";
       }
     } else if (isSaved) {
       hubStatus.className = "status-chip-v5 saved";
@@ -14060,6 +14147,7 @@ function syncCommandHub() {
 const originalActivateCapture = window.activateCapture;
 window.activateCapture = function (tab) {
   if (typeof originalActivateCapture === "function") originalActivateCapture(tab);
+  applyPinolFormLock();
   syncCommandHub();
 };
 
