@@ -1,0 +1,5 @@
+
+/* Heights fix */
+.podium-step.p-1 { height: 170px !important; }
+.podium-step.p-2 { height: 140px !important; }
+.podium-step.p-3 { height: 130px !important; }

@@ -2778,6 +2778,29 @@
             justify-content: center;
             margin-bottom: 16px;
           }
+
+          .rda-mobile-close-btn {
+            display: none;
+          }
+
+          @media (max-width: 768px) {
+            .rda-mobile-close-btn {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              position: absolute;
+              top: 16px;
+              right: 16px;
+              width: 40px;
+              height: 40px;
+              border-radius: 50%;
+              background: #f1f5f9;
+              color: #0f172a;
+              border: none;
+              cursor: pointer;
+              z-index: 100;
+            }
+          }
         </style>
 
         <div id="rdaDashboardPanel"

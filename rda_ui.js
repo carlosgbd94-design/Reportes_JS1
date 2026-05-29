@@ -377,7 +377,7 @@ function renderDashboard() {
     const sumaDosisCuatro = agg.dpt_4_dosis;
 
     agg.cobertura_menor1 = factorMenor1 > 0 ? Math.round((((sumaDosisMenor1 / 4.0) / factorMenor1) * 100) * 10) / 10 : 0;
-    agg.cobertura_uno = factorUno > 0 ? Math.round(((sumaDosisUno / factorUno) * 100) * 10) / 10 : 0;
+    agg.cobertura_uno = factorUno > 0 ? Math.round((((sumaDosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
     agg.cobertura_cuatro = factorCuatro > 0 ? Math.round(((sumaDosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
 
     // Renderizar componentes
@@ -615,7 +615,7 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                 const dosisCuatro = mAgg.dpt_4_dosis;
 
                 d1.push(factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0);
-                d2.push(factorUno > 0 ? Math.round(((dosisUno / factorUno) * 100) * 10) / 10 : 0);
+                d2.push(factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0);
                 d3.push(factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0);
             } else if (esquema === 'adultos') {
                 d1.push(mAgg.adol_hb); d2.push(mAgg.adol_sr); d3.push(mAgg.adol_vph); d4.push(mAgg.adol_td); d5.push(mAgg.adol_tdpa);
@@ -641,7 +641,7 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                 const dosisCuatro = u.dpt_4_dosis||0;
 
                 res.v1 = factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0;
-                res.v2 = factorUno > 0 ? Math.round(((dosisUno / factorUno) * 100) * 10) / 10 : 0;
+                res.v2 = factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
                 res.v3 = factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
                 res.sortVal = res.v1;
             } else if (esquema === 'adultos') {
@@ -771,7 +771,7 @@ function renderTable(fUnits, esquema) {
             const dosisCuatro = u.dpt_4_dosis || 0;
 
             res.v1 = factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0;
-            res.v2 = factorUno > 0 ? Math.round(((dosisUno / factorUno) * 100) * 10) / 10 : 0;
+            res.v2 = factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
             res.v3 = factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
             res.dosis = dosisM1 + dosisUno + dosisCuatro;
         } else if (esquema === 'adultos') {
@@ -1370,7 +1370,7 @@ function renderMobileDashboard() {
     const sumaDosisUno = agg.hexa_ref_dosis + agg.neumo_ref_dosis + agg.srp_2_dosis;
     const sumaDosisCuatro = agg.dpt_4_dosis;
     agg.cobertura_menor1 = factorMenor1 > 0 ? Math.round((((sumaDosisMenor1 / 4.0) / factorMenor1) * 100) * 10) / 10 : 0;
-    agg.cobertura_uno = factorUno > 0 ? Math.round(((sumaDosisUno / factorUno) * 100) * 10) / 10 : 0;
+    agg.cobertura_uno = factorUno > 0 ? Math.round((((sumaDosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
     agg.cobertura_cuatro = factorCuatro > 0 ? Math.round(((sumaDosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
 
     // === Render KPI Cards ===

@@ -92,8 +92,8 @@ class RDA2026Calculator {
         const total = this.sumVariables(registros, DICT_RDA.Hexa_Ref, meses)
                     + this.sumVariables(registros, DICT_RDA.Neumo_Ref, meses)
                     + this.sumVariables(registros, DICT_RDA.SRP_2, meses);
-        // Regla: Suma simple (sin dividir entre 3)
-        const cob = (total / factor) * 100;
+        // Dividir el total entre 3 según las especificaciones del esquema
+        const cob = ((total / 3) / factor) * 100;
         return isFinite(cob) ? Math.round(cob * 10) / 10 : 0;
     }
 
