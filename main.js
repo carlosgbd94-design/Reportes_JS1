@@ -11384,6 +11384,10 @@ function formatPinolDate(isoString) {
 }
 
 function showPinolObsModal(text, event) {
+  if (event) {
+    event.stopPropagation();
+  }
+
   const modal = $("pinolObsModal");
   const textEl = $("pinolObsText");
   if (!modal || !textEl) return;
@@ -11394,9 +11398,8 @@ function showPinolObsModal(text, event) {
 
   if (triggerEl) {
     const rect = triggerEl.getBoundingClientRect();
-    const modalWidth = 340; // matches index.html layout
+    const modalWidth = 340;
 
-    // Center of the trigger button
     const btnCenterX = rect.left + rect.width / 2;
 
     let left = btnCenterX - modalWidth / 2;
@@ -11408,11 +11411,13 @@ function showPinolObsModal(text, event) {
 
     const originXPercent = ((btnCenterX - left) / modalWidth) * 100;
 
-    let top = rect.bottom + 12;
-    if (rect.bottom + 180 > window.innerHeight) {
-      top = rect.top - 160;
-      modal.style.transformOrigin = `${originXPercent}% 100%`;
-    } else {
+    // Default to opening above the icon
+    let top = rect.top - 148;
+    modal.style.transformOrigin = `${originXPercent}% 100%`;
+
+    // Fallback below if it goes off-screen vertically at the top
+    if (top < 16) {
+      top = rect.bottom + 12;
       modal.style.transformOrigin = `${originXPercent}% 0%`;
     }
 
@@ -11425,15 +11430,17 @@ function showPinolObsModal(text, event) {
   modal.style.pointerEvents = "auto";
   modal.style.transform = "scale(1)";
 
-  const outsideClickListener = (e) => {
-    if (!modal.contains(e.target) && triggerEl && e.target !== triggerEl && !triggerEl.contains(e.target)) {
+  if (window._pinolObsCloseListener) {
+    document.removeEventListener("click", window._pinolObsCloseListener);
+  }
+
+  window._pinolObsCloseListener = (e) => {
+    if (!modal.contains(e.target) && triggerEl && !triggerEl.contains(e.target)) {
       closePinolObsModal();
-      document.removeEventListener("click", outsideClickListener);
     }
   };
-  setTimeout(() => {
-    document.addEventListener("click", outsideClickListener);
-  }, 50);
+
+  document.addEventListener("click", window._pinolObsCloseListener);
 }
 
 function closePinolObsModal() {
@@ -11443,6 +11450,11 @@ function closePinolObsModal() {
   modal.style.opacity = "0";
   modal.style.pointerEvents = "none";
   modal.style.transform = "scale(0.95)";
+
+  if (window._pinolObsCloseListener) {
+    document.removeEventListener("click", window._pinolObsCloseListener);
+    window._pinolObsCloseListener = null;
+  }
 }
 
 async function deletePinolRow(id) {
