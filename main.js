@@ -1480,7 +1480,10 @@ async function loadNotifications(options = {}) {
       });
 
       const data = res.data || {};
-      const items = Array.isArray(data.items) ? data.items : [];
+      const rawItems = Array.isArray(data.items) ? data.items : [];
+      const items = rawItems.map(item => Object.assign({}, item, {
+        status: item.status || (String(item.is_read).toUpperCase() === "SI" ? "READ" : "UNREAD")
+      }));
       const unread = Number(data.unread || 0);
       const prevUnread = Number(LAST_NOTIF_UNREAD || 0);
       const delta = unread - prevUnread;
@@ -1596,7 +1599,7 @@ function applyLocalNotificationRead(id) {
   LIVE_STATE.notifications = current
     .map(item => {
       if (String(item?.id || "") !== String(id || "")) return item;
-      return Object.assign({}, item, { status: "READ" });
+      return Object.assign({}, item, { status: "READ", is_read: "SI" });
     })
     .filter(item => {
       if (!ONLY_UNREAD_NOTIFS) return true;
@@ -1628,7 +1631,8 @@ function applyLocalPinolReceiptConfirm(notificationId) {
       });
 
       return Object.assign({}, patched, {
-        status: "READ"
+        status: "READ",
+        is_read: "SI"
       });
     })
     .filter(item => {
@@ -3871,9 +3875,16 @@ async function supabaseRequest(action = "", payload) {
           const da = new Date(a.created_ts || 0);
           const db = new Date(b.created_ts || 0);
           return db - da;
+        }).map(n => {
+          const finalStatus = n.status || (String(n.is_read).toUpperCase() === 'SI' ? 'READ' : 'UNREAD');
+          const finalIsRead = n.is_read || (String(finalStatus).toUpperCase() === 'READ' ? 'SI' : 'NO');
+          return Object.assign({}, n, {
+            status: finalStatus,
+            is_read: finalIsRead
+          });
         });
 
-        const unreadCount = sorted.filter(n => String(n.is_read).toUpperCase() === 'NO').length;
+        const unreadCount = sorted.filter(n => String(n.status).toUpperCase() !== 'READ').length;
         console.log(`[Notif DEBUG] Final filtered list:`, sorted.length);
 
         return {
@@ -4740,7 +4751,7 @@ async function supabaseRequest(action = "", payload) {
           .from('notificaciones')
           .update({
             meta_json: JSON.stringify(meta),
-            is_read: 'SI',
+            status: 'READ',
             read_ts: new Date().toISOString()
           })
           .eq('id', payload.notification_id);
@@ -4775,7 +4786,7 @@ async function supabaseRequest(action = "", payload) {
           target_usuario: payload.usuario_destino || null,
           title: payload.title || "Notificación",
           message: payload.message || "",
-          is_read: 'NO'
+          status: 'UNREAD'
         };
 
         // 🛡️ Regla de Oro: Si se dirige a CLUES, auto-poblar municipio para que el MUNICIPAL lo vea
@@ -4803,7 +4814,7 @@ async function supabaseRequest(action = "", payload) {
 
         const { error } = await supabase
           .from('notificaciones')
-          .update({ is_read: 'SI', read_ts: new Date().toISOString() })
+          .update({ status: 'READ', read_ts: new Date().toISOString() })
           .eq('id', payload.id);
         if (error) throw error;
         return { ok: true };
@@ -4821,7 +4832,7 @@ async function supabaseRequest(action = "", payload) {
         const { error } = await supabase
           .from('notificaciones')
           .update({
-            is_read: 'SI',
+            status: 'READ',
             read_ts: new Date().toISOString(),
             meta_json: JSON.stringify(meta)
           })
@@ -5172,7 +5183,7 @@ async function supabaseRequest(action = "", payload) {
             target_municipio: sol.municipio || null, // Importante para jerarquía municipal
             title: 'Pinol entregado',
             message: payload.comentario_notificacion || 'Tu solicitud de pinol ha sido marcada como entregada.',
-            is_read: 'NO',
+            status: 'UNREAD',
             meta_json: JSON.stringify({ source: 'PINOL', event: 'PINOL_ENTREGADO', pinol_id: sol.id })
           });
         }
