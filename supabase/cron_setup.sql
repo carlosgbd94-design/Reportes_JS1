@@ -41,7 +41,7 @@ SELECT cron.schedule(
     url := 'https://utclfqjietlxzlorxhrs.supabase.co/functions/v1/email-alerts',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Y2xmcWppZXRseHpsb3J4aHJzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjM1NjI1NCwiZXhwIjoyMDkxOTMyMjU0fQ.Izrt8M3FnEMclV15E_cRmyhXwsNf2GbvEYizADA9b0o'
+      'Authorization', 'Bearer YOUR_SERVICE_ROLE_KEY'
     ),
     body := '{"action": "send-reminders"}'
   );
@@ -58,7 +58,7 @@ SELECT cron.schedule(
     url := 'https://utclfqjietlxzlorxhrs.supabase.co/functions/v1/email-alerts',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Y2xmcWppZXRseHpsb3J4aHJzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjM1NjI1NCwiZXhwIjoyMDkxOTMyMjU0fQ.Izrt8M3FnEMclV15E_cRmyhXwsNf2GbvEYizADA9b0o'
+      'Authorization', 'Bearer YOUR_SERVICE_ROLE_KEY'
     ),
     body := '{"action": "send-summaries"}'
   );
@@ -79,7 +79,7 @@ SELECT cron.schedule(
     url := 'https://utclfqjietlxzlorxhrs.supabase.co/functions/v1/email-alerts',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Y2xmcWppZXRseHpsb3J4aHJzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjM1NjI1NCwiZXhwIjoyMDkxOTMyMjU0fQ.Izrt8M3FnEMclV15E_cRmyhXwsNf2GbvEYizADA9b0o'
+      'Authorization', 'Bearer YOUR_SERVICE_ROLE_KEY'
     ),
     body := '{"action": "send-reminders"}'
   );
@@ -96,7 +96,7 @@ SELECT cron.schedule(
     url := 'https://utclfqjietlxzlorxhrs.supabase.co/functions/v1/email-alerts',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Y2xmcWppZXRseHpsb3J4aHJzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjM1NjI1NCwiZXhwIjoyMDkxOTMyMjU0fQ.Izrt8M3FnEMclV15E_cRmyhXwsNf2GbvEYizADA9b0o'
+      'Authorization', 'Bearer YOUR_SERVICE_ROLE_KEY'
     ),
     body := '{"action": "send-summaries"}'
   );
