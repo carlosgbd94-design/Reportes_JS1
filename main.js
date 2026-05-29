@@ -3785,14 +3785,25 @@ async function supabaseRequest(action = "", payload) {
 
             if (pinolErr) console.warn("[Notif DEBUG] Pinol Synthesis warning:", pinolErr);
 
+            let readVNotifs = [];
+            let deletedVNotifs = [];
+            try {
+              readVNotifs = JSON.parse(localStorage.getItem("JS1_READ_VNOTIFS") || "[]");
+              deletedVNotifs = JSON.parse(localStorage.getItem("JS1_DELETED_VNOTIFS") || "[]");
+            } catch (e) { }
+
             (pinolSrc || []).forEach(p => {
+              const vNotifId = 'VNOTIF:PINOL:' + p.id;
+              if (deletedVNotifs.includes(vNotifId)) return;
+
               if (canSeeMunicipio_(USER, p.municipio)) {
+                const isRead = (p.estatus === 'RECIBIDO' || readVNotifs.includes(vNotifId)) ? 'SI' : 'NO';
                 virtualNotifs.push({
-                  id: 'VNOTIF:PINOL:' + p.id,
+                  id: vNotifId,
                   created_ts: p.timestamp_entrega || p.timestamp_solicitud,
                   title: 'Pedido de pinol entregado',
                   message: `Pinol entregado:\nFecha de solicitud: ${p.fecha_solicitud}\nUnidad: ${p.unidad || unitMap[p.clues] || 'Unidad Desconocida'}`,
-                  is_read: (p.estatus === 'RECIBIDO') ? 'SI' : 'NO', // Si la unidad ya recibió, marcar como leída para el supervisor
+                  is_read: isRead,
                   target_scope: 'CLUES',
                   target_clues: p.clues,
                   target_municipio: p.municipio,
@@ -4779,6 +4790,17 @@ async function supabaseRequest(action = "", payload) {
       }
 
       case "marknotificationread": {
+        if (payload.id && String(payload.id).startsWith("VNOTIF:")) {
+          try {
+            const readVNotifs = JSON.parse(localStorage.getItem("JS1_READ_VNOTIFS") || "[]");
+            if (!readVNotifs.includes(payload.id)) {
+              readVNotifs.push(payload.id);
+              localStorage.setItem("JS1_READ_VNOTIFS", JSON.stringify(readVNotifs));
+            }
+          } catch (e) { }
+          return { ok: true };
+        }
+
         const { error } = await supabase
           .from('notificaciones')
           .update({ is_read: 'SI', read_ts: new Date().toISOString() })
@@ -4809,6 +4831,17 @@ async function supabaseRequest(action = "", payload) {
       }
 
       case "deletenotification": {
+        if (payload.id && String(payload.id).startsWith("VNOTIF:")) {
+          try {
+            const deletedVNotifs = JSON.parse(localStorage.getItem("JS1_DELETED_VNOTIFS") || "[]");
+            if (!deletedVNotifs.includes(payload.id)) {
+              deletedVNotifs.push(payload.id);
+              localStorage.setItem("JS1_DELETED_VNOTIFS", JSON.stringify(deletedVNotifs));
+            }
+          } catch (e) { }
+          return { ok: true };
+        }
+
         const { error } = await supabase
           .from('notificaciones')
           .delete()
