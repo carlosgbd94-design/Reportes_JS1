@@ -4144,6 +4144,9 @@ async function supabaseRequest(action = "", payload) {
           const dates = [];
           let curr = new Date(start + "T12:00:00");
           const stop = new Date(end + "T12:00:00");
+          if (tipo === "BIO" && stop.getDay() === 4) {
+            stop.setDate(stop.getDate() + 1);
+          }
           while (curr <= stop) {
             const dow = curr.getDay();
             const ymd = dateToLocalYmd(curr);
@@ -4358,6 +4361,9 @@ async function supabaseRequest(action = "", payload) {
             const dates = [];
             let curr = new Date(start + "T12:00:00");
             const stop = new Date(end + "T12:00:00");
+            if (tipo === "BIO" && stop.getDay() === 4) {
+              stop.setDate(stop.getDate() + 1);
+            }
             while (curr <= stop) {
               const dow = curr.getDay();
               const ymd = dateToLocalYmd(curr);
@@ -11798,6 +11804,13 @@ function updateCumplimientoMedalTone(userRank, userTier = "") {
 }
 
 function renderHistoryMetrics(data) {
+  const getProgressBg = (pct) => {
+    if (pct === 100) return "linear-gradient(90deg, #10b981, #059669)";
+    if (pct >= 90) return "linear-gradient(90deg, #22c55e, #84cc16)";
+    if (pct >= 70) return "linear-gradient(90deg, #eab308, #ca8a04)";
+    return "linear-gradient(90deg, #ef4444, #dc2626)";
+  };
+
   const rows = data?.rows || [];
   const role = data?.role || "UNIDAD";
   const tbody = $("historyTbody");
@@ -11986,11 +11999,11 @@ function renderHistoryMetrics(data) {
               <div class="flex items-center gap-3 text-[10px] font-bold text-slate-500 w-full max-w-[250px]">
                   <div class="flex-1">
                       BIO (${r.bio_semanas_ok}/${r.eBio})
-                      <div class="lb-progress-wrap"><div class="lb-progress-fill lb-fill-${r.tier}" style="width: ${bPct}%"></div></div>
+                      <div class="lb-progress-wrap"><div class="lb-progress-fill" style="width: ${bPct}%; background: ${getProgressBg(bPct)} !important;"></div></div>
                   </div>
                   <div class="flex-1">
                       CONS (${r.cons_semanas_ok}/${r.eCons})
-                      <div class="lb-progress-wrap"><div class="lb-progress-fill lb-fill-${r.tier}" style="width: ${cPct}%"></div></div>
+                      <div class="lb-progress-wrap"><div class="lb-progress-fill" style="width: ${cPct}%; background: ${getProgressBg(cPct)} !important;"></div></div>
                   </div>
                   <div class="flex flex-col items-center justify-center w-10 ml-2" title="Pedido Mensual">
                       <span class="text-[9px]">PED</span>
@@ -12036,11 +12049,11 @@ function renderHistoryMetrics(data) {
             <div class="flex items-center gap-3 text-[10px] font-bold text-slate-500 w-full max-w-[250px]">
                 <div class="flex-1">
                     BIO (${r.bio_semanas_ok}/${r.eBio})
-                    <div class="lb-progress-wrap"><div class="lb-progress-fill lb-fill-${r.tier}" style="width: ${bPct}%"></div></div>
+                    <div class="lb-progress-wrap"><div class="lb-progress-fill" style="width: ${bPct}%; background: ${getProgressBg(bPct)} !important;"></div></div>
                 </div>
                 <div class="flex-1">
                     CONS (${r.cons_semanas_ok}/${r.eCons})
-                    <div class="lb-progress-wrap"><div class="lb-progress-fill lb-fill-${r.tier}" style="width: ${cPct}%"></div></div>
+                    <div class="lb-progress-wrap"><div class="lb-progress-fill" style="width: ${cPct}%; background: ${getProgressBg(cPct)} !important;"></div></div>
                 </div>
                 <div class="flex flex-col items-center justify-center w-10 ml-2" title="Pedido Mensual">
                     <span class="text-[9px]">PED</span>
@@ -12055,13 +12068,84 @@ function renderHistoryMetrics(data) {
   }
 
   // Trigger confetti if there is a top score of 90% or more
-  if (activeRows.length > 0 && activeRows.some(r => r.score >= 90) && typeof confetti === "function") {
-    confetti({
-      particleCount: 150,
-      spread: 80,
-      origin: { y: 0.6 },
-      colors: ['#ffd700', '#cbd5e1', '#cd7f32', '#06b6d4', '#10b981']
-    });
+  function triggerConfettiFallback() {
+    if (typeof confetti === "function") {
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#ffd700', '#cbd5e1', '#cd7f32', '#06b6d4', '#10b981']
+      });
+      return;
+    }
+    
+    console.log("[Confetti] Running HTML5 fallback animation...");
+    const canvas = document.createElement("canvas");
+    canvas.style.position = "fixed";
+    canvas.style.top = "0";
+    canvas.style.left = "0";
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    canvas.style.pointerEvents = "none";
+    canvas.style.zIndex = "999999";
+    document.body.appendChild(canvas);
+
+    const ctx = canvas.getContext("2d");
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    const colors = ['#ffd700', '#cbd5e1', '#cd7f32', '#06b6d4', '#10b981', '#ff4b5c', '#3f72af'];
+    const particles = [];
+
+    for (let i = 0; i < 120; i++) {
+      particles.push({
+        x: width / 2,
+        y: height * 0.7,
+        vx: (Math.random() - 0.5) * 16,
+        vy: (Math.random() - 0.85) * 22,
+        size: Math.random() * 8 + 4,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        rotation: Math.random() * 360,
+        rotationSpeed: (Math.random() - 0.5) * 8
+      });
+    }
+
+    let startTime = Date.now();
+    function animate() {
+      ctx.clearRect(0, 0, width, height);
+      let alive = false;
+
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.5;
+        p.vx *= 0.98;
+        p.rotation += p.rotationSpeed;
+
+        if (p.y < height && p.x > 0 && p.x < width) {
+          alive = true;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rotation * Math.PI / 180);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+          ctx.restore();
+        }
+      });
+
+      if (alive && Date.now() - startTime < 4000) {
+        requestAnimationFrame(animate);
+      } else {
+        canvas.remove();
+      }
+    }
+    animate();
+  }
+
+  if (activeRows.length > 0) {
+    setTimeout(() => {
+      triggerConfettiFallback();
+    }, 300);
   }
 }
 
