@@ -11564,6 +11564,7 @@ async function refreshPinol() {
     </span>
   `;
       }
+      const obsText = String(x?.observaciones || "").trim();
       const obsHtml = obsText ? `<button type="button" class="ghostBtn" onclick="showPinolObsModal('${escapeHtml(escapeAttr(obsText))}', event)" title="Ver observación" style="margin: 0 auto; display: flex;"><span class="material-symbols-rounded">chat</span></button>` : `<span class="muted text-center block">—</span>`;
 
       const fechaSoliFormateada = formatPinolDate(x?.fecha_solicitud);
