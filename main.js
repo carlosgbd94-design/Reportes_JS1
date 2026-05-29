@@ -4834,6 +4834,23 @@ async function supabaseRequest(action = "", payload) {
         };
         const { error } = await supabase.from('pinol_solicitudes').insert(record);
         if (error) throw error;
+
+        // Notificación para MUNICIPAL / ADMIN de que hay nueva solicitud
+        await supabase.from('notificaciones').insert({
+          id: 'NOTIF:PINOL_REQ:' + record.id,
+          created_ts: new Date().toISOString(),
+          created_date: todayYmdLocal(),
+          from_usuario: USER.usuario,
+          from_rol: USER.rol,
+          target_scope: 'MUNICIPIO',
+          target_municipio: record.municipio,
+          target_clues: record.clues,
+          title: 'Nueva solicitud de pinol',
+          message: `La unidad ${record.unidad} ha solicitado ${record.solicitud_botellas} botella(s) de Pinol.`,
+          status: 'UNREAD',
+          meta_json: JSON.stringify({ source: 'PINOL', event: 'PINOL_SOLICITADO', pinol_id: record.id })
+        }).catch(err => console.warn("[savepinol] notif insert failed:", err));
+
         return { ok: true };
       }
 
@@ -5270,6 +5287,12 @@ async function supabaseRequest(action = "", payload) {
           .eq('id', payload.id);
 
         if (updateError) throw updateError;
+
+        // Auto-marcar como leída la solicitud inicial para los supervisores
+        await supabase.from('notificaciones')
+          .update({ status: 'READ', read_ts: new Date().toISOString() })
+          .eq('id', 'NOTIF:PINOL_REQ:' + payload.id)
+          .catch(() => {});
 
         // Crear notificación para la unidad
         const { data: sol } = await supabase.from('pinol_solicitudes').select('*').eq('id', payload.id).single();
