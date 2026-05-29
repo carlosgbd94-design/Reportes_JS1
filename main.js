@@ -1131,7 +1131,7 @@ function formatNotifDate(ts) {
 function formatNotifBody(title, message) {
   if (!message) return "";
   let clean = message;
-  const isDelivery = (title && title.toLowerCase().includes("entrega")) || message.toLowerCase().includes("entregada");
+  const isDelivery = (title && title.toLowerCase().includes("entrega")) || message.toLowerCase().includes("entregada") || message.toLowerCase().includes("recibido");
 
   if (isDelivery) {
     clean = "Pinol entregado:";
@@ -1139,7 +1139,7 @@ function formatNotifBody(title, message) {
     clean = title ? `${title}:` : "Notificación:";
   }
 
-  const unidadMatch = message.match(/Unidad:\s*([^.\n]+)/i);
+  const unidadMatch = message.match(/Unidad:\s*([^.\n]+)/i) || message.match(/Unidad de salud:\s*([^.\n]+)/i);
   const unidad = unidadMatch ? unidadMatch[1].trim().split(" CLUES:")[0].split(" Solicitó:")[0] : "";
 
   const fechaMatch = message.match(/Fecha de solicitud:\s*([\d-]+)/i);
@@ -1157,6 +1157,17 @@ function formatNotifBody(title, message) {
   let html = `<strong style="color:var(--md-sys-color-primary);">${clean}</strong>`;
   if (fechaReq) html += `<div style="margin-top:2px;">Fecha de solicitud: ${fechaReq}</div>`;
   if (unidad) html += `<div>Unidad de salud: ${unidad}</div>`;
+
+  // Mostrar comentario personalizado de entrega si existe y no es el genérico/virtual
+  if (isDelivery) {
+    const isGeneric = message.includes("Tu solicitud de pinol ha sido marcada como entregada.");
+    const isVirtual = message.includes("Pinol entregado:\n");
+    if (!isGeneric && !isVirtual && message.trim()) {
+      html += `<div style="margin-top:6px; padding:6px 10px; background:rgba(0,0,0,0.03); border-left:3px solid var(--md-sys-color-primary); border-radius:4px; font-size:12px; color:var(--md-sys-color-on-surface-variant); font-style:italic;">
+        <strong>Comentario:</strong> "${escapeHtml(message)}"
+      </div>`;
+    }
+  }
 
   return html;
 }
@@ -5663,7 +5674,7 @@ function applyPinolFormLock() {
   
   if (btn) {
     btn.disabled = locked;
-    btn.style.display = locked ? "none" : "";
+    btn.style.display = "none"; // Always keep hidden as a proxy, using the Command Hub button instead
   }
 
   updatePinolFormBanner(status);
