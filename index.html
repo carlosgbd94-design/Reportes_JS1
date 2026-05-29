@@ -3080,24 +3080,23 @@
     </div>
   </div>
 
-  <!-- ✅ MODAL OBSERVACIONES PINOL -->
+  <!-- ✅ POPUP OBSERVACIONES PINOL (Compacto, posicionado dinámicamente) -->
   <div id="pinolObsModal"
-    class="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-primary/20 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
-    <div
-      class="bg-white rounded-2xl shadow-xl w-full max-w-[400px] border border-outline-variant/30 transform scale-95 transition-all duration-300 flex flex-col overflow-hidden"
-      id="pinolObsModalInner">
-      <div class="px-5 py-4 border-b border-outline-variant/30 flex justify-between items-center bg-surface-variant/30">
-        <div class="font-black text-primary flex items-center gap-2"><span
-            class="material-symbols-rounded text-primary/60">chat</span> Observación</div>
-        <button type="button"
-          class="text-primary/40 hover:text-primary transition-colors cursor-pointer bg-transparent border-none outline-none"
-          onclick="closePinolObsModal()">
-          <span class="material-symbols-rounded text-[20px]">close</span>
-        </button>
+    class="fixed z-[10000] bg-white rounded-2xl shadow-xl w-[280px] border border-slate-200 opacity-0 pointer-events-none transition-all duration-300 transform scale-95 origin-top-left flex flex-col overflow-hidden"
+    style="left: 0px; top: 0px;">
+    <div class="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/80">
+      <div class="font-bold text-[13px] text-primary flex items-center gap-1.5">
+        <span class="material-symbols-rounded text-primary/60 text-[18px]">chat</span>
+        Observación
       </div>
-      <div class="p-6">
-        <p id="pinolObsText" class="text-[14px] font-medium text-slate-700 m-0 leading-relaxed"></p>
-      </div>
+      <button type="button"
+        class="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer bg-transparent border-none outline-none flex items-center justify-center p-0.5"
+        onclick="closePinolObsModal()">
+        <span class="material-symbols-rounded text-[16px]">close</span>
+      </button>
+    </div>
+    <div class="p-4">
+      <p id="pinolObsText" class="text-[12.5px] font-semibold text-slate-700 m-0 leading-relaxed break-words"></p>
     </div>
   </div>
 
@@ -3158,7 +3157,7 @@
           </div>
         </div>
 
-        <div class="fieldCard" style="background:transparent; border:none; padding:0;">
+        <div style="margin-bottom: 20px;">
           <label
             style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:10px; display:block;">
             COMENTARIO PARA LA UNIDAD (OPCIONAL)
@@ -3167,7 +3166,7 @@
             style="
                 min-height: 100px;
                 background: var(--md-surface-container-highest);
-                border: 1px solid var(--md-outline-variant);
+                border: 1.5px solid var(--md-outline-variant);
                 border-radius: 16px;
                 padding: 14px;
                 font-size: 15px;

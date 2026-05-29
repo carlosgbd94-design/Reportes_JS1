@@ -11383,22 +11383,55 @@ function formatPinolDate(isoString) {
   return `${dia}/${mes}/${anio}`;
 }
 
-function showPinolObsModal(text) {
+function showPinolObsModal(text, event) {
   const modal = $("pinolObsModal");
-  const inner = $("pinolObsModalInner");
   const textEl = $("pinolObsText");
-  if (!modal || !inner || !textEl) return;
+  if (!modal || !textEl) return;
+
   textEl.textContent = text || "";
+
+  if (event && event.currentTarget) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const modalWidth = 280;
+
+    let left = rect.left;
+    if (left + modalWidth > window.innerWidth) {
+      left = rect.right - modalWidth;
+    }
+
+    let top = rect.top + window.scrollY;
+    // Position below if space permits, otherwise above
+    if (rect.bottom + 150 > window.innerHeight) {
+      top = rect.top + window.scrollY - 130;
+      modal.style.transformOrigin = "bottom left";
+    } else {
+      top = rect.bottom + window.scrollY + 8;
+      modal.style.transformOrigin = "top left";
+    }
+
+    modal.style.left = `${left}px`;
+    modal.style.top = `${top}px`;
+  }
+
   modal.classList.remove("pointer-events-none", "opacity-0");
-  inner.classList.remove("scale-95");
+  modal.style.transform = "scale(1)";
+
+  const outsideClickListener = (e) => {
+    if (!modal.contains(e.target) && event && e.target !== event.currentTarget && !event.currentTarget.contains(e.target)) {
+      closePinolObsModal();
+      document.removeEventListener("click", outsideClickListener);
+    }
+  };
+  setTimeout(() => {
+    document.addEventListener("click", outsideClickListener);
+  }, 50);
 }
 
 function closePinolObsModal() {
   const modal = $("pinolObsModal");
-  const inner = $("pinolObsModalInner");
-  if (!modal || !inner) return;
+  if (!modal) return;
   modal.classList.add("pointer-events-none", "opacity-0");
-  inner.classList.add("scale-95");
+  modal.style.transform = "scale(0.95)";
 }
 
 async function deletePinolRow(id) {
@@ -11531,8 +11564,7 @@ async function refreshPinol() {
     </span>
   `;
       }
-      const obsText = String(x?.observaciones || "").trim();
-      const obsHtml = obsText ? `<button type="button" class="ghostBtn" onclick="showPinolObsModal('${escapeHtml(escapeAttr(obsText))}')" title="Ver observación" style="margin: 0 auto; display: flex;"><span class="material-symbols-rounded">chat</span></button>` : `<span class="muted text-center block">—</span>`;
+      const obsHtml = obsText ? `<button type="button" class="ghostBtn" onclick="showPinolObsModal('${escapeHtml(escapeAttr(obsText))}', event)" title="Ver observación" style="margin: 0 auto; display: flex;"><span class="material-symbols-rounded">chat</span></button>` : `<span class="muted text-center block">—</span>`;
 
       const fechaSoliFormateada = formatPinolDate(x?.fecha_solicitud);
       const fechaEntrega = x?.fecha_entrega || x?.timestamp_entrega || "";

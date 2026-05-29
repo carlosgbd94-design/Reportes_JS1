@@ -4576,7 +4576,15 @@ input[disabled] {
   font-family: inherit;
   font-size: 15px;
   font-weight: 500;
+  transition: all 0.3s ease;
 }
+#pinolEntregaComentario:focus {
+  outline: none;
+  border-color: var(--md-sys-color-primary, #006a6a) !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(0, 106, 106, 0.08);
+}
+
 
 /* Animaci*/
 @keyframes modalFadeIn {
