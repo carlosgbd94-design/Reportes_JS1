@@ -11390,8 +11390,10 @@ function showPinolObsModal(text, event) {
 
   textEl.textContent = text || "";
 
-  if (event && event.currentTarget) {
-    const rect = event.currentTarget.getBoundingClientRect();
+  const triggerEl = event ? event.currentTarget : null;
+
+  if (triggerEl) {
+    const rect = triggerEl.getBoundingClientRect();
     const modalWidth = 280;
 
     let left = rect.left;
@@ -11417,7 +11419,7 @@ function showPinolObsModal(text, event) {
   modal.style.transform = "scale(1)";
 
   const outsideClickListener = (e) => {
-    if (!modal.contains(e.target) && event && e.target !== event.currentTarget && !event.currentTarget.contains(e.target)) {
+    if (!modal.contains(e.target) && triggerEl && e.target !== triggerEl && !triggerEl.contains(e.target)) {
       closePinolObsModal();
       document.removeEventListener("click", outsideClickListener);
     }
