@@ -1489,15 +1489,15 @@
                   </div>
 
                   <!-- 🛡️ OPCIÓN: NO HACER PEDIDO MENSUAL (Solo existencias) -->
-                  <div
-                    class="w-full lg:w-[260px] bg-white border-2 border-slate-200 rounded-[24px] p-5 flex flex-col justify-center gap-3 shadow-sm transition-all hover:border-primary/30 group">
+                  <div id="cardNoPedido"
+                    class="w-full lg:w-[260px] bg-white border-2 border-slate-200 rounded-[24px] p-5 flex flex-col justify-center gap-3 shadow-sm transition-all duration-300 hover:border-primary/30 group">
                     <div class="flex items-center justify-between">
                       <div class="flex items-center gap-2.5">
-                        <div
+                        <div id="iconNoPedidoBg"
                           class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
                           <span class="material-symbols-rounded text-[20px]">inventory</span>
                         </div>
-                        <span
+                        <span id="labelNoPedido"
                           class="text-[11px] font-black uppercase tracking-wider text-slate-600 group-hover:text-primary transition-colors">Solo
                           Existencias</span>
                       </div>
@@ -1508,7 +1508,7 @@
                         </div>
                       </label>
                     </div>
-                    <div
+                    <div id="hintNoPedido"
                       class="text-[10px] font-bold text-slate-400 leading-tight group-hover:text-slate-500 transition-colors">
                       Activa esta opción si <b>NO</b> necesitas realizar pedido este mes.
                     </div>
@@ -2076,9 +2076,16 @@
           <div class="captureSummaryGrid">
             <div>
               <div class="sectionHeader">
-                <div class="sectionTitleWrap">
-                  <span class="material-symbols-rounded" style="color: #4ade80;">check_circle</span>
-                  <h3>Unidades que ya capturaron</h3>
+                <div class="sectionTitleWrap" style="display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 12px; width: 100%;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-rounded" style="color: #22c55e; font-size: 20px;">check_circle</span>
+                    <h3 style="font-size: 13px; font-weight: 800; color: #475569; margin: 0; font-family: inherit;">Unidades que ya capturaron</h3>
+                  </div>
+                  <!-- Nomenclatura dinámica para Pedido de Biológico (Solo Existencias) - Enseguida del título -->
+                  <div id="legendBioSinPedido" style="display: none; align-items: center; gap: 6px; margin-left: 4px;">
+                    <span class="material-symbols-rounded" style="color: #3b82f6; font-size: 20px;">check_circle</span>
+                    <span style="font-size: 13px; font-weight: 800; color: #475569; font-family: inherit;">Sin pedido de biológico</span>
+                  </div>
                 </div>
               </div>
 
@@ -2104,9 +2111,9 @@
 
             <div>
               <div class="sectionHeader" style="border-left-color: var(--warn);">
-                <div class="sectionTitleWrap">
-                  <span class="material-symbols-rounded" style="color: var(--warn);">pending</span>
-                  <h3>Faltantes por capturar</h3>
+                <div class="sectionTitleWrap" style="display: flex; align-items: center; gap: 8px;">
+                  <span class="material-symbols-rounded" style="color: var(--warn); font-size: 20px;">pending</span>
+                  <h3 style="font-size: 13px; font-weight: 800; color: #475569; margin: 0; font-family: inherit;">Faltantes por capturar</h3>
                 </div>
               </div>
 

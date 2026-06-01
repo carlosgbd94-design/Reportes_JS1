@@ -3777,6 +3777,8 @@ async function supabaseRequest(action = "", payload, options = {}) {
           promedio_frascos: Number(it.promedio_frascos || 0),
           existencia_actual_frascos: Number(it.existencia_actual_frascos || 0),
           pedido_frascos: Number(it.pedido_frascos || 0),
+          tipo_pedido: payload.tipo_pedido || "MENSUAL",
+          sin_pedido: payload.sin_pedido || false,
           capturado_por: String(payload.nombre || USER.nombre || USER.usuario || "").toUpperCase()
         }));
 
@@ -4213,6 +4215,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
 
               if (tipo === "BIO") {
                 metadata.tipo_pedido = record?.tipo_pedido || "MENSUAL";
+                metadata.sin_pedido = record?.sin_pedido || false;
               }
               return metadata;
             }),
@@ -8751,8 +8754,82 @@ async function loadBioForm() {
   if ($("fechaPedidoBIO")) $("fechaPedidoBIO").value = BIO_STATE.fechaPedidoProgramada || "";
   if ($("fechaPedidoBIOBox")) $("fechaPedidoBIOBox").textContent = BIO_STATE.fechaPedidoFriendly || "—";
 
-  // Resetear toggle de "No hacer pedido"
-  if ($("chkNoPedido")) $("chkNoPedido").checked = false;
+  // Evaluar si es "Solo Existencias" (todos los pedidos_frascos en la base de datos están vacíos o en 0)
+  let isOnlyStockSaved = false;
+  if (HAS_SAVED_BIO && BIO_STATE.rows && BIO_STATE.rows.length > 0) {
+    isOnlyStockSaved = BIO_STATE.rows.every(row => !row.pedido_frascos || Number(row.pedido_frascos) === 0);
+  }
+
+  // Configurar toggle de "No hacer pedido"
+  const chkNoPedido = $("chkNoPedido");
+  if (chkNoPedido) {
+    chkNoPedido.checked = isOnlyStockSaved;
+    
+    // Listener interactivo para manejar la habilitación/deshabilitación y estilo de la tarjeta
+    const updateStockOnlyUI = () => {
+      const isChecked = chkNoPedido.checked;
+      const card = $("cardNoPedido");
+      const iconBg = $("iconNoPedidoBg");
+      const label = $("labelNoPedido");
+      const hint = $("hintNoPedido");
+      
+      if (card) {
+        if (isChecked) {
+          card.style.backgroundColor = "#f0fdf4"; // Verde muy claro premium
+          card.style.borderColor = "#bbf7d0";
+          if (iconBg) {
+            iconBg.style.backgroundColor = "#dcfce7";
+            iconBg.style.color = "#16a34a";
+          }
+          if (label) label.style.color = "#15803d";
+          if (hint) {
+            hint.innerHTML = "Modo: <b>Reportando solo existencias</b> (pedido en ceros).";
+            hint.style.color = "#166534";
+          }
+        } else {
+          card.style.backgroundColor = "#ffffff";
+          card.style.borderColor = "#e2e8f0";
+          if (iconBg) {
+            iconBg.style.backgroundColor = "";
+            iconBg.style.color = "";
+          }
+          if (label) label.style.color = "";
+          if (hint) {
+            hint.innerHTML = "Activa esta opción si <b>NO</b> necesitas realizar pedido este mes.";
+            hint.style.color = "";
+          }
+        }
+      }
+      
+      // Bloquear/desbloquear inputs de la columna "pedido"
+      document.querySelectorAll('input[data-kind="pedido"]').forEach(inp => {
+        if (isChecked) {
+          // Guardar valor anterior en memoria antes de poner a 0
+          if (!inp.dataset.preVal) inp.dataset.preVal = inp.value;
+          inp.value = "0";
+          inp.disabled = true;
+          inp.style.opacity = "0.5";
+          inp.style.backgroundColor = "#f1f5f9";
+        } else {
+          // Restaurar valor anterior si existía
+          if (inp.dataset.preVal !== undefined) {
+            inp.value = inp.dataset.preVal;
+            delete inp.dataset.preVal;
+          }
+          // Habilitar solo si el formulario global no está bloqueado
+          const formBioLocked = HAS_SAVED_BIO && !EDIT_BIO;
+          inp.disabled = formBioLocked;
+          inp.style.opacity = "";
+          inp.style.backgroundColor = "";
+        }
+      });
+      refreshBioAlerts();
+    };
+
+    chkNoPedido.onchange = updateStockOnlyUI;
+    // Ejecutar inmediatamente para configurar el estado inicial
+    setTimeout(updateStockOnlyUI, 50);
+  }
 
   const bioHint = $("bioHint");
   const bioDayAlert = $("bioDayAlert");
@@ -8815,6 +8892,12 @@ function setEditModeBIO(on) {
   applyCaptureLockState();
   updateCaptureStateBanner();
   syncCommandHub();
+  
+  // Forzar que el switch y los inputs de pedido se sincronicen con el nuevo estado de edición
+  const chk = $("chkNoPedido");
+  if (chk && typeof chk.onchange === "function") {
+    chk.onchange();
+  }
 }
 
 function setFormLocked(formId, locked) {
@@ -9424,7 +9507,7 @@ function renderCaptureSummary(data) {
           <td data-label="Estatus">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%">
               <div style="display:flex; align-items:center; gap:8px">
-                <span class="material-symbols-rounded" style="color: #22c55e; font-size: 24px; vertical-align: middle;" title="${r.editado === 'SI' ? 'Editado' : 'Capturado'}">check_circle</span>
+                <span class="material-symbols-rounded" style="color: ${r.sin_pedido ? '#3b82f6' : '#22c55e'}; font-size: 24px; vertical-align: middle;" title="${r.sin_pedido ? 'Sin pedido de biológico (Solo Existencias)' : (r.editado === 'SI' ? 'Editado' : 'Capturado')}">check_circle</span>
                 ${r.tipo_pedido ? `<span class="opacity-60 font-black uppercase text-[10px] tracking-tighter" style="background:#f1f5f9; padding:2px 6px; border-radius:6px">${r.tipo_pedido}</span>` : ""}
               </div>
               <button class="live-view-btn-v2" onclick="openLiveView('${r.clues}','${escapeHtml(r.unidad)}','${escapeHtml(r.municipio)}')" title="Ver inventario en vivo">
@@ -9453,6 +9536,12 @@ function renderCaptureSummary(data) {
           </td>
         </tr>
       `).join("");
+  }
+
+  // Mostrar u ocultar la nomenclatura dinámica según la vista activa
+  const legendBio = $("legendBioSinPedido");
+  if (legendBio) {
+    legendBio.style.display = (tipo === "BIO") ? "flex" : "none";
   }
 
   renderCapturadasOnly(capturadas);
