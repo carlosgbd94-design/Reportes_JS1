@@ -8764,8 +8764,8 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
 }
 
 #bCumplimiento {
-  min-height: 140px !important;
-  padding: 24px 32px !important;
+  min-height: 155px !important;
+  padding: 20px 24px !important;
 }
 
 /* Liquid Glass Panels (Sin backdrop-blur) */
