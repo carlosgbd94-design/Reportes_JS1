@@ -1103,7 +1103,44 @@
             <!-- Decorative Separator -->
             <div class="hidden md:block w-px h-12 bg-outline-variant/40"></div>
 
-            <!-- Compliance KPI (Completely Redesigned to Prevent Overlaps) -->
+             <!-- SVGs for gamified medals with premium high fidelity metallic gradients -->
+             <svg style="display: none;">
+               <defs>
+                 <!-- Gold Metallic Gradient -->
+                 <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                   <stop offset="0%" stop-color="#ffe259" />
+                   <stop offset="100%" stop-color="#ffa751" />
+                 </linearGradient>
+                 <!-- Silver Metallic Gradient -->
+                 <linearGradient id="silverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                   <stop offset="0%" stop-color="#e2ebf0" />
+                   <stop offset="100%" stop-color="#cfd9df" />
+                 </linearGradient>
+                 <!-- Bronze Metallic Gradient -->
+                 <linearGradient id="bronzeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                   <stop offset="0%" stop-color="#f39c12" />
+                   <stop offset="100%" stop-color="#d35400" />
+                 </linearGradient>
+                 <!-- Diamond/Cyan Neon Gradient -->
+                 <linearGradient id="diamondGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                   <stop offset="0%" stop-color="#00f2fe" />
+                   <stop offset="50%" stop-color="#4facfe" />
+                   <stop offset="100%" stop-color="#000000" />
+                 </linearGradient>
+                 <!-- Steel Metallic Gradient -->
+                 <linearGradient id="steelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                   <stop offset="0%" stop-color="#708090" />
+                   <stop offset="100%" stop-color="#3a506b" />
+                 </linearGradient>
+                 <!-- Emerald Gradient -->
+                 <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                   <stop offset="0%" stop-color="#11998e" />
+                   <stop offset="100%" stop-color="#38ef7d" />
+                 </linearGradient>
+               </defs>
+             </svg>
+
+             <!-- Compliance KPI (Completely Redesigned to Prevent Overlaps) -->
              <div class="flex items-center justify-center gap-4 flex-wrap w-full md:w-auto h-full">
                <div id="bCumplimiento" data-tone="bad" style="min-height: 140px; padding: 24px 32px;"
                  class="flex flex-col justify-between w-full md:w-auto min-w-[360px] rounded-3xl bg-white border border-outline-variant/50 shadow-sm transition-all hover:shadow-md group cursor-help relative overflow-hidden">
@@ -3834,27 +3871,40 @@
       container.classList.remove("good", "ok", "warn", "bad", "podium-gold-chip", "podium-silver-chip", "podium-bronze-chip", "podium-steel-chip", "podium-emerald-chip", "podium-diamond-chip");
       container.removeAttribute("data-tone");
 
-      // Inject medals (custom dynamic medals list or standard set)
+      // Inject medals (custom dynamic medals list or standard set) using high-fidelity vector SVGs
       if (medalsEl) {
         if (customMedals && Array.isArray(customMedals)) {
           medalsEl.innerHTML = "";
           customMedals.forEach(m => {
-            let color = "text-cyan-400";
-            let icon = "diamond";
-            if (m.type === "oro") { color = "text-yellow-500"; icon = "workspace_premium"; }
-            else if (m.type === "plata") { color = "text-slate-400"; icon = "military_tech"; }
-            else if (m.type === "bronce") { color = "text-amber-600"; icon = "military_tech"; }
-            else if (m.type === "acero") { color = "text-cyan-500"; icon = "workspace_premium"; }
-            else if (m.type === "jade") { color = "text-emerald-500"; icon = "military_tech"; }
-            
-            medalsEl.innerHTML += `<span class="material-symbols-rounded ${color} text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="Medalla de cumplimiento ${m.type.charAt(0).toUpperCase() + m.type.slice(1)} - ${m.month}">${icon}</span>`;
+            let fillUrl = "url(#goldGrad)";
+            let pathD = "M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M12,17A5,5 0 1,1 17,12A5,5 0 0,1 12,17Z";
+            let isHighTier = true;
+            if (m.type === "diamante") { fillUrl = "url(#diamondGrad)"; pathD = "M12,2L2,12L12,22L22,12Z"; }
+            else if (m.type === "plata") { fillUrl = "url(#silverGrad)"; }
+            else if (m.type === "bronce") { fillUrl = "url(#bronzeGrad)"; pathD = "M12,2L4,5V11C4,16.5 8.3,21.7 12,23C15.7,21.7 20,16.5 20,11V5L12,2Z"; isHighTier = false; }
+            else if (m.type === "acero") { fillUrl = "url(#steelGrad)"; pathD = "M12,2L4,5V11C4,16.5 8.3,21.7 12,23C15.7,21.7 20,16.5 20,11V5L12,2Z"; isHighTier = false; }
+            else if (m.type === "jade") { fillUrl = "url(#emeraldGrad)"; pathD = "M12,2L4,5V11C4,16.5 8.3,21.7 12,23C15.7,21.7 20,16.5 20,11V5L12,2Z"; isHighTier = false; }
+            const opacityVal = isHighTier ? "1.0" : "0.2";
+            medalsEl.innerHTML += `
+              <svg class="w-6 h-6 drop-shadow-sm cursor-help hover:scale-125 transition-transform" style="opacity: ${opacityVal};" title="Medalla de cumplimiento ${m.type.charAt(0).toUpperCase() + m.type.slice(1)} - ${m.month}" viewBox="0 0 24 24">
+                <path d="${pathD}" fill="${fillUrl}" />
+              </svg>
+            `;
           });
         } else {
           medalsEl.innerHTML = `
-            <span class="material-symbols-rounded text-cyan-400 text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="Medalla de cumplimiento Diamante - Enero">diamond</span>
-            <span class="material-symbols-rounded text-yellow-500 text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="Medalla de cumplimiento Oro - Febrero">workspace_premium</span>
-            <span class="material-symbols-rounded text-slate-400 text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="Medalla de cumplimiento Plata - Marzo">military_tech</span>
-            <span class="material-symbols-rounded text-cyan-400 text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="Medalla de cumplimiento Diamante - Mayo">diamond</span>
+            <svg class="w-6 h-6 drop-shadow-sm cursor-help hover:scale-125 transition-transform" style="opacity: 1.0;" title="Medalla de cumplimiento Diamante - Enero" viewBox="0 0 24 24">
+              <path d="M12,2L2,12L12,22L22,12Z" fill="url(#diamondGrad)" />
+            </svg>
+            <svg class="w-6 h-6 drop-shadow-sm cursor-help hover:scale-125 transition-transform" style="opacity: 1.0;" title="Medalla de cumplimiento Oro - Febrero" viewBox="0 0 24 24">
+              <path d="M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M12,17A5,5 0 1,1 17,12A5,5 0 0,1 12,17Z" fill="url(#goldGrad)" />
+            </svg>
+            <svg class="w-6 h-6 drop-shadow-sm cursor-help hover:scale-125 transition-transform" style="opacity: 1.0;" title="Medalla de cumplimiento Plata - Marzo" viewBox="0 0 24 24">
+              <path d="M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M12,17A5,5 0 1,1 17,12A5,5 0 0,1 12,17Z" fill="url(#silverGrad)" />
+            </svg>
+            <svg class="w-6 h-6 drop-shadow-sm cursor-help hover:scale-125 transition-transform" style="opacity: 1.0;" title="Medalla de cumplimiento Diamante - Mayo" viewBox="0 0 24 24">
+              <path d="M12,2L2,12L12,22L22,12Z" fill="url(#diamondGrad)" />
+            </svg>
           `;
         }
       }

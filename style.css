@@ -8406,61 +8406,160 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
 .rank-5 { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important; color: white !important; box-shadow: 0 4px 10px rgba(56,239,125,0.3) !important; }
 
 /* Custom dynamic chip states for bCumplimiento with high-end premium details */
-.podium-gold-chip {
-  border: 2px solid #f59e0b !important;
-  background: linear-gradient(135deg, #ffffff 0%, #fffbeb 40%, #fef3c7 75%, #fde68a 100%) !important;
-  box-shadow: 0 20px 40px -8px rgba(217, 119, 6, 0.3), inset 0 0 10px rgba(251, 191, 36, 0.4), 0 0 0 1px rgba(217, 119, 6, 0.1) !important;
-  animation: glow-gold 3s infinite alternate;
-}
-.podium-gold-chip .icon-bg {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25) 0%, rgba(217, 119, 6, 0.15) 100%) !important;
-  color: #b45309 !important;
-}
 
-.podium-silver-chip {
-  border: 2px solid #94a3b8 !important;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 40%, #e2e8f0 75%, #cbd5e1 100%) !important;
-  box-shadow: 0 20px 40px -8px rgba(148, 163, 184, 0.25), inset 0 0 10px rgba(148, 163, 184, 0.2) !important;
-  animation: glow-silver 3s infinite alternate;
-}
-.podium-silver-chip .icon-bg {
-  background: linear-gradient(135deg, rgba(148, 163, 184, 0.25) 0%, rgba(100, 116, 139, 0.15) 100%) !important;
-  color: #475569 !important;
-}
-
-.podium-bronze-chip {
-  border: 2px solid #d97706 !important;
-  background: linear-gradient(135deg, #ffffff 0%, #fff7ed 40%, #ffedd5 75%, #fed7aa 100%) !important;
-  box-shadow: 0 20px 40px -8px rgba(180, 83, 9, 0.25), inset 0 0 10px rgba(251, 146, 60, 0.2) !important;
-  animation: glow-bronze 3s infinite alternate;
-}
-.podium-bronze-chip .icon-bg {
-  background: linear-gradient(135deg, rgba(217, 119, 6, 0.2) 0%, rgba(180, 83, 9, 0.12) 100%) !important;
-  color: #b45309 !important;
-}
-
-.podium-steel-chip {
-  border: 2px solid #0d9488 !important;
-  background: linear-gradient(135deg, #ffffff 0%, #f0fdfa 60%, #ccfbf1 100%) !important;
-  box-shadow: 0 15px 35px -8px rgba(13, 148, 136, 0.18) !important;
-}
-.podium-steel-chip .icon-bg {
-  background: linear-gradient(135deg, rgba(13, 148, 136, 0.2) 0%, rgba(20, 184, 166, 0.1) 100%) !important;
-  color: #0f766e !important;
-}
-
+/* 1. tier="jade" (Cápsula Base): Píldora u óvalo horizontal plano, mate, sin animaciones. Entrada. */
 .podium-emerald-chip {
-  border: 2px solid #10b981 !important;
-  background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 60%, #dcfce7 100%) !important;
-  box-shadow: 0 15px 35px -8px rgba(16, 185, 129, 0.18) !important;
+  border-radius: 9999px !important;
+  border: 2px solid #2e353b !important;
+  background: #1e252b !important;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.4) !important;
+  transform: none !important;
+  animation: none !important;
+}
+.podium-emerald-chip #dayTxt, .podium-emerald-chip span:not(.material-symbols-rounded) {
+  color: #a1a1aa !important;
 }
 .podium-emerald-chip .icon-bg {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.1) 100%) !important;
-  color: #047857 !important;
+  background: rgba(255,255,255,0.05) !important;
+  color: #71717a !important;
 }
 
-/* Premium Diamond style: crystalline, neon cyan/purple/pink gradient, deep inset glows */
+/* 2. tier="acero" (Asimetría Dinámica): border-radius angulado y vanguardista. Text pop. */
+.podium-steel-chip {
+  border-radius: 30px 4px 30px 4px !important;
+  border: 2px solid #576574 !important;
+  background: linear-gradient(135deg, #2c3e50 0%, #1e272e 100%) !important;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3), inset 0 0 8px rgba(255,255,255,0.1) !important;
+}
+.podium-steel-chip #dayTxt {
+  color: #cbd5e1 !important;
+  animation: steelTextPop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+.podium-steel-chip span:not(.material-symbols-rounded):not(#dayTxt) {
+  color: #94a3b8 !important;
+}
+.podium-steel-chip .icon-bg {
+  background: rgba(255,255,255,0.1) !important;
+  color: #cbd5e1 !important;
+}
+
+@keyframes steelTextPop {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 3. tier="bronce" (Estandarte Técnico): Listón/emblema sutil con border-radius e inclinación. Breathe opacity. */
+.podium-bronze-chip {
+  border-radius: 12px 12px 28px 28px !important;
+  border: 2px solid #cd7f32 !important;
+  background: linear-gradient(135deg, #3d2314 0%, #1a0f0a 100%) !important;
+  box-shadow: 0 15px 30px rgba(205, 127, 50, 0.15) !important;
+  animation: bronzeBreathe 5s ease-in-out infinite;
+}
+.podium-bronze-chip #dayTxt, .podium-bronze-chip span:not(.material-symbols-rounded) {
+  color: #ffaa66 !important;
+}
+.podium-bronze-chip .icon-bg {
+  background: rgba(205, 127, 50, 0.15) !important;
+  color: #cd7f32 !important;
+}
+
+@keyframes bronzeBreathe {
+  0%, 100% { opacity: 0.85; transform: scale(0.99); }
+  50% { opacity: 1; transform: scale(1.01); }
+}
+
+/* 4. tier="plata" (Escudo Cromado): Escudo deportivo, shimmer diagonal cada 3s. */
+.podium-silver-chip {
+  border-radius: 36px 36px 12px 12px !important;
+  border: 2px solid #a0a0a0 !important;
+  background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 35%, #cbd5e1 70%, #94a3b8 100%) !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2), inset 0 0 15px rgba(255,255,255,0.7) !important;
+}
+.podium-silver-chip #dayTxt, .podium-silver-chip span:not(.material-symbols-rounded) {
+  color: #334155 !important;
+  font-weight: 900 !important;
+}
+.podium-silver-chip .icon-bg {
+  background: rgba(255,255,255,0.6) !important;
+  color: #475569 !important;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+.podium-silver-chip::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.85) 50%, rgba(255,255,255,0) 100%);
+  transform: skewX(-25deg);
+  animation: shine-effect-silver 3s infinite ease-in-out;
+  pointer-events: none;
+  z-index: 5;
+}
+
+@keyframes shine-effect-silver {
+  0% { left: -150%; }
+  40% { left: 150%; }
+  100% { left: 150%; }
+}
+
+/* 5. tier="oro" (Insignia Suprema 3D): Relieve, cortes diamante, flotación y holograma. */
+.podium-gold-chip {
+  border-radius: 40px 10px 40px 10px !important;
+  border: 2px solid #ffd700 !important;
+  background: linear-gradient(135deg, #ffd700, #ff8c00, #ff007a, #00f2fe, #ffd700) !important;
+  background-size: 400% 400% !important;
+  box-shadow: 
+    0 30px 60px -10px rgba(255, 140, 0, 0.45),
+    0 10px 25px rgba(255, 0, 122, 0.25),
+    inset 0 0 20px rgba(255,255,255,0.8) !important;
+  animation: goldFloat 4s ease-in-out infinite, goldHolo 8s linear infinite !important;
+  overflow: visible !important; /* Allow 3D overflow */
+}
+/* Sobresalir elementos verticalmente */
+.podium-gold-chip #bCumplimientoIconBg {
+  transform: translateY(-20px) scale(1.1) !important;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
+  z-index: 20 !important;
+}
+.podium-gold-chip #dayTxt {
+  transform: translateY(-5px) scale(1.1) !important;
+  background: linear-gradient(135deg, #ffffff 0%, #ffe259 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  font-weight: 900 !important;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)) !important;
+}
+.podium-gold-chip span:not(.material-symbols-rounded):not(#dayTxt) {
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.4) !important;
+}
+.podium-gold-chip .icon-bg {
+  background: rgba(255,255,255,0.9) !important;
+  color: #d97706 !important;
+}
+.podium-gold-chip #bCumplimientoMedals {
+  bottom: -10px !important;
+  right: 20px !important;
+  transform: scale(1.1) !important;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)) !important;
+}
+
+@keyframes goldFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes goldHolo {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* 6. tier="diamante" (Crystalline Diamond): crystalline premium look. */
 .podium-diamond-chip {
+  border-radius: 24px !important;
   border: 2px solid #06b6d4 !important;
   background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 25%, #fae8ff 60%, #fef2f2 85%, #f0f9ff 100%) !important;
   box-shadow: 
@@ -8474,18 +8573,18 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
   background: linear-gradient(135deg, rgba(6, 182, 212, 0.25) 0%, rgba(219, 39, 119, 0.15) 100%) !important;
   color: #0891b2 !important;
 }
-/* Liquid/refractive text colors inside the card elements for premium visual flow */
 .podium-diamond-chip #dayTxt {
-  background: linear-gradient(135deg, #0284c7 0%, #b91c1c 100%) !important;
+  background: linear-gradient(135deg, #0891b2 0%, #db2777 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   font-weight: 900 !important;
 }
+.podium-diamond-chip span:not(.material-symbols-rounded):not(#dayTxt) {
+  color: #0891b2 !important;
+}
 
-/* Glass shine overlay animation across all premium podium cards - only active on premium classes */
-.podium-gold-chip::before, 
-.podium-silver-chip::before, 
-.podium-bronze-chip::before, 
+/* Glass shine overlay animation across all premium gold and silver cards */
+.podium-gold-chip::before,
 .podium-diamond-chip::before {
   content: '';
   position: absolute;

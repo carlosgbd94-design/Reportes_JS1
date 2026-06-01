@@ -12195,37 +12195,52 @@ function renderUnitMedals(medals) {
     const mm = monthParts[1];
     const label = monthNames[mm] || mm;
     const fullMonthLabel = fullMonthNames[mm] || mm;
-    let color = "";
-    let icon = "military_tech";
+    let fillUrl = "";
+    let isHighTier = false;
+    let pathD = ""; // SVG Path shape definition
     let title = "";
 
+    // Determine path and gradients based on tier
     if (m.score === 100 || m.tier === "diamante") {
-      color = "text-cyan-400";
-      icon = "diamond";
+      fillUrl = "url(#diamondGrad)";
+      isHighTier = true;
+      pathD = "M12,2L2,12L12,22L22,12Z"; // Diamond path
       title = `Medalla de cumplimiento Diamante - ${fullMonthLabel}`;
     } else if (m.rank === 1) {
-      color = "text-yellow-500";
-      icon = "workspace_premium";
+      fillUrl = "url(#goldGrad)";
+      isHighTier = true;
+      pathD = "M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M12,17A5,5 0 1,1 17,12A5,5 0 0,1 12,17Z"; // Shield/Badge circle
       title = `Medalla de cumplimiento Oro - ${fullMonthLabel}`;
     } else if (m.rank === 2) {
-      color = "text-slate-400";
-      icon = "military_tech";
+      fillUrl = "url(#silverGrad)";
+      isHighTier = true;
+      pathD = "M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M12,17A5,5 0 1,1 17,12A5,5 0 0,1 12,17Z";
       title = `Medalla de cumplimiento Plata - ${fullMonthLabel}`;
     } else if (m.rank === 3) {
-      color = "text-amber-600";
-      icon = "military_tech";
+      fillUrl = "url(#bronzeGrad)";
+      isHighTier = false; // Bronce/Steel/Jade are low tiers - render dark/locked
+      pathD = "M12,2L4,5V11C4,16.5 8.3,21.7 12,23C15.7,21.7 20,16.5 20,11V5L12,2Z"; // Shield path
       title = `Medalla de cumplimiento Bronce - ${fullMonthLabel}`;
     } else if (m.rank === 4) {
-      color = "text-cyan-500";
-      icon = "workspace_premium";
+      fillUrl = "url(#steelGrad)";
+      isHighTier = false;
+      pathD = "M12,2L4,5V11C4,16.5 8.3,21.7 12,23C15.7,21.7 20,16.5 20,11V5L12,2Z";
       title = `Medalla de cumplimiento Acero - ${fullMonthLabel}`;
     } else if (m.rank === 5) {
-      color = "text-emerald-500";
-      icon = "military_tech";
+      fillUrl = "url(#emeraldGrad)";
+      isHighTier = false;
+      pathD = "M12,2L4,5V11C4,16.5 8.3,21.7 12,23C15.7,21.7 20,16.5 20,11V5L12,2Z";
       title = `Medalla de cumplimiento Jade - ${fullMonthLabel}`;
     }
 
-    container.innerHTML += '<span class="material-symbols-rounded ' + color + ' text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="' + title + '">' + icon + '</span>';
+    const opacityVal = isHighTier ? "1.0" : "0.2";
+
+    // Append vector SVG elements for clean motivational aesthetics
+    container.innerHTML += `
+      <svg class="w-6 h-6 drop-shadow-sm cursor-help hover:scale-125 transition-transform" style="opacity: ${opacityVal};" title="${title}" viewBox="0 0 24 24">
+        <path d="${pathD}" fill="${fillUrl || "#71717a"}" />
+      </svg>
+    `;
   });
 }
 
