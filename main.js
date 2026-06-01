@@ -9672,11 +9672,6 @@ function setLoggedInUI(user, status) {
   document.body.setAttribute("data-role", USER.rol);
   STATUS = (status && status.data) ? status.data : (status || null);
 
-  // Invalidate old history metrics cache on login/reload to ensure fresh medals load
-  if (typeof invalidateOpsCacheByPrefix === "function") {
-    invalidateOpsCacheByPrefix(["HISTORY_METRICS"]);
-  }
-
   Object.assign(AppState, {
     user: USER,
     status: STATUS,
@@ -12212,7 +12207,7 @@ async function getHistoryMetrics(mes, _ignored, force = false) {
     key: cacheKey,
     ttl: CACHE_TTL.HISTORY_METRICS,
     fetcher,
-    shouldCache: (data) => data != null && data.rows && data.rows.length > 0
+    shouldCache: (data) => data != null
   });
 }
 
@@ -12241,7 +12236,7 @@ async function getYearlyMedals(year, clues) {
   let hasError = false;
   const promises = months.map(async (m) => {
     try {
-      const data = await getHistoryMetrics(m, null, false);
+      const data = await getHistoryMetrics(m, null, true);
       if (!data || !data.rows) {
         console.warn("[getYearlyMedals] No history metrics data for month", m);
         hasError = true;
@@ -12336,7 +12331,7 @@ async function getYearlyMuniMedals(year, municipio) {
   let hasError = false;
   const promises = months.map(async (m) => {
     try {
-      const data = await getHistoryMetrics(m, null, false);
+      const data = await getHistoryMetrics(m, null, true);
       if (!data || !data.rows) {
         hasError = true;
         return;
