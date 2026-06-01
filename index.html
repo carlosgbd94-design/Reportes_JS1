@@ -3562,6 +3562,33 @@
     </div>
   </div>
 
+  <!-- ✅ DRIVE UPLOAD PROGRESS OVERLAY -->
+  <div class="overlay" id="uploadProgressOverlay" style="background: rgba(3, 8, 18, 0.4) !important;">
+    <div class="modal" style="max-width: 420px; background: white; border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden; padding: 32px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 24px;">
+      <div class="modalEyebrow" style="color: var(--md-sys-color-primary); font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 8px;">
+        <span class="material-symbols-rounded" style="font-size: 18px;">cloud_upload</span>
+        Transmisión de Archivo
+      </div>
+      
+      <div id="uploadProgressSpinner" class="loaderCircle" style="width: 64px; height: 64px; border: 4px solid #f1f5f9; border-top: 4px solid var(--md-sys-color-primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+      
+      <div style="width: 100%;">
+        <div id="uploadProgressTitle" style="font-weight: 900; font-size: 20px; color: #0f172a; margin-bottom: 8px;">Subiendo a Servidor Central...</div>
+        <div id="uploadProgressSub" style="color: #64748b; font-size: 13px; line-height: 1.5; margin-bottom: 20px;">Estableciendo conexión segura y transfiriendo paquetes de datos.</div>
+        
+        <!-- Bar/Progress -->
+        <div style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 100px; overflow: hidden; position: relative; margin-bottom: 12px;">
+          <div id="uploadProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--md-sys-color-primary) 0%, var(--md-sys-color-secondary) 100%); border-radius: 100px; transition: width 0.1s ease-out;"></div>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 13px; font-weight: 700;">
+          <span id="uploadProgressBytes" style="color: #64748b;">0 MB / 0 MB</span>
+          <span id="uploadProgressPercent" style="color: var(--md-sys-color-primary); font-size: 15px; font-weight: 900;">0%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="overlay" id="exportOverlay">
 
     <div class="modal"

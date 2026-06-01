@@ -255,12 +255,12 @@ window.$ = $; // Alias global experto
  * 🚀 APP_SERVICE: Centralized API & Logic Layer
  */
 const AppService = {
-  async call(actionOrPayload, payload = {}) {
+  async call(actionOrPayload, payload = {}, options = {}) {
     const action = (typeof actionOrPayload === "string" ? actionOrPayload : actionOrPayload?.action) || "unknown";
     const finalPayload = typeof actionOrPayload === "object" ? actionOrPayload : payload;
     const body = { ...finalPayload, action: action.toLowerCase(), token: AppState.token };
     try {
-      return await supabaseRequest(body.action, body);
+      return await supabaseRequest(body.action, body, options);
     } catch (error) {
       console.error(`[AppService Error] ${action}:`, error);
       showToast(error.message || "Error de comunicación", false, "bad");
@@ -820,7 +820,7 @@ function initNotificationsRealtime() {
   }
 
   console.log("[Realtime] Iniciando suscripción a la tabla notificaciones...");
-  
+
   NOTIFICATIONS_CHANNEL = window.supabase
     .channel('public-notificaciones-changes')
     .on(
@@ -828,7 +828,7 @@ function initNotificationsRealtime() {
       { event: '*', schema: 'public', table: 'notificaciones' },
       (payload) => {
         console.log("[Realtime] Cambio detectado:", payload.eventType, payload.new?.id || payload.old?.id);
-        loadNotifications({ silent: true }).catch(() => {});
+        loadNotifications({ silent: true }).catch(() => { });
       }
     )
     .subscribe((status) => {
@@ -849,7 +849,7 @@ function initPinolRealtime() {
   }
 
   console.log("[Realtime] Iniciando suscripción a la tabla pinol_solicitudes...");
-  
+
   PINOL_SOLICITUDES_CHANNEL = window.supabase
     .channel('public-pinol-solicitudes-changes')
     .on(
@@ -3284,7 +3284,7 @@ async function saveMyPasswordFlow() {
     try {
       const legacyHash = await hashPassword(newPassword);
       const userUid = USER.uid || USER.id || (await window.supabase.auth.getUser()).data.user?.id;
-      
+
       // Actualizar tabla perfiles
       if (userUid) {
         await window.supabase
@@ -3379,7 +3379,7 @@ async function requestPasswordResetFlow() {
         .maybeSingle();
 
       if (error) throw error;
-      
+
       if (!data || !data.email) {
         hideOverlay();
         showToast("El usuario no tiene un correo registrado o no existe", false, "bad");
@@ -3516,7 +3516,7 @@ async function hashPassword(text) {
  * INTERCEPTOR SUPABASE
  * Reemplaza la lógica de GAS por llamadas directas a Supabase.
  */
-async function supabaseRequest(action = "", payload) {
+async function supabaseRequest(action = "", payload, options = {}) {
   const actionLower = String(action || "").toLowerCase();
   console.log(`[Supabase] Action: ${actionLower}`, payload);
 
@@ -4405,8 +4405,8 @@ async function supabaseRequest(action = "", payload) {
             ...m,
             score,
             tier,
-            eBio,
-            eCons,
+            eBio: totalMonthBio,
+            eCons: totalMonthCons,
             isPedidoRequired
           };
         });
@@ -5203,7 +5203,8 @@ async function supabaseRequest(action = "", payload) {
 
         const { error } = await supabase.storage.from('evidencias').upload(folderPath, file, {
           cacheControl: '3600',
-          upsert: true
+          upsert: true,
+          onUploadProgress: options.onUploadProgress
         });
         if (error) throw error;
         return { ok: true, data: { path: folderPath } };
@@ -5357,7 +5358,7 @@ async function supabaseRequest(action = "", payload) {
         await supabase.from('notificaciones')
           .update({ status: 'READ', read_ts: new Date().toISOString() })
           .eq('id', 'NOTIF:PINOL_REQ:' + payload.id)
-          .catch(() => {});
+          .catch(() => { });
 
         // Crear notificación para la unidad
         const { data: sol } = await supabase.from('pinol_solicitudes').select('*').eq('id', payload.id).single();
@@ -5850,7 +5851,7 @@ function applyPinolFormLock() {
     el.disabled = locked;
     el.style.opacity = locked ? "0.5" : "1";
   });
-  
+
   if (btn) {
     btn.disabled = locked;
     btn.style.display = "none"; // Always keep hidden as a proxy, using the Command Hub button instead
@@ -8022,7 +8023,7 @@ function paintStatusChips(status) {
     const tone = getComplianceBadgeTone(pct);
 
     // Apply ranking/tier styles if present, otherwise default to tone-based semaphorization
-    if (status.userRank !== undefined) {
+    if (role === "UNIDAD" && status.userRank !== undefined) {
       updateCumplimientoMedalTone(status.userRank, status.userTier);
       // Remove basic semaphorization overrides to allow premium CSS themes to shine
       container.classList.remove("good", "ok", "warn", "bad");
@@ -9763,7 +9764,7 @@ async function runPostLoginInit(user) {
 
 function resetApplicationState() {
   console.log("[State Cleanup] Resetting application state...");
-  
+
   // 1. Reset variables
   USER = null;
   STATUS = null;
@@ -9773,7 +9774,7 @@ function resetApplicationState() {
   HAS_TODAY_CONS = false;
   HAS_SAVED_BIO = false;
   window._pinolCache = [];
-  
+
   Object.assign(AppState, {
     user: null,
     status: null,
@@ -9792,7 +9793,7 @@ function resetApplicationState() {
     "panelCaptureSummary", "panelHistoryMetrics", "panelPINOLADMIN",
     "panelUNIDADADMIN", "panelLotesAdmin", "panelConfigOverride", "panelUsersAdmin"
   ];
-  
+
   panelsToHide.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
@@ -9836,10 +9837,10 @@ function setLoggedOutUI() {
 
   $("tabOPS_PINOL")?.classList.remove("liveAccent", "notifHot");
   $("tabCAP")?.classList.remove("liveAccent", "notifHot");
- 
+
   if ($("tabOPS_PINOL")) $("tabOPS_PINOL").title = "Pinol";
   if ($("tabCAP")) $("tabCAP").title = "Captura";
- 
+
   LIVE_STATE.pinolWatching = false;
   LIVE_STATE.summaryWatching = false;
   LIVE_STATE.unidadWatching = false;
@@ -12541,7 +12542,7 @@ function renderHistoryMetrics(data) {
       });
       return;
     }
-    
+
     console.log("[Confetti] Running HTML5 fallback animation...");
     const canvas = document.createElement("canvas");
     canvas.style.position = "fixed";
@@ -12988,6 +12989,8 @@ async function openUploadFilesModal() {
   const muniWrap = $("uploadMunicipalMuniWrap");
   const unitWrap = $("uploadMunicipalUnitWrap");
   const cluesView = $("uploadCluesView");
+  const modalTitle = modal.querySelector(".modalTitle");
+  const btnDoUpload = $("btnDoUpload");
 
   // Clear previous dynamic state
   muniWrap.style.display = "none";
@@ -12998,6 +13001,8 @@ async function openUploadFilesModal() {
     // REGLA: SÓLO MUNICIPAL SUBE SUPERVISIONES
     categorySelect.innerHTML = '<option value="Supervisión" selected>Supervisión</option>';
     categorySelect.disabled = true;
+    if (modalTitle) modalTitle.textContent = "Subir supervisión";
+    if (btnDoUpload) btnDoUpload.innerHTML = '<span class="material-symbols-rounded">cloud_upload</span> Subir supervisión';
     await loadMunicipalUploadContext();
   } else if (role === "UNIDAD") {
     // REGLA: SÓLO UNIDAD SUBE EVIDENCIAS
@@ -13007,6 +13012,8 @@ async function openUploadFilesModal() {
         <option value="Otros reportes">Otros reportes</option>
       `;
     categorySelect.disabled = false;
+    if (modalTitle) modalTitle.textContent = "Subir evidencias";
+    if (btnDoUpload) btnDoUpload.innerHTML = '<span class="material-symbols-rounded">cloud_upload</span> Subir evidencia';
   } else {
     // ADMIN / JURISDICCIONAL: NO SUBEN NADA
     modal.classList.remove("show");
@@ -13116,6 +13123,11 @@ $("uploadFileInput")?.addEventListener("change", (e) => {
   const btnDoUpload = $("btnDoUpload");
 
   if (file) {
+    if (file.size > 15 * 1024 * 1024) {
+      showToast("El archivo excede el límite de 15MB. Por favor selecciona un archivo más pequeño.", false, "bad");
+      resetUploadForm();
+      return;
+    }
     if (fileNameLabel) fileNameLabel.textContent = file.name;
     if (btnBrowse) btnBrowse.classList.add("hasFile");
     if (btnDoUpload) btnDoUpload.disabled = false;
@@ -13132,12 +13144,12 @@ async function handleFileUploadFlow() {
   const category = $("uploadCategory")?.value || "Otros reportes";
 
   if (!file) {
-    showToast("Por favor selecciona un archivo primero", false);
+    showToast("Por favor selecciona un archivo primero", false, "bad");
     return;
   }
 
   if (file.size > 15 * 1024 * 1024) {
-    showToast("El archivo es demasiado grande (máx 15MB)", false);
+    showToast("El archivo excede el límite de 15MB. Por favor selecciona un archivo más pequeño.", false, "bad");
     return;
   }
 
@@ -13149,7 +13161,7 @@ async function handleFileUploadFlow() {
     const unitSelect = $("uploadUnitSelect");
     targetClues = unitSelect.value;
     if (!targetClues) {
-      showToast("Debes seleccionar una unidad a supervisar", false);
+      showToast("Debes seleccionar una unidad a supervisar", false, "bad");
       return;
     }
     const option = unitSelect.options[unitSelect.selectedIndex];
@@ -13158,10 +13170,21 @@ async function handleFileUploadFlow() {
     targetMunicipio = option.getAttribute("data-muni") || "";
   }
 
-  try {
-    showOverlay("Subiendo archivo…", "Cargando");
-    setBtnBusy("btnDoUpload", true, "Subiendo…");
+  // 1. Close current upload modal
+  closeUploadFilesModal();
 
+  // 2. Setup progress overlay UI elements
+  const progressOverlay = $("uploadProgressOverlay");
+  const progressBar = $("uploadProgressBar");
+  const progressPercent = $("uploadProgressPercent");
+  const progressBytes = $("uploadProgressBytes");
+
+  if (progressOverlay) progressOverlay.classList.add("show");
+  if (progressBar) progressBar.style.width = "0%";
+  if (progressPercent) progressPercent.textContent = "0%";
+  if (progressBytes) progressBytes.textContent = `0 MB / ${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+
+  try {
     const res = await apiCall({
       action: "uploadFile",
       file: file,
@@ -13169,20 +13192,36 @@ async function handleFileUploadFlow() {
       targetClues: targetClues,
       targetUnidad: targetUnidad,
       targetMunicipio: targetMunicipio
+    }, {}, {
+      onUploadProgress: (progress) => {
+        const loaded = progress.loaded || 0;
+        const total = progress.total || file.size;
+        const pct = Math.min(100, Math.round((loaded / total) * 100));
+
+        if (progressBar) progressBar.style.width = `${pct}%`;
+        if (progressPercent) progressPercent.textContent = `${pct}%`;
+        if (progressBytes) {
+          progressBytes.textContent = `${(loaded / (1024 * 1024)).toFixed(2)} MB / ${(total / (1024 * 1024)).toFixed(2)} MB`;
+        }
+      }
     });
 
     if (res && res.ok) {
-      showToast("¡Archivo subido exitosamente!", true);
-      closeUploadFilesModal();
+      showToast("¡Carga exitosa!", true, "good");
     } else {
-      showToast("Error al subir: " + (res?.error || "Desconocido"), false);
+      showToast("Error al subir: " + (res?.error || "Desconocido"), false, "bad");
     }
   } catch (err) {
     console.error("Upload Error:", err);
-    showToast("Error de conexión al subir el archivo", false);
+    let errMsg = "Error de conexión al subir el archivo";
+    if (err.message && (err.message.includes("Payload Too Large") || err.message.includes("413") || err.message.includes("size") || err.message.includes("limit"))) {
+      errMsg = "El archivo excede el límite permitido de 15MB.";
+    } else if (err.message) {
+      errMsg = err.message;
+    }
+    showToast(errMsg, false, "bad");
   } finally {
-    setBtnBusy("btnDoUpload", false);
-    hideOverlay();
+    if (progressOverlay) progressOverlay.classList.remove("show");
   }
 }
 
