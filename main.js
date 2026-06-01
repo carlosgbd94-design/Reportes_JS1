@@ -9672,6 +9672,11 @@ function setLoggedInUI(user, status) {
   document.body.setAttribute("data-role", USER.rol);
   STATUS = (status && status.data) ? status.data : (status || null);
 
+  // Invalidate old history metrics cache on login/reload to ensure fresh medals load
+  if (typeof invalidateOpsCacheByPrefix === "function") {
+    invalidateOpsCacheByPrefix(["HISTORY_METRICS"]);
+  }
+
   Object.assign(AppState, {
     user: USER,
     status: STATUS,
@@ -12207,7 +12212,7 @@ async function getHistoryMetrics(mes, _ignored, force = false) {
     key: cacheKey,
     ttl: CACHE_TTL.HISTORY_METRICS,
     fetcher,
-    shouldCache: (data) => data != null
+    shouldCache: (data) => data != null && data.rows && data.rows.length > 0
   });
 }
 
