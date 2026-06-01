@@ -8023,7 +8023,7 @@ function paintStatusChips(status) {
     const tone = getComplianceBadgeTone(pct);
 
     // Apply ranking/tier styles if present, otherwise default to tone-based semaphorization
-    if (role === "UNIDAD" && status.userRank !== undefined) {
+    if (status.userRank !== undefined) {
       updateCumplimientoMedalTone(status.userRank, status.userTier);
       // Remove basic semaphorization overrides to allow premium CSS themes to shine
       container.classList.remove("good", "ok", "warn", "bad");
