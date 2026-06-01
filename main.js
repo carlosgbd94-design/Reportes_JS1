@@ -4346,22 +4346,42 @@ async function supabaseRequest(action = "", payload) {
           }
         });
 
+        // Helper to count total Thursdays/Fridays in month for historymetrics
+        function getMonthTotalWeeksForDate(targetYm) {
+          const year = parseInt(targetYm.substring(0, 4));
+          const month = parseInt(targetYm.substring(5, 7)) - 1;
+          const lastDay = new Date(year, month + 1, 0).getDate();
+          let totalCons = 0;
+          let totalBio = 0;
+          for (let d = 1; d <= lastDay; d++) {
+            const day = new Date(year, month, d).getDay();
+            if (day === 4) totalCons++;
+            if (day === 5) totalBio++;
+          }
+          return { totalCons, totalBio };
+        }
+
+        const totalMonthWeeks = getMonthTotalWeeksForDate(mes);
+        const totalMonthCons = totalMonthWeeks.totalCons || 4;
+        const totalMonthBio = totalMonthWeeks.totalBio || 4;
+
         let rows = units.map(u => {
           const m = metricsMap[u.clues];
-          const eBio = expectedDatesBio.length;
-          const eCons = expectedDatesCons.length;
 
-          const bPct = eBio > 0 ? (m.bio_semanas_ok / eBio) * 100 : 100;
-          const cPct = eCons > 0 ? (m.cons_semanas_ok / eCons) * 100 : 100;
+          // Target Base: total month requirements
+          const denominatorBio = totalMonthBio;
+          const denominatorCons = totalMonthCons;
 
-          let pPct = 100;
+          const bPct = denominatorBio > 0 ? (m.bio_semanas_ok / denominatorBio) * 100 : 100;
+          const cPct = denominatorCons > 0 ? (m.cons_semanas_ok / denominatorCons) * 100 : 100;
+
+          let pPct = m.pedido_mensual ? 100 : 0;
           let isPedidoRequired = false;
           const dToday = new Date(today + "T12:00:00");
           const midMonth = new Date(`${mes}-15T12:00:00`);
 
           if (!isCurrentMonth || dToday >= midMonth) {
             isPedidoRequired = true;
-            pPct = m.pedido_mensual ? 100 : 0;
           }
 
           let score = 0;
@@ -4488,6 +4508,25 @@ async function supabaseRequest(action = "", payload) {
           const rawCons = resCons.data || [];
           const rawPedidos = resPedidos.data || [];
 
+          // Helper to count the total Thursdays (CONS) and Fridays (BIO) in the current month
+          function getMonthTotalExpectedWeeks(dateStr) {
+            const year = parseInt(dateStr.substring(0, 4));
+            const month = parseInt(dateStr.substring(5, 7)) - 1;
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            let totalCons = 0;
+            let totalBio = 0;
+            for (let d = 1; d <= lastDay; d++) {
+              const day = new Date(year, month, d).getDay();
+              if (day === 4) totalCons++;
+              if (day === 5) totalBio++;
+            }
+            return { totalCons, totalBio };
+          }
+
+          const totalMonthWeeks = getMonthTotalExpectedWeeks(today);
+          const totalMonthCons = totalMonthWeeks.totalCons || 4;
+          const totalMonthBio = totalMonthWeeks.totalBio || 4;
+
           const expectedDatesCons = getExpectedDatesList(monthStartStr, today, "CONS");
           const expectedDatesBio = getExpectedDatesList(monthStartStr, today, "BIO");
 
@@ -4557,17 +4596,21 @@ async function supabaseRequest(action = "", payload) {
 
           let unitScores = units.map(u => {
             const m = metricsMap[u.clues];
-            const eBio = expectedDatesBio.length;
-            const eCons = expectedDatesCons.length;
 
-            const bPct = eBio > 0 ? (m.bio_semanas_ok / eBio) * 100 : 100;
-            const cPct = eCons > 0 ? (m.cons_semanas_ok / eCons) * 100 : 100;
-            const pPct = isPedidoRequired ? (m.pedido_mensual ? 100 : 0) : 100;
+            // PROGRESSIVE COMPLIANCE DENOMINATOR: Use the entire month's total requirements as the target base
+            const denominatorBio = totalMonthBio;
+            const denominatorCons = totalMonthCons;
+
+            const bPct = denominatorBio > 0 ? (m.bio_semanas_ok / denominatorBio) * 100 : 100;
+            const cPct = denominatorCons > 0 ? (m.cons_semanas_ok / denominatorCons) * 100 : 100;
+            const pPct = m.pedido_mensual ? 100 : 0;
 
             let score = 0;
+            // The score is calculated as a cumulative percentage towards the total month target (no default 100% on day 1)
             if (isPedidoRequired) {
               score = Math.round((bPct * 0.4) + (cPct * 0.4) + (pPct * 0.2));
             } else {
+              // Before mid-month, Pedido is not required, so we scale the 2 weekly captures to 50% each
               score = Math.round((bPct * 0.5) + (cPct * 0.5));
             }
             if (score > 100) score = 100;
@@ -7969,19 +8012,45 @@ function paintStatusChips(status) {
 
     const tone = getComplianceBadgeTone(pct);
 
-    // Forzar limpieza y aplicación de tono
-    container.classList.remove("good", "ok", "warn", "bad");
-    container.classList.add(tone);
-    container.setAttribute("data-tone", tone);
-
+    // Apply ranking/tier styles if present, otherwise default to tone-based semaphorization
     if (status.userRank !== undefined) {
       updateCumplimientoMedalTone(status.userRank, status.userTier);
+      // Remove basic semaphorization overrides to allow premium CSS themes to shine
+      container.classList.remove("good", "ok", "warn", "bad");
+      container.removeAttribute("data-tone");
     } else {
       updateCumplimientoMedalTone(undefined, undefined);
+      container.classList.remove("good", "ok", "warn", "bad");
+      container.classList.add(tone);
+      container.setAttribute("data-tone", tone);
+    }
+
+    // Dynamic progression hint tooltip on mouse hover explaining the 0% to 100% logic
+    let tooltipText = "Progreso de Cumplimiento: Inicia el mes en 0% y sube conforme realizas tus entregas semanales (2 de consumibles, 2 de biológicos) y mensuales (1 pedido).";
+    if (role === "MUNICIPAL") {
+      tooltipText = "Promedio de Cumplimiento Municipal: Avance global ponderado de las unidades correspondientes a tu municipio durante el mes.";
+    } else if (role === "ADMIN" || role === "JURISDICCIONAL") {
+      tooltipText = "Promedio de Cumplimiento Global/Jurisdiccional: Avance acumulado de todas las unidades activas.";
+    }
+    container.title = tooltipText;
+
+    // Load and paint yearly medals for the active user directly on dashboard load
+    const currentYear = new Date().getFullYear();
+    if (USER && USER.rol === "UNIDAD" && USER.clues) {
+      getYearlyMedals(currentYear, USER.clues).then(medals => {
+        renderUnitMedals(medals);
+      });
+    } else if (USER && (USER.rol === "MUNICIPAL" || (status.selectedMunicipio && status.selectedMunicipio !== "TODOS"))) {
+      const targetMuni = USER.rol === "MUNICIPAL" ? (USER.municipio || "").split(",")[0].trim() : status.selectedMunicipio;
+      if (targetMuni) {
+        getYearlyMuniMedals(currentYear, targetMuni).then(medals => {
+          renderUnitMedals(medals);
+        });
+      }
     }
 
     // Update icon background for premium look if colored
-    if (iconBg && ["good", "warn", "bad"].includes(tone)) {
+    if (iconBg && ["good", "warn", "bad"].includes(tone) && !status.userRank) {
       iconBg.style.backgroundColor = "rgba(255, 255, 255, 0.25)";
     }
   }
