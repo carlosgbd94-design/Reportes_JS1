@@ -8023,11 +8023,17 @@ function paintStatusChips(status) {
     const tone = getComplianceBadgeTone(pct);
 
     // Apply ranking/tier styles if present, otherwise default to tone-based semaphorization
-    if (status.userRank !== undefined) {
+    if (status.userRank !== undefined && status.userTier !== "riesgo") {
       updateCumplimientoMedalTone(status.userRank, status.userTier);
-      // Remove basic semaphorization overrides to allow premium CSS themes to shine
-      container.classList.remove("good", "ok", "warn", "bad");
-      container.removeAttribute("data-tone");
+      const hasPodiumClass = ["podium-gold-chip", "podium-silver-chip", "podium-bronze-chip", "podium-steel-chip", "podium-emerald-chip", "podium-diamond-chip"].some(cls => container.classList.contains(cls));
+      if (hasPodiumClass) {
+        container.classList.remove("good", "ok", "warn", "bad");
+        container.removeAttribute("data-tone");
+      } else {
+        container.classList.remove("good", "ok", "warn", "bad");
+        container.classList.add(tone);
+        container.setAttribute("data-tone", tone);
+      }
     } else {
       updateCumplimientoMedalTone(undefined, undefined);
       container.classList.remove("good", "ok", "warn", "bad");
