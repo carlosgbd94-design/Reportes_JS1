@@ -179,7 +179,7 @@ serve(async (req) => {
       // Obtener perfiles de usuarios
       const { data: profiles, error: profErr } = await supabaseAdmin
         .from('perfiles')
-        .select('email, rol, municipio_asignado')
+        .select('email, rol, municipio, municipios_allowed')
         .in('rol', ['MUNICIPAL', 'ADMIN', 'JURISDICCIONAL'])
 
       if (profErr) throw new Error(`Error obteniendo perfiles de supervisión: ${profErr.message}`)
@@ -194,12 +194,22 @@ serve(async (req) => {
       }
 
       // Enviar a perfiles MUNICIPALES (solo sus unidades correspondientes)
-      const municipalProfiles = (profiles || []).filter(p => p.rol === 'MUNICIPAL' && p.email && p.municipio_asignado)
+      const municipalProfiles = (profiles || []).filter(p => p.rol === 'MUNICIPAL' && p.email)
       for (const supervisor of municipalProfiles) {
-        const myMuni = String(supervisor.municipio_asignado).trim().toUpperCase()
-        const muniUnits = units.filter(u => String(u.municipio).trim().toUpperCase() === myMuni)
+        let allowedMunis: string[] = []
+        if (Array.isArray(supervisor.municipios_allowed) && supervisor.municipios_allowed.length > 0) {
+          allowedMunis = supervisor.municipios_allowed.map((m: string) => String(m).trim().toUpperCase())
+        } else if (supervisor.municipio) {
+          allowedMunis = String(supervisor.municipio).split(',').map(m => m.trim().toUpperCase())
+        }
+
+        if (allowedMunis.length === 0) continue
+
+        const muniUnits = units.filter(u => allowedMunis.includes(String(u.municipio).trim().toUpperCase()))
 
         if (muniUnits.length === 0) continue
+
+        const muniLabel = allowedMunis.join(', ')
 
         let completedCount = 0
         const rowsHtml = muniUnits.map(unit => {
@@ -228,7 +238,7 @@ serve(async (req) => {
           <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
             <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 25px; border-radius: 8px 8px 0 0; text-align: center;">
               <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 0.5px;">Resumen Municipal de Captura</h1>
-              <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 13px; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;">Módulo: ${reportType} | Municipio: ${supervisor.municipio_asignado}</p>
+              <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 13px; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;">Módulo: ${reportType} | Municipio: ${muniLabel}</p>
             </div>
             
             <div style="padding: 25px; color: #334155; line-height: 1.6;">
@@ -266,8 +276,8 @@ serve(async (req) => {
         await smtpClient.send({
           from: gmailUser,
           to: supervisor.email,
-          subject: `📊 Reporte ${reportType}: Municipio ${supervisor.municipio_asignado} (${pct}% Capturado) - ${todayYmd}`,
-          content: `Resumen de capture municipal para ${supervisor.municipio_asignado}.`,
+          subject: `📊 Reporte ${reportType}: Municipio ${muniLabel} (${pct}% Capturado) - ${todayYmd}`,
+          content: `Resumen de capture municipal para ${muniLabel}.`,
           html: htmlBody,
         })
         sentCount++
