@@ -1103,24 +1103,24 @@
             <!-- Decorative Separator -->
             <div class="hidden md:block w-px h-12 bg-outline-variant/40"></div>
 
-            <!-- Compliance KPI (Redesigned) -->
+            <!-- Compliance KPI (Redesigned with Premium layout) -->
             <div class="flex items-center justify-center gap-4 flex-wrap w-full md:w-auto h-full">
               <div id="bCumplimiento" data-tone="bad" style="min-height: 120px;"
-                class="flex items-center gap-6 px-8 w-full md:w-auto min-w-[240px] rounded-2xl bg-white border border-outline-variant/50 shadow-sm transition-all hover:shadow-md group cursor-help relative overflow-hidden">
+                class="flex items-center gap-8 px-10 w-full md:w-auto min-w-[340px] rounded-2xl bg-white border border-outline-variant/50 shadow-sm transition-all hover:shadow-md group cursor-help relative overflow-hidden">
 
-                <!-- Medallas Acumuladas (Trazabilidad) -->
-                <div id="bCumplimientoMedals" class="absolute top-2 right-2 flex gap-1 z-20"></div>
+                <!-- Medallas Acumuladas (Trazabilidad) - Properly aligned at the bottom right to avoid overlaps -->
+                <div id="bCumplimientoMedals" class="absolute bottom-2 right-4 flex gap-1.5 z-20"></div>
 
                 <!-- Progress Icon with Pulse Background -->
-                <div class="w-14 h-14 rounded-xl bg-primary/5 flex items-center justify-center shrink-0 relative z-10"
+                <div class="w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center shrink-0 relative z-10"
                   id="bCumplimientoIconBg">
                   <span class="material-symbols-rounded text-[28px]">analytics</span>
                 </div>
 
-                <div class="flex flex-col leading-tight relative z-10">
+                <div class="flex flex-col leading-tight relative z-10 pr-12">
                   <span class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1.5">Cumplimiento</span>
                   <div class="flex items-baseline gap-1">
-                    <span id="dayTxt" class="text-3xl font-black tracking-tighter text-primary">0%</span>
+                    <span id="dayTxt" class="text-4xl font-black tracking-tighter text-primary">0%</span>
                   </div>
                 </div>
 
@@ -1129,7 +1129,6 @@
                   class="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 opacity-0 transition-opacity pointer-events-none">
                 </div>
               </div>
-
               <!-- 💎 CRYSTALLINE INSIGHT HUB (Dato Curioso - Dynamic) -->
               <div id="factCard"
                 style="min-height: 120px; transition: background-color 0.5s ease, border-color 0.5s ease;"
@@ -3817,8 +3816,8 @@
   <div id="toast-container" class="toast-stack-container" aria-live="polite"></div>
 
   <script>
-    // Testing Utility: Allows manual override of the compliance card classes and text for style previews
-    window.testComplianceChip = function(type) {
+    // Testing Utility: Allows manual override of the compliance card classes, text, and medal configurations for style previews
+    window.testComplianceChip = function(type, customMedals = null) {
       const container = document.getElementById("bCumplimiento");
       const textEl = document.getElementById("dayTxt");
       const medalsEl = document.getElementById("bCumplimientoMedals");
@@ -3828,14 +3827,29 @@
       container.classList.remove("good", "ok", "warn", "bad", "podium-gold-chip", "podium-silver-chip", "podium-bronze-chip", "podium-steel-chip", "podium-emerald-chip", "podium-diamond-chip");
       container.removeAttribute("data-tone");
 
-      // Inject some mock medals to test the tooltip hover functionality
+      // Inject medals (custom dynamic medals list or standard set)
       if (medalsEl) {
-        medalsEl.innerHTML = `
-          <span class="material-symbols-rounded text-cyan-400 text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="Medalla de cumplimiento Diamante - Enero">diamond</span>
-          <span class="material-symbols-rounded text-yellow-500 text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="Medalla de cumplimiento Oro - Febrero">workspace_premium</span>
-          <span class="material-symbols-rounded text-slate-400 text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="Medalla de cumplimiento Plata - Marzo">military_tech</span>
-          <span class="material-symbols-rounded text-cyan-400 text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="Medalla de cumplimiento Diamante - Mayo">diamond</span>
-        `;
+        if (customMedals && Array.isArray(customMedals)) {
+          medalsEl.innerHTML = "";
+          customMedals.forEach(m => {
+            let color = "text-cyan-400";
+            let icon = "diamond";
+            if (m.type === "oro") { color = "text-yellow-500"; icon = "workspace_premium"; }
+            else if (m.type === "plata") { color = "text-slate-400"; icon = "military_tech"; }
+            else if (m.type === "bronce") { color = "text-amber-600"; icon = "military_tech"; }
+            else if (m.type === "acero") { color = "text-cyan-500"; icon = "workspace_premium"; }
+            else if (m.type === "jade") { color = "text-emerald-500"; icon = "military_tech"; }
+            
+            medalsEl.innerHTML += `<span class="material-symbols-rounded ${color} text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="Medalla de cumplimiento ${m.type.charAt(0).toUpperCase() + m.type.slice(1)} - ${m.month}">${icon}</span>`;
+          });
+        } else {
+          medalsEl.innerHTML = `
+            <span class="material-symbols-rounded text-cyan-400 text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="Medalla de cumplimiento Diamante - Enero">diamond</span>
+            <span class="material-symbols-rounded text-yellow-500 text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="Medalla de cumplimiento Oro - Febrero">workspace_premium</span>
+            <span class="material-symbols-rounded text-slate-400 text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="Medalla de cumplimiento Plata - Marzo">military_tech</span>
+            <span class="material-symbols-rounded text-cyan-400 text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="Medalla de cumplimiento Diamante - Mayo">diamond</span>
+          `;
+        }
       }
 
       switch(type.toLowerCase()) {
