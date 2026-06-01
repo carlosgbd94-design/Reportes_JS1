@@ -12215,8 +12215,10 @@ async function getHistoryMetrics(mes, _ignored, force = false) {
 let YEARLY_MEDALS_CACHE = {};
 
 async function getYearlyMedals(year, clues) {
+  console.log("[getYearlyMedals] Fetching medals for clues:", clues, "year:", year);
   const cacheKey = year + "__" + clues;
   if (YEARLY_MEDALS_CACHE[cacheKey]) {
+    console.log("[getYearlyMedals] Returning cached medals:", YEARLY_MEDALS_CACHE[cacheKey]);
     return YEARLY_MEDALS_CACHE[cacheKey];
   }
 
@@ -12231,10 +12233,15 @@ async function getYearlyMedals(year, clues) {
   }
 
   const medals = [];
+  let hasError = false;
   const promises = months.map(async (m) => {
     try {
       const data = await getHistoryMetrics(m, null, false);
-      if (!data || !data.rows) return;
+      if (!data || !data.rows) {
+        console.warn("[getYearlyMedals] No history metrics data for month", m);
+        hasError = true;
+        return;
+      }
 
       const rows = [...data.rows];
       const isCurrentMonth = m === todayYmdLocal().substring(0, 7);
@@ -12265,7 +12272,8 @@ async function getYearlyMedals(year, clues) {
         return (a.municipio || "").localeCompare(b.municipio || "");
       });
 
-      const index = rows.findIndex(r => r.clues === clues);
+      const index = rows.findIndex(r => String(r.clues).trim().toUpperCase() === String(clues).trim().toUpperCase());
+      console.log(`[getYearlyMedals] Month: ${m}, Clues to find: ${clues}, index found: ${index}`);
       if (index >= 0) {
         const uRow = rows[index];
         let tier = "riesgo";
@@ -12276,6 +12284,7 @@ async function getYearlyMedals(year, clues) {
         else if (uRow.score >= 60) tier = "acero";
         else if (uRow.score >= 50) tier = "jade";
 
+        console.log(`[getYearlyMedals] Clues: ${clues}, Month: ${m}, Score: ${uRow.score}, Tier: ${tier}`);
         if (tier !== "riesgo") {
           medals.push({
             month: m,
@@ -12287,18 +12296,22 @@ async function getYearlyMedals(year, clues) {
       }
     } catch (err) {
       console.error("Error loading medals for month " + m + ":", err);
+      hasError = true;
     }
   });
 
   await Promise.all(promises);
   medals.sort((a, b) => a.month.localeCompare(b.month));
-  YEARLY_MEDALS_CACHE[cacheKey] = medals;
+  if (!hasError && medals.length > 0) {
+    YEARLY_MEDALS_CACHE[cacheKey] = medals;
+  }
   return medals;
 }
 
 let MUNI_MEDALS_CACHE = {};
 
 async function getYearlyMuniMedals(year, municipio) {
+  console.log("[getYearlyMuniMedals] Fetching medals for muni:", municipio, "year:", year);
   const cacheKey = year + "__" + municipio;
   if (MUNI_MEDALS_CACHE[cacheKey]) {
     return MUNI_MEDALS_CACHE[cacheKey];
@@ -12315,10 +12328,14 @@ async function getYearlyMuniMedals(year, municipio) {
   }
 
   const medals = [];
+  let hasError = false;
   const promises = months.map(async (m) => {
     try {
       const data = await getHistoryMetrics(m, null, false);
-      if (!data || !data.rows) return;
+      if (!data || !data.rows) {
+        hasError = true;
+        return;
+      }
 
       const rows = [...data.rows];
       const isCurrentMonth = m === todayYmdLocal().substring(0, 7);
@@ -12383,21 +12400,31 @@ async function getYearlyMuniMedals(year, municipio) {
       }
     } catch (err) {
       console.error("Error loading medals for month " + m + ":", err);
+      hasError = true;
     }
   });
 
   await Promise.all(promises);
   medals.sort((a, b) => a.month.localeCompare(b.month));
-  MUNI_MEDALS_CACHE[cacheKey] = medals;
+  if (!hasError && medals.length > 0) {
+    MUNI_MEDALS_CACHE[cacheKey] = medals;
+  }
   return medals;
 }
 
 function renderUnitMedals(medals) {
+  console.log("[renderUnitMedals] Rendering medals in UI:", medals);
   const container = $("bCumplimientoMedals");
-  if (!container) return;
+  if (!container) {
+    console.warn("[renderUnitMedals] Element #bCumplimientoMedals not found!");
+    return;
+  }
   container.innerHTML = "";
 
-  if (!medals || !medals.length) return;
+  if (!medals || !medals.length) {
+    console.log("[renderUnitMedals] Empty medals array, rendering nothing.");
+    return;
+  }
 
   const monthNames = {
     "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr", "05": "May", "06": "Jun",
@@ -12452,7 +12479,7 @@ function renderUnitMedals(medals) {
       title = `Medalla de cumplimiento Jade - ${fullMonthLabel} (${m.score}%)`;
     }
 
-    const opacityVal = isHighTier ? "1.0" : "0.2";
+    const opacityVal = "1.0";
 
     // Append vector SVG elements for clean motivational aesthetics
     container.innerHTML += `
@@ -12473,12 +12500,16 @@ function updateCumplimientoMedalTone(userRank, userTier = "") {
 
   if (normalizedTier === "diamante") {
     container.classList.add("podium-diamond-chip");
-  } else {
-    if (userRank === 1) container.classList.add("podium-gold-chip");
-    else if (userRank === 2) container.classList.add("podium-silver-chip");
-    else if (userRank === 3) container.classList.add("podium-bronze-chip");
-    else if (userRank === 4) container.classList.add("podium-steel-chip");
-    else if (userRank === 5) container.classList.add("podium-emerald-chip");
+  } else if (normalizedTier === "oro") {
+    container.classList.add("podium-gold-chip");
+  } else if (normalizedTier === "plata") {
+    container.classList.add("podium-silver-chip");
+  } else if (normalizedTier === "bronce") {
+    container.classList.add("podium-bronze-chip");
+  } else if (normalizedTier === "acero") {
+    container.classList.add("podium-steel-chip");
+  } else if (normalizedTier === "jade") {
+    container.classList.add("podium-emerald-chip");
   }
 }
 
