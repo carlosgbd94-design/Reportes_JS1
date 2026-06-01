@@ -4396,7 +4396,10 @@ async function supabaseRequest(action = "", payload) {
           let tier = "riesgo";
           if (score === 100) tier = "diamante";
           else if (score >= 90) tier = "oro";
-          else if (score >= 70) tier = "plata";
+          else if (score >= 80) tier = "plata";
+          else if (score >= 70) tier = "bronce";
+          else if (score >= 60) tier = "acero";
+          else if (score >= 50) tier = "jade";
 
           return {
             ...m,
@@ -4618,7 +4621,10 @@ async function supabaseRequest(action = "", payload) {
             let tier = "riesgo";
             if (score === 100) tier = "diamante";
             else if (score >= 90) tier = "oro";
-            else if (score >= 70) tier = "plata";
+            else if (score >= 80) tier = "plata";
+            else if (score >= 70) tier = "bronce";
+            else if (score >= 60) tier = "acero";
+            else if (score >= 50) tier = "jade";
 
             return {
               clues: u.clues,
@@ -4646,7 +4652,10 @@ async function supabaseRequest(action = "", payload) {
             let tier = "riesgo";
             if (score === 100) tier = "diamante";
             else if (score >= 90) tier = "oro";
-            else if (score >= 70) tier = "plata";
+            else if (score >= 80) tier = "plata";
+            else if (score >= 70) tier = "bronce";
+            else if (score >= 60) tier = "acero";
+            else if (score >= 50) tier = "jade";
             return {
               municipio: m,
               score,
@@ -12378,6 +12387,9 @@ function renderHistoryMetrics(data) {
     diamante: '<span class="material-symbols-rounded medal-icon tier-diamante" title="Diamante">diamond</span>',
     oro: '<span class="material-symbols-rounded medal-icon tier-oro" title="Oro">workspace_premium</span>',
     plata: '<span class="material-symbols-rounded medal-icon tier-plata" title="Plata">military_tech</span>',
+    bronce: '<span class="material-symbols-rounded medal-icon tier-bronze" style="color: #b45309 !important;" title="Bronce">military_tech</span>',
+    acero: '<span class="material-symbols-rounded medal-icon tier-steel" style="color: #0d9488 !important;" title="Acero">workspace_premium</span>',
+    jade: '<span class="material-symbols-rounded medal-icon tier-emerald" style="color: #059669 !important;" title="Jade">military_tech</span>',
     riesgo: '<span class="material-symbols-rounded medal-icon tier-riesgo" title="En Riesgo">warning</span>'
   };
 
