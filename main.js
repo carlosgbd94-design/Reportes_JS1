@@ -10628,6 +10628,11 @@ $("btnSavePINOL").onclick = async () => {
   const nombre = $("nombrePINOL")?.value.trim() || "";
   if (!nombre) return showToast("Ingresa el nombre del responsable", false, "warn");
 
+  const solicitud = Number($("pinol_solicitud")?.value || 0);
+  if (isNaN(solicitud) || solicitud < 1) {
+    return showToast("La solicitud debe ser de al menos 1 botella", false, "warn");
+  }
+
   await AppService.runCapture({
     btnId: "btnSavePINOL",
     title: "Guardando",
