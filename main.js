@@ -12172,9 +12172,42 @@ async function getHistoryMetrics(mes, _ignored, force = false) {
   const cacheKey = buildCacheKey("HISTORY_METRICS", `${m}`);
 
   const fetcher = async () => {
-    const r = await apiCall({ action: "historyMetrics", token: TOKEN, mes: m });
-    if (!r || !r.ok) return null;
-    return r.data || null;
+    try {
+      const { data, error } = await window.supabase.rpc('get_history_metrics_rpc', { p_mes: m });
+      if (error) {
+        console.error("RPC Error in getHistoryMetrics:", error);
+        return null;
+      }
+      
+      // Mapear campos devueltos por el RPC para coincidir con la nomenclatura del frontend camelCase
+      const rows = (data || []).map(r => ({
+        clues: r.clues,
+        municipio: r.municipio,
+        unidad: r.unidad,
+        bio_semanas_ok: r.bio_semanas_ok,
+        cons_semanas_ok: r.cons_semanas_ok,
+        pedido_mensual: r.pedido_mensual,
+        ultima_captura: r.ultima_captura,
+        score: r.score,
+        tier: r.tier,
+        eBio: r.ebio,
+        eCons: r.econs,
+        isPedidoRequired: r.ispedidorequired
+      }));
+
+      const role = String(USER?.rol || "").toUpperCase();
+      let filteredRows = rows;
+      if (role === "UNIDAD") {
+        filteredRows = rows.filter(r => r.clues === USER.clues);
+      } else if (role === "MUNICIPAL") {
+        filteredRows = rows.filter(r => canSeeMunicipio_(USER, r.municipio));
+      }
+
+      return { rows: filteredRows, role };
+    } catch (e) {
+      console.error("Exception in getHistoryMetrics fetcher:", e);
+      return null;
+    }
   };
 
   return force ? await fetcher() : await getCachedOrFetch({
@@ -14883,4 +14916,40 @@ function initHeaderGlass() {
 window.addEventListener('resize', () => {
   if (window.headerGlassTimeout) clearTimeout(window.headerGlassTimeout);
   window.headerGlassTimeout = setTimeout(initHeaderGlass, 200);
+});
+
+// Event Delegation global master
+document.addEventListener('click', (e) => {
+  // 1. Cierre de modales
+  const closeBtn = e.target.closest('.modal-close-btn') || e.target.closest('[data-modal-close]');
+  if (closeBtn) {
+    const modal = closeBtn.closest('.modal-container') || closeBtn.closest('.modal') || document.querySelector('.modal-open');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('modal-open');
+    }
+  }
+
+  // 2. Click fuera del modal (cerrar)
+  const backdrop = e.target;
+  if (backdrop && (backdrop.classList.contains('modal-backdrop') || backdrop.classList.contains('modal-container'))) {
+    backdrop.style.display = 'none';
+    backdrop.classList.remove('modal-open');
+  }
+
+  // 3. Efecto interactivo Ripple
+  const rippleBtn = e.target.closest('.btn-ripple') || e.target.closest('button:not(.no-ripple)');
+  if (rippleBtn) {
+    const rect = rippleBtn.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const ripple = document.createElement('span');
+    ripple.className = 'ripple-effect';
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+    
+    rippleBtn.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+  }
 });
