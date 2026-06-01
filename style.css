@@ -8323,6 +8323,22 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
   vertical-align: middle;
 }
 
+.chip-medal-icon {
+  font-size: 28px !important;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 4px 8px rgba(0,0,0,0.25)) !important;
+  display: inline-block;
+  vertical-align: middle;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: help;
+}
+
+.chip-medal-icon:hover {
+  transform: scale(1.35) rotate(5deg) !important;
+}
+
 .tier-diamante { background-image: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); animation: shimmer-medal 2s infinite linear; background-size: 200% auto; }
 .tier-oro { background-image: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
 .tier-plata { background-image: linear-gradient(135deg, #94a3b8 0%, #cbd5e1 100%); }
@@ -8544,8 +8560,6 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
   color: #d97706 !important;
 }
 .podium-gold-chip #bCumplimientoMedals {
-  bottom: -10px !important;
-  right: 20px !important;
   transform: scale(1.1) !important;
   filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)) !important;
 }

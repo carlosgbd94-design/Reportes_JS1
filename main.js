@@ -12436,56 +12436,45 @@ function renderUnitMedals(medals) {
     "07": "Julio", "08": "Agosto", "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre"
   };
 
+  const iconNameMap = {
+    diamante: "diamond",
+    oro: "workspace_premium",
+    plata: "military_tech",
+    bronce: "military_tech",
+    acero: "workspace_premium",
+    jade: "military_tech"
+  };
+
+  const classMap = {
+    diamante: "tier-diamante",
+    oro: "tier-oro",
+    plata: "tier-plata",
+    bronce: "tier-bronze",
+    acero: "tier-steel",
+    jade: "tier-emerald"
+  };
+
+  const titleMap = {
+    diamante: "Diamante",
+    oro: "Oro",
+    plata: "Plata",
+    bronce: "Bronce",
+    acero: "Acero",
+    jade: "Jade"
+  };
+
   medals.forEach(m => {
     const monthParts = m.month.split("-");
     const mm = monthParts[1];
-    const label = monthNames[mm] || mm;
     const fullMonthLabel = fullMonthNames[mm] || mm;
-    let fillUrl = "";
-    let isHighTier = false;
-    let pathD = ""; // SVG Path shape definition
-    let title = "";
+    const tierKey = String(m.tier || "").trim().toLowerCase();
+    const iconName = iconNameMap[tierKey] || "military_tech";
+    const tierClass = classMap[tierKey] || "tier-riesgo";
+    const label = titleMap[tierKey] || "Cumplimiento";
+    const title = `Medalla de cumplimiento ${label} - ${fullMonthLabel} (${m.score}%)`;
 
-    // Determine path and gradients based on tier
-    if (m.tier === "diamante") {
-      fillUrl = "url(#diamondGrad)";
-      isHighTier = true;
-      pathD = "M12,2L2,12L12,22L22,12Z"; // Diamond path
-      title = `Medalla de cumplimiento Diamante - ${fullMonthLabel} (${m.score}%)`;
-    } else if (m.tier === "oro") {
-      fillUrl = "url(#goldGrad)";
-      isHighTier = true;
-      pathD = "M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M12,17A5,5 0 1,1 17,12A5,5 0 0,1 12,17Z"; // Shield/Badge circle
-      title = `Medalla de cumplimiento Oro - ${fullMonthLabel} (${m.score}%)`;
-    } else if (m.tier === "plata") {
-      fillUrl = "url(#silverGrad)";
-      isHighTier = true;
-      pathD = "M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M12,17A5,5 0 1,1 17,12A5,5 0 0,1 12,17Z";
-      title = `Medalla de cumplimiento Plata - ${fullMonthLabel} (${m.score}%)`;
-    } else if (m.tier === "bronce") {
-      fillUrl = "url(#bronzeGrad)";
-      isHighTier = false; // Bronce/Steel/Jade are low tiers - render dark/locked
-      pathD = "M12,2L4,5V11C4,16.5 8.3,21.7 12,23C15.7,21.7 20,16.5 20,11V5L12,2Z"; // Shield path
-      title = `Medalla de cumplimiento Bronce - ${fullMonthLabel} (${m.score}%)`;
-    } else if (m.tier === "acero") {
-      fillUrl = "url(#steelGrad)";
-      isHighTier = false;
-      pathD = "M12,2L4,5V11C4,16.5 8.3,21.7 12,23C15.7,21.7 20,16.5 20,11V5L12,2Z";
-      title = `Medalla de cumplimiento Acero - ${fullMonthLabel} (${m.score}%)`;
-    } else if (m.tier === "jade") {
-      fillUrl = "url(#emeraldGrad)";
-      isHighTier = false;
-      pathD = "M12,2L4,5V11C4,16.5 8.3,21.7 12,23C15.7,21.7 20,16.5 20,11V5L12,2Z";
-      title = `Medalla de cumplimiento Jade - ${fullMonthLabel} (${m.score}%)`;
-    }
-
-    const opacityVal = "1.0";
-
-    // Append vector SVG elements for clean motivational aesthetics
     container.innerHTML += `
-      <svg class="w-6 h-6 drop-shadow-sm cursor-help hover:scale-125 transition-transform" style="opacity: ${opacityVal};" title="${title}" viewBox="0 0 24 24">
-        <path d="${pathD}" fill="${fillUrl || "#71717a"}" />
-      </svg>
+      <span class="material-symbols-rounded chip-medal-icon ${tierClass}" title="${title}">${iconName}</span>
     `;
   });
 }
