@@ -12196,14 +12196,7 @@ async function getHistoryMetrics(mes, _ignored, force = false) {
       }));
 
       const role = String(USER?.rol || "").toUpperCase();
-      let filteredRows = rows;
-      if (role === "UNIDAD") {
-        filteredRows = rows.filter(r => r.clues === USER.clues);
-      } else if (role === "MUNICIPAL") {
-        filteredRows = rows.filter(r => canSeeMunicipio_(USER, r.municipio));
-      }
-
-      return { rows: filteredRows, role };
+      return { rows, role };
     } catch (e) {
       console.error("Exception in getHistoryMetrics fetcher:", e);
       return null;
@@ -12484,12 +12477,32 @@ function renderHistoryMetrics(data) {
   const role = data?.role || "UNIDAD";
   const tbody = $("historyTbody");
 
-  // Filter by selected municipality in histMunicipioFilter
   const selectedMuni = $("histMunicipioFilter")?.value || "TODOS";
   let activeRows = [...rows];
-  if (selectedMuni && selectedMuni !== "TODOS") {
-    activeRows = rows.filter(r => normalizeText(r.municipio) === normalizeText(selectedMuni));
+  const userRole = String(USER?.rol || "").toUpperCase();
+  if (userRole === "UNIDAD") {
+    activeRows = activeRows.filter(r => r.clues === USER.clues);
+  } else if (userRole === "MUNICIPAL") {
+    activeRows = activeRows.filter(r => canSeeMunicipio_(USER, r.municipio));
+  } else {
+    // ADMIN / JURISDICCIONAL: Permite filtro manual por municipio en la vista
+    if (selectedMuni && selectedMuni !== "TODOS") {
+      activeRows = activeRows.filter(r => normalizeText(r.municipio) === normalizeText(selectedMuni));
+    }
   }
+
+  // ORDENAR: Mayor score a menor score. A igualdad de score, por última captura de forma descendente, y luego por nombre
+  activeRows.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    const dateA = a.ultima_captura || "—";
+    const dateB = b.ultima_captura || "—";
+    if (dateA !== dateB) {
+      if (dateA === "—") return 1;
+      if (dateB === "—") return -1;
+      return dateB.localeCompare(dateA);
+    }
+    return a.unidad.localeCompare(b.unidad);
+  });
 
   const targetYmd = $("histMesEvaluacion")?.value || todayYmdLocal().substring(0, 7);
   const yearParts = targetYmd.split("-");
