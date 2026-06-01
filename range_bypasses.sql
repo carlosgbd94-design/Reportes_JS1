@@ -15,7 +15,7 @@ BEGIN
     SELECT 
         b.clues, 
         b.fecha, 
-        b.usuario AS capturado_por,
+        b.capturado_por AS capturado_por,
         COALESCE(b.tiene_ceros, false) AS tiene_ceros
     FROM public.biologicos_existencia b
     WHERE b.fecha >= p_fecha_inicio AND b.fecha <= p_fecha_fin;
