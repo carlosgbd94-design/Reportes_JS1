@@ -3670,8 +3670,51 @@ async function supabaseRequest(action = "", payload, options = {}) {
           };
         });
 
-        // 4. Ejecutar Inserción Dual en Paralelo
-        console.log("[Capture Logic] Preparando guardado de SR para:", { clues, fecha });
+        // ============================================================
+        // DETECCIÓN INTELIGENTE DE BIOLÓGICOS EN CERO (Server-Side)
+        // ============================================================
+
+        // Biológicos siempre activos en el esquema básico
+        const BIOS_SIEMPRE_ACTIVOS = [
+          "bcg", "hepatitis_a", "hepatitis_b", "rotavirus",
+          "hexavalente", "neumococica_13", "srp", "sr",
+          "td", "dpt", "tdpa", "vsr"
+        ];
+
+        // NEUMOCÓCICA 20: Solo rastrear si la unidad tiene histórico > 0 en días ANTERIORES
+        // (El día que reciben por primera vez no genera alerta; los días siguientes sí)
+        const { data: histNeumo20 } = await supabase
+          .from('biologicos_existencia')
+          .select('neumococica_20')
+          .eq('clues', clues)
+          .lt('fecha', fecha)
+          .gt('neumococica_20', 0)
+          .limit(1)
+          .maybeSingle();
+        const trackNeumo20 = !!histNeumo20;
+
+        // INFLUENZA y COVID-19: Solo durante temporada (octubre-marzo)
+        const nowMx = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Mexico_City" }));
+        const currentMonth = nowMx.getMonth() + 1; // 1-12
+        const isInfluenzaSeason = currentMonth >= 10 || currentMonth <= 3;
+
+        // Construir lista activa de biológicos a rastrear
+        const biosToTrack = [...BIOS_SIEMPRE_ACTIVOS];
+        if (trackNeumo20) biosToTrack.push("neumococica_20");
+        if (isInfluenzaSeason) {
+          biosToTrack.push("influenza");
+          biosToTrack.push("covid_19");
+        }
+        // VPH y VARICELA: no se rastrean automáticamente
+
+        // Calcular cuáles están en cero
+        const missingBioKeys = biosToTrack.filter(b => (summaryRecord[b] || 0) === 0);
+        summaryRecord.tiene_ceros = missingBioKeys.length > 0;
+
+        console.log(`[Capture Logic] Biológicos rastreados: ${biosToTrack.length} | En cero: ${missingBioKeys.length}${trackNeumo20 ? ' | Neumo20: rastreando' : ''}${isInfluenzaSeason ? ' | Temporada influenza activa' : ''}`);
+
+        // 4. Ejecutar Inserción Dual en Paralelo (summaryRecord ya tiene tiene_ceros)
+        console.log("[Capture Logic] Preparando guardado de SR para:", { clues, fecha, tiene_ceros: summaryRecord.tiene_ceros });
 
         // PURGAR PREVIAMENTE PARA EVITAR DUPLICADOS AL EDITAR
         await Promise.all([
@@ -3689,31 +3732,39 @@ async function supabaseRequest(action = "", payload, options = {}) {
 
         console.log("[Capture Logic] SR Guardado correctamente.");
 
-        // --- Generar Alerta de Desabasto ---
-        if (payload.missingVaccines && payload.missingVaccines.length > 0) {
-          const missList = payload.missingVaccines;
+        // --- Generar Alerta de Desabasto (si hay biológicos en cero) ---
+        if (missingBioKeys.length > 0) {
+          const BIO_DISPLAY_NAMES = {
+            "bcg": "BCG", "hepatitis_a": "Hepatitis A", "hepatitis_b": "Hepatitis B",
+            "rotavirus": "Rotavirus", "hexavalente": "Hexavalente",
+            "neumococica_13": "Neumocócica 13", "neumococica_20": "Neumocócica 20",
+            "srp": "SRP", "sr": "SR", "td": "TD", "dpt": "DPT", "tdpa": "TDPa",
+            "vsr": "VSR", "influenza": "Influenza", "covid_19": "COVID-19"
+          };
+          const missList = missingBioKeys.map(b => BIO_DISPLAY_NAMES[b] || b.toUpperCase());
           const notifId = 'NOTIF:DESABASTO:' + btoa(clues + ":" + fecha + ":" + Date.now());
 
           await supabase.from('notificaciones').insert({
             id: notifId,
-            tipo: 'alerta_desabasto',
+            tipo: 'ALERTA_DESABASTO',
             created_ts: new Date().toISOString(),
             created_date: todayYmdLocal(),
             from_usuario: 'SISTEMA',
             from_rol: 'SYS',
             target_scope: 'MUNICIPIO',
             target_municipio: municipio,
-            title: 'Alerta de Desabasto',
-            message: `La unidad ${unidad} no cuenta con existencias de ${missList.length} biológico(s) prioritario(s).`,
+            title: '🚨 Desabasto detectado',
+            message: `La unidad ${unidad} capturó sin existencias de: ${missList.join(', ')}.`,
             status: 'UNREAD',
             meta_json: JSON.stringify({
               clues: clues,
               unidad: unidad,
+              municipio: municipio,
               missing: missList,
               status: 'activa'
             })
           });
-          console.log("[Capture Logic] Alerta de desabasto generada.");
+          console.log("[Capture Logic] Alerta de desabasto generada para:", missList);
         }
 
         return { ok: true };
@@ -4216,6 +4267,9 @@ async function supabaseRequest(action = "", payload, options = {}) {
               if (tipo === "BIO") {
                 metadata.tipo_pedido = record?.tipo_pedido || "MENSUAL";
                 metadata.sin_pedido = record?.sin_pedido || false;
+              }
+              if (tipo === "SR") {
+                metadata.tiene_ceros = record?.tiene_ceros || false;
               }
               return metadata;
             }),
@@ -9499,16 +9553,35 @@ function renderCaptureSummary(data) {
       tbodyCap.innerHTML = `<tr><td colspan="5" class="muted">${msg}</td></tr>`;
       return;
     }
-    tbodyCap.innerHTML = list.map(r => `
-        <tr>
-          <td data-label="Municipio">${escapeHtml(r.municipio || "")}</td>
-          <td data-label="CLUES">${escapeHtml(r.clues || "")}</td>
-          <td data-label="Unidad">${escapeHtml(r.unidad || "")}</td>
+    tbodyCap.innerHTML = list.map(r => {
+      // Determinar estado visual: verde (OK), azul (sin pedido BIO), ámbar (con ceros SR)
+      let iconColor = '#22c55e'; // Verde: capturado normal
+      let iconTitle = r.editado === 'SI' ? 'Editado' : 'Capturado';
+      let extraTag = '';
+
+      if (r.sin_pedido) {
+        iconColor = '#3b82f6'; // Azul: sin pedido biológico
+        iconTitle = 'Sin pedido de biológico (Solo Existencias)';
+      } else if (r.tiene_ceros) {
+        iconColor = '#f43f5e'; // Carmesí/Rosa: capturó con algún biológico en cero
+        iconTitle = 'Capturó con algún biológico sin existencia';
+        extraTag = `<span style="background:#fff1f2; color:#be123c; padding:1px 7px; border-radius:6px; font-size:10px; font-weight:800; border:1px solid #fecdd3; white-space:nowrap;">SIN STOCK</span>`;
+      }
+
+      const tipoPedidoTag = r.tipo_pedido
+        ? `<span class="opacity-60 font-black uppercase text-[10px] tracking-tighter" style="background:#f1f5f9; padding:2px 6px; border-radius:6px">${r.tipo_pedido}</span>`
+        : '';
+
+      return `
+        <tr${r.tiene_ceros ? ' style="background: #fff5f5;"' : ''}>
+          <td data-label="Municipio">${escapeHtml(r.municipio || '')}</td>
+          <td data-label="CLUES">${escapeHtml(r.clues || '')}</td>
+          <td data-label="Unidad">${escapeHtml(r.unidad || '')}</td>
           <td data-label="Estatus">
             <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%">
               <div style="display:flex; align-items:center; gap:8px">
-                <span class="material-symbols-rounded" style="color: ${r.sin_pedido ? '#3b82f6' : '#22c55e'}; font-size: 24px; vertical-align: middle;" title="${r.sin_pedido ? 'Sin pedido de biológico (Solo Existencias)' : (r.editado === 'SI' ? 'Editado' : 'Capturado')}">check_circle</span>
-                ${r.tipo_pedido ? `<span class="opacity-60 font-black uppercase text-[10px] tracking-tighter" style="background:#f1f5f9; padding:2px 6px; border-radius:6px">${r.tipo_pedido}</span>` : ""}
+                <span class="material-symbols-rounded" style="color: ${iconColor}; font-size: 24px; vertical-align: middle;" title="${iconTitle}">check_circle</span>
+                ${tipoPedidoTag}${extraTag}
               </div>
               <button class="live-view-btn-v2" onclick="openLiveView('${r.clues}','${escapeHtml(r.unidad)}','${escapeHtml(r.municipio)}')" title="Ver inventario en vivo">
                  <span class="material-symbols-rounded">visibility</span>
@@ -9516,7 +9589,8 @@ function renderCaptureSummary(data) {
             </div>
           </td>
         </tr>
-      `).join("");
+      `;
+    }).join('');
   }
 
   function renderFaltantesOnly(list) {
@@ -9542,6 +9616,12 @@ function renderCaptureSummary(data) {
   const legendBio = $("legendBioSinPedido");
   if (legendBio) {
     legendBio.style.display = (tipo === "BIO") ? "flex" : "none";
+  }
+
+  // Leyenda de ceros: siempre visible en SR
+  const legendCeros = $("legendBioConCeros");
+  if (legendCeros) {
+    legendCeros.style.display = (tipo === "SR") ? "flex" : "none";
   }
 
   renderCapturadasOnly(capturadas);
@@ -13426,6 +13506,8 @@ async function openLiveView(clues, unidad, municipio) {
 
       if (!res.data || !res.data.length) {
         tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay registros detallados para esta fecha.</td></tr>';
+        const zeroAlertEmpty = $("liveViewZeroAlert");
+        if (zeroAlertEmpty) { zeroAlertEmpty.style.display = 'none'; zeroAlertEmpty.innerHTML = ''; }
         renderLiveCharts("SR", null, null);
       } else {
         const items = res.data;
@@ -13494,6 +13576,52 @@ async function openLiveView(clues, unidad, municipio) {
                 </tr>
               `;
         }).join("");
+
+        // --- Panel de Alerta: Vacunas en Cero ---
+        const biosEnCero = items.filter(r => Number(r.cantidad || 0) === 0);
+        const zeroAlertEl = $("liveViewZeroAlert");
+        if (zeroAlertEl) {
+          if (biosEnCero.length > 0) {
+            const pillsHtml = biosEnCero.map(r =>
+              `<span style="display:inline-flex; align-items:center; gap:4px; background:#fff; border:1.5px solid #fecdd3; color:#be123c; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:800; white-space:nowrap;">
+                <span class="material-symbols-rounded" style="font-size:14px; color:#f43f5e;">inventory_2</span>
+                ${escapeHtml(r.biologico || '—')}
+              </span>`
+            ).join('');
+            zeroAlertEl.style.display = 'block';
+            zeroAlertEl.innerHTML = `
+              <div style="background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #fecdd3; border-radius: 20px; padding: 16px 20px; display:flex; flex-wrap:wrap; align-items:center; gap:12px;">
+                <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+                  <span class="material-symbols-rounded" style="font-size:24px; color:#f43f5e;">warning</span>
+                  <div>
+                    <div style="font-size:12px; font-weight:900; color:#be123c; text-transform:uppercase; letter-spacing:0.05em;">Vacunas sin existencia</div>
+                    <div style="font-size:11px; color:#e11d48; font-weight:600;">Esta unidad capturó con ${biosEnCero.length} biológico${biosEnCero.length > 1 ? 's' : ''} en cero</div>
+                  </div>
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:6px; flex:1;">
+                  ${pillsHtml}
+                </div>
+              </div>
+            `;
+          } else {
+            zeroAlertEl.style.display = 'none';
+            zeroAlertEl.innerHTML = '';
+          }
+        }
+
+        // Resaltar filas con cantidad = 0 en carmesí/rosa dentro de la tabla
+        if (biosEnCero.length > 0) {
+          Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+            const countBadge = tr.querySelector('.live-view-count-badge');
+            if (countBadge && (countBadge.textContent.trim() === '0')) {
+              tr.style.background = '#fff5f5';
+              countBadge.style.background = '#ffe4e6';
+              countBadge.style.color = '#be123c';
+              countBadge.style.borderColor = '#fecdd3';
+            }
+          });
+        }
+
         renderLiveCharts("SR", semStats, cadStats);
       }
     } else if (tipo === "BIO") {

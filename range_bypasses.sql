@@ -2,19 +2,21 @@
 -- MIGRACIÓN PARA RESÚMENES POR RANGO DE FECHAS (BYPASS RLS)
 -- ======================================================================================
 
--- 1. Existencias (SR) por rango
+-- 1. Existencias (SR) por rango (incluye tiene_ceros para semaforización del panel)
 CREATE OR REPLACE FUNCTION public.get_captures_sr_range_bypass(p_fecha_inicio DATE, p_fecha_fin DATE) 
 RETURNS TABLE (
     clues VARCHAR,
     fecha DATE,
-    capturado_por VARCHAR
+    capturado_por VARCHAR,
+    tiene_ceros BOOLEAN
 ) AS $$
 BEGIN
     RETURN QUERY 
     SELECT 
         b.clues, 
         b.fecha, 
-        b.usuario AS capturado_por
+        b.usuario AS capturado_por,
+        COALESCE(b.tiene_ceros, false) AS tiene_ceros
     FROM public.biologicos_existencia b
     WHERE b.fecha >= p_fecha_inicio AND b.fecha <= p_fecha_fin;
 END;

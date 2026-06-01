@@ -2086,6 +2086,11 @@
                     <span class="material-symbols-rounded" style="color: #3b82f6; font-size: 20px;">check_circle</span>
                     <span style="font-size: 13px; font-weight: 800; color: #475569; font-family: inherit;">Sin pedido de biológico</span>
                   </div>
+                  <!-- Nomenclatura dinámica para Existencias con Biológicos en Cero -->
+                  <div id="legendBioConCeros" style="display: none; align-items: center; gap: 6px; margin-left: 4px;">
+                    <span class="material-symbols-rounded" style="color: #f43f5e; font-size: 20px;">check_circle</span>
+                    <span style="font-size: 13px; font-weight: 800; color: #be123c; font-family: inherit;">Capturó con algún biológico sin existencia</span>
+                  </div>
                 </div>
               </div>
 
@@ -3836,6 +3841,9 @@
           </div>
 
         </div>
+
+        <!-- Panel de Alerta: Vacunas en Cero (Inyectado por JS al abrir Live View tipo SR) -->
+        <div id="liveViewZeroAlert" style="display:none; margin-bottom: 20px;"></div>
 
         <!-- Tabla de Inventario Detallado -->
         <div
