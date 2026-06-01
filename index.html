@@ -1103,32 +1103,39 @@
             <!-- Decorative Separator -->
             <div class="hidden md:block w-px h-12 bg-outline-variant/40"></div>
 
-            <!-- Compliance KPI (Redesigned with Premium layout) -->
-            <div class="flex items-center justify-center gap-4 flex-wrap w-full md:w-auto h-full">
-              <div id="bCumplimiento" data-tone="bad" style="min-height: 120px;"
-                class="flex items-center gap-8 px-10 w-full md:w-auto min-w-[340px] rounded-2xl bg-white border border-outline-variant/50 shadow-sm transition-all hover:shadow-md group cursor-help relative overflow-hidden">
+            <!-- Compliance KPI (Completely Redesigned to Prevent Overlaps) -->
+             <div class="flex items-center justify-center gap-4 flex-wrap w-full md:w-auto h-full">
+               <div id="bCumplimiento" data-tone="bad" style="min-height: 140px; padding: 24px 32px;"
+                 class="flex flex-col justify-between w-full md:w-auto min-w-[360px] rounded-3xl bg-white border border-outline-variant/50 shadow-sm transition-all hover:shadow-md group cursor-help relative overflow-hidden">
+                 
+                 <!-- Top Row: Icon & Text content -->
+                 <div class="flex items-center gap-6 w-full relative z-10">
+                   <!-- Progress Icon with Pulse Background -->
+                   <div class="w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center shrink-0"
+                     id="bCumplimientoIconBg">
+                     <span class="material-symbols-rounded text-[28px]">analytics</span>
+                   </div>
 
-                <!-- Medallas Acumuladas (Trazabilidad) - Properly aligned at the bottom right to avoid overlaps -->
-                <div id="bCumplimientoMedals" class="absolute bottom-2 right-4 flex gap-1.5 z-20"></div>
+                   <div class="flex flex-col leading-tight">
+                     <span class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1.5">Cumplimiento</span>
+                     <div class="flex items-baseline gap-1">
+                       <span id="dayTxt" class="text-4xl font-black tracking-tighter text-primary">0%</span>
+                     </div>
+                   </div>
+                 </div>
 
-                <!-- Progress Icon with Pulse Background -->
-                <div class="w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center shrink-0 relative z-10"
-                  id="bCumplimientoIconBg">
-                  <span class="material-symbols-rounded text-[28px]">analytics</span>
-                </div>
+                 <!-- Bottom Row: Medallas Acumuladas (Trazabilidad) - Kept completely separated in its own area -->
+                 <div class="w-full flex items-center justify-between border-t border-dashed border-outline-variant/30 pt-3 mt-3 relative z-10">
+                   <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Logros del Año</span>
+                   <div id="bCumplimientoMedals" class="flex gap-1.5"></div>
+                 </div>
 
-                <div class="flex flex-col leading-tight relative z-10 pr-12">
-                  <span class="text-[10px] font-black uppercase tracking-widest opacity-40 mb-1.5">Cumplimiento</span>
-                  <div class="flex items-baseline gap-1">
-                    <span id="dayTxt" class="text-4xl font-black tracking-tighter text-primary">0%</span>
-                  </div>
-                </div>
-
-                <!-- Glass Reflection Effect -->
-                <div
-                  class="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 opacity-0 transition-opacity pointer-events-none">
-                </div>
-              </div>
+                 <!-- Glass Reflection Effect -->
+                 <div
+                   class="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 opacity-0 transition-opacity pointer-events-none">
+                 </div>
+               </div>
+             </div>
               <!-- 💎 CRYSTALLINE INSIGHT HUB (Dato Curioso - Dynamic) -->
               <div id="factCard"
                 style="min-height: 120px; transition: background-color 0.5s ease, border-color 0.5s ease;"

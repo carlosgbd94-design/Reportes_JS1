@@ -4772,7 +4772,7 @@ input[disabled] {
 }
 
 #bCumplimiento[data-tone] #dayTxt,
-#bCumplimiento[data-tone] span {
+#bCumplimiento[data-tone] span:not(.material-symbols-rounded) {
   color: white !important;
 }
 
@@ -4780,6 +4780,31 @@ input[disabled] {
 #bCumplimiento[data-tone] .opacity-30 {
   color: white !important;
   opacity: 0.8 !important;
+}
+
+/* Evitar que las reglas de data-tone pisen los estilos de los textos y medallas en las chips premium */
+.podium-gold-chip #dayTxt, .podium-gold-chip span:not(.material-symbols-rounded) { color: #b45309 !important; }
+.podium-silver-chip #dayTxt, .podium-silver-chip span:not(.material-symbols-rounded) { color: #475569 !important; }
+.podium-bronze-chip #dayTxt, .podium-bronze-chip span:not(.material-symbols-rounded) { color: #9a3412 !important; }
+.podium-steel-chip #dayTxt, .podium-steel-chip span:not(.material-symbols-rounded) { color: #0f766e !important; }
+.podium-emerald-chip #dayTxt, .podium-emerald-chip span:not(.material-symbols-rounded) { color: #047857 !important; }
+.podium-diamond-chip #dayTxt {
+  background: linear-gradient(135deg, #0891b2 0%, #db2777 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  font-weight: 900 !important;
+}
+.podium-diamond-chip span:not(.material-symbols-rounded):not(#dayTxt) {
+  color: #0891b2 !important;
+}
+.podium-gold-chip .opacity-40,
+.podium-silver-chip .opacity-40,
+.podium-bronze-chip .opacity-40,
+.podium-steel-chip .opacity-40,
+.podium-emerald-chip .opacity-40,
+.podium-diamond-chip .opacity-40 {
+  color: inherit !important;
+  opacity: 0.65 !important;
 }
 
 
