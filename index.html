@@ -3821,11 +3821,22 @@
     window.testComplianceChip = function(type) {
       const container = document.getElementById("bCumplimiento");
       const textEl = document.getElementById("dayTxt");
+      const medalsEl = document.getElementById("bCumplimientoMedals");
       if (!container || !textEl) return console.error("Compliance card elements not found!");
       
       // Reset classes
       container.classList.remove("good", "ok", "warn", "bad", "podium-gold-chip", "podium-silver-chip", "podium-bronze-chip", "podium-steel-chip", "podium-emerald-chip", "podium-diamond-chip");
       container.removeAttribute("data-tone");
+
+      // Inject some mock medals to test the tooltip hover functionality
+      if (medalsEl) {
+        medalsEl.innerHTML = `
+          <span class="material-symbols-rounded text-cyan-400 text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="Medalla de cumplimiento Diamante - Enero">diamond</span>
+          <span class="material-symbols-rounded text-yellow-500 text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="Medalla de cumplimiento Oro - Febrero">workspace_premium</span>
+          <span class="material-symbols-rounded text-slate-400 text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="Medalla de cumplimiento Plata - Marzo">military_tech</span>
+          <span class="material-symbols-rounded text-cyan-400 text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="Medalla de cumplimiento Diamante - Mayo">diamond</span>
+        `;
+      }
 
       switch(type.toLowerCase()) {
         case "diamante":
@@ -3857,6 +3868,7 @@
           container.classList.add("good");
           container.setAttribute("data-tone", "good");
           textEl.textContent = "85%";
+          if (medalsEl) medalsEl.innerHTML = "";
           break;
       }
       console.log("Compliance chip override applied: " + type);

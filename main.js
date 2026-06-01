@@ -12176,10 +12176,16 @@ function renderUnitMedals(medals) {
     "07": "Jul", "08": "Ago", "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dic"
   };
 
+  const fullMonthNames = {
+    "01": "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril", "05": "Mayo", "06": "Junio",
+    "07": "Julio", "08": "Agosto", "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre"
+  };
+
   medals.forEach(m => {
     const monthParts = m.month.split("-");
     const mm = monthParts[1];
     const label = monthNames[mm] || mm;
+    const fullMonthLabel = fullMonthNames[mm] || mm;
     let color = "";
     let icon = "military_tech";
     let title = "";
@@ -12187,27 +12193,27 @@ function renderUnitMedals(medals) {
     if (m.score === 100 || m.tier === "diamante") {
       color = "text-cyan-400";
       icon = "diamond";
-      title = "Liga Diamante (100% de Excelencia) - " + label;
+      title = `Medalla de cumplimiento Diamante - ${fullMonthLabel}`;
     } else if (m.rank === 1) {
       color = "text-yellow-500";
       icon = "workspace_premium";
-      title = "Medalla de Oro (1er Lugar) - " + label;
+      title = `Medalla de cumplimiento Oro - ${fullMonthLabel}`;
     } else if (m.rank === 2) {
       color = "text-slate-400";
       icon = "military_tech";
-      title = "Medalla de Plata (2do Lugar) - " + label;
+      title = `Medalla de cumplimiento Plata - ${fullMonthLabel}`;
     } else if (m.rank === 3) {
       color = "text-amber-600";
       icon = "military_tech";
-      title = "Medalla de Bronce (3er Lugar) - " + label;
+      title = `Medalla de cumplimiento Bronce - ${fullMonthLabel}`;
     } else if (m.rank === 4) {
       color = "text-cyan-500";
       icon = "workspace_premium";
-      title = "Medalla de Acero (4to Lugar) - " + label;
+      title = `Medalla de cumplimiento Acero - ${fullMonthLabel}`;
     } else if (m.rank === 5) {
       color = "text-emerald-500";
       icon = "military_tech";
-      title = "Medalla de Jade (5to Lugar) - " + label;
+      title = `Medalla de cumplimiento Jade - ${fullMonthLabel}`;
     }
 
     container.innerHTML += '<span class="material-symbols-rounded ' + color + ' text-[18px] drop-shadow-sm cursor-help hover:scale-125 transition-transform" title="' + title + '">' + icon + '</span>';
