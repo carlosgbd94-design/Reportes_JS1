@@ -387,8 +387,22 @@ function renderDashboard() {
     agg.cobertura_cuatro = factorCuatro > 0 ? Math.round(((sumaDosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
 
     // Renderizar componentes
+    const isSingleUnit = fUnits.length === 1;
+    const grid = document.getElementById('rdaAnalysisGrid');
+    const doughnutContainer = document.getElementById('chartDoughnutContainer');
+    
+    if (!isSingleUnit && grid && doughnutContainer) {
+        doughnutContainer.style.display = 'none';
+        grid.style.gridTemplateColumns = '1fr 1fr';
+    } else if (grid && doughnutContainer) {
+        doughnutContainer.style.display = 'flex';
+        grid.style.gridTemplateColumns = '350px 1fr';
+    }
+
     renderKPIs(agg, esquema);
-    renderDoughnut(agg, esquema);
+    if (isSingleUnit) {
+        renderDoughnut(agg, esquema);
+    }
     renderBarChart(fUnits, muniFilter, esquema);
     renderTable(fUnits, esquema);
 }
@@ -462,11 +476,17 @@ function renderDoughnut(agg, esquema) {
     let labels = [];
     let data = [];
     let backgroundColors = [];
+    let centerValue = '';
+    let centerLabel = '';
 
     if (esquema === 'basico') {
         labels = ['< 1 Año', '1 Año', '4 Años'];
         data = [agg.cobertura_menor1, agg.cobertura_uno, agg.cobertura_cuatro];
         backgroundColors = ['#0d9488', '#0284c7', '#7c3aed'];
+        const validCovs = data.filter(d => d > 0);
+        const avg = validCovs.length ? Math.round(validCovs.reduce((a,b)=>a+b,0) / validCovs.length) : 0;
+        centerValue = avg + '%';
+        centerLabel = 'Promedio';
     } else if (esquema === 'adultos') {
         labels = ['HepB', 'SR', 'VPH', 'Td', 'Tdpa'];
         data = [agg.adol_hb, agg.adol_sr, agg.adol_vph, agg.adol_td, agg.adol_tdpa];
@@ -485,11 +505,45 @@ function renderDoughnut(agg, esquema) {
         backgroundColors = ['#0284c7', '#7c3aed'];
     }
 
+    if (esquema !== 'basico') {
+        const sum = data.reduce((a,b) => a + (b||0), 0);
+        centerValue = sum.toLocaleString();
+        centerLabel = 'Total Dosis';
+    }
+
+    const premiumDoughnutPlugin = {
+        id: 'premiumCenterText',
+        beforeDraw: (chart) => {
+            const { ctx, chartArea: { top, bottom, left, right } } = chart;
+            ctx.save();
+            const centerX = left + (right - left) / 2;
+            const centerY = top + (bottom - top) / 2;
+
+            const val = chart.options.plugins.premiumCenterText?.value || '';
+            const lbl = chart.options.plugins.premiumCenterText?.label || '';
+
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            ctx.font = '800 32px Inter, sans-serif';
+            ctx.fillStyle = '#0f172a';
+            ctx.fillText(val, centerX, centerY - 10);
+
+            ctx.font = '600 12px Inter, sans-serif';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText(lbl, centerX, centerY + 16);
+            ctx.restore();
+        }
+    };
+
     if (_rdaCharts.d) {
         const chart = _rdaCharts.d;
         chart.data.labels = labels;
         chart.data.datasets[0].data = data;
         chart.data.datasets[0].backgroundColor = backgroundColors;
+        if (!chart.options.plugins.premiumCenterText) chart.options.plugins.premiumCenterText = {};
+        chart.options.plugins.premiumCenterText.value = centerValue;
+        chart.options.plugins.premiumCenterText.label = centerLabel;
         chart.update();
     } else {
         _rdaCharts.d = new Chart(ctx, {
@@ -501,211 +555,352 @@ function renderDoughnut(agg, esquema) {
                     backgroundColor: backgroundColors, 
                     hoverOffset: 12,
                     borderWidth: 0,
-                    borderRadius: 8
+                    borderRadius: 12,
+                    spacing: 2
                 }]
             },
             options: { 
-                devicePixelRatio: 3,
-                responsive: true, maintainAspectRatio: false, cutout: '75%', 
-                animation: { duration: 800, easing: 'easeOutQuart' },
+                responsive: true, maintainAspectRatio: false, cutout: '80%', 
+                animation: { duration: 1000, easing: 'easeOutQuart' },
                 plugins: { 
                     legend: { position: 'bottom', labels: { font: { size: 12, weight: '700' }, color: '#64748b', padding: 20, usePointStyle: true, pointStyle: 'circle' } },
-                    tooltip: { backgroundColor: '#0f172a', titleFont: { size: 13 }, bodyFont: { size: 13 }, padding: 12, cornerRadius: 10 }
+                    tooltip: { backgroundColor: '#0f172a', titleFont: { size: 13 }, bodyFont: { size: 13 }, padding: 12, cornerRadius: 10 },
+                    premiumCenterText: { value: centerValue, label: centerLabel }
                 }
-            }
+            },
+            plugins: [premiumDoughnutPlugin]
         });
     }
 }
 
-// Chart.js Recycler: In-Place Horizontal Bar chart update
+// Chart.js Recycler: In-Place Horizontal Bar / Combo chart update
 function renderBarChart(fUnits, muniFilter, esquema) {
     const ctx = document.getElementById('chartBar');
+    const ctxTotal = document.getElementById('chartBarTotal');
+    const totalContainer = document.getElementById('chartBarTotalContainer');
+    
     if (!ctx) return;
 
     const titleEl = document.getElementById('chartBarTitle');
-    let labels = [];
-    let d1 = [], d2 = [], d3 = [], d4 = [], d5 = [];
     const role = (typeof USER !== 'undefined' && USER?.rol) || 'UNIDAD';
     const maxMes = _rdaCache.maxMes || 12;
 
-    let datasetConfigs = [];
-    if (esquema === 'basico') {
-        datasetConfigs = [
-            { label: '< 1 Año', data: d1, backgroundColor: '#0d9488' },
-            { label: '1 Año', data: d2, backgroundColor: '#0284c7' },
-            { label: '4 Años', data: d3, backgroundColor: '#7c3aed' }
-        ];
-    } else if (esquema === 'adultos') {
-        datasetConfigs = [
-            { label: 'HepB', data: d1, backgroundColor: '#0d9488' },
-            { label: 'SR', data: d2, backgroundColor: '#0284c7' },
-            { label: 'VPH', data: d3, backgroundColor: '#7c3aed' },
-            { label: 'Td', data: d4, backgroundColor: '#ea580c' },
-            { label: 'Tdpa', data: d5, backgroundColor: '#db2777' }
-        ];
-    } else if (esquema === 'mayores') {
-        datasetConfigs = [
-            { label: 'Neumo 13', data: d1, backgroundColor: '#0d9488' },
-            { label: 'Neumo 20', data: d2, backgroundColor: '#0284c7' },
-            { label: 'Td Mayores', data: d3, backgroundColor: '#7c3aed' }
-        ];
-    } else if (esquema === 'embarazadas') {
-        datasetConfigs = [
-            { label: 'Tdpa', data: d1, backgroundColor: '#db2777' },
-            { label: 'VSR', data: d2, backgroundColor: '#0d9488' }
-        ];
-    } else if (esquema === 'invernal') {
-        datasetConfigs = [
-            { label: 'Influenza', data: d1, backgroundColor: '#0284c7' },
-            { label: 'COVID-19', data: d2, backgroundColor: '#7c3aed' }
-        ];
-    }
+    const isSingleUnit = fUnits.length === 1;
 
-    if (!muniFilter && (role === 'ADMIN' || role === 'JURISDICCIONAL')) {
-        if (titleEl) titleEl.textContent = 'Análisis por Municipio';
-        const munis = [...new Set(_rdaCache.unidades.map(u => (u.municipio || '').toUpperCase().trim()))].filter(Boolean).sort();
-        
-        for (const m of munis) {
-            labels.push(m);
-            const muniUnits = _rdaCache.unidades.filter(u => (u.municipio || '').toUpperCase().trim() === m);
-            
-            let mAgg = {
-                pob_menor_1: 0, pob_1_ano: 0, pob_4_anos: 0,
-                bcg_dosis: 0, hepb_0_7_dosis: 0, hexa_3_dosis: 0, rota_2_dosis: 0, neumo_2_dosis: 0,
-                hexa_ref_dosis: 0, neumo_ref_dosis: 0, srp_2_dosis: 0, dpt_4_dosis: 0,
-                adol_hb: 0, adol_sr: 0, adol_vph: 0, adol_td: 0, adol_tdpa: 0,
-                am_neumo13: 0, am_neumo20: 0, am_td: 0,
-                emb_tdpa: 0, emb_vsr: 0,
-                inv_influenza: 0, inv_covid: 0
-            };
+    let labels = [];
+    let finalDatasets = [];
+    let isHorizontal = !isSingleUnit;
+    let titleText = '';
 
-            for (const u of muniUnits) {
-                mAgg.pob_menor_1 += u.pob_menor_1 || 0;
-                mAgg.pob_1_ano += u.pob_1_ano || 0;
-                mAgg.pob_4_anos += u.pob_4_anos || 0;
+    // Lógica para Total Jurisdiccional (oculto por defecto)
+    if (totalContainer) totalContainer.style.display = 'none';
 
-                mAgg.bcg_dosis += u.bcg_dosis || 0;
-                mAgg.hepb_0_7_dosis += u.hepb_0_7_dosis || 0;
-                mAgg.hexa_3_dosis += u.hexa_3_dosis || 0;
-                mAgg.rota_2_dosis += u.rota_2_dosis || 0;
-                mAgg.neumo_2_dosis += u.neumo_2_dosis || 0;
+    if (isSingleUnit) {
+        titleText = 'Avance Anual 2025';
+        const u = fUnits[0];
 
-                mAgg.hexa_ref_dosis += u.hexa_ref_dosis || 0;
-                mAgg.neumo_ref_dosis += u.neumo_ref_dosis || 0;
-                mAgg.srp_2_dosis += u.srp_2_dosis || 0;
-                mAgg.dpt_4_dosis += u.dpt_4_dosis || 0;
+        if (esquema === 'basico') {
+            labels = ['< 1 Año', '1 Año', '4 Años'];
+            const factorM1 = (u.pob_menor_1 * 0.0833) * maxMes;
+            const factorUno = (u.pob_1_ano * 0.0833) * maxMes;
+            const factorCuatro = (u.pob_4_anos * 0.0833) * maxMes;
 
-                mAgg.adol_hb += u.adol_hb || 0;
-                mAgg.adol_sr += u.adol_sr || 0;
-                mAgg.adol_vph += u.adol_vph || 0;
-                mAgg.adol_td += u.adol_td || 0;
-                mAgg.adol_tdpa += u.adol_tdpa || 0;
+            const dosisM1 = (u.bcg_dosis||0) + (u.hepb_0_7_dosis||0) + (u.hexa_3_dosis||0) + (u.rota_2_dosis||0) + (u.neumo_2_dosis||0);
+            const dosisUno = (u.hexa_ref_dosis||0) + (u.neumo_ref_dosis||0) + (u.srp_2_dosis||0);
+            const dosisCuatro = u.dpt_4_dosis||0;
 
-                mAgg.am_neumo13 += u.am_neumo13 || 0;
-                mAgg.am_neumo20 += u.am_neumo20 || 0;
-                mAgg.am_td += u.am_td || 0;
+            const covM1 = factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0;
+            const covUno = factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
+            const covCuatro = factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
 
-                mAgg.emb_tdpa += u.emb_tdpa || 0;
-                mAgg.emb_vsr += u.emb_vsr || 0;
-
-                mAgg.inv_influenza += u.inv_influenza || 0;
-                mAgg.inv_covid += u.inv_covid || 0;
-            }
-
-            if (esquema === 'basico') {
-                const factorM1 = (mAgg.pob_menor_1 * 0.0833) * maxMes;
-                const factorUno = (mAgg.pob_1_ano * 0.0833) * maxMes;
-                const factorCuatro = (mAgg.pob_4_anos * 0.0833) * maxMes;
-
-                const dosisM1 = mAgg.bcg_dosis + mAgg.hepb_0_7_dosis + mAgg.hexa_3_dosis + mAgg.rota_2_dosis + mAgg.neumo_2_dosis;
-                const dosisUno = mAgg.hexa_ref_dosis + mAgg.neumo_ref_dosis + mAgg.srp_2_dosis;
-                const dosisCuatro = mAgg.dpt_4_dosis;
-
-                d1.push(factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0);
-                d2.push(factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0);
-                d3.push(factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0);
-            } else if (esquema === 'adultos') {
-                d1.push(mAgg.adol_hb); d2.push(mAgg.adol_sr); d3.push(mAgg.adol_vph); d4.push(mAgg.adol_td); d5.push(mAgg.adol_tdpa);
+            finalDatasets = [
+                {
+                    type: 'bar',
+                    label: 'Aplicaciones',
+                    data: [Math.round(dosisM1/4.0), Math.round(dosisUno/3.0), dosisCuatro],
+                    backgroundColor: '#e2e8f0',
+                    borderRadius: 4,
+                    barPercentage: 0.7,
+                    categoryPercentage: 0.8,
+                    yAxisID: 'y',
+                    order: 1
+                },
+                {
+                    type: 'bar',
+                    label: 'Meta',
+                    data: [Math.round(factorM1), Math.round(factorUno), Math.round(factorCuatro)],
+                    backgroundColor: '#0f172a',
+                    borderRadius: 4,
+                    barPercentage: 0.7,
+                    categoryPercentage: 0.8,
+                    yAxisID: 'y',
+                    order: 1
+                },
+                {
+                    type: 'line',
+                    label: 'Avance',
+                    data: [covM1, covUno, covCuatro],
+                    borderColor: '#94a3b8',
+                    borderWidth: 4,
+                    tension: 0.4,
+                    fill: false,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#94a3b8',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8,
+                    yAxisID: 'y1',
+                    order: 0
+                }
+            ];
+        } else {
+            labels = [''];
+            if (esquema === 'adultos') {
+                finalDatasets = [
+                    { type: 'bar', label: 'HepB', data: [u.adol_hb||0], backgroundColor: '#c43d3d', borderRadius: 6, barThickness: 40 },
+                    { type: 'bar', label: 'SR', data: [u.adol_sr||0], backgroundColor: '#7b5ea7', borderRadius: 6, barThickness: 40 },
+                    { type: 'bar', label: 'VPH', data: [u.adol_vph||0], backgroundColor: '#2a9d8f', borderRadius: 6, barThickness: 40 },
+                    { type: 'bar', label: 'Td', data: [u.adol_td||0], backgroundColor: '#9e9e9e', borderRadius: 6, barThickness: 40 },
+                    { type: 'bar', label: 'Tdpa', data: [u.adol_tdpa||0], backgroundColor: '#e76f51', borderRadius: 6, barThickness: 40 }
+                ];
             } else if (esquema === 'mayores') {
-                d1.push(mAgg.am_neumo13); d2.push(mAgg.am_neumo20); d3.push(mAgg.am_td);
+                finalDatasets = [
+                    { type: 'bar', label: 'Neumo 13', data: [u.am_neumo13||0], backgroundColor: '#3d405b', borderRadius: 6, barThickness: 40 },
+                    { type: 'bar', label: 'Neumo 20', data: [u.am_neumo20||0], backgroundColor: '#3d405b', borderRadius: 6, barThickness: 40 },
+                    { type: 'bar', label: 'Td', data: [u.am_td||0], backgroundColor: '#9e9e9e', borderRadius: 6, barThickness: 40 }
+                ];
             } else if (esquema === 'embarazadas') {
-                d1.push(mAgg.emb_tdpa); d2.push(mAgg.emb_vsr);
+                finalDatasets = [
+                    { type: 'bar', label: 'Tdpa', data: [u.emb_tdpa||0], backgroundColor: '#e76f51', borderRadius: 6, barThickness: 40 },
+                    { type: 'bar', label: 'VSR', data: [u.emb_vsr||0], backgroundColor: '#d8b4a0', borderRadius: 6, barThickness: 40 }
+                ];
             } else if (esquema === 'invernal') {
-                d1.push(mAgg.inv_influenza); d2.push(mAgg.inv_covid);
+                finalDatasets = [
+                    { type: 'bar', label: 'Influenza', data: [u.inv_influenza||0], backgroundColor: '#f1bdad', borderRadius: 6, barThickness: 40 },
+                    { type: 'bar', label: 'COVID-19', data: [u.inv_covid||0], backgroundColor: '#4a4a4a', borderRadius: 6, barThickness: 40 }
+                ];
             }
         }
     } else {
-        if (titleEl) titleEl.textContent = 'Top 12 Unidades';
-        const results = fUnits.map(u => {
-            const res = { clues: u.clues, nombre: u.nombre };
-            if (esquema === 'basico') {
-                const factorM1 = (u.pob_menor_1 * 0.0833) * maxMes;
-                const factorUno = (u.pob_1_ano * 0.0833) * maxMes;
-                const factorCuatro = (u.pob_4_anos * 0.0833) * maxMes;
+        let d1 = [], d2 = [], d3 = [], d4 = [], d5 = [];
+        let datasetConfigs = [];
+        if (esquema === 'basico') {
+            datasetConfigs = [
+                { label: '< 1 Año', data: d1, backgroundColor: '#0d9488' },
+                { label: '1 Año', data: d2, backgroundColor: '#0284c7' },
+                { label: '4 Años', data: d3, backgroundColor: '#7c3aed' }
+            ];
+        } else if (esquema === 'adultos') {
+            datasetConfigs = [
+                { label: 'HepB', data: d1, backgroundColor: '#c43d3d' },
+                { label: 'SR', data: d2, backgroundColor: '#7b5ea7' },
+                { label: 'VPH', data: d3, backgroundColor: '#2a9d8f' },
+                { label: 'Td', data: d4, backgroundColor: '#9e9e9e' },
+                { label: 'Tdpa', data: d5, backgroundColor: '#e76f51' }
+            ];
+        } else if (esquema === 'mayores') {
+            datasetConfigs = [
+                { label: 'Neumo 13', data: d1, backgroundColor: '#3d405b' },
+                { label: 'Neumo 20', data: d2, backgroundColor: '#3d405b' },
+                { label: 'Td Mayores', data: d3, backgroundColor: '#9e9e9e' }
+            ];
+        } else if (esquema === 'embarazadas') {
+            datasetConfigs = [
+                { label: 'Tdpa', data: d1, backgroundColor: '#e76f51' },
+                { label: 'VSR', data: d2, backgroundColor: '#d8b4a0' }
+            ];
+        } else if (esquema === 'invernal') {
+            datasetConfigs = [
+                { label: 'Influenza', data: d1, backgroundColor: '#f1bdad' },
+                { label: 'COVID-19', data: d2, backgroundColor: '#4a4a4a' }
+            ];
+        }
 
-                const dosisM1 = (u.bcg_dosis||0) + (u.hepb_0_7_dosis||0) + (u.hexa_3_dosis||0) + (u.rota_2_dosis||0) + (u.neumo_2_dosis||0);
-                const dosisUno = (u.hexa_ref_dosis||0) + (u.neumo_ref_dosis||0) + (u.srp_2_dosis||0);
-                const dosisCuatro = u.dpt_4_dosis||0;
-
-                res.v1 = factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0;
-                res.v2 = factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
-                res.v3 = factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
-                res.sortVal = res.v1;
-            } else if (esquema === 'adultos') {
-                res.v1 = u.adol_hb || 0; res.v2 = u.adol_sr || 0; res.v3 = u.adol_vph || 0; res.v4 = u.adol_td || 0; res.v5 = u.adol_tdpa || 0;
-                res.sortVal = res.v1 + res.v2 + res.v3 + res.v4 + res.v5;
-            } else if (esquema === 'mayores') {
-                res.v1 = u.am_neumo13 || 0; res.v2 = u.am_neumo20 || 0; res.v3 = u.am_td || 0;
-                res.sortVal = res.v1 + res.v2 + res.v3;
-            } else if (esquema === 'embarazadas') {
-                res.v1 = u.emb_tdpa || 0; res.v2 = u.emb_vsr || 0;
-                res.sortVal = res.v1 + res.v2;
-            } else if (esquema === 'invernal') {
-                res.v1 = u.inv_influenza || 0; res.v2 = u.inv_covid || 0;
-                res.sortVal = res.v1 + res.v2;
+        if (!muniFilter && (role === 'ADMIN' || role === 'JURISDICCIONAL')) {
+            titleText = 'Análisis por Municipio';
+            const munis = [...new Set(_rdaCache.unidades.map(u => (u.municipio || '').toUpperCase().trim()))].filter(Boolean).sort();
+            for (const m of munis) {
+                labels.push(m);
+                const muniUnits = _rdaCache.unidades.filter(u => (u.municipio || '').toUpperCase().trim() === m);
+                let mAgg = {
+                    pob_menor_1: 0, pob_1_ano: 0, pob_4_anos: 0, bcg_dosis: 0, hepb_0_7_dosis: 0, hexa_3_dosis: 0, rota_2_dosis: 0, neumo_2_dosis: 0,
+                    hexa_ref_dosis: 0, neumo_ref_dosis: 0, srp_2_dosis: 0, dpt_4_dosis: 0, adol_hb: 0, adol_sr: 0, adol_vph: 0, adol_td: 0, adol_tdpa: 0,
+                    am_neumo13: 0, am_neumo20: 0, am_td: 0, emb_tdpa: 0, emb_vsr: 0, inv_influenza: 0, inv_covid: 0
+                };
+                for (const u of muniUnits) {
+                    mAgg.pob_menor_1 += u.pob_menor_1 || 0; mAgg.pob_1_ano += u.pob_1_ano || 0; mAgg.pob_4_anos += u.pob_4_anos || 0;
+                    mAgg.bcg_dosis += u.bcg_dosis || 0; mAgg.hepb_0_7_dosis += u.hepb_0_7_dosis || 0; mAgg.hexa_3_dosis += u.hexa_3_dosis || 0; mAgg.rota_2_dosis += u.rota_2_dosis || 0; mAgg.neumo_2_dosis += u.neumo_2_dosis || 0;
+                    mAgg.hexa_ref_dosis += u.hexa_ref_dosis || 0; mAgg.neumo_ref_dosis += u.neumo_ref_dosis || 0; mAgg.srp_2_dosis += u.srp_2_dosis || 0; mAgg.dpt_4_dosis += u.dpt_4_dosis || 0;
+                    mAgg.adol_hb += u.adol_hb || 0; mAgg.adol_sr += u.adol_sr || 0; mAgg.adol_vph += u.adol_vph || 0; mAgg.adol_td += u.adol_td || 0; mAgg.adol_tdpa += u.adol_tdpa || 0;
+                    mAgg.am_neumo13 += u.am_neumo13 || 0; mAgg.am_neumo20 += u.am_neumo20 || 0; mAgg.am_td += u.am_td || 0;
+                    mAgg.emb_tdpa += u.emb_tdpa || 0; mAgg.emb_vsr += u.emb_vsr || 0; mAgg.inv_influenza += u.inv_influenza || 0; mAgg.inv_covid += u.inv_covid || 0;
+                }
+                if (esquema === 'basico') {
+                    const factorM1 = (mAgg.pob_menor_1 * 0.0833) * maxMes; const factorUno = (mAgg.pob_1_ano * 0.0833) * maxMes; const factorCuatro = (mAgg.pob_4_anos * 0.0833) * maxMes;
+                    const dosisM1 = mAgg.bcg_dosis + mAgg.hepb_0_7_dosis + mAgg.hexa_3_dosis + mAgg.rota_2_dosis + mAgg.neumo_2_dosis;
+                    const dosisUno = mAgg.hexa_ref_dosis + mAgg.neumo_ref_dosis + mAgg.srp_2_dosis; const dosisCuatro = mAgg.dpt_4_dosis;
+                    d1.push(factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0);
+                    d2.push(factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0);
+                    d3.push(factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0);
+                } else if (esquema === 'adultos') { d1.push(mAgg.adol_hb); d2.push(mAgg.adol_sr); d3.push(mAgg.adol_vph); d4.push(mAgg.adol_td); d5.push(mAgg.adol_tdpa);
+                } else if (esquema === 'mayores') { d1.push(mAgg.am_neumo13); d2.push(mAgg.am_neumo20); d3.push(mAgg.am_td);
+                } else if (esquema === 'embarazadas') { d1.push(mAgg.emb_tdpa); d2.push(mAgg.emb_vsr);
+                } else if (esquema === 'invernal') { d1.push(mAgg.inv_influenza); d2.push(mAgg.inv_covid); }
             }
-            return res;
-        }).sort((a, b) => b.sortVal - a.sortVal).slice(0, 12);
+        } else {
+            titleText = 'Top 10 Unidades';
+            const results = fUnits.map(u => {
+                const res = { clues: u.clues, nombre: u.nombre };
+                if (esquema === 'basico') {
+                    const factorM1 = (u.pob_menor_1 * 0.0833) * maxMes; const factorUno = (u.pob_1_ano * 0.0833) * maxMes; const factorCuatro = (u.pob_4_anos * 0.0833) * maxMes;
+                    const dosisM1 = (u.bcg_dosis||0) + (u.hepb_0_7_dosis||0) + (u.hexa_3_dosis||0) + (u.rota_2_dosis||0) + (u.neumo_2_dosis||0);
+                    const dosisUno = (u.hexa_ref_dosis||0) + (u.neumo_ref_dosis||0) + (u.srp_2_dosis||0); const dosisCuatro = u.dpt_4_dosis||0;
+                    res.v1 = factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0;
+                    res.v2 = factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
+                    res.v3 = factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
+                    res.sortVal = res.v1;
+                } else if (esquema === 'adultos') { res.v1 = u.adol_hb || 0; res.v2 = u.adol_sr || 0; res.v3 = u.adol_vph || 0; res.v4 = u.adol_td || 0; res.v5 = u.adol_tdpa || 0; res.sortVal = res.v1 + res.v2 + res.v3 + res.v4 + res.v5;
+                } else if (esquema === 'mayores') { res.v1 = u.am_neumo13 || 0; res.v2 = u.am_neumo20 || 0; res.v3 = u.am_td || 0; res.sortVal = res.v1 + res.v2 + res.v3;
+                } else if (esquema === 'embarazadas') { res.v1 = u.emb_tdpa || 0; res.v2 = u.emb_vsr || 0; res.sortVal = res.v1 + res.v2;
+                } else if (esquema === 'invernal') { res.v1 = u.inv_influenza || 0; res.v2 = u.inv_covid || 0; res.sortVal = res.v1 + res.v2; }
+                return res;
+            }).sort((a, b) => b.sortVal - a.sortVal).slice(0, 10);
 
-        for (const r of results) {
-            labels.push((r.nombre || r.clues).substring(0, 20));
-            d1.push(r.v1 || 0); d2.push(r.v2 || 0); d3.push(r.v3 || 0);
-            if (r.v4 !== undefined) d4.push(r.v4);
-            if (r.v5 !== undefined) d5.push(r.v5);
+            for (const r of results) {
+                labels.push((r.nombre || r.clues).substring(0, 20));
+                d1.push(r.v1 || 0); d2.push(r.v2 || 0); d3.push(r.v3 || 0);
+                if (r.v4 !== undefined) d4.push(r.v4);
+                if (r.v5 !== undefined) d5.push(r.v5);
+            }
+        }
+        finalDatasets = datasetConfigs.map((cfg) => ({ label: cfg.label, data: cfg.data, backgroundColor: cfg.backgroundColor, borderRadius: 6, barThickness: 12 }));
+
+        // Renderizar Total Jurisdiccional o Municipal (Suma de TODAS las unidades en fUnits)
+        if (totalContainer && ctxTotal) {
+            totalContainer.style.display = 'flex';
+            const titleElTotal = document.getElementById('chartBarTotalTitle');
+            if (titleElTotal) titleElTotal.textContent = muniFilter ? 'Avance Municipal Total' : 'Avance Jurisdiccional Total';
+            
+            let tAgg = { pob_menor_1: 0, pob_1_ano: 0, pob_4_anos: 0, bcg_dosis: 0, hepb_0_7_dosis: 0, hexa_3_dosis: 0, rota_2_dosis: 0, neumo_2_dosis: 0, hexa_ref_dosis: 0, neumo_ref_dosis: 0, srp_2_dosis: 0, dpt_4_dosis: 0, adol_hb: 0, adol_sr: 0, adol_vph: 0, adol_td: 0, adol_tdpa: 0, am_neumo13: 0, am_neumo20: 0, am_td: 0, emb_tdpa: 0, emb_vsr: 0, inv_influenza: 0, inv_covid: 0 };
+            for (const u of fUnits) {
+                tAgg.pob_menor_1 += u.pob_menor_1 || 0; tAgg.pob_1_ano += u.pob_1_ano || 0; tAgg.pob_4_anos += u.pob_4_anos || 0;
+                tAgg.bcg_dosis += u.bcg_dosis || 0; tAgg.hepb_0_7_dosis += u.hepb_0_7_dosis || 0; tAgg.hexa_3_dosis += u.hexa_3_dosis || 0; tAgg.rota_2_dosis += u.rota_2_dosis || 0; tAgg.neumo_2_dosis += u.neumo_2_dosis || 0;
+                tAgg.hexa_ref_dosis += u.hexa_ref_dosis || 0; tAgg.neumo_ref_dosis += u.neumo_ref_dosis || 0; tAgg.srp_2_dosis += u.srp_2_dosis || 0; tAgg.dpt_4_dosis += u.dpt_4_dosis || 0;
+                tAgg.adol_hb += u.adol_hb || 0; tAgg.adol_sr += u.adol_sr || 0; tAgg.adol_vph += u.adol_vph || 0; tAgg.adol_td += u.adol_td || 0; tAgg.adol_tdpa += u.adol_tdpa || 0;
+                tAgg.am_neumo13 += u.am_neumo13 || 0; tAgg.am_neumo20 += u.am_neumo20 || 0; tAgg.am_td += u.am_td || 0;
+                tAgg.emb_tdpa += u.emb_tdpa || 0; tAgg.emb_vsr += u.emb_vsr || 0; tAgg.inv_influenza += u.inv_influenza || 0; tAgg.inv_covid += u.inv_covid || 0;
+            }
+            
+            let tLabels = [];
+            let tDatasets = [];
+            let tOptions = {
+                responsive: true, maintainAspectRatio: false,
+                animation: { duration: 1000, easing: 'easeOutQuart' },
+                plugins: { legend: { display: true, position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle' } }, tooltip: { backgroundColor: '#0f172a', padding: 12, cornerRadius: 10, mode: 'index', intersect: false } },
+                scales: { x: { ticks: { color: '#0f172a', font: { size: 12, weight: '800' } }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: '#94a3b8', font: { size: 11, weight: '600' } }, grid: { color: '#f1f5f9', borderDash: [5,5] } } }
+            };
+
+            if (esquema === 'basico') {
+                tLabels = ['< 1 Año', '1 Año', '4 Años'];
+                const factorM1 = (tAgg.pob_menor_1 * 0.0833) * maxMes; const factorUno = (tAgg.pob_1_ano * 0.0833) * maxMes; const factorCuatro = (tAgg.pob_4_anos * 0.0833) * maxMes;
+                const dosisM1 = tAgg.bcg_dosis + tAgg.hepb_0_7_dosis + tAgg.hexa_3_dosis + tAgg.rota_2_dosis + tAgg.neumo_2_dosis;
+                const dosisUno = tAgg.hexa_ref_dosis + tAgg.neumo_ref_dosis + tAgg.srp_2_dosis; const dosisCuatro = tAgg.dpt_4_dosis;
+                let covM1 = factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0;
+                let covUno = factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
+                let covCuatro = factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
+                
+                tDatasets = [
+                    { type: 'bar', label: 'Aplicaciones', data: [Math.round(dosisM1/4.0), Math.round(dosisUno/3.0), dosisCuatro], backgroundColor: '#e2e8f0', borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.8, yAxisID: 'y', order: 1 },
+                    { type: 'bar', label: 'Meta', data: [Math.round(factorM1), Math.round(factorUno), Math.round(factorCuatro)], backgroundColor: '#0f172a', borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.8, yAxisID: 'y', order: 1 },
+                    { type: 'line', label: 'Avance', data: [covM1, covUno, covCuatro], borderColor: '#94a3b8', borderWidth: 4, tension: 0.4, fill: false, pointBackgroundColor: '#ffffff', pointBorderColor: '#94a3b8', pointBorderWidth: 2, pointRadius: 6, pointHoverRadius: 8, yAxisID: 'y1', order: 0 }
+                ];
+                tOptions.scales.y1 = { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#64748b', callback: v => v + '%' } };
+            } else {
+                tLabels = [''];
+                if (esquema === 'adultos') {
+                    tDatasets = [
+                        { type: 'bar', label: 'HepB', data: [tAgg.adol_hb], backgroundColor: '#c43d3d', borderRadius: 6, barThickness: 40 },
+                        { type: 'bar', label: 'SR', data: [tAgg.adol_sr], backgroundColor: '#7b5ea7', borderRadius: 6, barThickness: 40 },
+                        { type: 'bar', label: 'VPH', data: [tAgg.adol_vph], backgroundColor: '#2a9d8f', borderRadius: 6, barThickness: 40 },
+                        { type: 'bar', label: 'Td', data: [tAgg.adol_td], backgroundColor: '#9e9e9e', borderRadius: 6, barThickness: 40 },
+                        { type: 'bar', label: 'Tdpa', data: [tAgg.adol_tdpa], backgroundColor: '#e76f51', borderRadius: 6, barThickness: 40 }
+                    ];
+                } else if (esquema === 'mayores') {
+                    tDatasets = [
+                        { type: 'bar', label: 'Neumo 13', data: [tAgg.am_neumo13], backgroundColor: '#3d405b', borderRadius: 6, barThickness: 40 },
+                        { type: 'bar', label: 'Neumo 20', data: [tAgg.am_neumo20], backgroundColor: '#3d405b', borderRadius: 6, barThickness: 40 },
+                        { type: 'bar', label: 'Td', data: [tAgg.am_td], backgroundColor: '#9e9e9e', borderRadius: 6, barThickness: 40 }
+                    ];
+                } else if (esquema === 'embarazadas') {
+                    tDatasets = [
+                        { type: 'bar', label: 'Tdpa', data: [tAgg.emb_tdpa], backgroundColor: '#e76f51', borderRadius: 6, barThickness: 40 },
+                        { type: 'bar', label: 'VSR', data: [tAgg.emb_vsr], backgroundColor: '#d8b4a0', borderRadius: 6, barThickness: 40 }
+                    ];
+                } else if (esquema === 'invernal') {
+                    tDatasets = [
+                        { type: 'bar', label: 'Influenza', data: [tAgg.inv_influenza], backgroundColor: '#f1bdad', borderRadius: 6, barThickness: 40 },
+                        { type: 'bar', label: 'COVID-19', data: [tAgg.inv_covid], backgroundColor: '#4a4a4a', borderRadius: 6, barThickness: 40 }
+                    ];
+                }
+            }
+
+            if (_rdaCharts.total) _rdaCharts.total.destroy();
+            _rdaCharts.total = new Chart(ctxTotal, {
+                type: 'bar',
+                data: { labels: tLabels, datasets: tDatasets },
+                options: tOptions
+            });
         }
     }
 
-    const finalDatasets = datasetConfigs.map((cfg, idx) => ({
-        label: cfg.label,
-        data: cfg.data,
-        backgroundColor: cfg.backgroundColor,
-        borderRadius: 6,
-        barThickness: 12
-    }));
+
+    if (titleEl) titleEl.textContent = titleText;
+
+    if (_rdaCharts.b) {
+        const wasHorizontal = _rdaCharts.b.config.options.indexAxis === 'y';
+        if (wasHorizontal !== isHorizontal) {
+            _rdaCharts.b.destroy();
+            _rdaCharts.b = null;
+        }
+    }
 
     if (_rdaCharts.b) {
         const chart = _rdaCharts.b;
         chart.data.labels = labels;
         chart.data.datasets = finalDatasets;
+        if (isSingleUnit && esquema === 'basico') {
+            chart.options.scales.y1 = { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#64748b', callback: v => v + '%' } };
+        } else if (chart.options.scales.y1) {
+            delete chart.options.scales.y1;
+        }
         chart.update();
     } else {
-        _rdaCharts.b = new Chart(ctx, {
-            type: 'bar',
-            data: { labels, datasets: finalDatasets },
-            options: { 
-                devicePixelRatio: 3,
-                indexAxis: 'y', responsive: true, maintainAspectRatio: false, 
-                animation: { duration: 1000, easing: 'easeOutQuart' },
-                plugins: { 
-                    legend: { display: false },
-                    tooltip: { backgroundColor: '#0f172a', padding: 12, cornerRadius: 10, callbacks: { label: c => ` ${c.dataset.label}: ${c.raw}${esquema==='basico'?'%':''}` } }
-                },
-                scales: { 
-                    x: { beginAtZero: true, ticks: { color: '#94a3b8', font: { size: 11, weight: '600' } }, grid: { color: '#f1f5f9', borderDash: [5,5] } },
-                    y: { ticks: { color: '#0f172a', font: { size: 11, weight: '800' } }, grid: { display: false } } 
-                }
+        const options = {
+            responsive: true, maintainAspectRatio: false, 
+            animation: { duration: 1000, easing: 'easeOutQuart' },
+            plugins: { 
+                legend: { display: isSingleUnit, position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle' } },
+                tooltip: { backgroundColor: '#0f172a', padding: 12, cornerRadius: 10, mode: 'index', intersect: false }
+            },
+            scales: {}
+        };
+        if (isHorizontal) {
+            options.indexAxis = 'y';
+            options.plugins.legend.display = true; // Mostrar leyendas para desglose
+            options.scales = {
+                x: { beginAtZero: true, ticks: { color: '#94a3b8', font: { size: 11, weight: '600' } }, grid: { color: '#f1f5f9', borderDash: [5,5] } },
+                y: { ticks: { color: '#0f172a', font: { size: 11, weight: '800' } }, grid: { display: false } }
+            };
+        } else {
+            options.scales = {
+                x: { ticks: { color: '#0f172a', font: { size: 12, weight: '800' } }, grid: { display: false } },
+                y: { beginAtZero: true, ticks: { color: '#94a3b8', font: { size: 11, weight: '600' } }, grid: { color: '#f1f5f9', borderDash: [5,5] } }
+            };
+            if (esquema === 'basico') {
+                options.scales.y1 = { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#64748b', callback: v => v + '%' } };
             }
-        });
+        }
+        _rdaCharts.b = new Chart(ctx, { type: 'bar', data: { labels, datasets: finalDatasets }, options: options });
     }
 }
 
@@ -877,7 +1072,7 @@ function _safeName(n) { return (n||'').replace(/[^a-zA-Z0-9]/g,'_').substring(0,
 async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob = false) {
     return new Promise(async (resolve, reject) => {
         try {
-            console.log("[RDA PDF] Iniciando exportación nativa vectorial premium...");
+            console.log("[RDA PDF] Iniciando exportación nativa vectorial premium con patrón corporativo...");
             
             const jsPDF = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
             if (!jsPDF) { throw new Error("La librería jsPDF no está cargada en el DOM."); }
@@ -899,195 +1094,324 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             const tableHeaders = Array.from(tablaOriginal.querySelectorAll('thead th'))
                 .map(th => th.innerText.replace(/[↕\n\r]/g, '').trim());
 
-            const tableRows = Array.from(tablaOriginal.querySelectorAll('tbody tr')).map(tr => {
+            const tableRowsRaw = Array.from(tablaOriginal.querySelectorAll('tbody tr')).map(tr => {
                 return Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim());
             });
 
-            // Helper para cargar logo
-            const loadLogoBase64 = () => {
+            // Lógica Universal: Agrupar por Unidad y remover columnas redundantes
+            const colsLen = tableHeaders.length - 3;
+            tableHeaders.splice(0, 3);
+            
+            const isSingleUnit = tableRowsRaw.length === 1;
+            
+            const tableDataWithHeaders = [];
+            tableRowsRaw.forEach(row => {
+                const unitClues = row[0];
+                const unitName = row[1];
+                const unitMuni = row[2];
+                
+                if (!isSingleUnit) {
+                    tableDataWithHeaders.push([{
+                        content: `UNIDAD: ${unitName.toUpperCase()}   |   CLUES: ${unitClues}   |   MUNICIPIO: ${unitMuni.toUpperCase()}`,
+                        colSpan: colsLen,
+                        styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold', halign: 'left' }
+                    }]);
+                }
+                
+                tableDataWithHeaders.push(row.slice(3));
+            });
+
+            // Helper para cargar imágenes Base64
+            const loadImgBase64 = (url) => {
                 return new Promise((resolve) => {
                     const img = new Image();
                     img.crossOrigin = 'Anonymous';
-                    img.src = 'https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/Seseq_vertical_2025.png';
+                    img.src = url;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
                         canvas.width = img.width;
                         canvas.height = img.height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0);
-                        resolve({
-                            data: canvas.toDataURL('image/png'),
-                            ratio: img.width / img.height
-                        });
+                        resolve({ data: canvas.toDataURL('image/png'), ratio: img.width / img.height });
                     };
                     img.onerror = () => resolve(null);
                 });
             };
             
-            const logoData = await loadLogoBase64();
+            const [logoData, watermarkData] = await Promise.all([
+                loadImgBase64('https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/Seseq_vertical_2025.png'),
+                loadImgBase64('https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png')
+            ]);
 
-            // 4. Inicializar jsPDF en formato Carta Horizontal (Landscape)
-            // Dimensiones Carta: 11 x 8.5 in -> 279.4 x 215.9 mm
-            const doc = new jsPDF({
-                orientation: 'landscape',
-                unit: 'mm',
-                format: 'letter'
-            });
-
-            // 5. Configurar diseño visual del encabezado (Premium Aesthetic)
+            // 4. Inicializar jsPDF en formato Carta Horizontal
+            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'letter' });
+            
+            // ==========================================
+            // PATRÓN: MOSAICO LIMPIO (BACKGROUND)
+            // ==========================================
+            doc.setFillColor(255, 255, 255);
+            doc.rect(0, 0, 279.4, 215.9, 'F');
+            
+            if (watermarkData) {
+                doc.setGState(new doc.GState({opacity: 0.02}));
+                const tileSize = 35;
+                const tileH = tileSize / watermarkData.ratio;
+                for(let x = -10; x < 290; x += tileSize) {
+                    for(let y = -10; y < 230; y += tileH) {
+                        doc.addImage(watermarkData.data, 'PNG', x, y, tileSize, tileH, undefined, 'FAST');
+                    }
+                }
+                doc.setGState(new doc.GState({opacity: 1.0}));
+            }
+            
+            // 5. Encabezado
             const marginX = 15;
             let currentY = 0;
 
-            // Franja superior de marca institucional (Edge to Edge)
             doc.setFillColor(15, 23, 42); // Slate 900
             doc.rect(0, 0, 279.4, 6, 'F');
-            doc.setFillColor(13, 148, 136); // Teal 600 accent
+            doc.setFillColor(13, 148, 136); // Teal 600
             doc.rect(0, 6, 279.4, 1.5, 'F');
             
             currentY = 18;
-
             let textStartX = marginX;
             if (logoData) {
-                // Logo Seseq (Manteniendo Relación de Aspecto)
                 const logoH = 26;
                 const logoW = logoH * logoData.ratio;
                 doc.addImage(logoData.data, 'PNG', marginX, currentY, logoW, logoH, undefined, 'FAST');
                 textStartX = marginX + logoW + 8;
             }
+            
+            let headerTitle = isSingleUnit ? tableRowsRaw[0][1] : "Indicadores Analíticos RDA";
+            let headerSubtitle = isSingleUnit ? `${tableRowsRaw[0][0]}  |  ${tableRowsRaw[0][2].toUpperCase()}  |  ${esquemaTexto.toUpperCase()}` : `${esquemaTexto.toUpperCase()}  |  ${muni.toUpperCase()}`;
 
-            // Título Principal
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(24);
-            doc.setTextColor(15, 23, 42);
-            doc.text("Indicadores RDA 2026", textStartX, currentY + 8);
+            if (isSingleUnit) {
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(8);
+                doc.setTextColor(13, 148, 136); // Teal 600
+                doc.text("INDICADORES ANALÍTICOS RDA", textStartX, currentY + 2);
+                
+                doc.setFont('helvetica', 'bold');
+                let titleSize = headerTitle.length > 35 ? 16 : 24;
+                doc.setFontSize(titleSize);
+                doc.setTextColor(15, 23, 42);
+                doc.text(headerTitle.substring(0, 65), textStartX, currentY + 11);
 
-            // Subtítulo
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(11);
-            doc.setTextColor(100, 116, 139); // Slate 500
-            doc.text(`${esquemaTexto.toUpperCase()}  |  ${muni.toUpperCase()}`, textStartX, currentY + 16);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(10);
+                doc.setTextColor(100, 116, 139);
+                doc.text(headerSubtitle, textStartX, currentY + 18);
+            } else {
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(26);
+                doc.setTextColor(15, 23, 42);
+                doc.text(headerTitle, textStartX, currentY + 8);
+
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(10);
+                doc.setTextColor(100, 116, 139);
+                doc.text(headerSubtitle, textStartX, currentY + 15);
+            }
 
             // Avance del Cierre (Derecha)
-            doc.setFillColor(240, 253, 250); // Teal 50
-            doc.setDrawColor(204, 251, 241); // Teal 100
-            doc.roundedRect(210, currentY, 54, 18, 3, 3, 'FD');
-
+            doc.setFillColor(255, 255, 255);
+            doc.setDrawColor(226, 232, 240);
+            doc.roundedRect(210, currentY, 54, 20, 4, 4, 'FD');
+            doc.setFillColor(13, 148, 136); // Badge accent
+            doc.roundedRect(210, currentY, 54, 6, 4, 4, 'F');
+            
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(9);
-            doc.setTextColor(13, 148, 136); // Teal 600
-            doc.text("AVANCE AL CIERRE", 237, currentY + 7, { align: 'center' });
+            doc.setFontSize(8);
+            doc.setTextColor(255, 255, 255);
+            doc.text("AVANCE AL CIERRE", 237, currentY + 4, { align: 'center' });
             
-            doc.setFontSize(14);
-            doc.setTextColor(15, 23, 42); // Slate 900
-            doc.text(`${maxMesLabel.toUpperCase()}`, 237, currentY + 14, { align: 'center' });
+            doc.setFontSize(16);
+            doc.setTextColor(15, 23, 42);
+            doc.text(`${maxMesLabel.toUpperCase()}`, 237, currentY + 15, { align: 'center' });
             
-            currentY = 52;
+            currentY = 48;
 
-            // 6. Sección de Gráficas (Lado a lado, más amplias para mejor distribución)
-            const chartSectionHeight = 70;
+            // ==========================================
+            // CÁLCULO DE KPIS GERENCIALES
+            // ==========================================
+            let totalDosis = 0;
+            let totalMeta = 0;
+            let numPorcentajes = 0;
+            let sumaPorcentajes = 0;
+            
+            Array.from(tablaOriginal.querySelectorAll('tbody tr')).forEach(tr => {
+                const tds = Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim());
+                tds.forEach(cText => {
+                    if (cText.includes('%')) {
+                        const val = parseFloat(cText.replace('%', ''));
+                        if (!isNaN(val)) { sumaPorcentajes += val; numPorcentajes++; }
+                    }
+                });
+                
+                const dText = String(tds[tds.length - 1]).replace(/,/g, '');
+                const dVal = parseInt(dText, 10);
+                if (!isNaN(dVal)) totalDosis += dVal;
+                
+                if (_rdaState.esquema === 'basico' && tds.length > 5) {
+                    const mText = String(tds[tds.length - 2]).replace(/,/g, '');
+                    const mVal = parseInt(mText, 10);
+                    if (!isNaN(mVal)) totalMeta += mVal;
+                }
+            });
+            
+            const kpiPromedio = numPorcentajes > 0 ? (sumaPorcentajes / numPorcentajes).toFixed(1) + '%' : 'N/A';
+            const kpiDosis = totalDosis.toLocaleString('es-MX');
+            
+            let kpiPob = '';
+            let kpiPobLabel = '';
+            if (_rdaState.esquema === 'basico') {
+                kpiPobLabel = 'POBLACIÓN META';
+                kpiPob = totalMeta.toLocaleString('es-MX');
+            } else {
+                kpiPobLabel = tableRowsRaw.length === 1 ? 'REPORTES ENCONTRADOS' : 'UNIDADES ANALIZADAS';
+                kpiPob = tableRowsRaw.length.toString();
+            }
+
+            const kpiWidth = 80;
+            const kpiGap = (279.4 - (marginX * 2) - (kpiWidth * 3)) / 2;
+            
+            const drawModernKpiCard = (x, y, w, h, label, value, mainColor, accentColor) => {
+                // Solid Background with Modern Look
+                doc.setFillColor(mainColor[0], mainColor[1], mainColor[2]);
+                doc.roundedRect(x, y, w, h, 3, 3, 'F');
+                
+                // Barra sutil inferior en lugar de círculo
+                doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
+                doc.roundedRect(x, y + h - 2, w, 2, 0, 0, 'F');
+                
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(7);
+                doc.setTextColor(255, 255, 255); 
+                doc.text(label, x + 8, y + 8);
+                
+                doc.setFontSize(18);
+                doc.setTextColor(255, 255, 255); 
+                doc.text(value, x + 8, y + 17);
+            };
+            
+            // Colores vibrantes y originales
+            drawModernKpiCard(marginX, currentY, kpiWidth, 22, kpiPobLabel, kpiPob, [15, 23, 42], [30, 41, 59]); // Dark Slate
+            drawModernKpiCard(marginX + kpiWidth + kpiGap, currentY, kpiWidth, 22, "TOTAL DOSIS APLICADAS", kpiDosis, [13, 148, 136], [17, 94, 89]); // Emerald/Teal
+            drawModernKpiCard(marginX + (kpiWidth * 2) + (kpiGap * 2), currentY, kpiWidth, 22, "COBERTURA GLOBAL PROM.", kpiPromedio, [99, 102, 241], [79, 70, 229]); // Indigo
+
+            currentY += 28;
+
+            // ==========================================
+            // SECCIÓN DE GRÁFICAS
+            // ==========================================
+            const chartSectionHeight = 65;
             const cardWidthA = 85;
-            const cardWidthB = 149.4; // Ajuste para el margen derecho
+            const cardWidthB = 149.4;
             const gap = 15;
 
-            // Tarjeta A (Gráfica de Avance)
-            doc.setFillColor(248, 250, 252); // Slate 50
-            doc.roundedRect(marginX, currentY, cardWidthA, chartSectionHeight, 4, 4, 'F');
-            doc.setDrawColor(226, 232, 240); // Slate 200
-            doc.roundedRect(marginX, currentY, cardWidthA, chartSectionHeight, 4, 4, 'D');
-
+            // Tarjeta A (Gráfica)
+            doc.setFillColor(255, 255, 255);
+            doc.setDrawColor(226, 232, 240);
+            doc.roundedRect(marginX, currentY, cardWidthA, chartSectionHeight, 4, 4, 'FD');
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9);
             doc.setTextColor(100, 116, 139);
             doc.text("DISTRIBUCIÓN DE AVANCE", marginX + 6, currentY + 8);
-
             if (imgAvanceBase64) {
-                // Centrado dinámico dentro de la tarjeta
-                doc.addImage(imgAvanceBase64, 'PNG', marginX + 10, currentY + 12, 65, 53, undefined, 'FAST');
+                doc.addImage(imgAvanceBase64, 'PNG', marginX + 10, currentY + 12, 65, 50, undefined, 'FAST');
             }
 
-            // Tarjeta B (Gráfica Top Unidades)
-            doc.setFillColor(248, 250, 252);
-            doc.roundedRect(marginX + cardWidthA + gap, currentY, cardWidthB, chartSectionHeight, 4, 4, 'F');
-            doc.setDrawColor(226, 232, 240);
-            doc.roundedRect(marginX + cardWidthA + gap, currentY, cardWidthB, chartSectionHeight, 4, 4, 'D');
-
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(9);
-            doc.setTextColor(100, 116, 139);
+            // Tarjeta B (Gráfica)
+            doc.setFillColor(255, 255, 255);
+            doc.roundedRect(marginX + cardWidthA + gap, currentY, cardWidthB, chartSectionHeight, 4, 4, 'FD');
             doc.text("TOP UNIDADES / MUNICIPIOS DE LA JURISDICCIÓN", marginX + cardWidthA + gap + 6, currentY + 8);
-
             if (imgTopBase64) {
-                doc.addImage(imgTopBase64, 'PNG', marginX + cardWidthA + gap + 10, currentY + 12, 129.4, 53, undefined, 'FAST');
+                doc.addImage(imgTopBase64, 'PNG', marginX + cardWidthA + gap + 10, currentY + 12, 129.4, 50, undefined, 'FAST');
             }
 
-            currentY += chartSectionHeight + 10;
+            currentY += chartSectionHeight + 8;
 
-            // 7. Renderizar Tabla Vectorial Completa con jsPDF-autotable
+            // ==========================================
+            // TABLA VECTORIAL PREMIUM (Badges Nativos)
+            // ==========================================
             doc.autoTable({
                 head: [tableHeaders],
-                body: tableRows,
+                body: tableDataWithHeaders,
                 startY: currentY,
                 margin: { left: marginX, right: marginX },
-                theme: 'striped',
+                theme: 'plain', 
                 styles: {
-                    fontSize: 9, // Letra un poco más grande
+                    fontSize: 8,
                     font: 'helvetica',
-                    cellPadding: 4, // Más padding para que la tabla llene el espacio
-                    valign: 'middle'
-                },
-                headStyles: {
-                    fillColor: [15, 23, 42],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
+                    cellPadding: 5,
+                    valign: 'middle',
+                    lineColor: [241, 245, 249], 
+                    lineWidth: { bottom: 0.5 },
                     halign: 'center'
                 },
-                columnStyles: {
-                    0: { halign: 'left', font: 'helvetica', fontStyle: 'bold', cellWidth: 25 },
-                    1: { halign: 'left', fontStyle: 'bold', cellWidth: 55 },
-                    2: { halign: 'left', cellWidth: 30 }
+                headStyles: {
+                    fillColor: [248, 250, 252],
+                    textColor: [100, 116, 139],
+                    fontStyle: 'bold',
+                    halign: 'center',
+                    lineWidth: { bottom: 1, top: 1 }
                 },
-                bodyStyles: {
-                    textColor: [30, 41, 59]
-                },
-                didParseCell: function(data) {
-                    // Semáforo Inteligente Nativo
+                bodyStyles: { fillColor: [255, 255, 255] },
+                willDrawCell: function(data) {
                     if (data.section === 'body') {
-                        // Alinear columnas numéricas al centro
-                        if (data.column.index > 2) {
-                            data.cell.styles.halign = 'center';
-                        }
+                        // Respetar fila de encabezado que agrupa la unidad
+                        if (data.row.raw.length === 1 && data.row.raw[0].colSpan) return;
+
+                        doc.setFillColor(255, 255, 255);
+                        doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
                         
-                        const text = data.cell.text[0] || '';
-                        
-                        // Aplicar colores y fondos para cobertura pediátrica/indicadores de porcentaje
-                        if (text.includes('%')) {
-                            const val = parseFloat(text);
-                            if (!isNaN(val)) {
-                                if (val >= 80) {
-                                    data.cell.styles.fillColor = [220, 252, 231]; // Green 100
-                                    data.cell.styles.textColor = [22, 101, 52];    // Green 800
-                                    data.cell.styles.fontStyle = 'bold';
-                                } else if (val >= 50) {
-                                    data.cell.styles.fillColor = [254, 243, 199]; // Amber 100
-                                    data.cell.styles.textColor = [146, 64, 14];   // Amber 800
-                                    data.cell.styles.fontStyle = 'bold';
-                                } else {
-                                    data.cell.styles.fillColor = [254, 226, 226]; // Red 100
-                                    data.cell.styles.textColor = [153, 27, 27];   // Red 800
-                                    data.cell.styles.fontStyle = 'bold';
-                                }
-                            }
+                        // Todas las columnas restantes son numéricas
+                        const isBadgeCol = !(data.column.index === data.table.columns.length - 1 || (_rdaState.esquema === 'basico' && data.column.index === data.table.columns.length - 2));
+                        if (isBadgeCol && data.cell.text[0] && data.cell.text[0].includes('%')) {
+                            data.cell.customText = data.cell.text[0]; // Salvamos el texto
+                            data.cell.text = []; // BORRAMOS el texto nativo
                         }
                     }
                 },
+                didDrawCell: function(data) {
+                    if (data.section === 'body') {
+                        if (data.row.raw.length === 1 && data.row.raw[0].colSpan) return;
+                        
+                        const text = data.cell.customText;
+                        if (!text) return; // Si no hay customText, es una columna normal (Meta/Total)
+
+                        let bg = [241, 245, 249]; 
+                        let fg = [71, 85, 105];
+                        const val = parseFloat(text.replace('%', ''));
+                        if (!isNaN(val)) {
+                            if (val >= 80) { bg = [220, 252, 231]; fg = [22, 101, 52]; }
+                            else if (val >= 50) { bg = [254, 243, 199]; fg = [146, 64, 14]; }
+                            else { bg = [254, 226, 226]; fg = [153, 27, 27]; }
+                        }
+                        
+                        const textWidth = doc.getTextWidth(text);
+                        const badgeWidth = textWidth + 6;
+                        const badgeHeight = 5;
+                        const cx = data.cell.x + (data.cell.width / 2);
+                        const cy = data.cell.y + (data.cell.height / 2);
+                        
+                        doc.setFillColor(bg[0], bg[1], bg[2]);
+                        doc.roundedRect(cx - badgeWidth/2, cy - badgeHeight/2, badgeWidth, badgeHeight, 1.5, 1.5, 'F');
+                        
+                        doc.setFont('helvetica', 'bold');
+                        doc.setFontSize(8);
+                        doc.setTextColor(fg[0], fg[1], fg[2]);
+                        doc.text(text, cx, cy, { align: 'center', baseline: 'middle' });
+                    }
+                },
                 didDrawPage: function(data) {
-                    // Pie de página premium en todas las páginas
                     const pageCount = doc.internal.getNumberOfPages();
                     doc.setFont('helvetica', 'bold');
                     doc.setFontSize(8);
-                    doc.setTextColor(148, 163, 184); // Slate 400
+                    doc.setTextColor(148, 163, 184); 
                     
-                    const stamp = `REPORTE GENERADO EL ${new Date().toLocaleString('es-MX')} — PLATAFORMA DE INDICADORES RDA JS1`;
+                    const stamp = `REPORTE GENERADO EL ${new Date().toLocaleString('es-MX')} — INTELIGENCIA OPERATIVA JS1`;
                     doc.text(stamp, marginX, 208);
                     
                     const pag = `Página ${data.pageNumber} de ${pageCount}`;
@@ -1095,10 +1419,8 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
                 }
             });
 
-            // 8. Resolver Promesa con la salida correspondiente
             if (devolverBlob) {
-                const blob = doc.output('blob');
-                resolve(blob);
+                resolve(doc.output('blob'));
             } else {
                 doc.save(nombreArchivo);
                 resolve(true);
