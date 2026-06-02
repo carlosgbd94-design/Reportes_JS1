@@ -8324,7 +8324,7 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
 }
 
 .chip-medal-icon {
-  font-size: 28px !important;
+  font-size: 22px !important;
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -8764,8 +8764,8 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
 }
 
 #bCumplimiento {
-  min-height: 155px !important;
-  padding: 20px 24px !important;
+  min-height: 120px !important;
+  padding: 16px 20px !important;
 }
 
 /* Liquid Glass Panels (Sin backdrop-blur) */

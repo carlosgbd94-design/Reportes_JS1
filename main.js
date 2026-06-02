@@ -12467,7 +12467,6 @@ function renderUnitMedals(medals) {
     const monthParts = m.month.split("-");
     const mm = monthParts[1];
     const fullMonthLabel = fullMonthNames[mm] || mm;
-    const shorthandMonth = monthNames[mm] || mm;
     const tierKey = String(m.tier || "").trim().toLowerCase();
     const iconName = iconNameMap[tierKey] || "military_tech";
     const tierClass = classMap[tierKey] || "tier-riesgo";
@@ -12475,10 +12474,7 @@ function renderUnitMedals(medals) {
     const title = `Medalla de cumplimiento ${label} - ${fullMonthLabel} (${m.score}%)`;
 
     container.innerHTML += `
-      <div class="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl bg-white/40 dark:bg-black/25 border border-white/50 dark:border-white/5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_4px_10px_rgba(0,0,0,0.05)] hover:bg-white/60 dark:hover:bg-black/35 hover:scale-110 hover:-translate-y-0.5 transition-all select-none shrink-0" style="min-width: 48px; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);">
-        <span class="material-symbols-rounded chip-medal-icon ${tierClass}" title="${title}">${iconName}</span>
-        <span class="text-[8px] font-black tracking-widest uppercase opacity-75 text-current mt-0.5 select-none">${shorthandMonth}</span>
-      </div>
+      <span class="material-symbols-rounded chip-medal-icon ${tierClass}" title="${title}">${iconName}</span>
     `;
   });
 }
