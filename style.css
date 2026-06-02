@@ -8783,16 +8783,32 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
+/* Enforce cards to stay STRICTLY on a single horizontal line (No wrap) */
+#welcomeBlock > .flex-col {
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+}
+
 /* Adaptive vertical reflow for cards under narrow viewport or grid squeezing */
 @media (max-width: 1400px) {
+  /* Enforce nowrap in the parent layout wrapper */
+  #welcomeBlock > .flex-col {
+    flex-wrap: nowrap !important;
+  }
+
   /* Compression: Transition Compliance Card internal structure to a vertical stack */
   #bCumplimiento {
     width: 140px !important;
     min-width: 140px !important;
+    max-width: 140px !important;
     height: 120px !important;
     flex-direction: column !important;
     justify-content: space-between !important;
     padding: 10px 12px !important;
+    flex-shrink: 0 !important;
   }
   
   #bCumplimiento .gap-6 {
@@ -8842,6 +8858,7 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
     align-items: flex-start !important;
     justify-content: space-between !important;
     gap: 8px !important;
+    flex-shrink: 0 !important;
   }
   
   #factIconContainer {
