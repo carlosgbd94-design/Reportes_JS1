@@ -1023,7 +1023,7 @@
             <div class="topNotifHeaderTop !items-start">
               <div style="flex: 1; min-width: 0;">
                 <div class="topNotifTitle !text-base">Explorador de Evidencias</div>
-                <div class="topNotifSub !mt-1 !text-[11px]">Consulta de supervisiones y reportes</div>
+                <div id="archivosSubtitle" class="topNotifSub !mt-1 !text-[11px]">Consulta de supervisiones y reportes</div>
               </div>
               <div class="flex items-center gap-1.5 flex-none ml-4">
                 <button type="button" class="ghostBtn !w-9 !h-9 !min-w-[36px] !min-h-[36px] !rounded-xl"
@@ -1037,7 +1037,7 @@
               </div>
             </div>
           </div>
-          <div class="p-5 border-b border-outline-variant/30 bg-surface-variant/10">
+          <div class="p-5 border-b border-outline-variant/30 bg-surface-variant/10" style="padding: 20px !important;">
             <div class="flex flex-col gap-5">
               <!-- Tabs Premium Independientes -->
               <div id="archivosTabsContainer" class="flex gap-3 items-center justify-between w-full"
@@ -1065,16 +1065,15 @@
               </div>
 
               <!-- Buscador -->
-              <div class="relative w-full">
-                <span
-                  class="material-symbols-rounded absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
+              <div class="relative w-full" style="height: 48px; display: flex; align-items: center;">
+                <span class="material-symbols-rounded absolute text-slate-400 text-[20px] pointer-events-none select-none"
+                  style="left: 16px !important; top: 50% !important; transform: translateY(-50%) !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; height: 20px !important; width: 20px !important;">search</span>
                 <input type="text" id="archivosSearch" placeholder="Buscar por CLUES o Unidad..."
-                  style="padding-left: 44px; padding-right: 16px;"
-                  class="w-full bg-white rounded-xl border border-slate-200 h-12 text-[13px] font-bold text-primary outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all shadow-sm" />
+                  class="w-full bg-white rounded-xl border border-slate-200 text-[13px] font-bold text-primary outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all shadow-sm" />
               </div>
             </div>
           </div>
-          <div class="topNotifBody p-5" style="max-height:60vh; overflow-y:auto;">
+          <div class="topNotifBody p-5" style="max-height:60vh; overflow-y:auto; padding: 20px !important;">
             <div id="archivosContainer" class="grid grid-cols-1 gap-4"></div>
           </div>
         </div>
@@ -3108,8 +3107,64 @@
 
           </div><!-- /rdaDashboardContent -->
 
-          <!-- HIDDEN: Template PDF -->
-          <div id="rdaPdfTemplate" style="position: absolute; left: -9999px; top: 0; width: 1000px; background: #fff;">
+          <!-- HIDDEN: Premium Template PDF -->
+          <div id="rdaPdfPremiumTemplate" style="position: absolute; left: -9999px; top: 0; width: 1056px; background: #ffffff; padding: 40px; box-sizing: border-box; font-family: 'Inter', system-ui, sans-serif;">
+            <!-- Header Franja -->
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 12px; background: #0f172a; border-bottom: 3px solid #0d9488;"></div>
+            
+            <!-- Header Content -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top: 10px; margin-bottom: 32px;">
+              <div style="display: flex; gap: 20px; align-items: center;">
+                <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/Seseq_vertical_2025.png" alt="Seseq Logo" style="height: 60px;">
+                <div>
+                  <h1 style="margin: 0; font-size: 32px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em;">Indicadores RDA 2026</h1>
+                  <p id="pdfEsquemaMuni" style="margin: 4px 0 0 0; font-size: 14px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em;"></p>
+                </div>
+              </div>
+              <div style="text-align: right; background: #f0fdfa; border: 1px solid #ccfbf1; padding: 12px 20px; border-radius: 12px;">
+                <div style="font-size: 11px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">Avance al Cierre</div>
+                <div id="pdfAvanceCierre" style="font-size: 20px; font-weight: 900; color: #0f172a;"></div>
+              </div>
+            </div>
+
+            <!-- KPIs -->
+            <div id="pdfKpisContainer" style="display: flex; gap: 16px; margin-bottom: 32px;">
+              <!-- KPI items will be injected here -->
+            </div>
+
+            <!-- Charts -->
+            <div style="display: flex; gap: 24px; margin-bottom: 32px; height: 260px;">
+              <div style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; display: flex; flex-direction: column;">
+                <div style="font-size: 12px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px;">Distribución de Avance</div>
+                <div style="flex: 1; position: relative; display: flex; align-items: center; justify-content: center;">
+                  <img id="pdfChartAvance" src="" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                </div>
+              </div>
+              <div style="flex: 2; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; display: flex; flex-direction: column;">
+                <div style="font-size: 12px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px;">Top Unidades / Municipios de la Jurisdicción</div>
+                <div style="flex: 1; position: relative; display: flex; align-items: center; justify-content: center;">
+                  <img id="pdfChartTop" src="" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Table -->
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+              <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead id="pdfTableHead" style="background: #0f172a;">
+                  <!-- Injected headers -->
+                </thead>
+                <tbody id="pdfTableBody">
+                  <!-- Injected rows -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Footer -->
+            <div style="margin-top: 32px; border-top: 1px solid #e2e8f0; padding-top: 16px; display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">
+              <div id="pdfTimestamp"></div>
+              <div>Plataforma de Indicadores RDA JS1</div>
+            </div>
           </div>
 
         </div><!-- /rdaDashboardPanel -->

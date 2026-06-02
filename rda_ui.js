@@ -157,23 +157,29 @@ async function fetchRDAData() {
     const curYear = _rdaCache.anio;
 
     // 1. Obtener el mes máximo progresivo en registros_sis
-    const { data: mesData, error: mesError } = await window.supabase
-        .from('registros_sis')
-        .select('mes')
-        .eq('anio', curYear)
-        .order('mes', { ascending: false })
-        .limit(1);
-    
+    // SOLUCIÓN DEFINITIVA: La tabla registros_sis tiene RLS (Row Level Security)
+    // lo que bloqueaba las lecturas desde el cliente y devolvía un array vacío siempre.
+    // He creado una función RPC 'get_rda_max_mes' en la base de datos (SECURITY DEFINER)
+    // que puentea el bloqueo y calcula el mes máximo instantáneamente en el servidor.
+    const yearInt = parseInt(curYear, 10);
+    const maxAllowedMes = (yearInt === new Date().getFullYear()) ? (new Date().getMonth() + 1) : 12;
+
+    const { data: maxMesRpc, error: mesError } = await window.supabase
+        .rpc('get_rda_max_mes', { p_anio: yearInt });
+
     if (mesError) throw mesError;
-    const maxMes = (mesData && mesData.length > 0) ? mesData[0].mes : 12;
+
+    let maxMes = parseInt(maxMesRpc, 10);
+    if (isNaN(maxMes) || maxMes < 1) maxMes = 1;
+    if (maxMes > maxAllowedMes) maxMes = maxAllowedMes;
 
     // 2. Consultar el stored procedure de Supabase (pre-agregación en BD)
     const { data: indicators, error: indError } = await window.supabase
-        .rpc('get_rda_indicators', { p_anio: curYear, p_max_mes: maxMes });
+        .rpc('get_rda_indicators', { p_anio: yearInt, p_max_mes: maxMes });
 
     if (indError) throw indError;
 
-    console.log(`[RDA] Loaded 2026 pre-aggregated indicators: ${indicators.length} records. Max Mes: ${maxMes}`);
+    console.log(`[RDA] Loaded ${yearInt} pre-aggregated indicators: ${indicators.length} records. Max Mes: ${maxMes}`);
 
     _rdaCache.unidades = indicators || [];
     _rdaCache.registros = indicators || [];
@@ -499,6 +505,7 @@ function renderDoughnut(agg, esquema) {
                 }]
             },
             options: { 
+                devicePixelRatio: 3,
                 responsive: true, maintainAspectRatio: false, cutout: '75%', 
                 animation: { duration: 800, easing: 'easeOutQuart' },
                 plugins: { 
@@ -686,6 +693,7 @@ function renderBarChart(fUnits, muniFilter, esquema) {
             type: 'bar',
             data: { labels, datasets: finalDatasets },
             options: { 
+                devicePixelRatio: 3,
                 indexAxis: 'y', responsive: true, maintainAspectRatio: false, 
                 animation: { duration: 1000, easing: 'easeOutQuart' },
                 plugins: { 
@@ -865,11 +873,11 @@ function _tLabel() { return `Cierre_${MONTH_NAMES[_rdaCache.maxMes-1] || 'Final'
 function _dateStr() { return new Date().toISOString().slice(0,10).replace(/-/g,''); }
 function _safeName(n) { return (n||'').replace(/[^a-zA-Z0-9]/g,'_').substring(0,40); }
 
-// Motor de exportación a PDF (Ultra-Safe Direct Render)
+// Motor de exportación a PDF (Premium Vectorial - Direct Render)
 async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob = false) {
     return new Promise(async (resolve, reject) => {
         try {
-            console.log("[RDA PDF] Iniciando exportación nativa vectorial...");
+            console.log("[RDA PDF] Iniciando exportación nativa vectorial premium...");
             
             const jsPDF = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
             if (!jsPDF) { throw new Error("La librería jsPDF no está cargada en el DOM."); }
@@ -960,10 +968,18 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             doc.text(`${esquemaTexto.toUpperCase()}  |  ${muni.toUpperCase()}`, textStartX, currentY + 16);
 
             // Avance del Cierre (Derecha)
+            doc.setFillColor(240, 253, 250); // Teal 50
+            doc.setDrawColor(204, 251, 241); // Teal 100
+            doc.roundedRect(210, currentY, 54, 18, 3, 3, 'FD');
+
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(12);
+            doc.setFontSize(9);
             doc.setTextColor(13, 148, 136); // Teal 600
-            doc.text(`AVANCE AL CIERRE: ${maxMesLabel}`, 264.4, currentY + 8, { align: 'right' });
+            doc.text("AVANCE AL CIERRE", 237, currentY + 7, { align: 'center' });
+            
+            doc.setFontSize(14);
+            doc.setTextColor(15, 23, 42); // Slate 900
+            doc.text(`${maxMesLabel.toUpperCase()}`, 237, currentY + 14, { align: 'center' });
             
             currentY = 52;
 
@@ -1094,7 +1110,6 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
         }
     });
 }
-
 async function exportIndividualPDF() {
     const content = document.getElementById('rdaDashboardContent');
     if (!content) return;

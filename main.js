@@ -14659,6 +14659,14 @@ function applyRolePermissions(role) {
   if ($("archivosSearch")) {
     $("archivosSearch").placeholder = isUnidad ? "Buscar por fecha..." : "Buscar por Clues o Unidad...";
   }
+  const subtitleEl = $("archivosSubtitle");
+  if (subtitleEl) {
+    if (isUnidad) {
+      subtitleEl.textContent = "Consulta tus supervisiones";
+    } else {
+      subtitleEl.textContent = "Consulta supervisiones y evidencias";
+    }
+  }
   const tabContainer = $("archivosTabsContainer");
   if (tabContainer) {
     if (isUnidad) {
