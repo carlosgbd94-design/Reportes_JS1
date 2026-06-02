@@ -1090,18 +1090,18 @@
           class="bg-white rounded-[32px] p-5 md:p-6 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] transition-shadow hover:shadow-[0_16px_32px_rgba(0,51,102,0.08)] overflow-hidden"
           id="welcomeBlock">
           <!-- 👤 PREMIUM WELCOME HUB (Balanced & Harmonious) -->
-          <div class="flex flex-col md:flex-row justify-center items-center gap-5 md:gap-8 relative">
+          <div class="flex flex-col xl:flex-row justify-between items-stretch xl:items-center gap-6 relative">
 
             <!-- Welcome Area -->
-            <div class="flex flex-col text-left items-start flex-1">
+            <div class="flex flex-col text-left items-start flex-1 min-w-[280px]">
               <span class="text-primary/60 text-[10px] font-black uppercase tracking-[0.25em] mb-2 block">Resumen
                 Operativo</span>
-              <h2 class="text-3xl sm:text-5xl font-black text-primary m-0 tracking-tighter leading-tight" id="welcome">
+              <h2 class="text-3xl sm:text-4xl font-black text-primary m-0 tracking-tighter leading-tight" id="welcome">
                 Hola</h2>
             </div>
 
             <!-- Decorative Separator -->
-            <div class="hidden md:block w-px h-12 bg-outline-variant/40"></div>
+            <div class="hidden xl:block w-px h-12 bg-outline-variant/40 shrink-0"></div>
 
              <!-- SVGs for gamified medals with premium high fidelity metallic gradients -->
              <svg style="width: 0; height: 0; position: absolute; pointer-events: none; visibility: hidden;">
@@ -1141,36 +1141,34 @@
              </svg>
 
              <!-- Compliance KPI (Completely Redesigned to Prevent Overlaps) -->
-             <div class="flex items-center justify-center gap-4 flex-wrap w-full md:w-auto h-full">
-               <div id="bCumplimiento" data-tone="bad"
-                 class="flex flex-col justify-between w-full md:w-auto min-w-[360px] rounded-3xl bg-white border border-outline-variant/50 shadow-sm transition-all hover:shadow-md group cursor-help relative overflow-hidden">
-                 
-                 <!-- Top Row: Icon & Text content -->
-                 <div class="flex items-center gap-6 w-full relative z-10">
-                   <!-- Progress Icon with Pulse Background -->
-                   <div class="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center shrink-0 relative overflow-hidden" id="bCumplimientoIconBg">
-                     <span class="material-symbols-rounded text-[20px] transition-all duration-300 group-hover:scale-0 group-hover:opacity-0" id="bCumplimientoIconBase">leaderboard</span>
-                     <span class="material-symbols-rounded text-[20px] absolute opacity-0 scale-50 transition-all duration-500 text-current select-none pointer-events-none" id="bCumplimientoIconSnake">moving</span>
-                   </div>
-
-                   <div class="flex flex-col leading-tight">
-                     <span class="text-[9px] font-black uppercase tracking-widest opacity-40 mb-1">Cumplimiento</span>
-                     <div class="flex items-baseline gap-1">
-                       <span id="dayTxt" class="text-xl font-black tracking-tighter text-primary">0%</span>
-                     </div>
-                   </div>
+             <div id="bCumplimiento" data-tone="bad"
+               class="flex flex-col justify-between w-full md:w-auto min-w-[320px] rounded-3xl bg-white border border-outline-variant/50 shadow-sm transition-all hover:shadow-md group cursor-help relative overflow-hidden shrink-0">
+               
+               <!-- Top Row: Icon & Text content -->
+               <div class="flex items-center gap-6 w-full relative z-10">
+                 <!-- Progress Icon with Pulse Background -->
+                 <div class="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center shrink-0 relative overflow-hidden" id="bCumplimientoIconBg">
+                   <span class="material-symbols-rounded text-[20px] transition-all duration-300 group-hover:scale-0 group-hover:opacity-0" id="bCumplimientoIconBase">leaderboard</span>
+                   <span class="material-symbols-rounded text-[20px] absolute opacity-0 scale-50 transition-all duration-500 text-current select-none pointer-events-none" id="bCumplimientoIconSnake">moving</span>
                  </div>
 
-                  <!-- Bottom Row: Medallas Acumuladas (Trazabilidad) -->
-                  <div class="w-full flex flex-col items-start gap-1.5 border-t border-dashed border-outline-variant/30 pt-1.5 mt-1.5 relative z-10">
-                    <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Logros del Año</span>
-                    <div id="bCumplimientoMedals" class="flex flex-wrap items-center gap-1.5 py-0.5 w-full"></div>
-                  </div>
-
-                 <!-- Glass Reflection Effect -->
-                 <div
-                   class="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 opacity-0 transition-opacity pointer-events-none">
+                 <div class="flex flex-col leading-tight">
+                   <span class="text-[9px] font-black uppercase tracking-widest opacity-40 mb-1">Cumplimiento</span>
+                   <div class="flex items-baseline gap-1">
+                     <span id="dayTxt" class="text-xl font-black tracking-tighter text-primary">0%</span>
+                   </div>
                  </div>
+               </div>
+
+                <!-- Bottom Row: Medallas Acumuladas (Trazabilidad) -->
+                <div class="w-full flex flex-col items-start gap-1.5 border-t border-dashed border-outline-variant/30 pt-1.5 mt-1.5 relative z-10">
+                  <span class="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Logros del Año</span>
+                  <div id="bCumplimientoMedals" class="flex flex-wrap items-center gap-1.5 py-0.5 w-full"></div>
+                </div>
+
+               <!-- Glass Reflection Effect -->
+               <div
+                 class="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 opacity-0 transition-opacity pointer-events-none">
                </div>
              </div>
               <!-- 💎 CRYSTALLINE INSIGHT HUB (Dato Curioso - Dynamic) -->

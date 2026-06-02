@@ -9894,23 +9894,23 @@ function updateDynamicGreeting(timeGreeting = null, customSubtitle = null) {
   }
 
   welcomeEl.classList.remove("text-3xl", "sm:text-5xl");
-  welcomeEl.classList.add("text-2xl", "sm:text-[32px]", "w-full", "relative", "z-10", "pt-1");
+  welcomeEl.classList.add("text-2xl", "sm:text-[30px]", "w-full", "relative", "z-10", "pt-1");
   welcomeEl.innerHTML = `
-      <div class="flex items-end justify-between w-full">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between w-full gap-4">
         <div class="flex flex-col">
-          <h1 class="text-[26px] sm:text-[36px] font-black tracking-tight leading-none flex items-center flex-wrap gap-x-4 gap-y-2 drop-shadow-sm transition-colors duration-500" style="color: ${colorTitle};">
+          <h1 class="text-[24px] sm:text-[30px] font-black tracking-tight leading-none flex items-center flex-wrap gap-x-4 gap-y-2 drop-shadow-sm transition-colors duration-500" style="color: ${colorTitle};">
             ${title}
-            <span class="text-[14px] sm:text-[15px] font-semibold opacity-80 tracking-normal hidden sm:inline-block" style="color: ${colorTitle};">
+            <span class="text-[13px] sm:text-[14px] font-semibold opacity-85 tracking-normal hidden sm:inline-block" style="color: ${colorTitle};">
               • hoy es ${longDate}
             </span>
           </h1>
-          <p class="text-[14px] sm:text-[15px] font-medium mt-2 max-w-[450px] leading-relaxed drop-shadow-sm transition-colors duration-500" style="color: ${colorSub};">
+          <p class="text-[13px] sm:text-[14px] font-medium mt-1.5 max-w-[420px] leading-relaxed drop-shadow-sm transition-colors duration-500" style="color: ${colorSub};">
             ${subtitle}
           </p>
         </div>
         
         <div class="flex items-center gap-4 text-right shrink-0">
-          <div class="h-8 w-px hidden md:block transition-colors duration-500" style="background-color: ${colorDivider};"></div>
+          <div class="h-8 w-px hidden lg:block transition-colors duration-500" style="background-color: ${colorDivider};"></div>
           <div class="flex flex-col items-end">
             <span class="text-[24px] sm:text-[32px] font-black flex items-center gap-2 drop-shadow-sm transition-colors duration-500 leading-none" style="color: ${colorTitle};">
               ${weatherTemp} ${weatherEmoji}
