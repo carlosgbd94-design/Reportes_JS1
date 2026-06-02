@@ -9691,7 +9691,10 @@ function setLoggedInUI(user, status) {
       // Add any other strictly ADMIN-only parent containers here if necessary
     ];
     forbiddenPanels.forEach(p => {
-      if (p) p.remove(); // Physically destroys the node from the HTML
+      if (p) { 
+        p.classList.add("hidden"); 
+        p.style.setProperty("display", "none", "important"); 
+      }
     });
   }
 
