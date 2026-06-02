@@ -1148,9 +1148,9 @@
                  <!-- Top Row: Icon & Text content -->
                  <div class="flex items-center gap-6 w-full relative z-10">
                    <!-- Progress Icon with Pulse Background -->
-                   <div class="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center shrink-0"
-                     id="bCumplimientoIconBg">
-                     <span class="material-symbols-rounded text-[20px]">analytics</span>
+                   <div class="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center shrink-0 relative overflow-hidden" id="bCumplimientoIconBg">
+                     <span class="material-symbols-rounded text-[20px] transition-all duration-300 group-hover:scale-0 group-hover:opacity-0" id="bCumplimientoIconBase">leaderboard</span>
+                     <span class="material-symbols-rounded text-[20px] absolute opacity-0 scale-50 transition-all duration-500 text-current select-none pointer-events-none" id="bCumplimientoIconSnake">moving</span>
                    </div>
 
                    <div class="flex flex-col leading-tight">
@@ -3913,40 +3913,51 @@
       container.classList.remove("good", "ok", "warn", "bad", "podium-gold-chip", "podium-silver-chip", "podium-bronze-chip", "podium-steel-chip", "podium-emerald-chip", "podium-diamond-chip");
       container.removeAttribute("data-tone");
 
-      // Inject medals (custom dynamic medals list or standard set) using high-fidelity vector SVGs
+      // Inject medals (custom dynamic medals list or standard set) using standard Material Symbols
       if (medalsEl) {
+        const iconNameMap = {
+          diamante: "diamond",
+          oro: "workspace_premium",
+          plata: "military_tech",
+          bronce: "military_tech",
+          acero: "workspace_premium",
+          jade: "military_tech"
+        };
+        const classMap = {
+          diamante: "tier-diamante",
+          oro: "tier-oro",
+          plata: "tier-plata",
+          bronce: "tier-bronze",
+          acero: "tier-steel",
+          jade: "tier-emerald"
+        };
+        const titleMap = {
+          diamante: "Diamante",
+          oro: "Oro",
+          plata: "Plata",
+          bronce: "Bronce",
+          acero: "Acero",
+          jade: "Jade"
+        };
+
         if (customMedals && Array.isArray(customMedals)) {
           medalsEl.innerHTML = "";
           customMedals.forEach(m => {
-            let fillUrl = "url(#goldGrad)";
-            let pathD = "M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M12,17A5,5 0 1,1 17,12A5,5 0 0,1 12,17Z";
-            let isHighTier = true;
-            if (m.type === "diamante") { fillUrl = "url(#diamondGrad)"; pathD = "M12,2L2,12L12,22L22,12Z"; }
-            else if (m.type === "plata") { fillUrl = "url(#silverGrad)"; }
-            else if (m.type === "bronce") { fillUrl = "url(#bronzeGrad)"; pathD = "M12,2L4,5V11C4,16.5 8.3,21.7 12,23C15.7,21.7 20,16.5 20,11V5L12,2Z"; isHighTier = false; }
-            else if (m.type === "acero") { fillUrl = "url(#steelGrad)"; pathD = "M12,2L4,5V11C4,16.5 8.3,21.7 12,23C15.7,21.7 20,16.5 20,11V5L12,2Z"; isHighTier = false; }
-            else if (m.type === "jade") { fillUrl = "url(#emeraldGrad)"; pathD = "M12,2L4,5V11C4,16.5 8.3,21.7 12,23C15.7,21.7 20,16.5 20,11V5L12,2Z"; isHighTier = false; }
-            const opacityVal = isHighTier ? "1.0" : "0.2";
+            const tierKey = String(m.type || "").trim().toLowerCase();
+            const iconName = iconNameMap[tierKey] || "military_tech";
+            const tierClass = classMap[tierKey] || "tier-riesgo";
+            const label = titleMap[tierKey] || "Cumplimiento";
+            const title = `Medalla de cumplimiento ${label} - ${m.month}`;
             medalsEl.innerHTML += `
-              <svg class="w-6 h-6 drop-shadow-sm cursor-help hover:scale-125 transition-transform" style="opacity: ${opacityVal};" title="Medalla de cumplimiento ${m.type.charAt(0).toUpperCase() + m.type.slice(1)} - ${m.month}" viewBox="0 0 24 24">
-                <path d="${pathD}" fill="${fillUrl}" />
-              </svg>
+              <span class="material-symbols-rounded chip-medal-icon ${tierClass}" title="${title}">${iconName}</span>
             `;
           });
         } else {
           medalsEl.innerHTML = `
-            <svg class="w-6 h-6 drop-shadow-sm cursor-help hover:scale-125 transition-transform" style="opacity: 1.0;" title="Medalla de cumplimiento Diamante - Enero" viewBox="0 0 24 24">
-              <path d="M12,2L2,12L12,22L22,12Z" fill="url(#diamondGrad)" />
-            </svg>
-            <svg class="w-6 h-6 drop-shadow-sm cursor-help hover:scale-125 transition-transform" style="opacity: 1.0;" title="Medalla de cumplimiento Oro - Febrero" viewBox="0 0 24 24">
-              <path d="M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M12,17A5,5 0 1,1 17,12A5,5 0 0,1 12,17Z" fill="url(#goldGrad)" />
-            </svg>
-            <svg class="w-6 h-6 drop-shadow-sm cursor-help hover:scale-125 transition-transform" style="opacity: 1.0;" title="Medalla de cumplimiento Plata - Marzo" viewBox="0 0 24 24">
-              <path d="M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M12,17A5,5 0 1,1 17,12A5,5 0 0,1 12,17Z" fill="url(#silverGrad)" />
-            </svg>
-            <svg class="w-6 h-6 drop-shadow-sm cursor-help hover:scale-125 transition-transform" style="opacity: 1.0;" title="Medalla de cumplimiento Diamante - Mayo" viewBox="0 0 24 24">
-              <path d="M12,2L2,12L12,22L22,12Z" fill="url(#diamondGrad)" />
-            </svg>
+            <span class="material-symbols-rounded chip-medal-icon tier-diamante" title="Medalla de cumplimiento Diamante - Enero">diamond</span>
+            <span class="material-symbols-rounded chip-medal-icon tier-oro" title="Medalla de cumplimiento Oro - Febrero">workspace_premium</span>
+            <span class="material-symbols-rounded chip-medal-icon tier-plata" title="Medalla de cumplimiento Plata - Marzo">military_tech</span>
+            <span class="material-symbols-rounded chip-medal-icon tier-diamante" title="Medalla de cumplimiento Diamante - Mayo">diamond</span>
           `;
         }
       }
