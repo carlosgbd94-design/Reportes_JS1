@@ -596,7 +596,8 @@ function renderBarChart(fUnits, muniFilter, esquema) {
     if (totalContainer) totalContainer.style.display = 'none';
 
     if (isSingleUnit) {
-        titleText = 'Avance Anual 2025';
+        const currentYear = new Date().getFullYear();
+        titleText = `Avance Anual ${currentYear}`;
         const u = fUnits[0];
 
         if (esquema === 'basico') {
@@ -1126,9 +1127,10 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             const isMuniFilter = muni && muni !== 'JURISDICCIÓN SANITARIA 1' && muni.trim() !== '';
 
             if (isSingleUnit) {
+                const currentYear = new Date().getFullYear();
                 imgChart1Base64 = _rdaCharts.d ? _rdaCharts.d.toBase64Image() : '';
                 titleChart1 = "DISTRIBUCIÓN DE AVANCE";
-                titleChart2 = "AVANCE ANUAL 2025";
+                titleChart2 = `AVANCE ANUAL ${currentYear}`;
             } else {
                 imgChart1Base64 = _rdaCharts.total ? _rdaCharts.total.toBase64Image() : '';
                 titleChart1 = isMuniFilter ? "AVANCE MUNICIPAL TOTAL" : "AVANCE JURISDICCIONAL TOTAL";
