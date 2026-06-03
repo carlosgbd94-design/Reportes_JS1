@@ -1010,6 +1010,12 @@ function renderTable(fUnits, esquema) {
                 ? (_rdaState.sortAsc ? va.localeCompare(vb) : vb.localeCompare(va)) 
                 : (_rdaState.sortAsc ? va - vb : vb - va);
         });
+    } else {
+        rows.sort((a, b) => {
+            const mCmp = (a.municipio || '').localeCompare(b.municipio || '');
+            if (mCmp !== 0) return mCmp;
+            return (a.clues || '').localeCompare(b.clues || '');
+        });
     }
 
     if (countEl) countEl.textContent = `${rows.length} unidades`;
@@ -1049,18 +1055,30 @@ function renderTable(fUnits, esquema) {
         return `<span style="display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;background:${bg};color:${fg}">${v}%</span>`;
     };
 
+    let html = '';
+    let currentMuni = null;
+    const totalCols = 4 + vCols.length + (showMeta ? 1 : 0);
+
+    rows.forEach(r => {
+        const muni = (r.municipio || 'Sin Municipio').toUpperCase();
+        if (!_rdaState.sortCol && muni !== currentMuni && fUnits.length > 1) {
+            html += `<tr><td colspan="${totalCols}" style="padding:12px 24px; background-color:#f8fafc; font-size:12px; font-weight:800; color:#334155; text-transform:uppercase; letter-spacing:0.05em; border-bottom:2px solid #e2e8f0; border-top:2px solid #e2e8f0;">${muni}</td></tr>`;
+            currentMuni = muni;
+        }
+        html += `
+        <tr style="border-bottom:1px solid #f1f5f9;">
+            <td style="padding:16px 24px;font-size:11px;font-weight:700;color:#64748b;">${r.clues}</td>
+            <td style="padding:16px 24px;font-size:11px;font-weight:800;color:#0f172a">${r.nombre}</td>
+            <td style="padding:16px 24px;font-size:11px;color:#64748b;font-weight:600;">${r.municipio}</td>
+            ${vCols.map(c => `<td style="padding:8px 12px;text-align:center">${badge(r[c.s], c.n)}</td>`).join('')}
+            ${showMeta ? `<td style="padding:16px 24px;text-align:center;font-size:11px;font-weight:800;color:#64748b">${r.pob.toLocaleString('es-MX')}</td>` : ''}
+            <td style="padding:16px 24px;text-align:center;font-size:11px;font-weight:800;color:#0f172a">${r.dosis.toLocaleString('es-MX')}</td>
+        </tr>`;
+    });
+
     tbody.innerHTML = rows.length === 0
-        ? `<tr><td colspan="${4 + vCols.length + (showMeta ? 1 : 0)}" style="padding:40px;text-align:center;color:#94a3b8;font-weight:600;">Sin datos</td></tr>`
-        : rows.map(r => `
-            <tr style="border-bottom:1px solid #f1f5f9;">
-                <td style="padding:16px 24px;font-size:11px;font-weight:700;color:#64748b;">${r.clues}</td>
-                <td style="padding:16px 24px;font-size:11px;font-weight:800;color:#0f172a">${r.nombre}</td>
-                <td style="padding:16px 24px;font-size:11px;color:#64748b;font-weight:600;">${r.municipio}</td>
-                ${vCols.map(c => `<td style="padding:8px 12px;text-align:center">${badge(r[c.s], c.n)}</td>`).join('')}
-                ${showMeta ? `<td style="padding:16px 24px;text-align:center;font-size:11px;font-weight:800;color:#64748b">${r.pob.toLocaleString('es-MX')}</td>` : ''}
-                <td style="padding:16px 24px;text-align:center;font-size:11px;font-weight:800;color:#0f172a">${r.dosis.toLocaleString('es-MX')}</td>
-            </tr>
-        `).join('');
+        ? `<tr><td colspan="${totalCols}" style="padding:40px;text-align:center;color:#94a3b8;font-weight:600;">Sin datos</td></tr>`
+        : html;
 }
 
 // ══════════ EXPORT ══════════
@@ -1332,6 +1350,11 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
 
             currentY += chartSectionHeight + 8;
 
+            if (!isSingleUnit) {
+                doc.addPage();
+                currentY = 20;
+            }
+
             // ==========================================
             // TABLA VECTORIAL PREMIUM (Badges Nativos)
             // ==========================================
@@ -1406,6 +1429,18 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
                     }
                 },
                 didDrawPage: function(data) {
+                    if (((!isSingleUnit && data.pageNumber >= 1) || (isSingleUnit && data.pageNumber > 1)) && watermarkData) {
+                        doc.setGState(new doc.GState({opacity: 0.02}));
+                        const tileSize = 35;
+                        const tileH = tileSize / watermarkData.ratio;
+                        for(let x = -10; x < 290; x += tileSize) {
+                            for(let y = -10; y < 230; y += tileH) {
+                                doc.addImage(watermarkData.data, 'PNG', x, y, tileSize, tileH, undefined, 'FAST');
+                            }
+                        }
+                        doc.setGState(new doc.GState({opacity: 1.0}));
+                    }
+
                     const pageCount = doc.internal.getNumberOfPages();
                     doc.setFont('helvetica', 'bold');
                     doc.setFontSize(8);
