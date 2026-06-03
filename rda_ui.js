@@ -1124,15 +1124,24 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             
             const tableDataWithHeaders = [];
             tableRowsRaw.forEach(row => {
-                const unitClues = row[0];
-                const unitName = row[1];
-                const unitMuni = row[2];
+                if (row.length === 1) {
+                    tableDataWithHeaders.push([{
+                        content: row[0],
+                        colSpan: colsLen,
+                        styles: { fillColor: [241, 245, 249], textColor: [51, 65, 85], fontStyle: 'bold', halign: 'center' }
+                    }]);
+                    return;
+                }
+
+                const unitClues = row[0] || '';
+                const unitName = row[1] || '';
+                const unitMuni = row[2] || '';
                 
                 if (!isSingleUnit) {
                     tableDataWithHeaders.push([{
                         content: `UNIDAD: ${unitName.toUpperCase()}   |   CLUES: ${unitClues}   |   MUNICIPIO: ${unitMuni.toUpperCase()}`,
                         colSpan: colsLen,
-                        styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold', halign: 'left' }
+                        styles: { fillColor: [248, 250, 252], textColor: [15, 23, 42], fontStyle: 'bold', halign: 'left' }
                     }]);
                 }
                 
