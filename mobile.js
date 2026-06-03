@@ -1015,24 +1015,30 @@
         }
     };
 
-    // Setup global observer to run checkAppLifecycle
-    const observer = new MutationObserver(checkAppLifecycle);
-    observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['style', 'class'] });
+    // Setup target observers instead of global document.body observers to prevent infinite loops.
+    const rightColumn = document.getElementById('rightColumn');
+    if (rightColumn) {
+        const observer = new MutationObserver(checkAppLifecycle);
+        observer.observe(rightColumn, { attributes: true, attributeFilter: ['style', 'class'] });
+    }
 
     // Initial check
     setTimeout(checkAppLifecycle, 200);
 
     // Keep activeTab updated if changed externally
-    const tabsObserver = new MutationObserver(() => {
-        ['SR', 'CONS', 'BIO', 'PINOL'].forEach(code => {
-            const deskForm = document.getElementById('form' + code);
-            if (deskForm && deskForm.style.display !== 'none' && activeTab !== code) {
-                activeTab = code;
-                syncDockState();
-                renderActiveForm();
-            }
+    const forms = ['SR', 'CONS', 'BIO', 'PINOL'].map(code => document.getElementById('form' + code)).filter(Boolean);
+    if (forms.length > 0) {
+        const tabsObserver = new MutationObserver(() => {
+            ['SR', 'CONS', 'BIO', 'PINOL'].forEach(code => {
+                const deskForm = document.getElementById('form' + code);
+                if (deskForm && deskForm.style.display !== 'none' && activeTab !== code) {
+                    activeTab = code;
+                    syncDockState();
+                    renderActiveForm();
+                }
+            });
         });
-    });
-    tabsObserver.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['style'] });
+        forms.forEach(f => tabsObserver.observe(f, { attributes: true, attributeFilter: ['style'] }));
+    }
 
 })();
