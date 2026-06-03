@@ -9200,3 +9200,326 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
     overflow: hidden;             /* evita desbordamiento del contenido interno */
   }
 }
+
+/* =============================================================================
+   CSS MIGRADO DE index.html — Centralizado aquí para evitar conflictos Tailwind
+   ============================================================================= */
+
+/* Tab RDA: ícono activo en color indigo */
+#tabOPS_RDA.active span.material-symbols-rounded,
+#tabUNIDAD_RDA.active span.material-symbols-rounded {
+  color: #6366f1 !important;
+}
+
+/* Login Split Desktop: Panel derecho (formulario) */
+@media (min-width: 1024px) {
+  #loginWrapper {
+    justify-content: flex-end !important;
+    padding: 0 !important;
+    background-color: #ffffff !important;
+    animation: none !important;
+    transform: none !important;
+  }
+
+  #desktopSplitLeft {
+    display: flex !important;
+    animation: none !important;
+  }
+
+  #cardLogin {
+    width: 45% !important;
+    max-width: none !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background-color: #ffffff !important;
+    border: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  #cardLoginContent {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    border: none !important;
+    max-width: 440px !important;
+    width: 100% !important;
+    align-items: center !important;
+    text-align: center !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+    margin: 0 auto !important;
+  }
+
+  /* Ocultar elementos exclusivos de móvil en desktop */
+  #mobileLogo,
+  #mobileTitle,
+  #mobileSubtitle,
+  #btnLoginIconMobile,
+  #btnTextMobile {
+    display: none !important;
+  }
+
+  /* Mostrar elementos exclusivos de desktop */
+  #desktopLogo {
+    display: flex !important;
+    justify-content: center !important;
+    width: 100% !important;
+  }
+
+  #desktopWelcome {
+    display: block !important;
+    text-align: center !important;
+  }
+
+  #btnTextDesktop {
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+  }
+
+  #desktopRememberMe {
+    display: flex !important;
+  }
+
+  /* Contenedor del formulario de login */
+  #loginForm {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  #inputsContainer { order: 1 !important; }
+
+  #passwordOptionsContainer {
+    order: 2 !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    margin-top: -0.5rem !important;
+    margin-bottom: 2rem !important;
+    width: 100% !important;
+  }
+
+  #btnLogin { order: 3 !important; }
+
+  /* Botón "Olvidé mi contraseña" en desktop */
+  #btnForgotPassword {
+    margin-top: 0 !important;
+    text-transform: none !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    letter-spacing: normal !important;
+    color: #0ea5e9 !important;
+    text-align: right !important;
+    width: auto !important;
+  }
+
+  #btnForgotPassword:hover {
+    color: #0284c7 !important;
+  }
+
+  /* Ícono del input en desktop */
+  .modern-input-group span.input-icon {
+    color: #94a3b8 !important;
+    font-size: 22px !important;
+    position: absolute !important;
+    left: 1rem !important;
+    z-index: 2 !important;
+    pointer-events: none !important;
+  }
+
+  .modern-input-group:focus-within span.input-icon {
+    color: #0ea5e9 !important;
+  }
+
+  /* Ojo de contraseña: animación 3D Flip */
+  @keyframes spinFlip {
+    0%   { transform: translateY(-50%) rotateY(0deg) scale(1); }
+    50%  { transform: translateY(-50%) rotateY(90deg) scale(0.8); }
+    100% { transform: translateY(-50%) rotateY(0deg) scale(1); }
+  }
+
+  .animate-spin-flip {
+    animation: spinFlip 0.3s ease-in-out !important;
+  }
+
+  #togglePassword {
+    z-index: 5 !important;
+    color: #94a3b8 !important;
+    transition: color 0.3s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    padding: 8px !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    position: absolute !important;
+    left: auto !important;
+    right: 0.5rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    flex-shrink: 0 !important;
+    width: 38px !important;
+    height: 38px !important;
+    pointer-events: auto !important;
+    outline: none !important;
+    border: none !important;
+  }
+
+  #togglePassword::before { display: none !important; }
+
+  #togglePassword:hover {
+    transform: translateY(-50%) !important;
+    color: #0ea5e9 !important;
+  }
+
+  /* Checkbox "Recordarme" en desktop */
+  #desktopRememberMe input[type="checkbox"] {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    min-height: 18px !important;
+    border: 2px solid #cbd5e1 !important;
+    border-radius: 5px !important;
+    background-color: #ffffff !important;
+    cursor: pointer !important;
+    position: relative !important;
+    outline: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-block !important;
+  }
+
+  #desktopRememberMe input[type="checkbox"]:hover {
+    border-color: #94a3b8 !important;
+  }
+
+  #desktopRememberMe input[type="checkbox"]:checked {
+    background-color: #0ea5e9 !important;
+    border-color: #0ea5e9 !important;
+  }
+
+  #desktopRememberMe input[type="checkbox"]:checked::after {
+    content: '' !important;
+    position: absolute !important;
+    left: 5px !important;
+    top: 2px !important;
+    width: 4px !important;
+    height: 9px !important;
+    border: solid white !important;
+    border-width: 0 2px 2px 0 !important;
+    transform: rotate(45deg) !important;
+  }
+
+  /* Botón Entrar en desktop */
+  #btnLogin {
+    margin-top: 0 !important;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+    color: #ffffff !important;
+    border-radius: 12px !important;
+    border: none !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  #btnLogin * { color: #ffffff !important; }
+
+  #btnLogin:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.2) !important;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%) !important;
+  }
+
+  /* Footer del login en desktop */
+  #loginFooter {
+    border-top: 1px solid #f1f5f9 !important;
+    text-align: center !important;
+    margin-top: 2rem !important;
+  }
+
+  #loginFooter p {
+    color: #94a3b8 !important;
+    font-size: 0.85rem !important;
+    letter-spacing: 0.1em !important;
+  }
+}
+
+/* Login: ocultar panel izquierdo en móvil */
+@media (max-width: 1023px) {
+  .split-desktop-left { display: none !important; }
+  .desktop-only        { display: none !important; }
+  .desktop-only-block  { display: none !important; }
+}
+
+/* Input box global: blindaje anti-autofill de Chrome */
+.modern-input-group {
+  border: 2px solid #e2e8f0 !important;
+  border-radius: 14px !important;
+  background-color: #f8fafc !important;
+  box-shadow: none !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important;
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  height: 56px !important;
+  margin-bottom: 1rem !important;
+  overflow: visible !important;
+  transform: none !important;
+}
+
+.modern-input-group:focus-within {
+  border-color: #0ea5e9 !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15) !important;
+  transform: none !important;
+}
+
+.modern-input-group input,
+.modern-input-group input:focus,
+.modern-input-group input:active,
+.modern-input-group input:-webkit-autofill,
+.modern-input-group input:-webkit-autofill:hover,
+.modern-input-group input:-webkit-autofill:focus {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  -webkit-box-shadow: 0 0 0 1000px #f8fafc inset !important;
+  -webkit-text-fill-color: #0f172a !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+  color: #0f172a !important;
+  padding-left: 3.5rem !important;
+  padding-right: 3rem !important;
+  height: 100% !important;
+  width: 100% !important;
+  font-size: 15px !important;
+  border-radius: 12px !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+.modern-input-group:focus-within input:-webkit-autofill,
+.modern-input-group:focus-within input:-webkit-autofill:hover,
+.modern-input-group:focus-within input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+}
+
+/* Ojito de contraseña: sin ripple en hover */
+#togglePassword::before { display: none !important; }
+
+#togglePassword:hover {
+  transform: translateY(-50%) !important;
+  color: #0ea5e9 !important;
+}

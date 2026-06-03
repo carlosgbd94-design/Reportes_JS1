@@ -145,7 +145,7 @@ class RDAParser {
     }
 
     static async processData(data) {
-        if (typeof showOverlay === 'function') showOverlay("Procesando datos...", "Limpiando");
+        if (typeof showOverlay === 'function') showOverlay("Procesando datos...", "Analizando");
 
         // 1. Parsear y filtrar datos
         const cleanData = [];
@@ -199,8 +199,9 @@ class RDAParser {
             }
         }
 
+        const mesesArray = [...mesesEnCSV].sort((a, b) => a - b);
         console.log(`[RDA Parser] CSV procesado: ${data.length} filas → ${cleanData.length} registros válidos (${skippedInventory} inventario excluido)`);
-        console.log(`[RDA Parser] CLUES únicas: ${Object.keys(uniqueUnits).length} | Meses: ${[...mesesEnCSV].sort().join(', ')}`);
+        console.log(`[RDA Parser] CLUES únicas: ${Object.keys(uniqueUnits).length} | Meses: ${mesesArray.join(', ')}`);
 
         if (cleanData.length === 0) {
             if (typeof hideOverlay === 'function') hideOverlay();
@@ -208,95 +209,53 @@ class RDAParser {
             return;
         }
 
-        const mesesArray = [...mesesEnCSV].sort((a, b) => a - b);
-        const mesesStr = mesesArray.join(', ');
-
-        // 2. Auto-upsert de unidades médicas (evitar FK errors)
-        const unitsToUpsert = Object.values(uniqueUnits);
-        if (unitsToUpsert.length > 0) {
-            if (typeof showOverlay === 'function') showOverlay(`Sincronizando ${unitsToUpsert.length} unidades...`, "Catálogo");
-            const { error: unitError } = await window.supabase
-                .from('unidades_medicas')
-                .upsert(unitsToUpsert, { onConflict: 'clues', ignoreDuplicates: true });
-
-            if (unitError) {
-                console.warn("[RDA Parser] Error al sync unidades (continuando):", unitError);
-            }
-        }
-
-        // 3. Smart Delete: borrar registros existentes de los meses que vienen en el CSV
-        if (typeof showOverlay === 'function') showOverlay(`Limpiando meses existentes: ${mesesStr}...`, "Sincronizando");
-
-        for (const mes of mesesArray) {
-            const { error: delError } = await window.supabase
-                .from('registros_sis')
-                .delete()
-                .eq('mes', mes);
-
-            if (delError) {
-                console.error(`[RDA Parser] Error al borrar mes ${mes}:`, delError);
-                if (typeof hideOverlay === 'function') hideOverlay();
-                if (typeof showToast === 'function') showToast(`Error al limpiar mes ${mes}`, false, 'bad');
-                return;
-            }
-        }
-
-        // 4. Bulk Insert — batches pequeños para evitar truncamiento
-        await this.bulkInsert(cleanData);
+        // 2. Llamada RPC atómica — Una sola transacción: upsert unidades + borrado + inserción masiva.
+        //    Si se pierde la conexión a la mitad, Postgres hace rollback automático y la BD
+        //    queda íntegra. Se reemplaza el antiguo sistema de múltiples peticiones secuenciales.
+        await this.rpcUpsert(Object.values(uniqueUnits), cleanData, mesesArray);
     }
 
-    static async bulkInsert(cleanData) {
-        if (typeof showOverlay === 'function') showOverlay(`Subiendo ${cleanData.length} registros...`, "Guardando");
+    static async rpcUpsert(unidades, registros, meses) {
+        const total = registros.length;
+        if (typeof showOverlay === 'function') {
+            showOverlay(`Enviando ${total.toLocaleString()} registros a la base de datos...`, "Sincronizando");
+        }
 
         try {
-            // Batches de 200 para evitar timeouts y errores de Supabase
-            const BATCH_SIZE = 200;
-            let success = 0;
-            let errors = 0;
-            const totalBatches = Math.ceil(cleanData.length / BATCH_SIZE);
-
-            for (let i = 0; i < cleanData.length; i += BATCH_SIZE) {
-                const batch = cleanData.slice(i, i + BATCH_SIZE);
-                const batchNum = Math.floor(i / BATCH_SIZE) + 1;
-                const pct = Math.round(((i + batch.length) / cleanData.length) * 100);
-                if (typeof showOverlay === 'function') {
-                    showOverlay(`Subiendo registros... ${pct}% (lote ${batchNum}/${totalBatches})`, "Guardando en BD");
-                }
-
-                const { error } = await window.supabase
-                    .from('registros_sis')
-                    .insert(batch);
-
-                if (error) {
-                    errors++;
-                    console.error(`[RDA Parser] ❌ Error lote ${batchNum}/${totalBatches}:`, error.message);
-                    console.error(`[RDA Parser] Muestra del lote fallido:`, batch.slice(0, 2));
-                    // NO detener — continuar con siguientes lotes para maximizar datos cargados
-                    continue;
-                }
-                success += batch.length;
-            }
+            const { data: result, error } = await window.supabase.rpc('upsert_registros_sis', {
+                p_unidades: unidades,
+                p_registros: registros,
+                p_meses: meses
+            });
 
             if (typeof hideOverlay === 'function') hideOverlay();
-            
-            if (errors > 0) {
-                const msg = `${success} registros cargados (${errors} lotes con error)`;
-                console.warn(`[RDA Parser] ⚠️ ${msg}`);
-                if (typeof showToast === 'function') showToast(msg, false, 'warn');
-            } else {
-                console.log(`[RDA Parser] ✅ ${success} registros cargados correctamente`);
-                if (typeof showToast === 'function') showToast(`${success} registros actualizados correctamente`, true, 'good');
+
+            if (error) {
+                console.error('[RDA Parser] ❌ Error en RPC upsert:', error);
+                if (typeof showToast === 'function') showToast(`Error al sincronizar: ${error.message}`, false, 'bad');
+                return;
             }
+
+            if (result && result.ok === false) {
+                console.error('[RDA Parser] ❌ Error en la función SQL:', result.error);
+                if (typeof showToast === 'function') showToast(`Error en base de datos: ${result.error}`, false, 'bad');
+                return;
+            }
+
+            const ins = result?.registros_insertados ?? total;
+            const del = result?.registros_eliminados ?? 0;
+            console.log(`[RDA Parser] ✅ RPC completado: ${ins} insertados, ${del} eliminados (meses anteriores), ${result?.unidades_nuevas ?? 0} unidades nuevas`);
+            if (typeof showToast === 'function') showToast(`${ins.toLocaleString()} registros actualizados correctamente`, true, 'good');
 
             // Refrescar el dashboard si está abierto
             if (typeof window.refreshRDADashboard === 'function') {
                 window.refreshRDADashboard();
             }
 
-        } catch (error) {
-            console.error("[RDA Parser] Error fatal:", error);
+        } catch (err) {
+            console.error('[RDA Parser] ❌ Error fatal en rpcUpsert:', err);
             if (typeof hideOverlay === 'function') hideOverlay();
-            if (typeof showToast === 'function') showToast(error.message, false, 'bad');
+            if (typeof showToast === 'function') showToast(err.message || 'Error inesperado al subir datos', false, 'bad');
         }
     }
 }
