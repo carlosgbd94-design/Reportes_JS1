@@ -1122,7 +1122,7 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             let imgChart1Base64 = '';
             let titleChart1 = '';
             
-            if (isSingleUnit || _rdaState.esquema === 'basico') {
+            if (isSingleUnit) {
                 imgChart1Base64 = _rdaCharts.d ? _rdaCharts.d.toBase64Image() : '';
                 titleChart1 = "DISTRIBUCIÓN DE AVANCE";
             } else {
@@ -1346,7 +1346,7 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             // ==========================================
             // SECCIÓN DE GRÁFICAS
             // ==========================================
-            const chartSectionHeight = 85;
+            const chartSectionHeight = 110;
             const cardWidth = 117.2;
             const gap = 15;
 
