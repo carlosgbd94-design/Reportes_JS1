@@ -1000,11 +1000,12 @@
 
     // Check if right column is active, to launch the exclusive mobile app container instead
     const checkAppLifecycle = () => {
-        const rightColumn = document.getElementById('rightColumn');
         const loginWrapper = document.getElementById('loginWrapper');
         const mobileApp = document.getElementById('mobileAppContainer');
 
-        if (rightColumn && !rightColumn.classList.contains('hidden') && rightColumn.style.display !== 'none') {
+        const isLoggedIn = loginWrapper && (loginWrapper.style.display === 'none' || loginWrapper.hidden);
+
+        if (isLoggedIn) {
             // Logged in!
             initMobileApp();
             mobileApp?.classList.remove('hidden');
@@ -1016,10 +1017,10 @@
     };
 
     // Setup target observers instead of global document.body observers to prevent infinite loops.
-    const rightColumn = document.getElementById('rightColumn');
-    if (rightColumn) {
+    const loginWrapper = document.getElementById('loginWrapper');
+    if (loginWrapper) {
         const observer = new MutationObserver(checkAppLifecycle);
-        observer.observe(rightColumn, { attributes: true, attributeFilter: ['style', 'class'] });
+        observer.observe(loginWrapper, { attributes: true, attributeFilter: ['style', 'hidden'] });
     }
 
     // Initial check
