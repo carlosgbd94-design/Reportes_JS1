@@ -818,13 +818,17 @@
     height: 56px !important;
     border-radius: 50% !important;
     border: none !important;
-    display: flex !important;
+    display: flex;
     align-items: center !important;
     justify-content: center !important;
     color: #ffffff !important;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2) !important;
     cursor: pointer !important;
     transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.touch-ui .mobile-btn-circle.hidden {
+    display: none !important;
 }
 
 .touch-ui .mobile-btn-circle:active {
@@ -916,14 +920,31 @@
 .touch-ui .dock-indicator {
     position: absolute !important;
     width: 80px !important;
-    height: 56px !important;
-    border-radius: 28px !important;
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    top: 8px !important;
+    height: 60px !important;
+    border-radius: 30px !important;
+    top: 6px !important;
     pointer-events: none !important;
-    z-index: 1 !important;
-    transition: left 0.4s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.3s ease !important;
+    z-index: 2 !important;
+    will-change: transform, left !important;
+    transform-origin: center center !important;
+    transition: left 0.5s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.3s ease !important;
+    overflow: hidden !important;
+}
+
+.touch-ui .dock-indicator-inner {
+    position: absolute !important;
+    inset: 0 !important;
+    border-radius: inherit !important;
+    z-index: 3 !important;
+    pointer-events: none !important;
+    backdrop-filter: url(#dockGlassFilter) !important;
+    -webkit-backdrop-filter: url(#dockGlassFilter) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.5),
+        inset 0 2px 5px rgba(255, 255, 255, 0.3),
+        inset 0 0 20px rgba(255, 255, 255, 0.1) !important;
 }
 
 /* Animations */
@@ -943,4 +964,8 @@
 
 .touch-ui .animate-slideIn {
     animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
+.touch-ui .appFooter {
+    display: none !important;
 }
