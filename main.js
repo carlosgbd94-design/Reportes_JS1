@@ -806,6 +806,8 @@ const NOTIF_PREF_KEYS = {
 
 let NOTIFICATIONS_CHANNEL = null;
 let PINOL_SOLICITUDES_CHANNEL = null;
+let PRESENCE_CHANNEL = null;
+let ACTIVE_USERS = {};
 
 function initNotificationsRealtime() {
   if (!window.supabase || !TOKEN || !USER) return;
@@ -875,6 +877,7 @@ function startNotificationsAutoRefresh() {
   stopNotificationsAutoRefresh();
   initNotificationsRealtime();
   initPinolRealtime();
+  initPresenceRealtime();
 }
 
 function stopNotificationsAutoRefresh() {
@@ -896,6 +899,78 @@ function stopNotificationsAutoRefresh() {
     }
     PINOL_SOLICITUDES_CHANNEL = null;
   }
+  if (PRESENCE_CHANNEL) {
+    try { window.supabase.removeChannel(PRESENCE_CHANNEL); } catch (e) {}
+    PRESENCE_CHANNEL = null;
+  }
+}
+
+function initPresenceRealtime() {
+  if (!window.supabase || !TOKEN || !USER) return;
+  
+  if (PRESENCE_CHANNEL) {
+    try { window.supabase.removeChannel(PRESENCE_CHANNEL); } catch (e) {}
+    PRESENCE_CHANNEL = null;
+  }
+  
+  PRESENCE_CHANNEL = window.supabase.channel('global_presence', {
+    config: {
+      presence: { key: USER.usuario }
+    }
+  });
+  
+  PRESENCE_CHANNEL.on('presence', { event: 'sync' }, () => {
+    ACTIVE_USERS = PRESENCE_CHANNEL.presenceState();
+    renderActiveUsers();
+  }).subscribe(async (status) => {
+    if (status === 'SUBSCRIBED') {
+      await PRESENCE_CHANNEL.track({
+        user: USER.usuario,
+        nombre: USER.nombre || USER.usuario,
+        rol: USER.rol,
+        clues: USER.clues || 'N/A'
+      });
+    }
+  });
+}
+
+function renderActiveUsers() {
+  const activeUsersCount = document.getElementById('activeUsersCount');
+  const activeUsersTbody = document.getElementById('activeUsersTbody');
+  if (!activeUsersCount || !activeUsersTbody) return;
+  
+  let totalUsers = 0;
+  let html = '';
+  
+  for (const [key, presences] of Object.entries(ACTIVE_USERS)) {
+    if (presences.length > 0) {
+      totalUsers++;
+      const data = presences[0];
+      let roleColor = 'text-primary/70';
+      if (data.rol === 'ADMIN') roleColor = 'text-red-500';
+      else if (data.rol === 'MUNICIPAL') roleColor = 'text-blue-500';
+      
+      html += `
+        <tr class="hover:bg-primary/5 transition-colors">
+          <td class="px-6 py-3 border-b border-outline-variant/10 text-xs font-bold text-primary">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-green-500"></span>
+              ${data.nombre || data.user}
+            </div>
+          </td>
+          <td class="px-6 py-3 border-b border-outline-variant/10 text-[10px] font-black tracking-widest uppercase ${roleColor}">${data.rol}</td>
+          <td class="px-6 py-3 border-b border-outline-variant/10 text-xs text-primary/70">${data.clues}</td>
+        </tr>
+      `;
+    }
+  }
+  
+  if (totalUsers === 0) {
+    html = `<tr><td colspan="3" class="text-center py-4 text-xs font-medium text-primary/50">Solo tú estás conectado</td></tr>`;
+  }
+  
+  activeUsersCount.textContent = `${totalUsers} En línea`;
+  activeUsersTbody.innerHTML = html;
 }
 
 function readNotifPrefs() {
@@ -4957,22 +5032,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
         const { error } = await supabase.from('pinol_solicitudes').insert(record);
         if (error) throw error;
 
-        // Notificación para MUNICIPAL / ADMIN de que hay nueva solicitud
-        await supabase.from('notificaciones').insert({
-          id: 'NOTIF:PINOL_REQ:' + record.id,
-          created_ts: new Date().toISOString(),
-          created_date: todayYmdLocal(),
-          from_usuario: USER.usuario,
-          from_rol: USER.rol,
-          target_scope: 'MUNICIPIO',
-          target_municipio: record.municipio,
-          target_clues: record.clues,
-          title: 'Nueva solicitud de pinol',
-          message: `La unidad ${record.unidad} ha solicitado ${record.solicitud_botellas} botella(s) de Pinol.`,
-          status: 'UNREAD',
-          meta_json: JSON.stringify({ source: 'PINOL', event: 'PINOL_SOLICITADO', pinol_id: record.id })
-        }).catch(err => console.warn("[savepinol] notif insert failed:", err));
-
+        // La notificación se genera automáticamente en Supabase mediante Trigger (notify_admin_on_pinol)
         return { ok: true };
       }
 
@@ -9626,7 +9686,43 @@ function renderCaptureSummary(data) {
 
   renderCapturadasOnly(capturadas);
   renderFaltantesOnly(faltantes);
+  
+  window.currentFaltantesWhatsApp = faltantes;
+  window.currentTipoWhatsApp = tipo;
 }
+
+window.generateWhatsAppTemplate = function() {
+  if (!window.currentFaltantesWhatsApp || window.currentFaltantesWhatsApp.length === 0) {
+    Swal.fire('Sin faltantes', 'No hay unidades pendientes para copiar.', 'info');
+    return;
+  }
+  
+  let titulo = "Pendientes";
+  if (window.currentTipoWhatsApp === "BIO") titulo = "Pedido de biológico";
+  else if (window.currentTipoWhatsApp === "CONS") titulo = "Consumibles";
+  else if (window.currentTipoWhatsApp === "SR") titulo = "Existencia de biológico";
+  
+  let texto = `${titulo}\n\n`;
+  window.currentFaltantesWhatsApp.forEach(r => {
+    const unitName = (r.unidad || '').toUpperCase().trim();
+    texto += `*${unitName} - PENDIENTE*\n`;
+  });
+  
+  navigator.clipboard.writeText(texto).then(() => {
+    Swal.fire({
+      icon: 'success',
+      title: '¡Copiado!',
+      text: 'La plantilla se ha copiado al portapapeles lista para pegar en WhatsApp.',
+      timer: 2000,
+      showConfirmButton: false,
+      toast: true,
+      position: 'top-end'
+    });
+  }).catch(err => {
+    console.error("Error copiando al portapapeles:", err);
+    Swal.fire('Error', 'No se pudo copiar el texto automáticamente.', 'error');
+  });
+};
 
 function populateHistoryMunicipioFilter(user) {
   const container = $("filterMunicipioContainer");

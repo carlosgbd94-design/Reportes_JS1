@@ -193,7 +193,7 @@
             style="--glass-icon-color: #4338ca; --corner-radius: 100px;">
             <div class="GlassContent liquidGL header-liquid-glass">
               <button class="header-action-btn" id="btnUploadRdaCsv" data-tooltip="Subir Archivo SIS (CSV)"
-                style="display:none;">
+                title="Cargar Reporte de Sistema (CSV)" style="display:none;" onclick="document.getElementById('modalUploadCSV').classList.add('show')">
                 <span class="material-symbols-rounded">upload_file</span>
               </button>
             </div>
@@ -2112,11 +2112,25 @@
             </div>
 
             <div>
-              <div class="sectionHeader" style="border-left-color: var(--warn);">
+              <div class="sectionHeader" style="border-left-color: var(--warn); display: flex; justify-content: space-between; align-items: center;">
                 <div class="sectionTitleWrap" style="display: flex; align-items: center; gap: 8px;">
                   <span class="material-symbols-rounded" style="color: var(--warn); font-size: 20px;">pending</span>
                   <h3 style="font-size: 13px; font-weight: 800; color: #475569; margin: 0; font-family: inherit;">Faltantes por capturar</h3>
                 </div>
+                <button onclick="generateWhatsAppTemplate()" title="Copiar plantilla para WhatsApp" class="whatsapp-copy-btn" style="background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; outline: none; position: relative; width: 34px; height: 34px; border-radius: 50%;">
+                  <style>
+                    .whatsapp-copy-btn { overflow: hidden; transition: background-color 0.2s; }
+                    .whatsapp-copy-btn:hover { background-color: #25D36615; }
+                    .whatsapp-copy-btn .icon-wa, .whatsapp-copy-btn .icon-copy { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: absolute; display: flex; align-items: center; justify-content: center; }
+                    .whatsapp-copy-btn .icon-copy { opacity: 0; transform: scale(0.5) rotate(-45deg); color: #25D366; font-size: 20px; }
+                    .whatsapp-copy-btn:hover .icon-wa { opacity: 0; transform: scale(0.5) rotate(45deg); }
+                    .whatsapp-copy-btn:hover .icon-copy { opacity: 1; transform: scale(1) rotate(0deg); }
+                  </style>
+                  <span class="icon-wa">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                  </span>
+                  <span class="material-symbols-rounded icon-copy">content_copy</span>
+                </button>
               </div>
 
               <div class="tableWrap captureTableDesktop">
@@ -2539,6 +2553,11 @@
                   <span class="material-symbols-rounded">verified_user</span>
                   <span>Seguridad</span>
                 </button>
+
+                <button class="nav-tab" id="tabAdminUsuariosActivos" onclick="activateAdminSubPanel('usuarios_activos')">
+                  <span class="material-symbols-rounded text-green-500">sensors</span>
+                  <span>En Línea</span>
+                </button>
               </div>
             </div>
 
@@ -2791,6 +2810,39 @@
 
             </div>
           </div>
+
+          <!-- SUB-PANEL 4: USUARIOS ACTIVOS -->
+          <div id="adminSection_usuarios_activos"
+            class="admin-sub-panel hide animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div class="bg-surface/50 rounded-[32px] overflow-hidden border border-outline-variant/30 shadow-sm">
+              <div
+                class="p-6 bg-primary/5 border-b border-outline-variant/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                  <span class="material-symbols-rounded text-green-500 text-[24px] animate-pulse">sensors</span>
+                  <h4 class="text-[14px] font-black text-primary m-0 uppercase tracking-widest">Usuarios Activos en Tiempo Real</h4>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="px-3 py-1 bg-green-500/10 text-green-600 rounded-full text-xs font-black shadow-sm" id="activeUsersCount">0 En línea</span>
+                </div>
+              </div>
+
+              <div class="overflow-x-auto min-h-[400px] p-6">
+                <table class="w-full text-left border-collapse bg-white/50 rounded-2xl overflow-hidden shadow-sm">
+                  <thead>
+                    <tr class="bg-primary/5">
+                      <th class="px-6 py-4 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">Usuario</th>
+                      <th class="px-6 py-4 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">Rol</th>
+                      <th class="px-6 py-4 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">CLUES</th>
+                    </tr>
+                  </thead>
+                  <tbody id="activeUsersTbody" class="divide-y divide-outline-variant/20">
+                    <tr><td colspan="3" class="text-center py-8 text-xs font-medium text-primary/50">Cargando datos en tiempo real...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -3306,6 +3358,86 @@
             Confirmar entrega y notificar
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ MODAL UPLOAD CSV (SIS) -->
+  <div id="modalUploadCSV" class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible" aria-hidden="true">
+    <div class="w-full max-w-[600px] bg-white border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100 flex flex-col max-h-[90vh]">
+      <!-- Header -->
+      <div class="flex items-center justify-between p-6 bg-primary/5 border-b border-outline-variant/20">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <span class="material-symbols-rounded text-primary">cloud_upload</span>
+          </div>
+          <div>
+            <h3 class="text-[16px] font-black text-primary m-0 tracking-tight">Carga de Reporte SIS</h3>
+            <p class="text-[11px] font-medium text-primary/60 m-0">Formato requerido: .csv delimitado por comas</p>
+          </div>
+        </div>
+        <button type="button" class="w-8 h-8 flex items-center justify-center rounded-full bg-surface-variant/50 text-primary hover:bg-error hover:text-error-on transition-colors border-none cursor-pointer" onclick="document.getElementById('modalUploadCSV').classList.remove('show'); document.getElementById('rdaCsvInput').value = ''; document.getElementById('csvPreviewArea').style.display='none'; document.getElementById('csvDropZone').style.display='flex'; document.getElementById('btnConfirmUploadCSV').classList.add('opacity-50', 'pointer-events-none');">
+          <span class="material-symbols-rounded text-[18px]">close</span>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-6 overflow-y-auto">
+        <!-- Drop Zone -->
+        <div id="csvDropZone" class="w-full h-[200px] rounded-2xl border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-3 bg-surface-variant/20 transition-all cursor-pointer hover:border-primary hover:bg-primary/5" onclick="document.getElementById('rdaCsvInput').click()" ondragover="event.preventDefault(); this.classList.add('border-primary', 'bg-primary/10')" ondragleave="this.classList.remove('border-primary', 'bg-primary/10')" ondrop="event.preventDefault(); this.classList.remove('border-primary', 'bg-primary/10'); handleCsvDrop(event)">
+          <span class="material-symbols-rounded text-[40px] text-primary/50 pointer-events-none">upload_file</span>
+          <div class="text-center pointer-events-none">
+            <h4 class="text-[14px] font-bold text-primary m-0">Arrastra y suelta tu archivo CSV aquí</h4>
+            <p class="text-[12px] text-primary/60 m-0 mt-1">O haz clic para explorar en tu equipo</p>
+          </div>
+        </div>
+
+        <!-- Preview Area (Hidden initially) -->
+        <div id="csvPreviewArea" style="display: none;" class="flex flex-col gap-4">
+          <div class="p-4 bg-primary/5 rounded-2xl border border-primary/20 flex items-center gap-4">
+            <span class="material-symbols-rounded text-[32px] text-primary">csv</span>
+            <div class="flex-grow min-w-0">
+              <h4 id="csvFileName" class="text-[13px] font-bold text-primary m-0 truncate w-full">archivo.csv</h4>
+              <p id="csvFileSize" class="text-[11px] font-medium text-primary/60 m-0">0 KB</p>
+            </div>
+            <button class="flex-shrink-0 text-[11px] font-bold text-error bg-error/10 px-3 py-1 rounded-full border-none cursor-pointer hover:bg-error/20" onclick="document.getElementById('rdaCsvInput').value = ''; document.getElementById('csvPreviewArea').style.display='none'; document.getElementById('csvDropZone').style.display='flex'; document.getElementById('btnConfirmUploadCSV').classList.add('opacity-50', 'pointer-events-none');">Quitar</button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-surface-variant/30 p-4 rounded-2xl border border-outline-variant/30 text-center">
+              <span class="block text-[11px] font-bold uppercase tracking-widest text-primary/60 mb-1">Válidos</span>
+              <span id="csvValidCount" class="block text-[24px] font-black text-green-600">0</span>
+            </div>
+            <div class="bg-surface-variant/30 p-4 rounded-2xl border border-outline-variant/30 text-center">
+              <span class="block text-[11px] font-bold uppercase tracking-widest text-primary/60 mb-1">Ignorados</span>
+              <span id="csvIgnoredCount" class="block text-[24px] font-black text-primary/40">0</span>
+            </div>
+          </div>
+          
+          <div id="csvSchemaError" class="p-4 bg-error/10 border border-error/20 rounded-xl text-[12px] font-medium text-error flex items-start gap-2" style="display: none;">
+             <span class="material-symbols-rounded text-[18px]">error</span>
+             <span id="csvSchemaErrorText">El archivo no tiene el formato requerido.</span>
+          </div>
+
+          <div class="p-4 bg-amber-50 rounded-2xl border border-amber-200" id="csvMonthsWarning" style="display: none;">
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-rounded text-amber-500 mt-0.5">warning</span>
+              <div>
+                <h5 class="text-[12px] font-bold text-amber-900 m-0 mb-1">Aviso de Sobrescritura</h5>
+                <p class="text-[11px] font-medium text-amber-700/80 m-0 leading-relaxed">El archivo contiene datos de los meses: <strong id="csvMonthsList"></strong>. Al confirmar, se eliminarán los registros previos de esos meses antes de insertar los nuevos para evitar duplicados.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="p-6 bg-surface-variant/20 border-t border-outline-variant/20 flex justify-end gap-3">
+        <button type="button" class="h-10 px-5 rounded-full bg-white border border-outline-variant/50 text-[12px] font-bold text-primary hover:bg-surface-variant transition-colors cursor-pointer" onclick="document.getElementById('modalUploadCSV').classList.remove('show'); document.getElementById('rdaCsvInput').value = ''; document.getElementById('csvPreviewArea').style.display='none'; document.getElementById('csvDropZone').style.display='flex'; document.getElementById('btnConfirmUploadCSV').classList.add('opacity-50', 'pointer-events-none');">Cancelar</button>
+        <button type="button" id="btnConfirmUploadCSV" class="h-10 px-6 rounded-full bg-primary text-primary-on text-[12px] font-bold shadow-sm transition-all hover:translate-y-[-1px] hover:shadow-md cursor-pointer border-none flex items-center gap-2 opacity-50 pointer-events-none">
+          <span class="material-symbols-rounded text-[18px]">check_circle</span>
+          Confirmar y Subir
+        </button>
       </div>
     </div>
   </div>
