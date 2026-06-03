@@ -1101,20 +1101,7 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             const muni = document.getElementById('rdaFilterMunicipio')?.value || 'JURISDICCIÓN SANITARIA 1';
             const maxMesLabel = MONTH_NAMES[_rdaCache.maxMes-1] || 'FINAL';
             
-            // 2. Obtener imágenes base64 de las gráficas
-            let imgChart1Base64 = '';
-            let titleChart1 = '';
-            
-            if (isSingleUnit || _rdaState.esquema === 'basico') {
-                imgChart1Base64 = _rdaCharts.d ? _rdaCharts.d.toBase64Image() : '';
-                titleChart1 = "DISTRIBUCIÓN DE AVANCE";
-            } else {
-                imgChart1Base64 = _rdaCharts.total ? _rdaCharts.total.toBase64Image() : '';
-                titleChart1 = "AVANCE JURISDICCIONAL TOTAL";
-            }
-            const imgTopBase64 = _rdaCharts.b ? _rdaCharts.b.toBase64Image() : '';
-
-            // 3. Extraer estructura y datos de la tabla real
+            // 2. Extraer estructura y datos de la tabla real
             const tablaOriginal = document.querySelector('#rdaDetailTable');
             if (!tablaOriginal) return reject("Tabla de datos no encontrada.");
 
@@ -1130,6 +1117,19 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             tableHeaders.splice(0, 3);
             
             const isSingleUnit = tableRowsRaw.length === 1;
+
+            // 3. Obtener imágenes base64 de las gráficas
+            let imgChart1Base64 = '';
+            let titleChart1 = '';
+            
+            if (isSingleUnit || _rdaState.esquema === 'basico') {
+                imgChart1Base64 = _rdaCharts.d ? _rdaCharts.d.toBase64Image() : '';
+                titleChart1 = "DISTRIBUCIÓN DE AVANCE";
+            } else {
+                imgChart1Base64 = _rdaCharts.total ? _rdaCharts.total.toBase64Image() : '';
+                titleChart1 = "AVANCE JURISDICCIONAL TOTAL";
+            }
+            const imgTopBase64 = _rdaCharts.b ? _rdaCharts.b.toBase64Image() : '';
             
             const tablesGrouped = [];
             let currentBody = [];
