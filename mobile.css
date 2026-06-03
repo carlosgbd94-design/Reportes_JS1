@@ -1,394 +1,878 @@
 /**
- * JS1 Reportes - Mobile Adaptation Layer (MAL)
- * All rules must start with .touch-ui
+ * JS1 Reportes - Mobile Exclusive Stylesheet (Touch-UI)
+ * Premium High-Fidelity Responsive Architecture.
+ * Targets touch devices strictly under the body.touch-ui namespace.
  */
 
-/* A. Touch targets - Minimum 44px-48px for interactive elements */
-.touch-ui button,
-.touch-ui .header-action-btn,
-.touch-ui .tab-btn,
-.touch-ui select,
-.touch-ui input {
-    min-height: 48px !important;
-}
-
-/* B. Layout Stacking - Force 1 column on touch devices for main grids */
-.touch-ui .flex-col.lg\:flex-row {
-    flex-direction: column !important;
-}
-
-.touch-ui .grid {
-    grid-template-columns: 1fr !important;
-}
-
-/* Specific stacking for Welcome Hub */
-.touch-ui #welcomeBlock .flex-col.md\:flex-row {
-    flex-direction: column !important;
-    gap: 2rem !important;
-}
-
-/* C. Tables - Momentum scrolling and overflow */
-.touch-ui .overflow-x-auto {
-    -webkit-overflow-scrolling: touch !important;
-    scroll-snap-type: x proximity !important;
-    padding-bottom: 8px !important;
-}
-
-.touch-ui table {
-    display: block !important;
-    width: 100% !important;
-    overflow-x: auto !important;
-}
-
-/* D. Forms Spacing */
-.touch-ui .modern-input-group {
-    margin-bottom: 1rem !important;
-}
-
-.touch-ui .space-y-6>*+* {
-    margin-top: 1.5rem !important;
-}
-
-/* FASE 4: Navegación */
-.touch-ui #mainHeader {
-    top: 0 !important;
-    inset-x: 0 !important;
-    padding: 0 !important;
-}
-
-.touch-ui #logoCluster {
-    padding-left: 8px !important;
-    padding-right: 4px !important;
-    max-width: 55% !important;
-    flex-shrink: 1 !important;
-    min-width: 0 !important;
-}
-
-.touch-ui #logoA,
-.touch-ui #logoB {
-    height: clamp(22px, 6vw, 32px) !important;
-    flex-shrink: 0 !important;
-}
-
-.touch-ui #logoCluster .GlassContent {
-    padding: 6px 10px !important;
-    gap: clamp(4px, 1.5vw, 8px) !important;
-    overflow: hidden !important;
-}
-
-.touch-ui #logoCluster h1 {
-    font-size: clamp(12px, 3.8vw, 16px) !important;
-    white-space: nowrap !important;
-    text-overflow: ellipsis !important;
-    overflow: hidden !important;
-    line-height: 1.2 !important;
-}
-
-/* Force-show elements hidden by Tailwind's sm: responsive classes */
-.touch-ui #logoB {
-    display: block !important;
-}
-
-.touch-ui #logoCluster h1 span.hidden {
-    display: inline !important;
-    font-size: clamp(10px, 3vw, 14px) !important;
-}
-
-.touch-ui #logoCluster p.hidden {
-    display: block !important;
-    font-size: clamp(6px, 1.8vw, 9px) !important;
-    margin-top: 1px !important;
-}
-
-/* Very small screens: hide subtitle, shrink further */
-@media (max-width: 360px) {
-    .touch-ui #logoCluster p.hidden {
-        display: none !important;
-    }
-    .touch-ui #logoB {
-        height: 20px !important;
-    }
-    .touch-ui #logoCluster h1 {
-        font-size: 11px !important;
-    }
-}
-
-.touch-ui #userControlsGroup {
-    gap: clamp(4px, 2vw, 12px) !important;
-}
-
-.touch-ui #headerActions {
-    gap: clamp(2px, 1vw, 6px) !important;
-}
-
-.touch-ui .header-action-btn {
-    width: clamp(36px, 10vw, 44px) !important;
-    height: clamp(36px, 10vw, 44px) !important;
-}
-
-.touch-ui #btnProfileToggle {
-    height: clamp(36px, 10vw, 44px) !important;
-    padding: 0 clamp(8px, 2.5vw, 12px) !important;
-    border-radius: 16px !important;
-}
-
-.touch-ui #profileDropdownContainer .GlassContainer {
-    --corner-radius: 16px !important;
-}
-
-/* FASE 5: Formularios */
-.touch-ui .modern-input-group input {
-    height: 56px !important;
-    padding-left: 52px !important;
-    font-size: 16px !important;
-    /* Prevent iOS zoom on focus */
-}
-
-.touch-ui .modern-input-group .input-icon {
-    left: 16px !important;
-}
-
-.touch-ui #captureContentArea>div {
-    gap: 2rem !important;
-}
-
-.touch-ui .btn-premium-action {
-    height: 60px !important;
-    font-size: 14px !important;
-}
-
-/* Stacking for Pedido form specifically */
-.touch-ui #formBIO .flex-col.lg\:flex-row {
-    gap: 1.5rem !important;
-}
-
-/* FASE 6: Tablas */
-.touch-ui .overflow-x-auto {
-    display: block !important;
-    width: 100% !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    scrollbar-width: none !important;
-}
-
-.touch-ui .overflow-x-auto::-webkit-scrollbar {
+/* ─── HEADER LOGO MIGRATION & SIMPLIFICATION ─── */
+.touch-ui #logoDivider,
+.touch-ui #logoText {
     display: none !important;
 }
 
-.touch-ui table th,
-.touch-ui table td {
-    padding: 12px 16px !important;
-    min-width: 120px !important;
+.touch-ui #logoB {
+    display: block !important;
+    height: 38px !important;
+    width: auto !important;
+    margin: 0 auto !important;
 }
 
-/* FASE: Unified Overlay System (Retrofit) */
-.touch-ui .overlay,
-.touch-ui .modal-backdrop {
-    backdrop-filter: blur(8px) !important;
-    background: rgba(0, 0, 0, 0.4) !important;
+.touch-ui #logoCluster {
+    display: flex !important;
+    width: 100% !important;
+    justify-content: center !important;
+    max-width: none !important;
+    flex: 1 !important;
 }
 
-/* TIPO A: Anchored Floating Cards (Notifications & Explorer) */
-.touch-ui #topNotifDropdown,
-.touch-ui #archivosDropdown {
-    position: fixed !important;
-    border-radius: 20px !important;
-    border: 1px solid rgba(255, 255, 255, 0.4) !important;
-    box-shadow: 0 12px 32px rgba(0, 51, 102, 0.25) !important;
-    background: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(20px) !important;
-    z-index: 10005 !important;
-    max-height: calc(100dvh - 140px) !important;
-    overflow-y: auto !important;
-    overscroll-behavior: contain !important;
+.touch-ui #logoCluster .GlassContent {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
     padding: 0 !important;
 }
 
-/* Fix: Ensure archivos internals are visible on mobile */
-.touch-ui #archivosDropdown .topNotifCard {
-    max-height: none !important;
-    overflow: visible !important;
-    min-height: 0 !important;
-}
-
-.touch-ui #archivosDropdown .topNotifBody {
-    max-height: 50vh !important;
-    overflow-y: auto !important;
-    min-height: 100px !important;
-}
-
-.touch-ui #archivosDropdown #archivosContainer {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
-    min-height: 40px !important;
-}
-
-/* TIPO B: Floating Action Modals */
-.touch-ui #uploadFilesOverlay .modalContainer {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    width: clamp(300px, 90vw, 500px) !important;
-    max-height: 85dvh !important;
-    border-radius: 28px !important;
-    padding: 20px !important;
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.3) !important;
-    z-index: 10006 !important;
-}
-
-/* PATCH: Header Mobile Fix */
-.touch-ui #mainHeader>div {
-    flex-wrap: nowrap !important;
+.touch-ui #mainHeader > div {
     justify-content: space-between !important;
-    gap: clamp(4px, 1.5vw, 8px) !important;
-    padding: clamp(4px, 1.5vw, 8px) !important;
+    padding: 10px 16px !important;
 }
 
-/* PATCH: Content Separation */
-.touch-ui #welcomeBlock {
-    margin-top: 24px !important;
+.touch-ui #userControlsGroup {
+    flex-shrink: 0 !important;
 }
 
-/* PATCH: Vertical Rhythm */
-.touch-ui #rightColumn>div,
-.touch-ui #captureContentArea>div {
-    margin-bottom: 24px !important;
+/* ─── APP CONTAINERS & ROOT ─── */
+.touch-ui body {
+    background-color: #f8fafc !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    -webkit-tap-highlight-color: transparent;
 }
 
-.touch-ui .modern-input-group {
-    margin-bottom: 20px !important;
+.touch-ui #mobileAppContainer {
+    width: 100% !important;
+    max-width: 600px !important;
+    margin: 0 auto !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
 }
 
-.touch-ui .btn-premium-action {
-    margin-top: 32px !important;
-    margin-bottom: 16px !important;
+/* ─── WELCOME & COMPLIANCE CARD ─── */
+.touch-ui .mobile-welcome-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%) !important;
+    border: 1px solid rgba(15, 23, 42, 0.08) !important;
+    border-radius: 28px !important;
+    padding: 24px !important;
+    box-shadow: 0 10px 30px rgba(0, 51, 102, 0.04) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
 }
 
-.touch-ui #srCaptureTable,
-.touch-ui #srCaptureTbody tr {
-    margin-bottom: 12px !important;
+.touch-ui .mobile-welcome-header {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    text-align: left !important;
 }
 
-/* FASE: Captura Mobile Optimization */
-.touch-ui #srCaptureTbody tr,
-.touch-ui #bioTbody tr {
-    border-bottom: 8px solid var(--md-sys-color-surface-container) !important;
+.touch-ui .mobile-eyebrow {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.2em !important;
+    color: #64748b !important;
+    margin-bottom: 6px !important;
 }
 
-.touch-ui #srCaptureTbody td,
-.touch-ui #bioTbody td {
-    padding: 16px 12px !important;
-    vertical-align: middle !important;
-}
-
-/* FASE: Priority Columns Layout */
-.touch-ui .bioNameCell,
-.touch-ui #srCaptureTbody td:first-child {
-    min-width: 140px !important;
-    width: 140px !important;
+.touch-ui .mobile-welcome-header h2 {
+    font-size: 24px !important;
     font-weight: 900 !important;
-    white-space: normal !important;
-    word-break: keep-all !important;
+    color: #0f172a !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
+    letter-spacing: -0.02em !important;
 }
 
-.touch-ui .bioExistenciaCell,
-.touch-ui .bioPedidoCell,
-.touch-ui .bioMetricCell {
-    min-width: 100px !important;
+/* Compliance Wrap */
+.touch-ui .mobile-compliance-wrap {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+    border-radius: 20px !important;
+    padding: 16px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02) !important;
 }
 
-/* Hit areas for quantity inputs */
-.touch-ui .sr-cantidad-input,
-.touch-ui .bioInput {
+.touch-ui .mobile-compliance-kpi {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+.touch-ui .mobile-kpi-icon {
+    font-size: 24px !important;
+    color: #0284c7 !important;
+    background: rgba(2, 132, 199, 0.08) !important;
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.touch-ui .mobile-kpi-text {
+    display: flex !important;
+    flex-direction: column !important;
+    line-height: 1.1 !important;
+}
+
+.touch-ui .mobile-kpi-label {
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.1em !important;
+    color: #94a3b8 !important;
+}
+
+.touch-ui .mobile-kpi-val {
+    font-size: 18px !important;
+    font-weight: 900 !important;
+    color: #0f172a !important;
+    margin-top: 2px !important;
+}
+
+/* Compliance Medals Row */
+.touch-ui .mobile-medals-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+.touch-ui .chip-medal-icon {
+    font-size: 20px !important;
+    display: inline-block !important;
+}
+
+/* Fact Card */
+.touch-ui .mobile-fact-card {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 14px !important;
+    background: rgba(14, 165, 233, 0.03) !important;
+    border: 1px solid rgba(14, 165, 233, 0.1) !important;
+    border-radius: 20px !important;
+    padding: 16px !important;
+    text-align: left !important;
+}
+
+.touch-ui .mobile-fact-icon-bg {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 12px !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(14, 165, 233, 0.15) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+}
+
+.touch-ui .mobile-fact-content {
+    display: flex !important;
+    flex-direction: column !important;
+    min-width: 0 !important;
+}
+
+.touch-ui .mobile-fact-title {
+    font-size: 10px !important;
+    font-weight: 900 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.1em !important;
+    color: #0284c7 !important;
+    margin-bottom: 2px !important;
+}
+
+.touch-ui .mobile-fact-body {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #334155 !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+}
+
+/* ─── ROLE TABS CONTROL (Segmented Control) ─── */
+.touch-ui .mobile-role-tabs-container {
+    display: flex !important;
+    background: #e2e8f0 !important;
+    border-radius: 16px !important;
+    padding: 4px !important;
+    margin: 8px 0 !important;
+    gap: 4px !important;
+}
+
+.touch-ui .mobile-role-tab {
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    height: 44px !important;
+    border: none !important;
+    background: transparent !important;
+    border-radius: 12px !important;
+    color: #64748b !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+}
+
+.touch-ui .mobile-role-tab.active {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05) !important;
+}
+
+.touch-ui .mobile-role-tab span.material-symbols-rounded {
+    font-size: 20px !important;
+}
+
+/* ─── FORM SECTION HEADERS ─── */
+.touch-ui .mobile-section-header {
+    display: flex !important;
+    align-items: center !important;
+    gap: 16px !important;
+    padding: 8px 4px !important;
+    text-align: left !important;
+    margin-top: 12px !important;
+}
+
+.touch-ui .mobile-section-emoji {
+    font-size: 32px !important;
+}
+
+.touch-ui .mobile-section-header h3 {
+    font-size: 18px !important;
+    font-weight: 900 !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    letter-spacing: -0.01em !important;
+}
+
+.touch-ui .mobile-section-header p {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: #64748b !important;
+    margin: 4px 0 0 0 !important;
+}
+
+/* ─── FORM CARD WRAPPER ─── */
+.touch-ui .mobile-input-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+    border-radius: 20px !important;
+    padding: 16px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    text-align: left !important;
+}
+
+.touch-ui .mobile-field-label {
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    color: #64748b !important;
+}
+
+.touch-ui .mobile-input-wrapper {
+    position: relative !important;
+    width: 100% !important;
+}
+
+.touch-ui .mobile-input-icon {
+    position: absolute !important;
+    left: 14px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    font-size: 20px !important;
+    color: #94a3b8 !important;
+    pointer-events: none !important;
+}
+
+.touch-ui .mobile-text-input {
+    width: 100% !important;
     height: 52px !important;
+    background: #f8fafc !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 14px !important;
+    padding: 0 16px 0 46px !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    box-sizing: border-box !important;
+    outline: none !important;
+    transition: all 0.2s ease !important;
+}
+
+.touch-ui .mobile-text-input:focus {
+    border-color: #0ea5e9 !important;
+    background: #ffffff !important;
+}
+
+/* ─── DYNAMIC CARDS LIST ─── */
+.touch-ui .mobile-cards-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    width: 100% !important;
+}
+
+/* Biológicos Cards */
+.touch-ui .mobile-batch-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(15, 23, 42, 0.06) !important;
+    border-radius: 24px !important;
+    padding: 18px !important;
+    box-shadow: 0 8px 24px rgba(0, 51, 102, 0.03) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+    text-align: left !important;
+    transition: transform 0.2s ease !important;
+}
+
+.touch-ui .mobile-card-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    border-bottom: 1.5px dashed #f1f5f9 !important;
+    padding-bottom: 10px !important;
+}
+
+.touch-ui .mobile-card-title-val {
+    font-size: 14px !important;
+    font-weight: 900 !important;
+    color: #003366 !important;
+    letter-spacing: -0.01em !important;
+}
+
+.touch-ui .mobile-card-actions {
+    display: flex !important;
+    gap: 8px !important;
+}
+
+.touch-ui .mobile-action-btn-mini {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 10px !important;
+    border: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.touch-ui .mobile-action-btn-mini.clone {
+    background: #f0f9ff !important;
+    color: #0284c7 !important;
+}
+
+.touch-ui .mobile-action-btn-mini.delete {
+    background: #fef2f2 !important;
+    color: #ef4444 !important;
+}
+
+.touch-ui .mobile-card-body {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+}
+
+.touch-ui .mobile-form-field {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+}
+
+.touch-ui .mobile-form-field label {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    color: #64748b !important;
+}
+
+.touch-ui .mobile-select-element {
+    width: 100% !important;
+    height: 48px !important;
+    background: #f8fafc !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    box-sizing: border-box !important;
+    outline: none !important;
+}
+
+.touch-ui .mobile-badge-label {
+    padding: 8px 12px !important;
+    border-radius: 10px !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    display: inline-block !important;
+    width: fit-content !important;
+}
+
+.touch-ui .mobile-badge-label.info {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.touch-ui .mobile-date-element {
+    width: 100% !important;
+    height: 48px !important;
+    background: #f8fafc !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    box-sizing: border-box !important;
+    outline: none !important;
+}
+
+/* Counter inputs */
+.touch-ui .mobile-counter-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    background: #f8fafc !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    height: 48px !important;
+}
+
+.touch-ui .mobile-counter-wrapper.large {
+    height: 56px !important;
+}
+
+.touch-ui .counter-btn {
+    width: 52px !important;
+    height: 100% !important;
+    border: none !important;
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+    font-size: 20px !important;
+    font-weight: 900 !important;
+    cursor: pointer !important;
+    transition: background 0.1s ease !important;
+}
+
+.touch-ui .counter-btn:active {
+    background: #cbd5e1 !important;
+}
+
+.touch-ui .mobile-number-input {
+    flex: 1 !important;
+    height: 100% !important;
+    border: none !important;
+    background: transparent !important;
+    font-size: 15px !important;
+    font-weight: 900 !important;
+    color: #0f172a !important;
+    outline: none !important;
+    box-sizing: border-box !important;
+}
+
+/* ─── ADD ROW BUTTON ─── */
+.touch-ui .mobile-btn-primary {
+    width: 100% !important;
+    height: 52px !important;
+    background: rgba(0, 51, 102, 0.08) !important;
+    border: 2px dashed rgba(0, 51, 102, 0.25) !important;
+    border-radius: 16px !important;
+    color: #003366 !important;
+    font-size: 13px !important;
+    font-weight: 900 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+/* ─── CONSUMIBLES QUANTITY CARDS ─── */
+.touch-ui .mobile-input-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+}
+
+.touch-ui .mobile-quantity-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+    border-radius: 20px !important;
+    padding: 14px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    text-align: center !important;
+}
+
+.touch-ui .qty-card-label {
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    color: #64748b !important;
+}
+
+.touch-ui .mobile-calc-card {
+    background: #f1f5f9 !important;
+    border: 1.5px dashed #cbd5e1 !important;
+    border-radius: 16px !important;
+    padding: 16px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+}
+
+.touch-ui .calc-label {
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    color: #475569 !important;
+}
+
+.touch-ui .calc-val {
+    font-size: 18px !important;
+    font-weight: 900 !important;
+    color: #0f172a !important;
+}
+
+/* ─── PEDIDO LOGISTICS & TOGGLE ─── */
+.touch-ui .mobile-info-banner {
+    background: #f0f9ff !important;
+    border: 1px solid #bae6fd !important;
+    border-radius: 20px !important;
+    padding: 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 14px !important;
+    text-align: left !important;
+}
+
+.touch-ui .mobile-info-banner span {
+    font-size: 24px !important;
+    color: #0284c7 !important;
+}
+
+.touch-ui .mobile-info-banner div {
+    display: flex !important;
+    flex-direction: column !important;
+    line-height: 1.3 !important;
+}
+
+.touch-ui .mobile-info-banner strong {
+    font-size: 14px !important;
+    font-weight: 900 !important;
+    color: #0369a1 !important;
+}
+
+.touch-ui .mobile-info-banner span#mobBioHintVal {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: #0284c7 !important;
+    margin-top: 2px !important;
+}
+
+/* Toggle Checkbox Card */
+.touch-ui .mobile-checkbox-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+    border-radius: 20px !important;
+    padding: 16px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    text-align: left !important;
+}
+
+.touch-ui .checkbox-text {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.touch-ui .checkbox-text strong {
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+}
+
+.touch-ui .checkbox-text p {
+    font-size: 10px !important;
+    color: #64748b !important;
+    margin: 4px 0 0 0 !important;
+    line-height: 1.2 !important;
+}
+
+/* Toggle Switch Styling */
+.touch-ui .mobile-toggle-switch {
+    position: relative !important;
+    display: inline-block !important;
+    width: 46px !important;
+    height: 26px !important;
+    flex-shrink: 0 !important;
+}
+
+.touch-ui .mobile-toggle-switch input {
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+.touch-ui .toggle-slider {
+    position: absolute !important;
+    cursor: pointer !important;
+    inset: 0 !important;
+    background-color: #cbd5e1 !important;
+    transition: .3s !important;
+    border-radius: 34px !important;
+}
+
+.touch-ui .toggle-slider:before {
+    position: absolute !important;
+    content: "" !important;
+    height: 18px !important;
+    width: 18px !important;
+    left: 4px !important;
+    bottom: 4px !important;
+    background-color: white !important;
+    transition: .3s !important;
+    border-radius: 50% !important;
+}
+
+.touch-ui .mobile-toggle-switch input:checked + .toggle-slider {
+    background-color: #0ea5e9 !important;
+}
+
+.touch-ui .mobile-toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(20px) !important;
+}
+
+/* Pedido Vaccine Card */
+.touch-ui .mobile-pedido-card {
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+    border-radius: 20px !important;
+    padding: 16px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    text-align: left !important;
+}
+
+.touch-ui .mobile-pedido-card.warning-glow {
+    border-color: #f59e0b !important;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.08) !important;
+}
+
+.touch-ui .pedido-card-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+
+.touch-ui .vaccine-name {
+    font-size: 15px !important;
+    font-weight: 900 !important;
+    color: #0f172a !important;
+}
+
+.touch-ui .warning-icon {
+    font-size: 20px !important;
+    color: #f59e0b !important;
+}
+
+.touch-ui .pedido-card-meta {
+    display: flex !important;
+    gap: 12px !important;
+}
+
+.touch-ui .meta-badge {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    padding: 6px 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+.touch-ui .meta-lbl {
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    color: #94a3b8 !important;
+}
+
+.touch-ui .meta-val {
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    color: #334155 !important;
+}
+
+.touch-ui .pedido-card-fields {
+    display: flex !important;
+    gap: 12px !important;
+}
+
+/* ─── PINOL TEXTAREA ─── */
+.touch-ui .mobile-textarea-wrapper {
+    position: relative !important;
+    width: 100% !important;
+}
+
+.touch-ui .mobile-textarea-icon {
+    position: absolute !important;
+    left: 14px !important;
+    top: 14px !important;
+    font-size: 20px !important;
+    color: #94a3b8 !important;
+    pointer-events: none !important;
+}
+
+.touch-ui .mobile-textarea {
+    width: 100% !important;
+    height: 100px !important;
+    background: #f8fafc !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 14px !important;
+    padding: 12px 16px 12px 46px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    box-sizing: border-box !important;
+    outline: none !important;
+    resize: none !important;
+    transition: all 0.2s ease !important;
+}
+
+.touch-ui .mobile-textarea:focus {
+    border-color: #0ea5e9 !important;
+    background: #ffffff !important;
+}
+
+/* ─── FLOATING COMMAND HUB ─── */
+.touch-ui .mobile-command-hub {
+    position: fixed !important;
+    bottom: 96px !important; /* Spaced nicely above the navigation dock */
+    right: 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    gap: 12px !important;
+    z-index: 100000 !important;
+}
+
+/* Status Chip */
+.touch-ui .mobile-status-chip {
+    background: #0f172a !important;
+    color: #ffffff !important;
+    border-radius: 12px !important;
+    padding: 6px 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    font-size: 11px !important;
+    font-weight: 900 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15) !important;
+    opacity: 0.9 !important;
+}
+
+.touch-ui .mobile-status-chip span.material-symbols-rounded {
     font-size: 16px !important;
 }
 
-.touch-ui .sr-bio-select,
-.touch-ui .sr-lote-select {
-    height: 52px !important;
+.touch-ui .mobile-actions-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
 }
 
-/* Headers readability */
-.touch-ui thead th {
-    padding: 12px !important;
-    font-size: 11px !important;
-    letter-spacing: 0.02em !important;
-    white-space: nowrap !important;
+/* Circle floating buttons */
+.touch-ui .mobile-btn-circle {
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 50% !important;
+    border: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #ffffff !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2) !important;
+    cursor: pointer !important;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
-.touch-ui .bioAlertWrap {
-    transform: scale(1.1) !important;
+.touch-ui .mobile-btn-circle:active {
+    transform: scale(0.9) !important;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   LIQUID GLASS DOCK - Pebble & Void Architecture
-   ═══════════════════════════════════════════════════════════════════════ */
+.touch-ui .mobile-btn-circle.save {
+    background: #10b981 !important; /* Emerald Save */
+}
 
-/* Dock Container: Dark translucent bar */
+.touch-ui .mobile-btn-circle.edit {
+    background: #0284c7 !important; /* Blue Edit */
+}
+
+.touch-ui .mobile-btn-circle.cancel {
+    background: #ef4444 !important; /* Red Cancel */
+}
+
+.touch-ui .mobile-btn-circle span {
+    font-size: 24px !important;
+}
+
+/* ─── DOCK NAVIGATION HIGHLIGHT ─── */
 .touch-ui #mobileCaptureDock {
     position: fixed !important;
-    bottom: 20px !important;
+    bottom: 12px !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
-    width: 92% !important;
-    max-width: 420px !important;
+    width: 94% !important;
+    max-width: 440px !important;
     height: 72px !important;
-    background: rgba(133, 133, 133, 0.233) !important;
+    background: rgba(15, 23, 42, 0.9) !important; /* Premium dark background */
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
     border-radius: 36px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: space-around !important;
     z-index: 999999 !important;
-    box-shadow:
-        0 30px 60px rgba(0, 0, 0, 0.6),
-        inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
     padding: 0 8px !important;
-    touch-action: none !important;
-    user-select: none !important;
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
 }
 
-/* Glass Indicator Bubble - The refractive element */
-.touch-ui .dock-indicator {
-    position: absolute !important;
-    width: 80px !important;
-    height: 60px !important;
-    border-radius: 30px !important;
-    top: 6px !important;
-    pointer-events: none !important;
-    z-index: 2 !important;
-    will-change: transform, left !important;
-    transform-origin: center center !important;
-    transition: left 0.5s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.3s ease !important;
-    overflow: hidden !important;
-}
-
-/* Inner div: THIS is what receives backdrop-filter */
-.touch-ui .dock-indicator-inner {
-    position: absolute !important;
-    inset: 0 !important;
-    border-radius: inherit !important;
-    z-index: 3 !important;
-    pointer-events: none !important;
-
-    /* THE KEY: backdrop-filter with SVG URL reference */
-    backdrop-filter: url(#dockGlassFilter) !important;
-    -webkit-backdrop-filter: url(#dockGlassFilter) !important;
-
-    /* Physical Glass Treatment */
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    box-shadow:
-        0 10px 30px rgba(0, 0, 0, 0.5),
-        inset 0 2px 5px rgba(255, 255, 255, 0.3),
-        inset 0 0 20px rgba(255, 255, 255, 0.1) !important;
-}
-
-/* Dock Items */
 .touch-ui .dock-item {
     display: flex !important;
     flex-direction: column !important;
@@ -396,545 +880,71 @@
     justify-content: center !important;
     background: transparent !important;
     border: none !important;
-    color: rgb(165 165 165 / 44%) !important;
-    flex: 1 !important;
+    color: rgba(255, 255, 255, 0.4) !important;
     height: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    flex: 1 !important;
     position: relative !important;
     z-index: 10 !important;
-    transition: all 0.3s ease !important;
-    text-decoration: none !important;
     gap: 4px !important;
     cursor: pointer !important;
-    pointer-events: none !important;
-    /* Dock handles all pointer events */
+    -webkit-tap-highlight-color: transparent !important;
 }
 
 .touch-ui .dock-item.active {
-    color: #202020 !important;
+    color: #ffffff !important;
 }
 
-.touch-ui .dock-item span,
-.touch-ui .dock-item .material-symbols-rounded {
-    font-size: 24px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    line-height: 1 !important;
-    display: block !important;
-    color: rgba(0, 51, 102, 0.45) !important;
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease !important;
+.touch-ui .dock-item span {
+    font-size: 22px !important;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
-.touch-ui .dock-item label {
-    color: rgba(0, 51, 102, 0.4) !important;
-}
-
-.touch-ui .dock-item.active span,
-.touch-ui .dock-item.active .material-symbols-rounded {
-    color: #003366 !important;
-    transform: scale(1.15) translateY(-2px) !important;
-    filter: drop-shadow(0 0 8px rgba(0, 51, 102, 0.25)) !important;
+.touch-ui .dock-item.active span {
+    transform: translateY(-2px) scale(1.15) !important;
+    color: #0ea5e9 !important;
 }
 
 .touch-ui .dock-item label {
-    font-size: 9px !important;
+    font-size: 8px !important;
     font-weight: 800 !important;
-    letter-spacing: 0.05em !important;
     text-transform: uppercase !important;
-    line-height: 1 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    letter-spacing: 0.05em !important;
+    color: rgba(255, 255, 255, 0.5) !important;
+    transition: color 0.2s ease !important;
 }
 
 .touch-ui .dock-item.active label {
-    color: #003366 !important;
-    transform: translateY(2px) !important;
+    color: #ffffff !important;
 }
 
-/* Dock gradient border (premium edge highlight) */
-.touch-ui #mobileCaptureDock::before {
-    content: "" !important;
+.touch-ui .dock-indicator {
     position: absolute !important;
-    inset: 0 !important;
-    border-radius: inherit !important;
-    padding: 1.5px !important;
-    background: linear-gradient(160deg,
-            rgba(255, 255, 255, 0.7) 0%,
-            rgba(255, 255, 255, 0) 40%,
-            rgba(255, 255, 255, 0) 60%,
-            rgba(255, 255, 255, 0.4) 100%) !important;
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0) !important;
-    -webkit-mask-composite: xor !important;
-    mask-composite: exclude !important;
-    pointer-events: none !important;
-}
-
-/* Hide desktop capture tabs on mobile */
-.touch-ui #desktopCaptureTitle,
-.touch-ui #desktopCaptureTabs {
-    display: none !important;
-}
-
-.touch-ui #panelCAP>div:first-child {
-    margin: 0 !important;
-    padding: 0 !important;
-    gap: 0 !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
-   PROFILE CARD (Mobile Optimized)
-   ═══════════════════════════════════════════════════════════════════════ */
-
-.touch-ui #profileDropdown:not(.hidden) {
-    display: flex !important;
-    flex-direction: column !important;
-    background: #ffffff !important;
-    border-radius: 20px !important;
-    border: 1px solid rgba(0, 0, 0, 0.1) !important;
-    box-shadow: 0 12px 48px rgba(0, 51, 102, 0.3) !important;
-    width: 280px !important;
-    max-width: 280px !important;
-    height: auto !important;
-    max-height: 85dvh !important;
-    overflow: hidden !important;
-    padding: 12px !important;
-    z-index: 10005 !important;
-    position: fixed !important;
-    transform: none !important;
-    right: auto !important;
-    inset: auto !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-}
-
-.touch-ui #profileDropdown .GlassContent {
-    display: contents !important;
-}
-
-.touch-ui #profileDropdown .profile-header {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 8px !important;
-    padding-bottom: 8px !important;
-    margin-bottom: 8px !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
-}
-
-.touch-ui #profileDropdown .profile-avatar-container {
-    width: 36px !important;
-    height: 36px !important;
-    flex-shrink: 0 !important;
-    margin: 0 !important;
-}
-
-.touch-ui #profileDropdown #profileInfo {
-    display: flex !important;
-    flex-direction: column !important;
-}
-
-.touch-ui #profileDropdown #profileInfo h3 {
-    font-size: 13px !important;
-    font-weight: 800 !important;
-    line-height: 1.1 !important;
-    margin: 0 !important;
-}
-
-.touch-ui #profileDropdown #profileInfo p {
-    font-size: 9px !important;
-    opacity: 0.6 !important;
-    margin: 0 !important;
-}
-
-.touch-ui #profileDropdown .profile-body {
-    padding: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 4px !important;
-}
-
-.touch-ui #profileDropdown .fieldCard {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 2px 0 !important;
-    margin: 0 !important;
-    display: grid !important;
-    grid-template-columns: 18px 1fr !important;
-    align-items: center !important;
-    gap: 6px !important;
-}
-
-.touch-ui #profileDropdown .fieldCard label {
-    display: none !important;
-}
-
-.touch-ui #profileDropdown .fieldCard div {
-    font-size: 11px !important;
-    font-weight: 600 !important;
-}
-
-.touch-ui #profileDropdown .fieldCard::before {
-    font-family: 'Material Symbols Rounded' !important;
-    font-size: 14px !important;
-    opacity: 0.5 !important;
-}
-
-.touch-ui #profileDropdown .fieldCard:nth-child(1)::before {
-    content: "home_work";
-}
-
-.touch-ui #profileDropdown .fieldCard:nth-child(2)::before {
-    content: "pin_drop";
-}
-
-.touch-ui #profileDropdown .fieldCard:nth-child(3)::before {
-    content: "badge";
-}
-
-.touch-ui #profileDropdown .profile-footer {
-    padding: 8px 0 0 0 !important;
-    margin-top: 8px !important;
-    border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
-}
-
-.touch-ui #profileDropdown .btn-premium-action {
-    min-height: 38px !important;
-    height: 38px !important;
-    font-size: 12px !important;
-    margin: 0 !important;
-    border-radius: 10px !important;
-}
-
-/* Final Cleanup of legacy mobile rules */
-.touch-ui .notifItem,
-.touch-ui .archivosItem,
-.touch-ui .profileItem {
-    padding: 8px 12px !important;
-    margin-bottom: 4px !important;
-    border-radius: 10px !important;
-    background: white !important;
-    border: 1px solid rgba(0, 0, 0, 0.05) !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
-   COMMAND HUB FLOATING (MOBILE ONLY)
-   ═══════════════════════════════════════════════════════════════════════ */
-.touch-ui .command-hub-tracker {
-    position: fixed !important;
-    top: auto !important;
-    bottom: 110px !important; /* Above the dock */
-    right: 20px !important;
-    left: auto !important;
-    width: auto !important;
-    height: auto !important;
-    z-index: 100000 !important;
-    pointer-events: none !important;
-}
-
-.touch-ui .command-hub {
-    flex-direction: column-reverse !important;
-    gap: 12px !important;
-    pointer-events: auto !important;
-    align-items: flex-end !important;
-}
-
-.touch-ui .command-hub .save-chip-premium span:not(.material-symbols-rounded),
-.touch-ui .command-hub .edit-btn-premium span:not(.material-symbols-rounded),
-.touch-ui .command-hub .cancel-btn-premium span:not(.material-symbols-rounded) {
-    display: none !important;
-}
-
-.touch-ui .command-hub .save-chip-premium,
-.touch-ui .command-hub .edit-btn-premium,
-.touch-ui .command-hub .cancel-btn-premium {
-    width: 56px !important;
+    width: 80px !important;
     height: 56px !important;
-    border-radius: 50% !important;
-    padding: 0 !important;
-    align-items: center !important;
-    justify-content: center !important;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+    border-radius: 28px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    top: 8px !important;
+    pointer-events: none !important;
+    z-index: 1 !important;
+    transition: left 0.4s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.3s ease !important;
 }
 
-.touch-ui .command-hub .status-chip-v5 {
-    display: none !important;
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
-   NATIVE MOBILE RDA DASHBOARD
-   ═══════════════════════════════════════════════════════════════════════ */
-/* Hide the dock, command hub, and background panels if RDA Mobile is open */
-.touch-ui body:has(#rdaMobileDashboard:not(.translate-y-full)) #mobileCaptureDock,
-.touch-ui body:has(#rdaMobileDashboard:not(.translate-y-full)) .command-hub-tracker,
-.touch-ui body:has(#rdaMobileDashboard:not(.translate-y-full)) .command-hub,
-.touch-ui body:has(#rdaMobileDashboard:not(.translate-y-full)) #rdaDashboardOverlay,
-.touch-ui body:has(#rdaMobileDashboard:not(.translate-y-full)) #panelCaptureSummary,
-.touch-ui body:has(#rdaMobileDashboard:not(.translate-y-full)) #panelWelcome {
-    display: none !important;
+@keyframes slideIn {
+    from { transform: translateY(12px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
 }
 
-/* Force hide the desktop RDA dashboard overlay on touch-ui */
-.touch-ui #rdaDashboardOverlay {
-    display: none !important;
+.touch-ui .animate-fadeIn {
+    animation: fadeIn 0.4s ease forwards !important;
 }
 
-#rdaMobileDashboard {
-    background-color: #f8fafc !important; /* Fallback opaque background */
-    /* Smooth slide up animation */
-    will-change: transform;
-    height: 100dvh;
-    z-index: 99999 !important;
-}
-
-.rda-no-scrollbar::-webkit-scrollbar {
-    display: none;
-}
-.rda-no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
-
-.rda-scheme-btn {
-    padding: 10px 16px;
-    border-radius: 14px;
-    background: #f1f5f9;
-    color: #64748b;
-    font-size: 13px;
-    font-weight: 800;
-    border: none;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-}
-
-.rda-scheme-btn.active {
-    background: var(--primary, #003366);
-    color: #ffffff;
-    box-shadow: 0 4px 12px rgba(0, 51, 102, 0.2);
-}
-
-.rda-kpi-mobile-card {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 20px;
-    padding: 16px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-}
-
-.rda-kpi-mobile-card .kpi-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 12px;
-}
-
-.rda-kpi-mobile-card .kpi-icon span {
-    font-size: 20px;
-}
-
-.rda-kpi-mobile-card .kpi-label {
-    font-size: 11px;
-    font-weight: 800;
-    color: #64748b;
-    margin-bottom: 4px;
-    line-height: 1.2;
-}
-
-.rda-kpi-mobile-card .kpi-value {
-    font-size: 20px;
-    font-weight: 900;
-    color: #0f172a;
-}
-
-.rda-kpi-mobile-card .kpi-meta {
-    font-size: 10px;
-    font-weight: 700;
-    color: #94a3b8;
-    margin-top: 4px;
-}
-
-.rda-unit-mobile-card {
-    background: #ffffff;
-    border-radius: 20px;
-    padding: 16px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
-    border: 1px solid #f1f5f9;
-}
-
-.rda-unit-mobile-card .unit-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px dashed #e2e8f0;
-}
-
-.rda-unit-mobile-card .unit-title {
-    font-size: 14px;
-    font-weight: 900;
-    color: #0f172a;
-    line-height: 1.2;
-}
-
-.rda-unit-mobile-card .unit-clues {
-    font-size: 10px;
-    font-weight: 800;
-    color: #64748b;
-    background: #f1f5f9;
-    padding: 3px 8px;
-    border-radius: 6px;
-    margin-top: 6px;
-    display: inline-block;
-}
-
-.rda-unit-mobile-card .unit-doses {
-    font-size: 16px;
-    font-weight: 900;
-    color: var(--primary, #003366);
-    background: rgba(0, 51, 102, 0.05);
-    padding: 6px 10px;
-    border-radius: 10px;
-    text-align: right;
-}
-
-.rda-unit-mobile-card .unit-metrics {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-}
-
-.rda-unit-mobile-card .metric-item {
-    display: flex;
-    flex-direction: column;
-    background: #f8fafc;
-    padding: 8px 10px;
-    border-radius: 10px;
-}
-
-.rda-unit-mobile-card .metric-label {
-    font-size: 10px;
-    font-weight: 800;
-    color: #94a3b8;
-    text-transform: uppercase;
-    margin-bottom: 4px;
-}
-
-.rda-unit-mobile-card .metric-value {
-    font-size: 13px;
-    font-weight: 900;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
-   TABLES TO CARDS (VERTICAL REDUCTION REFACTOR)
-   ═══════════════════════════════════════════════════════════════════════ */
-.touch-ui #srCaptureTable {
-    display: flex !important;
-    flex-direction: column !important;
-    width: 100% !important;
-    background: transparent !important;
-    border: none !important;
-}
-
-.touch-ui #srCaptureTable thead {
-    display: none !important; /* Hide table headers completely for card view */
-}
-
-.touch-ui #srCaptureTable tbody {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 16px !important;
-    background: transparent !important;
-}
-
-.touch-ui #srCaptureTable tr {
-    display: flex !important;
-    flex-direction: column !important;
-    background: #ffffff !important;
-    border-radius: 24px !important;
-    padding: 16px !important;
-    box-shadow: 0 4px 15px rgba(0, 51, 102, 0.08) !important;
-    border: 1px solid rgba(0, 51, 102, 0.05) !important;
-    margin-bottom: 0 !important;
-}
-
-.touch-ui #srCaptureTable td {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    padding: 10px 0 !important;
-    border-bottom: 1px solid rgba(0,0,0,0.05) !important;
-    min-width: 0 !important;
-    width: 100% !important;
-}
-
-.touch-ui #srCaptureTable td:last-child {
-    border-bottom: none !important;
-}
-
-.touch-ui #srCaptureTable td::before {
-    content: attr(data-label);
-    font-size: 11px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #64748b;
-    margin-right: 12px;
-}
-
-/* Specifically adapt inputs in cards to be right-aligned */
-.touch-ui #srCaptureTable td select,
-.touch-ui #srCaptureTable td > div,
-.touch-ui #srCaptureTable td > input {
-    flex: 1 !important;
-    width: 100% !important;
-    max-width: 160px !important;
-    min-width: 0 !important;
-    box-sizing: border-box !important;
-    margin-left: auto !important;
-}
-
-.touch-ui #srCaptureTable td input,
-.touch-ui #srCaptureTable td select {
-    text-align: right !important;
-    background: #f8fafc !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-}
-
-/* Bio name cell in cards should be prominent */
-.touch-ui #srCaptureTable td.bioNameCell,
-.touch-ui #srCaptureTbody td:first-child {
-    width: 100% !important;
-    font-size: 16px !important;
-    font-weight: 900 !important;
-    color: #0f172a !important;
-    padding-bottom: 16px !important;
-    border-bottom: 2px dashed rgba(0,0,0,0.05) !important;
-}
-
-.touch-ui #srCaptureTable td.bioNameCell::before,
-.touch-ui #srCaptureTbody td:first-child::before {
-    display: none !important;
-}
-
-/* Action button at bottom of card */
-.touch-ui #srCaptureTable td:last-child button {
-    width: 100% !important;
-    margin-top: 8px !important;
-}
-
-/* Ensure enough bottom padding so floating command hub doesn't block the last card's buttons */
-.touch-ui #srCaptureTable {
-    padding-bottom: 80px !important;
+.touch-ui .animate-slideIn {
+    animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
 }
