@@ -286,7 +286,7 @@ function populateUnidadFilter() {
     uniSel.disabled = false;
     const units = (_rdaCache.unidades || [])
         .filter(u => (u.municipio || '').toUpperCase().trim() === muni.toUpperCase().trim())
-        .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+        .sort((a, b) => (a.clues || '').localeCompare(b.clues || ''));
 
     uniSel.innerHTML = '<option value="">Todas las unidades</option>' +
         units.map(u => `<option value="${u.clues}">${u.nombre || u.clues}</option>`).join('');
@@ -458,7 +458,7 @@ function renderKPIs(agg, esquema) {
         card.className = 'rda-kpi-card';
         card.innerHTML = `
             <div class="rda-icon-box" style="background: ${k.bg}; color: ${k.fg};">
-                <span class="material-symbols-rounded">${k.icon}</span>
+                <span class="material-symbols-rounded premium-anim-icon">${k.icon}</span>
             </div>
             <div style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">${k.label}</div>
             <div style="font-size: 36px; font-weight: 900; color: ${valColor}; letter-spacing: -0.04em; line-height: 1.1;">${valText}</div>
@@ -1632,7 +1632,7 @@ function populateMobileFilters() {
         } else {
             uniSel.disabled = false;
             const units = unidades.filter(u => (u.municipio || '').toUpperCase().trim() === muni.toUpperCase().trim())
-                                  .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+                                  .sort((a, b) => (a.clues || '').localeCompare(b.clues || ''));
             const currUni = uniSel.value;
             uniSel.innerHTML = '<option value="">Todas las unidades</option>' + units.map(u => `<option value="${u.clues}">${u.nombre || u.clues}</option>`).join('');
             uniSel.value = currUni || '';
@@ -1750,7 +1750,7 @@ function renderMobileDashboard() {
             kpiHtml += `
                 <div class="rda-kpi-mobile-card" style="border-left: 3px solid ${k.fg};">
                     <div class="kpi-icon" style="background: ${k.bg}; color: ${k.fg};">
-                        <span class="material-symbols-rounded">${k.icon}</span>
+                        <span class="material-symbols-rounded premium-anim-icon">${k.icon}</span>
                     </div>
                     <div class="kpi-label">${k.label}</div>
                     <div class="kpi-value" style="color: ${valColor};">${valText}</div>
