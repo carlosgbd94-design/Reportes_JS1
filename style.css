@@ -8992,109 +8992,10 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-/* Enforce cards to stay STRICTLY on a single horizontal line (No wrap) */
-#welcomeBlock > .flex-col {
-  flex-direction: row !important;
-  flex-wrap: nowrap !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  width: 100% !important;
-}
+/* Chips row layout — desktop only */
 
-/* Adaptive vertical reflow for cards under narrow viewport or grid squeezing */
-@media (max-width: 1400px) {
-  /* Enforce nowrap in the parent layout wrapper */
-  #welcomeBlock > .flex-col {
-    flex-wrap: nowrap !important;
-  }
 
-  /* Compression: Transition Compliance Card internal structure to a vertical stack */
-  #bCumplimiento {
-    width: 140px !important;
-    min-width: 140px !important;
-    max-width: 140px !important;
-    height: 120px !important;
-    flex-direction: column !important;
-    justify-content: space-between !important;
-    padding: 10px 12px !important;
-    flex-shrink: 0 !important;
-  }
-  
-  #bCumplimiento .gap-6 {
-    gap: 8px !important;
-    flex-direction: column !important;
-    align-items: flex-start !important;
-  }
-  
-  #bCumplimiento #bCumplimientoIconBg {
-    width: 32px !important;
-    height: 32px !important;
-    border-radius: 8px !important;
-  }
-  
-  #bCumplimiento #bCumplimientoIconBg span {
-    font-size: 16px !important;
-  }
-  
-  #bCumplimiento .leading-tight {
-    margin-top: 4px !important;
-  }
-  
-  #bCumplimiento #dayTxt {
-    font-size: 16px !important;
-  }
-  
-  #bCumplimiento .border-t {
-    padding-top: 6px !important;
-    margin-top: 6px !important;
-    gap: 4px !important;
-  }
-  
-  #bCumplimientoMedals {
-    gap: 4px !important;
-  }
-  
-  .chip-medal-icon {
-    font-size: 16px !important;
-  }
 
-  /* Compression: Transition Dato Curioso Card internal structure to a vertical stack */
-  #factCard {
-    max-width: 180px !important;
-    min-width: 140px !important;
-    padding: 10px 12px !important;
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    justify-content: space-between !important;
-    gap: 8px !important;
-    flex-shrink: 0 !important;
-  }
-  
-  #factIconContainer {
-    width: 32px !important;
-    height: 32px !important;
-    border-radius: 8px !important;
-  }
-  
-  #factIcon {
-    font-size: 16px !important;
-  }
-  
-  #factCard .flex-col {
-    margin-top: 4px !important;
-  }
-  
-  #factTitle {
-    font-size: 8px !important;
-    letter-spacing: 0.1em !important;
-  }
-  
-  #factBody {
-    font-size: 11px !important;
-    line-height: 1.25 !important;
-    padding-right: 0 !important;
-  }
-}
 
 /* Enforce cards to stay STRICTLY on a single horizontal line on desktop only */
 @media (min-width: 1280px) {
@@ -9292,11 +9193,11 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
 .shadow-emerald-500\/20 { box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.2) !important; }
 .group:hover .group-hover\:bg-emerald-500\/10 { background-color: rgba(16, 185, 129, 0.1) !important; }
 
-/* Fix para asegurar que las 3 chips principales midan igual en desktop */
+/* Fix para asegurar que las 3 chips principales midan igual en desktop y sean fluídas */
 @media (min-width: 1280px) {
   .chip-equal-width {
     flex: 1 1 0% !important;
-    width: 33.333% !important;
-    max-width: calc(33.333% - 16px) !important;
+    min-width: 0 !important;      /* KEY: permite que flexbox las encoja fluidamente */
+    overflow: hidden;             /* evita desbordamiento del contenido interno */
   }
 }
