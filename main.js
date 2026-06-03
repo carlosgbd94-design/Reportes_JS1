@@ -4569,6 +4569,16 @@ async function supabaseRequest(action = "", payload, options = {}) {
 
         if (consErr) console.warn("[Supabase] Fallo al consultar aperturas_consumibles:", consErr);
 
+        // 1.5 Verificar Apertura Manual (Existencia Semanal)
+        const { data: extOverride, error: extErr } = await supabase
+          .from('aperturas_existencia')
+          .select('*')
+          .eq('fecha', today)
+          .eq('activo', 'SI')
+          .maybeSingle();
+
+        if (extErr) console.warn("[Supabase] Fallo al consultar aperturas_existencia:", extErr);
+
         // 2. Verificar Apertura Manual (Biológicos - Calendario Pedidos)
         const currentMonth = today.substring(0, 7);
         const { data: bioOverride } = await supabase
@@ -4581,7 +4591,19 @@ async function supabaseRequest(action = "", payload, options = {}) {
         // 3. Lógica Inteligente (Días festivos / Fines de semana)
         const consIntelligent = await getConsumiblesStatus(today, clues);
         const dow = new Date().getDay();
-        const canCaptureExistenciaBioStandard = (dow === 4 || dow === 5);
+        
+        let canCaptureExistenciaBioStandard = false;
+        const hoyDate = new Date();
+        const d_dow = hoyDate.getDay();
+        if (d_dow === 4 || d_dow === 5) {
+             canCaptureExistenciaBioStandard = true;
+        } else if (d_dow === 3) {
+             const jueDate = new Date(hoyDate); jueDate.setDate(hoyDate.getDate() + 1);
+             const vieDate = new Date(hoyDate); vieDate.setDate(hoyDate.getDate() + 2);
+             if (isMexicanHoliday(jueDate) && isMexicanHoliday(vieDate)) {
+                 canCaptureExistenciaBioStandard = true; // Open on Wednesday
+             }
+        }
 
         const bioWindow = calculateBioIntelligentWindow(new Date().getFullYear(), new Date().getMonth());
         const isBioWindowOpen = today >= dateToLocalYmd(bioWindow.start) && today <= dateToLocalYmd(bioWindow.end);
@@ -4598,11 +4620,14 @@ async function supabaseRequest(action = "", payload, options = {}) {
         let canBio = canCaptureExistenciaBioStandard || isBioWindowOpen;
         let bioReason = isBioWindowOpen ? "Ventana de pedido mensual abierta" : (canCaptureExistenciaBioStandard ? "Día operativo (Jueves/Viernes)" : "Disponible jueves y viernes");
 
-        if (bioOverride) {
+        if (extOverride) {
+          canBio = true;
+          bioReason = extOverride.motivo || "Apertura semanal extraordinaria habilitada por Administrador";
+        } else if (bioOverride) {
           const isTodayInBioWindow = today >= bioOverride.habilitar_desde && today <= bioOverride.habilitar_hasta;
           if (isTodayInBioWindow) {
             canBio = true;
-            bioReason = bioOverride.motivo || "Apertura extraordinaria habilitada por Administrador";
+            bioReason = bioOverride.motivo || "Apertura mensual extraordinaria habilitada por Administrador";
           }
         }
 
@@ -4713,6 +4738,14 @@ async function supabaseRequest(action = "", payload, options = {}) {
             const dVie = new Date(`${targetViernes}T12:00:00`);
             const dJue = new Date(dVie); dJue.setDate(dVie.getDate() - 1);
             const targetWindow = [targetViernes, dateToLocalYmd(dJue)];
+
+            // Lógica Inteligente para Feriados (Existencia Biológico)
+            if (isMexicanHoliday(dVie) && isMexicanHoliday(dJue)) {
+               const dMie = new Date(dJue);
+               dMie.setDate(dJue.getDate() - 1);
+               targetWindow.push(dateToLocalYmd(dMie));
+            }
+
             units.forEach(u => {
               if (rawBio.some(r => r.clues === u.clues && targetWindow.includes(r.fecha))) {
                 metricsMap[u.clues].bio_semanas_ok++;
@@ -4883,6 +4916,36 @@ async function supabaseRequest(action = "", payload, options = {}) {
       case "admingetconsumiblesoverride": {
         const { data, error } = await supabase
           .from('aperturas_consumibles')
+          .select('*')
+          .eq('activo', 'SI')
+          .maybeSingle();
+        if (error) throw error;
+        return { ok: true, data };
+      }
+
+      case "adminsetexistenciaoverride": {
+        if (USER.rol !== "ADMIN") throw new Error("No autorizado");
+        const { fecha, motivo, enabled } = payload;
+
+        if (enabled === "NO") {
+          const { error } = await supabase.from('aperturas_existencia').delete().eq('fecha', fecha || todayYmdLocal());
+          if (error) throw error;
+        } else {
+          const { error } = await supabase.from('aperturas_existencia').upsert({
+            fecha: fecha || todayYmdLocal(),
+            motivo: motivo || "APERTURA EXTRAORDINARIA",
+            activo: 'SI',
+            creado_por: USER.usuario,
+            timestamp: new Date().toISOString()
+          }, { onConflict: 'fecha' });
+          if (error) throw error;
+        }
+        return { ok: true };
+      }
+
+      case "admingetexistenciaoverride": {
+        const { data, error } = await supabase
+          .from('aperturas_existencia')
           .select('*')
           .eq('activo', 'SI')
           .maybeSingle();
@@ -8771,21 +8834,16 @@ async function loadExportOptions() {
     const id = "expmun_" + m.replace(/\s+/g, "_").replace(/[^\w]/g, "");
 
     const label = document.createElement("label");
-    label.className = "modern-toggle exportMunicipioToggle";
+    label.className = "premium-muni-card";
     label.setAttribute("for", id);
 
     label.innerHTML = `
-      <div class="modernToggleText">
-        <div class="modernToggleTitle">${escapeHtml(m)}</div>
-      </div>
-      <div class="modernToggleSwitch">
-        <input
-          type="checkbox"
-          class="exportMunicipioChk"
-          id="${id}"
-          value="${escapeAttr(m)}"
-        >
-        <span class="modernToggleSlider"></span>
+      <input type="checkbox" class="exportMunicipioChk" id="${id}" value="${escapeAttr(m)}">
+      <div class="muni-card-content">
+        <span class="muni-title">${escapeHtml(m)}</span>
+        <div class="muni-check-icon">
+          <span class="material-symbols-rounded">check</span>
+        </div>
       </div>
     `;
 
@@ -11348,6 +11406,20 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
 window.activateAdminSubPanel = function (panelId) {
   // 1. Alternar Clases de Pestañas (Premium)
   const container = document.querySelector('#panelAdminSecurityTabs .nav-container');
+  if (panelId === 'aperturas') {
+    loadConsumiblesOverrideAdmin();
+    loadExistenciaOverrideAdmin();
+  }
+
+  if (panelId === 'dashboard') {
+    const activeSub = document.querySelector(".admin-tab.border-primary")?.id;
+    if (activeSub === 'tabAdminUsers') refreshUsers();
+    else if (activeSub === 'tabAdminCatalog') loadUnitCatalogAdmin();
+    else if (activeSub === 'tabAdminAperturas') {
+      loadConsumiblesOverrideAdmin();
+      loadExistenciaOverrideAdmin();
+    }
+  }
   if (container) {
     container.querySelectorAll(".nav-tab").forEach(btn => {
       const isTarget = btn.id.toLowerCase().includes(panelId.toLowerCase());
@@ -11556,19 +11628,66 @@ async function loadConsumiblesOverrideAdmin() {
 
   try {
     const r = await apiCall({ action: "adminGetConsumiblesOverride" });
-    if (!r || !r.ok) {
-      if ($("consOverrideStateTxt")) $("consOverrideStateTxt").textContent = "REGLA ESTÁNDAR";
+    const setStatus = (text, isActiva) => {
+      if ($("consOverrideStateTxt")) $("consOverrideStateTxt").textContent = text;
+      if ($("consOverrideDot")) {
+        $("consOverrideDot").className = `w-2 h-2 rounded-full ${isActiva ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-300'} animate-pulse`;
+      }
+      if ($("consOverrideBadge")) {
+        $("consOverrideBadge").className = `px-3 py-1.5 rounded-xl border flex items-center gap-2 ${isActiva ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-100'}`;
+      }
+    };
+
+    if (!r || !r.ok || !r.data) {
+      setStatus("REGLA ESTÁNDAR", false);
       return;
     }
 
     const data = r.data || {};
     if ($("consOverrideDate")) $("consOverrideDate").value = data.fecha || "";
     if ($("consOverrideReason")) $("consOverrideReason").value = data.motivo || "";
-    if ($("consOverrideStateTxt")) {
-      $("consOverrideStateTxt").textContent = data.fecha ? "ACTIVA: " + formatDateMx(data.fecha) : "REGLA ESTÁNDAR";
+    
+    if (data.fecha) {
+      setStatus("ACTIVA: " + formatDateMx(data.fecha), true);
+    } else {
+      setStatus("REGLA ESTÁNDAR", false);
     }
   } catch (e) {
     console.error("loadConsumiblesOverrideAdmin error:", e);
+  }
+}
+
+async function loadExistenciaOverrideAdmin() {
+  if (!USER || USER.rol !== "ADMIN") return;
+
+  try {
+    const r = await apiCall({ action: "adminGetExistenciaOverride" });
+    const setStatus = (text, isActiva) => {
+      if ($("existenciaOverrideStateTxt")) $("existenciaOverrideStateTxt").textContent = text;
+      if ($("existenciaOverrideDot")) {
+        $("existenciaOverrideDot").className = `w-2 h-2 rounded-full ${isActiva ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]' : 'bg-slate-300'} animate-pulse`;
+      }
+      if ($("existenciaOverrideBadge")) {
+        $("existenciaOverrideBadge").className = `px-3 py-1.5 rounded-xl border flex items-center gap-2 ${isActiva ? 'bg-indigo-50 border-indigo-100' : 'bg-slate-50 border-slate-100'}`;
+      }
+    };
+
+    if (!r || !r.ok || !r.data) {
+      setStatus("REGLA ESTÁNDAR", false);
+      return;
+    }
+
+    const data = r.data || {};
+    if ($("existenciaOverrideDate")) $("existenciaOverrideDate").value = data.fecha || "";
+    if ($("existenciaOverrideReason")) $("existenciaOverrideReason").value = data.motivo || "";
+    
+    if (data.fecha) {
+      setStatus("ACTIVA: " + formatDateMx(data.fecha), true);
+    } else {
+      setStatus("REGLA ESTÁNDAR", false);
+    }
+  } catch (e) {
+    console.error("loadExistenciaOverrideAdmin error:", e);
   }
 }
 
@@ -11663,6 +11782,71 @@ $("btnClearConsOverride").onclick = async () => {
     showToast("Error al desactivar", false);
   } finally {
     setBtnBusy("btnClearConsOverride", false);
+  }
+};
+
+$("btnSaveExistenciaOverride").onclick = async () => {
+  if (isBtnBusy("btnSaveExistenciaOverride")) return;
+
+  const fecha = $("existenciaOverrideDate").value;
+  const motivo = $("existenciaOverrideReason").value;
+
+  if (!fecha) {
+    showToast("Selecciona una fecha de apertura", false, "warn");
+    return;
+  }
+
+  setBtnBusy("btnSaveExistenciaOverride", true, "Guardando...");
+  showOverlay("Configurando apertura extraordinaria...", "Administración");
+
+  try {
+    const r = await apiCall({
+      action: "adminSetExistenciaOverride",
+      fecha,
+      motivo,
+      enabled: "SI"
+    });
+
+    if (!r || !r.ok) {
+      showToast(r?.error || "No se pudo guardar la apertura", false);
+      return;
+    }
+
+    showToast("Apertura extraordinaria de existencia habilitada", true);
+    await loadExistenciaOverrideAdmin();
+    await refreshConsumiblesStatusUi(); // Reusamos el refresco ya que llama a unitStatus()
+  } catch (e) {
+    console.error("btnSaveExistenciaOverride error:", e);
+    showToast("Error al guardar apertura extraordinaria", false);
+  } finally {
+    setBtnBusy("btnSaveExistenciaOverride", false);
+    hideOverlay();
+  }
+};
+
+$("btnClearExistenciaOverride").onclick = async () => {
+  if (isBtnBusy("btnClearExistenciaOverride")) return;
+  if (!confirm("¿Deseas desactivar la apertura extraordinaria de existencia?")) return;
+
+  setBtnBusy("btnClearExistenciaOverride", true, "Limpiando...");
+  try {
+    const r = await apiCall({
+      action: "adminSetExistenciaOverride",
+      enabled: "NO"
+    });
+
+    if (!r || !r.ok) throw new Error(r?.error || "Error al desactivar");
+
+    showToast("Apertura extraordinaria desactivada");
+    $("existenciaOverrideDate").value = "";
+    $("existenciaOverrideReason").value = "";
+    await loadExistenciaOverrideAdmin();
+    await refreshConsumiblesStatusUi();
+  } catch (e) {
+    console.error("btnClearExistenciaOverride error:", e);
+    showToast("Error al desactivar", false);
+  } finally {
+    setBtnBusy("btnClearExistenciaOverride", false);
   }
 };
 
