@@ -1102,7 +1102,16 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             const maxMesLabel = MONTH_NAMES[_rdaCache.maxMes-1] || 'FINAL';
             
             // 2. Obtener imágenes base64 de las gráficas
-            const imgAvanceBase64 = _rdaCharts.d ? _rdaCharts.d.toBase64Image() : '';
+            let imgChart1Base64 = '';
+            let titleChart1 = '';
+            
+            if (isSingleUnit || _rdaState.esquema === 'basico') {
+                imgChart1Base64 = _rdaCharts.d ? _rdaCharts.d.toBase64Image() : '';
+                titleChart1 = "DISTRIBUCIÓN DE AVANCE";
+            } else {
+                imgChart1Base64 = _rdaCharts.total ? _rdaCharts.total.toBase64Image() : '';
+                titleChart1 = "AVANCE JURISDICCIONAL TOTAL";
+            }
             const imgTopBase64 = _rdaCharts.b ? _rdaCharts.b.toBase64Image() : '';
 
             // 3. Extraer estructura y datos de la tabla real
@@ -1116,37 +1125,42 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
                 return Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim());
             });
 
-            // Lógica Universal: Agrupar por Unidad y remover columnas redundantes
+            // Lógica Universal: Agrupar por Unidad y Municipio
             const colsLen = tableHeaders.length - 3;
             tableHeaders.splice(0, 3);
             
             const isSingleUnit = tableRowsRaw.length === 1;
             
-            const tableDataWithHeaders = [];
+            const tablesGrouped = [];
+            let currentBody = [];
+            let currentGroupName = '';
+            
             tableRowsRaw.forEach(row => {
                 if (row.length === 1) {
-                    tableDataWithHeaders.push([{
-                        content: row[0],
-                        colSpan: colsLen,
-                        styles: { fillColor: [241, 245, 249], textColor: [51, 65, 85], fontStyle: 'bold', halign: 'center' }
-                    }]);
+                    if (currentBody.length > 0) {
+                        tablesGrouped.push({ muni: currentGroupName, rows: currentBody });
+                        currentBody = [];
+                    }
+                    currentGroupName = row[0];
                     return;
                 }
 
                 const unitClues = row[0] || '';
                 const unitName = row[1] || '';
-                const unitMuni = row[2] || '';
                 
                 if (!isSingleUnit) {
-                    tableDataWithHeaders.push([{
-                        content: `UNIDAD: ${unitName.toUpperCase()}   |   CLUES: ${unitClues}   |   MUNICIPIO: ${unitMuni.toUpperCase()}`,
+                    currentBody.push([{
+                        content: `UNIDAD: ${unitName.toUpperCase()}   |   CLUES: ${unitClues}`,
                         colSpan: colsLen,
                         styles: { fillColor: [248, 250, 252], textColor: [15, 23, 42], fontStyle: 'bold', halign: 'left' }
                     }]);
                 }
                 
-                tableDataWithHeaders.push(row.slice(3));
+                currentBody.push(row.slice(3));
             });
+            if (currentBody.length > 0) {
+                tablesGrouped.push({ muni: currentGroupName, rows: currentBody });
+            }
 
             // Helper para cargar imágenes Base64
             const loadImgBase64 = (url) => {
@@ -1332,29 +1346,28 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             // ==========================================
             // SECCIÓN DE GRÁFICAS
             // ==========================================
-            const chartSectionHeight = 65;
-            const cardWidthA = 85;
-            const cardWidthB = 149.4;
+            const chartSectionHeight = 85;
+            const cardWidth = 117.2;
             const gap = 15;
 
-            // Tarjeta A (Gráfica)
+            // Tarjeta A (Gráfica 1)
             doc.setFillColor(255, 255, 255);
             doc.setDrawColor(226, 232, 240);
-            doc.roundedRect(marginX, currentY, cardWidthA, chartSectionHeight, 4, 4, 'FD');
+            doc.roundedRect(marginX, currentY, cardWidth, chartSectionHeight, 4, 4, 'FD');
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9);
             doc.setTextColor(100, 116, 139);
-            doc.text("DISTRIBUCIÓN DE AVANCE", marginX + 6, currentY + 8);
-            if (imgAvanceBase64) {
-                doc.addImage(imgAvanceBase64, 'PNG', marginX + 10, currentY + 12, 65, 50, undefined, 'FAST');
+            doc.text(titleChart1, marginX + 6, currentY + 8);
+            if (imgChart1Base64) {
+                doc.addImage(imgChart1Base64, 'PNG', marginX + 10, currentY + 12, cardWidth - 20, chartSectionHeight - 20, undefined, 'FAST');
             }
 
-            // Tarjeta B (Gráfica)
+            // Tarjeta B (Gráfica 2)
             doc.setFillColor(255, 255, 255);
-            doc.roundedRect(marginX + cardWidthA + gap, currentY, cardWidthB, chartSectionHeight, 4, 4, 'FD');
-            doc.text("TOP UNIDADES / MUNICIPIOS DE LA JURISDICCIÓN", marginX + cardWidthA + gap + 6, currentY + 8);
+            doc.roundedRect(marginX + cardWidth + gap, currentY, cardWidth, chartSectionHeight, 4, 4, 'FD');
+            doc.text("TOP UNIDADES / MUNICIPIOS", marginX + cardWidth + gap + 6, currentY + 8);
             if (imgTopBase64) {
-                doc.addImage(imgTopBase64, 'PNG', marginX + cardWidthA + gap + 10, currentY + 12, 129.4, 50, undefined, 'FAST');
+                doc.addImage(imgTopBase64, 'PNG', marginX + cardWidth + gap + 10, currentY + 12, cardWidth - 20, chartSectionHeight - 20, undefined, 'FAST');
             }
 
             currentY += chartSectionHeight + 8;
@@ -1367,9 +1380,24 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             // ==========================================
             // TABLA VECTORIAL PREMIUM (Badges Nativos)
             // ==========================================
-            doc.autoTable({
-                head: [tableHeaders],
-                body: tableDataWithHeaders,
+            tablesGrouped.forEach((grp, idx) => {
+                if (!isSingleUnit && grp.muni) {
+                    if (currentY > 180) {
+                        doc.addPage();
+                        currentY = 20;
+                    }
+                    doc.setFillColor(241, 245, 249);
+                    doc.rect(marginX, currentY, 249.4, 8, 'F');
+                    doc.setFont('helvetica', 'bold');
+                    doc.setFontSize(10);
+                    doc.setTextColor(51, 65, 85);
+                    doc.text(`MUNICIPIO: ${grp.muni.toUpperCase()}`, marginX + 124.7, currentY + 5.5, { align: 'center' });
+                    currentY += 8;
+                }
+
+                doc.autoTable({
+                    head: [tableHeaders],
+                    body: grp.rows,
                 startY: currentY,
                 margin: { left: marginX, right: marginX },
                 theme: 'plain', 
@@ -1462,6 +1490,9 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
                     doc.text(pag, 264.4, 208, { align: 'right' });
                 }
             });
+            
+            currentY = doc.lastAutoTable.finalY + 10;
+        });
 
             if (devolverBlob) {
                 resolve(doc.output('blob'));
