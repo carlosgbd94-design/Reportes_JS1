@@ -9280,3 +9280,11 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
 .hover\:border-emerald-200:hover { border-color: #a7f3d0 !important; }
 .shadow-emerald-500\/20 { box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.2) !important; }
 .group:hover .group-hover\:bg-emerald-500\/10 { background-color: rgba(16, 185, 129, 0.1) !important; }
+
+/* Fix para asegurar que las 3 chips principales midan igual en desktop */
+@media (min-width: 1280px) {
+  .chip-equal-width {
+    flex: 0 0 calc(33.333% - 16px) !important;
+    max-width: calc(33.333% - 16px) !important;
+  }
+}
