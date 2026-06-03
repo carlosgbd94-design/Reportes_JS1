@@ -9523,3 +9523,9 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
   transform: translateY(-50%) !important;
   color: #0ea5e9 !important;
 }
+
+/* Conservar padding-left en desktop para evitar solape con el icono */
+.sr-cantidad-input {
+  padding-left: 38px !important;
+}
+

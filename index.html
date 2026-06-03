@@ -891,16 +891,24 @@
                     <label
                       class="text-[11px] font-black text-primary uppercase tracking-widest text-center truncate">SRP
                       (Dosis)</label>
-                    <input id="srp_dosis" type="number" min="0" placeholder="0"
-                      class="w-full h-[64px] bg-slate-50 border-2 border-slate-300 rounded-2xl text-[26px] font-black text-slate-900 focus:border-primary transition-all outline-none text-center">
+                    <div class="touch-stepper-wrap flex items-center gap-2">
+                      <button type="button" class="stepper-btn stepper-btn-minus" onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
+                      <input id="srp_dosis" type="number" min="0" placeholder="0"
+                        class="w-full h-[64px] bg-slate-50 border-2 border-slate-300 rounded-2xl text-[26px] font-black text-slate-900 focus:border-primary transition-all outline-none text-center">
+                      <button type="button" class="stepper-btn stepper-btn-plus" onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
+                    </div>
                   </div>
 
                   <!-- SR -->
                   <div class="flex-1 flex flex-col gap-2 min-w-0">
                     <label class="text-[11px] font-black text-primary uppercase tracking-widest text-center truncate">SR
                       (Dosis)</label>
-                    <input id="sr_dosis" type="number" min="0" placeholder="0"
-                      class="w-full h-[64px] bg-slate-50 border-2 border-slate-300 rounded-2xl text-[26px] font-black text-slate-900 focus:border-primary transition-all outline-none text-center">
+                    <div class="touch-stepper-wrap flex items-center gap-2">
+                      <button type="button" class="stepper-btn stepper-btn-minus" onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
+                      <input id="sr_dosis" type="number" min="0" placeholder="0"
+                        class="w-full h-[64px] bg-slate-50 border-2 border-slate-300 rounded-2xl text-[26px] font-black text-slate-900 focus:border-primary transition-all outline-none text-center">
+                      <button type="button" class="stepper-btn stepper-btn-plus" onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
+                    </div>
                   </div>
 
                   <!-- Jeringa 0.5 -->
@@ -908,8 +916,12 @@
                     <label
                       class="text-[11px] font-black text-primary uppercase tracking-widest text-center truncate">Jeringa
                       0.5</label>
-                    <input id="jeringa_aplic_05ml_0605502657" type="number" min="0" placeholder="0"
-                      class="w-full h-[64px] bg-primary/5 border-2 border-primary/30 rounded-2xl text-[26px] font-black text-primary focus:border-primary focus:bg-white transition-all outline-none text-center">
+                    <div class="touch-stepper-wrap flex items-center gap-2">
+                      <button type="button" class="stepper-btn stepper-btn-minus" onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
+                      <input id="jeringa_aplic_05ml_0605502657" type="number" min="0" placeholder="0"
+                        class="w-full h-[64px] bg-primary/5 border-2 border-primary/30 rounded-2xl text-[26px] font-black text-primary focus:border-primary focus:bg-white transition-all outline-none text-center">
+                      <button type="button" class="stepper-btn stepper-btn-plus" onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
+                    </div>
                   </div>
 
                   <!-- Jeringa 5.0 -->
@@ -917,8 +929,12 @@
                     <label
                       class="text-[11px] font-black text-primary uppercase tracking-widest text-center truncate">Jeringa
                       5.0</label>
-                    <input id="jeringa_reconst_5ml_0605500438" type="number" min="0" placeholder="0"
-                      class="w-full h-[64px] bg-primary/5 border-2 border-primary/30 rounded-2xl text-[26px] font-black text-primary focus:border-primary focus:bg-white transition-all outline-none text-center">
+                    <div class="touch-stepper-wrap flex items-center gap-2">
+                      <button type="button" class="stepper-btn stepper-btn-minus" onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
+                      <input id="jeringa_reconst_5ml_0605500438" type="number" min="0" placeholder="0"
+                        class="w-full h-[64px] bg-primary/5 border-2 border-primary/30 rounded-2xl text-[26px] font-black text-primary focus:border-primary focus:bg-white transition-all outline-none text-center">
+                      <button type="button" class="stepper-btn stepper-btn-plus" onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
+                    </div>
                   </div>
 
                   <!-- Aguja (Auto) -->
@@ -1188,20 +1204,28 @@
                   </div>
 
                   <!-- Contenedor Cantidades -->
-                  <div class="bg-white border-2 border-slate-200 rounded-[28px] p-6 shadow-sm flex gap-6">
-                    <div class="w-[130px]">
+                  <div class="bg-white border-2 border-slate-200 rounded-[28px] p-6 shadow-sm flex flex-row gap-6 pinol-quantities-row">
+                    <div class="flex-1 min-w-0">
                       <label
                         class="text-[11px] font-black text-primary uppercase tracking-[0.2em] block mb-4 text-center">Existencia</label>
-                      <input id="pinol_existencia" type="number" min="0" step="1" placeholder="0"
-                        class="w-full h-[58px] bg-slate-50 border-2 border-slate-400 rounded-2xl px-4 text-[20px] font-black text-slate-900 focus:border-primary focus:bg-white transition-all outline-none text-center">
+                      <div class="touch-stepper-wrap flex items-center gap-2">
+                        <button type="button" class="stepper-btn stepper-btn-minus" onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
+                        <input id="pinol_existencia" type="number" min="0" step="1" placeholder="0"
+                          class="w-full h-[58px] bg-slate-50 border-2 border-slate-400 rounded-2xl px-4 text-[20px] font-black text-slate-900 focus:border-primary focus:bg-white transition-all outline-none text-center">
+                        <button type="button" class="stepper-btn stepper-btn-plus" onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
+                      </div>
                       <div class="text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] text-center mt-3">
                         botellas</div>
                     </div>
-                    <div class="w-[130px]">
+                    <div class="flex-1 min-w-0">
                       <label
                         class="text-[11px] font-black text-primary uppercase tracking-[0.2em] block mb-4 text-center">Pedido</label>
-                      <input id="pinol_solicitud" type="number" min="0" step="1" placeholder="0"
-                        class="w-full h-[58px] bg-slate-50 border-2 border-primary/40 rounded-2xl px-4 text-[20px] font-black text-primary focus:border-primary focus:bg-white transition-all outline-none text-center">
+                      <div class="touch-stepper-wrap flex items-center gap-2">
+                        <button type="button" class="stepper-btn stepper-btn-minus" onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
+                        <input id="pinol_solicitud" type="number" min="0" step="1" placeholder="0"
+                          class="w-full h-[58px] bg-slate-50 border-2 border-primary/40 rounded-2xl px-4 text-[20px] font-black text-primary focus:border-primary focus:bg-white transition-all outline-none text-center">
+                        <button type="button" class="stepper-btn stepper-btn-plus" onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
+                      </div>
                       <div class="text-[10px] font-black text-primary/40 uppercase tracking-[0.25em] text-center mt-3">
                         botellas</div>
                     </div>

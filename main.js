@@ -7203,9 +7203,13 @@ window.addSRRow = function (data = null) {
         </div>
       </td>
       <td class="p-4 py-3" data-label="Frascos">
-        <div class="relative group w-full">
-          <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-rounded text-slate-400 text-[18px] pointer-events-none transition-colors group-focus-within:text-primary">inventory_2</span>
-          <input type="number" style="padding-left: 38px !important;" class="sr-cantidad-input w-full bg-slate-50 border-2 border-slate-400 rounded-xl pr-3 py-2.5 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" min="0" step="1" value="${data?.cantidad || ""}" placeholder="0">
+        <div class="relative group w-full flex items-center gap-1.5 touch-stepper-wrap">
+          <button type="button" class="stepper-btn stepper-btn-minus" onclick="const inp=this.nextElementSibling.querySelector('input'); inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
+          <div class="relative w-full">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-rounded text-slate-400 text-[18px] pointer-events-none transition-colors group-focus-within:text-primary">inventory_2</span>
+            <input type="number" class="sr-cantidad-input w-full bg-slate-50 border-2 border-slate-400 rounded-xl pr-3 py-2.5 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" min="0" step="1" value="${data?.cantidad || ""}" placeholder="0">
+          </div>
+          <button type="button" class="stepper-btn stepper-btn-plus" onclick="const inp=this.previousElementSibling.querySelector('input'); inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
         </div>
       </td>
       <td class="p-4 py-3 text-center" data-label="Acción">
@@ -7912,24 +7916,30 @@ async function whoami() {
       .single();
 
     if (perfilError || !perfil) {
-      console.error("[whoami] Perfil no encontrado para UID:", session.user.id, perfilError);
-      clearSession();
-      return null;
+      console.warn("[whoami] Perfil no encontrado en DB, usando fallback de metadata:", session.user.id, perfilError);
+      const fallbackPerfil = {
+        id: session.user.id,
+        rol: session.user.user_metadata?.rol || "UNIDAD",
+        clues: session.user.user_metadata?.clues || "FALLBACK",
+        unidad: session.user.user_metadata?.unidad || "Unidad Fallback",
+        municipio: session.user.user_metadata?.municipio || "",
+        activo: "SI"
+      };
+      USER = buildUserFromPerfil(session.user.id, session.user.email, fallbackPerfil);
+    } else {
+      // 4. Verificar que el usuario esté activo
+      if (String(perfil.activo || "SI").toUpperCase() !== "SI") {
+        console.warn("[whoami] Usuario desactivado:", perfil.usuario);
+        await window.supabase.auth.signOut();
+        clearSession();
+        return null;
+      }
+      // 5. Construir USER de forma canónica y persistir
+      USER = buildUserFromPerfil(session.user.id, session.user.email, perfil);
     }
-
-    // 4. Verificar que el usuario esté activo
-    if (String(perfil.activo || "SI").toUpperCase() !== "SI") {
-      console.warn("[whoami] Usuario desactivado:", perfil.usuario);
-      await window.supabase.auth.signOut();
-      clearSession();
-      return null;
-    }
-
-    // 5. Construir USER de forma canónica y persistir
-    USER = buildUserFromPerfil(session.user.id, session.user.email, perfil);
 
     // 🛡️ Verificar cambio obligatorio desde metadata fresca de Auth o base de datos
-    if (user.user_metadata?.force_password_change || perfil.must_change) {
+    if (user.user_metadata?.force_password_change || (perfil && perfil.must_change)) {
       USER.mustChange = true;
     }
 
@@ -8394,21 +8404,25 @@ function renderBioRows(rows) {
       <div class="bio-name">
         💉 ${escapeHtml(r.biologico || "")}
       </div>
-      <div class="text-center">
+      <div class="text-center flex items-center justify-center gap-1 touch-stepper-wrap">
+        <button type="button" class="stepper-btn stepper-btn-minus" onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
         <input
           class="bioInput"
           style="width: 80px; height: 48px; text-align: center; font-size: 18px; font-weight: 900; border: 2px solid #cbd5e1; border-radius: 12px; background: #ffffff; outline: none; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"
           type="number" min="0" step="any" inputmode="decimal"
           data-i="${i}" data-kind="existencia"
           value="${r.existencia_actual_frascos ?? ""}" placeholder="0">
+        <button type="button" class="stepper-btn stepper-btn-plus" onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
       </div>
-      <div class="text-center">
+      <div class="text-center flex items-center justify-center gap-1 touch-stepper-wrap">
+        <button type="button" class="stepper-btn stepper-btn-minus" onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
         <input
           class="bioInput"
           style="width: 80px; height: 48px; text-align: center; font-size: 18px; font-weight: 900; border: 2px solid #cbd5e1; border-radius: 12px; background: #ffffff; outline: none; color: #0f172a; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"
           type="number" min="0" step="1" inputmode="numeric"
           data-i="${i}" data-kind="pedido"
           value="${r.pedido_frascos ?? ""}" placeholder="0">
+        <button type="button" class="stepper-btn stepper-btn-plus" onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
       </div>
       <div class="text-center">
         <span class="bio-metric-pill">${isCamp ? "N/A" : (r.promedio_frascos ?? "") + " fr."}</span>
@@ -14992,6 +15006,14 @@ function syncCommandHub() {
   const mainPanel = AppState.mainPanel; // CAP, ARCHIVOS, NOTIFS, ADMIN
   const captureTab = AppState.captureTab || "SR";
 
+  const isEditing = (captureTab === "SR" && typeof EDIT_SR !== "undefined" && EDIT_SR) ||
+                    (captureTab === "CONS" && typeof EDIT_CONS !== "undefined" && EDIT_CONS) ||
+                    (captureTab === "BIO" && typeof EDIT_BIO !== "undefined" && EDIT_BIO);
+  const isAlreadySaved = (captureTab === "SR" && typeof HAS_TODAY_SR !== "undefined" && HAS_TODAY_SR) ||
+                         (captureTab === "CONS" && typeof HAS_TODAY_CONS !== "undefined" && HAS_TODAY_CONS) ||
+                         (captureTab === "BIO" && typeof HAS_SAVED_BIO !== "undefined" && HAS_SAVED_BIO);
+  const canEdit = isAlreadySaved && !isEditing;
+
   // 1. Visibilidad Global (Solo en paneles de captura)
   const isCapture = (mainPanel === "CAP");
   const isUnidad = (typeof USER !== "undefined" && USER?.rol === "UNIDAD");
@@ -15125,15 +15147,16 @@ function syncCommandHub() {
 
     const saveText = hubSave.querySelector('span:last-child');
     if (saveText) {
-      if (realCancelBtn && realCancelBtn.style.display !== "none") saveText.textContent = "Actualizar";
+      if (isEditing) saveText.textContent = "Actualizar";
       else saveText.textContent = "Guardar";
     }
   }
 
-  if (realEditBtn && realEditBtn.style.display !== "none") hubEdit.style.display = "flex";
+
+  if (canEdit && captureTab !== "PINOL") hubEdit.style.display = "flex";
   else hubEdit.style.display = "none";
 
-  if (realCancelBtn && realCancelBtn.style.display !== "none") hubCancel.style.display = "flex";
+  if (isEditing && captureTab !== "PINOL") hubCancel.style.display = "flex";
   else hubCancel.style.display = "none";
 
   if (hubSave) {
