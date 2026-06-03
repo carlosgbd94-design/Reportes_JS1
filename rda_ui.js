@@ -1121,13 +1121,18 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             // 3. Obtener imágenes base64 de las gráficas
             let imgChart1Base64 = '';
             let titleChart1 = '';
+            let titleChart2 = '';
             
+            const isMuniFilter = muni && muni !== 'JURISDICCIÓN SANITARIA 1' && muni.trim() !== '';
+
             if (isSingleUnit) {
                 imgChart1Base64 = _rdaCharts.d ? _rdaCharts.d.toBase64Image() : '';
                 titleChart1 = "DISTRIBUCIÓN DE AVANCE";
+                titleChart2 = "AVANCE ANUAL 2025";
             } else {
                 imgChart1Base64 = _rdaCharts.total ? _rdaCharts.total.toBase64Image() : '';
-                titleChart1 = "AVANCE JURISDICCIONAL TOTAL";
+                titleChart1 = isMuniFilter ? "AVANCE MUNICIPAL TOTAL" : "AVANCE JURISDICCIONAL TOTAL";
+                titleChart2 = isMuniFilter ? "TOP UNIDADES DEL MUNICIPIO" : "TOP 10 UNIDADES";
             }
             const imgTopBase64 = _rdaCharts.b ? _rdaCharts.b.toBase64Image() : '';
             
@@ -1365,7 +1370,7 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             // Tarjeta B (Gráfica 2)
             doc.setFillColor(255, 255, 255);
             doc.roundedRect(marginX + cardWidth + gap, currentY, cardWidth, chartSectionHeight, 4, 4, 'FD');
-            doc.text("TOP UNIDADES / MUNICIPIOS", marginX + cardWidth + gap + 6, currentY + 8);
+            doc.text(titleChart2, marginX + cardWidth + gap + 6, currentY + 8);
             if (imgTopBase64) {
                 doc.addImage(imgTopBase64, 'PNG', marginX + cardWidth + gap + 10, currentY + 12, cardWidth - 20, chartSectionHeight - 20, undefined, 'FAST');
             }
