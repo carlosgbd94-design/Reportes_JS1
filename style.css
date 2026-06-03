@@ -8997,16 +8997,15 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
 
 
 
-/* Enforce cards to stay STRICTLY on a single horizontal line on desktop only */
-@media (min-width: 1280px) {
-  #welcomeBlock > .flex-col {
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    align-items: stretch !important;
-    justify-content: space-between !important;
-    width: 100% !important;
-  }
+/* Las 3 chips SIEMPRE en 1 sola fila — mobile tiene su propio CSS/JS */
+#welcomeBlock > .flex-col {
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+  justify-content: space-between !important;
+  width: 100% !important;
 }
+
 
 /* Liquid Glass Panels (Sin backdrop-blur) */
 .liquid-glass-panel {
