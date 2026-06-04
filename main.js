@@ -5009,12 +5009,15 @@ async function supabaseRequest(action = "", payload, options = {}) {
       }
 
       case "biogetexportoptions": {
-        const { data, error } = await supabase.from('unidades').select('municipio');
+        const { data, error } = await supabase.from('unidades').select('municipio, unidad');
         if (error) throw error;
-        let uniqueMunis = [...new Set(data.map(u => u.municipio))].filter(Boolean).sort();
-
-        // 🛡️ Aplicar Jerarquía
-        uniqueMunis = uniqueMunis.filter(m => canSeeMunicipio_(USER, m));
+        let filtered = data || [];
+        if (role === "CARAVANAS") {
+          filtered = filtered.filter(u => isCaravanaUnit_(u));
+        } else {
+          filtered = filtered.filter(m => canSeeMunicipio_(USER, m.municipio));
+        }
+        let uniqueMunis = [...new Set(filtered.map(u => u.municipio))].filter(Boolean).sort();
 
         return { ok: true, data: { municipios: uniqueMunis } };
       }
@@ -12862,6 +12865,11 @@ function renderHistoryMetrics(data) {
     activeRows = activeRows.filter(r => r.clues === USER.clues);
   } else if (userRole === "MUNICIPAL") {
     activeRows = activeRows.filter(r => canSeeMunicipio_(USER, r.municipio));
+  } else if (userRole === "CARAVANAS") {
+    activeRows = activeRows.filter(r => isCaravanaUnit_({ unidad: r.unidad }));
+    if (selectedMuni && selectedMuni !== "TODOS") {
+      activeRows = activeRows.filter(r => normalizeText(r.municipio) === normalizeText(selectedMuni));
+    }
   } else {
     // ADMIN / JURISDICCIONAL: Permite filtro manual por municipio en la vista
     if (selectedMuni && selectedMuni !== "TODOS") {
@@ -14508,6 +14516,21 @@ function filterArchivosGrid() {
     if (isMunicipal && allowedCluesSet) {
       const cluesFromPath = cluMun.split("_")[0];
       if (!allowedCluesSet.has(cluesFromPath)) return false;
+    }
+
+    // ✅ REGLA: CARAVANAS solo ve archivos de unidades móviles (FAM/UMME)
+    if (role === "CARAVANAS") {
+      let isCaravana = false;
+      const cluesFromPath = cluMun.split("_")[0];
+      const catalog = Array.isArray(UNIT_CATALOG) ? UNIT_CATALOG : [];
+      const uInfo = catalog.find(u => u.clues === cluesFromPath);
+      if (uInfo) {
+        const uName = (uInfo.unidad || uInfo.UNIDAD || uInfo.nombre || "").toUpperCase().trim();
+        isCaravana = uName.startsWith("FAM") || uName.startsWith("UMME");
+      } else {
+        isCaravana = cluMun.includes("FAM") || cluMun.includes("UMME");
+      }
+      if (!isCaravana) return false;
     }
 
     return true;
