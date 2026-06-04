@@ -3,9 +3,14 @@
  * Parser de CSV concentrado SIS — Smart Upsert por MES.
  * Al subir un CSV, detecta los meses incluidos, borra registros previos
  * de esos meses, y luego inserta los nuevos datos.
+ *
+ * v2: Auto-detección de tipo de CSV (Productividad SIS vs Población).
  */
 
 class RDAParser {
+    // Tipo de CSV detectado: 'SIS' | 'POBLACION' | null
+    static detectedType = null;
+
     static init() {
         const fileInput = document.getElementById('rdaCsvInput');
         const btnConfirm = document.getElementById('btnConfirmUploadCSV');
@@ -22,8 +27,13 @@ class RDAParser {
             btnConfirm.addEventListener('click', () => {
                 if (this.pendingData) {
                     document.getElementById('modalUploadCSV').classList.remove('show');
-                    this.processData(this.pendingData);
+                    if (this.detectedType === 'POBLACION') {
+                        this.processPoblacionData(this.pendingData);
+                    } else {
+                        this.processData(this.pendingData);
+                    }
                     this.pendingData = null;
+                    this.detectedType = null;
                 }
             });
         }
@@ -41,6 +51,40 @@ class RDAParser {
         return key ? (row[key] || '').toString().trim() : null;
     }
 
+    /** Busca una columna que contenga alguno de los patrones dados */
+    static _findColByPatterns(row, patterns) {
+        for (const k of Object.keys(row)) {
+            const norm = this._normalizeKey(k);
+            if (patterns.some(p => norm.includes(p))) return k;
+        }
+        return null;
+    }
+
+    /**
+     * Detecta el tipo de CSV basado en los encabezados.
+     * @param {string[]} fields — nombres de columna del CSV
+     * @returns {'SIS'|'POBLACION'|null}
+     */
+    static detectCSVType(fields) {
+        const nf = fields.map(f => this._normalizeKey(f));
+
+        const hasClues    = nf.includes("CLUES");
+        const hasVariable = nf.includes("VARIABLE");
+        const hasValor    = nf.includes("VALOR");
+        const hasMes      = nf.includes("MES");
+        const hasAnio     = nf.includes("ANO") || nf.includes("ANIO");
+
+        // SIS: tiene las 5 columnas canónicas
+        if (hasClues && hasVariable && hasValor && hasMes && hasAnio) return 'SIS';
+
+        // POBLACION: tiene CLUES + al menos una columna de población
+        const POB_PATTERNS = ['POB_MENOR', 'MENOR_1', 'MENORES', 'POB_1', '1_ANO', 'POB_4', '4_ANO', 'CUATRO'];
+        const hasPobCol = nf.some(f => POB_PATTERNS.some(p => f.includes(p)));
+        if (hasClues && hasPobCol) return 'POBLACION';
+
+        return null;
+    }
+
     static parseCSVAndPreview(file) {
         document.getElementById('csvSchemaError').style.display = 'none';
         
@@ -54,6 +98,10 @@ class RDAParser {
         document.getElementById('csvIgnoredCount').textContent = '...';
         document.getElementById('csvMonthsWarning').style.display = 'none';
 
+        // Reset tipo badge
+        const badge = document.getElementById('csvTypeBadge');
+        if (badge) badge.style.display = 'none';
+
         Papa.parse(file, {
             header: true,
             skipEmptyLines: true,
@@ -63,28 +111,51 @@ class RDAParser {
                     return;
                 }
                 
-                // Validate Schema headers
+                // Auto-detectar tipo de CSV
                 const fields = results.meta.fields || [];
-                const normalizedFields = fields.map(f => this._normalizeKey(f));
-                
-                const hasClues = normalizedFields.includes("CLUES");
-                const hasVariable = normalizedFields.includes("VARIABLE");
-                const hasValor = normalizedFields.includes("VALOR");
-                const hasMes = normalizedFields.includes("MES");
-                const hasAnio = normalizedFields.includes("ANO") || normalizedFields.includes("ANIO");
+                this.detectedType = this.detectCSVType(fields);
 
-                if (!hasClues || !hasVariable || !hasValor || !hasMes || !hasAnio) {
-                    this._showSchemaError("Faltan columnas requeridas. El CSV debe contener: CLUES, VARIABLE, VALOR, MES, y ANO/ANIO.");
+                if (!this.detectedType) {
+                    this._showSchemaError(
+                        "Formato no reconocido. El CSV debe ser de tipo Productividad SIS (CLUES, VARIABLE, VALOR, MES, ANO) " +
+                        "o de Población (CLUES + columnas de población como POB_MENOR_1, POB_1_ANO, POB_4_ANOS)."
+                    );
                     return;
                 }
 
-                this.validateAndPreviewData(results.data);
+                // Actualizar UI según tipo detectado
+                this._updateModalForType(this.detectedType);
+
+                if (this.detectedType === 'SIS') {
+                    this.validateAndPreviewData(results.data);
+                } else if (this.detectedType === 'POBLACION') {
+                    this.validateAndPreviewPoblacion(results.data);
+                }
             },
             error: (error) => {
                 this._showSchemaError("Error al leer el archivo CSV.");
                 console.error("[RDA Parser]", error);
             }
         });
+    }
+
+    /** Actualiza el título y badge del modal según tipo detectado */
+    static _updateModalForType(type) {
+        const titleEl = document.querySelector('#modalUploadCSV h3');
+        const subtitleEl = document.querySelector('#modalUploadCSV h3 + p');
+        const badge = document.getElementById('csvTypeBadge');
+        const monthsWarning = document.getElementById('csvMonthsWarning');
+
+        if (type === 'SIS') {
+            if (titleEl) titleEl.textContent = 'Carga de Reporte SIS';
+            if (subtitleEl) subtitleEl.textContent = 'Productividad mensual — formato .csv';
+            if (badge) { badge.textContent = '📊 PRODUCTIVIDAD SIS'; badge.className = 'inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-700 mt-2'; badge.style.display = 'inline-flex'; }
+        } else if (type === 'POBLACION') {
+            if (titleEl) titleEl.textContent = 'Carga de Población';
+            if (subtitleEl) subtitleEl.textContent = 'Actualización masiva de datos demográficos';
+            if (badge) { badge.textContent = '👥 POBLACIÓN'; badge.className = 'inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700 mt-2'; badge.style.display = 'inline-flex'; }
+            if (monthsWarning) monthsWarning.style.display = 'none';
+        }
     }
 
     static _showSchemaError(msg) {
@@ -95,6 +166,10 @@ class RDAParser {
         document.getElementById('csvValidCount').textContent = '0';
         document.getElementById('csvIgnoredCount').textContent = '0';
     }
+
+    // =========================================================================
+    // SIS FLOW (original, sin cambios funcionales)
+    // =========================================================================
 
     static validateAndPreviewData(data) {
         let validos = 0;
@@ -256,6 +331,124 @@ class RDAParser {
             console.error('[RDA Parser] ❌ Error fatal en rpcUpsert:', err);
             if (typeof hideOverlay === 'function') hideOverlay();
             if (typeof showToast === 'function') showToast(err.message || 'Error inesperado al subir datos', false, 'bad');
+        }
+    }
+
+    // =========================================================================
+    // POBLACIÓN FLOW (nuevo)
+    // =========================================================================
+
+    /** Valida y muestra preview del CSV de población */
+    static validateAndPreviewPoblacion(data) {
+        const POB_MENOR_PATTERNS = ['POB_MENOR', 'MENOR_1', 'MENORES'];
+        const POB_1_PATTERNS     = ['POB_1_ANO', 'POB_1ANO', '1_ANO', 'UN_ANO', 'DE_1_ANO'];
+        const POB_4_PATTERNS     = ['POB_4_ANO', 'POB_4ANO', '4_ANO', 'CUATRO', 'DE_4_ANO'];
+
+        let validos = 0;
+        let ignorados = 0;
+
+        // Encontrar las columnas reales en el CSV usando la primera fila
+        const sampleRow = data[0];
+        const colMenor = this._findColByPatterns(sampleRow, POB_MENOR_PATTERNS);
+        const col1     = this._findColByPatterns(sampleRow, POB_1_PATTERNS);
+        const col4     = this._findColByPatterns(sampleRow, POB_4_PATTERNS);
+
+        if (!colMenor && !col1 && !col4) {
+            this._showSchemaError("No se encontraron columnas de población (POB_MENOR_1, POB_1_ANO, POB_4_ANOS).");
+            return;
+        }
+
+        for (const row of data) {
+            const clues = this._getCol(row, 'CLUES');
+            if (!clues) { ignorados++; continue; }
+
+            const pMenor = colMenor ? parseInt(row[colMenor], 10) : NaN;
+            const p1     = col1     ? parseInt(row[col1], 10)     : NaN;
+            const p4     = col4     ? parseInt(row[col4], 10)     : NaN;
+
+            // Al menos un valor de población debe ser numérico
+            if (isNaN(pMenor) && isNaN(p1) && isNaN(p4)) { ignorados++; continue; }
+
+            validos++;
+        }
+
+        // Actualizar contadores — reusar los mismos IDs del modal
+        document.getElementById('csvValidCount').textContent = validos.toLocaleString();
+        document.getElementById('csvIgnoredCount').textContent = ignorados.toLocaleString();
+
+        // Cambiar label "Válidos" → "Unidades"
+        const validLabel = document.querySelector('#csvPreviewArea .bg-surface-variant\\/30:first-child .block:first-child');
+
+        if (validos > 0) {
+            this.pendingData = data;
+            // Guardar las columnas detectadas para el procesamiento posterior
+            this._pobCols = { colMenor, col1, col4 };
+            document.getElementById('btnConfirmUploadCSV').classList.remove('opacity-50', 'pointer-events-none');
+
+            // Mostrar aviso de población en lugar de aviso de meses
+            const warn = document.getElementById('csvMonthsWarning');
+            if (warn) {
+                const h5 = warn.querySelector('h5');
+                const p = warn.querySelector('p');
+                if (h5) h5.textContent = 'Actualización de Población';
+                if (p) p.innerHTML = `Se actualizarán los datos demográficos de <strong>${validos}</strong> unidades médicas. ` +
+                    `Columnas detectadas: ${[colMenor, col1, col4].filter(Boolean).join(', ')}.`;
+                warn.style.display = 'block';
+            }
+        } else {
+            this._showSchemaError("No se encontraron registros válidos de población.");
+        }
+    }
+
+    /** Procesa y envía datos de población al RPC */
+    static async processPoblacionData(data) {
+        if (typeof showOverlay === 'function') showOverlay("Actualizando población...", "Procesando");
+
+        const { colMenor, col1, col4 } = this._pobCols || {};
+        const payload = [];
+
+        for (const row of data) {
+            const clues = this._getCol(row, 'CLUES');
+            if (!clues) continue;
+
+            const pMenor = colMenor ? parseInt(row[colMenor], 10) : NaN;
+            const p1     = col1     ? parseInt(row[col1], 10)     : NaN;
+            const p4     = col4     ? parseInt(row[col4], 10)     : NaN;
+
+            if (isNaN(pMenor) && isNaN(p1) && isNaN(p4)) continue;
+
+            payload.push({
+                clues,
+                pob_menor_1: isNaN(pMenor) ? 0 : pMenor,
+                pob_1_ano:   isNaN(p1)     ? 0 : p1,
+                pob_4_anos:  isNaN(p4)     ? 0 : p4
+            });
+        }
+
+        console.log(`[RDA Parser] 👥 Enviando ${payload.length} registros de población...`);
+
+        try {
+            const { data: result, error } = await window.supabase.rpc('upsert_poblacion_data', {
+                p_data: payload
+            });
+
+            if (typeof hideOverlay === 'function') hideOverlay();
+
+            if (error) {
+                console.error('[RDA Parser] ❌ Error en upsert_poblacion_data:', error);
+                if (typeof showToast === 'function') showToast(`Error: ${error.message}`, false, 'bad');
+                return;
+            }
+
+            const updated = result?.registros_actualizados ?? 0;
+            const total   = result?.total_enviados ?? payload.length;
+            console.log(`[RDA Parser] ✅ Población actualizada: ${updated}/${total} registros`);
+            if (typeof showToast === 'function') showToast(`Población actualizada: ${updated} unidades`, true, 'good');
+
+        } catch (err) {
+            console.error('[RDA Parser] ❌ Error fatal en processPoblacionData:', err);
+            if (typeof hideOverlay === 'function') hideOverlay();
+            if (typeof showToast === 'function') showToast(err.message || 'Error inesperado', false, 'bad');
         }
     }
 }

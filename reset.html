@@ -251,17 +251,29 @@
 
     .overlay.show { display: flex; }
 
-    .spinner {
-      width: 48px;
-      height: 48px;
-      border: 4px solid rgba(255, 255, 255, 0.1);
-      border-top-color: #ffffff;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-bottom: 16px;
+    .elastic-bounce-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
     }
 
-    @keyframes spin { 100% { transform: rotate(360deg); } }
+    .bounce-logo {
+      width: 70px;
+      height: 70px;
+      object-fit: contain;
+      animation: p9-bounce 1.5s infinite ease-in-out;
+      will-change: transform;
+      transform: translateZ(0);
+      backface-visibility: hidden;
+    }
+
+    @keyframes p9-bounce {
+      0%, 100% { transform: translateY(0) scale(1, 1); }
+      25% { transform: translateY(-25px) scale(0.9, 1.15); }
+      50% { transform: translateY(0) scale(1.1, 0.85); }
+      75% { transform: translateY(-6px) scale(0.97, 1.03); }
+    }
   </style>
 </head>
 
@@ -315,7 +327,9 @@
   </div>
 
   <div class="overlay" id="overlay">
-    <div class="spinner"></div>
+    <div class="elastic-bounce-container">
+      <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" alt="Cargando..." class="bounce-logo">
+    </div>
     <div id="overlayText" style="font-weight: 800; font-size: 14px; letter-spacing: 0.05em; text-transform: uppercase;">Procesando...</div>
   </div>
 

@@ -2062,6 +2062,11 @@
                   <span class="material-symbols-rounded text-green-500">sensors</span>
                   <span>En Línea</span>
                 </button>
+
+                <button class="nav-tab" id="tabAdminParametros" onclick="activateAdminSubPanel('parametros')">
+                  <span class="material-symbols-rounded">tune</span>
+                  <span>Parámetros</span>
+                </button>
               </div>
             </div>
 
@@ -2394,6 +2399,100 @@
                     <tr><td colspan="3" class="text-center py-8 text-xs font-medium text-primary/50">Cargando datos en tiempo real...</td></tr>
                   </tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUB-PANEL 5: PARÁMETROS (Cálculo Min/Max/Avg) -->
+          <div id="adminSection_parametros"
+            class="admin-sub-panel hide animate-in fade-in slide-in-from-bottom-4 duration-500" style="display:none;">
+            <div class="bg-surface/50 rounded-[32px] overflow-hidden border border-outline-variant/30 shadow-sm">
+              <!-- Header -->
+              <div
+                class="p-6 bg-primary/5 border-b border-outline-variant/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                  <span class="material-symbols-rounded text-primary text-[24px]">calculate</span>
+                  <div>
+                    <h4 class="text-[14px] font-black text-primary m-0 uppercase tracking-widest">Calculadora de Parámetros</h4>
+                    <p class="text-[11px] font-medium text-primary/50 m-0 mt-0.5">Calcula Min / Max / Promedio de Frascos a partir de productividad SIS</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Controles -->
+              <div class="p-6 flex flex-wrap items-end gap-4 border-b border-outline-variant/10">
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] font-black text-primary/60 uppercase tracking-widest">Año Base</label>
+                  <select id="paramCalcAnio"
+                    class="h-10 px-4 rounded-xl border border-outline-variant/40 bg-white text-[13px] font-bold text-primary focus:ring-2 focus:ring-primary/30 outline-none min-w-[100px]">
+                    <option value="2026" selected>2026</option>
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                  </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] font-black text-primary/60 uppercase tracking-widest">Buffer Demanda (%)</label>
+                  <input id="paramCalcBuffer" type="number" value="10" min="0" max="50" step="1"
+                    class="h-10 px-4 rounded-xl border border-outline-variant/40 bg-white text-[13px] font-bold text-primary focus:ring-2 focus:ring-primary/30 outline-none w-[100px]" />
+                </div>
+
+                <button id="btnCalcParams" onclick="window.runBioParamCalculation()"
+                  class="h-10 px-6 rounded-full bg-primary text-white text-[12px] font-bold border-none cursor-pointer shadow-sm hover:translate-y-[-1px] hover:shadow-md transition-all flex items-center gap-2">
+                  <span class="material-symbols-rounded text-[18px]">calculate</span>
+                  Calcular
+                </button>
+              </div>
+
+              <!-- Resumen de resultados -->
+              <div id="paramCalcSummary" class="p-4 mx-6 mt-4 rounded-2xl bg-primary/5 border border-primary/10" style="display:none;">
+                <div class="flex flex-wrap items-center gap-4 text-[12px] font-bold text-primary">
+                  <span>📊 <span id="paramCalcUnitsCount">0</span> unidades</span>
+                  <span class="text-primary/30">|</span>
+                  <span>🧬 <span id="paramCalcBiosCount">0</span> biológicos</span>
+                  <span class="text-primary/30">|</span>
+                  <span>📅 Meses: <span id="paramCalcMonths">—</span></span>
+                  <span class="text-primary/30">|</span>
+                  <span>🛡️ Buffer: <span id="paramCalcBufferVal">10</span>%</span>
+                </div>
+              </div>
+
+              <!-- Filtro -->
+              <div id="paramCalcFilterRow" class="px-6 pt-4 flex flex-wrap gap-3" style="display:none;">
+                <input id="paramCalcFilter" type="text" placeholder="Filtrar por CLUES, unidad o biológico..."
+                  oninput="window.filterParamCalcTable()"
+                  class="flex-grow h-9 px-4 rounded-xl border border-outline-variant/30 bg-white text-[12px] font-medium text-primary placeholder:text-primary/40 focus:ring-2 focus:ring-primary/30 outline-none" />
+              </div>
+
+              <!-- Tabla de resultados -->
+              <div class="overflow-x-auto p-6">
+                <table class="w-full text-left border-collapse bg-white/50 rounded-2xl overflow-hidden shadow-sm" id="paramCalcTable" style="display:none;">
+                  <thead>
+                    <tr class="bg-primary/5">
+                      <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 sticky left-0 bg-primary/5 z-10">Unidad</th>
+                      <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">Biológico</th>
+                      <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center">Min</th>
+                      <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center">Max</th>
+                      <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center">Prom. Frascos</th>
+                      <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center">Tipo</th>
+                    </tr>
+                  </thead>
+                  <tbody id="paramCalcTbody" class="divide-y divide-outline-variant/20"></tbody>
+                </table>
+
+                <div id="paramCalcEmpty" class="text-center py-12 text-xs font-medium text-primary/50">
+                  Selecciona un año y presiona "Calcular" para generar los parámetros.
+                </div>
+              </div>
+
+              <!-- Footer: Guardar -->
+              <div id="paramCalcFooter" class="p-6 bg-surface-variant/20 border-t border-outline-variant/20 flex justify-between items-center" style="display:none;">
+                <span class="text-[11px] font-bold text-primary/50">Los valores se guardarán en biologicos_params</span>
+                <button id="btnSaveCalcParams" onclick="window.saveCalculatedBioParams()"
+                  class="h-10 px-6 rounded-full bg-green-600 text-white text-[12px] font-bold border-none cursor-pointer shadow-sm hover:translate-y-[-1px] hover:shadow-md transition-all flex items-center gap-2">
+                  <span class="material-symbols-rounded text-[18px]">save</span>
+                  Guardar Todo en Base de Datos
+                </button>
               </div>
             </div>
           </div>
@@ -2779,7 +2878,9 @@
 
   <div id="overlay" class="overlay" aria-hidden="true">
     <div class="overlay-content">
-      <div class="md-spinner"></div>
+      <div class="elastic-bounce-container" style="margin-bottom: 8px;">
+        <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" alt="Cargando..." class="bounce-logo">
+      </div>
       <div class="overlay-text">
         <h3 id="overlayTitle">Procesando</h3>
         <p id="overlayMsg">Cargando JS1 Reportes…</p>
@@ -2929,6 +3030,7 @@
           <div>
             <h3 class="text-[16px] font-black text-primary m-0 tracking-tight">Carga de Reporte SIS</h3>
             <p class="text-[11px] font-medium text-primary/60 m-0">Formato requerido: .csv delimitado por comas</p>
+            <span id="csvTypeBadge" style="display:none;" class="inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-700 mt-2"></span>
           </div>
         </div>
         <button type="button" class="w-8 h-8 flex items-center justify-center rounded-full bg-surface-variant/50 text-primary hover:bg-error hover:text-error-on transition-colors border-none cursor-pointer" onclick="document.getElementById('modalUploadCSV').classList.remove('show'); document.getElementById('rdaCsvInput').value = ''; document.getElementById('csvPreviewArea').style.display='none'; document.getElementById('csvDropZone').style.display='flex'; document.getElementById('btnConfirmUploadCSV').classList.add('opacity-50', 'pointer-events-none');">
@@ -3318,7 +3420,9 @@
         Transmisión de Archivo
       </div>
       
-      <div id="uploadProgressSpinner" class="loaderCircle" style="width: 64px; height: 64px; border: 4px solid #f1f5f9; border-top: 4px solid var(--md-sys-color-primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+      <div id="uploadProgressSpinner" class="elastic-bounce-container" style="margin-bottom: 8px;">
+        <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" alt="Cargando..." class="bounce-logo">
+      </div>
       
       <div style="width: 100%;">
         <div id="uploadProgressTitle" style="font-weight: 900; font-size: 20px; color: #0f172a; margin-bottom: 8px;">Subiendo a Servidor Central...</div>
