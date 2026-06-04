@@ -3988,6 +3988,12 @@ async function supabaseRequest(action = "", payload, options = {}) {
           }
         });
 
+        // 🛡️ Agregar alcance para Caravanas/Unidades Móviles si aplica
+        const isUserCaravanaUnit = role === "UNIDAD" && isCaravanaUnit_({ clues: clues, unidad: USER?.unidad });
+        if (role === "CARAVANAS" || isUserCaravanaUnit) {
+          orClauses.push("target_scope.eq.CARAVANAS_UNITS");
+        }
+
         const orFilterString = orClauses.join(',');
         console.log(`[Notif DEBUG] PostgREST OR Filter:`, orFilterString);
 
