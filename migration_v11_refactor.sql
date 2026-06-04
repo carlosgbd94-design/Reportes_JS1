@@ -109,7 +109,12 @@ BEGIN
     v_is_current_month := (TO_CHAR(v_today, 'YYYY-MM') = p_mes);
     
     IF v_is_current_month THEN
-        v_fecha_fin := v_today;
+        -- Avanzar la fecha fin hasta el domingo de la semana en curso (pero sin pasarse del fin de mes)
+        -- para que se incluya el viernes/jueves de esta semana aunque hoy sea jueves.
+        v_fecha_fin := LEAST(
+            (v_today + (7 - EXTRACT(DOW FROM v_today)::INT) % 7)::DATE,
+            (v_fecha_inicio + INTERVAL '1 month - 1 day')::DATE
+        );
     ELSE
         v_fecha_fin := (v_fecha_inicio + INTERVAL '1 month - 1 day')::DATE;
     END IF;

@@ -479,7 +479,7 @@
             </div>
 
             <div class="topNotifHeadActions">
-              <button type="button" class="ghostBtn" id="btnTopNotifRefresh" title="Actualizar bandeja de entrada">
+              <button type="button" class="premium-refresh-btn" id="btnTopNotifRefresh" title="Actualizar bandeja de entrada">
                 <span class="material-symbols-rounded">refresh</span>
               </button>
               <button type="button" class="ghostBtn" id="btnTopNotifOnlyUnread" title="Mostrar solo no leídas">
@@ -511,9 +511,9 @@
                 <div id="archivosSubtitle" class="topNotifSub !mt-1 !text-[11px]">Consulta de supervisiones y reportes</div>
               </div>
               <div class="flex items-center gap-1.5 flex-none ml-4">
-                <button type="button" class="ghostBtn !w-9 !h-9 !min-w-[36px] !min-h-[36px] !rounded-xl"
+                <button type="button" class="premium-refresh-btn"
                   id="btnRefreshArchivos" title="Actualizar lista">
-                  <span class="material-symbols-rounded !text-[20px]">refresh</span>
+                  <span class="material-symbols-rounded">refresh</span>
                 </button>
                 <button type="button" class="ghostBtn !w-9 !h-9 !min-w-[36px] !min-h-[36px] !rounded-xl"
                   id="btnArchivosClose" title="Cerrar panel">
@@ -1506,10 +1506,10 @@
               class="text-[17px] font-extrabold text-primary tracking-tight m-0 bg-primary-container/40 px-6 py-2.5 rounded-2xl border border-primary/10">
               Resumen de captura de existencia de biológicos de hoy</h3>
             <button
-              class="bg-surface-variant text-surface-on hover:bg-surface-onVariant/10 px-3 h-[36px] rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all outline-none border-none cursor-pointer text-[12px]"
+              class="premium-refresh-btn has-text"
               id="btnRefreshCaptureSummary" title="Actualizar resumen">
-              <span class="material-symbols-rounded text-[16px]">refresh</span> <span
-                class="hidden sm:inline">Actualizar</span>
+              <span class="material-symbols-rounded">refresh</span>
+              <span class="hidden sm:inline">Actualizar</span>
             </button>
           </div>
 
@@ -1672,9 +1672,9 @@
           <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-6">
             <h3 class="text-lg font-extrabold text-primary m-0 tracking-tight">Sistema de Excelencia Operativa</h3>
             <button
-              class="bg-primary/10 text-primary hover:bg-primary/20 px-4 h-[42px] rounded-xl font-bold flex items-center justify-center gap-2 transition-all border-none cursor-pointer text-sm"
+              class="premium-refresh-btn has-text"
               id="btnRefreshHistory" title="Actualizar ranking">
-              <span class="material-symbols-rounded text-[18px]">refresh</span> Actualizar
+              <span class="material-symbols-rounded">refresh</span> Actualizar
             </button>
           </div>
 
@@ -1768,9 +1768,9 @@
           <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-6">
             <h3 class="text-lg font-extrabold text-primary m-0 tracking-tight">Solicitudes de pinol</h3>
             <button
-              class="bg-primary/10 text-primary hover:bg-primary/20 px-4 h-[42px] rounded-xl font-bold flex items-center justify-center gap-2 transition-all border-none cursor-pointer text-sm"
+              class="premium-refresh-btn has-text"
               id="btnRefreshPinol" title="Actualizar solicitudes">
-              <span class="material-symbols-rounded text-[18px]">refresh</span> Actualizar
+              <span class="material-symbols-rounded">refresh</span> Actualizar
             </button>
           </div>
 
@@ -1864,9 +1864,9 @@
           <div class="flex justify-between items-center mb-6">
             <h3 class="text-xl font-black text-primary uppercase tracking-tighter">Carga de lotes por municipio</h3>
             <button
-              class="flex items-center gap-2 bg-primary/5 text-primary px-4 py-2 rounded-xl border border-primary/10 font-bold text-sm hover:bg-primary/10 transition-colors"
+              class="premium-refresh-btn has-text"
               id="btnRefreshLotesAdmin">
-              <span class="material-symbols-rounded text-[20px]">refresh</span> Actualizar
+              <span class="material-symbols-rounded">refresh</span> Actualizar
             </button>
           </div>
 
@@ -2059,7 +2059,7 @@
                 </button>
 
                 <button class="nav-tab" id="tabAdminUsuariosActivos" onclick="activateAdminSubPanel('usuarios_activos')">
-                  <span class="material-symbols-rounded text-green-500">sensors</span>
+                  <span class="material-symbols-rounded">sensors</span>
                   <span>En Línea</span>
                 </button>
 
@@ -2072,7 +2072,7 @@
 
             <div class="flex items-center gap-3">
               <button
-                class="w-[42px] h-[42px] rounded-xl bg-surface-variant text-primary hover:bg-primary hover:text-white flex items-center justify-center transition-all shadow-sm border-none cursor-pointer"
+                class="premium-refresh-btn"
                 id="btnRefreshUsers" title="Actualizar datos">
                 <span class="material-symbols-rounded">refresh</span>
               </button>
@@ -3864,10 +3864,59 @@
   <script defer src="main.js?v=2026.21"></script>
 
 
-  <svg style="display: none" xmlns="http://www.w3.org/2000/svg">
+  <svg style="position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; opacity: 0;" xmlns="http://www.w3.org/2000/svg">
     <filter id="glass-blur" x="-50%" y="-50%" width="200%" height="200%">
       <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="3" result="turbulence" />
       <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="22" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+    
+    <!-- Liquid Glass Refractive Filters for Tabs -->
+    <filter id="filterUnidadTab" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blurred" />
+      <feImage id="unidadTabDisplacementImage" href="" x="0" y="0" width="100" height="36" result="displacement_map" preserveAspectRatio="none" />
+      <feDisplacementMap id="unidadTabDisplacementMap" in="blurred" in2="displacement_map" scale="25" xChannelSelector="R" yChannelSelector="G" result="displaced" />
+      <feColorMatrix in="displaced" type="saturate" values="1.2" result="displaced_saturated" />
+      <feImage id="unidadTabSpecularImage" href="" x="0" y="0" width="100" height="36" result="specular_layer" preserveAspectRatio="none" />
+      <feComponentTransfer in="specular_layer" result="specular_faded">
+        <feFuncA type="linear" slope="0.8" />
+      </feComponentTransfer>
+      <feBlend in="specular_faded" in2="displaced_saturated" mode="screen" />
+    </filter>
+
+    <filter id="filterCaptureTab" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blurred" />
+      <feImage id="captureTabDisplacementImage" href="" x="0" y="0" width="100" height="36" result="displacement_map" preserveAspectRatio="none" />
+      <feDisplacementMap id="captureTabDisplacementMap" in="blurred" in2="displacement_map" scale="25" xChannelSelector="R" yChannelSelector="G" result="displaced" />
+      <feColorMatrix in="displaced" type="saturate" values="1.2" result="displaced_saturated" />
+      <feImage id="captureTabSpecularImage" href="" x="0" y="0" width="100" height="36" result="specular_layer" preserveAspectRatio="none" />
+      <feComponentTransfer in="specular_layer" result="specular_faded">
+        <feFuncA type="linear" slope="0.8" />
+      </feComponentTransfer>
+      <feBlend in="specular_faded" in2="displaced_saturated" mode="screen" />
+    </filter>
+
+    <filter id="filterOpsTab" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blurred" />
+      <feImage id="opsTabDisplacementImage" href="" x="0" y="0" width="100" height="36" result="displacement_map" preserveAspectRatio="none" />
+      <feDisplacementMap id="opsTabDisplacementMap" in="blurred" in2="displacement_map" scale="25" xChannelSelector="R" yChannelSelector="G" result="displaced" />
+      <feColorMatrix in="displaced" type="saturate" values="1.2" result="displaced_saturated" />
+      <feImage id="opsTabSpecularImage" href="" x="0" y="0" width="100" height="36" result="specular_layer" preserveAspectRatio="none" />
+      <feComponentTransfer in="specular_layer" result="specular_faded">
+        <feFuncA type="linear" slope="0.8" />
+      </feComponentTransfer>
+      <feBlend in="specular_faded" in2="displaced_saturated" mode="screen" />
+    </filter>
+
+    <filter id="filterAdminTab" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blurred" />
+      <feImage id="adminTabDisplacementImage" href="" x="0" y="0" width="100" height="36" result="displacement_map" preserveAspectRatio="none" />
+      <feDisplacementMap id="adminTabDisplacementMap" in="blurred" in2="displacement_map" scale="25" xChannelSelector="R" yChannelSelector="G" result="displaced" />
+      <feColorMatrix in="displaced" type="saturate" values="1.2" result="displaced_saturated" />
+      <feImage id="adminTabSpecularImage" href="" x="0" y="0" width="100" height="36" result="specular_layer" preserveAspectRatio="none" />
+      <feComponentTransfer in="specular_layer" result="specular_faded">
+        <feFuncA type="linear" slope="0.8" />
+      </feComponentTransfer>
+      <feBlend in="specular_faded" in2="displaced_saturated" mode="screen" />
     </filter>
   </svg>
 
