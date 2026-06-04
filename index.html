@@ -163,7 +163,7 @@
       <div class="flex items-center gap-2 sm:gap-6 lg:gap-8" id="userControlsGroup">
         <div class="flex items-center gap-2 sm:gap-4 lg:gap-6" id="headerActions">
 
-          <div class="GlassContainer" id="glassBtnExport" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL"
+          <div class="GlassContainer" id="glassBtnExport" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,CARAVANAS"
             style="--glass-icon-color: #003366; --corner-radius: 100px;">
             <div class="GlassContent liquidGL header-liquid-glass">
               <button class="header-action-btn" id="btnExport" data-tooltip="Exportar reportes"
@@ -173,7 +173,7 @@
             </div>
           </div>
 
-          <div class="GlassContainer" id="glassBtnUpload" data-role-gate="UNIDAD,MUNICIPAL"
+          <div class="GlassContainer" id="glassBtnUpload" data-role-gate="UNIDAD,MUNICIPAL,CARAVANAS"
             style="--glass-icon-color: #005bb5; --corner-radius: 100px;">
             <div class="GlassContent liquidGL header-liquid-glass">
               <button class="header-action-btn" id="btnOpenUpload" data-tooltip="Subir archivos" title="Subir archivos"
@@ -183,7 +183,7 @@
             </div>
           </div>
 
-          <div class="GlassContainer" id="glassBtnExplorer" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,UNIDAD"
+          <div class="GlassContainer" id="glassBtnExplorer" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,UNIDAD,CARAVANAS"
             style="--glass-icon-color: #00695c; --corner-radius: 100px;">
             <div class="GlassContent liquidGL header-liquid-glass">
               <button class="header-action-btn" id="btnViewArchivos" data-tooltip="Explorador de evidencias"
@@ -193,7 +193,7 @@
             </div>
           </div>
 
-          <div class="GlassContainer" id="glassBtnNotifs" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,UNIDAD"
+          <div class="GlassContainer" id="glassBtnNotifs" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,UNIDAD,CARAVANAS"
             style="--glass-icon-color: #c41e3a; --corner-radius: 100px;">
             <div class="GlassContent liquidGL header-liquid-glass">
               <button class="header-action-btn" id="btnTopNotifications" data-tooltip="Notificaciones"
@@ -1283,7 +1283,7 @@
         </div>
 
         <!-- 🧱 BLOCK 4: NAVEGACIÓN PREMIUM (Magic Tabs) -->
-        <div id="panelAdminOpsTabs" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL" style="display:none"
+        <div id="panelAdminOpsTabs" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,CARAVANAS" style="display:none"
           class="w-full mb-8 flex justify-center">
           <div class="nav-container">
             <div id="opsTabIndicator" class="nav-indicator liquid-glass">
@@ -1302,7 +1302,7 @@
               <span>Métricas</span>
             </button>
 
-            <button class="nav-tab" id="tabOPS_RDA" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL"
+            <button class="nav-tab" id="tabOPS_RDA" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,CARAVANAS"
               onclick="activateOpsTab('RDA')">
               <span class="material-symbols-rounded premium-anim-bar">stacked_bar_chart</span>
               <span>Indicadores RDA</span>
@@ -1320,7 +1320,7 @@
               <span>Lotes</span>
             </button>
 
-            <button class="nav-tab" id="tabOPS_NOTIFS" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL"
+            <button class="nav-tab" id="tabOPS_NOTIFS" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,CARAVANAS"
               onclick="activateOpsTab('NOTIFICATIONS')">
               <span class="material-symbols-rounded">campaign</span>
               <span>Avisos</span>
@@ -1338,7 +1338,7 @@
         <!-- NOTIFICACIONES (REDISEÑO GLASSMORPHISM) -->
         <div
           class="bg-white rounded-[28px] overflow-hidden shadow-[0_8px_30px_rgba(0,51,102,0.06)] mb-6 border border-outline-variant/20"
-          id="panelNOTIFS" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL" style="display:none">
+          id="panelNOTIFS" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,CARAVANAS" style="display:none">
           <div
             class="bg-primary text-white px-6 py-4 md:px-8 md:py-5 relative flex flex-row items-center justify-between gap-6 h-auto bg-gradient-to-r from-[#002a52] to-[#0052a3]">
             <!-- Decoración de fondo -->
@@ -1499,7 +1499,7 @@
         </div>
 
         <!-- RESUMEN DE CAPTURA -->
-        <div id="panelCaptureSummary" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL" style="display:none"
+        <div id="panelCaptureSummary" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,CARAVANAS" style="display:none"
           class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8">
           <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-4">
             <h3 id="captureSummaryTitle"
@@ -1667,7 +1667,7 @@
 
         <!-- MÉTRICAS HISTÓRICAS -> LIGAS DE EXCELENCIA -->
 
-        <div id="panelHISTORY" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL" style="display:none"
+        <div id="panelHISTORY" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,CARAVANAS" style="display:none"
           class="bg-white rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8 overflow-hidden">
           <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-6">
             <h3 class="text-lg font-extrabold text-primary m-0 tracking-tight">Sistema de Excelencia Operativa</h3>
@@ -2642,7 +2642,7 @@
                     <span class="material-symbols-rounded" style="color: #0d9488;">picture_as_pdf</span>
                     Reporte PDF Individual
                   </button>
-                  <button class="rda-export-opt" data-export="masivo" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL"
+                  <button class="rda-export-opt" data-export="masivo" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,CARAVANAS"
                     style="width: 100%; padding: 16px; border: none; background: transparent; text-align: left; font-size: 14px; font-weight: 700; color: #1e293b; cursor: pointer; display: flex; align-items: center; gap: 12px;">
                     <span class="material-symbols-rounded" style="color: #4338ca;">folder_zip</span>
                     Archivo ZIP Masivo
@@ -3138,6 +3138,7 @@
             <option value="UNIDAD">UNIDAD</option>
             <option value="MUNICIPAL">MUNICIPAL</option>
             <option value="JURISDICCIONAL">JURISDICCIONAL</option>
+            <option value="CARAVANAS">CARAVANAS</option>
           </select>
         </div>
 

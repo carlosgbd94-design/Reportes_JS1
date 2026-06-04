@@ -58,7 +58,7 @@ async function handleLoginFlow(email, password) {
       mustChangePassword: mustChange
     });
 
-    if (USER?.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(USER.rol)) {
+    if (USER?.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL", "CARAVANAS"].includes(USER.rol)) {
       apiCall("silentAdminReminders").catch(() => { });
     }
 
@@ -654,6 +654,12 @@ function canSeeMunicipio_(user, municipio) {
   return allowed.includes(m);
 }
 
+function isCaravanaUnit_(u) {
+  if (!u) return false;
+  const name = String(u.unidad || u.UNIDAD || u.nombre || "").trim().toUpperCase();
+  return name.startsWith("FAM") || name.startsWith("UMME");
+}
+
 
 function hideToastNow() {
   const toastEl = $("toast-container");
@@ -949,6 +955,7 @@ function renderActiveUsers() {
       let roleColor = 'text-primary/70';
       if (data.rol === 'ADMIN') roleColor = 'text-red-500';
       else if (data.rol === 'MUNICIPAL') roleColor = 'text-blue-500';
+      else if (data.rol === 'CARAVANAS') roleColor = 'text-teal-500';
       
       html += `
         <tr class="hover:bg-primary/5 transition-colors">
@@ -1207,7 +1214,7 @@ function getNotifTemplatePayload(templateKey) {
       type: "WARN",
       title: "Recordatorio de captura pendiente",
       message: `Se solicita realizar la captura correspondiente en JS1 Reportes a la brevedad.\n\nEste aviso forma parte del seguimiento operativo de la Jurisdicción Sanitaria 1.`,
-      suggestScope: role === "MUNICIPAL" ? "ALL_MY_UNITS" : "MUNICIPIO"
+      suggestScope: (role === "MUNICIPAL" || role === "CARAVANAS") ? "ALL_MY_UNITS" : "MUNICIPIO"
     },
     OBS_ADMIN: {
       type: "WARN",
@@ -1219,7 +1226,7 @@ function getNotifTemplatePayload(templateKey) {
       type: "INFO",
       title: "Aviso general",
       message: `Se comparte el siguiente aviso operativo mediante JS1 Reportes.\n\nFavor de tomar conocimiento y dar seguimiento en caso necesario.`,
-      suggestScope: role === "MUNICIPAL" ? "ALL_MY_UNITS" : "MUNICIPIO"
+      suggestScope: (role === "MUNICIPAL" || role === "CARAVANAS") ? "ALL_MY_UNITS" : "MUNICIPIO"
     }
   };
 
@@ -1989,7 +1996,7 @@ function renderNotifComposer() {
         <option value="MUNICIPIO">🏙️ Personal de un Municipio (Staff)</option>
         <option value="USUARIO">👤 Usuario Municipal Específico</option>
       `;
-  } else if (role === "MUNICIPAL") {
+  } else if (role === "MUNICIPAL" || role === "CARAVANAS") {
     options += `
         <option value="ALL_MY_UNITS">📋 Todas mis Unidades</option>
         <option value="CLUES">🏥 Unidad Específica (CLUES)</option>
@@ -2015,7 +2022,7 @@ function renderNotifComposer() {
     const isMuniStaffTarget = (scope === "MUNICIPIO");
     const isCluesTarget = (scope === "CLUES");
 
-    $("notifMunicipioBox").style.display = (isMuniStaffTarget || isCluesTarget) ? "block" : "none";
+    $("notifMunicipioBox").style.display = ((isMuniStaffTarget || isCluesTarget) && role !== "CARAVANAS") ? "block" : "none";
     $("notifUnidadBox").style.display = (isCluesTarget) ? "block" : "none";
     $("notifUserBox").style.display = (scope === "USUARIO") ? "block" : "none";
 
@@ -2024,10 +2031,12 @@ function renderNotifComposer() {
     if ($("notifTargetClues")) $("notifTargetClues").innerHTML = "<option value=''>Cargando...</option>";
     if ($("notifTargetUser")) $("notifTargetUser").innerHTML = "<option value=''>Cargando...</option>";
 
-    if (isMuniStaffTarget || isCluesTarget) {
+    if ((isMuniStaffTarget || isCluesTarget) && role !== "CARAVANAS") {
       await populateMunicipiosNotif();
     } else if (scope === "CLUES" && role === "MUNICIPAL") {
       await populateCluesNotif(USER.municipio);
+    } else if (scope === "CLUES" && role === "CARAVANAS") {
+      await populateCaravanasNotif();
     } else if (scope === "USUARIO" || scope === "MUNICIPAL_USERS_ALL") {
       await populateUsersNotif(scope);
     }
@@ -2067,6 +2076,17 @@ async function populateCluesNotif(mun) {
     const { data } = await supabase.from('unidades').select('clues, unidad').eq('municipio', mun).order('clues');
     select.innerHTML = `<option value="">Seleccionar unidad...</option>` +
       data.map(u => `<option value="${escapeAttr(u.clues)}">${escapeHtml(u.unidad)}</option>`).join("");
+  } catch (e) { select.innerHTML = "<option>Error</option>"; }
+}
+
+async function populateCaravanasNotif() {
+  const select = $("notifTargetClues");
+  if (!select) return;
+  try {
+    const { data } = await supabase.from('unidades').select('clues, unidad').eq('activo', 'SI').order('unidad');
+    const filtered = data.filter(u => isCaravanaUnit_(u));
+    select.innerHTML = `<option value="">Seleccionar caravana...</option>` +
+      filtered.map(u => `<option value="${escapeAttr(u.clues)}">${escapeHtml(u.unidad)}</option>`).join("");
   } catch (e) { select.innerHTML = "<option>Error</option>"; }
 }
 
@@ -2118,6 +2138,10 @@ async function sendNotificationFlow() {
         payload.target_municipio = $("notifTargetMunicipio")?.value || USER.municipio;
       } else if (scope === "CLUES") {
         // MUNICIPAL enviando a CLUES específica: ya tiene target_clues del selector
+      }
+    } else if (USER.rol === "CARAVANAS") {
+      if (scope === "ALL_MY_UNITS") {
+        payload.target_scope = "CARAVANAS_UNITS";
       }
     }
 
@@ -4060,17 +4084,28 @@ async function supabaseRequest(action = "", payload, options = {}) {
           // D. Dirigidas a mi CLUES (Unidad)
           if (nClues === clues && clues !== "") return true;
 
-          // E. JERARQUÍA: Si soy Supervisor (Municipal/Admin)
-          if (role === "MUNICIPAL" || role === "ADMIN" || role === "JURISDICCIONAL") {
-            // i. Por municipio explícito
-            if (nMuni && canSeeMunicipio_(USER, nMuni)) return true;
+          // E. Si la notif es para todas las Caravanas y la unidad destinataria es Caravana
+          if (nScope === "CARAVANAS_UNITS" && isCaravanaUnit_({ clues: clues, unidad: USER.unidad })) return true;
+
+          // F. JERARQUÍA: Si soy Supervisor (Municipal/Admin/Caravanas)
+          if (role === "MUNICIPAL" || role === "ADMIN" || role === "JURISDICCIONAL" || role === "CARAVANAS") {
+            // i. Por municipio explícito (para Caravanas, si la unidad pertenece a Caravanas y es de ese municipio)
+            if (nMuni && role === "CARAVANAS") {
+              const derivedMuni = unitMap[nClues];
+              if (derivedMuni && isCaravanaUnit_({ clues: nClues })) return true;
+            } else if (nMuni && canSeeMunicipio_(USER, nMuni)) {
+              return true;
+            }
 
             // ii. Por CLUES (derivar municipio si no viene en la notif)
             const derivedMuni = unitMap[nClues];
             if (derivedMuni) {
-              const canSee = canSeeMunicipio_(USER, derivedMuni);
-              if (canSee) return true;
-              else console.log(`[Notif DEBUG] Municipal Supervisor cannot see unit ${nClues} because it belongs to ${derivedMuni}`);
+              if (role === "CARAVANAS") {
+                if (isCaravanaUnit_({ clues: nClues })) return true;
+              } else {
+                const canSee = canSeeMunicipio_(USER, derivedMuni);
+                if (canSee) return true;
+              }
             } else if (nClues && nClues !== "SYS") {
               console.log(`[Notif DEBUG] Unit ${nClues} not found in unitMap`);
             }
@@ -4281,6 +4316,8 @@ async function supabaseRequest(action = "", payload, options = {}) {
         if (role === "MUNICIPAL") {
           allUnits = allUnits.filter(u => canSeeMunicipio_(USER, u.municipio));
           console.log(`[admincaptureoverview DEBUG] Unidades MUNICIPAL después de filtro: ${allUnits.length}`);
+        } else if (role === "CARAVANAS") {
+          allUnits = allUnits.filter(u => isCaravanaUnit_(u));
         }
 
         const capturadas = allUnits.filter(u => capturedClues.includes(String(u.clues || u.CLUES || "").trim().toUpperCase()));
@@ -4349,6 +4386,8 @@ async function supabaseRequest(action = "", payload, options = {}) {
         let units = unitsData || [];
         if (role === "MUNICIPAL") {
           units = units.filter(u => canSeeMunicipio_(USER, u.municipio));
+        } else if (role === "CARAVANAS") {
+          units = units.filter(u => isCaravanaUnit_(u));
         }
         const unitCluesSet = new Set(units.map(u => u.clues));
 
@@ -4817,6 +4856,25 @@ async function supabaseRequest(action = "", payload, options = {}) {
             const muniInfo = muniList.find(m => m.municipio === myMuni);
             municipal_avg = muniInfo ? muniInfo.score : 0;
 
+          } else if (role === "CARAVANAS") {
+            const caravanScores = unitScores.filter(item => {
+              const u = units.find(x => x.clues === item.clues);
+              return isCaravanaUnit_(u);
+            });
+            const caravanSum = caravanScores.reduce((sum, item) => sum + item.score, 0);
+            compliance_pct = caravanScores.length > 0 ? Math.round(caravanSum / caravanScores.length) : 0;
+            
+            let tier = "riesgo";
+            if (compliance_pct === 100) tier = "diamante";
+            else if (compliance_pct >= 90) tier = "oro";
+            else if (compliance_pct >= 80) tier = "plata";
+            else if (compliance_pct >= 70) tier = "bronce";
+            else if (compliance_pct >= 60) tier = "acero";
+            else if (compliance_pct >= 50) tier = "jade";
+            userTier = tier;
+            userRank = undefined;
+            municipal_avg = compliance_pct;
+
           } else {
             // MUNICIPAL, ADMIN, JURISDICCIONAL
             let targetMuni = "";
@@ -4943,6 +5001,8 @@ async function supabaseRequest(action = "", payload, options = {}) {
         let filteredData = data || [];
         if (role === "MUNICIPAL") {
           filteredData = filteredData.filter(u => canSeeMunicipio_(USER, u.municipio));
+        } else if (role === "CARAVANAS") {
+          filteredData = filteredData.filter(u => isCaravanaUnit_(u));
         }
 
         return { ok: true, data: filteredData };
@@ -4977,6 +5037,8 @@ async function supabaseRequest(action = "", payload, options = {}) {
         }
         if (role === "MUNICIPAL") {
           filteredData = filteredData.filter(row => canSeeMunicipio_(USER, row.municipio));
+        } else if (role === "CARAVANAS") {
+          filteredData = filteredData.filter(row => isCaravanaUnit_(row));
         }
 
         return { ok: true, data: filteredData };
@@ -4999,6 +5061,8 @@ async function supabaseRequest(action = "", payload, options = {}) {
         }
         if (role === "MUNICIPAL") {
           filteredData = filteredData.filter(row => canSeeMunicipio_(USER, row.municipio));
+        } else if (role === "CARAVANAS") {
+          filteredData = filteredData.filter(row => isCaravanaUnit_(row));
         }
 
         const requestedMunis = (payload.municipios || []).map(m => String(m).toUpperCase());
@@ -5017,6 +5081,8 @@ async function supabaseRequest(action = "", payload, options = {}) {
 
         if (USER.rol === 'UNIDAD') {
           query = query.eq('clues', USER.clues);
+        } else if (USER.rol === 'CARAVANAS') {
+          return { ok: true, data: [] };
         } else if (USER.rol === 'MUNICIPAL' || USER.rol === 'JURISDICCIONAL') {
           const mList = Array.isArray(USER?.municipiosAllowed) ? USER.municipiosAllowed : [];
           if (mList.length > 0) {
@@ -6619,7 +6685,7 @@ async function hydrateSessionUi(user, status, opts = {}) {
   // Al usar apiCall para múltiples cosas aquí, el API_BATCH_TIMER las agrupará en UN solo POST
   try {
     // ? Visibilidad de pestañas por Rol
-    const isOps = user?.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL"].includes(user.rol);
+    const isOps = user?.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL", "CARAVANAS"].includes(user.rol);
     const isLotesAdmin = user?.rol && ["ADMIN", "JURISDICCIONAL"].includes(user.rol);
 
     toggleEl("tabLOTES", isLotesAdmin, "flex");
@@ -9874,6 +9940,7 @@ function setLoggedInUI(user, status) {
   const isJurisdiccional = role === "JURISDICCIONAL";
   const isMunicipal = role === "MUNICIPAL";
   const isUnidad = role === "UNIDAD";
+  const isCaravanas = role === "CARAVANAS";
 
   if ($("tabADMIN")) $("tabADMIN").style.display = isAdmin ? "block" : "none";
   // Tabs y botones de acceso rápido ahora se gestionan vía data-role-gate en applyRolePermissions
@@ -9900,11 +9967,11 @@ function setLoggedInUI(user, status) {
   if ($("panelCAP")) $("panelCAP").style.display = isUnidad ? "block" : "none";
   const canSeeLotes = (isAdmin || isJurisdiccional);
   const canSeeAdminCenter = isAdmin;
-  const canSeeNotifsCenter = (isAdmin || isJurisdiccional || isMunicipal);
+  const canSeeNotifsCenter = (isAdmin || isJurisdiccional || isMunicipal || isCaravanas);
   const canSeePinol = (isAdmin || isMunicipal);
-  const canExport = (isAdmin || isJurisdiccional || isMunicipal);
+  const canExport = (isAdmin || isJurisdiccional || isMunicipal || isCaravanas);
 
-  if ($("panelAdminOpsTabs")) $("panelAdminOpsTabs").style.display = (isAdmin || isJurisdiccional || isMunicipal) ? "block" : "none";
+  if ($("panelAdminOpsTabs")) $("panelAdminOpsTabs").style.display = (isAdmin || isJurisdiccional || isMunicipal || isCaravanas) ? "block" : "none";
   if ($("panelUnidadOpsTabs")) $("panelUnidadOpsTabs").style.display = isUnidad ? "block" : "none";
   if ($("tabLOTES")) $("tabLOTES").style.display = canSeeLotes ? "flex" : "none";
   if ($("tabOPS_PINOL")) $("tabOPS_PINOL").style.display = canSeePinol ? "flex" : "none";
@@ -9926,14 +9993,14 @@ function setLoggedInUI(user, status) {
     $("notifListWrap").style.display = "none";
   }
   if ($("notifComposerPane")) {
-    $("notifComposerPane").style.display = (isAdmin || isJurisdiccional || isMunicipal) ? "block" : "none";
+    $("notifComposerPane").style.display = (isAdmin || isJurisdiccional || isMunicipal || isCaravanas) ? "block" : "none";
   }
 
   if ($("notifRoleKpi")) {
     $("notifRoleKpi").textContent = user.rol || "—";
   }
 
-  if ($("panelNOTIFS")) $("panelNOTIFS").style.display = (isAdmin || isJurisdiccional || isMunicipal) ? "" : "none";
+  if ($("panelNOTIFS")) $("panelNOTIFS").style.display = (isAdmin || isJurisdiccional || isMunicipal || isCaravanas) ? "" : "none";
 
 
   syncTopNotifMirror();
@@ -11514,7 +11581,7 @@ if (createRol && createUnidad && createClues && createMunicipio) {
     createClues.value = "";
     createUnidad.innerHTML = '<option value="">Selecciona la Unidad</option>';
 
-    if (val === "JURISDICCIONAL" || val === "MUNICIPAL") {
+    if (val === "JURISDICCIONAL" || val === "MUNICIPAL" || val === "CARAVANAS") {
       createUnidad.innerHTML = '<option value="OFICINAS DE LA JURISDICCIÓN SANITARIA 1">OFICINAS DE LA JURISDICCIÓN SANITARIA 1</option>';
       createUnidad.value = "OFICINAS DE LA JURISDICCIÓN SANITARIA 1";
       createClues.value = "QTSSA012154";
@@ -11524,6 +11591,10 @@ if (createRol && createUnidad && createClues && createMunicipio) {
         createMunicipio.value = "";
         createMunicipio.disabled = true;
         createUsuarioID.value = "QTSSA012154_JURISDICCIONAL";
+      } else if (val === "CARAVANAS") {
+        createMunicipio.value = "";
+        createMunicipio.disabled = true;
+        createUsuarioID.value = "QTSSA012154_CARAVANAS";
       } else {
         // MUNICIPAL: Permite elegir municipio pero bloquea unidad
         createMunicipio.disabled = false;
@@ -14940,7 +15011,7 @@ function applyRolePermissions(role) {
 
   // Especial: Ajustes de UI que no son solo ocultar (placeholders, etc)
   const isUnidad = normalizedRole === "UNIDAD";
-  const isMunicipal = normalizedRole === "MUNICIPAL";
+  const isMunicipal = normalizedRole === "MUNICIPAL" || normalizedRole === "CARAVANAS";
   if ($("archivosSearch")) {
     $("archivosSearch").placeholder = isUnidad ? "Buscar por fecha..." : "Buscar por Clues o Unidad...";
   }

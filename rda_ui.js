@@ -181,8 +181,16 @@ async function fetchRDAData() {
 
     console.log(`[RDA] Loaded ${yearInt} pre-aggregated indicators: ${indicators.length} records. Max Mes: ${maxMes}`);
 
-    _rdaCache.unidades = indicators || [];
-    _rdaCache.registros = indicators || [];
+    let filteredIndicators = indicators || [];
+    if (typeof USER !== 'undefined' && USER?.rol === 'CARAVANAS') {
+        filteredIndicators = filteredIndicators.filter(u => {
+            const name = (u.unidad || u.nombre || '').toUpperCase().trim();
+            return name.startsWith('FAM') || name.startsWith('UMME');
+        });
+    }
+
+    _rdaCache.unidades = filteredIndicators;
+    _rdaCache.registros = filteredIndicators;
     _rdaCache.maxMes = maxMes;
     return _rdaCache;
 }
@@ -210,7 +218,7 @@ function populateFilters() {
         esquemaSel.style.display = 'block';
     }
 
-    if (role === 'ADMIN' || role === 'JURISDICCIONAL') {
+    if (role === 'ADMIN' || role === 'JURISDICCIONAL' || role === 'CARAVANAS') {
         muniSel.disabled = false;
         if (uniSel) uniSel.disabled = false;
         muniSel.innerHTML = '<option value="">Todos los municipios</option>' +
@@ -1674,7 +1682,7 @@ function populateMobileFilters() {
 
     let municipios = [...new Set(unidades.map(u => (u.municipio || '').toUpperCase().trim()))].filter(Boolean).sort();
 
-    if (role === 'ADMIN' || role === 'JURISDICCIONAL') {
+    if (role === 'ADMIN' || role === 'JURISDICCIONAL' || role === 'CARAVANAS') {
         muniSel.disabled = false;
         if (muniSel.options.length <= 1) {
             muniSel.innerHTML = '<option value="">Todos los municipios</option>' + municipios.map(m => `<option value="${m}">${m}</option>`).join('');
