@@ -108,16 +108,9 @@ BEGIN
     
     v_is_current_month := (TO_CHAR(v_today, 'YYYY-MM') = p_mes);
     
-    IF v_is_current_month THEN
-        -- Avanzar la fecha fin hasta el domingo de la semana en curso (pero sin pasarse del fin de mes)
-        -- para que se incluya el viernes/jueves de esta semana aunque hoy sea jueves.
-        v_fecha_fin := LEAST(
-            (v_today + (7 - EXTRACT(DOW FROM v_today)::INT) % 7)::DATE,
-            (v_fecha_inicio + INTERVAL '1 month - 1 day')::DATE
-        );
-    ELSE
-        v_fecha_fin := (v_fecha_inicio + INTERVAL '1 month - 1 day')::DATE;
-    END IF;
+    -- Siempre evaluar hasta el fin de mes completo para que el denominador sea el total del mes
+    v_fecha_fin := (v_fecha_inicio + INTERVAL '1 month - 1 day')::DATE;
+
 
     -- Calcular semanas esperadas en el mes (jueves para consumibles, viernes para biológicos)
     v_curr_date := v_fecha_inicio;

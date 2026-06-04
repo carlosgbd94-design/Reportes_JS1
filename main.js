@@ -4655,6 +4655,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
         let global_avg = 0;
         let userRank = undefined;
         let userTier = undefined;
+        let unitDetails = null;
 
         try {
           const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -4862,6 +4863,18 @@ async function supabaseRequest(action = "", payload, options = {}) {
             const muniInfo = muniList.find(m => m.municipio === myMuni);
             municipal_avg = muniInfo ? muniInfo.score : 0;
 
+            const m = metricsMap[clues];
+            if (m) {
+              unitDetails = {
+                bio_ok: m.bio_semanas_ok,
+                cons_ok: m.cons_semanas_ok,
+                bio_expected: expectedDatesBio.length,
+                cons_expected: expectedDatesCons.length,
+                pedido_mensual: m.pedido_mensual,
+                is_pedido_required: isPedidoRequired
+              };
+            }
+
           } else if (role === "CARAVANAS") {
             const caravanScores = unitScores.filter(item => {
               const u = units.find(x => x.clues === item.clues);
@@ -4925,7 +4938,8 @@ async function supabaseRequest(action = "", payload, options = {}) {
             userRank,
             userTier,
             municipal_avg,
-            global_avg
+            global_avg,
+            unitDetails
           }
         };
       }
@@ -8280,8 +8294,27 @@ function paintStatusChips(status) {
     }
 
     // Dynamic progression hint tooltip on mouse hover explaining the 0% to 100% logic
-    let tooltipText = "Progreso de Cumplimiento: Inicia el mes en 0% y sube conforme realizas tus entregas semanales (2 de consumibles, 2 de biológicos) y mensuales (1 pedido).";
-    if (role === "MUNICIPAL") {
+    let tooltipText = "Progreso de Cumplimiento: Inicia el mes en 0% y sube conforme realizas tus entregas semanales y mensuales.";
+    if (role === "UNIDAD") {
+      let upToDateText = "";
+      if (status.unitDetails) {
+        const details = status.unitDetails;
+        const isBioOk = details.bio_ok >= details.bio_expected;
+        const isConsOk = details.cons_ok >= details.cons_expected;
+        const isPedidoOk = !details.is_pedido_required || details.pedido_mensual;
+        
+        if (isBioOk && isConsOk && isPedidoOk) {
+          upToDateText = "\n\n✅ ¡Felicidades! Estás al corriente con tus reportes programados a la fecha.";
+        } else {
+          const pending = [];
+          if (!isBioOk) pending.push(`Biológicos (${details.bio_ok}/${details.bio_expected})`);
+          if (!isConsOk) pending.push(`Consumibles (${details.cons_ok}/${details.cons_expected})`);
+          if (!isPedidoOk) pending.push("Pedido Mensual");
+          upToDateText = `\n\n⚠️ Reportes pendientes a la fecha: ${pending.join(", ")}.`;
+        }
+      }
+      tooltipText += upToDateText;
+    } else if (role === "MUNICIPAL") {
       tooltipText = "Promedio de Cumplimiento Municipal: Avance global ponderado de las unidades correspondientes a tu municipio durante el mes.";
     } else if (role === "ADMIN" || role === "JURISDICCIONAL") {
       tooltipText = "Promedio de Cumplimiento Global/Jurisdiccional: Avance acumulado de todas las unidades activas.";
@@ -12601,15 +12634,12 @@ async function getYearlyMedals(year, clues) {
       }
 
       const rows = [...data.rows];
-      const isCurrentMonth = m === todayYmdLocal().substring(0, 7);
-      const currentDayOfMonth = new Date().getDate();
-      const elapsedWeeks = isCurrentMonth ? Math.max(1, Math.ceil(currentDayOfMonth / 7)) : 5;
 
       rows.forEach(r => {
-        const dynamicEBio = isCurrentMonth ? Math.min(elapsedWeeks, r.eBio || 4) : (r.eBio || 4);
-        const dynamicECons = isCurrentMonth ? Math.min(elapsedWeeks, r.eCons || 4) : (r.eCons || 4);
-        let bPct = dynamicEBio > 0 ? (r.bio_semanas_ok / dynamicEBio) * 100 : 100;
-        let cPct = dynamicECons > 0 ? (r.cons_semanas_ok / dynamicECons) * 100 : 100;
+        const expectedBio = r.eBio || 4;
+        const expectedCons = r.eCons || 4;
+        let bPct = expectedBio > 0 ? (r.bio_semanas_ok / expectedBio) * 100 : 100;
+        let cPct = expectedCons > 0 ? (r.cons_semanas_ok / expectedCons) * 100 : 100;
         let pPct = 100;
         if (r.isPedidoRequired) {
           const hasPedido = r.pedido_mensual || r.has_pedido || r.pedido || r.pedido_capturado || r.is_pedido_done;
@@ -12695,15 +12725,12 @@ async function getYearlyMuniMedals(year, municipio) {
       }
 
       const rows = [...data.rows];
-      const isCurrentMonth = m === todayYmdLocal().substring(0, 7);
-      const currentDayOfMonth = new Date().getDate();
-      const elapsedWeeks = isCurrentMonth ? Math.max(1, Math.ceil(currentDayOfMonth / 7)) : 5;
 
       rows.forEach(r => {
-        const dynamicEBio = isCurrentMonth ? Math.min(elapsedWeeks, r.eBio || 4) : (r.eBio || 4);
-        const dynamicECons = isCurrentMonth ? Math.min(elapsedWeeks, r.eCons || 4) : (r.eCons || 4);
-        let bPct = dynamicEBio > 0 ? (r.bio_semanas_ok / dynamicEBio) * 100 : 100;
-        let cPct = dynamicECons > 0 ? (r.cons_semanas_ok / dynamicECons) * 100 : 100;
+        const expectedBio = r.eBio || 4;
+        const expectedCons = r.eCons || 4;
+        let bPct = expectedBio > 0 ? (r.bio_semanas_ok / expectedBio) * 100 : 100;
+        let cPct = expectedCons > 0 ? (r.cons_semanas_ok / expectedCons) * 100 : 100;
         let pPct = 100;
         if (r.isPedidoRequired) {
           const hasPedido = r.pedido_mensual || r.has_pedido || r.pedido || r.pedido_capturado || r.is_pedido_done;
