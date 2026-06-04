@@ -126,8 +126,8 @@ BEGIN
         v_curr_date := v_curr_date + 1;
     END LOOP;
     
-    IF v_total_month_cons = 0 THEN v_total_month_cons := 4; END IF;
-    IF v_total_month_bio = 0 THEN v_total_month_bio := 4; END IF;
+    IF v_total_month_cons = 0 THEN v_total_month_cons := 1; END IF;
+    IF v_total_month_bio = 0 THEN v_total_month_bio := 1; END IF;
 
     v_mid_month := CAST(p_mes || '-15' AS DATE);
     IF NOT v_is_current_month OR v_today >= v_mid_month THEN

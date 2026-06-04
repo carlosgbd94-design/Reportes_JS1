@@ -175,8 +175,16 @@ class RDAParser {
         let validos = 0;
         let ignorados = 0;
         const mesesEnCSV = new Set();
+        
+        // Registrar detalles de los registros ignorados
+        const reasonCounts = {
+            missing: { label: "Falta algún campo requerido (CLUES, Variable, Valor, Mes, Año)", count: 0, examples: [] },
+            inventory: { label: "Variables de inventario excluidas (VOI, VOF, VBC5)", count: 0, examples: [] }
+        };
 
-        for (const row of data) {
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            const rowNum = i + 2; // Fila 1 es el header, la primera fila de datos es la 2
             const clues    = this._getCol(row, 'CLUES');
             const variable = this._getCol(row, 'VARIABLE');
             const valorRaw = this._getCol(row, 'VALOR');
@@ -189,12 +197,20 @@ class RDAParser {
 
             if (!clues || !variable || isNaN(valor) || isNaN(mes) || isNaN(anio)) {
                 ignorados++;
+                reasonCounts.missing.count++;
+                if (reasonCounts.missing.examples.length < 5) {
+                    reasonCounts.missing.examples.push(`[Fila ${rowNum}] CLUES: ${clues || 'nulo'}, Var: ${variable || 'nulo'}, Valor: ${valorRaw || 'nulo'}`);
+                }
                 continue;
             }
 
             const varUpper = variable.toUpperCase();
             if (varUpper.startsWith('VOI') || varUpper.startsWith('VOF') || varUpper.startsWith('VBC5')) {
                 ignorados++;
+                reasonCounts.inventory.count++;
+                if (reasonCounts.inventory.examples.length < 5) {
+                    reasonCounts.inventory.examples.push(`[Fila ${rowNum}] Var: ${variable} (${clues})`);
+                }
                 continue;
             }
 
@@ -204,6 +220,43 @@ class RDAParser {
 
         document.getElementById('csvValidCount').textContent = validos.toLocaleString();
         document.getElementById('csvIgnoredCount').textContent = ignorados.toLocaleString();
+
+        // Mostrar / Ocultar área de detalles ignorados
+        const detailsArea = document.getElementById('csvIgnoredDetailsArea');
+        const detailsList = document.getElementById('csvIgnoredDetailsList');
+        
+        if (detailsList) {
+            detailsList.innerHTML = '';
+            if (ignorados > 0) {
+                let html = '';
+                if (reasonCounts.missing.count > 0) {
+                    html += `
+                        <div class="py-1">
+                            <span class="font-bold text-slate-800">${reasonCounts.missing.count} registros</span> - ${reasonCounts.missing.label}
+                            <ul style="margin: 4px 0 0 16px; padding: 0;" class="text-slate-500 list-disc">
+                                ${reasonCounts.missing.examples.map(ex => `<li>${ex}</li>`).join('')}
+                                ${reasonCounts.missing.count > 5 ? `<li>... y ${reasonCounts.missing.count - 5} más</li>` : ''}
+                            </ul>
+                        </div>
+                    `;
+                }
+                if (reasonCounts.inventory.count > 0) {
+                    html += `
+                        <div class="py-1">
+                            <span class="font-bold text-slate-800">${reasonCounts.inventory.count} registros</span> - ${reasonCounts.inventory.label}
+                            <ul style="margin: 4px 0 0 16px; padding: 0;" class="text-slate-500 list-disc">
+                                ${reasonCounts.inventory.examples.map(ex => `<li>${ex}</li>`).join('')}
+                                ${reasonCounts.inventory.count > 5 ? `<li>... y ${reasonCounts.inventory.count - 5} más</li>` : ''}
+                            </ul>
+                        </div>
+                    `;
+                }
+                detailsList.innerHTML = html;
+                detailsArea.style.display = 'block';
+            } else {
+                detailsArea.style.display = 'none';
+            }
+        }
 
         if (validos > 0) {
             this.pendingData = data; // Guardar para confirmación
@@ -290,37 +343,66 @@ class RDAParser {
         await this.rpcUpsert(Object.values(uniqueUnits), cleanData, mesesArray);
     }
 
+    static chunkArray(array, size) {
+        const chunks = [];
+        for (let i = 0; i < array.length; i += size) {
+            chunks.push(array.slice(i, i + size));
+        }
+        return chunks;
+    }
+
     static async rpcUpsert(unidades, registros, meses) {
         const total = registros.length;
-        if (typeof showOverlay === 'function') {
-            showOverlay(`Enviando ${total.toLocaleString()} registros a la base de datos...`, "Sincronizando");
-        }
-
         try {
-            const { data: result, error } = await window.supabase.rpc('upsert_registros_sis', {
-                p_unidades: unidades,
-                p_registros: registros,
-                p_meses: meses
-            });
+            // 1. Sincronizar unidades médicas (en lotes de 100)
+            if (typeof showOverlay === 'function') {
+                showOverlay("Sincronizando catálogo de unidades médicas...", "Sincronizando");
+            }
+            const unitChunks = this.chunkArray(unidades, 100);
+            for (let i = 0; i < unitChunks.length; i++) {
+                const { error: unitErr } = await window.supabase
+                    .from('unidades_medicas')
+                    .upsert(unitChunks[i], { onConflict: 'clues', ignoreDuplicates: true });
+                if (unitErr) throw new Error(`Error al registrar unidades médicas: ${unitErr.message}`);
+            }
+
+            // 2. Limpiar registros previos de los meses en el CSV
+            if (typeof showOverlay === 'function') {
+                showOverlay("Limpiando registros de meses previos para evitar duplicados...", "Sincronizando");
+            }
+            const { error: delErr } = await window.supabase
+                .from('registros_sis')
+                .delete()
+                .in('mes', meses);
+            if (delErr) throw new Error(`Error al limpiar base de datos: ${delErr.message}`);
+
+            // 3. Insertar nuevos registros en lotes de 5000
+            const batchSize = 5000;
+            const recordChunks = this.chunkArray(registros, batchSize);
+            const totalBatches = recordChunks.length;
+
+            for (let i = 0; i < totalBatches; i++) {
+                const start = i * batchSize + 1;
+                const end = Math.min((i + 1) * batchSize, total);
+                
+                if (typeof showOverlay === 'function') {
+                    showOverlay(
+                        `Enviando lote ${i + 1} de ${totalBatches} (${start.toLocaleString('es-MX')} a ${end.toLocaleString('es-MX')} de ${total.toLocaleString('es-MX')} registros)...`,
+                        "Sincronizando"
+                    );
+                }
+
+                const { error: insErr } = await window.supabase
+                    .from('registros_sis')
+                    .insert(recordChunks[i]);
+                
+                if (insErr) throw new Error(`Error en lote ${i + 1}: ${insErr.message}`);
+            }
 
             if (typeof hideOverlay === 'function') hideOverlay();
-
-            if (error) {
-                console.error('[RDA Parser] ❌ Error en RPC upsert:', error);
-                if (typeof showToast === 'function') showToast(`Error al sincronizar: ${error.message}`, false, 'bad');
-                return;
-            }
-
-            if (result && result.ok === false) {
-                console.error('[RDA Parser] ❌ Error en la función SQL:', result.error);
-                if (typeof showToast === 'function') showToast(`Error en base de datos: ${result.error}`, false, 'bad');
-                return;
-            }
-
-            const ins = result?.registros_insertados ?? total;
-            const del = result?.registros_eliminados ?? 0;
-            console.log(`[RDA Parser] ✅ RPC completado: ${ins} insertados, ${del} eliminados (meses anteriores), ${result?.unidades_nuevas ?? 0} unidades nuevas`);
-            if (typeof showToast === 'function') showToast(`${ins.toLocaleString()} registros actualizados correctamente`, true, 'good');
+            
+            console.log(`[RDA Parser] ✅ Carga masiva completada: ${total} registros insertados en ${totalBatches} lotes.`);
+            if (typeof showToast === 'function') showToast(`${total.toLocaleString('es-MX')} registros actualizados correctamente`, true, 'good');
 
             // Refrescar el dashboard si está abierto
             if (typeof window.refreshRDADashboard === 'function') {
@@ -328,7 +410,7 @@ class RDAParser {
             }
 
         } catch (err) {
-            console.error('[RDA Parser] ❌ Error fatal en rpcUpsert:', err);
+            console.error('[RDA Parser] ❌ Error en carga masiva:', err);
             if (typeof hideOverlay === 'function') hideOverlay();
             if (typeof showToast === 'function') showToast(err.message || 'Error inesperado al subir datos', false, 'bad');
         }
@@ -358,16 +440,37 @@ class RDAParser {
             return;
         }
 
-        for (const row of data) {
+        const reasonCounts = {
+            noClues: { label: "Falta el campo CLUES", count: 0, examples: [] },
+            noPop: { label: "Faltan valores numéricos de población (menor 1, 1 año, 4 años)", count: 0, examples: [] }
+        };
+
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            const rowNum = i + 2;
             const clues = this._getCol(row, 'CLUES');
-            if (!clues) { ignorados++; continue; }
+            if (!clues) { 
+                ignorados++; 
+                reasonCounts.noClues.count++;
+                if (reasonCounts.noClues.examples.length < 5) {
+                    reasonCounts.noClues.examples.push(`[Fila ${rowNum}] Sin CLUES`);
+                }
+                continue; 
+            }
 
             const pMenor = colMenor ? parseInt(row[colMenor], 10) : NaN;
             const p1     = col1     ? parseInt(row[col1], 10)     : NaN;
             const p4     = col4     ? parseInt(row[col4], 10)     : NaN;
 
             // Al menos un valor de población debe ser numérico
-            if (isNaN(pMenor) && isNaN(p1) && isNaN(p4)) { ignorados++; continue; }
+            if (isNaN(pMenor) && isNaN(p1) && isNaN(p4)) { 
+                ignorados++; 
+                reasonCounts.noPop.count++;
+                if (reasonCounts.noPop.examples.length < 5) {
+                    reasonCounts.noPop.examples.push(`[Fila ${rowNum}] CLUES: ${clues}`);
+                }
+                continue; 
+            }
 
             validos++;
         }
@@ -376,8 +479,41 @@ class RDAParser {
         document.getElementById('csvValidCount').textContent = validos.toLocaleString();
         document.getElementById('csvIgnoredCount').textContent = ignorados.toLocaleString();
 
-        // Cambiar label "Válidos" → "Unidades"
-        const validLabel = document.querySelector('#csvPreviewArea .bg-surface-variant\\/30:first-child .block:first-child');
+        // Mostrar / Ocultar área de detalles ignorados
+        const detailsArea = document.getElementById('csvIgnoredDetailsArea');
+        const detailsList = document.getElementById('csvIgnoredDetailsList');
+        
+        if (detailsList) {
+            detailsList.innerHTML = '';
+            if (ignorados > 0) {
+                let html = '';
+                if (reasonCounts.noClues.count > 0) {
+                    html += `
+                        <div class="py-1">
+                            <span class="font-bold text-slate-800">${reasonCounts.noClues.count} registros</span> - ${reasonCounts.noClues.label}
+                            <ul style="margin: 4px 0 0 16px; padding: 0;" class="text-slate-500 list-disc">
+                                ${reasonCounts.noClues.examples.map(ex => `<li>${ex}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+                if (reasonCounts.noPop.count > 0) {
+                    html += `
+                        <div class="py-1">
+                            <span class="font-bold text-slate-800">${reasonCounts.noPop.count} registros</span> - ${reasonCounts.noPop.label}
+                            <ul style="margin: 4px 0 0 16px; padding: 0;" class="text-slate-500 list-disc">
+                                ${reasonCounts.noPop.examples.map(ex => `<li>${ex}</li>`).join('')}
+                                ${reasonCounts.noPop.count > 5 ? `<li>... y ${reasonCounts.noPop.count - 5} más</li>` : ''}
+                            </ul>
+                        </div>
+                    `;
+                }
+                detailsList.innerHTML = html;
+                detailsArea.style.display = 'block';
+            } else {
+                detailsArea.style.display = 'none';
+            }
+        }
 
         if (validos > 0) {
             this.pendingData = data;
