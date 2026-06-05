@@ -3771,9 +3771,47 @@ async function supabaseRequest(action = "", payload, options = {}) {
 
         // ============================================================
         // DETECCIÓN INTELIGENTE DE BIOLÓGICOS EN CERO (Server-Side)
-        // Basado en lo que la unidad REALMENTE capturó, no en lista fija.
-        // Un biológico está en cero solo si la SUMA de todos sus lotes = 0.
+        // Comparación con el reporte anterior: si antes había stock (>0)
+        // y ahora está en 0 (porque se omitió la fila o se capturó en 0),
+        // se registra como alerta de desabasto automática.
         // ============================================================
+        const { data: prevReport } = await supabase
+          .from('biologicos_existencia')
+          .select('*')
+          .eq('clues', clues)
+          .lt('fecha', fecha)
+          .order('fecha', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const BIOS_MAP = {
+          "bcg": "BCG",
+          "hepatitis_b": "HEPATITIS B",
+          "hexavalente": "HEXAVALENTE",
+          "dpt": "DPT",
+          "rotavirus": "ROTAVIRUS",
+          "neumococica_13": "NEUMOCÓCICA 13",
+          "neumococica_20": "NEUMOCÓCICA 20",
+          "srp": "SRP",
+          "sr": "SR",
+          "vph": "VPH",
+          "varicela": "VARICELA",
+          "hepatitis_a": "HEPATITIS A",
+          "td": "TD",
+          "tdpa": "TDPA",
+          "covid_19": "COVID-19",
+          "influenza": "INFLUENZA",
+          "vsr": "VSR"
+        };
+
+        const desabastoTransicion = [];
+        Object.keys(BIOS_MAP).forEach(bioKey => {
+          const currentQty = Number(summaryRecord[bioKey] || 0);
+          const hadStock = prevReport ? Number(prevReport[bioKey] || 0) > 0 : false;
+          if (currentQty === 0 && hadStock) {
+            desabastoTransicion.push(BIOS_MAP[bioKey]);
+          }
+        });
 
         const bioTotalsCapture = {};
         detailRecords.forEach(r => {
@@ -3783,10 +3821,17 @@ async function supabaseRequest(action = "", payload, options = {}) {
           }
         });
 
-        const missingBioKeys = Object.keys(bioTotalsCapture).filter(b => bioTotalsCapture[b] === 0);
-        summaryRecord.tiene_ceros = missingBioKeys.length > 0;
+        const explicitZeros = Object.keys(bioTotalsCapture).filter(b => bioTotalsCapture[b] === 0);
+        const explicitZerosOrig = explicitZeros.map(bUpper => {
+          const orig = detailRecords.find(r => (r.biologico || '').trim().toUpperCase() === bUpper);
+          return orig ? (orig.biologico || '').trim() : bUpper;
+        });
 
-        console.log(`[Capture Logic] Biológicos capturados: ${Object.keys(bioTotalsCapture).length} | En cero total: ${missingBioKeys.length}`, missingBioKeys);
+        // Unión de transiciones (de >0 a 0) y ceros explícitos capturados
+        const finalMissing = Array.from(new Set([...desabastoTransicion, ...explicitZerosOrig]));
+        summaryRecord.tiene_ceros = finalMissing.length > 0;
+
+        console.log(`[Capture Logic] Desabasto por transición: ${desabastoTransicion.join(', ')} | Ceros explícitos: ${explicitZerosOrig.join(', ')}`);
 
         // 4. Ejecutar Inserción Dual en Paralelo (summaryRecord ya tiene tiene_ceros)
         console.log("[Capture Logic] Preparando guardado de SR para:", { clues, fecha, tiene_ceros: summaryRecord.tiene_ceros });
@@ -3808,12 +3853,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
         console.log("[Capture Logic] SR Guardado correctamente.");
 
         // --- Generar Alerta de Desabasto (si hay biológicos en cero) ---
-        if (missingBioKeys.length > 0) {
-          // missingBioKeys son nombres en UPPERCASE; buscar el nombre original para display
-          const missList = missingBioKeys.map(bUpper => {
-            const orig = detailRecords.find(r => (r.biologico || '').trim().toUpperCase() === bUpper);
-            return orig ? (orig.biologico || '').trim() : bUpper;
-          });
+        if (finalMissing.length > 0) {
           const notifId = 'NOTIF:DESABASTO:' + btoa(clues + ":" + fecha + ":" + Date.now());
 
           await supabase.from('notificaciones').insert({
@@ -3826,17 +3866,17 @@ async function supabaseRequest(action = "", payload, options = {}) {
             target_scope: 'MUNICIPIO',
             target_municipio: municipio,
             title: '🚨 Desabasto detectado',
-            message: `La unidad ${unidad} capturó sin existencias de: ${missList.join(', ')}.`,
+            message: `La unidad ${unidad} capturó sin existencias de: ${finalMissing.join(', ')}.`,
             status: 'UNREAD',
             meta_json: JSON.stringify({
               clues: clues,
               unidad: unidad,
               municipio: municipio,
-              missing: missList,
+              missing: finalMissing,
               status: 'activa'
             })
           });
-          console.log("[Capture Logic] Alerta de desabasto generada para:", missList);
+          console.log("[Capture Logic] Alerta de desabasto generada para:", finalMissing);
         }
 
         return { ok: true };
@@ -7276,7 +7316,7 @@ window.addSRRow = function (data = null) {
       </td>
       <td class="p-4 py-3 text-center" data-label="Acción">
         <div class="flex justify-center items-center w-full gap-2">
-          <button type="button" class="md-clone-btn group text-slate-400 hover:text-primary transition-colors" title="Agregar recepción" onclick="cloneSRRow(this);">
+          <button type="button" class="md-clone-btn group text-slate-400 hover:text-primary transition-colors" title="Añadir fecha de recepción" onclick="cloneSRRow(this);">
             <span class="material-symbols-rounded text-[22px]">post_add</span>
           </button>
           <button type="button" class="md-delete-btn group" title="Eliminar este lote" onclick="this.closest('tr').remove();">
@@ -10910,21 +10950,85 @@ if (bSaveSR) bSaveSR.onclick = async () => {
   const nombre = $("nombreSR")?.value.trim() || "";
   if (!nombre) return showToast("Ingresa el nombre del responsable", false, "warn");
 
+  const isBatchExpired = (cad) => {
+    if (!cad) return false;
+    let cadDate = null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(cad)) {
+      cadDate = new Date(cad + "T23:59:59");
+    } else {
+      const parts = String(cad).split('-');
+      if (parts.length === 2) {
+        const monthsMap = {
+          'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5,
+          'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11
+        };
+        const mStr = parts[0].toUpperCase();
+        const yShort = parseInt(parts[1]);
+        const mIdx = monthsMap[mStr];
+        if (!isNaN(yShort) && mIdx !== undefined) {
+          cadDate = new Date(2000 + yShort, mIdx + 1, 0, 23, 59, 59);
+        }
+      }
+    }
+    if (!cadDate || isNaN(cadDate.getTime())) return false;
+    return cadDate < new Date();
+  };
+
   const items = [];
   let hasInvalid = false;
-  let missingDate = false;
-  document.querySelectorAll("#srCaptureTbody tr").forEach(tr => {
+  const errors = [];
+
+  document.querySelectorAll("#srCaptureTbody tr").forEach((tr, index) => {
     const row = tr._cache || {};
     const bio = (row.bioSelect || tr.querySelector(".sr-bio-select"))?.value;
     const lote = (row.loteSelect || tr.querySelector(".sr-lote-select"))?.value;
     const cant = (row.cantidadInput || tr.querySelector(".sr-cantidad-input"))?.value;
     const recep = (row.recepcionInput || tr.querySelector(".sr-recepcion-input"))?.value;
 
-    if (!bio && !lote && !cant) return;
-    if (!bio || !lote || cant === "" || Number(cant) < 0 || !recep) {
+    if (!bio && !lote && !cant && !recep) {
+      tr.style.background = "";
+      return;
+    }
+
+    const rowErrors = [];
+
+    if (!bio) {
+      rowErrors.push("falta seleccionar el biológico");
+    }
+    if (bio && !lote) {
+      rowErrors.push("falta seleccionar el lote");
+    }
+    if (bio && !recep) {
+      rowErrors.push("falta seleccionar la fecha de recepción");
+    }
+    if (cant === "") {
+      rowErrors.push("falta ingresar la cantidad");
+    } else if (Number(cant) < 0) {
+      rowErrors.push("la cantidad no puede ser negativa");
+    } else if (Number(cant) === 0) {
+      rowErrors.push("no puedes guardar lotes en ceros, si se terminó la vacuna por favor elimina la fila");
+    } else if (bio) {
+      // Decimal validation
+      const allowedDecimals = ["TD", "COVID-19", "INFLUENZA", "DPT", "HEPATITIS B"];
+      const hasDecimal = Number(cant) % 1 !== 0;
+      if (hasDecimal && !allowedDecimals.includes(bio)) {
+        rowErrors.push(`la vacuna ${bio} no admite decimales (solo TD, COVID, INFLUENZA, DPT, HEPATITIS B)`);
+      }
+    }
+
+    if (lote) {
+      const loteSelect = row.loteSelect || tr.querySelector(".sr-lote-select");
+      const selectedOpt = loteSelect?.selectedOptions?.[0];
+      const cad = selectedOpt?.dataset?.cad;
+      if (cad && isBatchExpired(cad)) {
+        rowErrors.push(`el lote ${lote} de ${bio} está caducado (${formatToMmmAa(cad)})`);
+      }
+    }
+
+    if (rowErrors.length > 0) {
       hasInvalid = true;
-      if (!recep && bio) missingDate = true;
-      tr.style.background = "rgba(239, 68, 68, 0.1)";
+      tr.style.background = "rgba(239, 68, 68, 0.15)";
+      errors.push(`Fila ${index + 1}: ${rowErrors.join(", ")}`);
     } else {
       tr.style.background = "";
       items.push({ biologico: bio, lote, cantidad: Number(cant), fecha_recepcion: recep });
@@ -10932,8 +11036,8 @@ if (bSaveSR) bSaveSR.onclick = async () => {
   });
 
   if (hasInvalid) {
-    if (missingDate) return showToast("Falta seleccionar la fecha de recepción en una o más filas marcadas", false, "warn");
-    return showToast("Corrige las filas en rojo", false, "warn");
+    errors.forEach(err => showToast(err, false, "warn", { force: true }));
+    return;
   }
   if (!items.length) return showToast("Captura al menos un biológico", false, "warn");
 
