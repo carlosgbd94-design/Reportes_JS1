@@ -5359,7 +5359,7 @@ input[disabled] {
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   gap: 4px;
   width: 100%;
@@ -8297,7 +8297,8 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
 
 .bio-chip {
   background: #f8fafc;
-  padding: 4px 14px 4px 4px;
+  padding: 6px 12px;
+  margin: 0 auto;
   border-radius: 12px;
   font-size: 11px;
   font-weight: 800;
@@ -8318,6 +8319,7 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
   color: white;
   font-size: 12px;
   font-weight: 900;
+  margin-left: -6px;
 }
 .bio-chip.good { color: #15803d; border-color: #dcfce7; background: #f0fdf4; }
 .bio-chip.good .bio-chip-icon { background: #16a34a; }
@@ -9678,6 +9680,201 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
 
 .premium-refresh-btn:hover .material-symbols-rounded {
   transform: rotate(180deg);
+  .desktop-only        { display: none !important; }
+  .desktop-only-block  { display: none !important; }
+}
+
+/* Input box global: blindaje anti-autofill de Chrome */
+.modern-input-group {
+  border: 2px solid #e2e8f0 !important;
+  border-radius: 14px !important;
+  background-color: #f8fafc !important;
+  box-shadow: none !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important;
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  height: 56px !important;
+  margin-bottom: 1rem !important;
+  overflow: visible !important;
+  transform: none !important;
+}
+
+.modern-input-group:focus-within {
+  border-color: #0ea5e9 !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15) !important;
+  transform: none !important;
+}
+
+.modern-input-group input,
+.modern-input-group input:focus,
+.modern-input-group input:active,
+.modern-input-group input:-webkit-autofill,
+.modern-input-group input:-webkit-autofill:hover,
+.modern-input-group input:-webkit-autofill:focus {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  -webkit-box-shadow: 0 0 0 1000px #f8fafc inset !important;
+  -webkit-text-fill-color: #0f172a !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+  color: #0f172a !important;
+  padding-left: 3.5rem !important;
+  padding-right: 3rem !important;
+  height: 100% !important;
+  width: 100% !important;
+  font-size: 15px !important;
+  border-radius: 12px !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+.modern-input-group:focus-within input:-webkit-autofill,
+.modern-input-group:focus-within input:-webkit-autofill:hover,
+.modern-input-group:focus-within input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+}
+
+/* Ojito de contraseña: sin ripple en hover */
+#togglePassword::before { display: none !important; }
+
+#togglePassword:hover {
+  transform: translateY(-50%) !important;
+  color: #0ea5e9 !important;
+}
+
+/* Conservar padding-left en desktop para evitar solape con el icono */
+.sr-cantidad-input {
+  padding-left: 38px !important;
+}
+
+/* Animación de partículas flotantes para el login de escritorio (desktopSplitLeft) */
+.particle-logo {
+  position: absolute;
+  bottom: -150px;
+  background-image: url('https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.1;
+  animation: floatUp linear infinite;
+  filter: grayscale(100%) brightness(10);
+  pointer-events: none;
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.15;
+  }
+  90% {
+    opacity: 0.15;
+  }
+  100% {
+    transform: translateY(-120vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* Liquid Glass Tab Indicator Overrides */
+#unidadTabIndicator .liquid-glass--bend {
+  backdrop-filter: url(#filterUnidadTab) !important;
+  -webkit-backdrop-filter: url(#filterUnidadTab) !important;
+  filter: none !important;
+}
+#captureTabIndicator .liquid-glass--bend {
+  backdrop-filter: url(#filterCaptureTab) !important;
+  -webkit-backdrop-filter: url(#filterCaptureTab) !important;
+  filter: none !important;
+}
+#opsTabIndicator .liquid-glass--bend {
+  backdrop-filter: url(#filterOpsTab) !important;
+  -webkit-backdrop-filter: url(#filterOpsTab) !important;
+  filter: none !important;
+}
+#adminTabIndicator .liquid-glass--bend {
+  backdrop-filter: url(#filterAdminTab) !important;
+  -webkit-backdrop-filter: url(#filterAdminTab) !important;
+  filter: none !important;
+}
+
+/* Colores para Subpaneles de Admin */
+.nav-tab.active[onclick*="'aperturas'"] .material-symbols-rounded { color: #3b82f6 !important; }      /* Blue */
+.nav-tab.active[onclick*="'catalogo'"] .material-symbols-rounded { color: #6366f1; }      /* Indigo */
+.nav-tab.active[onclick*="'seguridad'"] .material-symbols-rounded { color: #ea580c; }     /* Orange */
+.nav-tab.active[onclick*="'usuarios_activos'"] .material-symbols-rounded { color: #10b981; } /* Emerald */
+.nav-tab.active[onclick*="'parametros'"] .material-symbols-rounded { color: #14b8a6; }    /* Teal */
+
+/* Botón de actualizar Premium (Estandarizado Global) */
+.premium-refresh-btn {
+  position: relative;
+  height: 42px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.4) !important;
+  backdrop-filter: blur(10px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  color: #334155 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 13.5px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Ajustes según si lleva texto o no */
+.premium-refresh-btn:not(.has-text) {
+  width: 42px;
+  padding: 0 !important;
+}
+
+.premium-refresh-btn.has-text {
+  padding: 0 18px !important;
+}
+
+.premium-refresh-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 0;
+}
+
+.premium-refresh-btn .material-symbols-rounded {
+  position: relative;
+  z-index: 1;
+  font-size: 22px;
+  color: #475569 !important;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.premium-refresh-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-color: rgba(99, 102, 241, 0.4) !important;
+  color: #6366f1 !important;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.premium-refresh-btn:hover::before {
+  opacity: 1;
+}
+
+.premium-refresh-btn:hover .material-symbols-rounded {
+  transform: rotate(180deg);
   color: #6366f1 !important;
 }
 
@@ -9686,5 +9883,369 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
   box-shadow: 0 2px 6px rgba(99, 102, 241, 0.1) !important;
 }
 
+/* ===== REDISEÑO PREMIUM EXPORT MODAL & GRID ===== */
+.export-muni-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
 
+.export-muni-card {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 2px solid #cbd5e1;
+  border-radius: 14px;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  margin: 0 !important;
+  box-sizing: border-box;
+}
+
+.export-muni-card:hover {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.export-muni-card:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.export-muni-card input[type="checkbox"] {
+  width: 20px !important;
+  height: 20px !important;
+  cursor: pointer;
+  accent-color: #0ea5e9;
+  margin: 0 !important;
+  display: inline-block !important;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.export-muni-card input[type="checkbox"]:checked {
+  transform: scale(1.1);
+  animation: checkBounce 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.export-muni-card span {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1e293b;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.2s ease;
+}
+
+/* Checked State highlight using CSS :has() */
+.export-muni-card:has(input[type="checkbox"]:checked) {
+  border-color: #0ea5e9 !important;
+  background-color: #f0f9ff !important;
+  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.1) !important;
+}
+
+.export-muni-card:has(input[type="checkbox"]:checked) span {
+  color: #0369a1;
+}
+
+/* Card for "Separar por municipio" */
+.export-split-card {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 2px solid #cbd5e1;
+  border-radius: 14px;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  margin: 0 !important;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.export-split-card:hover {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.export-split-card:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.export-split-card input[type="checkbox"] {
+  width: 20px !important;
+  height: 20px !important;
+  cursor: pointer;
+  accent-color: #0ea5e9;
+  margin: 2px 0 0 0 !important;
+  display: inline-block !important;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.export-split-card input[type="checkbox"]:checked {
+  transform: scale(1.1);
+  animation: checkBounce 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.export-split-card:has(input[type="checkbox"]:checked) {
+  border-color: #0ea5e9 !important;
+  background-color: #f0f9ff !important;
+  box-shadow: 0 6px 16px rgba(14, 165, 233, 0.1) !important;
+}
+
+.export-split-card:has(input[type="checkbox"]:checked) .title {
+  color: #0369a1;
+}
+
+.export-split-card .text-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.export-split-card .title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1e293b;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  transition: color 0.2s ease;
+}
+
+.export-split-card .subtitle {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.4;
+}
+
+@keyframes checkBounce {
+  0% { transform: scale(0.9); }
+  50% { transform: scale(1.25); }
+  100% { transform: scale(1.1); }
+}
+
+/* ===== CUSTOM COMPLIANCE NOTIFICATION PANEL ===== */
+.compliance-notif-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  max-width: 320px;
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.compliance-notif-box.success {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+}
+
+.compliance-notif-box.pending {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.compliance-notif-box.omission {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(239, 68, 68, 0.25) !important;
+}
+
+.compliance-notif-box .material-symbols-rounded {
+  font-size: 15px;
+  flex-shrink: 0;
+  margin-top: 0;
+}
+
+.compliance-notif-box.success .material-symbols-rounded {
+  color: #a7f3d0 !important;
+}
+
+.compliance-notif-box.pending .material-symbols-rounded {
+  color: #fef08a !important;
+}
+
+.compliance-notif-box.omission .material-symbols-rounded {
+  color: #fca5a5 !important;
+}
+
+.compliance-notif-text-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.compliance-notif-title {
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #ffffff !important;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.compliance-notif-desc {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8) !important;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 1350px) {
+  .compliance-notif-desc {
+    display: none !important;
+  }
+}
+
+/* Adapt compliance notifications and status badges to podium themes */
+.podium-gold-chip .compliance-notif-box {
+  background: rgba(180, 83, 9, 0.08) !important;
+  border: 1px solid rgba(180, 83, 9, 0.2) !important;
+}
+.podium-gold-chip .compliance-notif-title,
+.podium-gold-chip .compliance-notif-desc,
+.podium-gold-chip .compliance-notif-box .material-symbols-rounded {
+  color: #b45309 !important;
+}
+.podium-gold-chip #bCumplimientoStatusBadge > div {
+  background: rgba(180, 83, 9, 0.08) !important;
+  border-color: rgba(180, 83, 9, 0.25) !important;
+  color: #b45309 !important;
+}
+.podium-gold-chip #bCumplimientoStatusBadge > div > span:first-child {
+  background-color: #b45309 !important;
+}
+
+.podium-silver-chip .compliance-notif-box {
+  background: rgba(71, 85, 105, 0.08) !important;
+  border: 1px solid rgba(71, 85, 105, 0.2) !important;
+}
+.podium-silver-chip .compliance-notif-title,
+.podium-silver-chip .compliance-notif-desc,
+.podium-silver-chip .compliance-notif-box .material-symbols-rounded {
+  color: #475569 !important;
+}
+.podium-silver-chip #bCumplimientoStatusBadge > div {
+  background: rgba(71, 85, 105, 0.08) !important;
+  border-color: rgba(71, 85, 105, 0.25) !important;
+  color: #475569 !important;
+}
+.podium-silver-chip #bCumplimientoStatusBadge > div > span:first-child {
+  background-color: #475569 !important;
+}
+
+.podium-bronze-chip .compliance-notif-box {
+  background: rgba(154, 52, 18, 0.08) !important;
+  border: 1px solid rgba(154, 52, 18, 0.2) !important;
+}
+.podium-bronze-chip .compliance-notif-title,
+.podium-bronze-chip .compliance-notif-desc,
+.podium-bronze-chip .compliance-notif-box .material-symbols-rounded {
+  color: #9a3412 !important;
+}
+.podium-bronze-chip #bCumplimientoStatusBadge > div {
+  background: rgba(154, 52, 18, 0.08) !important;
+  border-color: rgba(154, 52, 18, 0.25) !important;
+  color: #9a3412 !important;
+}
+.podium-bronze-chip #bCumplimientoStatusBadge > div > span:first-child {
+  background-color: #9a3412 !important;
+}
+
+.podium-steel-chip .compliance-notif-box {
+  background: rgba(15, 118, 110, 0.08) !important;
+  border: 1px solid rgba(15, 118, 110, 0.2) !important;
+}
+.podium-steel-chip .compliance-notif-title,
+.podium-steel-chip .compliance-notif-desc,
+.podium-steel-chip .compliance-notif-box .material-symbols-rounded {
+  color: #0f766e !important;
+}
+.podium-steel-chip #bCumplimientoStatusBadge > div {
+  background: rgba(15, 118, 110, 0.08) !important;
+  border-color: rgba(15, 118, 110, 0.25) !important;
+  color: #0f766e !important;
+}
+.podium-steel-chip #bCumplimientoStatusBadge > div > span:first-child {
+  background-color: #0f766e !important;
+}
+
+.podium-emerald-chip .compliance-notif-box {
+  background: rgba(4, 120, 87, 0.08) !important;
+  border: 1px solid rgba(4, 120, 87, 0.2) !important;
+}
+.podium-emerald-chip .compliance-notif-title,
+.podium-emerald-chip .compliance-notif-desc,
+.podium-emerald-chip .compliance-notif-box .material-symbols-rounded {
+  color: #047857 !important;
+}
+.podium-emerald-chip #bCumplimientoStatusBadge > div {
+  background: rgba(4, 120, 87, 0.08) !important;
+  border-color: rgba(4, 120, 87, 0.25) !important;
+  color: #047857 !important;
+}
+.podium-emerald-chip #bCumplimientoStatusBadge > div > span:first-child {
+  background-color: #047857 !important;
+}
+
+.podium-diamond-chip .compliance-notif-box {
+  background: rgba(8, 145, 178, 0.08) !important;
+  border: 1px solid rgba(219, 39, 119, 0.25) !important;
+}
+.podium-diamond-chip .compliance-notif-title {
+  color: #db2777 !important;
+}
+.podium-diamond-chip .compliance-notif-desc {
+  color: #0891b2 !important;
+}
+.podium-diamond-chip .compliance-notif-box .material-symbols-rounded {
+  color: #db2777 !important;
+}
+.podium-diamond-chip #bCumplimientoStatusBadge > div {
+  background: rgba(8, 145, 178, 0.08) !important;
+  border-color: rgba(219, 39, 119, 0.25) !important;
+  color: #db2777 !important;
+}
+.podium-diamond-chip #bCumplimientoStatusBadge > div > span:first-child {
+  background-color: #db2777 !important;
+}
+
+/* ===== PREMIUM STATUS BADGE DOT STYLE ===== */
+#bCumplimientoStatusBadge .status-dot {
+  width: 6.5px !important;
+  height: 6.5px !important;
+  border-radius: 50% !important;
+  display: inline-block !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 0 5px currentColor !important;
+}
 

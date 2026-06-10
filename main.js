@@ -3413,7 +3413,15 @@ async function loadUnitCatalog(force = false) {
       shouldCache: (data) => Array.isArray(data)
     });
 
-  UNIT_CATALOG = Array.isArray(data) ? data : [];
+  UNIT_CATALOG = (Array.isArray(data) ? data : []).map(u => {
+    if (u && u.unidad) {
+      const upper = u.unidad.toUpperCase().trim();
+      if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("ESPECIALIDADES DEL NIÑO Y LA MUJER")) {
+        u.unidad = "HENM";
+      }
+    }
+    return u;
+  });
   paintUnitCatalogLists();
   return UNIT_CATALOG;
 }
@@ -3893,7 +3901,12 @@ async function supabaseRequest(action = "", payload, options = {}) {
               unidad: (function () {
                 const u = dataFromDb.unidad;
                 const r = String(dataFromDb.rol).toUpperCase();
-                return (r !== "UNIDAD" && !u) ? "OFICINAS DE LA JURISDICCIÓN SANITARIA" : u;
+                const rawUni = (r !== "UNIDAD" && !u) ? "OFICINAS DE LA JURISDICCIÓN SANITARIA" : u;
+                const upper = String(rawUni || "").toUpperCase().trim();
+                if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("ESPECIALIDADES DEL NIÑO Y LA MUJER")) {
+                  return "HENM";
+                }
+                return rawUni;
               })(),
               rol: dataFromDb.rol,
               email: dataFromDb.email || ""
@@ -4444,7 +4457,21 @@ async function supabaseRequest(action = "", payload, options = {}) {
         // Asegurarnos de mapear tanto .clues como .CLUES por seguridad, normalizados a mayúsculas
         let capturedClues = [...new Set(captureRecords.map(x => String(x.clues || x.CLUES || "").trim().toUpperCase()))];
 
-        let allUnits = resUnits.data || [];
+        let allUnits = (resUnits.data || []).map(u => {
+          if (u.unidad) {
+            const upper = u.unidad.toUpperCase().trim();
+            if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("ESPECIALIDADES DEL NIÑO Y LA MUJER")) {
+              u.unidad = "HENM";
+            }
+          }
+          if (u.UNIDAD) {
+            const upper = u.UNIDAD.toUpperCase().trim();
+            if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("ESPECIALIDADES DEL NIÑO Y LA MUJER")) {
+              u.UNIDAD = "HENM";
+            }
+          }
+          return u;
+        });
         console.log(`[admincaptureoverview DEBUG] Unidades activas traídas desde BD: ${allUnits.length}`);
         // Filtramos localmente usando canSeeMunicipio_ para evitar fallos de acentos y mayúsculas en Supabase
         if (role === "MUNICIPAL") {
@@ -4453,6 +4480,13 @@ async function supabaseRequest(action = "", payload, options = {}) {
         } else if (role === "CARAVANAS") {
           allUnits = allUnits.filter(u => isCaravanaUnit_(u));
         }
+
+        // Ordenar alfabéticamente por CLUES
+        allUnits.sort((a, b) => {
+          const cluesA = String(a.clues || a.CLUES || "").trim().toUpperCase();
+          const cluesB = String(b.clues || b.CLUES || "").trim().toUpperCase();
+          return cluesA.localeCompare(cluesB);
+        });
 
         const capturadas = allUnits.filter(u => capturedClues.includes(String(u.clues || u.CLUES || "").trim().toUpperCase()));
         const faltantes = allUnits.filter(u => !capturedClues.includes(String(u.clues || u.CLUES || "").trim().toUpperCase()));
@@ -4517,7 +4551,21 @@ async function supabaseRequest(action = "", payload, options = {}) {
         const { data: unitsData, error: unitsError } = await unitsQuery;
         if (unitsError) throw unitsError;
 
-        let units = unitsData || [];
+        let units = (unitsData || []).map(u => {
+          if (u.unidad) {
+            const upper = u.unidad.toUpperCase().trim();
+            if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("ESPECIALIDADES DEL NIÑO Y LA MUJER")) {
+              u.unidad = "HENM";
+            }
+          }
+          if (u.UNIDAD) {
+            const upper = u.UNIDAD.toUpperCase().trim();
+            if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("ESPECIALIDADES DEL NIÑO Y LA MUJER")) {
+              u.UNIDAD = "HENM";
+            }
+          }
+          return u;
+        });
         if (role === "MUNICIPAL") {
           units = units.filter(u => canSeeMunicipio_(USER, u.municipio));
         } else if (role === "CARAVANAS") {
@@ -7776,6 +7824,10 @@ function stopPublicClockTimer() {
 
 function escapeHtml(s) {
   s = (s == null) ? "" : String(s);
+  const upper = s.toUpperCase().trim();
+  if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("ESPECIALIDADES DEL NIÑO Y LA MUJER")) {
+    s = "HENM";
+  }
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 function escapeAttr(s) { return escapeHtml(s); }
@@ -8430,8 +8482,11 @@ function paintStatusChips(status) {
       container.setAttribute("data-tone", tone);
     }
 
-    // Dynamic progression hint tooltip on mouse hover explaining the 0% to 100% logic
+    // Refined Week-by-Week Compliance Algorithm & Premium UX Notification Layout
     let tooltipText = "Progreso de Cumplimiento: Inicia el mes en 0% y sube conforme realizas tus entregas semanales y mensuales.";
+    let statusBadgeHtml = "";
+    let notifBoxHtml = "";
+
     if (role === "UNIDAD") {
       let upToDateText = "";
       if (status.unitDetails) {
@@ -8439,19 +8494,159 @@ function paintStatusChips(status) {
         const isBioOk = details.bio_ok >= details.bio_expected;
         const isConsOk = details.cons_ok >= details.cons_expected;
         const isPedidoOk = !details.is_pedido_required || details.pedido_mensual;
+
+        const totalExpected = details.bio_expected + details.cons_expected;
+        const totalCompleted = details.bio_ok + details.cons_ok;
+
+        // Detect if there are prior week omissions vs current week pending
+        const todayObj = new Date();
+        const dow = todayObj.getDay();
         
+        let hasPriorOmission = false;
+        let pendingThisWeek = false;
+
+        // Consumibles expectation logic
+        if (details.cons_expected > 0) {
+          const missingCons = details.cons_expected - details.cons_ok;
+          if (missingCons > 0) {
+            // If today is Thursday (dow === 4) and we haven't captured, it's pending this week.
+            // If missing > 1, or if it is not Thursday, it's a permanent prior omission.
+            if (dow === 4 && missingCons === 1) {
+              pendingThisWeek = true;
+            } else {
+              hasPriorOmission = true;
+            }
+          }
+        }
+
+        // Biológicos expectation logic
+        if (details.bio_expected > 0) {
+          const missingBio = details.bio_expected - details.bio_ok;
+          if (missingBio > 0) {
+            // If today is Friday (dow === 5) or Thursday (dow === 4, window open) and missing is 1, it's pending.
+            // Otherwise, it's a permanent prior omission.
+            if ((dow === 4 || dow === 5) && missingBio === 1) {
+              pendingThisWeek = true;
+            } else {
+              hasPriorOmission = true;
+            }
+          }
+        }
+
+        if (!isPedidoOk) {
+          // Pedido is monthly. If required and not captured, it's pending or omitted
+          hasPriorOmission = true; 
+        }
+
+        // Render appropriate notification and badge based on the exact status
         if (isBioOk && isConsOk && isPedidoOk) {
-          upToDateText = "\n\n✅ ¡Felicidades! Estás al corriente con tus reportes programados a la fecha.";
+          // Status: Perfect Compliance
+          statusBadgeHtml = `
+            <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+              <span class="status-dot bg-emerald-400 animate-pulse"></span>
+              <span>Al Día</span>
+            </div>
+          `;
+          notifBoxHtml = `
+            <div class="compliance-notif-box success">
+              <span class="material-symbols-rounded">check_circle</span>
+              <div class="compliance-notif-text-container">
+                <span class="compliance-notif-title">Al Corriente</span>
+                <span class="compliance-notif-desc">Entregas al corriente</span>
+              </div>
+            </div>
+          `;
+          upToDateText = "";
+        } else if (hasPriorOmission) {
+          // Status: Omission Detected (Permanent score impact)
+          statusBadgeHtml = `
+            <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-red-500/10 text-red-300 border border-red-500/20">
+              <span class="status-dot bg-red-500 animate-ping"></span>
+              <span>Omisión</span>
+            </div>
+          `;
+          const pendingList = [];
+          if (!isBioOk) pendingList.push(`Biológicos (${details.bio_ok}/${details.bio_expected})`);
+          if (!isConsOk) pendingList.push(`Consumibles (${details.cons_ok}/${details.cons_expected})`);
+          if (!isPedidoOk) pendingList.push("Pedido Mensual");
+
+          notifBoxHtml = `
+            <div class="compliance-notif-box omission">
+              <span class="material-symbols-rounded">warning</span>
+              <div class="compliance-notif-text-container">
+                <span class="compliance-notif-title">Omisión</span>
+                <span class="compliance-notif-desc">Falta reporte previo</span>
+              </div>
+            </div>
+          `;
+          upToDateText = `\n\n⚠️ Reportes omitidos/pendientes: ${pendingList.join(", ")}.`;
         } else {
-          const pending = [];
-          if (!isBioOk) pending.push(`Biológicos (${details.bio_ok}/${details.bio_expected})`);
-          if (!isConsOk) pending.push(`Consumibles (${details.cons_ok}/${details.cons_expected})`);
-          if (!isPedidoOk) pending.push("Pedido Mensual");
-          upToDateText = `\n\n⚠️ Reportes pendientes a la fecha: ${pending.join(", ")}.`;
+          // Status: Pending for the current active week
+          statusBadgeHtml = `
+            <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/20">
+              <span class="status-dot bg-amber-400 animate-pulse"></span>
+              <span>Pendiente</span>
+            </div>
+          `;
+          notifBoxHtml = `
+            <div class="compliance-notif-box pending">
+              <span class="material-symbols-rounded">schedule</span>
+              <div class="compliance-notif-text-container">
+                <span class="compliance-notif-title">Pendiente</span>
+                <span class="compliance-notif-desc">Captura de esta semana</span>
+              </div>
+            </div>
+          `;
+          upToDateText = "\n\n⚠️ Tienes entregas pendientes correspondientes a la semana en curso.";
         }
       }
       tooltipText += upToDateText;
-    } else if (role === "MUNICIPAL") {
+    } else {
+      // Non-unit roles: Coordinators, Admin, Jurisdictional
+      const score = Number(status.compliance_pct || 0);
+      if (score >= 80) {
+        statusBadgeHtml = `
+          <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+            <span class="status-dot bg-emerald-400"></span>
+            <span>Saludable</span>
+          </div>
+        `;
+        notifBoxHtml = `
+          <div class="compliance-notif-box success">
+            <span class="material-symbols-rounded">verified</span>
+            <div class="compliance-notif-text-container">
+              <span class="compliance-notif-title">Óptimo</span>
+              <span class="compliance-notif-desc">Promedio estable</span>
+            </div>
+          </div>
+        `;
+      } else {
+        statusBadgeHtml = `
+          <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-red-500/10 text-red-300 border border-red-500/20">
+            <span class="status-dot bg-red-500"></span>
+            <span>Crítico</span>
+          </div>
+        `;
+        notifBoxHtml = `
+          <div class="compliance-notif-box omission">
+            <span class="material-symbols-rounded">error</span>
+            <div class="compliance-notif-text-container">
+              <span class="compliance-notif-title">Atención</span>
+              <span class="compliance-notif-desc">Omisiones acumuladas</span>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    if ($("bCumplimientoStatusBadge")) {
+      $("bCumplimientoStatusBadge").innerHTML = statusBadgeHtml;
+    }
+    if ($("bCumplimientoNotification")) {
+      $("bCumplimientoNotification").innerHTML = notifBoxHtml;
+    }
+
+    if (role === "MUNICIPAL") {
       tooltipText = "Promedio de Cumplimiento Municipal: Avance global ponderado de las unidades correspondientes a tu municipio durante el mes.";
     } else if (role === "ADMIN" || role === "JURISDICCIONAL") {
       tooltipText = "Promedio de Cumplimiento Global/Jurisdiccional: Avance acumulado de todas las unidades activas.";
@@ -8648,8 +8843,8 @@ function renderBioRows(rows) {
       <div class="text-center">
         <span class="bio-metric-pill">${isCamp ? "N/A" : (r.min_dosis ?? "") + " / " + (r.max_dosis ?? "")}</span>
       </div>
-      <div class="text-center" style="display: flex; justify-content: flex-end; padding-right: 12px;">
-        <div id="bioAlert_${i}" class="bioAlertWrap flex justify-center"></div>
+      <div class="text-center" style="display: flex; justify-content: center; align-items: center; width: 100%;">
+        <div id="bioAlert_${i}" class="bioAlertWrap" style="display: flex; justify-content: center; align-items: center; width: 100%; border: none; background: transparent; box-shadow: none; padding: 0;"></div>
       </div>
     </div>
   `}).join("");
@@ -8692,8 +8887,8 @@ function refreshExportSplitUi() {
 
   if (!wrap || !chk) return;
 
-  // Ahora visible para CONS, SR (Existencia) y BIO (Pedido)
-  const visible = rol === "ADMIN" && (tipo === "CONS" || tipo === "SR" || tipo === "BIO");
+  // Ahora visible para ADMIN, JURISDICCIONAL y MUNICIPAL para CONS, SR (Existencia) y BIO (Pedido)
+  const visible = (rol === "ADMIN" || rol === "JURISDICCIONAL" || rol === "MUNICIPAL") && (tipo === "CONS" || tipo === "SR" || tipo === "BIO");
 
   wrap.style.display = visible ? "block" : "none";
 
@@ -8746,7 +8941,7 @@ async function updateExportFechaHint() {
         const hasExtra = res.data.some(d => d.type === "EXTRAORDINARIO");
 
         if (hasMensual && hasExtra) {
-          exactBox.style.display = "block";
+          exactBox.style.display = "flex";
           $("exportFechaHint").textContent = "Múltiples tipos de pedido detectados (Ordinario y Extraordinario). Selecciona el corte exacto.";
         } else {
           exactBox.style.display = "none";
@@ -9060,23 +9255,18 @@ async function loadExportOptions() {
   }
 
   const grid = document.createElement("div");
-  grid.className = "exportMunicipiosGrid";
+  grid.className = "export-muni-grid";
 
   municipios.forEach((m) => {
     const id = "expmun_" + m.replace(/\s+/g, "_").replace(/[^\w]/g, "");
 
     const label = document.createElement("label");
-    label.className = "premium-muni-card";
+    label.className = "export-muni-card";
     label.setAttribute("for", id);
 
     label.innerHTML = `
       <input type="checkbox" class="exportMunicipioChk" id="${id}" value="${escapeAttr(m)}">
-      <div class="muni-card-content">
-        <span class="muni-title">${escapeHtml(m)}</span>
-        <div class="muni-check-icon">
-          <span class="material-symbols-rounded">check</span>
-        </div>
-      </div>
+      <span title="${escapeHtml(m)}">${escapeHtml(m)}</span>
     `;
 
     grid.appendChild(label);
@@ -9903,7 +10093,12 @@ function renderCaptureSummary(data) {
       tbodyCap.innerHTML = `<tr><td colspan="5" class="muted">${msg}</td></tr>`;
       return;
     }
-    tbodyCap.innerHTML = list.map(r => {
+    const sortedList = [...list].sort((a, b) => {
+      const cluesA = String(a.clues || a.CLUES || "").trim().toUpperCase();
+      const cluesB = String(b.clues || b.CLUES || "").trim().toUpperCase();
+      return cluesA.localeCompare(cluesB);
+    });
+    tbodyCap.innerHTML = sortedList.map(r => {
       // Determinar estado visual: verde (OK), azul (sin pedido BIO), ámbar (con ceros SR)
       let iconColor = '#22c55e'; // Verde: capturado normal
       let iconTitle = r.editado === 'SI' ? 'Editado' : 'Capturado';
@@ -9950,7 +10145,12 @@ function renderCaptureSummary(data) {
       tbodyFal.innerHTML = `<tr><td colspan="4" class="muted">${msg}</td></tr>`;
       return;
     }
-    tbodyFal.innerHTML = list.map(r => `
+    const sortedList = [...list].sort((a, b) => {
+      const cluesA = String(a.clues || a.CLUES || "").trim().toUpperCase();
+      const cluesB = String(b.clues || b.CLUES || "").trim().toUpperCase();
+      return cluesA.localeCompare(cluesB);
+    });
+    tbodyFal.innerHTML = sortedList.map(r => `
         <tr>
           <td data-label="Municipio">${escapeHtml(r.municipio || "")}</td>
           <td data-label="CLUES">${escapeHtml(r.clues || "")}</td>

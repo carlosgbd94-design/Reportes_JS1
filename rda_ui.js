@@ -375,7 +375,21 @@ async function fetchRDAData() {
 
     console.log(`[RDA] Loaded ${yearInt} pre-aggregated indicators: ${indicators.length} records. Max Mes: ${maxMes}`);
 
-    let filteredIndicators = indicators || [];
+    let filteredIndicators = (indicators || []).map(u => {
+        if (u.nombre) {
+            const upper = u.nombre.toUpperCase().trim();
+            if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("ESPECIALIDADES DEL NIÑO Y LA MUJER")) {
+                u.nombre = "HENM";
+            }
+        }
+        if (u.unidad) {
+            const upper = u.unidad.toUpperCase().trim();
+            if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("ESPECIALIDADES DEL NIÑO Y LA MUJER")) {
+                u.unidad = "HENM";
+            }
+        }
+        return u;
+    });
     if (typeof USER !== 'undefined' && USER?.rol === 'CARAVANAS') {
         filteredIndicators = filteredIndicators.filter(u => {
             const name = (u.unidad || u.nombre || '').toUpperCase().trim();
@@ -797,6 +811,7 @@ function renderDoughnut(agg, esquema) {
             },
             options: { 
                 responsive: true, maintainAspectRatio: false, cutout: '80%', 
+                devicePixelRatio: 3,
                 animation: { duration: 1000, easing: 'easeOutQuart' },
                 plugins: { 
                     legend: { position: 'bottom', labels: { font: { size: 12, weight: '700' }, color: '#64748b', padding: 20, usePointStyle: true, pointStyle: 'circle' } },
@@ -1158,6 +1173,7 @@ function renderBarChart(fUnits, muniFilter, esquema) {
             let tDatasets = [];
             let tOptions = {
                 responsive: true, maintainAspectRatio: false,
+                devicePixelRatio: 3,
                 animation: { duration: 1000, easing: 'easeOutQuart' },
                 plugins: { legend: { display: true, position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle' } }, tooltip: { backgroundColor: '#0f172a', padding: 12, cornerRadius: 10, mode: 'index', intersect: false } },
                 scales: { x: { ticks: { color: '#0f172a', font: { size: 12, weight: '800' } }, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: '#94a3b8', font: { size: 11, weight: '600' } }, grid: { color: '#f1f5f9', borderDash: [5,5] } } }
@@ -1313,6 +1329,7 @@ function renderBarChart(fUnits, muniFilter, esquema) {
     } else {
         const options = {
             responsive: true, maintainAspectRatio: false, 
+            devicePixelRatio: 3,
             animation: { duration: 1000, easing: 'easeOutQuart' },
             plugins: { 
                 legend: { display: isSingleUnit, position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle' } },
@@ -1946,22 +1963,26 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
                         }
                         doc.setGState(new doc.GState({opacity: 1.0}));
                     }
-
-                    const pageCount = doc.internal.getNumberOfPages();
-                    doc.setFont('helvetica', 'bold');
-                    doc.setFontSize(8);
-                    doc.setTextColor(148, 163, 184); 
-                    
-                    const stamp = `REPORTE GENERADO EL ${new Date().toLocaleString('es-MX')} — INTELIGENCIA OPERATIVA JS1`;
-                    doc.text(stamp, marginX, 208);
-                    
-                    const pag = `Página ${data.pageNumber} de ${pageCount}`;
-                    doc.text(pag, 264.4, 208, { align: 'right' });
                 }
             });
             
             currentY = doc.lastAutoTable.finalY + 10;
         });
+
+            // Loop through all pages to add the dynamic page number and footer stamp (Two-Pass Pattern)
+            const totalPages = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                doc.setPage(i);
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(8);
+                doc.setTextColor(148, 163, 184);
+                
+                const stamp = `REPORTE GENERADO EL ${new Date().toLocaleString('es-MX')} — INTELIGENCIA OPERATIVA JS1`;
+                doc.text(stamp, marginX, 208);
+                
+                const pag = `Página ${i} de ${totalPages}`;
+                doc.text(pag, 264.4, 208, { align: 'right' });
+            }
 
             if (devolverBlob) {
                 resolve(doc.output('blob'));
