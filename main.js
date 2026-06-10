@@ -12410,10 +12410,9 @@ async function refreshUsers() {
               <span class="text-[9px] font-bold text-slate-400 mt-0.5 uppercase tracking-wider">Cuenta Activa</span>
            </div>
         </td>
-        <td class="px-6 py-5 align-middle" style="word-break: break-word; overflow-wrap: break-word;">
-           <div class="flex flex-col min-w-0 gap-0.5" style="word-break: break-word; overflow-wrap: break-word;">
-              <span class="text-[11px] font-black text-slate-600 uppercase tracking-tighter leading-tight" title="${escapeHtml(u.unidad || 'Unidad No Asignada')}" style="word-break: break-word; overflow-wrap: break-word; white-space: normal; display: block;">${escapeHtml(u.unidad || 'Unidad No Asignada')}</span>
-              <span class="text-[10px] font-bold text-slate-400 mt-0.5">${escapeHtml(u.municipio)} | <span class="text-primary/70 font-mono">${escapeHtml(u.clues)}</span></span>
+        <td class="px-6 py-5 align-middle" style="word-break: break-all; overflow-wrap: break-word;">
+           <div class="flex flex-col min-w-0" style="word-break: break-all; overflow-wrap: break-word;">
+              <span class="font-bold text-slate-600 text-[13px] tracking-tight leading-normal" title="${escapeHtml(u.email || 'Sin correo registrado')}" style="word-break: break-all; overflow-wrap: break-word; white-space: normal; display: block;">${escapeHtml(u.email || 'Sin correo registrado')}</span>
            </div>
         </td>
         <td class="px-6 py-5 align-middle">

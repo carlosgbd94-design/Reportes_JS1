@@ -10249,3 +10249,34 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
   box-shadow: 0 0 5px currentColor !important;
 }
 
+/* ===== FIX ADMIN ACTION BUTTONS HOVER STYLES ===== */
+.adminActionBtn {
+  transition: all 0.2s ease-in-out !important;
+}
+
+.adminActionBtn:hover {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+.adminActionBtn[data-action="reset"]:hover {
+  background-color: #003366 !important; /* Primary */
+}
+
+.adminActionBtn[data-action="toggle"][data-active="SI"]:hover {
+  background-color: #ba1a1a !important; /* Rose / Block */
+}
+
+.adminActionBtn[data-action="toggle"][data-active="NO"]:hover {
+  background-color: #006b54 !important; /* Emerald / Activate */
+}
+
+.adminActionBtn[data-action="delete"]:hover {
+  background-color: #ba1a1a !important; /* Rose / Delete */
+}
+
+.adminActionBtn:hover span.material-symbols-rounded {
+  color: #ffffff !important;
+}
+
+
