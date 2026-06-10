@@ -7096,13 +7096,12 @@ input, textarea, select, [contenteditable] {
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 2;
     overflow: hidden !important;
-}
-/* Restore Liquid Glass Purity (High Transparency) & iOS Squircle Shapes */
-#glassBtnExport { --glass-bg: rgba(255, 255, 255, 0.05) !important; --glass-icon-color: #007AFF !important; --corner-radius: 14px !important; } /* iOS Blue */
-#glassBtnUpload { --glass-bg: rgba(255, 255, 255, 0.05) !important; --glass-icon-color: #5856D6 !important; --corner-radius: 14px !important; } /* iOS Purple */
-#glassBtnExplorer { --glass-bg: rgba(255, 255, 255, 0.05) !important; --glass-icon-color: #34C759 !important; --corner-radius: 14px !important; } /* iOS Green */
-#glassBtnNotifs { --glass-bg: rgba(255, 255, 255, 0.05) !important; --glass-icon-color: #FF3B30 !important; --corner-radius: 14px !important; } /* iOS Red */
-#glassBtnUploadRdaCsv { --glass-bg: rgba(255, 255, 255, 0.05) !important; --glass-icon-color: #FF9500 !important; --corner-radius: 14px !important; } /* iOS Orange */
+}/* Restore Liquid Glass Purity (High Transparency) & Institutional Elegant Colors */
+#glassBtnExport { --glass-bg: rgba(255, 255, 255, 0.05) !important; --glass-icon-color: #1E3A8A !important; --corner-radius: 100px !important; } /* Deep Navy */
+#glassBtnUpload { --glass-bg: rgba(255, 255, 255, 0.05) !important; --glass-icon-color: #0F766E !important; --corner-radius: 100px !important; } /* Deep Teal */
+#glassBtnExplorer { --glass-bg: rgba(255, 255, 255, 0.05) !important; --glass-icon-color: #4338CA !important; --corner-radius: 100px !important; } /* Deep Indigo */
+#glassBtnNotifs { --glass-bg: rgba(255, 255, 255, 0.05) !important; --glass-icon-color: #BE123C !important; --corner-radius: 100px !important; } /* Deep Crimson */
+#glassBtnUploadRdaCsv { --glass-bg: rgba(255, 255, 255, 0.05) !important; --glass-icon-color: #0369A1 !important; --corner-radius: 100px !important; } /* Institutional Blue */
 
 #btnExport, #btnOpenUpload, #btnViewArchivos, #btnTopNotifications, #btnUploadRdaCsv {
     color: var(--glass-icon-color) !important;
@@ -7140,7 +7139,7 @@ input, textarea, select, [contenteditable] {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    border-radius: var(--corner-radius, 14px) !important;
+    border-radius: var(--corner-radius, 100px) !important;
     transition: all 0.3s ease !important;
     cursor: pointer !important;
 }
