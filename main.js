@@ -815,6 +815,210 @@ let PINOL_SOLICITUDES_CHANNEL = null;
 let PRESENCE_CHANNEL = null;
 let ACTIVE_USERS = {};
 
+// ===== SISTEMA DE NOTIFICACIONES PER-PROFILE: Fan-Out =====
+
+/**
+ * Resuelve la lista de usuarios destinatarios para una notificación,
+ * basándose en target_scope y campos de targeting.
+ * Retorna un array de strings (nombres de usuario).
+ */
+async function resolveNotificationRecipients(record) {
+  const scope = String(record.target_scope || "GLOBAL").toUpperCase();
+  const targetMuni = String(record.target_municipio || "").trim();
+  const targetClues = String(record.target_clues || "").trim();
+  const targetUser = String(record.target_usuario || "").trim();
+  const fromUser = String(record.from_usuario || "").trim();
+
+  try {
+    // Helper: obtener todos los usuarios activos
+    const fetchActiveUsers = async (filter = {}) => {
+      let q = supabase.from('usuarios_legacy').select('usuario, rol, clues, municipio, municipios_allowed').eq('activo', 'SI');
+      if (filter.rol) q = q.eq('rol', filter.rol);
+      if (filter.clues) q = q.eq('clues', filter.clues);
+      const { data } = await q;
+      return data || [];
+    };
+
+    let recipients = new Set();
+
+    switch (scope) {
+      case "GLOBAL": {
+        const users = await fetchActiveUsers();
+        users.forEach(u => recipients.add(u.usuario));
+        break;
+      }
+
+      case "ROLE": {
+        // targetUser contiene el nombre del rol (ej: "MUNICIPAL")
+        const users = await fetchActiveUsers({ rol: targetUser });
+        users.forEach(u => recipients.add(u.usuario));
+        // Admins siempre ven todo
+        const admins = await fetchActiveUsers({ rol: 'ADMIN' });
+        admins.forEach(u => recipients.add(u.usuario));
+        break;
+      }
+
+      case "USUARIO": {
+        if (targetUser) recipients.add(targetUser);
+        break;
+      }
+
+      case "CLUES": {
+        // La unidad específica
+        const unitUsers = await fetchActiveUsers({ clues: targetClues });
+        unitUsers.forEach(u => recipients.add(u.usuario));
+
+        // Supervisores municipales que administran ese municipio
+        const allSupervisors = await fetchActiveUsers();
+        const muni = targetMuni || (() => {
+          const u = unitUsers.find(x => x.municipio);
+          return u ? u.municipio : "";
+        })();
+
+        allSupervisors.forEach(u => {
+          const uRole = String(u.rol || "").toUpperCase();
+          if (uRole === "ADMIN" || uRole === "JURISDICCIONAL") {
+            recipients.add(u.usuario);
+          } else if (uRole === "MUNICIPAL" || uRole === "CARAVANAS") {
+            // Verificar si este supervisor tiene acceso al municipio de la unidad
+            const allowed = (() => {
+              let raw = u.municipios_allowed;
+              if (typeof raw === "string") try { raw = JSON.parse(raw); } catch (e) { raw = [raw]; }
+              return Array.isArray(raw) ? raw.map(m => normalizeTextKey_(m)) : [];
+            })();
+            if (allowed.includes("*") || (muni && allowed.includes(normalizeTextKey_(muni)))) {
+              recipients.add(u.usuario);
+            }
+          }
+        });
+        break;
+      }
+
+      case "MUNICIPIO": {
+        // Staff municipal de ese municipio + admins
+        const allUsers = await fetchActiveUsers();
+        allUsers.forEach(u => {
+          const uRole = String(u.rol || "").toUpperCase();
+          if (uRole === "ADMIN" || uRole === "JURISDICCIONAL") {
+            recipients.add(u.usuario);
+          } else if (uRole === "MUNICIPAL" || uRole === "CARAVANAS") {
+            const allowed = (() => {
+              let raw = u.municipios_allowed;
+              if (typeof raw === "string") try { raw = JSON.parse(raw); } catch (e) { raw = [raw]; }
+              return Array.isArray(raw) ? raw.map(m => normalizeTextKey_(m)) : [];
+            })();
+            if (allowed.includes("*") || (targetMuni && allowed.includes(normalizeTextKey_(targetMuni)))) {
+              recipients.add(u.usuario);
+            }
+          }
+        });
+        break;
+      }
+
+      case "MUNICIPIO_UNITS": {
+        // Todas las unidades de un municipio
+        const { data: units } = await supabase.from('unidades').select('clues').eq('municipio', targetMuni).eq('activo', 'SI');
+        if (units && units.length) {
+          const cluesList = units.map(u => u.clues);
+          const { data: unitUsers } = await supabase.from('usuarios_legacy').select('usuario, clues').eq('activo', 'SI').in('clues', cluesList);
+          (unitUsers || []).forEach(u => recipients.add(u.usuario));
+        }
+        // También supervisores municipales
+        const supervisors = await fetchActiveUsers();
+        supervisors.forEach(u => {
+          const uRole = String(u.rol || "").toUpperCase();
+          if (uRole === "ADMIN" || uRole === "JURISDICCIONAL") {
+            recipients.add(u.usuario);
+          } else if (uRole === "MUNICIPAL") {
+            const allowed = (() => {
+              let raw = u.municipios_allowed;
+              if (typeof raw === "string") try { raw = JSON.parse(raw); } catch (e) { raw = [raw]; }
+              return Array.isArray(raw) ? raw.map(m => normalizeTextKey_(m)) : [];
+            })();
+            if (allowed.includes("*") || (targetMuni && allowed.includes(normalizeTextKey_(targetMuni)))) {
+              recipients.add(u.usuario);
+            }
+          }
+        });
+        break;
+      }
+
+      case "CARAVANAS_UNITS": {
+        // Todas las unidades tipo caravana
+        const { data: allUnits } = await supabase.from('unidades').select('clues, unidad').eq('activo', 'SI');
+        const caravanaClues = (allUnits || []).filter(u => isCaravanaUnit_(u)).map(u => u.clues);
+        if (caravanaClues.length) {
+          const { data: caravanaUsers } = await supabase.from('usuarios_legacy').select('usuario, clues').eq('activo', 'SI').in('clues', caravanaClues);
+          (caravanaUsers || []).forEach(u => recipients.add(u.usuario));
+        }
+        // Supervisores caravanas + admins
+        const adminsEtc = await fetchActiveUsers();
+        adminsEtc.forEach(u => {
+          const uRole = String(u.rol || "").toUpperCase();
+          if (uRole === "ADMIN" || uRole === "JURISDICCIONAL" || uRole === "CARAVANAS") {
+            recipients.add(u.usuario);
+          }
+        });
+        break;
+      }
+
+      case "MUNICIPAL_USERS_ALL": {
+        const municipals = await fetchActiveUsers({ rol: 'MUNICIPAL' });
+        municipals.forEach(u => recipients.add(u.usuario));
+        const admins = await fetchActiveUsers({ rol: 'ADMIN' });
+        admins.forEach(u => recipients.add(u.usuario));
+        break;
+      }
+
+      default: {
+        console.warn(`[FanOut] Scope desconocido: ${scope}`);
+        break;
+      }
+    }
+
+    // El remitente también recibe la notificación si es admin (para visibilidad)
+    // No es obligatorio, pero mantiene consistencia
+    if (fromUser) recipients.add(fromUser);
+
+    return Array.from(recipients).filter(Boolean);
+  } catch (e) {
+    console.error("[FanOut] Error resolviendo destinatarios:", e);
+    return [];
+  }
+}
+
+/**
+ * Crea filas en notificaciones_perfil para cada destinatario.
+ * Usa upsert para evitar duplicados.
+ */
+async function fanOutNotification(notificacionId, recipients = []) {
+  if (!notificacionId || !recipients.length) return;
+
+  const records = recipients.map(usuario => ({
+    notificacion_id: notificacionId,
+    usuario: usuario,
+    status: 'UNREAD',
+    deleted: false
+  }));
+
+  // Insertar en lotes de 50 para evitar límites de Supabase
+  const BATCH_SIZE = 50;
+  for (let i = 0; i < records.length; i += BATCH_SIZE) {
+    const batch = records.slice(i, i + BATCH_SIZE);
+    const { error } = await supabase
+      .from('notificaciones_perfil')
+      .upsert(batch, { onConflict: 'notificacion_id,usuario', ignoreDuplicates: true });
+
+    if (error) {
+      console.error(`[FanOut] Error inserting batch ${i / BATCH_SIZE}:`, error);
+    }
+  }
+
+  console.log(`[FanOut] ${recipients.length} destinatarios procesados para notificación ${notificacionId}`);
+}
+
+// ===== FIN FAN-OUT =====
+
 function initNotificationsRealtime() {
   if (!window.supabase || !TOKEN || !USER) return;
 
@@ -827,20 +1031,26 @@ function initNotificationsRealtime() {
     NOTIFICATIONS_CHANNEL = null;
   }
 
-  console.log("[Realtime] Iniciando suscripción a la tabla notificaciones...");
+  const usuario = String(USER?.usuario || "").trim();
+  console.log(`[Realtime] Iniciando suscripción a notificaciones_perfil para ${usuario}...`);
 
   NOTIFICATIONS_CHANNEL = window.supabase
-    .channel('public-notificaciones-changes')
+    .channel('my-notificaciones-perfil')
     .on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'notificaciones' },
+      {
+        event: '*',
+        schema: 'public',
+        table: 'notificaciones_perfil',
+        filter: `usuario=eq.${usuario}`
+      },
       (payload) => {
-        console.log("[Realtime] Cambio detectado:", payload.eventType, payload.new?.id || payload.old?.id);
+        console.log("[Realtime] Cambio en mi buzón:", payload.eventType, payload.new?.notificacion_id || payload.old?.notificacion_id);
         loadNotifications({ silent: true }).catch(() => { });
       }
     )
     .subscribe((status) => {
-      console.log("[Realtime] Canal notificaciones estado:", status);
+      console.log("[Realtime] Canal notificaciones_perfil estado:", status);
     });
 }
 
@@ -3856,9 +4066,9 @@ async function supabaseRequest(action = "", payload, options = {}) {
         if (finalMissing.length > 0) {
           const notifId = 'NOTIF:DESABASTO:' + btoa(clues + ":" + fecha + ":" + Date.now());
 
-          await supabase.from('notificaciones').insert({
+          const desabastoRecord = {
             id: notifId,
-            tipo: 'ALERTA_DESABASTO',
+            type: 'ALERTA_DESABASTO',
             created_ts: new Date().toISOString(),
             created_date: todayYmdLocal(),
             from_usuario: 'SISTEMA',
@@ -3875,8 +4085,14 @@ async function supabaseRequest(action = "", payload, options = {}) {
               missing: finalMissing,
               status: 'activa'
             })
-          });
-          console.log("[Capture Logic] Alerta de desabasto generada para:", finalMissing);
+          };
+
+          await supabase.from('notificaciones').insert(desabastoRecord);
+
+          // Fan-out: crear copias individuales para cada destinatario
+          const desabastoRecipients = await resolveNotificationRecipients(desabastoRecord);
+          await fanOutNotification(desabastoRecord.id, desabastoRecipients);
+          console.log(`[Capture Logic] Alerta de desabasto generada para: ${finalMissing.join(', ')} → ${desabastoRecipients.length} destinatarios`);
         }
 
         return { ok: true };
@@ -4004,183 +4220,55 @@ async function supabaseRequest(action = "", payload, options = {}) {
         };
       }
       case "listmynotifications": {
-        const role = String(USER?.rol || "").toUpperCase();
-        const clues = String(USER?.clues || "").trim();
         const usuario = String(USER?.usuario || "").trim();
 
-        console.log(`[Notif DEBUG] Starting fetch for ${usuario} (${role})`);
+        console.log(`[Notif] Cargando buzón personal de ${usuario}...`);
 
-        // 1. Construir filtros OR para optimización en base de datos
-        const orClauses = ["target_scope.eq.GLOBAL"];
-        if (usuario) {
-          orClauses.push(`target_usuario.eq."${usuario}"`);
-        }
-        if (role) {
-          orClauses.push(`and(target_scope.eq.ROLE,target_usuario.eq."${role}")`);
-        }
-        if (clues) {
-          orClauses.push(`target_clues.eq."${clues}"`);
-        }
-        const mList = Array.isArray(USER?.municipiosAllowed) ? USER.municipiosAllowed : [];
-        mList.forEach(muni => {
-          if (muni) {
-            orClauses.push(`target_municipio.eq."${muni.toUpperCase().trim()}"`);
-          }
-        });
-
-        // 🛡️ Agregar alcance para Caravanas/Unidades Móviles si aplica
-        const isUserCaravanaUnit = role === "UNIDAD" && isCaravanaUnit_({ clues: clues, unidad: USER?.unidad });
-        if (role === "CARAVANAS" || isUserCaravanaUnit) {
-          orClauses.push("target_scope.eq.CARAVANAS_UNITS");
-        }
-
-        const orFilterString = orClauses.join(',');
-        console.log(`[Notif DEBUG] PostgREST OR Filter:`, orFilterString);
-
-        // 2. Obtener masa filtrada desde Supabase
-        const { data: rawNotifs, error: notifErr } = await supabase
-          .from('notificaciones')
-          .select('*')
-          .or(orFilterString)
+        // 1. Consultar mi buzón personal (notificaciones_perfil + JOIN notificaciones)
+        const { data: misBuzon, error: buzonErr } = await supabase
+          .from('notificaciones_perfil')
+          .select('id, notificacion_id, status, read_ts, notificacion:notificaciones(*)')
+          .eq('usuario', usuario)
+          .eq('deleted', false)
+          .order('created_at', { ascending: false })
           .limit(300);
 
-        if (notifErr) {
-          console.error(`[Notif DEBUG] Fetch error:`, notifErr);
-          throw notifErr;
+        if (buzonErr) {
+          console.error(`[Notif] Error al cargar buzón:`, buzonErr);
+          throw buzonErr;
         }
 
-        console.log(`[Notif DEBUG] Raw items fetched:`, rawNotifs?.length || 0);
+        console.log(`[Notif] Items en buzón:`, misBuzon?.length || 0);
 
-        // 3. Obtener catálogo de unidades para mapeo (Jerarquía)
-        const { data: allUnits } = await supabase.from('unidades').select('clues, municipio').eq('activo', 'SI');
-        const unitMap = {};
-        (allUnits || []).forEach(u => unitMap[u.clues] = u.municipio);
-
-        // 4. SÍNTESIS DE NOTIFICACIONES (Bypass RLS)
-        let virtualNotifs = [];
-        try {
-          if (role === "MUNICIPAL" || role === "ADMIN" || role === "JURISDICCIONAL") {
-            const { data: pinolSrc, error: pinolErr } = await supabase.from('pinol_solicitudes')
-              .select('*')
-              .in('estatus', ['ENTREGADO', 'RECIBIDO'])
-              .order('timestamp_solicitud', { ascending: false })
-              .limit(50);
-
-            if (pinolErr) console.warn("[Notif DEBUG] Pinol Synthesis warning:", pinolErr);
-
-            let readVNotifs = [];
-            let deletedVNotifs = [];
-            try {
-              readVNotifs = JSON.parse(localStorage.getItem("JS1_READ_VNOTIFS") || "[]");
-              deletedVNotifs = JSON.parse(localStorage.getItem("JS1_DELETED_VNOTIFS") || "[]");
-            } catch (e) { }
-
-            (pinolSrc || []).forEach(p => {
-              const vNotifId = 'VNOTIF:PINOL:' + p.id;
-              if (deletedVNotifs.includes(vNotifId)) return;
-
-              if (canSeeMunicipio_(USER, p.municipio)) {
-                const isRead = (p.estatus === 'RECIBIDO' || readVNotifs.includes(vNotifId)) ? 'SI' : 'NO';
-                virtualNotifs.push({
-                  id: vNotifId,
-                  created_ts: p.timestamp_entrega || p.timestamp_solicitud,
-                  title: 'Pedido de pinol entregado',
-                  message: `Pinol entregado:\nFecha de solicitud: ${p.fecha_solicitud}\nUnidad: ${p.unidad || unitMap[p.clues] || 'Unidad Desconocida'}`,
-                  is_read: isRead,
-                  target_scope: 'CLUES',
-                  target_clues: p.clues,
-                  target_municipio: p.municipio,
-                  meta_json: JSON.stringify({ source: 'PINOL', event: 'PINOL_ENTREGADO', pinol_id: p.id })
-                });
-              }
+        // 2. Mapear al formato esperado por el frontend
+        const items = (misBuzon || [])
+          .filter(np => np.notificacion) // Filtrar refs huérfanas
+          .map(np => {
+            const n = np.notificacion;
+            const finalStatus = np.status || 'UNREAD';
+            const finalIsRead = finalStatus === 'READ' ? 'SI' : 'NO';
+            return Object.assign({}, n, {
+              status: finalStatus,
+              is_read: finalIsRead,
+              read_ts: np.read_ts,
+              type: n.type || n.tipo || 'INFO'
             });
-          }
-        } catch (e) {
-          console.error("[Notif DEBUG] Synthesis error:", e);
-        }
+          });
 
-        // 5. Mezclar y de-duplicar
-        const allCombined = [...(rawNotifs || []), ...virtualNotifs];
-        const seenIds = new Set();
-        const uniqueItems = [];
-
-        allCombined.forEach(n => {
-          if (!seenIds.has(n.id)) {
-            uniqueItems.push(n);
-            seenIds.add(n.id);
-          }
-        });
-
-        // 6. Filtrado "Zero Errors" en memoria
-        const filtered = uniqueItems.filter(n => {
-          const nScope = String(n.target_scope || "").toUpperCase();
-          const nClues = String(n.target_clues || "").trim();
-          const nMuni = String(n.target_municipio || "").trim();
-          const nUser = String(n.target_usuario || "").trim();
-
-          // A. Notificaciones Globales
-          if (nScope === "GLOBAL") return true;
-
-          // B. Dirigidas a mi usuario específico
-          if (nUser === usuario && nUser !== "") return true;
-
-          // C. Dirigidas a mi Rol (Broadcast)
-          if (nScope === "ROLE" && nUser === role) return true;
-
-          // D. Dirigidas a mi CLUES (Unidad)
-          if (nClues === clues && clues !== "") return true;
-
-          // E. Si la notif es para todas las Caravanas y la unidad destinataria es Caravana
-          if (nScope === "CARAVANAS_UNITS" && isCaravanaUnit_({ clues: clues, unidad: USER.unidad })) return true;
-
-          // F. JERARQUÍA: Si soy Supervisor (Municipal/Admin/Caravanas)
-          if (role === "MUNICIPAL" || role === "ADMIN" || role === "JURISDICCIONAL" || role === "CARAVANAS") {
-            // i. Por municipio explícito (para Caravanas, si la unidad pertenece a Caravanas y es de ese municipio)
-            if (nMuni && role === "CARAVANAS") {
-              const derivedMuni = unitMap[nClues];
-              if (derivedMuni && isCaravanaUnit_({ clues: nClues })) return true;
-            } else if (nMuni && canSeeMunicipio_(USER, nMuni)) {
-              return true;
-            }
-
-            // ii. Por CLUES (derivar municipio si no viene en la notif)
-            const derivedMuni = unitMap[nClues];
-            if (derivedMuni) {
-              if (role === "CARAVANAS") {
-                if (isCaravanaUnit_({ clues: nClues })) return true;
-              } else {
-                const canSee = canSeeMunicipio_(USER, derivedMuni);
-                if (canSee) return true;
-              }
-            } else if (nClues && nClues !== "SYS") {
-              console.log(`[Notif DEBUG] Unit ${nClues} not found in unitMap`);
-            }
-          }
-
-          return false;
-        });
-
-        // 4. Ordenar en memoria por fecha (descendente)
-        const sorted = (filtered || []).sort((a, b) => {
+        // 3. Ordenar por fecha descendente
+        items.sort((a, b) => {
           const da = new Date(a.created_ts || 0);
           const db = new Date(b.created_ts || 0);
           return db - da;
-        }).map(n => {
-          const finalStatus = n.status || (String(n.is_read).toUpperCase() === 'SI' ? 'READ' : 'UNREAD');
-          const finalIsRead = n.is_read || (String(finalStatus).toUpperCase() === 'READ' ? 'SI' : 'NO');
-          return Object.assign({}, n, {
-            status: finalStatus,
-            is_read: finalIsRead
-          });
         });
 
-        const unreadCount = sorted.filter(n => String(n.status).toUpperCase() !== 'READ').length;
-        console.log(`[Notif DEBUG] Final filtered list:`, sorted.length);
+        const unreadCount = items.filter(n => String(n.status).toUpperCase() !== 'READ').length;
+        console.log(`[Notif] Lista final: ${items.length} items, ${unreadCount} no leídas`);
 
         return {
           ok: true,
           data: {
-            items: sorted,
+            items: items,
             unread: unreadCount
           }
         };
@@ -5209,22 +5297,25 @@ async function supabaseRequest(action = "", payload, options = {}) {
         const meta = JSON.parse(notif.meta_json || "{}");
         const pinolId = meta.pinol_id;
 
-        // 1. Marcar notificación como leída y confirmada
+        // 1. Marcar notificación maestro como confirmada (meta_json global)
         meta.confirmed_by_unit = "SI";
         meta.confirmation_ts = new Date().toISOString();
 
-        const { error: notifError } = await supabase
+        await supabase
           .from('notificaciones')
-          .update({
-            meta_json: JSON.stringify(meta),
-            status: 'READ',
-            read_ts: new Date().toISOString()
-          })
+          .update({ meta_json: JSON.stringify(meta) })
           .eq('id', payload.notification_id);
 
-        if (notifError) throw notifError;
+        // 2. Marcar MI copia como leída en notificaciones_perfil
+        const { error: perfilError } = await supabase
+          .from('notificaciones_perfil')
+          .update({ status: 'READ', read_ts: new Date().toISOString() })
+          .eq('notificacion_id', payload.notification_id)
+          .eq('usuario', USER.usuario);
 
-        // 2. Marcar solicitud de Pinol como RECIBIDA
+        if (perfilError) console.warn("[Notif] Error actualizando perfil:", perfilError);
+
+        // 3. Marcar solicitud de Pinol como RECIBIDA
         if (pinolId) {
           const { error: pinolError } = await supabase
             .from('pinol_solicitudes')
@@ -5240,16 +5331,18 @@ async function supabaseRequest(action = "", payload, options = {}) {
       }
 
       case "sendnotification": {
+        // 🛡️ Corregir mapeo de campos: el frontend envía target_scope, target_municipio, etc.
         const record = {
-          id: 'NOTIF:' + btoa((payload.clues || payload.usuario_destino || 'SYS') + ":" + Date.now()),
+          id: 'NOTIF:' + btoa((payload.target_clues || payload.clues || payload.target_usuario || payload.usuario_destino || 'SYS') + ":" + Date.now()),
           created_ts: new Date().toISOString(),
           created_date: todayYmdLocal(),
           from_usuario: USER.usuario,
           from_rol: USER.rol,
-          target_scope: payload.scope || "GLOBAL",
-          target_municipio: payload.municipio || null,
-          target_clues: payload.clues || null,
-          target_usuario: payload.usuario_destino || null,
+          target_scope: payload.target_scope || payload.scope || "GLOBAL",
+          target_municipio: payload.target_municipio || payload.municipio || null,
+          target_clues: payload.target_clues || payload.clues || null,
+          target_usuario: payload.target_usuario || payload.usuario_destino || null,
+          type: payload.type || 'INFO',
           title: payload.title || "Notificación",
           message: payload.message || "",
           status: 'UNREAD'
@@ -5261,69 +5354,62 @@ async function supabaseRequest(action = "", payload, options = {}) {
           if (u) record.target_municipio = u.municipio;
         }
 
+        // 1. Insertar notificación maestra
         const { error } = await supabase.from('notificaciones').insert(record);
         if (error) throw error;
+
+        // 2. Fan-out: crear copias individuales para cada destinatario
+        const recipients = await resolveNotificationRecipients(record);
+        await fanOutNotification(record.id, recipients);
+
+        console.log(`[Notif] Notificación ${record.id} enviada a ${recipients.length} destinatarios`);
         return { ok: true };
       }
 
       case "marknotificationread": {
-        if (payload.id && String(payload.id).startsWith("VNOTIF:")) {
-          try {
-            const readVNotifs = JSON.parse(localStorage.getItem("JS1_READ_VNOTIFS") || "[]");
-            if (!readVNotifs.includes(payload.id)) {
-              readVNotifs.push(payload.id);
-              localStorage.setItem("JS1_READ_VNOTIFS", JSON.stringify(readVNotifs));
-            }
-          } catch (e) { }
-          return { ok: true };
-        }
-
+        // Per-profile: marcar SOLO mi copia como leída
         const { error } = await supabase
-          .from('notificaciones')
+          .from('notificaciones_perfil')
           .update({ status: 'READ', read_ts: new Date().toISOString() })
-          .eq('id', payload.id);
+          .eq('notificacion_id', payload.id)
+          .eq('usuario', USER.usuario);
         if (error) throw error;
         return { ok: true };
       }
 
       case "resolvedesabasto": {
         // Obtenemos la notificación primero para actualizar meta_json
-        const { data: notif } = await supabase.from('notificaciones').select('meta_json').eq('id', payload.id).single();
-        if (!notif) throw new Error("Notificación no encontrada");
+        const { data: notifDesab } = await supabase.from('notificaciones').select('meta_json').eq('id', payload.id).single();
+        if (!notifDesab) throw new Error("Notificación no encontrada");
 
-        let meta = {};
-        try { meta = JSON.parse(notif.meta_json || "{}"); } catch (e) { }
-        meta.status = "resuelta";
+        let metaDesab = {};
+        try { metaDesab = JSON.parse(notifDesab.meta_json || "{}"); } catch (e) { }
+        metaDesab.status = "resuelta";
 
-        const { error } = await supabase
+        // 1. Actualizar meta_json global (afecta visualización para todos)
+        await supabase
           .from('notificaciones')
-          .update({
-            status: 'READ',
-            read_ts: new Date().toISOString(),
-            meta_json: JSON.stringify(meta)
-          })
+          .update({ meta_json: JSON.stringify(metaDesab) })
           .eq('id', payload.id);
-        if (error) throw error;
+
+        // 2. Marcar MI copia como leída en notificaciones_perfil
+        const { error: errorDesab } = await supabase
+          .from('notificaciones_perfil')
+          .update({ status: 'READ', read_ts: new Date().toISOString() })
+          .eq('notificacion_id', payload.id)
+          .eq('usuario', USER.usuario);
+        if (errorDesab) console.warn("[Notif] Error actualizando perfil desabasto:", errorDesab);
         return { ok: true };
       }
 
       case "deletenotification": {
-        if (payload.id && String(payload.id).startsWith("VNOTIF:")) {
-          try {
-            const deletedVNotifs = JSON.parse(localStorage.getItem("JS1_DELETED_VNOTIFS") || "[]");
-            if (!deletedVNotifs.includes(payload.id)) {
-              deletedVNotifs.push(payload.id);
-              localStorage.setItem("JS1_DELETED_VNOTIFS", JSON.stringify(deletedVNotifs));
-            }
-          } catch (e) { }
-          return { ok: true };
-        }
-
-        const { error } = await supabase
-          .from('notificaciones')
-          .delete()
-          .eq('id', payload.id);
-        if (error) throw error;
+        // Per-profile: soft-delete SOLO mi copia
+        const { error: delError } = await supabase
+          .from('notificaciones_perfil')
+          .update({ deleted: true, deleted_ts: new Date().toISOString() })
+          .eq('notificacion_id', payload.id)
+          .eq('usuario', USER.usuario);
+        if (delError) throw delError;
         return { ok: true };
       }
 
@@ -5636,16 +5722,18 @@ async function supabaseRequest(action = "", payload, options = {}) {
 
         if (updateError) throw updateError;
 
-        // Auto-marcar como leída la solicitud inicial para los supervisores
-        await supabase.from('notificaciones')
+        // Auto-marcar como leída la solicitud inicial para MI perfil
+        const reqNotifId = 'NOTIF:PINOL_REQ:' + payload.id;
+        await supabase.from('notificaciones_perfil')
           .update({ status: 'READ', read_ts: new Date().toISOString() })
-          .eq('id', 'NOTIF:PINOL_REQ:' + payload.id)
+          .eq('notificacion_id', reqNotifId)
+          .eq('usuario', USER.usuario)
           .catch(() => { });
 
-        // Crear notificación para la unidad
+        // Crear notificación para la unidad + fan-out
         const { data: sol } = await supabase.from('pinol_solicitudes').select('*').eq('id', payload.id).single();
         if (sol) {
-          await supabase.from('notificaciones').insert({
+          const pinolNotifRecord = {
             id: 'NOTIF:' + btoa(sol.clues + ":" + Date.now()),
             created_ts: new Date().toISOString(),
             created_date: todayYmdLocal(),
@@ -5653,12 +5741,20 @@ async function supabaseRequest(action = "", payload, options = {}) {
             from_rol: USER.rol,
             target_scope: 'CLUES',
             target_clues: sol.clues,
-            target_municipio: sol.municipio || null, // Importante para jerarquía municipal
+            target_municipio: sol.municipio || null,
+            type: 'SUCCESS',
             title: 'Pinol entregado',
             message: payload.comentario_notificacion || 'Tu solicitud de pinol ha sido marcada como entregada.',
             status: 'UNREAD',
             meta_json: JSON.stringify({ source: 'PINOL', event: 'PINOL_ENTREGADO', pinol_id: sol.id })
-          });
+          };
+
+          await supabase.from('notificaciones').insert(pinolNotifRecord);
+
+          // Fan-out: crear copias individuales para cada destinatario
+          const pinolRecipients = await resolveNotificationRecipients(pinolNotifRecord);
+          await fanOutNotification(pinolNotifRecord.id, pinolRecipients);
+          console.log(`[Notif] Pinol entregado → ${pinolRecipients.length} destinatarios`);
         }
         return { ok: true };
       }
