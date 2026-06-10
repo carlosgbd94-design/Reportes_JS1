@@ -46,6 +46,11 @@ serve(async (req) => {
     const localTime = new Date(localTimeStr)
     const dayOfWeek = localTime.getDay() // 0 = Dom, 1 = Lun, ..., 4 = Jue, 5 = Vie
     
+    // Normalizador de municipios para evitar fallos por acentos
+    const normalizeMuni = (m: string) => {
+      return String(m || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase()
+    }
+    
     const todayYmd = formatter.format(localTime) // YYYY-MM-DD
     
     const yesterday = new Date(localTime)
@@ -55,12 +60,15 @@ serve(async (req) => {
     console.log(`[ALERTA LOG] Fecha Local: ${todayYmd}, Día de la Semana: ${dayOfWeek}, Acción: ${action}`)
 
     // 1. Obtener catálogo de unidades médicas activas
-    const { data: units, error: unitsErr } = await supabaseAdmin
-      .from('unidades_medicas')
-      .select('clues, nombre, municipio')
-      .order('nombre')
+    const { data: rawUnits, error: unitsErr } = await supabaseAdmin
+      .from('unidades')
+      .select('clues, unidad, municipio')
+      .eq('activo', 'SI')
+      .order('unidad')
     
     if (unitsErr) throw new Error(`Error obteniendo unidades: ${unitsErr.message}`)
+    
+    const activeUnits = rawUnits || []
 
     // 2. Obtener capturas de hoy y de ayer
     const [resBioToday, resConsToday, resBioYesterday] = await Promise.all([
@@ -98,7 +106,7 @@ serve(async (req) => {
 
       if (profErr) throw new Error(`Error obteniendo perfiles de unidades: ${profErr.message}`)
 
-      for (const unit of units) {
+      for (const unit of activeUnits) {
         const unitClues = String(unit.clues).trim().toUpperCase()
         const userForUnit = (userProfiles || []).find(p => String(p.clues_asignado).trim().toUpperCase() === unitClues)
 
@@ -123,40 +131,47 @@ serve(async (req) => {
 
         if (missingItems.length > 0) {
           const htmlBody = `
-            <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-              <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 25px; border-radius: 8px 8px 0 0; text-align: center;">
-                <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 0.5px;">Recordatorio de Captura Diario</h1>
-              </div>
-              <div style="padding: 25px; color: #334155; line-height: 1.6;">
-                <p style="font-size: 16px; margin-top: 0;">Estimado(a) capturista de la unidad <strong>${unit.nombre}</strong>,</p>
-                <p style="font-size: 15px;">Te recordamos que tenemos registros pendientes para tu unidad:</p>
-                
-                <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; border-radius: 4px; margin: 20px 0;">
-                  <span style="color: #991b1b; font-weight: 700; font-size: 14px; text-transform: uppercase;">Pendiente de Capturar:</span>
-                  <ul style="margin: 8px 0 0 0; padding-left: 20px; color: #7f1d1d; font-size: 15px; font-weight: 500;">
-                    ${missingItems.map(item => `<li>${item}</li>`).join('')}
-                  </ul>
-                </div>
-                
-                <p style="font-size: 15px;">Por favor, ingresa a la plataforma a la brevedad para realizar el registro y mantener la información actualizada.</p>
-                
-                <div style="text-align: center; margin: 30px 0 10px 0;">
-                  <a href="${platformUrl}" style="background-color: #2563eb; color: #ffffff; padding: 12px 30px; border-radius: 6px; font-weight: 600; text-decoration: none; display: inline-block; box-shadow: 0 4px 6px rgba(37,99,235,0.2);">Ir a la Plataforma</a>
-                </div>
-              </div>
-              <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; text-align: center; color: #64748b; font-size: 12px; line-height: 1.4;">
-                <p style="margin: 0 0 5px 0;">Este es un recordatorio automático del Sistema de Reportes JS1.</p>
-                <p style="margin: 0;">Por favor no respondas a este correo.</p>
-              </div>
-            </div>
-          `
+<div style="font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0;">
+  <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 30px 20px; text-align: center;">
+    <div style="background-color: rgba(255, 255, 255, 0.2); width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 15px auto; display: flex; align-items: center; justify-content: center;">
+      <span style="font-size: 30px;">⏱️</span>
+    </div>
+    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Acción Requerida</h1>
+    <p style="color: #dbeafe; margin: 8px 0 0 0; font-size: 15px; font-weight: 500;">Recordatorio de Captura Diario</p>
+  </div>
+  
+  <div style="padding: 35px 30px; color: #334155; line-height: 1.6;">
+    <p style="font-size: 16px; margin-top: 0; color: #0f172a;">Estimado(a) capturista de la unidad <strong style="color: #1e40af; font-weight: 700;">${unit.unidad}</strong>,</p>
+    <p style="font-size: 15px; color: #475569;">El sistema ha detectado que aún existen registros pendientes correspondientes a tu unidad para el día de hoy:</p>
+    
+    <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-left: 5px solid #ef4444; padding: 20px; border-radius: 8px; margin: 25px 0;">
+      <div style="color: #b91c1c; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Pendiente de Capturar</div>
+      <ul style="margin: 0; padding-left: 20px; color: #7f1d1d; font-size: 16px; font-weight: 600;">
+        ${missingItems.map(item => `<li style="margin-bottom: 6px;">${item}</li>`).join('')}
+      </ul>
+    </div>
+    
+    <p style="font-size: 15px; color: #475569;">Te solicitamos ingresar a la plataforma a la brevedad para realizar tu registro y mantener los indicadores actualizados.</p>
+    
+    <div style="text-align: center; margin: 40px 0 10px 0;">
+      <a href="${platformUrl}" style="background-color: #2563eb; color: #ffffff; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 15px; text-decoration: none; display: inline-block; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2), 0 2px 4px -2px rgba(37, 99, 235, 0.2);">Acceder a la Plataforma</a>
+    </div>
+  </div>
+  
+  <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+    <p style="margin: 0; color: #64748b; font-size: 12px; font-weight: 500;">Jurisdicción Sanitaria 1 - Reportes JS1</p>
+    <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 11px;">Este es un correo automático de no-reply. Favor de no responder a esta dirección.</p>
+  </div>
+</div>
+`
 
           await smtpClient.send({
             from: gmailUser,
             to: userForUnit.email,
-            subject: `⚠️ Recordatorio Pendiente: Captura en ${unit.nombre}`,
-            content: `Recordatorio de captura pendiente para ${unit.nombre}: ${missingItems.join(', ')}`,
+            subject: `Aviso Pendiente: Captura en ${unit.unidad}`,
+            content: `Recordatorio de captura pendiente para ${unit.unidad}: ${missingItems.join(', ')}`,
             html: htmlBody,
+            replyTo: 'no-reply@js1reportes.com'
           })
           sentCount++
         }
@@ -180,7 +195,7 @@ serve(async (req) => {
       const { data: profiles, error: profErr } = await supabaseAdmin
         .from('perfiles')
         .select('email, rol, municipio, municipios_allowed')
-        .in('rol', ['MUNICIPAL', 'ADMIN', 'JURISDICCIONAL'])
+        .in('rol', ['MUNICIPAL', 'ADMIN', 'JURISDICCIONAL', 'CARAVANAS'])
 
       if (profErr) throw new Error(`Error obteniendo perfiles de supervisión: ${profErr.message}`)
 
@@ -198,14 +213,14 @@ serve(async (req) => {
       for (const supervisor of municipalProfiles) {
         let allowedMunis: string[] = []
         if (Array.isArray(supervisor.municipios_allowed) && supervisor.municipios_allowed.length > 0) {
-          allowedMunis = supervisor.municipios_allowed.map((m: string) => String(m).trim().toUpperCase())
+          allowedMunis = supervisor.municipios_allowed.map(normalizeMuni)
         } else if (supervisor.municipio) {
-          allowedMunis = String(supervisor.municipio).split(',').map(m => m.trim().toUpperCase())
+          allowedMunis = String(supervisor.municipio).split(',').map(normalizeMuni)
         }
 
         if (allowedMunis.length === 0) continue
 
-        const muniUnits = units.filter(u => allowedMunis.includes(String(u.municipio).trim().toUpperCase()))
+        const muniUnits = activeUnits.filter(u => allowedMunis.includes(normalizeMuni(u.municipio)))
 
         if (muniUnits.length === 0) continue
 
@@ -224,7 +239,7 @@ serve(async (req) => {
 
           return `
             <tr style="border-bottom: 1px solid #f1f5f9;">
-              <td style="padding: 12px 16px; font-size: 14px; font-weight: 500; color: #1e293b;">${unit.nombre}</td>
+              <td style="padding: 12px 16px; font-size: 14px; font-weight: 500; color: #1e293b;">${unit.unidad}</td>
               <td style="padding: 12px 16px; font-size: 13px; font-family: monospace; color: #64748b;">${unit.clues}</td>
               <td style="padding: 12px 16px; text-align: center;">${renderStatusBadge(isOk)}</td>
             </tr>
@@ -235,50 +250,140 @@ serve(async (req) => {
         const progressColor = pct === 100 ? '#10b981' : (pct >= 70 ? '#f59e0b' : '#ef4444')
 
         const htmlBody = `
-          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 25px; border-radius: 8px 8px 0 0; text-align: center;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 0.5px;">Resumen Municipal de Captura</h1>
-              <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 13px; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;">Módulo: ${reportType} | Municipio: ${muniLabel}</p>
-            </div>
-            
-            <div style="padding: 25px; color: #334155; line-height: 1.6;">
-              <p style="font-size: 15px; margin-top: 0;">Estimado(a) Coordinador(a),</p>
-              <p style="font-size: 14px;">Te compartimos el estatus de captura para las unidades adscritas a tu municipio el día de hoy <strong>${todayYmd}</strong>:</p>
-              
-              <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                <div style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Avance del Municipio</div>
-                <div style="font-size: 40px; font-weight: 800; color: ${progressColor}; margin: 5px 0;">${pct}%</div>
-                <div style="font-size: 13px; color: #475569; font-weight: 500;">
-                  Unidades Completadas: <strong>${completedCount}</strong> de <strong>${muniUnits.length}</strong>
-                </div>
-              </div>
-              
-              <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-                <thead>
-                  <tr style="background-color: #f1f5f9; text-align: left;">
-                    <th style="padding: 12px 16px; font-size: 12px; font-weight: 700; color: #475569; border-radius: 4px 0 0 4px;">Unidad</th>
-                    <th style="padding: 12px 16px; font-size: 12px; font-weight: 700; color: #475569;">CLUES</th>
-                    <th style="padding: 12px 16px; font-size: 12px; font-weight: 700; color: #475569; text-align: center; border-radius: 0 4px 4px 0;">Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${rowsHtml}
-                </tbody>
-              </table>
-            </div>
+<div style="font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 650px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0;">
+  <div style="background: linear-gradient(135deg, #0f172a 0%, #334155 100%); padding: 30px 25px; text-align: center;">
+    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Resumen de Captura</h1>
+    <p style="color: #94a3b8; margin: 8px 0 0 0; font-size: 13px; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;">Módulo: ${reportType} | Región: ${muniLabel}</p>
+  </div>
+  
+  <div style="padding: 30px 25px; color: #334155; line-height: 1.6;">
+    <p style="font-size: 16px; margin-top: 0; color: #0f172a;">Estimado(a) Coordinador(a),</p>
+    <p style="font-size: 15px; color: #475569;">Te compartimos el estatus de captura para las unidades adscritas a tu supervisión el día de hoy <strong style="color: #1e293b;">${todayYmd}</strong>:</p>
+    
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center;">
+      <div style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Avance General</div>
+      <div style="font-size: 48px; font-weight: 800; color: ${progressColor}; margin: 8px 0;">${pct}%</div>
+      <div style="font-size: 14px; color: #475569; font-weight: 500;">
+        Unidades Completadas: <strong style="color: #0f172a;">${completedCount}</strong> de <strong style="color: #0f172a;">${muniUnits.length}</strong>
+      </div>
+    </div>
+    
+    <div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-top: 25px;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="background-color: #f1f5f9; text-align: left; border-bottom: 2px solid #e2e8f0;">
+            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Unidad</th>
+            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">CLUES</th>
+            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-            <div style="border-top: 1px solid #e2e8f0; padding-top: 15px; text-align: center; color: #64748b; font-size: 11px; margin-top: 20px;">
-              <p style="margin: 0;">Jurisdicción Sanitaria 1 - Sistema de Indicadores JS1.</p>
-            </div>
-          </div>
-        `
+  <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+    <p style="margin: 0; color: #64748b; font-size: 12px; font-weight: 500;">Jurisdicción Sanitaria 1 - Sistema de Indicadores JS1</p>
+    <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 11px;">Este es un correo automático de no-reply. Favor de no responder a esta dirección.</p>
+  </div>
+</div>
+`
 
         await smtpClient.send({
           from: gmailUser,
           to: supervisor.email,
-          subject: `📊 Reporte ${reportType}: Municipio ${muniLabel} (${pct}% Capturado) - ${todayYmd}`,
-          content: `Resumen de capture municipal para ${muniLabel}.`,
+          subject: `Reporte ${reportType}: Región ${muniLabel} (${pct}% Capturado) - ${todayYmd}`,
+          content: `Resumen de captura para ${muniLabel}.`,
           html: htmlBody,
+          replyTo: 'no-reply@js1reportes.com'
+        })
+        sentCount++
+      }
+
+      // Enviar a perfiles CARAVANAS (solo unidades UMME y FAM)
+      const caravanasProfiles = (profiles || []).filter(p => p.rol === 'CARAVANAS' && p.email)
+      for (const supervisor of caravanasProfiles) {
+        const caravanaUnits = activeUnits.filter(u => {
+          const name = String(u.unidad || '').trim().toUpperCase()
+          return name.startsWith('FAM') || name.startsWith('UMME')
+        })
+
+        if (caravanaUnits.length === 0) continue
+
+        let completedCount = 0
+        const rowsHtml = caravanaUnits.map(unit => {
+          const uClues = String(unit.clues).trim().toUpperCase()
+          
+          const isOk = (reportType === 'CONSUMIBLES')
+            ? capturedConsToday.has(uClues)
+            : (capturedBioToday.has(uClues) || capturedBioYesterday.has(uClues))
+          
+          if (isOk) completedCount++
+
+          return `
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 12px 16px; font-size: 14px; font-weight: 500; color: #1e293b;">${unit.unidad}</td>
+              <td style="padding: 12px 16px; font-size: 13px; font-family: monospace; color: #64748b;">${unit.clues}</td>
+              <td style="padding: 12px 16px; text-align: center;">${renderStatusBadge(isOk)}</td>
+            </tr>
+          `
+        }).join('')
+
+        const pct = Math.round((completedCount / caravanaUnits.length) * 100)
+        const progressColor = pct === 100 ? '#10b981' : (pct >= 70 ? '#f59e0b' : '#ef4444')
+        const regionLabel = 'CARAVANAS MÓVILES (UMME/FAM)'
+
+        const htmlBody = `
+<div style="font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 650px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0;">
+  <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 30px 25px; text-align: center;">
+    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Resumen de Captura</h1>
+    <p style="color: #d1fae5; margin: 8px 0 0 0; font-size: 13px; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;">Módulo: ${reportType} | Región: ${regionLabel}</p>
+  </div>
+  
+  <div style="padding: 30px 25px; color: #334155; line-height: 1.6;">
+    <p style="font-size: 16px; margin-top: 0; color: #0f172a;">Estimado(a) Coordinador(a),</p>
+    <p style="font-size: 15px; color: #475569;">Te compartimos el estatus de captura para las unidades adscritas a tu supervisión el día de hoy <strong style="color: #1e293b;">${todayYmd}</strong>:</p>
+    
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center;">
+      <div style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Avance General</div>
+      <div style="font-size: 48px; font-weight: 800; color: ${progressColor}; margin: 8px 0;">${pct}%</div>
+      <div style="font-size: 14px; color: #475569; font-weight: 500;">
+        Unidades Completadas: <strong style="color: #0f172a;">${completedCount}</strong> de <strong style="color: #0f172a;">${caravanaUnits.length}</strong>
+      </div>
+    </div>
+    
+    <div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-top: 25px;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="background-color: #f1f5f9; text-align: left; border-bottom: 2px solid #e2e8f0;">
+            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Unidad</th>
+            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">CLUES</th>
+            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+    <p style="margin: 0; color: #64748b; font-size: 12px; font-weight: 500;">Jurisdicción Sanitaria 1 - Sistema de Indicadores JS1</p>
+    <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 11px;">Este es un correo automático de no-reply. Favor de no responder a esta dirección.</p>
+  </div>
+</div>
+`
+
+        await smtpClient.send({
+          from: gmailUser,
+          to: supervisor.email,
+          subject: `Reporte ${reportType}: CARAVANAS (${pct}% Capturado) - ${todayYmd}`,
+          content: `Resumen de captura para Caravanas Móviles.`,
+          html: htmlBody,
+          replyTo: 'no-reply@js1reportes.com'
         })
         sentCount++
       }
@@ -288,9 +393,9 @@ serve(async (req) => {
       
       if (adminProfiles.length > 0) {
         // Agrupar unidades por municipio
-        const unitsByMuni: { [key: string]: typeof units } = {}
-        units.forEach(u => {
-          const mKey = String(u.municipio).trim().toUpperCase()
+        const unitsByMuni: { [key: string]: typeof activeUnits } = {}
+        activeUnits.forEach(u => {
+          const mKey = normalizeMuni(u.municipio)
           if (!unitsByMuni[mKey]) unitsByMuni[mKey] = []
           unitsByMuni[mKey].push(u)
         })
@@ -314,14 +419,14 @@ serve(async (req) => {
 
             return `
               <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 8px 12px; font-size: 13px; color: #334155;">${unit.nombre}</td>
+                <td style="padding: 8px 12px; font-size: 13px; color: #334155;">${unit.unidad}</td>
                 <td style="padding: 8px 12px; font-size: 12px; font-family: monospace; color: #64748b;">${unit.clues}</td>
                 <td style="padding: 8px 12px; text-align: center;">${renderStatusBadge(isOk)}</td>
               </tr>
             `
           }).join('')
 
-          const muniPct = Math.round((muniCompleted / muniUnits.length) * 100)
+          const muniPct = muniUnits.length > 0 ? Math.round((muniCompleted / muniUnits.length) * 100) : 0
 
           return `
             <div style="margin-top: 25px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
@@ -338,44 +443,46 @@ serve(async (req) => {
           `
         }).join('')
 
-        const totalPct = Math.round((totalCompleted / units.length) * 100)
+        const totalPct = activeUnits.length > 0 ? Math.round((totalCompleted / activeUnits.length) * 100) : 0
 
         const htmlBodyAdmin = `
-          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 750px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-            <div style="background: linear-gradient(135deg, #1e3a8a 0%, #1e293b 100%); padding: 25px; border-radius: 8px 8px 0 0; text-align: center;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 0.5px;">Reporte General Jurisdiccional</h1>
-              <p style="color: #94a3b8; margin: 5px 0 0 0; font-size: 13px; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;">Jurisdicción Sanitaria 1 | Módulo: ${reportType}</p>
-            </div>
-            
-            <div style="padding: 25px; color: #334155; line-height: 1.6;">
-              <p style="font-size: 15px; margin-top: 0;">Estimado(a) Administrador(a) / Personal Jurisdiccional,</p>
-              <p style="font-size: 14px;">Se presenta el consolidado de capturas generales para el día de hoy <strong>${todayYmd}</strong>:</p>
-              
-              <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                <div style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Estatus Jurisdiccional Global</div>
-                <div style="font-size: 44px; font-weight: 800; color: #1e3a8a; margin: 5px 0;">${totalPct}%</div>
-                <div style="font-size: 14px; color: #475569; font-weight: 500;">
-                  Total General: <strong>${totalCompleted}</strong> de <strong>${units.length}</strong> unidades capturadas
-                </div>
-              </div>
-              
-              <h3 style="color: #1e293b; font-size: 16px; font-weight: 700; margin-top: 30px; margin-bottom: 10px;">Consolidado por Municipios</h3>
-              ${municipiosHtml}
-            </div>
+<div style="font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 750px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0;">
+  <div style="background: linear-gradient(135deg, #1e3a8a 0%, #1e293b 100%); padding: 30px 25px; text-align: center;">
+    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Reporte General Jurisdiccional</h1>
+    <p style="color: #94a3b8; margin: 8px 0 0 0; font-size: 13px; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;">Jurisdicción Sanitaria 1 | Módulo: ${reportType}</p>
+  </div>
+  
+  <div style="padding: 35px 30px; color: #334155; line-height: 1.6;">
+    <p style="font-size: 16px; margin-top: 0; color: #0f172a;">Estimado(a) Administrador(a) / Personal Jurisdiccional,</p>
+    <p style="font-size: 15px; color: #475569;">Se presenta el consolidado de capturas generales para el día de hoy <strong style="color: #1e293b;">${todayYmd}</strong>:</p>
+    
+    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02);">
+      <div style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Estatus Jurisdiccional Global</div>
+      <div style="font-size: 52px; font-weight: 800; color: #1e3a8a; margin: 8px 0;">${totalPct}%</div>
+      <div style="font-size: 15px; color: #475569; font-weight: 500;">
+        Total General: <strong style="color: #0f172a;">${totalCompleted}</strong> de <strong style="color: #0f172a;">${activeUnits.length}</strong> unidades capturadas
+      </div>
+    </div>
+    
+    <h3 style="color: #0f172a; font-size: 18px; font-weight: 800; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">Consolidado por Municipios</h3>
+    ${municipiosHtml}
+  </div>
 
-            <div style="border-top: 1px solid #e2e8f0; padding-top: 15px; text-align: center; color: #64748b; font-size: 11px; margin-top: 30px;">
-              <p style="margin: 0;">Jurisdicción Sanitaria 1 - Sistema de Indicadores JS1.</p>
-            </div>
-          </div>
-        `
+  <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+    <p style="margin: 0; color: #64748b; font-size: 12px; font-weight: 500;">Jurisdicción Sanitaria 1 - Sistema de Indicadores JS1</p>
+    <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 11px;">Este es un correo automático de no-reply. Favor de no responder a esta dirección.</p>
+  </div>
+</div>
+`
 
         for (const admin of adminProfiles) {
           await smtpClient.send({
             from: gmailUser,
             to: admin.email,
-            subject: `📊 [GENERAL] Reporte JS1 ${reportType} (${totalPct}% Global) - ${todayYmd}`,
-            content: `Estatus general de captura: ${totalCompleted}/${units.length} completadas.`,
+            subject: `[GENERAL] Reporte JS1 ${reportType} (${totalPct}% Global) - ${todayYmd}`,
+            content: `Estatus general de captura: ${totalCompleted}/${activeUnits.length} completadas.`,
             html: htmlBodyAdmin,
+            replyTo: 'no-reply@js1reportes.com'
           })
           sentCount++
         }
@@ -399,3 +506,4 @@ serve(async (req) => {
     )
   }
 })
+
