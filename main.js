@@ -5157,6 +5157,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
       }
 
       case "biogetexportoptions": {
+        const role = String(USER?.rol || "").toUpperCase();
         const { data, error } = await supabase.from('unidades').select('municipio, unidad');
         if (error) throw error;
         let filtered = data || [];
