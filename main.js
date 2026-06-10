@@ -12404,36 +12404,36 @@ async function refreshUsers() {
       const statusClass = isActivo ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700";
 
       tr.innerHTML = `
-        <td class="px-6 py-5">
-           <div class="flex flex-col">
-              <span class="font-extrabold text-primary text-[14px]">${escapeHtml(u.usuario)}</span>
-              <span class="text-[10px] font-bold text-slate-400">CUENTA ACTIVA</span>
+        <td class="px-6 py-5 align-middle" style="word-break: break-all; overflow-wrap: break-word;">
+           <div class="flex flex-col min-w-0" style="word-break: break-all; overflow-wrap: break-word;">
+              <span class="font-extrabold text-primary text-[13px] tracking-tight leading-normal" title="${escapeHtml(u.usuario)}" style="word-break: break-all; overflow-wrap: break-word; white-space: normal; display: block;">${escapeHtml(u.usuario)}</span>
+              <span class="text-[9px] font-bold text-slate-400 mt-0.5 uppercase tracking-wider">Cuenta Activa</span>
            </div>
         </td>
-        <td class="px-6 py-5">
-           <div class="flex flex-col gap-0.5">
-              <span class="text-[11px] font-black text-slate-600 uppercase tracking-tighter">${escapeHtml(u.unidad || 'Unidad No Asignada')}</span>
-              <span class="text-[10px] font-bold text-slate-400">${escapeHtml(u.municipio)} | <span class="text-primary/70">${escapeHtml(u.clues)}</span></span>
+        <td class="px-6 py-5 align-middle" style="word-break: break-word; overflow-wrap: break-word;">
+           <div class="flex flex-col min-w-0 gap-0.5" style="word-break: break-word; overflow-wrap: break-word;">
+              <span class="text-[11px] font-black text-slate-600 uppercase tracking-tighter leading-tight" title="${escapeHtml(u.unidad || 'Unidad No Asignada')}" style="word-break: break-word; overflow-wrap: break-word; white-space: normal; display: block;">${escapeHtml(u.unidad || 'Unidad No Asignada')}</span>
+              <span class="text-[10px] font-bold text-slate-400 mt-0.5">${escapeHtml(u.municipio)} | <span class="text-primary/70 font-mono">${escapeHtml(u.clues)}</span></span>
            </div>
         </td>
-        <td class="px-6 py-5">
+        <td class="px-6 py-5 align-middle">
            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${roleClass}">${escapeHtml(u.rol)}</span>
         </td>
-        <td class="px-6 py-5">
+        <td class="px-6 py-5 align-middle">
            <div class="flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full ${isActivo ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-rose-400'}"></span>
-              <span class="text-[11px] font-black uppercase ${statusClass.split(' ')[1]}">${isActivo ? 'Habilitado' : 'Suspendido'}</span>
+              <span class="w-2.5 h-2.5 rounded-full shrink-0 ${isActivo ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-rose-400'}"></span>
+              <span class="text-[11px] font-black uppercase tracking-wide ${statusClass.split(' ')[1]}">${isActivo ? 'Habilitado' : 'Suspendido'}</span>
            </div>
         </td>
-        <td class="px-6 py-5 text-right">
+        <td class="px-6 py-5 align-middle text-right">
           <div class="flex items-center justify-end gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
-            <button class="adminActionBtn w-8 h-8 rounded-xl bg-surface-variant flex items-center justify-center text-surface-on hover:bg-primary hover:text-white transition-all shadow-sm" data-action="reset" data-user="${escapeAttr(u.usuario)}" title="Nueva Contraseña">
+            <button class="adminActionBtn w-8 h-8 rounded-xl bg-surface-variant flex items-center justify-center text-surface-on hover:bg-primary hover:text-white transition-all shadow-sm cursor-pointer border-none" data-action="reset" data-user="${escapeAttr(u.usuario)}" title="Nueva Contraseña">
               <span class="material-symbols-rounded text-lg">key</span>
             </button>
-            <button class="adminActionBtn w-8 h-8 rounded-xl ${isActivo ? 'bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white'} flex items-center justify-center transition-all shadow-sm" data-action="toggle" data-user="${escapeAttr(u.usuario)}" data-active="${escapeAttr(u.activo)}" title="${isActivo ? 'Bloquear Acceso' : 'Activar Acceso'}">
+            <button class="adminActionBtn w-8 h-8 rounded-xl ${isActivo ? 'bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white'} flex items-center justify-center transition-all shadow-sm cursor-pointer border-none" data-action="toggle" data-user="${escapeAttr(u.usuario)}" data-active="${escapeAttr(u.activo)}" title="${isActivo ? 'Bloquear Acceso' : 'Activar Acceso'}">
               <span class="material-symbols-rounded text-lg">${isActivo ? 'block' : 'check_circle'}</span>
             </button>
-            <button class="adminActionBtn w-8 h-8 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white flex items-center justify-center transition-all shadow-sm" data-action="delete" data-user="${escapeAttr(u.usuario)}" title="Eliminar definitivamente">
+            <button class="adminActionBtn w-8 h-8 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white flex items-center justify-center transition-all shadow-sm cursor-pointer border-none" data-action="delete" data-user="${escapeAttr(u.usuario)}" title="Eliminar definitivamente">
               <span class="material-symbols-rounded text-lg">delete</span>
             </button>
           </div>
