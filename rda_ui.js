@@ -2093,6 +2093,15 @@ window.refreshRDADashboard = () => {
     _rdaCache.maxMes = 0;
     loadAndRender(); 
 };
+window.resetRDAEsquemaToBasico = () => {
+    _rdaState.esquema = 'basico';
+    const sel = document.getElementById('rdaFilterEsquema');
+    if (sel) sel.value = 'basico';
+    document.querySelectorAll('.rda-scheme-btn').forEach(b => {
+        if (b.dataset.scheme === 'basico') b.classList.add('active');
+        else b.classList.remove('active');
+    });
+};
 window.loadAndRender = loadAndRender;
 window.addEventListener('DOMContentLoaded', () => initRDADashboard());
 

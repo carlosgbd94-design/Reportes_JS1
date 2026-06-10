@@ -10547,6 +10547,7 @@ function activateMain(tab) {
   } else if (tab === "ADMIN") {
     activateOpsTab(AppState.opsTab);
   } else if (tab === "RDA") {
+    if (typeof resetRDAEsquemaToBasico === 'function') resetRDAEsquemaToBasico();
     if (typeof loadAndRender === 'function') loadAndRender();
   }
 }
@@ -10803,6 +10804,7 @@ window.activateOpsTab = function (tab) {
       if (typeof runSinglePanelTask === 'function') runSinglePanelTask("ops-tab-pinol", () => refreshPinol());
     }
     if (tab === "RDA") {
+      if (typeof resetRDAEsquemaToBasico === 'function') resetRDAEsquemaToBasico();
       if (typeof loadAndRender === 'function') loadAndRender();
     }
     if (tab === "LOTES") {
