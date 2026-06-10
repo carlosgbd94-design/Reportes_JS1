@@ -10,7 +10,13 @@ if (window.location.hash && window.location.hash.includes('type=recovery')) {
 }
 const SUPABASE_URL = "https://utclfqjietlxzlorxhrs.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Y2xmcWppZXRseHpsb3J4aHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNTYyNTQsImV4cCI6MjA5MTkzMjI1NH0.EgDK7xkSZHZyUlGF5m2C7bZjrfkx1M8cBXzxIFedDa4";
-window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    experimental: {
+      passkey: true
+    }
+  }
+});
 
 
 /**
@@ -396,6 +402,7 @@ document.addEventListener("DOMContentLoaded", () => {
       startFactsRotation();
       initWeather();
       initHeaderGlass();
+      checkPasskeySupport();
     }
   })();
 
@@ -428,6 +435,20 @@ document.addEventListener("DOMContentLoaded", () => {
       const email = document.getElementById("usuario").value.trim();
       const password = document.getElementById("password").value.trim();
       await handleLoginFlow(email, password);
+    });
+  }
+
+  const btnBiometricLogin = document.getElementById("btnBiometricLogin");
+  if (btnBiometricLogin) {
+    btnBiometricLogin.addEventListener("click", async () => {
+      await loginWithPasskey();
+    });
+  }
+
+  const btnRegisterPasskey = document.getElementById("btnRegisterPasskey");
+  if (btnRegisterPasskey) {
+    btnRegisterPasskey.addEventListener("click", async () => {
+      await registerPasskey();
     });
   }
 
@@ -9282,6 +9303,10 @@ async function loadExportOptions() {
 async function loadBioForm() {
   if (!TOKEN || !USER || USER.rol !== "UNIDAD") return;
 
+  if ($("bioTbody")) {
+    $("bioTbody").innerHTML = getBioSkeletonHtml(6);
+  }
+
   const r = await apiCall({ action: "bioGetForm", token: TOKEN });
   if (!r || !r.ok) {
     if ($("bioTbody")) {
@@ -10051,9 +10076,9 @@ function renderCaptureSummary(data) {
   }
 
   $("sumFecha").textContent = fecha || "—";
-  $("sumTotal").textContent = data?.total_unidades ?? 0;
-  $("sumCapturadas").textContent = data?.total_capturadas ?? 0;
-  $("sumFaltantes").textContent = data?.total_faltantes ?? 0;
+  animateCounter("sumTotal", parseInt($("sumTotal").textContent) || 0, data?.total_unidades ?? 0);
+  animateCounter("sumCapturadas", parseInt($("sumCapturadas").textContent) || 0, data?.total_capturadas ?? 0);
+  animateCounter("sumFaltantes", parseInt($("sumFaltantes").textContent) || 0, data?.total_faltantes ?? 0);
 
   // 🛡️ FILTRO DE TIPO DE PEDIDO (Solo para BIO)
   let capturadas = data?.capturadas || [];
@@ -10965,6 +10990,9 @@ window.activateOpsTab = function (tab) {
       } else {
         const dType = (tab === "RDA") ? "flex" : "block";
         activePanel.style.setProperty("display", dType, "important");
+        activePanel.classList.remove("tab-panel-animated");
+        void activePanel.offsetWidth; // Force reflow
+        activePanel.classList.add("tab-panel-animated");
       }
     }
   }
@@ -12368,6 +12396,11 @@ async function refreshUsers() {
   loadNotifUnitCatalog().catch(console.error);
   loadNotifUserCatalog().catch(console.error);
 
+  const tbody = $("usersTbody");
+  if (tbody) {
+    tbody.innerHTML = getTableSkeletonHtml(6);
+  }
+
   try {
     const r = await smartLoader(
       () => apiCall({ action: "adminListUsers", token: TOKEN }),
@@ -12755,6 +12788,11 @@ async function deletePinolRow(id) {
 async function refreshPinol() {
   if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL")) return;
 
+  const tbody = $("pinolTbody");
+  if (tbody) {
+    tbody.innerHTML = getPinolSkeletonHtml(5);
+  }
+
   try {
     const items = await smartLoader(
       () => listPinol(true),
@@ -12788,10 +12826,10 @@ async function refreshPinol() {
 
     updatePinolTabBadge(safeItems);
 
-    if (totalEl) totalEl.textContent = String(total);
-    if (pendientesEl) pendientesEl.textContent = String(pendientes.length);
-    if (entregadasEl) entregadasEl.textContent = String(entregadas.length);
-    if (recibidasEl) recibidasEl.textContent = String(recibidas.length);
+    if (totalEl) animateCounter("pinolTotal", parseInt(totalEl.textContent) || 0, total);
+    if (pendientesEl) animateCounter("pinolPendientes", parseInt(pendientesEl.textContent) || 0, pendientes.length);
+    if (entregadasEl) animateCounter("pinolEntregadas", parseInt(entregadasEl.textContent) || 0, entregadas.length);
+    if (recibidasEl) animateCounter("pinolRecibidas", parseInt(recibidasEl.textContent) || 0, recibidas.length);
 
     // Semáforo automático
     if ($("kpiCardPinolPendientes")) {
@@ -15985,3 +16023,171 @@ function updateLiquidGlassMaps(indicatorId, w, h) {
 
   dispMap.setAttribute("scale", (maxDisp * 1.5).toString());
 }
+
+// ===== PREMIUM SKELETON HELPERS =====
+function getTableSkeletonHtml(rowsCount = 5) {
+  let html = "";
+  for (let i = 0; i < rowsCount; i++) {
+    html += `
+      <tr class="border-b border-outline-variant/10">
+        <td class="px-6 py-5">
+          <div class="skeleton-loader skeleton-text w-24"></div>
+          <div class="skeleton-loader skeleton-text w-16 mt-1" style="height: 8px;"></div>
+        </td>
+        <td class="px-6 py-5">
+          <div class="skeleton-loader skeleton-text w-48"></div>
+        </td>
+        <td class="px-6 py-5">
+          <div class="skeleton-loader skeleton-text w-12 h-6" style="border-radius: 9999px;"></div>
+        </td>
+        <td class="px-6 py-5">
+          <div class="flex items-center gap-2">
+            <div class="skeleton-loader w-2.5 h-2.5 rounded-full"></div>
+            <div class="skeleton-loader skeleton-text w-16" style="margin-bottom: 0;"></div>
+          </div>
+        </td>
+        <td class="px-6 py-5 text-right">
+          <div class="flex items-center justify-end gap-1.5 opacity-30">
+            <div class="skeleton-loader w-8 h-8 rounded-xl"></div>
+            <div class="skeleton-loader w-8 h-8 rounded-xl"></div>
+            <div class="skeleton-loader w-8 h-8 rounded-xl"></div>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+  return html;
+}
+
+function getBioSkeletonHtml(count = 5) {
+  let html = "";
+  for (let i = 0; i < count; i++) {
+    html += `
+      <div class="bio-card opacity-75">
+        <div class="skeleton-loader skeleton-text w-32 h-5"></div>
+        <div class="flex justify-center"><div class="skeleton-loader w-20 h-10 rounded-xl"></div></div>
+        <div class="flex justify-center"><div class="skeleton-loader w-20 h-10 rounded-xl"></div></div>
+        <div class="flex justify-center"><div class="skeleton-loader w-16 h-8 rounded-lg"></div></div>
+        <div class="flex justify-center"><div class="skeleton-loader w-16 h-8 rounded-lg"></div></div>
+        <div class="flex justify-center"><div class="skeleton-loader w-24 h-8 rounded-lg"></div></div>
+      </div>
+    `;
+  }
+  return html;
+}
+
+function getPinolSkeletonHtml(count = 4) {
+  let html = "";
+  for (let i = 0; i < count; i++) {
+    html += `
+      <tr class="border-b border-outline-variant/10">
+        <td class="px-6 py-5"><div class="skeleton-loader skeleton-text w-20"></div></td>
+        <td class="px-6 py-5"><div class="skeleton-loader skeleton-text w-24"></div></td>
+        <td class="px-6 py-5"><div class="skeleton-loader skeleton-text w-32"></div></td>
+        <td class="px-6 py-5"><div class="skeleton-loader skeleton-text w-16"></div></td>
+        <td class="px-6 py-5 text-center"><div class="skeleton-loader skeleton-text w-12 mx-auto"></div></td>
+        <td class="px-6 py-5 text-center"><div class="skeleton-loader skeleton-text w-12 mx-auto"></div></td>
+        <td class="px-6 py-5"><div class="skeleton-loader skeleton-text w-20"></div></td>
+        <td class="px-6 py-5 text-right"><div class="skeleton-loader w-8 h-8 rounded-xl ml-auto"></div></td>
+      </tr>
+    `;
+  }
+  return html;
+}
+
+// ===== COUNTER ANIMATION HELPER =====
+function animateCounter(elementId, start, end, duration = 1000) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  
+  const range = end - start;
+  if (range === 0) {
+    el.textContent = end;
+    return;
+  }
+  
+  let current = start;
+  const increment = range > 0 ? 1 : -1;
+  const stepTime = Math.abs(Math.floor(duration / range));
+  const timer = setInterval(() => {
+    current += increment;
+    el.textContent = current;
+    if (current == end) {
+      clearInterval(timer);
+    }
+  }, Math.max(stepTime, 10));
+}
+
+// ===== SUPABASE PASSKEYS (WEBAUTHN BIOMETRICS) =====
+async function checkPasskeySupport() {
+  if (window.PublicKeyCredential && 
+      window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+    try {
+      const available = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      if (available) {
+        const biometricLoginBtn = document.getElementById("btnBiometricLogin");
+        if (biometricLoginBtn) biometricLoginBtn.style.display = "flex";
+        
+        const passkeyRegContainer = document.getElementById("passkeyRegContainer");
+        if (passkeyRegContainer) passkeyRegContainer.style.display = "block";
+      }
+    } catch (e) {
+      console.warn("Error checking biometric auth availability:", e);
+    }
+  }
+}
+
+async function registerPasskey() {
+  if (!window.supabase) {
+    showToast("Supabase no está disponible", false, "error");
+    return;
+  }
+  showOverlay("Registrando huella / Face ID...", "Seguridad");
+  try {
+    const { data, error } = await window.supabase.auth.registerPasskey();
+    if (error) throw error;
+    showToast("Dispositivo biométrico registrado con éxito", true, "good");
+  } catch (e) {
+    console.error("Passkey registration failed:", e);
+    showToast("Error al registrar datos biométricos: " + e.message, false, "bad");
+  } finally {
+    hideOverlay();
+  }
+}
+
+async function loginWithPasskey() {
+  if (!window.supabase) {
+    showToast("Supabase no está disponible", false, "error");
+    return;
+  }
+  showOverlay("Iniciando sesión biométrica...", "Seguridad");
+  try {
+    const { data, error } = await window.supabase.auth.signInWithPasskey();
+    if (error) throw error;
+
+    if (!data.session) throw new Error("No se pudo establecer la sesión.");
+
+    const { data: perfil, error: perfilError } = await window.supabase
+      .from('perfiles')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+
+    if (perfilError) console.warn("[Auth] Error en perfil:", perfilError);
+
+    TOKEN = data.session.access_token;
+    USER = buildUserFromPerfil(data.user.id, data.user.email, perfil);
+
+    await hydrateSessionUi(USER, null, {
+      showSuccessToast: true,
+      mustChangePassword: !!USER.mustChange
+    });
+  } catch (e) {
+    console.error("Passkey authentication failed:", e);
+    showToast("Error de autenticación biométrica: " + e.message, false, "bad");
+  } finally {
+    hideOverlay();
+  }
+}
+
+
