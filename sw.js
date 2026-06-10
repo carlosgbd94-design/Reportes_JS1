@@ -1,5 +1,5 @@
 /**
- * sw.js — Service Worker JS1 Reportes
+ * sw.js — Service Worker SIREVAQ
  * Cache-first para activos estáticos. Garantiza disponibilidad offline.
  * Versión: 2026.1
  */

@@ -159,7 +159,7 @@ serve(async (req) => {
   </div>
   
   <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
-    <p style="margin: 0; color: #64748b; font-size: 12px; font-weight: 500;">Jurisdicción Sanitaria 1 - Reportes JS1</p>
+    <p style="margin: 0; color: #64748b; font-size: 12px; font-weight: 500;">Jurisdicción Sanitaria 1 - SIREVAQ</p>
     <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 11px;">Este es un correo automático de no-reply. Favor de no responder a esta dirección.</p>
   </div>
 </div>

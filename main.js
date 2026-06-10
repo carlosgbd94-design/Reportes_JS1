@@ -1,5 +1,5 @@
 // ============================================
-// JS1 REPORTES — ARQUITECTURA EXPERTA (V2026)
+// SIREVAQ — ARQUITECTURA EXPERTA (V2026)
 // ============================================
 // Firebase & GAS completamente eliminados.
 // Arquitectura basada en Servicios (Service Layer) y Estado Reactivo (AppState).
@@ -375,7 +375,7 @@ function clearSession() {
 document.addEventListener("DOMContentLoaded", () => {
   // 🛡️ ARRANQUE ÚNICO (Expert Implementation)
   (async () => {
-    showOverlay("Cargando JS1 Reportes…", "Inicializando");
+    showOverlay("Cargando SIREVAQ…", "Inicializando");
     try {
 
       initProfileDropdown();
@@ -1423,7 +1423,7 @@ function getNotifTemplatePayload(templateKey) {
     CAPTURA_PENDIENTE: {
       type: "WARN",
       title: "Recordatorio de captura pendiente",
-      message: `Se solicita realizar la captura correspondiente en JS1 Reportes a la brevedad.\n\nEste aviso forma parte del seguimiento operativo de la Jurisdicción Sanitaria 1.`,
+      message: `Se solicita realizar la captura correspondiente en SIREVAQ a la brevedad.\n\nEste aviso forma parte del seguimiento operativo de la Jurisdicción Sanitaria 1.`,
       suggestScope: (role === "MUNICIPAL" || role === "CARAVANAS") ? "ALL_MY_UNITS" : "MUNICIPIO"
     },
     OBS_ADMIN: {
@@ -1435,7 +1435,7 @@ function getNotifTemplatePayload(templateKey) {
     AVISO_GENERAL: {
       type: "INFO",
       title: "Aviso general",
-      message: `Se comparte el siguiente aviso operativo mediante JS1 Reportes.\n\nFavor de tomar conocimiento y dar seguimiento en caso necesario.`,
+      message: `Se comparte el siguiente aviso operativo mediante SIREVAQ.\n\nFavor de tomar conocimiento y dar seguimiento en caso necesario.`,
       suggestScope: (role === "MUNICIPAL" || role === "CARAVANAS") ? "ALL_MY_UNITS" : "MUNICIPIO"
     }
   };
@@ -11482,7 +11482,7 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
   }
 
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'JS1 Reportes';
+  wb.creator = 'SIREVAQ';
   const sheetName = tipo === "SR" ? "EXISTENCIAS" : (tipo === "CONS" ? "CONSUMIBLES" : "PEDIDOS");
   const ws = wb.addWorksheet(sheetName, { views: [{ showGridLines: false }] });
 

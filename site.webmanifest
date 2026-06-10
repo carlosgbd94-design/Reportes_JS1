@@ -1,6 +1,6 @@
 {
-  "name": "JS1 Reportes — Plataforma Institucional",
-  "short_name": "JS1 Reportes",
+  "name": "SIREVAQ — Sistema de Reportes y Evaluación en Vacunación de Querétaro",
+  "short_name": "SIREVAQ",
   "description": "Plataforma institucional de captura y concentración de información para los centros de salud de la Jurisdicción Sanitaria 1, Secretaría de Salud de Querétaro.",
   "start_url": "./",
   "scope": "./",

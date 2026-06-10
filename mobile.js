@@ -1,5 +1,5 @@
 /**
- * JS1 Reportes - Mobile Adaptation Layer (MAL)
+ * SIREVAQ - Mobile Adaptation Layer (MAL)
  * Senior Implementation - High-Fidelity Refraction (Pebble & Void Engine)
  * Architecture: backdrop-filter + SVG displacement (Chrome path)
  */
