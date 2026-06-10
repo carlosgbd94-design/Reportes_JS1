@@ -18,6 +18,15 @@ const DICT_RDA = {
     SRP_2:      ['VTV01'],
     DPT_4:      ['VAC12'],
 
+    // Variables individuales y combinadas para Cobertura por Biológico (0-8 años)
+    Hexa_1:     ['VAC67'],
+    Hexa_2:     ['VAC68'],
+    Neumo_1:    ['VAC17'],
+    Neumo_C1:   ['VCC01'],
+    Neumo_C2:   ['VCC02'],
+    Neumo_C3:   ['VCC03'],
+    SRP_1:      ['VAC23'],
+
     // ── ADOLESCENTES Y ADULTOS (Solo aplicaciones) ──
     ADOL_HB:  ['VHB01','VHB02','VHB03','VHB04','VHB05','VHB06'],
     ADOL_SR:  ['VDV01','VDV02','VDV03','VDV04','VDV05','VDV06'],
@@ -75,6 +84,70 @@ class RDA2026Calculator {
     }
 
     // ── COBERTURAS RDA (Fórmula Federal) ──
+
+    // ── COBERTURAS POR BIOLÓGICO (Fórmulas Oficiales RDA) ──
+    static coberturaBiolBCG(registros, pobMenor1, meses) {
+        const factor = this.factorPoblacional(pobMenor1, meses);
+        const total = this.sumVariables(registros, DICT_RDA.BCG, meses);
+        const cob = (total / factor) * 100;
+        return isFinite(cob) ? Math.round(cob * 10) / 10 : 0;
+    }
+
+    static coberturaBiolHepB(registros, pobMenor1, meses) {
+        const factor = this.factorPoblacional(pobMenor1, meses);
+        const total = this.sumVariables(registros, DICT_RDA.HepB_0_7, meses);
+        const cob = (total / factor) * 100;
+        return isFinite(cob) ? Math.round(cob * 10) / 10 : 0;
+    }
+
+    static coberturaBiolRota(registros, pobMenor1, meses) {
+        const factor = this.factorPoblacional(pobMenor1, meses);
+        const total = this.sumVariables(registros, DICT_RDA.Rota_2, meses);
+        const cob = (total / factor) * 100;
+        return isFinite(cob) ? Math.round(cob * 10) / 10 : 0;
+    }
+
+    static coberturaBiolHexaMenor1(registros, pobMenor1, meses) {
+        const factor = this.factorPoblacional(pobMenor1, meses);
+        const total = this.sumVariables(registros, [...DICT_RDA.Hexa_1, ...DICT_RDA.Hexa_2, ...DICT_RDA.Hexa_3], meses);
+        const cob = (total / factor) * 100;
+        return isFinite(cob) ? Math.round(cob * 10) / 10 : 0;
+    }
+
+    static coberturaBiolHexa1Ano(registros, pob1Ano, meses) {
+        const factor = this.factorPoblacional(pob1Ano, meses);
+        const total = this.sumVariables(registros, DICT_RDA.Hexa_Ref, meses);
+        const cob = (total / factor) * 100;
+        return isFinite(cob) ? Math.round(cob * 10) / 10 : 0;
+    }
+
+    static coberturaBiolNeumoMenor1(registros, pobMenor1, meses) {
+        const factor = this.factorPoblacional(pobMenor1, meses);
+        const total = this.sumVariables(registros, [...DICT_RDA.Neumo_1, ...DICT_RDA.Neumo_2, ...DICT_RDA.Neumo_C1, ...DICT_RDA.Neumo_C2], meses);
+        const cob = (total / factor) * 100;
+        return isFinite(cob) ? Math.round(cob * 10) / 10 : 0;
+    }
+
+    static coberturaBiolNeumo1Ano(registros, pob1Ano, meses) {
+        const factor = this.factorPoblacional(pob1Ano, meses);
+        const total = this.sumVariables(registros, [...DICT_RDA.Neumo_Ref, ...DICT_RDA.Neumo_C3], meses);
+        const cob = (total / factor) * 100;
+        return isFinite(cob) ? Math.round(cob * 10) / 10 : 0;
+    }
+
+    static coberturaBiolSRP(registros, pob1Ano, meses) {
+        const factor = this.factorPoblacional(pob1Ano, meses);
+        const total = this.sumVariables(registros, [...DICT_RDA.SRP_1, ...DICT_RDA.SRP_2], meses);
+        const cob = (total / factor) * 100;
+        return isFinite(cob) ? Math.round(cob * 10) / 10 : 0;
+    }
+
+    static coberturaBiolDPT(registros, pob4Anos, meses) {
+        const factor = this.factorPoblacional(pob4Anos, meses);
+        const total = this.sumVariables(registros, DICT_RDA.DPT_4, meses);
+        const cob = (total / factor) * 100;
+        return isFinite(cob) ? Math.round(cob * 10) / 10 : 0;
+    }
 
     static coberturaMenor1(registros, pobMenor1, meses) {
         const factor = this.factorPoblacional(pobMenor1, meses);

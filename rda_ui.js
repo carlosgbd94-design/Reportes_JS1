@@ -41,21 +41,189 @@ function initRDADashboard() {
     const overlay = document.getElementById('rdaDashboardOverlay');
     
     // Legacy modal logic (btnOpen, btnClose, Escape) has been entirely removed
-    // The RDA Dashboard now operates purely via the standardized 'activateOpsTab' / 'activateUnidadTab'
-    
-
+    // The RDA Dashboard now operates purely via the standardized 'activateOpsTab' / 'activateUnidadT    // Inyección de select con soporte completo para los 5 esquemas de vacunación (Apple Material Specification)
     // Inyección de select con soporte completo para los 5 esquemas de vacunación
-    const filterContainer = document.querySelector('#rdaDashboardPanel div div[style*="background: #f1f5f9"]');
-    if (filterContainer && !document.getElementById('rdaFilterEsquema')) {
+    const leftGroup = document.getElementById('rdaFilterLeftGroup');
+    if (leftGroup && !document.getElementById('rdaFilterEsquema')) {
+        // Estilos dedicados para anular cualquier regla global e implementar un diseño Premium
+        const style = document.createElement('style');
+        style.innerHTML = `
+            #rdaFilterEsquema {
+                display: inline-block !important;
+                width: 290px !important;
+                height: 42px !important;
+                padding: 0 40px 0 16px !important;
+                border-radius: 12px !important;
+                border: 1px solid #cbd5e1 !important;
+                background-color: #ffffff !important;
+                color: #0f172a !important;
+                font-size: 13px !important;
+                font-weight: 700 !important;
+                outline: none !important;
+                cursor: pointer !important;
+                box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                -webkit-appearance: none !important;
+                appearance: none !important;
+                background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23475569'%3e%3cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3e%3c/svg%3e") !important;
+                background-repeat: no-repeat !important;
+                background-position: right 14px center !important;
+                background-size: 18px !important;
+            }
+            #rdaFilterEsquema:hover {
+                border-color: #94a3b8 !important;
+                background-color: #f8fafc !important;
+                box-shadow: 0 3px 6px rgba(15, 23, 42, 0.06) !important;
+            }
+            #rdaFilterEsquema:focus {
+                border-color: #0ea5e9 !important;
+                background-color: #ffffff !important;
+                box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.12) !important;
+            }
+            #rdaViewToggleContainer {
+                display: inline-flex !important;
+                align-items: center !important;
+                padding: 3px !important;
+                box-sizing: border-box !important;
+                height: 42px !important;
+                margin-left: 12px !important;
+                border-radius: 12px !important;
+                border: 1px solid #cbd5e1 !important;
+                background: #f1f5f9 !important;
+                box-shadow: inset 0 1.5px 3px rgba(15, 23, 42, 0.05) !important;
+                transition: all 0.25s ease !important;
+            }
+            #rdaViewToggleContainer:hover {
+                border-color: #94a3b8 !important;
+            }
+            #rdaViewToggleContainer button {
+                box-sizing: border-box !important;
+                min-height: 0 !important;
+                height: 34px !important;
+                padding: 0 18px !important;
+                border-radius: 9px !important;
+                border: 1px solid transparent !important;
+                font-family: inherit !important;
+                font-size: 12px !important;
+                font-weight: 700 !important;
+                cursor: pointer !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                margin: 0 !important;
+            }
+            #rdaViewToggleContainer button.active {
+                background-color: #ffffff !important;
+                color: #0f172a !important;
+                border-color: rgba(15, 23, 42, 0.04) !important;
+                box-shadow: 0 3px 8px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+            }
+            #rdaViewToggleContainer button.inactive {
+                background: transparent !important;
+                color: #64748b !important;
+                box-shadow: none !important;
+                border-color: transparent !important;
+            }
+            #rdaViewToggleContainer button.inactive:hover {
+                color: #0f172a !important;
+                background: rgba(15, 23, 42, 0.02) !important;
+            }
+            #rdaFilterMunicipio, #rdaFilterUnidad {
+                display: inline-block;
+                width: auto !important;
+                min-width: 220px !important;
+                max-width: 280px !important;
+                height: 42px !important;
+                padding: 0 40px 0 16px !important;
+                border-radius: 12px !important;
+                border: 1px solid #cbd5e1 !important;
+                background-color: #ffffff !important;
+                color: #0f172a !important;
+                font-size: 13px !important;
+                font-weight: 700 !important;
+                outline: none !important;
+                cursor: pointer !important;
+                box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                -webkit-appearance: none !important;
+                appearance: none !important;
+                background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23475569'%3e%3cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3e%3c/svg%3e") !important;
+                background-repeat: no-repeat !important;
+                background-position: right 14px center !important;
+                background-size: 18px !important;
+            }
+            #rdaFilterMunicipio:hover, #rdaFilterUnidad:hover {
+                border-color: #94a3b8 !important;
+                background-color: #f8fafc !important;
+                box-shadow: 0 3px 6px rgba(15, 23, 42, 0.06) !important;
+            }
+            #rdaFilterMunicipio:focus, #rdaFilterUnidad:focus {
+                border-color: #0ea5e9 !important;
+                background-color: #ffffff !important;
+                box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.12) !important;
+            }
+            #rdaTableContainer {
+                overflow: auto !important;
+                max-height: 540px !important;
+                position: relative !important;
+                border-radius: 0 0 24px 24px !important;
+            }
+            #rdaDetailTable thead tr th {
+                position: sticky !important;
+                top: 0 !important;
+                z-index: 20 !important;
+                background-color: #f8fafc !important;
+                box-shadow: 0 1px 0 #e2e8f0 !important;
+            }
+            #rdaDetailTable th:nth-child(1),
+            #rdaDetailTable td:nth-child(1) {
+                position: sticky !important;
+                left: 0 !important;
+                z-index: 12 !important;
+                background-color: #ffffff !important;
+                width: 140px !important;
+                min-width: 140px !important;
+                max-width: 140px !important;
+                box-shadow: 1px 0 0 #f1f5f9 !important;
+            }
+            #rdaDetailTable th:nth-child(2),
+            #rdaDetailTable td:nth-child(2) {
+                position: sticky !important;
+                left: 140px !important;
+                z-index: 12 !important;
+                background-color: #ffffff !important;
+                min-width: 200px !important;
+                box-shadow: 2px 0 5px rgba(15, 23, 42, 0.04) !important;
+            }
+            #rdaDetailTable th:nth-child(1),
+            #rdaDetailTable th:nth-child(2) {
+                z-index: 22 !important;
+                background-color: #f8fafc !important;
+            }
+            #rdaDetailTable tr:nth-child(even) td:nth-child(1),
+            #rdaDetailTable tr:nth-child(even) td:nth-child(2) {
+                background-color: #f8fafc !important;
+            }
+            #rdaDetailTable tr td[colspan] {
+                position: sticky !important;
+                left: 0 !important;
+                z-index: 11 !important;
+                background-color: #f8fafc !important;
+            }
+            #rdaDetailTable tbody tr:hover td {
+                background-color: #f1f5f9 !important;
+            }
+            #rdaDetailTable tbody tr:hover td:nth-child(1),
+            #rdaDetailTable tbody tr:hover td:nth-child(2) {
+                background-color: #f1f5f9 !important;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Selector de Esquemas moderno y limpio
         const sel = document.createElement('select');
         sel.id = 'rdaFilterEsquema';
-        sel.style.cssText = `
-            height: 38px; padding: 0 16px; min-width: 260px;
-            border-radius: 10px; border: 1px solid #e2e8f0;
-            background: #0f172a; color: #fff;
-            font-size: 13px; font-weight: 700; outline: none; cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        `;
         sel.innerHTML = `
             <option value="basico">Esquema Básico (0 a 8 años)</option>
             <option value="adultos">Esquemas Adolescentes y Adultos</option>
@@ -67,7 +235,33 @@ function initRDADashboard() {
             _rdaState.esquema = sel.value;
             renderDashboard();
         });
-        filterContainer.insertBefore(sel, filterContainer.firstChild);
+
+        leftGroup.appendChild(sel);
+ 
+        // Segmented Control de vistas limpio y moderno
+        const toggleWrapper = document.createElement('div');
+        toggleWrapper.id = 'rdaViewToggleContainer';
+        toggleWrapper.innerHTML = `
+            <button id="btnViewEsquema" class="active">Por Esquema</button>
+            <button id="btnViewBiologico" class="inactive" style="margin-left: 4px !important;">Por Biológico</button>
+        `;
+        const btnE = toggleWrapper.querySelector('#btnViewEsquema');
+        const btnB = toggleWrapper.querySelector('#btnViewBiologico');
+        
+        btnE.addEventListener('click', () => {
+            _rdaState.vistaBasico = 'esquema';
+            btnE.className = 'active';
+            btnB.className = 'inactive';
+            renderDashboard();
+        });
+        btnB.addEventListener('click', () => {
+            _rdaState.vistaBasico = 'biologico';
+            btnB.className = 'active';
+            btnE.className = 'inactive';
+            renderDashboard();
+        });
+
+        leftGroup.appendChild(toggleWrapper);
     }
 
     document.getElementById('rdaFilterMunicipio')?.addEventListener('change', () => {
@@ -310,6 +504,11 @@ function renderDashboard() {
     const uniFilter = document.getElementById('rdaFilterUnidad')?.value || '';
     const esquema = _rdaState.esquema || 'basico';
 
+    const toggleContainer = document.getElementById('rdaViewToggleContainer');
+    if (toggleContainer) {
+        toggleContainer.style.display = (esquema === 'basico') ? 'flex' : 'none';
+    }
+
     let fUnits = unidades;
     if (muniFilter) fUnits = fUnits.filter(u => (u.municipio || '').toUpperCase().trim() === muniFilter.toUpperCase().trim());
     if (uniFilter) fUnits = fUnits.filter(u => u.clues === uniFilter);
@@ -343,6 +542,9 @@ function renderDashboard() {
         am_neumo13: 0, am_neumo20: 0, am_td: 0,
         emb_tdpa: 0, emb_vsr: 0,
         inv_influenza: 0, inv_covid: 0,
+        // Campos de dosis adicionales para biológicos individuales
+        hexa_1_dosis: 0, hexa_2_dosis: 0, neumo_1_dosis: 0,
+        neumo_c1_dosis: 0, neumo_c2_dosis: 0, neumo_c3_dosis: 0, srp_1_dosis: 0,
         total_unidades: fUnits.length
     };
 
@@ -377,6 +579,15 @@ function renderDashboard() {
 
         agg.inv_influenza += u.inv_influenza || 0;
         agg.inv_covid += u.inv_covid || 0;
+
+        // Nuevos campos agregados
+        agg.hexa_1_dosis += u.hexa_1_dosis || 0;
+        agg.hexa_2_dosis += u.hexa_2_dosis || 0;
+        agg.neumo_1_dosis += u.neumo_1_dosis || 0;
+        agg.neumo_c1_dosis += u.neumo_c1_dosis || 0;
+        agg.neumo_c2_dosis += u.neumo_c2_dosis || 0;
+        agg.neumo_c3_dosis += u.neumo_c3_dosis || 0;
+        agg.srp_1_dosis += u.srp_1_dosis || 0;
     }
 
     agg.pob_total = agg.pob_menor_1 + agg.pob_1_ano + agg.pob_4_anos;
@@ -393,6 +604,17 @@ function renderDashboard() {
     agg.cobertura_menor1 = factorMenor1 > 0 ? Math.round((((sumaDosisMenor1 / 4.0) / factorMenor1) * 100) * 10) / 10 : 0;
     agg.cobertura_uno = factorUno > 0 ? Math.round((((sumaDosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
     agg.cobertura_cuatro = factorCuatro > 0 ? Math.round(((sumaDosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
+
+    // Coberturas por Biológico individual (Fórmulas RDA Oficiales)
+    agg.cobertura_bcg = factorMenor1 > 0 ? Math.round(((agg.bcg_dosis) / factorMenor1 * 100) * 10) / 10 : 0;
+    agg.cobertura_hepb = factorMenor1 > 0 ? Math.round(((agg.hepb_0_7_dosis) / factorMenor1 * 100) * 10) / 10 : 0;
+    agg.cobertura_rota = factorMenor1 > 0 ? Math.round(((agg.rota_2_dosis) / factorMenor1 * 100) * 10) / 10 : 0;
+    agg.cobertura_hexa_m1 = factorMenor1 > 0 ? Math.round(((agg.hexa_1_dosis + agg.hexa_2_dosis + agg.hexa_3_dosis) / factorMenor1 * 100) * 10) / 10 : 0;
+    agg.cobertura_hexa_uno = factorUno > 0 ? Math.round(((agg.hexa_ref_dosis) / factorUno * 100) * 10) / 10 : 0;
+    agg.cobertura_neumo_m1 = factorMenor1 > 0 ? Math.round(((agg.neumo_1_dosis + agg.neumo_2_dosis + agg.neumo_c1_dosis + agg.neumo_c2_dosis) / factorMenor1 * 100) * 10) / 10 : 0;
+    agg.cobertura_neumo_uno = factorUno > 0 ? Math.round(((agg.neumo_ref_dosis + agg.neumo_c3_dosis) / factorUno * 100) * 10) / 10 : 0;
+    agg.cobertura_srp = factorUno > 0 ? Math.round(((agg.srp_1_dosis + agg.srp_2_dosis) / factorUno * 100) * 10) / 10 : 0;
+    agg.cobertura_dpt = factorCuatro > 0 ? Math.round(((agg.dpt_4_dosis) / factorCuatro * 100) * 10) / 10 : 0;
 
     // Renderizar componentes
     const isSingleUnit = fUnits.length === 1;
@@ -488,9 +710,15 @@ function renderDoughnut(agg, esquema) {
     let centerLabel = '';
 
     if (esquema === 'basico') {
-        labels = ['< 1 Año', '1 Año', '4 Años'];
-        data = [agg.cobertura_menor1, agg.cobertura_uno, agg.cobertura_cuatro];
-        backgroundColors = ['#0d9488', '#0284c7', '#7c3aed'];
+        if (_rdaState.vistaBasico === 'biologico') {
+            labels = ['BCG', 'HepB', 'Rota', 'Hexa <1A', 'Hexa 1A', 'Neumo <1A', 'Neumo 1A', 'SRP', 'DPT'];
+            data = [agg.cobertura_bcg, agg.cobertura_hepb, agg.cobertura_rota, agg.cobertura_hexa_m1, agg.cobertura_hexa_uno, agg.cobertura_neumo_m1, agg.cobertura_neumo_uno, agg.cobertura_srp, agg.cobertura_dpt];
+            backgroundColors = ['#A5CBE3', '#E8B2B2', '#93BCCD', '#CDE69A', '#9ACD32', '#ACAFC8', '#3D405B', '#F3B7CA', '#F3E0AF'];
+        } else {
+            labels = ['< 1 Año', '1 Año', '4 Años'];
+            data = [agg.cobertura_menor1, agg.cobertura_uno, agg.cobertura_cuatro];
+            backgroundColors = ['#0d9488', '#0284c7', '#7c3aed'];
+        }
         const validCovs = data.filter(d => d > 0);
         const avg = validCovs.length ? Math.round(validCovs.reduce((a,b)=>a+b,0) / validCovs.length) : 0;
         centerValue = avg + '%';
@@ -609,59 +837,132 @@ function renderBarChart(fUnits, muniFilter, esquema) {
         const u = fUnits[0];
 
         if (esquema === 'basico') {
-            labels = ['< 1 Año', '1 Año', '4 Años'];
-            const factorM1 = (u.pob_menor_1 * 0.0833) * maxMes;
-            const factorUno = (u.pob_1_ano * 0.0833) * maxMes;
-            const factorCuatro = (u.pob_4_anos * 0.0833) * maxMes;
+            if (_rdaState.vistaBasico === 'biologico') {
+                labels = ['BCG', 'HepB', 'Rota', 'Hexa <1A', 'Hexa 1A', 'Neumo <1A', 'Neumo 1A', 'SRP', 'DPT'];
+                const factorM1 = (u.pob_menor_1 * 0.0833) * maxMes;
+                const factorUno = (u.pob_1_ano * 0.0833) * maxMes;
+                const factorCuatro = (u.pob_4_anos * 0.0833) * maxMes;
 
-            const dosisM1 = (u.bcg_dosis||0) + (u.hepb_0_7_dosis||0) + (u.hexa_3_dosis||0) + (u.rota_2_dosis||0) + (u.neumo_2_dosis||0);
-            const dosisUno = (u.hexa_ref_dosis||0) + (u.neumo_ref_dosis||0) + (u.srp_2_dosis||0);
-            const dosisCuatro = u.dpt_4_dosis||0;
+                const appBCG = u.bcg_dosis || 0;
+                const appHepB = u.hepb_0_7_dosis || 0;
+                const appRota = u.rota_2_dosis || 0;
+                const appHexaM1 = (u.hexa_1_dosis||0) + (u.hexa_2_dosis||0) + (u.hexa_3_dosis||0);
+                const appHexa1A = u.hexa_ref_dosis || 0;
+                const appNeumoM1 = (u.neumo_1_dosis||0) + (u.neumo_2_dosis||0) + (u.neumo_c1_dosis||0) + (u.neumo_c2_dosis||0);
+                const appNeumo1A = (u.neumo_ref_dosis||0) + (u.neumo_c3_dosis||0);
+                const appSRP = (u.srp_1_dosis||0) + (u.srp_2_dosis||0);
+                const appDPT = u.dpt_4_dosis || 0;
 
-            const covM1 = factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0;
-            const covUno = factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
-            const covCuatro = factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
+                const covBCG = factorM1 > 0 ? Math.round((appBCG / factorM1 * 100) * 10) / 10 : 0;
+                const covHepB = factorM1 > 0 ? Math.round((appHepB / factorM1 * 100) * 10) / 10 : 0;
+                const covRota = factorM1 > 0 ? Math.round((appRota / factorM1 * 100) * 10) / 10 : 0;
+                const covHexaM1 = factorM1 > 0 ? Math.round((appHexaM1 / factorM1 * 100) * 10) / 10 : 0;
+                const covHexa1A = factorUno > 0 ? Math.round((appHexa1A / factorUno * 100) * 10) / 10 : 0;
+                const covNeumoM1 = factorM1 > 0 ? Math.round((appNeumoM1 / factorM1 * 100) * 10) / 10 : 0;
+                const covNeumo1A = factorUno > 0 ? Math.round((appNeumo1A / factorUno * 100) * 10) / 10 : 0;
+                const covSRP = factorUno > 0 ? Math.round((appSRP / factorUno * 100) * 10) / 10 : 0;
+                const covDPT = factorCuatro > 0 ? Math.round((appDPT / factorCuatro * 100) * 10) / 10 : 0;
 
-            finalDatasets = [
-                {
-                    type: 'bar',
-                    label: 'Aplicaciones',
-                    data: [Math.round(dosisM1/4.0), Math.round(dosisUno/3.0), dosisCuatro],
-                    backgroundColor: '#e2e8f0',
-                    borderRadius: 4,
-                    barPercentage: 0.7,
-                    categoryPercentage: 0.8,
-                    yAxisID: 'y',
-                    order: 1
-                },
-                {
-                    type: 'bar',
-                    label: 'Meta',
-                    data: [Math.round(factorM1), Math.round(factorUno), Math.round(factorCuatro)],
-                    backgroundColor: '#0f172a',
-                    borderRadius: 4,
-                    barPercentage: 0.7,
-                    categoryPercentage: 0.8,
-                    yAxisID: 'y',
-                    order: 1
-                },
-                {
-                    type: 'line',
-                    label: 'Avance',
-                    data: [covM1, covUno, covCuatro],
-                    borderColor: '#94a3b8',
-                    borderWidth: 4,
-                    tension: 0.4,
-                    fill: false,
-                    pointBackgroundColor: '#ffffff',
-                    pointBorderColor: '#94a3b8',
-                    pointBorderWidth: 2,
-                    pointRadius: 6,
-                    pointHoverRadius: 8,
-                    yAxisID: 'y1',
-                    order: 0
-                }
-            ];
+                finalDatasets = [
+                    {
+                        type: 'bar',
+                        label: 'Aplicaciones',
+                        data: [appBCG, appHepB, appRota, appHexaM1, appHexa1A, appNeumoM1, appNeumo1A, appSRP, appDPT],
+                        backgroundColor: '#e2e8f0',
+                        borderRadius: 4,
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.8,
+                        yAxisID: 'y',
+                        order: 1
+                    },
+                    {
+                        type: 'bar',
+                        label: 'Meta',
+                        data: [
+                            Math.round(factorM1), Math.round(factorM1), Math.round(factorM1),
+                            Math.round(factorM1), Math.round(factorUno),
+                            Math.round(factorM1), Math.round(factorUno),
+                            Math.round(factorUno), Math.round(factorCuatro)
+                        ],
+                        backgroundColor: '#0f172a',
+                        borderRadius: 4,
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.8,
+                        yAxisID: 'y',
+                        order: 1
+                    },
+                    {
+                        type: 'line',
+                        label: 'Avance',
+                        data: [covBCG, covHepB, covRota, covHexaM1, covHexa1A, covNeumoM1, covNeumo1A, covSRP, covDPT],
+                        borderColor: '#94a3b8',
+                        borderWidth: 4,
+                        tension: 0.4,
+                        fill: false,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#94a3b8',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        yAxisID: 'y1',
+                        order: 0
+                    }
+                ];
+            } else {
+                labels = ['< 1 Año', '1 Año', '4 Años'];
+                const factorM1 = (u.pob_menor_1 * 0.0833) * maxMes;
+                const factorUno = (u.pob_1_ano * 0.0833) * maxMes;
+                const factorCuatro = (u.pob_4_anos * 0.0833) * maxMes;
+
+                const dosisM1 = (u.bcg_dosis||0) + (u.hepb_0_7_dosis||0) + (u.hexa_3_dosis||0) + (u.rota_2_dosis||0) + (u.neumo_2_dosis||0);
+                const dosisUno = (u.hexa_ref_dosis||0) + (u.neumo_ref_dosis||0) + (u.srp_2_dosis||0);
+                const dosisCuatro = u.dpt_4_dosis||0;
+
+                const covM1 = factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0;
+                const covUno = factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
+                const covCuatro = factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
+
+                finalDatasets = [
+                    {
+                        type: 'bar',
+                        label: 'Aplicaciones',
+                        data: [Math.round(dosisM1/4.0), Math.round(dosisUno/3.0), dosisCuatro],
+                        backgroundColor: '#e2e8f0',
+                        borderRadius: 4,
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.8,
+                        yAxisID: 'y',
+                        order: 1
+                    },
+                    {
+                        type: 'bar',
+                        label: 'Meta',
+                        data: [Math.round(factorM1), Math.round(factorUno), Math.round(factorCuatro)],
+                        backgroundColor: '#0f172a',
+                        borderRadius: 4,
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.8,
+                        yAxisID: 'y',
+                        order: 1
+                    },
+                    {
+                        type: 'line',
+                        label: 'Avance',
+                        data: [covM1, covUno, covCuatro],
+                        borderColor: '#94a3b8',
+                        borderWidth: 4,
+                        tension: 0.4,
+                        fill: false,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#94a3b8',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        yAxisID: 'y1',
+                        order: 0
+                    }
+                ];
+            }
         } else {
             labels = [''];
             if (esquema === 'adultos') {
@@ -691,14 +992,28 @@ function renderBarChart(fUnits, muniFilter, esquema) {
             }
         }
     } else {
-        let d1 = [], d2 = [], d3 = [], d4 = [], d5 = [];
+        let d1 = [], d2 = [], d3 = [], d4 = [], d5 = [], d6 = [], d7 = [], d8 = [], d9 = [];
         let datasetConfigs = [];
         if (esquema === 'basico') {
-            datasetConfigs = [
-                { label: '< 1 Año', data: d1, backgroundColor: '#0d9488' },
-                { label: '1 Año', data: d2, backgroundColor: '#0284c7' },
-                { label: '4 Años', data: d3, backgroundColor: '#7c3aed' }
-            ];
+            if (_rdaState.vistaBasico === 'biologico') {
+                datasetConfigs = [
+                    { label: 'BCG', data: d1, backgroundColor: '#A5CBE3' },
+                    { label: 'HepB', data: d2, backgroundColor: '#E8B2B2' },
+                    { label: 'Rota', data: d3, backgroundColor: '#93BCCD' },
+                    { label: 'Hexa <1A', data: d4, backgroundColor: '#CDE69A' },
+                    { label: 'Hexa 1A', data: d5, backgroundColor: '#9ACD32' },
+                    { label: 'Neumo <1A', data: d6, backgroundColor: '#ACAFC8' },
+                    { label: 'Neumo 1A', data: d7, backgroundColor: '#3D405B' },
+                    { label: 'SRP', data: d8, backgroundColor: '#F3B7CA' },
+                    { label: 'DPT', data: d9, backgroundColor: '#F3E0AF' }
+                ];
+            } else {
+                datasetConfigs = [
+                    { label: '< 1 Año', data: d1, backgroundColor: '#0d9488' },
+                    { label: '1 Año', data: d2, backgroundColor: '#0284c7' },
+                    { label: '4 Años', data: d3, backgroundColor: '#7c3aed' }
+                ];
+            }
         } else if (esquema === 'adultos') {
             datasetConfigs = [
                 { label: 'HepB', data: d1, backgroundColor: '#c43d3d' },
@@ -734,7 +1049,8 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                 let mAgg = {
                     pob_menor_1: 0, pob_1_ano: 0, pob_4_anos: 0, bcg_dosis: 0, hepb_0_7_dosis: 0, hexa_3_dosis: 0, rota_2_dosis: 0, neumo_2_dosis: 0,
                     hexa_ref_dosis: 0, neumo_ref_dosis: 0, srp_2_dosis: 0, dpt_4_dosis: 0, adol_hb: 0, adol_sr: 0, adol_vph: 0, adol_td: 0, adol_tdpa: 0,
-                    am_neumo13: 0, am_neumo20: 0, am_td: 0, emb_tdpa: 0, emb_vsr: 0, inv_influenza: 0, inv_covid: 0
+                    am_neumo13: 0, am_neumo20: 0, am_td: 0, emb_tdpa: 0, emb_vsr: 0, inv_influenza: 0, inv_covid: 0,
+                    hexa_1_dosis: 0, hexa_2_dosis: 0, neumo_1_dosis: 0, neumo_c1_dosis: 0, neumo_c2_dosis: 0, neumo_c3_dosis: 0, srp_1_dosis: 0
                 };
                 for (const u of muniUnits) {
                     mAgg.pob_menor_1 += u.pob_menor_1 || 0; mAgg.pob_1_ano += u.pob_1_ano || 0; mAgg.pob_4_anos += u.pob_4_anos || 0;
@@ -743,14 +1059,28 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                     mAgg.adol_hb += u.adol_hb || 0; mAgg.adol_sr += u.adol_sr || 0; mAgg.adol_vph += u.adol_vph || 0; mAgg.adol_td += u.adol_td || 0; mAgg.adol_tdpa += u.adol_tdpa || 0;
                     mAgg.am_neumo13 += u.am_neumo13 || 0; mAgg.am_neumo20 += u.am_neumo20 || 0; mAgg.am_td += u.am_td || 0;
                     mAgg.emb_tdpa += u.emb_tdpa || 0; mAgg.emb_vsr += u.emb_vsr || 0; mAgg.inv_influenza += u.inv_influenza || 0; mAgg.inv_covid += u.inv_covid || 0;
+                    mAgg.hexa_1_dosis += u.hexa_1_dosis || 0; mAgg.hexa_2_dosis += u.hexa_2_dosis || 0; mAgg.neumo_1_dosis += u.neumo_1_dosis || 0;
+                    mAgg.neumo_c1_dosis += u.neumo_c1_dosis || 0; mAgg.neumo_c2_dosis += u.neumo_c2_dosis || 0; mAgg.neumo_c3_dosis += u.neumo_c3_dosis || 0; mAgg.srp_1_dosis += u.srp_1_dosis || 0;
                 }
                 if (esquema === 'basico') {
                     const factorM1 = (mAgg.pob_menor_1 * 0.0833) * maxMes; const factorUno = (mAgg.pob_1_ano * 0.0833) * maxMes; const factorCuatro = (mAgg.pob_4_anos * 0.0833) * maxMes;
-                    const dosisM1 = mAgg.bcg_dosis + mAgg.hepb_0_7_dosis + mAgg.hexa_3_dosis + mAgg.rota_2_dosis + mAgg.neumo_2_dosis;
-                    const dosisUno = mAgg.hexa_ref_dosis + mAgg.neumo_ref_dosis + mAgg.srp_2_dosis; const dosisCuatro = mAgg.dpt_4_dosis;
-                    d1.push(factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0);
-                    d2.push(factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0);
-                    d3.push(factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0);
+                    if (_rdaState.vistaBasico === 'biologico') {
+                        d1.push(factorM1 > 0 ? Math.round(((mAgg.bcg_dosis) / factorM1 * 100) * 10) / 10 : 0);
+                        d2.push(factorM1 > 0 ? Math.round(((mAgg.hepb_0_7_dosis) / factorM1 * 100) * 10) / 10 : 0);
+                        d3.push(factorM1 > 0 ? Math.round(((mAgg.rota_2_dosis) / factorM1 * 100) * 10) / 10 : 0);
+                        d4.push(factorM1 > 0 ? Math.round(((mAgg.hexa_1_dosis + mAgg.hexa_2_dosis + mAgg.hexa_3_dosis) / factorM1 * 100) * 10) / 10 : 0);
+                        d5.push(factorUno > 0 ? Math.round(((mAgg.hexa_ref_dosis) / factorUno * 100) * 10) / 10 : 0);
+                        d6.push(factorM1 > 0 ? Math.round(((mAgg.neumo_1_dosis + mAgg.neumo_2_dosis + mAgg.neumo_c1_dosis + mAgg.neumo_c2_dosis) / factorM1 * 100) * 10) / 10 : 0);
+                        d7.push(factorUno > 0 ? Math.round(((mAgg.neumo_ref_dosis + mAgg.neumo_c3_dosis) / factorUno * 100) * 10) / 10 : 0);
+                        d8.push(factorUno > 0 ? Math.round(((mAgg.srp_1_dosis + mAgg.srp_2_dosis) / factorUno * 100) * 10) / 10 : 0);
+                        d9.push(factorCuatro > 0 ? Math.round(((mAgg.dpt_4_dosis) / factorCuatro * 100) * 10) / 10 : 0);
+                    } else {
+                        const dosisM1 = mAgg.bcg_dosis + mAgg.hepb_0_7_dosis + mAgg.hexa_3_dosis + mAgg.rota_2_dosis + mAgg.neumo_2_dosis;
+                        const dosisUno = mAgg.hexa_ref_dosis + mAgg.neumo_ref_dosis + mAgg.srp_2_dosis; const dosisCuatro = mAgg.dpt_4_dosis;
+                        d1.push(factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0);
+                        d2.push(factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0);
+                        d3.push(factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0);
+                    }
                 } else if (esquema === 'adultos') { d1.push(mAgg.adol_hb); d2.push(mAgg.adol_sr); d3.push(mAgg.adol_vph); d4.push(mAgg.adol_td); d5.push(mAgg.adol_tdpa);
                 } else if (esquema === 'mayores') { d1.push(mAgg.am_neumo13); d2.push(mAgg.am_neumo20); d3.push(mAgg.am_td);
                 } else if (esquema === 'embarazadas') { d1.push(mAgg.emb_tdpa); d2.push(mAgg.emb_vsr);
@@ -762,12 +1092,25 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                 const res = { clues: u.clues, nombre: u.nombre };
                 if (esquema === 'basico') {
                     const factorM1 = (u.pob_menor_1 * 0.0833) * maxMes; const factorUno = (u.pob_1_ano * 0.0833) * maxMes; const factorCuatro = (u.pob_4_anos * 0.0833) * maxMes;
-                    const dosisM1 = (u.bcg_dosis||0) + (u.hepb_0_7_dosis||0) + (u.hexa_3_dosis||0) + (u.rota_2_dosis||0) + (u.neumo_2_dosis||0);
-                    const dosisUno = (u.hexa_ref_dosis||0) + (u.neumo_ref_dosis||0) + (u.srp_2_dosis||0); const dosisCuatro = u.dpt_4_dosis||0;
-                    res.v1 = factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0;
-                    res.v2 = factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
-                    res.v3 = factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
-                    res.sortVal = res.v1;
+                    if (_rdaState.vistaBasico === 'biologico') {
+                        res.v1 = factorM1 > 0 ? Math.round(((u.bcg_dosis) / factorM1 * 100) * 10) / 10 : 0;
+                        res.v2 = factorM1 > 0 ? Math.round(((u.hepb_0_7_dosis) / factorM1 * 100) * 10) / 10 : 0;
+                        res.v3 = factorM1 > 0 ? Math.round(((u.rota_2_dosis) / factorM1 * 100) * 10) / 10 : 0;
+                        res.v4 = factorM1 > 0 ? Math.round(((u.hexa_1_dosis + u.hexa_2_dosis + u.hexa_3_dosis) / factorM1 * 100) * 10) / 10 : 0;
+                        res.v5 = factorUno > 0 ? Math.round(((u.hexa_ref_dosis) / factorUno * 100) * 10) / 10 : 0;
+                        res.v6 = factorM1 > 0 ? Math.round(((u.neumo_1_dosis + u.neumo_2_dosis + u.neumo_c1_dosis + u.neumo_c2_dosis) / factorM1 * 100) * 10) / 10 : 0;
+                        res.v7 = factorUno > 0 ? Math.round(((u.neumo_ref_dosis + u.neumo_c3_dosis) / factorUno * 100) * 10) / 10 : 0;
+                        res.v8 = factorUno > 0 ? Math.round(((u.srp_1_dosis + u.srp_2_dosis) / factorUno * 100) * 10) / 10 : 0;
+                        res.v9 = factorCuatro > 0 ? Math.round(((u.dpt_4_dosis) / factorCuatro * 100) * 10) / 10 : 0;
+                        res.sortVal = (res.v1 + res.v2 + res.v3 + res.v4 + res.v5 + res.v6 + res.v7 + res.v8 + res.v9) / 9.0;
+                    } else {
+                        const dosisM1 = (u.bcg_dosis||0) + (u.hepb_0_7_dosis||0) + (u.hexa_3_dosis||0) + (u.rota_2_dosis||0) + (u.neumo_2_dosis||0);
+                        const dosisUno = (u.hexa_ref_dosis||0) + (u.neumo_ref_dosis||0) + (u.srp_2_dosis||0); const dosisCuatro = u.dpt_4_dosis||0;
+                        res.v1 = factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0;
+                        res.v2 = factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
+                        res.v3 = factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
+                        res.sortVal = res.v1;
+                    }
                 } else if (esquema === 'adultos') { res.v1 = u.adol_hb || 0; res.v2 = u.adol_sr || 0; res.v3 = u.adol_vph || 0; res.v4 = u.adol_td || 0; res.v5 = u.adol_tdpa || 0; res.sortVal = res.v1 + res.v2 + res.v3 + res.v4 + res.v5;
                 } else if (esquema === 'mayores') { res.v1 = u.am_neumo13 || 0; res.v2 = u.am_neumo20 || 0; res.v3 = u.am_td || 0; res.sortVal = res.v1 + res.v2 + res.v3;
                 } else if (esquema === 'embarazadas') { res.v1 = u.emb_tdpa || 0; res.v2 = u.emb_vsr || 0; res.sortVal = res.v1 + res.v2;
@@ -780,6 +1123,10 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                 d1.push(r.v1 || 0); d2.push(r.v2 || 0); d3.push(r.v3 || 0);
                 if (r.v4 !== undefined) d4.push(r.v4);
                 if (r.v5 !== undefined) d5.push(r.v5);
+                if (r.v6 !== undefined) d6.push(r.v6);
+                if (r.v7 !== undefined) d7.push(r.v7);
+                if (r.v8 !== undefined) d8.push(r.v8);
+                if (r.v9 !== undefined) d9.push(r.v9);
             }
         }
         finalDatasets = datasetConfigs.map((cfg) => ({ label: cfg.label, data: cfg.data, backgroundColor: cfg.backgroundColor, borderRadius: 6, barThickness: 12 }));
@@ -790,7 +1137,12 @@ function renderBarChart(fUnits, muniFilter, esquema) {
             const titleElTotal = document.getElementById('chartBarTotalTitle');
             if (titleElTotal) titleElTotal.textContent = muniFilter ? 'Avance Municipal Total' : 'Avance Jurisdiccional Total';
             
-            let tAgg = { pob_menor_1: 0, pob_1_ano: 0, pob_4_anos: 0, bcg_dosis: 0, hepb_0_7_dosis: 0, hexa_3_dosis: 0, rota_2_dosis: 0, neumo_2_dosis: 0, hexa_ref_dosis: 0, neumo_ref_dosis: 0, srp_2_dosis: 0, dpt_4_dosis: 0, adol_hb: 0, adol_sr: 0, adol_vph: 0, adol_td: 0, adol_tdpa: 0, am_neumo13: 0, am_neumo20: 0, am_td: 0, emb_tdpa: 0, emb_vsr: 0, inv_influenza: 0, inv_covid: 0 };
+            let tAgg = {
+                pob_menor_1: 0, pob_1_ano: 0, pob_4_anos: 0, bcg_dosis: 0, hepb_0_7_dosis: 0, hexa_3_dosis: 0, rota_2_dosis: 0, neumo_2_dosis: 0,
+                hexa_ref_dosis: 0, neumo_ref_dosis: 0, srp_2_dosis: 0, dpt_4_dosis: 0, adol_hb: 0, adol_sr: 0, adol_vph: 0, adol_td: 0, adol_tdpa: 0,
+                am_neumo13: 0, am_neumo20: 0, am_td: 0, emb_tdpa: 0, emb_vsr: 0, inv_influenza: 0, inv_covid: 0,
+                hexa_1_dosis: 0, hexa_2_dosis: 0, neumo_1_dosis: 0, neumo_c1_dosis: 0, neumo_c2_dosis: 0, neumo_c3_dosis: 0, srp_1_dosis: 0
+            };
             for (const u of fUnits) {
                 tAgg.pob_menor_1 += u.pob_menor_1 || 0; tAgg.pob_1_ano += u.pob_1_ano || 0; tAgg.pob_4_anos += u.pob_4_anos || 0;
                 tAgg.bcg_dosis += u.bcg_dosis || 0; tAgg.hepb_0_7_dosis += u.hepb_0_7_dosis || 0; tAgg.hexa_3_dosis += u.hexa_3_dosis || 0; tAgg.rota_2_dosis += u.rota_2_dosis || 0; tAgg.neumo_2_dosis += u.neumo_2_dosis || 0;
@@ -798,6 +1150,8 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                 tAgg.adol_hb += u.adol_hb || 0; tAgg.adol_sr += u.adol_sr || 0; tAgg.adol_vph += u.adol_vph || 0; tAgg.adol_td += u.adol_td || 0; tAgg.adol_tdpa += u.adol_tdpa || 0;
                 tAgg.am_neumo13 += u.am_neumo13 || 0; tAgg.am_neumo20 += u.am_neumo20 || 0; tAgg.am_td += u.am_td || 0;
                 tAgg.emb_tdpa += u.emb_tdpa || 0; tAgg.emb_vsr += u.emb_vsr || 0; tAgg.inv_influenza += u.inv_influenza || 0; tAgg.inv_covid += u.inv_covid || 0;
+                tAgg.hexa_1_dosis += u.hexa_1_dosis || 0; tAgg.hexa_2_dosis += u.hexa_2_dosis || 0; tAgg.neumo_1_dosis += u.neumo_1_dosis || 0;
+                tAgg.neumo_c1_dosis += u.neumo_c1_dosis || 0; tAgg.neumo_c2_dosis += u.neumo_c2_dosis || 0; tAgg.neumo_c3_dosis += u.neumo_c3_dosis || 0; tAgg.srp_1_dosis += u.srp_1_dosis || 0;
             }
             
             let tLabels = [];
@@ -810,19 +1164,92 @@ function renderBarChart(fUnits, muniFilter, esquema) {
             };
 
             if (esquema === 'basico') {
-                tLabels = ['< 1 Año', '1 Año', '4 Años'];
-                const factorM1 = (tAgg.pob_menor_1 * 0.0833) * maxMes; const factorUno = (tAgg.pob_1_ano * 0.0833) * maxMes; const factorCuatro = (tAgg.pob_4_anos * 0.0833) * maxMes;
-                const dosisM1 = tAgg.bcg_dosis + tAgg.hepb_0_7_dosis + tAgg.hexa_3_dosis + tAgg.rota_2_dosis + tAgg.neumo_2_dosis;
-                const dosisUno = tAgg.hexa_ref_dosis + tAgg.neumo_ref_dosis + tAgg.srp_2_dosis; const dosisCuatro = tAgg.dpt_4_dosis;
-                let covM1 = factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0;
-                let covUno = factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
-                let covCuatro = factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
-                
-                tDatasets = [
-                    { type: 'bar', label: 'Aplicaciones', data: [Math.round(dosisM1/4.0), Math.round(dosisUno/3.0), dosisCuatro], backgroundColor: '#e2e8f0', borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.8, yAxisID: 'y', order: 1 },
-                    { type: 'bar', label: 'Meta', data: [Math.round(factorM1), Math.round(factorUno), Math.round(factorCuatro)], backgroundColor: '#0f172a', borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.8, yAxisID: 'y', order: 1 },
-                    { type: 'line', label: 'Avance', data: [covM1, covUno, covCuatro], borderColor: '#94a3b8', borderWidth: 4, tension: 0.4, fill: false, pointBackgroundColor: '#ffffff', pointBorderColor: '#94a3b8', pointBorderWidth: 2, pointRadius: 6, pointHoverRadius: 8, yAxisID: 'y1', order: 0 }
-                ];
+                if (_rdaState.vistaBasico === 'biologico') {
+                    tLabels = ['BCG', 'HepB', 'Rota', 'Hexa <1A', 'Hexa 1A', 'Neumo <1A', 'Neumo 1A', 'SRP', 'DPT'];
+                    const factorM1 = (tAgg.pob_menor_1 * 0.0833) * maxMes;
+                    const factorUno = (tAgg.pob_1_ano * 0.0833) * maxMes;
+                    const factorCuatro = (tAgg.pob_4_anos * 0.0833) * maxMes;
+
+                    const appBCG = tAgg.bcg_dosis || 0;
+                    const appHepB = tAgg.hepb_0_7_dosis || 0;
+                    const appRota = tAgg.rota_2_dosis || 0;
+                    const appHexaM1 = (tAgg.hexa_1_dosis||0) + (tAgg.hexa_2_dosis||0) + (tAgg.hexa_3_dosis||0);
+                    const appHexa1A = tAgg.hexa_ref_dosis || 0;
+                    const appNeumoM1 = (tAgg.neumo_1_dosis||0) + (tAgg.neumo_2_dosis||0) + (tAgg.neumo_c1_dosis||0) + (tAgg.neumo_c2_dosis||0);
+                    const appNeumo1A = (tAgg.neumo_ref_dosis||0) + (tAgg.neumo_c3_dosis||0);
+                    const appSRP = (tAgg.srp_1_dosis||0) + (tAgg.srp_2_dosis||0);
+                    const appDPT = tAgg.dpt_4_dosis || 0;
+
+                    const covBCG = factorM1 > 0 ? Math.round((appBCG / factorM1 * 100) * 10) / 10 : 0;
+                    const covHepB = factorM1 > 0 ? Math.round((appHepB / factorM1 * 100) * 10) / 10 : 0;
+                    const covRota = factorM1 > 0 ? Math.round((appRota / factorM1 * 100) * 10) / 10 : 0;
+                    const covHexaM1 = factorM1 > 0 ? Math.round((appHexaM1 / factorM1 * 100) * 10) / 10 : 0;
+                    const covHexa1A = factorUno > 0 ? Math.round((appHexa1A / factorUno * 100) * 10) / 10 : 0;
+                    const covNeumoM1 = factorM1 > 0 ? Math.round((appNeumoM1 / factorM1 * 100) * 10) / 10 : 0;
+                    const covNeumo1A = factorUno > 0 ? Math.round((appNeumo1A / factorUno * 100) * 10) / 10 : 0;
+                    const covSRP = factorUno > 0 ? Math.round((appSRP / factorUno * 100) * 10) / 10 : 0;
+                    const covDPT = factorCuatro > 0 ? Math.round((appDPT / factorCuatro * 100) * 10) / 10 : 0;
+
+                    tDatasets = [
+                        {
+                            type: 'bar',
+                            label: 'Aplicaciones',
+                            data: [appBCG, appHepB, appRota, appHexaM1, appHexa1A, appNeumoM1, appNeumo1A, appSRP, appDPT],
+                            backgroundColor: '#e2e8f0',
+                            borderRadius: 4,
+                            barPercentage: 0.7,
+                            categoryPercentage: 0.8,
+                            yAxisID: 'y',
+                            order: 1
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Meta',
+                            data: [
+                                Math.round(factorM1), Math.round(factorM1), Math.round(factorM1),
+                                Math.round(factorM1), Math.round(factorUno),
+                                Math.round(factorM1), Math.round(factorUno),
+                                Math.round(factorUno), Math.round(factorCuatro)
+                            ],
+                            backgroundColor: '#0f172a',
+                            borderRadius: 4,
+                            barPercentage: 0.7,
+                            categoryPercentage: 0.8,
+                            yAxisID: 'y',
+                            order: 1
+                        },
+                        {
+                            type: 'line',
+                            label: 'Avance',
+                            data: [covBCG, covHepB, covRota, covHexaM1, covHexa1A, covNeumoM1, covNeumo1A, covSRP, covDPT],
+                            borderColor: '#94a3b8',
+                            borderWidth: 4,
+                            tension: 0.4,
+                            fill: false,
+                            pointBackgroundColor: '#ffffff',
+                            pointBorderColor: '#94a3b8',
+                            pointBorderWidth: 2,
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            yAxisID: 'y1',
+                            order: 0
+                        }
+                    ];
+                } else {
+                    tLabels = ['< 1 Año', '1 Año', '4 Años'];
+                    const factorM1 = (tAgg.pob_menor_1 * 0.0833) * maxMes; const factorUno = (tAgg.pob_1_ano * 0.0833) * maxMes; const factorCuatro = (tAgg.pob_4_anos * 0.0833) * maxMes;
+                    const dosisM1 = tAgg.bcg_dosis + tAgg.hepb_0_7_dosis + tAgg.hexa_3_dosis + tAgg.rota_2_dosis + tAgg.neumo_2_dosis;
+                    const dosisUno = tAgg.hexa_ref_dosis + tAgg.neumo_ref_dosis + tAgg.srp_2_dosis; const dosisCuatro = tAgg.dpt_4_dosis;
+                    let covM1 = factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0;
+                    let covUno = factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
+                    let covCuatro = factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
+                    
+                    tDatasets = [
+                        { type: 'bar', label: 'Aplicaciones', data: [Math.round(dosisM1/4.0), Math.round(dosisUno/3.0), dosisCuatro], backgroundColor: '#e2e8f0', borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.8, yAxisID: 'y', order: 1 },
+                        { type: 'bar', label: 'Meta', data: [Math.round(factorM1), Math.round(factorUno), Math.round(factorCuatro)], backgroundColor: '#0f172a', borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.8, yAxisID: 'y', order: 1 },
+                        { type: 'line', label: 'Avance', data: [covM1, covUno, covCuatro], borderColor: '#94a3b8', borderWidth: 4, tension: 0.4, fill: false, pointBackgroundColor: '#ffffff', pointBorderColor: '#94a3b8', pointBorderWidth: 2, pointRadius: 6, pointHoverRadius: 8, yAxisID: 'y1', order: 0 }
+                    ];
+                }
                 tOptions.scales.y1 = { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#64748b', callback: v => v + '%' } };
             } else {
                 tLabels = [''];
@@ -925,7 +1352,21 @@ function renderTable(fUnits, esquema) {
     // 1. Columnas específicas de la vacuna según esquema
     let vCols = [];
     if (esquema === 'basico') {
-        vCols = [{ n: '< 1 Año', s: 'v1' }, { n: '1 Año', s: 'v2' }, { n: '4 Años', s: 'v3' }];
+        if (_rdaState.vistaBasico === 'biologico') {
+            vCols = [
+                { n: 'BCG', s: 'v1' },
+                { n: 'HepB', s: 'v2' },
+                { n: 'Rota', s: 'v3' },
+                { n: 'Hexa <1A', s: 'v4' },
+                { n: 'Hexa 1A', s: 'v5' },
+                { n: 'Neumo <1A', s: 'v6' },
+                { n: 'Neumo 1A', s: 'v7' },
+                { n: 'SRP', s: 'v8' },
+                { n: 'DPT', s: 'v9' }
+            ];
+        } else {
+            vCols = [{ n: '< 1 Año', s: 'v1' }, { n: '1 Año', s: 'v2' }, { n: '4 Años', s: 'v3' }];
+        }
     } else if (esquema === 'adultos') {
         vCols = [
             { n: 'HepB', s: 'v1' }, { n: 'SR', s: 'v2' }, { n: 'VPH', s: 'v3' }, 
@@ -978,14 +1419,27 @@ function renderTable(fUnits, esquema) {
             const factorUno = (u.pob_1_ano * 0.0833) * maxMes;
             const factorCuatro = (u.pob_4_anos * 0.0833) * maxMes;
 
-            const dosisM1 = (u.bcg_dosis || 0) + (u.hepb_0_7_dosis || 0) + (u.hexa_3_dosis || 0) + (u.rota_2_dosis || 0) + (u.neumo_2_dosis || 0);
-            const dosisUno = (u.hexa_ref_dosis || 0) + (u.neumo_ref_dosis || 0) + (u.srp_2_dosis || 0);
-            const dosisCuatro = u.dpt_4_dosis || 0;
+            if (_rdaState.vistaBasico === 'biologico') {
+                res.v1 = factorM1 > 0 ? Math.round(((u.bcg_dosis) / factorM1 * 100) * 10) / 10 : 0;
+                res.v2 = factorM1 > 0 ? Math.round(((u.hepb_0_7_dosis) / factorM1 * 100) * 10) / 10 : 0;
+                res.v3 = factorM1 > 0 ? Math.round(((u.rota_2_dosis) / factorM1 * 100) * 10) / 10 : 0;
+                res.v4 = factorM1 > 0 ? Math.round(((u.hexa_1_dosis + u.hexa_2_dosis + u.hexa_3_dosis) / factorM1 * 100) * 10) / 10 : 0;
+                res.v5 = factorUno > 0 ? Math.round(((u.hexa_ref_dosis) / factorUno * 100) * 10) / 10 : 0;
+                res.v6 = factorM1 > 0 ? Math.round(((u.neumo_1_dosis + u.neumo_2_dosis + u.neumo_c1_dosis + u.neumo_c2_dosis) / factorM1 * 100) * 10) / 10 : 0;
+                res.v7 = factorUno > 0 ? Math.round(((u.neumo_ref_dosis + u.neumo_c3_dosis) / factorUno * 100) * 10) / 10 : 0;
+                res.v8 = factorUno > 0 ? Math.round(((u.srp_1_dosis + u.srp_2_dosis) / factorUno * 100) * 10) / 10 : 0;
+                res.v9 = factorCuatro > 0 ? Math.round(((u.dpt_4_dosis) / factorCuatro * 100) * 10) / 10 : 0;
+                res.dosis = (u.bcg_dosis || 0) + (u.hepb_0_7_dosis || 0) + (u.hexa_1_dosis || 0) + (u.hexa_2_dosis || 0) + (u.hexa_3_dosis || 0) + (u.rota_2_dosis || 0) + (u.neumo_1_dosis || 0) + (u.neumo_2_dosis || 0) + (u.neumo_c1_dosis || 0) + (u.neumo_c2_dosis || 0) + (u.hexa_ref_dosis || 0) + (u.neumo_ref_dosis || 0) + (u.neumo_c3_dosis || 0) + (u.srp_1_dosis || 0) + (u.srp_2_dosis || 0) + (u.dpt_4_dosis || 0);
+            } else {
+                const dosisM1 = (u.bcg_dosis || 0) + (u.hepb_0_7_dosis || 0) + (u.hexa_3_dosis || 0) + (u.rota_2_dosis || 0) + (u.neumo_2_dosis || 0);
+                const dosisUno = (u.hexa_ref_dosis || 0) + (u.neumo_ref_dosis || 0) + (u.srp_2_dosis || 0);
+                const dosisCuatro = u.dpt_4_dosis || 0;
 
-            res.v1 = factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0;
-            res.v2 = factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
-            res.v3 = factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
-            res.dosis = dosisM1 + dosisUno + dosisCuatro;
+                res.v1 = factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0;
+                res.v2 = factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
+                res.v3 = factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
+                res.dosis = dosisM1 + dosisUno + dosisCuatro;
+            }
         } else if (esquema === 'adultos') {
             res.v1 = u.adol_hb || 0;
             res.v2 = u.adol_sr || 0;

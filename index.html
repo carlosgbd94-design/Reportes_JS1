@@ -61,6 +61,25 @@
 
 <body class="min-h-screen relative overflow-x-hidden">
 
+  <!-- Filtros GPU (Inline SVG) para Liquid Glass (iOS 26) -->
+  <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="0" height="0" style="position: absolute; pointer-events: none; visibility: hidden;">
+    <defs>
+      <filter id="liquid-refraction" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" result="raw-noise" />
+        <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.18 0" in="raw-noise" result="noise-map"/>
+        <feDisplacementMap in="SourceGraphic" in2="noise-map" scale="18" xChannelSelector="R" yChannelSelector="G" result="refracted-source" />
+        <feOffset in="refracted-source" dx="-2.5" dy="0" result="red-layer" />
+        <feColorMatrix in="red-layer" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="red-only" />
+        <feOffset in="refracted-source" dx="2.5" dy="0" result="blue-layer" />
+        <feColorMatrix in="blue-layer" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="blue-only" />
+        <feColorMatrix in="refracted-source" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="green-only" />
+        <feBlend mode="screen" in="red-only" in2="green-only" result="rg-blend" />
+        <feBlend mode="screen" in="rg-blend" in2="blue-only" result="chromatic-aberration" />
+        <feComposite operator="over" in="chromatic-aberration" in2="SourceGraphic" />
+      </filter>
+    </defs>
+  </svg>
+
   <!-- 🎨 PREMIUM INSTITUTIONAL BACKGROUND (Mezcla de Opción 3 y 5 en Tema Claro) -->
   <div id="mainAppBackground"
     style="position: fixed; inset: 0; z-index: -3; pointer-events: none; overflow: hidden; background-color: #f8fafc;">
@@ -2576,21 +2595,22 @@
           </button>
           <!-- ═══════════ TOP BAR (Title + Actions) ═══════════ -->
           <div style="
-              flex-shrink: 0; padding: 24px 32px;
-              background: #fff; border-bottom: 1px solid #e2e8f0;
+              flex-shrink: 0; padding: 20px 32px;
+              background: #fff; border-bottom: 1px solid #f1f5f9;
               display: flex; align-items: center; justify-content: space-between;
+              flex-wrap: wrap; gap: 16px;
             ">
             <div style="display: flex; align-items: center; gap: 16px;">
               <div
-                style="width: 52px; height: 52px; border-radius: 16px; background: #0f172a; display: flex; align-items: center; justify-content: center; color: #67e8f9;">
-                <span class="material-symbols-rounded premium-anim-bar" style="font-size: 28px;">stacked_bar_chart</span>
+                style="width: 48px; height: 48px; border-radius: 14px; background: #0f172a; display: flex; align-items: center; justify-content: center; color: #67e8f9;">
+                <span class="material-symbols-rounded premium-anim-bar" style="font-size: 24px;">stacked_bar_chart</span>
               </div>
               <div>
-                <h2 style="margin: 0; font-size: 22px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em;">
                   Indicadores vacunas 2026</h2>
                 <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
                   <span id="rdaScopeLabel"
-                    style="font-size: 12px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Jurisdicción
+                    style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Jurisdicción
                     Sanitaria 1</span>
                   <span id="rdaCierreLabel"
                     style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: #f1f5f9; color: #0f172a; border: 1px solid #e2e8f0;">Avance
@@ -2599,60 +2619,69 @@
               </div>
             </div>
 
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <!-- Filtros inline -->
-              <div
-                style="display: flex; align-items: center; gap: 8px; margin-right: 16px; background: #f1f5f9; padding: 6px; border-radius: 14px;">
-                <select id="rdaFilterMunicipio" style="
-                    height: 38px; padding: 0 16px; min-width: 180px;
-                    border-radius: 10px; border: 1px solid #e2e8f0;
-                    background: #fff; color: #0f172a;
-                    font-size: 13px; font-weight: 700; outline: none; cursor: pointer;
-                  ">
-                  <option value="">Todos los municipios</option>
-                </select>
-
-                <select id="rdaFilterUnidad" style="
-                    display: none; height: 38px; padding: 0 16px; min-width: 220px;
-                    border-radius: 10px; border: 1px solid #e2e8f0;
-                    background: #fff; color: #0f172a;
-                    font-size: 13px; font-weight: 700; outline: none; cursor: pointer;
-                  ">
-                  <option value="">Todas las unidades</option>
-                </select>
-              </div>
-
-              <!-- Botones Acción -->
-              <div style="position: relative;" id="rdaExportContainer">
-                <button id="btnExportRdaToggle" style="
-                    height: 48px; padding: 0 20px;
-                    border-radius: 14px; border: none;
-                    background: #0f172a; color: #fff; font-size: 14px; font-weight: 800;
-                    display: flex; align-items: center; gap: 10px;
-                    cursor: pointer; transition: all 0.2s;
-                  ">
-                  <span class="material-symbols-rounded" style="font-size: 20px;">download</span>
-                  Exportar
-                  <span class="material-symbols-rounded" style="font-size: 18px;">expand_more</span>
+            <!-- Botones Acción -->
+            <div style="position: relative;" id="rdaExportContainer">
+              <button id="btnExportRdaToggle" style="
+                  height: 42px; padding: 0 18px;
+                  border-radius: 12px; border: none;
+                  background: #0f172a; color: #fff; font-size: 13px; font-weight: 800;
+                  display: flex; align-items: center; gap: 8px;
+                  cursor: pointer; transition: all 0.2s;
+                ">
+                <span class="material-symbols-rounded" style="font-size: 18px;">download</span>
+                Exportar
+                <span class="material-symbols-rounded" style="font-size: 16px;">expand_more</span>
+              </button>
+              <div id="rdaExportDropdown" style="
+                  display: none; position: absolute; top: 100%; right: 0; margin-top: 8px;
+                  background: #fff; border-radius: 16px; min-width: 240px;
+                  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+                  border: 1px solid #e2e8f0; overflow: hidden; z-index: 100;
+                ">
+                <button class="rda-export-opt" data-export="individual"
+                  style="width: 100%; padding: 14px 16px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 700; color: #1e293b; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                  <span class="material-symbols-rounded" style="color: #0d9488; font-size: 18px;">picture_as_pdf</span>
+                  Reporte PDF Individual
                 </button>
-                <div id="rdaExportDropdown" style="
-                    display: none; position: absolute; top: 100%; right: 0; margin-top: 8px;
-                    background: #fff; border-radius: 16px; min-width: 240px;
-                    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
-                    border: 1px solid #e2e8f0; overflow: hidden; z-index: 100;
-                  ">
-                  <button class="rda-export-opt" data-export="individual"
-                    style="width: 100%; padding: 16px; border: none; background: transparent; text-align: left; font-size: 14px; font-weight: 700; color: #1e293b; cursor: pointer; display: flex; align-items: center; gap: 12px;">
-                    <span class="material-symbols-rounded" style="color: #0d9488;">picture_as_pdf</span>
-                    Reporte PDF Individual
-                  </button>
-                  <button class="rda-export-opt" data-export="masivo" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,CARAVANAS"
-                    style="width: 100%; padding: 16px; border: none; background: transparent; text-align: left; font-size: 14px; font-weight: 700; color: #1e293b; cursor: pointer; display: flex; align-items: center; gap: 12px;">
-                    <span class="material-symbols-rounded" style="color: #4338ca;">folder_zip</span>
-                    Archivo ZIP Masivo
-                  </button>
-                </div>
+                <button class="rda-export-opt" data-export="masivo" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL,CARAVANAS"
+                  style="width: 100%; padding: 14px 16px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 700; color: #1e293b; cursor: pointer; display: flex; align-items: center; gap: 10px;">
+                  <span class="material-symbols-rounded" style="color: #4338ca; font-size: 18px;">folder_zip</span>
+                  Archivo ZIP Masivo
+                </button>
               </div>
+            </div>
+          </div>
+
+          <!-- ═══════════ FILTERS & CONTROLS TOOLBAR (Premium Design) ═══════════ -->
+          <div id="rdaFilterGroup" style="
+              flex-shrink: 0; padding: 16px 32px;
+              background: #f8fafc; border-bottom: 1px solid #e2e8f0;
+              display: flex; align-items: center; justify-content: space-between;
+              flex-wrap: wrap; gap: 16px;
+            ">
+            <div id="rdaFilterLeftGroup" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <!-- El selector de esquema y el toggle de visualización se inyectarán aquí -->
+            </div>
+            <div id="rdaFilterRightGroup" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+              <select id="rdaFilterMunicipio" style="
+                  height: 38px; padding: 0 16px; min-width: 180px;
+                  border-radius: 10px; border: 1px solid #e2e8f0;
+                  background: #fff; color: #0f172a;
+                  font-size: 13px; font-weight: 700; outline: none; cursor: pointer;
+                  box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s ease;
+                ">
+                <option value="">Todos los municipios</option>
+              </select>
+
+              <select id="rdaFilterUnidad" style="
+                  display: none; height: 38px; padding: 0 16px; min-width: 220px;
+                  border-radius: 10px; border: 1px solid #e2e8f0;
+                  background: #fff; color: #0f172a;
+                  font-size: 13px; font-weight: 700; outline: none; cursor: pointer;
+                  box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.2s ease;
+                ">
+                <option value="">Todas las unidades</option>
+              </select>
             </div>
           </div>
 
@@ -2770,8 +2799,8 @@
                   style="font-size: 12px; font-weight: 800; color: #64748b; background: #f8fafc; padding: 6px 14px; border-radius: 10px; border: 1px solid #e2e8f0;">0
                   unidades</span>
               </div>
-              <div style="overflow-x: auto;">
-                <table id="rdaDetailTable" style="width: 100%; border-collapse: collapse; min-width: 900px;">
+              <div id="rdaTableContainer" style="overflow: auto; max-height: 520px; position: relative;">
+                <table id="rdaDetailTable" style="width: 100%; border-collapse: separate; border-spacing: 0; min-width: 900px;">
                   <thead>
                     <tr style="background: #f8fafc;">
                       <th
