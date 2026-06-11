@@ -953,10 +953,7 @@
     border-bottom: 2px dashed rgba(0,0,0,0.05) !important;
 }
 
-.touch-ui #srCaptureTable td.bioNameCell::before,
-.touch-ui #srCaptureTbody td:first-child::before {
-    display: none !important;
-}
+/* The ::before pseudo-element for the first cell is no longer hidden, restoring the "Biológico" label */
 
 /* Action button at bottom of card */
 .touch-ui #srCaptureTable td:last-child button {
