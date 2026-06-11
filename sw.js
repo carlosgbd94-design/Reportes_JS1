@@ -78,6 +78,9 @@ self.addEventListener('fetch', (event) => {
     url.hostname.includes('cdnjs.cloudflare.com') ||
     url.hostname.includes('unpkg.com') ||
     url.hostname.includes('raw.githubusercontent.com') ||
+    url.hostname.includes('sentry-cdn.com') ||
+    url.hostname.includes('sentry.io') ||
+    url.hostname.includes('posthog.com') ||
     url.protocol === 'chrome-extension:'
   ) {
     return; // Dejar que el navegador maneje estas peticiones directamente
@@ -110,6 +113,7 @@ self.addEventListener('fetch', (event) => {
           if (event.request.mode === 'navigate') {
             return caches.match('./index.html');
           }
+          return new Response('', { status: 404, statusText: 'Offline' });
         });
       })
   );

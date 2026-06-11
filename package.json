@@ -1,0 +1,28 @@
+{
+  "name": "github",
+  "version": "1.0.0",
+  "description": "Este código ha sido creado para agilizar los procesos de captura y concentración de información de los centros de salud.",
+  "main": "main.js",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/carlosgbd94-design/SIREVAQ.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/carlosgbd94-design/SIREVAQ/issues"
+  },
+  "homepage": "https://github.com/carlosgbd94-design/SIREVAQ#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "serve": "^14.2.6"
+  },
+  "dependencies": {
+    "@sentry/browser": "^10.57.0"
+  }
+}
