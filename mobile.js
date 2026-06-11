@@ -401,7 +401,8 @@
             setupWobbleTriggers();
         });
     });
-    glassObserver.observe(document.body, { childList: true, subtree: true });
+    // SE COMENTÓ ESTO PORQUE CAUSA FLASHAZOS DE RENDIMIENTO Y REFLOWS CONSTANTES EN MOBILE (S25, iOS, etc.)
+    // glassObserver.observe(document.body, { childList: true, subtree: true });
 
     // ─── TABLES TO CARDS: AUTO DATA-LABEL INJECTION ───
     const injectTableDataLabels = () => {
