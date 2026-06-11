@@ -2091,8 +2091,7 @@ label,
 
 /* Modern Delete Button */
 /* Modern Delete Button - Enhanced for Animations */
-/* */
-.md-delete-btn {
+/* */.md-delete-btn, .md-edit-btn {
   background: var(--md-sys-color-surface-container-highest, #f1f5f9);
   border: none;
   width: 44px;
@@ -2107,13 +2106,21 @@ label,
   box-shadow: var(--md-shadow-1);
   position: relative;
   overflow: visible !important;
+  flex-shrink: 0;
 }
 
 .md-delete-btn:hover {
-  background-color: #dc2626 !important; /* Rojo s*/
+  background-color: #dc2626 !important; /* Rojo */
   color: #ffffff !important;
   transform: scale(1.1) translateY(-2px);
   box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4);
+}
+
+.md-edit-btn:hover {
+  background-color: var(--md-sys-color-primary, #4f8cff) !important;
+  color: #ffffff !important;
+  transform: scale(1.1) translateY(-2px);
+  box-shadow: 0 8px 20px rgba(79, 140, 255, 0.4);
 }
 
 .md-delete-btn svg {
@@ -2174,40 +2181,120 @@ label,
   flex-wrap: wrap;
 }
 
-.logistics-card {
+.premium-logistics-card {
   flex: 1;
   min-width: 160px;
-  background: #ffffff;
-  border: 1.5px solid var(--md-outline-variant);
-  border-radius: 20px;
-  padding: 20px;
-  text-align: center;
-  box-shadow: var(--md-shadow-1);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 24px;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   position: relative;
   overflow: hidden;
-}
-
-.logistics-card.filter-btn {
+  box-shadow: 0 10px 30px rgba(0, 51, 102, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
   cursor: pointer;
-  user-select: none;
+  z-index: 1;
 }
 
-.logistics-card.filter-btn:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--md-shadow-3);
-  border-color: var(--card-color, var(--md-sys-color-primary));
+.premium-logistics-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 24px;
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
-.logistics-card.filter-btn.active {
-  background: var(--card-color, var(--md-sys-color-primary));
+.premium-logistics-card .card-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120px;
+  height: 120px;
+  background: rgba(79, 140, 255, 0.3);
+  filter: blur(40px);
+  transform: translate(-50%, -50%);
+  z-index: -1;
+  transition: all 0.4s ease;
+  opacity: 0.6;
+}
+
+.premium-logistics-card:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(0, 51, 102, 0.1), inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.premium-logistics-card:hover .card-glow {
+  opacity: 1;
+  width: 140px;
+  height: 140px;
+}
+
+.premium-logistics-card.active {
+  background: rgba(255, 255, 255, 0.95);
   border-color: transparent;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1), 0 0 0 2px var(--md-sys-color-primary);
 }
 
-.logistics-card.filter-btn.active .val,
-.logistics-card.filter-btn.active .lbl {
-  color: #ffffff !important;
+.premium-logistics-card .card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  color: var(--md-sys-color-primary);
+  transition: all 0.3s ease;
 }
+
+.premium-logistics-card .card-icon span {
+  font-size: 24px;
+}
+
+.premium-logistics-card.critical .card-icon { color: #dc2626; }
+.premium-logistics-card.alert .card-icon { color: #d97706; }
+.premium-logistics-card.expired .card-icon { color: #7f1d1d; }
+
+.premium-logistics-card .card-content {
+  text-align: center;
+  z-index: 2;
+}
+
+.premium-logistics-card .val {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--md-sys-color-on-surface);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.premium-logistics-card .lbl {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--md-sys-color-on-surface-variant);
+  letter-spacing: 0.1em;
+  opacity: 0.8;
+}
+
+.premium-logistics-card.critical .val { color: #dc2626; }
+.premium-logistics-card.alert .val { color: #d97706; }
+.premium-logistics-card.expired .val { color: #7f1d1d; }
 
 .lote-life-container {
   width: 100%;
@@ -9142,30 +9229,35 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
 }
 
 .muni-check-icon {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: #f1f5f9;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid #e2e8f0;
+  border: 2px solid #e2e8f0;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+  flex-shrink: 0;
 }
 
 .muni-check-icon span {
   font-size: 16px;
-  color: transparent;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  transform: scale(0.5);
   font-weight: 900;
+  color: #ffffff;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: scale(0) rotate(-45deg);
+  opacity: 0;
 }
+
+
 
 /* Checked State */
 .premium-muni-card input[type="checkbox"]:checked + .muni-card-content {
   background: #f0fdf4;
   border-color: #22c55e;
-  box-shadow: 0 8px 16px -4px rgba(34, 197, 94, 0.2);
+  box-shadow: 0 8px 16px -4px rgba(34, 197, 94, 0.25);
 }
 
 .premium-muni-card input[type="checkbox"]:checked + .muni-card-content .muni-title {
@@ -9173,15 +9265,15 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
 }
 
 .premium-muni-card input[type="checkbox"]:checked + .muni-card-content .muni-check-icon {
-  background: #22c55e;
-  border-color: #22c55e;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  border-color: #16a34a;
   transform: scale(1.1);
-  box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
 }
 
 .premium-muni-card input[type="checkbox"]:checked + .muni-card-content .muni-check-icon span {
-  color: white;
-  transform: scale(1);
+  transform: scale(1) rotate(0);
+  opacity: 1;
 }
 
 /* Colores personalizados añadidos manualmente (Tailwind patch) */
@@ -10531,6 +10623,56 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
   transform: translateY(0) scale(0.98) !important;
 }
 
+/* PREMIUM DELETE MODAL AND INLINE EDIT */
 
+.premium-delete-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 32px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: premiumModalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
 
+.modal-icon-warning {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: #fee2e2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+.modal-icon-warning span { font-size: 32px; }
 
+@keyframes premiumModalPop {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.inline-edit-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 2px solid var(--md-sys-color-primary-container);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--md-sys-color-on-surface);
+  background: #ffffff;
+  outline: none;
+  transition: all 0.2s ease;
+}
+.inline-edit-input:focus {
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.1);
+}
+
+.md-edit-btn.save-btn { background: #dcfce7; color: #166534; }
+.md-edit-btn.save-btn:hover { background: #22c55e !important; color: white !important; }
+
+.md-edit-btn.cancel-btn { background: #f1f5f9; color: #475569; }
+.md-edit-btn.cancel-btn:hover { background: #cbd5e1 !important; color: #1e293b !important; }

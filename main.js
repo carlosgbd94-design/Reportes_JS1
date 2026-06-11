@@ -7021,18 +7021,27 @@ async function loadBatchesForSession(user) {
 // ADMINISTRACIÓN DE LOTES
 // ==========================================
 
-function parseInputToMmmAa(str) {
-  if (!str) return "";
+function parseInputToIso(str) {
+  if (!str) return null;
   const s = str.trim().toUpperCase();
 
-  // Si ya tiene el formato correcto ENE-25
-  if (/^[A-Z]{3}-\d{2}$/.test(s)) return s;
-
-  // Intentar detectar formatos comunes: 28/06/26, 28-06-26, 2026-06-28
   let d = null;
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
-    d = new Date(s + "T00:00:00");
+  const monthsMap = {
+    'ENE': 0, 'FEB': 1, 'MAR': 2, 'ABR': 3, 'MAY': 4, 'JUN': 5,
+    'JUL': 6, 'AGO': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DIC': 11
+  };
+
+  // Si tiene el formato ENE-25 o JUL-29
+  if (/^[A-Z]{3}-\d{2}$/.test(s)) {
+    const parts = s.split('-');
+    const m = monthsMap[parts[0]];
+    let y = parseInt(parts[1]);
+    if (y < 100) y += 2000;
+    d = new Date(y, m + 1, 0); // Último día del mes
+  } else if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    return s;
   } else {
+    // Intentar detectar formatos comunes: 28/06/26, 28-06-26, 2026-06-28
     const parts = s.split(/[\/\-]/);
     if (parts.length === 3) {
       // Asumimos DD, MM, AA o AAAA
@@ -7085,24 +7094,31 @@ document.addEventListener("blur", (e) => {
   if (e.target.id === "loteCad") {
     const val = e.target.value;
     if (val) {
-      e.target.value = parseInputToMmmAa(val);
+      const isoDate = parseInputToIso(val);
+      if (isoDate) {
+        e.target.dataset.iso = isoDate;
+        e.target.value = formatToMmmAa(isoDate);
+      } else {
+        showToast("Formato de fecha inválido", false, "warn");
+      }
     }
   }
 }, true);
 
 
+window.BIOS_LIST = [
+  "BCG", "HEPATITIS B", "HEXAVALENTE", "DPT", "ROTAVIRUS",
+  "NEUMOCÓCICA 13", "NEUMOCÓCICA 20", "SRP", "SR", "VPH",
+  "VARICELA", "HEPATITIS A", "TD", "TDPA", "COVID-19", "INFLUENZA", "VSR"
+];
+window.LoteEditingIdx = null;
+
 async function activateLotesAdmin() {
   showOverlay("Cargando catálogo de lotes…", "Lotes");
   try {
-    // Cargar lista de biológicos para el select
-    const bios = [
-      "BCG", "HEPATITIS B", "HEXAVALENTE", "DPT", "ROTAVIRUS",
-      "NEUMOCÓCICA 13", "NEUMOCÓCICA 20", "SRP", "SR", "VPH",
-      "VARICELA", "HEPATITIS A", "TD", "TDPA", "COVID-19", "INFLUENZA", "VSR"
-    ];
     const sel = $("loteBio");
     if (sel) {
-      sel.innerHTML = bios.map(b => `<option value="${b}">${b}</option>`).join("");
+      sel.innerHTML = window.BIOS_LIST.map(b => `<option value="${b}">${b}</option>`).join("");
     }
 
     await refreshLotesAdmin();
@@ -7157,6 +7173,41 @@ function renderLotesAdmin() {
     const idx = BATCH_CATALOG.indexOf(item);
     const expiryInfo = getExpiryLogistics(item.caducidad);
 
+    if (window.LoteEditingIdx === idx) {
+      return `
+        <tr class="lote-row-edit" style="background: rgba(79, 140, 255, 0.05);">
+          <td>
+            <select id="editBio_${idx}" class="inline-edit-input">
+              ${window.BIOS_LIST.map(b => `<option value="${b}" ${item.biologico === b ? 'selected' : ''}>${b}</option>`).join("")}
+            </select>
+            <div style="font-size:10px; opacity:0.6; font-weight:600; margin-top:4px;">${escapeHtml(item.fecha_recepcion || "—")}</div>
+          </td>
+          <td>
+            <input type="text" id="editLote_${idx}" class="inline-edit-input" value="${escapeHtml(item.lote)}" oninput="this.value = this.value.toUpperCase()" />
+          </td>
+          <td>
+            <input type="text" id="editCad_${idx}" class="inline-edit-input" value="${escapeHtml(formatToMmmAa(item.caducidad))}" onblur="this.dataset.iso = parseInputToIso(this.value) || ''; this.value = formatToMmmAa(this.dataset.iso || this.value);" data-iso="${escapeHtml(item.caducidad)}" oninput="this.value = this.value.toUpperCase()" />
+          </td>
+          <td>
+            <div class="status-pill warn" title="En edición"><span class="material-symbols-rounded" style="font-size:16px">edit</span>EDICIÓN</div>
+          </td>
+          <td style="font-weight:800; text-transform:uppercase; font-size:11px; letter-spacing:0.02em; color: var(--md-sys-color-on-surface-variant); opacity: 0.7;">
+             ${escapeHtml(item.municipio)}
+          </td>
+          <td>
+            <div style="display:flex; gap: 4px; justify-content:center;">
+              <button type="button" class="md-edit-btn group save-btn" title="Guardar" onclick="saveLoteEdit(${idx})">
+                <span class="material-symbols-rounded">check</span>
+              </button>
+              <button type="button" class="md-edit-btn group cancel-btn" title="Cancelar" onclick="cancelLoteEdit()">
+                <span class="material-symbols-rounded">close</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
     return `
         <tr class="lote-row-${expiryInfo.class}">
           <td>
@@ -7180,12 +7231,17 @@ function renderLotesAdmin() {
              ${escapeHtml(item.municipio)}
           </td>
           <td>
-            <button type="button" class="md-delete-btn group" title="Eliminar este lote" onclick="deleteLoteRowAdmin(${idx})">
-              <svg viewBox="0 0 24 24" class="w-6 h-6">
-                <path class="trash-lid transition-transform duration-200 group-hover:-translate-y-1" fill="currentColor" d="M15 4V3H9v1H4v2h16V4h-5z" />
-                <path fill="currentColor" d="M5 21a2 2 0 002 2h10a2 2 0 002-2V7H5v14zM8 9h2v10H8V9zm4 0h2v10h-2V9zm4 0h2v10h-2V9z" />
-              </svg>
-            </button>
+            <div style="display:flex; gap: 4px; justify-content:center;">
+              <button type="button" class="md-edit-btn group" title="Editar lote" onclick="startLoteEdit(${idx})">
+                <span class="material-symbols-rounded" style="font-size: 20px;">edit</span>
+              </button>
+              <button type="button" class="md-delete-btn group" title="Eliminar este lote" onclick="openDeleteLoteModal(${idx})">
+                <svg viewBox="0 0 24 24" class="w-6 h-6">
+                  <path class="trash-lid transition-transform duration-200 group-hover:-translate-y-1" fill="currentColor" d="M15 4V3H9v1H4v2h16V4h-5z" />
+                  <path fill="currentColor" d="M5 21a2 2 0 002 2h10a2 2 0 002-2V7H5v14zM8 9h2v10H8V9zm4 0h2v10h-2V9zm4 0h2v10h-2V9z" />
+                </svg>
+              </button>
+            </div>
           </td>
         </tr>
       `;
@@ -7268,21 +7324,37 @@ function updateLogisticsSummary() {
   }, { expired: 0, critical: 0, alert: 0, safe: 0 });
 
   summaryDiv.innerHTML = `
-      <div class="logistics-card filter-btn ${BATCH_FILTER === 'all' ? 'active' : ''}" onclick="setLoteFilter('all')">
-        <span class="val">${BATCH_CATALOG.length}</span>
-        <span class="lbl">TOTAL LOTES</span>
+      <div class="premium-logistics-card filter-btn ${BATCH_FILTER === 'all' ? 'active' : ''}" onclick="setLoteFilter('all')">
+        <div class="card-glow"></div>
+        <div class="card-icon"><span class="material-symbols-rounded">inventory</span></div>
+        <div class="card-content">
+          <span class="val">${BATCH_CATALOG.length}</span>
+          <span class="lbl">TOTAL LOTES</span>
+        </div>
       </div>
-      <div class="logistics-card filter-btn ${BATCH_FILTER === 'critical' ? 'active' : ''}" onclick="setLoteFilter('critical')" style="--card-color: #dc2626">
-        <span class="val" style="color:#dc2626">${summary.critical}</span>
-        <span class="lbl">CRÍTICO</span>
+      <div class="premium-logistics-card critical filter-btn ${BATCH_FILTER === 'critical' ? 'active' : ''}" onclick="setLoteFilter('critical')">
+        <div class="card-glow" style="background: rgba(220, 38, 38, 0.4)"></div>
+        <div class="card-icon"><span class="material-symbols-rounded">warning</span></div>
+        <div class="card-content">
+          <span class="val">${summary.critical}</span>
+          <span class="lbl">CRÍTICO</span>
+        </div>
       </div>
-      <div class="logistics-card filter-btn ${BATCH_FILTER === 'alert' ? 'active' : ''}" onclick="setLoteFilter('alert')" style="--card-color: #d97706">
-        <span class="val" style="color:#d97706">${summary.alert}</span>
-        <span class="lbl">EN ALERTA</span>
+      <div class="premium-logistics-card alert filter-btn ${BATCH_FILTER === 'alert' ? 'active' : ''}" onclick="setLoteFilter('alert')">
+        <div class="card-glow" style="background: rgba(217, 119, 6, 0.4)"></div>
+        <div class="card-icon"><span class="material-symbols-rounded">notifications_active</span></div>
+        <div class="card-content">
+          <span class="val">${summary.alert}</span>
+          <span class="lbl">EN ALERTA</span>
+        </div>
       </div>
-      <div class="logistics-card filter-btn ${BATCH_FILTER === 'expired' ? 'active' : ''}" onclick="setLoteFilter('expired')" style="--card-color: #7f1d1d">
-        <span class="val" style="color:#7f1d1d">${summary.expired}</span>
-        <span class="lbl">VENCIDOS</span>
+      <div class="premium-logistics-card expired filter-btn ${BATCH_FILTER === 'expired' ? 'active' : ''}" onclick="setLoteFilter('expired')">
+        <div class="card-glow" style="background: rgba(127, 29, 29, 0.4)"></div>
+        <div class="card-icon"><span class="material-symbols-rounded">dangerous</span></div>
+        <div class="card-content">
+          <span class="val">${summary.expired}</span>
+          <span class="lbl">VENCIDOS</span>
+        </div>
       </div>
     `;
 }
@@ -7302,18 +7374,17 @@ document.addEventListener("click", (e) => {
   }
 });
 
-$("btnAddLoteRow")?.addEventListener("click", () => {
+$("btnAddLoteRow")?.addEventListener("click", async () => {
   const biologico = $("loteBio").value;
   const rawLote = $("loteTxt").value.trim().toUpperCase();
   const rawCad = $("loteCad").value.trim().toUpperCase();
 
-  // Forzar formateo final por si no se disparó el blur
+  // Obtener iso desde dataset o forzar parseo
+  const caducidad = $("loteCad").dataset.iso || parseInputToIso(rawCad);
   const lote = rawLote;
-  const caducidad = parseInputToMmmAa(rawCad);
-
   const fecha_recepcion = $("loteRec").value;
 
-  // RECOLECCIÓN MULTIMUNICIPIO (Lógica individual explícita)
+  // RECOLECCIÓN MULTIMUNICIPIO
   const selectedMunis = Array.from(document.querySelectorAll(".loteMuniChk:checked")).map(cb => cb.value);
 
   if (!lote || !caducidad) {
@@ -7326,59 +7397,149 @@ $("btnAddLoteRow")?.addEventListener("click", () => {
     return;
   }
 
-  // Validar formato caducidad MMM-AA despues del parseo
-  if (!/^[A-Z]{3}-\d{2}$/.test(caducidad)) {
-    showToast("Formato de caducidad inválido. Usa ENE-25, JUL-27, etc.", false, "warn");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(caducidad)) {
+    showToast("Formato de caducidad inválido.", false, "warn");
     return;
   }
 
   let addedCount = 0;
+  let newLotes = [];
   selectedMunis.forEach(muni => {
     // VALIDACIÓN DE DUPLICADOS (Por Municipio)
     const exists = BATCH_CATALOG.find(x => x.biologico === biologico && x.lote === lote && x.municipio === muni);
     if (!exists) {
-      BATCH_CATALOG.push({ biologico, lote, caducidad, fecha_recepcion, municipio: muni });
+      const newLoteObj = { biologico, lote, caducidad, fecha_recepcion, municipio: muni };
+      BATCH_CATALOG.push(newLoteObj);
+      newLotes.push(newLoteObj);
       addedCount++;
     }
   });
 
   if (addedCount > 0) {
+    // Autoguardar los lotes nuevos a Supabase
+    await AppService.runCapture({
+      btnId: "btnAddLoteRow",
+      title: "Registrando Lotes",
+      msg: "Sincronizando lote en el catálogo...",
+      successMsg: selectedMunis.length > 1 ? `${addedCount} municipios asignados y guardados al lote` : "Lote registrado y guardado correctamente",
+      eventTitle: "Alta de Lote(s)",
+      eventMsg: "Lotes registrados y guardados en Supabase.",
+      action: async () => {
+        // AppService.call expects { lotes: [...] } for saving
+        await AppService.call("savelotes", { lotes: newLotes });
+      }
+    });
+
     renderLotesAdmin();
-    showToast(selectedMunis.length > 1 ? `${addedCount} municipios asignados al lote` : "Lote agregado correctamente");
   } else {
     showToast("El lote ya existe en los municipios seleccionados", false, "warn");
   }
 
-  // Limpiar campos parciales y desmarcar
+  // Limpiar campos
   $("loteTxt").value = "";
   $("loteCad").value = "";
+  $("loteCad").removeAttribute("data-iso");
   $("loteRec").value = "";
 
   document.querySelectorAll(".loteMuniChk").forEach(chk => chk.checked = false);
-
   $("loteTxt").focus();
 });
 
-window.deleteLoteRowAdmin = function (idx) {
-  BATCH_CATALOG.splice(idx, 1);
+window.startLoteEdit = function(idx) {
+  window.LoteEditingIdx = idx;
   renderLotesAdmin();
 }
 
-$("btnSaveLotesAdmin")?.addEventListener("click", async () => {
-  const lotes = BATCH_CATALOG || [];
-  if (!lotes.length) return showToast("No hay lotes para guardar", false, "warn");
+window.cancelLoteEdit = function() {
+  window.LoteEditingIdx = null;
+  renderLotesAdmin();
+}
 
+window.saveLoteEdit = async function(idx) {
+  const item = BATCH_CATALOG[idx];
+  if (!item) return;
+
+  const bioInput = document.getElementById(`editBio_${idx}`);
+  const loteInput = document.getElementById(`editLote_${idx}`);
+  const cadInput = document.getElementById(`editCad_${idx}`);
+
+  const rawLote = loteInput.value.trim().toUpperCase();
+  const rawCad = cadInput.dataset.iso || parseInputToIso(cadInput.value.trim().toUpperCase());
+
+  if (!rawLote || !rawCad) {
+    showToast("Lote y caducidad son obligatorios", false, "warn");
+    return;
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(rawCad)) {
+    showToast("Formato de caducidad inválido.", false, "warn");
+    return;
+  }
+
+  // Update object
+  item.biologico = bioInput.value;
+  item.lote = rawLote;
+  item.caducidad = rawCad;
+  
+  window.LoteEditingIdx = null;
+  
   await AppService.runCapture({
-    btnId: "btnSaveLotesAdmin",
-    title: "Guardando",
-    msg: "Sincronizando catálogo de lotes...",
-    successMsg: "Catálogo guardado correctamente",
-    eventTitle: "Administración de Lotes",
-    eventMsg: "Catálogo actualizado globalmente.",
-    mutation: { touchToday: true },
-    action: () => AppService.call("saveLotes", { lotes })
+    btnId: `editBio_${idx}`,
+    title: "Actualizando",
+    msg: "Sincronizando cambios del lote...",
+    successMsg: "Lote actualizado correctamente",
+    eventTitle: "Edición de Lote",
+    eventMsg: "Lote editado y guardado en Supabase.",
+    action: async () => {
+      // Assuming saveLotes replaces or upserts the catalog
+      await AppService.call("savelotes", { lotes: BATCH_CATALOG });
+    }
   });
-});
+
+  renderLotesAdmin();
+}
+
+let pendingDeleteIdx = null;
+
+window.openDeleteLoteModal = function(idx) {
+  const item = BATCH_CATALOG[idx];
+  if(!item) return;
+  pendingDeleteIdx = idx;
+  
+  const msgEl = document.getElementById("deleteModalMsg");
+  if(msgEl) {
+    msgEl.innerHTML = `Estás a punto de eliminar el lote <strong>${item.lote}</strong> del biológico <strong>${item.biologico}</strong> en <strong>${item.municipio}</strong>. Esta acción no se puede deshacer.`;
+  }
+  
+  const modal = document.getElementById("premiumDeleteModal");
+  if(modal) {
+    modal.style.display = 'flex'; // Overlay div display
+  }
+}
+
+window.closeDeleteModal = function() {
+  pendingDeleteIdx = null;
+  const modal = document.getElementById("premiumDeleteModal");
+  if(modal) modal.style.display = 'none';
+}
+
+window.confirmDeleteLote = async function () {
+  if (pendingDeleteIdx === null) return;
+  const idx = pendingDeleteIdx;
+  const item = BATCH_CATALOG[idx];
+  
+  closeDeleteModal();
+
+  BATCH_CATALOG.splice(idx, 1);
+  
+  await AppService.runCapture({
+    title: "Eliminando",
+    msg: "Actualizando catálogo...",
+    successMsg: "Lote eliminado correctamente",
+    action: () => AppService.call("savelotes", { lotes: BATCH_CATALOG })
+  });
+  
+  renderLotesAdmin();
+}
 
 // ==========================================
 // CAPTURA DINÁMICA DE BIOLÓGICOS (SR)
