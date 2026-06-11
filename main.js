@@ -5982,7 +5982,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
       case "requestpasswordreset": {
         const targetEmail = payload.email || payload.usuario || "";
         const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
-          redirectTo: 'https://carlosgbd94-design.github.io/Reportes_JS1/reset.html'
+          redirectTo: 'https://carlosgbd94-design.github.io/SIREVAQ/reset.html'
         });
         if (error) throw error;
         return { ok: true };

@@ -17,7 +17,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const gmailUser = Deno.env.get('GMAIL_USER') ?? ''
     const gmailPassword = Deno.env.get('GMAIL_APP_PASSWORD') ?? ''
-    const platformUrl = Deno.env.get('PLATFORM_URL') ?? 'https://carlosgbd94-design.github.io/Reportes_JS1/'
+    const platformUrl = Deno.env.get('PLATFORM_URL') ?? 'https://carlosgbd94-design.github.io/SIREVAQ/'
 
     if (!supabaseServiceKey) {
       throw new Error('Falta SUPABASE_SERVICE_ROLE_KEY')
