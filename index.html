@@ -477,61 +477,35 @@
             <span class="material-symbols-rounded ml-2" id="btnLoginIconMobile">login</span>
           </button>
 
-          <!-- ✨ PREMIUM BIOMETRIC DIVIDER + BUTTON -->
-          <div id="btnBiometricLogin" style="display: none; flex-direction: column; align-items: center; width: 100%; margin-top: 20px; gap: 0;">
+          <!-- BIOMETRIC LOGIN -->
+          <div id="btnBiometricLogin" style="display: none; flex-direction: column; align-items: center; width: 100%; gap: 0; margin-top: 16px;">
 
-            <!-- Divider "o continúa con" -->
-            <div style="display: flex; align-items: center; width: 100%; gap: 12px; margin-bottom: 16px;">
-              <div style="flex: 1; height: 1px; background: linear-gradient(to right, transparent, rgba(0,51,102,0.12));"></div>
-              <span style="font-size: 10px; font-weight: 800; letter-spacing: 0.15em; color: rgba(0,51,102,0.35); text-transform: uppercase; white-space: nowrap;">o continúa con</span>
-              <div style="flex: 1; height: 1px; background: linear-gradient(to left, transparent, rgba(0,51,102,0.12));"></div>
+            <!-- Divider -->
+            <div style="display: flex; align-items: center; gap: 16px; width: 100%; margin-bottom: 16px;">
+              <div style="flex: 1; height: 1px; background: rgba(0,51,102,0.1);"></div>
+              <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: rgba(0,51,102,0.3); text-transform: uppercase;">o</span>
+              <div style="flex: 1; height: 1px; background: rgba(0,51,102,0.1);"></div>
             </div>
 
-            <!-- Biometric Pill Button -->
+            <!-- Clean outline button -->
             <button type="button" id="btnBiometricLoginTrigger"
               style="
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 10px;
-                width: 100%;
-                height: 56px;
-                border-radius: 18px;
-                border: 1.5px solid rgba(99, 102, 241, 0.25);
-                background: linear-gradient(135deg, rgba(238,242,255,0.9) 0%, rgba(224,231,255,0.6) 100%);
-                backdrop-filter: blur(8px);
-                -webkit-backdrop-filter: blur(8px);
-                box-shadow: 0 4px 16px rgba(99, 102, 241, 0.10), inset 0 1px 1px rgba(255,255,255,0.8);
+                display: flex; align-items: center; justify-content: center; gap: 10px;
+                width: 100%; height: 56px;
+                border-radius: 16px;
+                border: 1.5px solid rgba(0,51,102,0.18);
+                background: transparent;
+                color: #003366;
                 cursor: pointer;
-                transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-                position: relative;
-                overflow: hidden;
+                font-family: inherit;
+                transition: background 0.18s ease, border-color 0.18s ease;
               "
-              onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 8px 24px rgba(99,102,241,0.20), inset 0 1px 1px rgba(255,255,255,0.9)';"
-              onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 16px rgba(99,102,241,0.10), inset 0 1px 1px rgba(255,255,255,0.8)';"
-              onmousedown="this.style.transform='scale(0.98)';"
-              onmouseup="this.style.transform='scale(1.02)';">
-
-              <!-- Fingerprint Icon -->
-              <div style="
-                width: 36px; height: 36px;
-                border-radius: 12px;
-                background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
-                display: flex; align-items: center; justify-content: center;
-                box-shadow: 0 4px 12px rgba(99,102,241,0.35);
-                flex-shrink: 0;
-              ">
-                <span class="material-symbols-rounded" style="font-size: 20px; color: white; font-variation-settings: 'FILL' 1;">fingerprint</span>
-              </div>
-
-              <!-- Text -->
-              <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2;">
-                <span style="font-size: 11px; font-weight: 900; color: #4338ca; letter-spacing: 0.04em; text-transform: uppercase;">Acceso Biométrico</span>
-                <span style="font-size: 9.5px; font-weight: 600; color: rgba(99,102,241,0.6); letter-spacing: 0.02em;">Passkey · Touch ID · Face ID</span>
-              </div>
-
-              <!-- Arrow -->
-              <span class="material-symbols-rounded" style="font-size: 18px; color: rgba(99,102,241,0.4); margin-left: auto; margin-right: 4px;">arrow_forward_ios</span>
+              onmouseover="this.style.background='rgba(0,51,102,0.04)'; this.style.borderColor='rgba(0,51,102,0.32)';"
+              onmouseout="this.style.background='transparent'; this.style.borderColor='rgba(0,51,102,0.18)';"
+              onmousedown="this.style.background='rgba(0,51,102,0.08)';"
+              onmouseup="this.style.background='rgba(0,51,102,0.04)';">
+              <span class="material-symbols-rounded" style="font-size: 22px; color: rgba(0,51,102,0.55); font-variation-settings: 'FILL' 1;">fingerprint</span>
+              <span style="font-size: 13px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(0,51,102,0.65);">Acceso Biométrico</span>
             </button>
           </div>
         </form>
