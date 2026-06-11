@@ -9245,6 +9245,7 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
     background-color: #ffffff !important;
     animation: none !important;
     transform: none !important;
+    overflow-y: auto !important;
   }
 
   #desktopSplitLeft {
@@ -9255,7 +9256,8 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
   #cardLogin {
     width: 45% !important;
     max-width: none !important;
-    height: 100vh !important;
+    min-height: 100vh !important;
+    height: auto !important;
     border-radius: 0 !important;
     box-shadow: none !important;
     background-color: #ffffff !important;
@@ -9267,6 +9269,8 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
+    padding: 2rem 0 !important;
+    box-sizing: border-box !important;
   }
 
   #cardLoginContent {
@@ -9300,11 +9304,13 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
     display: flex !important;
     justify-content: center !important;
     width: 100% !important;
+    margin-bottom: 1rem !important;
   }
 
   #desktopWelcome {
     display: block !important;
     text-align: center !important;
+    margin-bottom: 1rem !important;
   }
 
   #btnTextDesktop {
@@ -9331,13 +9337,16 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
     flex-direction: row !important;
     justify-content: space-between !important;
     margin-top: -0.5rem !important;
-    margin-bottom: 2rem !important;
+    margin-bottom: 1.25rem !important;
     width: 100% !important;
   }
 
   #btnLogin { order: 3 !important; }
 
-  #btnBiometricLogin { order: 4 !important; }
+  #btnBiometricLogin { 
+    order: 4 !important; 
+    margin-top: 0.75rem !important;
+  }
 
   /* Botón "Olvidé mi contraseña" en desktop */
   #btnForgotPassword {
@@ -9474,13 +9483,59 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
   #loginFooter {
     border-top: 1px solid #f1f5f9 !important;
     text-align: center !important;
-    margin-top: 2rem !important;
+    margin-top: 1rem !important;
   }
 
   #loginFooter p {
     color: #94a3b8 !important;
     font-size: 0.85rem !important;
     letter-spacing: 0.1em !important;
+  }
+
+  /* Compact Login overrides for desktop viewport height constraint */
+  #desktopWelcome h1 {
+    font-size: 1.8rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  #desktopWelcome p {
+    font-size: 0.95rem !important;
+  }
+
+  .modern-input-group {
+    height: 48px !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  .modern-input-group input,
+  .modern-input-group input:focus,
+  .modern-input-group input:active,
+  .modern-input-group input:-webkit-autofill,
+  .modern-input-group input:-webkit-autofill:hover,
+  .modern-input-group input:-webkit-autofill:focus {
+    padding-left: 3rem !important;
+    font-size: 14px !important;
+  }
+
+  .modern-input-group span.input-icon {
+    font-size: 20px !important;
+  }
+
+  #togglePassword {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  #btnLogin {
+    height: 48px !important;
+  }
+
+  #btnBiometricLoginTrigger {
+    height: 48px !important;
+  }
+
+  #btnBiometricLogin {
+    margin-top: 0.5rem !important;
   }
 }
 
@@ -9489,6 +9544,25 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
   .split-desktop-left { display: none !important; }
   .desktop-only        { display: none !important; }
   .desktop-only-block  { display: none !important; }
+
+  #loginWrapper {
+    padding: 1rem !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+  }
+
+  #cardLogin {
+    width: 100% !important;
+    max-width: 420px !important;
+    margin: auto !important;
+  }
+
+  #cardLoginContent {
+    padding: 2.5rem 1.5rem !important;
+  }
 }
 
 /* Input box global: blindaje anti-autofill de Chrome */
@@ -10341,13 +10415,120 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
 }
 
 /* ===== FIX BIOMETRIC BUTTONS HOVER STYLES ===== */
-#btnBiometricLogin:hover, #btnRegisterPasskey:hover {
-  background-color: #4f46e5 !important; /* Indigo 600 */
-  color: #ffffff !important;
+#btnBiometricLoginTrigger:hover {
+  background-color: rgba(0, 51, 102, 0.06) !important;
+  color: #003366 !important;
+  border-color: rgba(0, 51, 102, 0.35) !important;
+  transition: all 0.25s ease !important;
 }
 
-#btnBiometricLogin:hover span, #btnRegisterPasskey:hover span {
-  color: #ffffff !important;
+#btnBiometricLoginTrigger:hover span {
+  color: rgba(0, 51, 102, 0.75) !important;
+}
+
+#btnRegisterPasskey:hover {
+  background-color: rgba(79, 70, 229, 0.1) !important;
+  color: #4f46e5 !important;
+  transition: all 0.25s ease !important;
+}
+
+#btnRegisterPasskey:hover span {
+  color: #4f46e5 !important;
+}
+
+/* ===== 💎 SENIOR PREMIUM ANIMATION ENGINE 💎 ===== */
+
+/* Dropdown Animations (Profile, Notifications, Explorer) */
+#profileDropdown:not(.hidden),
+#topNotifDropdown:not([style*="display: none"]),
+#archivosDropdown:not([style*="display: none"]),
+.topNotifDropdown:not([style*="display: none"]) {
+  animation: premiumDropdownIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  transform-origin: top right;
+}
+
+@keyframes premiumDropdownIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Modal and Overlay Backdrop Animations */
+.overlay.show,
+.modal-backdrop.show,
+#uploadFilesOverlay.show,
+#modalUploadCSV.show,
+#forgotOverlay.show,
+#passwordOverlay.show,
+#liveViewOverlay.show {
+  animation: premiumOverlayFadeIn 0.3s ease-out forwards !important;
+  display: flex !important; /* Ensure it is flex */
+}
+
+@keyframes premiumOverlayFadeIn {
+  0% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    background-color: rgba(0, 0, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    backdrop-filter: blur(12px);
+    background-color: rgba(15, 23, 42, 0.3);
+  }
+}
+
+/* Modal Content/Card Scale-in Animations */
+.overlay.show .modalContainer,
+.overlay.show .GlassContainer,
+#modalUploadCSV.show .GlassContainer,
+#uploadFilesOverlay.show .modalContainer,
+#forgotOverlay.show .GlassContainer,
+#passwordOverlay.show .GlassContainer,
+#liveViewOverlay.show .GlassContainer {
+  animation: premiumModalScaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+}
+
+@keyframes premiumModalScaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(15px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Hover Micro-interactions for Header Buttons */
+.header-action-btn {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease !important;
+}
+
+.header-action-btn:hover {
+  transform: scale(1.1) !important;
+}
+
+.header-action-btn:active {
+  transform: scale(0.95) !important;
+}
+
+/* Hover transitions for Profile Button */
+#btnProfileToggle {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+#btnProfileToggle:hover {
+  transform: translateY(-1px) scale(1.02) !important;
+}
+
+#btnProfileToggle:active {
+  transform: translateY(0) scale(0.98) !important;
 }
 
 

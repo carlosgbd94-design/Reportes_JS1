@@ -8516,52 +8516,38 @@ function paintStatusChips(status) {
         const isConsOk = details.cons_ok >= details.cons_expected;
         const isPedidoOk = !details.is_pedido_required || details.pedido_mensual;
 
-        const totalExpected = details.bio_expected + details.cons_expected;
-        const totalCompleted = details.bio_ok + details.cons_ok;
+        // Simplify: Only check if there are pending captures to perform right now.
+        const hasPendingBio = details.bio_expected > details.bio_ok;
+        const hasPendingCons = details.cons_expected > details.cons_ok;
+        const hasPendingPedido = details.is_pedido_required && !details.pedido_mensual;
 
-        // Detect if there are prior week omissions vs current week pending
-        const todayObj = new Date();
-        const dow = todayObj.getDay();
-        
-        let hasPriorOmission = false;
-        let pendingThisWeek = false;
+        const isAnyPending = hasPendingBio || hasPendingCons || hasPendingPedido;
 
-        // Consumibles expectation logic
-        if (details.cons_expected > 0) {
-          const missingCons = details.cons_expected - details.cons_ok;
-          if (missingCons > 0) {
-            // If today is Thursday (dow === 4) and we haven't captured, it's pending this week.
-            // If missing > 1, or if it is not Thursday, it's a permanent prior omission.
-            if (dow === 4 && missingCons === 1) {
-              pendingThisWeek = true;
-            } else {
-              hasPriorOmission = true;
-            }
-          }
-        }
-
-        // Biológicos expectation logic
-        if (details.bio_expected > 0) {
-          const missingBio = details.bio_expected - details.bio_ok;
-          if (missingBio > 0) {
-            // If today is Friday (dow === 5) or Thursday (dow === 4, window open) and missing is 1, it's pending.
-            // Otherwise, it's a permanent prior omission.
-            if ((dow === 4 || dow === 5) && missingBio === 1) {
-              pendingThisWeek = true;
-            } else {
-              hasPriorOmission = true;
-            }
-          }
-        }
-
-        if (!isPedidoOk) {
-          // Pedido is monthly. If required and not captured, it's pending or omitted
-          hasPriorOmission = true; 
-        }
-
-        // Render appropriate notification and badge based on the exact status
-        if (isBioOk && isConsOk && isPedidoOk) {
-          // Status: Perfect Compliance
+        if (isAnyPending) {
+          // Status: Pending for the current active week/month capture
+          statusBadgeHtml = `
+            <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/20">
+              <span class="status-dot bg-amber-400 animate-pulse"></span>
+              <span>Pendiente</span>
+            </div>
+          `;
+          notifBoxHtml = `
+            <div class="compliance-notif-box pending">
+              <span class="material-symbols-rounded">schedule</span>
+              <div class="compliance-notif-text-container">
+                <span class="compliance-notif-title">Pendiente</span>
+                <span class="compliance-notif-desc">Captura de esta semana</span>
+              </div>
+            </div>
+          `;
+          
+          const pendingList = [];
+          if (hasPendingBio) pendingList.push(`Biológicos (${details.bio_ok}/${details.bio_expected})`);
+          if (hasPendingCons) pendingList.push(`Consumibles (${details.cons_ok}/${details.cons_expected})`);
+          if (hasPendingPedido) pendingList.push("Pedido Mensual");
+          upToDateText = `\n\n⚠️ Reportes pendientes a la fecha: ${pendingList.join(", ")}.`;
+        } else {
+          // Status: Perfect Compliance (No pending reports in active windows)
           statusBadgeHtml = `
             <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
               <span class="status-dot bg-emerald-400 animate-pulse"></span>
@@ -8578,47 +8564,6 @@ function paintStatusChips(status) {
             </div>
           `;
           upToDateText = "";
-        } else if (hasPriorOmission) {
-          // Status: Omission Detected (Permanent score impact)
-          statusBadgeHtml = `
-            <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-red-500/10 text-red-300 border border-red-500/20">
-              <span class="status-dot bg-red-500 animate-ping"></span>
-              <span>Omisión</span>
-            </div>
-          `;
-          const pendingList = [];
-          if (!isBioOk) pendingList.push(`Biológicos (${details.bio_ok}/${details.bio_expected})`);
-          if (!isConsOk) pendingList.push(`Consumibles (${details.cons_ok}/${details.cons_expected})`);
-          if (!isPedidoOk) pendingList.push("Pedido Mensual");
-
-          notifBoxHtml = `
-            <div class="compliance-notif-box omission">
-              <span class="material-symbols-rounded">warning</span>
-              <div class="compliance-notif-text-container">
-                <span class="compliance-notif-title">Omisión</span>
-                <span class="compliance-notif-desc">Falta reporte previo</span>
-              </div>
-            </div>
-          `;
-          upToDateText = `\n\n⚠️ Reportes omitidos/pendientes: ${pendingList.join(", ")}.`;
-        } else {
-          // Status: Pending for the current active week
-          statusBadgeHtml = `
-            <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/20">
-              <span class="status-dot bg-amber-400 animate-pulse"></span>
-              <span>Pendiente</span>
-            </div>
-          `;
-          notifBoxHtml = `
-            <div class="compliance-notif-box pending">
-              <span class="material-symbols-rounded">schedule</span>
-              <div class="compliance-notif-text-container">
-                <span class="compliance-notif-title">Pendiente</span>
-                <span class="compliance-notif-desc">Captura de esta semana</span>
-              </div>
-            </div>
-          `;
-          upToDateText = "\n\n⚠️ Tienes entregas pendientes correspondientes a la semana en curso.";
         }
       }
       tooltipText += upToDateText;
