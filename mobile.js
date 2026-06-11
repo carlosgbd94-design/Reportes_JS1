@@ -310,11 +310,16 @@
 
     // ─── LIFECYCLE OBSERVER ───
 
+    let _observerRafId = null;
     const observer = new MutationObserver(() => {
-        syncDockLifecycle();
-        if (document.getElementById('mobileCaptureDock')) syncDockState();
-        positionAnchoredCard('btnProfileToggle', 'profileDropdown');
-        positionAnchoredCard('glassBtnNotifs', 'topNotifDropdown');
+        if (_observerRafId) return; // debounce: skip if already queued
+        _observerRafId = requestAnimationFrame(() => {
+            _observerRafId = null;
+            syncDockLifecycle();
+            if (document.getElementById('mobileCaptureDock')) syncDockState();
+            positionAnchoredCard('btnProfileToggle', 'profileDropdown');
+            positionAnchoredCard('glassBtnNotifs', 'topNotifDropdown');
+        });
     });
 
     observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['style', 'class'] });
@@ -385,10 +390,16 @@
         setupWobbleTriggers();
     }, 500);
 
-    // Also observe for new buttons
+    // Also observe for new buttons — debounced to prevent infinite loop
+    // (setupLiquidGlassPro injects DOM nodes which would re-trigger this observer)
+    let _glassObserverRafId = null;
     const glassObserver = new MutationObserver(() => {
-        setupLiquidGlassPro();
-        setupWobbleTriggers();
+        if (_glassObserverRafId) return;
+        _glassObserverRafId = requestAnimationFrame(() => {
+            _glassObserverRafId = null;
+            setupLiquidGlassPro();
+            setupWobbleTriggers();
+        });
     });
     glassObserver.observe(document.body, { childList: true, subtree: true });
 

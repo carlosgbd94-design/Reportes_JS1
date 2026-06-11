@@ -3,6 +3,36 @@
  * All rules must start with .touch-ui
  */
 
+/* ═══════════════════════════════════════════════════════════════════════
+   ANTI-FLICKER / ANTI-REPAINT RULES (Mobile Critical)
+   Fixes constant screen flickering caused by:
+   1. Background animations forcing full GPU repaints
+   2. will-change on non-compositing properties
+   3. Expensive SVG backdrop-filter in dock indicator
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Disable background twinkle animation — it's the primary flicker cause on mobile.
+      The animation cycles opacity+scale on 5 elements with will-change, creating
+      constant GPU repaint layers that overwhelm mobile graphics chips. */
+.touch-ui .tech-node-light {
+    animation: none !important;
+    will-change: auto !important;
+    opacity: 0.08 !important;
+    transform: translate(-50%, -50%) !important;
+}
+
+/* 2. Contain the background div so its repaints don't escape to the whole viewport */
+.touch-ui #mainAppBackground {
+    contain: strict !important;
+}
+
+/* 3. Remove will-change from elements that are not actively transitioning on mobile
+      (keeps GPU compositor layers minimal) */
+.touch-ui .dock-indicator {
+    will-change: left, opacity !important; /* Only what actually animates */
+}
+
+
 /* A. Touch targets - Minimum 44px-48px for interactive elements */
 .touch-ui button,
 .touch-ui .header-action-btn,
@@ -375,17 +405,17 @@
     z-index: 3 !important;
     pointer-events: none !important;
 
-    /* THE KEY: backdrop-filter with SVG URL reference */
-    backdrop-filter: url(#dockGlassFilter) !important;
-    -webkit-backdrop-filter: url(#dockGlassFilter) !important;
+    /* Simplified glass effect - SVG URL backdrop-filter causes repaint loops on mobile */
+    backdrop-filter: blur(12px) saturate(1.4) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(1.4) !important;
 
     /* Physical Glass Treatment */
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    background: rgba(255, 255, 255, 0.18) !important;
+    border: 1px solid rgba(255, 255, 255, 0.35) !important;
     box-shadow:
-        0 10px 30px rgba(0, 0, 0, 0.5),
+        0 10px 30px rgba(0, 0, 0, 0.4),
         inset 0 2px 5px rgba(255, 255, 255, 0.3),
-        inset 0 0 20px rgba(255, 255, 255, 0.1) !important;
+        inset 0 0 20px rgba(255, 255, 255, 0.08) !important;
 }
 
 /* Dock Items */
@@ -1122,8 +1152,8 @@
 /* 8. Premium Mobile Login Redesign (Light Spectral Glass & High Contrast) */
 .touch-ui #loginWrapper {
     background: rgba(241, 245, 249, 0.45) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
 }
 .touch-ui #cardLogin {
     max-width: 340px !important;
