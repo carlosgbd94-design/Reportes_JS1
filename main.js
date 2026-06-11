@@ -14799,12 +14799,12 @@ function getSemaforoStatus(val) {
 
 function renderLiveCharts(tipo, leftData, rightData) {
   try {
-    const ctxLeft = $("liveChartLeft")?.getContext("2d");
-    const ctxRight = $("liveChartRight")?.getContext("2d");
+    const ctxLeft = $("liveChartLeft");
+    const ctxRight = $("liveChartRight");
     if (!ctxLeft || !ctxRight) return;
 
-    if (CHART_SEM) CHART_SEM.destroy();
-    if (CHART_CAD) CHART_CAD.destroy();
+    if (CHART_SEM) { CHART_SEM.dispose(); CHART_SEM = null; }
+    if (CHART_CAD) { CHART_CAD.dispose(); CHART_CAD = null; }
 
     const setDOM = (kL, tL, dL, kR, tR, dR) => {
       if ($("liveChartLeftKicker")) $("liveChartLeftKicker").textContent = kL;
@@ -14820,22 +14820,33 @@ function renderLiveCharts(tipo, leftData, rightData) {
       let sem = leftData || { pronto: 0, normal: 0, lejana: 0 };
       let cad = rightData || { m3: 0, m6: 0, m12: 0, more: 0 };
 
-      CHART_SEM = new Chart(ctxLeft, {
-        type: 'doughnut',
-        data: {
-          labels: ['Próxima', 'Media', 'Vigente'],
-          datasets: [{ data: [sem.pronto, sem.normal, sem.lejana], backgroundColor: ['#f87171', '#fbbf24', '#4ade80'], borderWidth: 0, hoverOffset: 4 }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 8, font: { size: 9, weight: '700' } } } } }
+      CHART_SEM = echarts.init(ctxLeft);
+      CHART_SEM.setOption({
+        animationDuration: 800, animationEasing: 'cubicOut',
+        tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
+        series: [{
+          type: 'pie', radius: ['60%', '90%'], avoidLabelOverlap: false,
+          itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+          label: { show: false },
+          data: [
+            { value: sem.pronto, name: 'Próxima', itemStyle: { color: '#f87171' } },
+            { value: sem.normal, name: 'Media', itemStyle: { color: '#fbbf24' } },
+            { value: sem.lejana, name: 'Vigente', itemStyle: { color: '#4ade80' } }
+          ]
+        }]
       });
 
-      CHART_CAD = new Chart(ctxRight, {
-        type: 'bar',
-        data: {
-          labels: ['< 3m', '3-6m', '6-12m', '> 12m'],
-          datasets: [{ label: 'Lotes', data: [cad.m3, cad.m6, cad.m12, cad.more], backgroundColor: '#3b82f6', borderRadius: 6 }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 8 } }, grid: { display: false } }, x: { ticks: { font: { size: 8, weight: '700' } }, grid: { display: false } } }, plugins: { legend: { display: false } } }
+      CHART_CAD = echarts.init(ctxRight);
+      CHART_CAD.setOption({
+        animationDuration: 800, animationEasing: 'cubicOut',
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
+        grid: { left: '0%', right: '0%', top: '15%', bottom: '5%', containLabel: true },
+        xAxis: { type: 'category', data: ['< 3m', '3-6m', '6-12m', '> 12m'], axisLabel: { fontSize: 9, fontWeight: 'bold', color: '#64748b' }, axisLine: { show: false }, axisTick: { show: false } },
+        yAxis: { type: 'value', show: false },
+        series: [{
+          name: 'Lotes', type: 'bar', data: [cad.m3, cad.m6, cad.m12, cad.more],
+          itemStyle: { color: '#3b82f6', borderRadius: [4, 4, 0, 0] }
+        }]
       });
 
     } else if (tipo === "BIO") {
@@ -14844,24 +14855,35 @@ function renderLiveCharts(tipo, leftData, rightData) {
       let pd = leftData?.pedido || 0;
       let top = rightData || [];
 
-      CHART_SEM = new Chart(ctxLeft, {
-        type: 'doughnut',
-        data: {
-          labels: ['Existencia Actual', 'Pedido Solicitado'],
-          datasets: [{ data: [ex, pd], backgroundColor: ['#94a3b8', '#8b5cf6'], borderWidth: 0, hoverOffset: 4 }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 8, font: { size: 9, weight: '700' } } } } }
+      CHART_SEM = echarts.init(ctxLeft);
+      CHART_SEM.setOption({
+        animationDuration: 800, animationEasing: 'cubicOut',
+        tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
+        series: [{
+          type: 'pie', radius: ['60%', '90%'], avoidLabelOverlap: false,
+          itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+          label: { show: false },
+          data: [
+            { value: ex, name: 'Existencia Actual', itemStyle: { color: '#94a3b8' } },
+            { value: pd, name: 'Pedido Solicitado', itemStyle: { color: '#8b5cf6' } }
+          ]
+        }]
       });
 
-      let topLabels = top.map(t => t.bio);
-      let topCant = top.map(t => t.cant);
-      CHART_CAD = new Chart(ctxRight, {
-        type: 'bar',
-        data: {
-          labels: topLabels.length ? topLabels : ['Sin datos'],
-          datasets: [{ label: 'Frascos', data: topCant.length ? topCant : [0], backgroundColor: '#c084fc', borderRadius: 6 }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { font: { size: 8 } }, grid: { display: false } }, x: { ticks: { font: { size: 8, weight: '700' }, maxRotation: 45, minRotation: 45 }, grid: { display: false } } }, plugins: { legend: { display: false } } }
+      let topLabels = top.length ? top.map(t => t.bio) : ['Sin datos'];
+      let topCant = top.length ? top.map(t => t.cant) : [0];
+      
+      CHART_CAD = echarts.init(ctxRight);
+      CHART_CAD.setOption({
+        animationDuration: 800, animationEasing: 'cubicOut',
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
+        grid: { left: '0%', right: '0%', top: '15%', bottom: '5%', containLabel: true },
+        xAxis: { type: 'category', data: topLabels, axisLabel: { fontSize: 8, fontWeight: 'bold', color: '#64748b', interval: 0, rotate: 45 }, axisLine: { show: false }, axisTick: { show: false } },
+        yAxis: { type: 'value', show: false },
+        series: [{
+          name: 'Frascos', type: 'bar', data: topCant,
+          itemStyle: { color: '#c084fc', borderRadius: [4, 4, 0, 0] }
+        }]
       });
 
     } else if (tipo === "CONS") {
@@ -14869,22 +14891,33 @@ function renderLiveCharts(tipo, leftData, rightData) {
       let j5 = leftData?.j5 || 0, j05 = leftData?.j05 || 0, ag = leftData?.ag || 0;
       let srp = rightData?.srp || 0, sr = rightData?.sr || 0;
 
-      CHART_SEM = new Chart(ctxLeft, {
-        type: 'doughnut',
-        data: {
-          labels: ['Jeringa 5ml', 'Jeringa 0.5ml', 'Agujas'],
-          datasets: [{ data: [j5, j05, ag], backgroundColor: ['#38bdf8', '#0ea5e9', '#0284c7'], borderWidth: 0, hoverOffset: 4 }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 8, font: { size: 9, weight: '700' } } } } }
+      CHART_SEM = echarts.init(ctxLeft);
+      CHART_SEM.setOption({
+        animationDuration: 800, animationEasing: 'cubicOut',
+        tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
+        series: [{
+          type: 'pie', radius: ['60%', '90%'], avoidLabelOverlap: false,
+          itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+          label: { show: false },
+          data: [
+            { value: j5, name: 'Jeringa 5ml', itemStyle: { color: '#38bdf8' } },
+            { value: j05, name: 'Jeringa 0.5ml', itemStyle: { color: '#0ea5e9' } },
+            { value: ag, name: 'Agujas', itemStyle: { color: '#0284c7' } }
+          ]
+        }]
       });
 
-      CHART_CAD = new Chart(ctxRight, {
-        type: 'bar',
-        data: {
-          labels: ['SRP', 'SR'],
-          datasets: [{ label: 'Dosis', data: [srp, sr], backgroundColor: '#059669', borderRadius: 6 }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { font: { size: 8 } }, grid: { display: false } }, x: { ticks: { font: { size: 10, weight: '900' } }, grid: { display: false } } }, plugins: { legend: { display: false } } }
+      CHART_CAD = echarts.init(ctxRight);
+      CHART_CAD.setOption({
+        animationDuration: 800, animationEasing: 'cubicOut',
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
+        grid: { left: '0%', right: '0%', top: '15%', bottom: '5%', containLabel: true },
+        xAxis: { type: 'category', data: ['SRP', 'SR'], axisLabel: { fontSize: 10, fontWeight: 'bold', color: '#64748b' }, axisLine: { show: false }, axisTick: { show: false } },
+        yAxis: { type: 'value', show: false },
+        series: [{
+          name: 'Dosis', type: 'bar', data: [srp, sr],
+          itemStyle: { color: '#059669', borderRadius: [4, 4, 0, 0] }
+        }]
       });
     }
   } catch (err) {
@@ -15877,6 +15910,9 @@ window.activateMain = function (panel, sub) {
 // ============================================================================
 // DYNAMIC HEADER LIQUID GLASS GENERATOR (Lens Refraction + Frosted Blur)
 // ============================================================================
+// ============================================================================
+// DYNAMIC HEADER LIQUID GLASS GENERATOR (Lens Refraction + Frosted Blur)
+// ============================================================================
 function initHeaderGlass() {
   let svgContainer = document.getElementById('header-glass-svg-container');
   if (!svgContainer) {
@@ -15912,8 +15948,8 @@ function initHeaderGlass() {
             <rect x="0" y="0" width="${width}" height="${height}" rx="${radius}" fill="url(#lensGrad-${index})" />
         </svg>`;
 
-    const encodedMap = encodeURIComponent(mapSvg);
-    const dataUri = `data:image/svg+xml,${encodedMap}`;
+    const encodedMap = btoa(unescape(encodeURIComponent(mapSvg)));
+    const dataUri = `data:image/svg+xml;base64,${encodedMap}`;
 
     // Refraction without chromatic aberration + frosted blur
     svgDefs += `
