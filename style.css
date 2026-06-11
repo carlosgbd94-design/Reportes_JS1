@@ -9337,6 +9337,8 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
 
   #btnLogin { order: 3 !important; }
 
+  #btnBiometricLogin { order: 4 !important; }
+
   /* Botón "Olvidé mi contraseña" en desktop */
   #btnForgotPassword {
     margin-top: 0 !important;
