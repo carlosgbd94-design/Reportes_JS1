@@ -10,7 +10,7 @@ test.describe('SIREVAQ Login Flow', () => {
 
     // Verificar que el contenedor de login esté visible (no oculto)
     const loginWrapper = page.locator('#loginWrapper');
-    await expect(loginWrapper).not.toHaveClass(/hidden/);
+    await expect(loginWrapper).toBeVisible();
 
     // Verificar la presencia de los campos de usuario y contraseña
     const usernameInput = page.locator('#usuario');
