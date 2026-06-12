@@ -404,6 +404,10 @@ class RDAParser {
             console.log(`[RDA Parser] ✅ Carga masiva completada: ${total} registros insertados en ${totalBatches} lotes.`);
             if (typeof showToast === 'function') showToast(`${total.toLocaleString('es-MX')} registros actualizados correctamente`, true, 'good');
 
+            // Lanzar celebración premium
+            if (typeof window.triggerConfetti === 'function') window.triggerConfetti();
+            if (typeof window.playNotificationSound === 'function') window.playNotificationSound('success');
+
             // Refrescar el dashboard si está abierto
             if (typeof window.refreshRDADashboard === 'function') {
                 window.refreshRDADashboard();
@@ -580,6 +584,10 @@ class RDAParser {
             const total   = result?.total_enviados ?? payload.length;
             console.log(`[RDA Parser] ✅ Población actualizada: ${updated}/${total} registros`);
             if (typeof showToast === 'function') showToast(`Población actualizada: ${updated} unidades`, true, 'good');
+
+            // Lanzar celebración premium
+            if (typeof window.triggerConfetti === 'function') window.triggerConfetti();
+            if (typeof window.playNotificationSound === 'function') window.playNotificationSound('success');
 
         } catch (err) {
             console.error('[RDA Parser] ❌ Error fatal en processPoblacionData:', err);

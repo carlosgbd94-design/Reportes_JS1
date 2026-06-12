@@ -291,6 +291,12 @@ const AppService = {
 
       muteRealtimeFor(12000);
       showToast(successMsg, true, "good");
+      if (typeof playNotificationSound === "function") {
+        playNotificationSound("success");
+      }
+      if (typeof triggerConfetti === "function") {
+        triggerConfetti();
+      }
       pushLiveEvent(eventTitle, eventMsg, "good");
       setSavedStamp();
 
@@ -1900,6 +1906,15 @@ async function loadNotifications(options = {}) {
         pulseBadge("tabNOTIFS");
         tabNOTIFS?.classList.add("notifHot");
         btnTopNotifications?.classList.add("notifHot");
+
+        // --- REALTIME AUDIO & WEB NOTIFICATION ---
+        if (typeof playNotificationSound === "function") {
+          playNotificationSound("incoming");
+        }
+        const latestUnread = items.find(n => n.status !== "READ");
+        if (latestUnread && typeof showWebNotification === "function") {
+          showWebNotification(latestUnread.title || "SIREVAQ", latestUnread.message || "Nueva notificación recibida", latestUnread.type || "INFO");
+        }
       }
 
       return data;
@@ -2394,9 +2409,17 @@ async function sendNotificationFlow() {
 
     if (res && res.ok) {
       showToast("Comunicado enviado con éxito", true);
+      if (typeof playNotificationSound === "function") {
+        playNotificationSound("sent");
+      }
+      if (typeof triggerConfetti === "function") {
+        triggerConfetti();
+      }
       // Reset form
       $("notifTitle").value = "";
       $("notifMessage").value = "";
+      if ($("notifMessage")) $("notifMessage").dispatchEvent(new Event("input"));
+      if (typeof updateNotifPreviewCard === "function") updateNotifPreviewCard();
     } else {
       throw new Error(res?.error || "Error al enviar");
     }
@@ -2665,6 +2688,7 @@ function bindNotificationsUiEvents() {
 
   bindNotifTemplateEvents();
   bindPinolEntregaModalEvents();
+  initNotificationComposerUX();
 }
 
 let NOTIF_UNIT_CATALOG = [];
@@ -2989,6 +3013,13 @@ function fillSelect(el, items, placeholder = "Seleccionar…", mapFn = null) {
   });
 
   el.innerHTML = opts.join("");
+
+  // Si tiene un buscador predictivo asociado, lo actualizamos dinámicamente
+  if (el.dataset.searchableId) {
+    if (typeof updateSearchableSelectOptions === "function") {
+      updateSearchableSelectOptions(el);
+    }
+  }
 }
 
 function refreshNotifScopeUi() {
@@ -12010,6 +12041,22 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
     rowCursor++;
   });
 
+  // --- OPTIMIZACIÓN EXCELJS: AUTO-AJUSTAR ANCHOS DE COLUMNAS ---
+  ws.columns.forEach(column => {
+    let maxLen = 0;
+    column.eachCell({ includeEmpty: true }, cell => {
+      const val = cell.value;
+      if (val) {
+        const str = String(val);
+        // Evitamos medir fórmulas largas para no desalinear
+        if (!str.startsWith('=')) {
+          maxLen = Math.max(maxLen, str.length);
+        }
+      }
+    });
+    column.width = Math.max(14, Math.min(maxLen + 4, 50));
+  });
+
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/octet-stream' });
   const url = window.URL.createObjectURL(blob);
@@ -13486,14 +13533,14 @@ function renderHistoryMetrics(data) {
     if (medalsContainer) medalsContainer.innerHTML = "";
   }
 
-  // Update dynamic KPIs based on activeRows
-  if ($("histTotalUnidades")) $("histTotalUnidades").textContent = activeRows.length;
+  // Update dynamic KPIs based on activeRows with smooth animated count
+  if ($("histTotalUnidades")) animateKpiCounter($("histTotalUnidades"), activeRows.length);
 
   const diamantes = activeRows.filter(r => r.tier === "diamante").length;
   const riesgos = activeRows.filter(r => r.tier === "riesgo").length;
 
-  if ($("histTotalDiamante")) $("histTotalDiamante").textContent = diamantes;
-  if ($("histTotalRiesgo")) $("histTotalRiesgo").textContent = riesgos;
+  if ($("histTotalDiamante")) animateKpiCounter($("histTotalDiamante"), diamantes);
+  if ($("histTotalRiesgo")) animateKpiCounter($("histTotalRiesgo"), riesgos);
 
   if (!activeRows.length) {
     if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-surface-onVariant/60">Sin datos para ese periodo</td></tr>`;
@@ -13715,15 +13762,9 @@ function renderHistoryMetrics(data) {
     if (tbody) tbody.innerHTML = html;
   }
 
-  // Trigger confetti if there is a top score of 90% or more
   function triggerConfettiFallback() {
-    if (typeof confetti === "function") {
-      confetti({
-        particleCount: 150,
-        spread: 80,
-        origin: { y: 0.6 },
-        colors: ['#ffd700', '#cbd5e1', '#cd7f32', '#06b6d4', '#10b981']
-      });
+    if (typeof triggerConfetti === "function") {
+      triggerConfetti();
       return;
     }
 
@@ -14720,6 +14761,12 @@ async function openLiveView(clues, unidad, municipio) {
       }
     }
 
+    // --- EFECTO PREMIUM CHARTS: CARGA ESCALA ---
+    setTimeout(() => {
+      $("liveChartLeftContainer")?.classList.add("loaded");
+      $("liveChartRightContainer")?.classList.add("loaded");
+    }, 150);
+
   } catch (e) {
     console.error("openLiveView error:", e);
     if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">Error al cargar: ${escapeHtml(e.message)}</td></tr>`;
@@ -14813,30 +14860,62 @@ function renderLiveCharts(tipo, leftData, rightData) {
 
       CHART_SEM = echarts.init(ctxLeft);
       CHART_SEM.setOption({
-        animationDuration: 800, animationEasing: 'cubicOut',
-        tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
+        animationDuration: 1000, animationEasing: 'exponentialOut',
+        tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.95)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
         series: [{
           type: 'pie', radius: ['60%', '90%'], avoidLabelOverlap: false,
-          itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+          itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
           label: { show: false },
+          emphasis: { scale: true, scaleSize: 6 }, // Usamos escala en lugar de sombras para evitar bugs de GPU
           data: [
-            { value: sem.pronto, name: 'Próxima', itemStyle: { color: '#f87171' } },
-            { value: sem.normal, name: 'Media', itemStyle: { color: '#fbbf24' } },
-            { value: sem.lejana, name: 'Vigente', itemStyle: { color: '#4ade80' } }
+            { 
+              value: sem.pronto, name: 'Próxima', 
+              itemStyle: { 
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: '#f87171' },
+                  { offset: 1, color: '#dc2626' }
+                ]) 
+              } 
+            },
+            { 
+              value: sem.normal, name: 'Media', 
+              itemStyle: { 
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: '#fbbf24' },
+                  { offset: 1, color: '#ea580c' }
+                ]) 
+              } 
+            },
+            { 
+              value: sem.lejana, name: 'Vigente', 
+              itemStyle: { 
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: '#34d399' },
+                  { offset: 1, color: '#059669' }
+                ]) 
+              } 
+            }
           ]
         }]
       });
 
       CHART_CAD = echarts.init(ctxRight);
       CHART_CAD.setOption({
-        animationDuration: 800, animationEasing: 'cubicOut',
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
+        animationDuration: 1000, animationEasing: 'exponentialOut',
+        tooltip: { trigger: 'axis', axisPointer: { type: 'none' }, backgroundColor: 'rgba(15, 23, 42, 0.95)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
         grid: { left: '0%', right: '0%', top: '15%', bottom: '5%', containLabel: true },
         xAxis: { type: 'category', data: ['< 3m', '3-6m', '6-12m', '> 12m'], axisLabel: { fontSize: 9, fontWeight: 'bold', color: '#64748b' }, axisLine: { show: false }, axisTick: { show: false } },
         yAxis: { type: 'value', show: false },
         series: [{
           name: 'Lotes', type: 'bar', data: [cad.m3, cad.m6, cad.m12, cad.more],
-          itemStyle: { color: '#3b82f6', borderRadius: [4, 4, 0, 0] }
+          emphasis: { focus: 'series' },
+          itemStyle: { 
+            borderRadius: [8, 8, 0, 0],
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#60a5fa' },
+              { offset: 1, color: '#2563eb' }
+            ])
+          }
         }]
       });
 
@@ -14848,15 +14927,32 @@ function renderLiveCharts(tipo, leftData, rightData) {
 
       CHART_SEM = echarts.init(ctxLeft);
       CHART_SEM.setOption({
-        animationDuration: 800, animationEasing: 'cubicOut',
-        tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
+        animationDuration: 1000, animationEasing: 'exponentialOut',
+        tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.95)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
         series: [{
           type: 'pie', radius: ['60%', '90%'], avoidLabelOverlap: false,
-          itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+          itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
           label: { show: false },
+          emphasis: { scale: true, scaleSize: 6 },
           data: [
-            { value: ex, name: 'Existencia Actual', itemStyle: { color: '#94a3b8' } },
-            { value: pd, name: 'Pedido Solicitado', itemStyle: { color: '#8b5cf6' } }
+            { 
+              value: ex, name: 'Existencia Actual', 
+              itemStyle: { 
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: '#cbd5e1' },
+                  { offset: 1, color: '#64748b' }
+                ]) 
+              } 
+            },
+            { 
+              value: pd, name: 'Pedido Solicitado', 
+              itemStyle: { 
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: '#c084fc' },
+                  { offset: 1, color: '#7c3aed' }
+                ]) 
+              } 
+            }
           ]
         }]
       });
@@ -14866,14 +14962,21 @@ function renderLiveCharts(tipo, leftData, rightData) {
       
       CHART_CAD = echarts.init(ctxRight);
       CHART_CAD.setOption({
-        animationDuration: 800, animationEasing: 'cubicOut',
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
+        animationDuration: 1000, animationEasing: 'exponentialOut',
+        tooltip: { trigger: 'axis', axisPointer: { type: 'none' }, backgroundColor: 'rgba(15, 23, 42, 0.95)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
         grid: { left: '0%', right: '0%', top: '15%', bottom: '5%', containLabel: true },
         xAxis: { type: 'category', data: topLabels, axisLabel: { fontSize: 8, fontWeight: 'bold', color: '#64748b', interval: 0, rotate: 45 }, axisLine: { show: false }, axisTick: { show: false } },
         yAxis: { type: 'value', show: false },
         series: [{
           name: 'Frascos', type: 'bar', data: topCant,
-          itemStyle: { color: '#c084fc', borderRadius: [4, 4, 0, 0] }
+          emphasis: { focus: 'series' },
+          itemStyle: { 
+            borderRadius: [8, 8, 0, 0],
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#d8b4fe' },
+              { offset: 1, color: '#8b5cf6' }
+            ])
+          }
         }]
       });
 
@@ -14884,30 +14987,62 @@ function renderLiveCharts(tipo, leftData, rightData) {
 
       CHART_SEM = echarts.init(ctxLeft);
       CHART_SEM.setOption({
-        animationDuration: 800, animationEasing: 'cubicOut',
-        tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
+        animationDuration: 1000, animationEasing: 'exponentialOut',
+        tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.95)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
         series: [{
           type: 'pie', radius: ['60%', '90%'], avoidLabelOverlap: false,
-          itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
+          itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
           label: { show: false },
+          emphasis: { scale: true, scaleSize: 6 },
           data: [
-            { value: j5, name: 'Jeringa 5ml', itemStyle: { color: '#38bdf8' } },
-            { value: j05, name: 'Jeringa 0.5ml', itemStyle: { color: '#0ea5e9' } },
-            { value: ag, name: 'Agujas', itemStyle: { color: '#0284c7' } }
+            { 
+              value: j5, name: 'Jeringa 5ml', 
+              itemStyle: { 
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: '#7dd3fc' },
+                  { offset: 1, color: '#0284c7' }
+                ]) 
+              } 
+            },
+            { 
+              value: j05, name: 'Jeringa 0.5ml', 
+              itemStyle: { 
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: '#38bdf8' },
+                  { offset: 1, color: '#0369a1' }
+                ]) 
+              } 
+            },
+            { 
+              value: ag, name: 'Agujas', 
+              itemStyle: { 
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: '#93c5fd' },
+                  { offset: 1, color: '#1d4ed8' }
+                ]) 
+              } 
+            }
           ]
         }]
       });
 
       CHART_CAD = echarts.init(ctxRight);
       CHART_CAD.setOption({
-        animationDuration: 800, animationEasing: 'cubicOut',
-        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
+        animationDuration: 1000, animationEasing: 'exponentialOut',
+        tooltip: { trigger: 'axis', axisPointer: { type: 'none' }, backgroundColor: 'rgba(15, 23, 42, 0.95)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
         grid: { left: '0%', right: '0%', top: '15%', bottom: '5%', containLabel: true },
         xAxis: { type: 'category', data: ['SRP', 'SR'], axisLabel: { fontSize: 10, fontWeight: 'bold', color: '#64748b' }, axisLine: { show: false }, axisTick: { show: false } },
         yAxis: { type: 'value', show: false },
         series: [{
           name: 'Dosis', type: 'bar', data: [srp, sr],
-          itemStyle: { color: '#059669', borderRadius: [4, 4, 0, 0] }
+          emphasis: { focus: 'series' },
+          itemStyle: { 
+            borderRadius: [8, 8, 0, 0],
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#34d399' },
+              { offset: 1, color: '#059669' }
+            ])
+          }
         }]
       });
     }
@@ -14921,6 +15056,8 @@ if ($("btnLiveViewClose")) {
     $("liveViewOverlay").classList.remove("show");
     $("liveViewOverlay").style.display = "none";
     $("liveViewOverlay").ariaHidden = "true";
+    $("liveChartLeftContainer")?.classList.remove("loaded");
+    $("liveChartRightContainer")?.classList.remove("loaded");
   };
 }
 
@@ -16322,5 +16459,539 @@ async function loginWithPasskey() {
     hideOverlay();
   }
 }
+
+// ===== REALTIME COMPOSER UX & SOUNDS =====
+function playNotificationSound(type = "success") {
+  if (!$("chkNotifSound")?.checked) return;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    const now = ctx.currentTime;
+    
+    if (type === "success" || type === "sent") {
+      osc.frequency.setValueAtTime(523.25, now);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      osc.start(now);
+      osc.stop(now + 0.15);
+      
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.frequency.setValueAtTime(659.25, now + 0.12);
+      gain2.gain.setValueAtTime(0.15, now + 0.12);
+      gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc2.start(now + 0.12);
+      osc2.stop(now + 0.3);
+    } else if (type === "incoming" || type === "receive") {
+      const freqs = [587.33, 698.46, 880.00];
+      freqs.forEach((f, idx) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.frequency.setValueAtTime(f, now + (idx * 0.08));
+        g.gain.setValueAtTime(0.12, now + (idx * 0.08));
+        g.gain.exponentialRampToValueAtTime(0.005, now + (idx * 0.08) + 0.25);
+        o.start(now + (idx * 0.08));
+        o.stop(now + (idx * 0.08) + 0.25);
+      });
+    } else if (type === "error" || type === "bad") {
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.linearRampToValueAtTime(120, now + 0.25);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      osc.start(now);
+      osc.stop(now + 0.25);
+    }
+  } catch (e) {
+    console.warn("AudioContext failed:", e);
+  }
+}
+
+function showWebNotification(title, body, priority = "info") {
+  if (Notification.permission === "granted" && !document.hasFocus()) {
+    try {
+      const iconMap = {
+        INFO: "💡",
+        SUCCESS: "✅",
+        WARN: "⚠️",
+        ERROR: "🚨"
+      };
+      const prefix = iconMap[String(priority).toUpperCase()] || "🔔";
+      new Notification(`${prefix} SIREVAQ`, {
+        body: `${title}\n${body}`,
+        tag: 'sirevaq-notification',
+        renotify: true
+      });
+    } catch (e) {
+      console.warn("Failed to trigger web notification:", e);
+    }
+  }
+}
+
+function updateNotifPreviewCard() {
+  const titleVal = $("notifTitle")?.value?.trim() || "Título del Aviso";
+  const messageVal = $("notifMessage")?.value?.trim() || "Escribe un mensaje para ver la previsualización interactiva aquí...";
+  const typeVal = $("notifType")?.value || "INFO";
+  const scopeVal = $("notifTargetScope")?.value || "ALL_MY_UNITS";
+  
+  const lblTitle = $("lblPreviewTitle");
+  const lblBody = $("lblPreviewBody");
+  const lblScope = $("lblPreviewScope");
+  const previewCard = $("notifPreviewCard");
+  const iconPreview = document.querySelector(".notif-icon-preview");
+  
+  if (lblTitle) lblTitle.textContent = titleVal;
+  if (lblBody) lblBody.textContent = messageVal;
+  
+  // Update Scope Label
+  if (lblScope) {
+    let scopeText = "Para: Toda la Red";
+    if (scopeVal === "MUNICIPIO") {
+      const muni = $("notifTargetMunicipio")?.value || "";
+      scopeText = muni ? `Para: Municipio ${muni}` : "Para: Municipio seleccionado";
+    } else if (scopeVal === "CLUES") {
+      const clues = $("notifTargetClues")?.value || "";
+      scopeText = clues ? `Para: Unidad ${clues}` : "Para: Unidad seleccionada";
+    } else if (scopeVal === "USUARIO") {
+      const user = $("notifTargetUser")?.value || "";
+      scopeText = user ? `Para: Usuario ${user}` : "Para: Usuario seleccionado";
+    }
+    lblScope.textContent = scopeText;
+  }
+  
+  // Update priority card classes and icon
+  if (previewCard) {
+    previewCard.className = "liveFeedItem w-full shadow-lg border border-outline-variant/20 max-w-md transform transition-all duration-300 hover:scale-[1.02]";
+    
+    let iconName = "info";
+    if (typeVal === "INFO") {
+      previewCard.classList.add("info");
+      iconName = "info";
+    } else if (typeVal === "SUCCESS") {
+      previewCard.classList.add("success");
+      iconName = "check_circle";
+    } else if (typeVal === "WARN") {
+      previewCard.classList.add("warn");
+      iconName = "warning";
+    } else if (typeVal === "ERROR") {
+      previewCard.classList.add("error");
+      iconName = "error";
+    }
+    
+    if (iconPreview) iconPreview.textContent = iconName;
+  }
+}
+
+function initNotificationComposerUX() {
+  const notifTitle = $("notifTitle");
+  const notifMessage = $("notifMessage");
+  const notifType = $("notifType");
+  const notifTargetScope = $("notifTargetScope");
+  const notifTargetMunicipio = $("notifTargetMunicipio");
+  const notifTargetClues = $("notifTargetClues");
+  const notifTargetUser = $("notifTargetUser");
+  const chkNotifSound = $("chkNotifSound");
+  const btnRequestPushPermission = $("btnRequestPushPermission");
+  const lblPushStatus = $("lblPushStatus");
+  const lblSoundIcon = $("lblSoundIcon");
+  
+  // 1. Text input listeners for live preview & character counter
+  if (notifTitle) {
+    notifTitle.addEventListener("input", updateNotifPreviewCard);
+  }
+  
+  if (notifMessage) {
+    notifMessage.addEventListener("input", () => {
+      const len = notifMessage.value.length;
+      const lblCount = $("notifCharCount");
+      const charBar = $("notifCharBar");
+      if (lblCount) lblCount.textContent = `${len} / 250`;
+      if (charBar) {
+        charBar.style.width = `${(len / 250) * 100}%`;
+        if (len >= 230) {
+          charBar.style.backgroundColor = "#ef4444";
+        } else if (len >= 180) {
+          charBar.style.backgroundColor = "#f59e0b";
+        } else {
+          charBar.style.backgroundColor = "var(--md-sys-color-primary, #0284c7)";
+        }
+      }
+      updateNotifPreviewCard();
+    });
+  }
+  
+  // 2. Selects change listeners for live preview
+  [notifType, notifTargetScope, notifTargetMunicipio, notifTargetClues, notifTargetUser].forEach(el => {
+    el?.addEventListener("change", updateNotifPreviewCard);
+  });
+  
+  // 3. sound configuration persistence
+  if (chkNotifSound) {
+    const savedSound = localStorage.getItem("SIREVAQ_NOTIF_SOUND") !== "NO";
+    chkNotifSound.checked = savedSound;
+    if (lblSoundIcon) {
+      lblSoundIcon.textContent = savedSound ? "volume_up" : "volume_off";
+    }
+    
+    chkNotifSound.addEventListener("change", () => {
+      localStorage.setItem("SIREVAQ_NOTIF_SOUND", chkNotifSound.checked ? "YES" : "NO");
+      if (lblSoundIcon) {
+        lblSoundIcon.textContent = chkNotifSound.checked ? "volume_up" : "volume_off";
+      }
+      if (chkNotifSound.checked) playNotificationSound("success");
+    });
+  }
+  
+  // 4. Web Notifications API Permission Setup
+  function updatePushStatusUi() {
+    if (!btnRequestPushPermission || !lblPushStatus) return;
+    if (!("Notification" in window)) {
+      lblPushStatus.textContent = "No soportado";
+      btnRequestPushPermission.style.display = "none";
+      return;
+    }
+    
+    if (Notification.permission === "granted") {
+      lblPushStatus.textContent = "Permitido en este equipo";
+      btnRequestPushPermission.innerHTML = `<span class="material-symbols-rounded text-[14px]">done</span> Permitido`;
+      btnRequestPushPermission.disabled = true;
+      btnRequestPushPermission.style.opacity = "0.7";
+    } else if (Notification.permission === "denied") {
+      lblPushStatus.textContent = "Bloqueado por el navegador";
+      btnRequestPushPermission.innerHTML = `<span class="material-symbols-rounded text-[14px]">block</span> Bloqueado`;
+      btnRequestPushPermission.disabled = true;
+      btnRequestPushPermission.style.opacity = "0.7";
+    } else {
+      lblPushStatus.textContent = "Requiere permiso";
+      btnRequestPushPermission.innerHTML = `<span class="material-symbols-rounded text-[14px]">sensors</span> Activar`;
+      btnRequestPushPermission.disabled = false;
+      btnRequestPushPermission.style.opacity = "1";
+    }
+  }
+  
+  updatePushStatusUi();
+  
+  if (btnRequestPushPermission) {
+    btnRequestPushPermission.addEventListener("click", () => {
+      if (!("Notification" in window)) return;
+      Notification.requestPermission().then(permission => {
+        updatePushStatusUi();
+        if (permission === "granted") {
+          playNotificationSound("success");
+          new Notification("SIREVAQ", {
+            body: "Notificaciones de escritorio activadas correctamente",
+            tag: 'sirevaq-setup'
+          });
+        }
+      });
+    });
+  }
+
+  // Convertir selectores de destino a buscadores predictivos
+  if (notifTargetClues) makeSelectSearchable(notifTargetClues, "location_city");
+  if (notifTargetUser) makeSelectSearchable(notifTargetUser, "person");
+  
+  // Initial Preview Card rendering
+  updateNotifPreviewCard();
+
+  // 5. Quick template chips events
+  const tplContainer = $("notifQuickTemplates");
+  if (tplContainer) {
+    tplContainer.querySelectorAll(".notif-tpl-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        const key = chip.getAttribute("data-template");
+        if (!key) return;
+        
+        // Apply template values
+        const tpl = getNotifTemplatePayload(key);
+        if (!tpl) return;
+        
+        if (notifType) notifType.value = tpl.type || "INFO";
+        if (notifTitle) notifTitle.value = tpl.title || "";
+        if (notifMessage) {
+          notifMessage.value = tpl.message || "";
+          notifMessage.dispatchEvent(new Event("input")); // Trigger char count & bar progress
+        }
+        if (notifTargetScope) {
+          notifTargetScope.value = tpl.suggestScope || "ALL_MY_UNITS";
+          notifTargetScope.dispatchEvent(new Event("change")); // Trigger dynamic visibility checks
+        }
+        
+        playNotificationSound("success");
+        showToast("Plantilla aplicada");
+        updateNotifPreviewCard();
+        
+        // Add dynamic pulse effect to preview card on template application
+        const previewCard = $("notifPreviewCard");
+        if (previewCard) {
+          previewCard.style.transform = "scale(1.04)";
+          setTimeout(() => {
+            previewCard.style.transform = "";
+          }, 300);
+        }
+      });
+    });
+  }
+}
+
+// ===== BUSCADOR PREDICTIVO AUTOCOMPLETE (OPCIÓN 1) =====
+function makeSelectSearchable(selectEl, iconName = "search") {
+  if (!selectEl || selectEl.dataset.searchableId) return;
+
+  const selectId = selectEl.id || Math.random().toString(36).substring(2, 9);
+  const wrapperId = `searchable-wrapper-${selectId}`;
+  selectEl.dataset.searchableId = wrapperId;
+
+  // Ocultamos el select original pero manteniendo su funcionalidad
+  selectEl.style.display = "none";
+
+  // Crear elementos del buscador predictivo personalizado
+  const wrapper = document.createElement("div");
+  wrapper.className = "searchable-select-wrapper";
+  wrapper.id = wrapperId;
+
+  const container = document.createElement("div");
+  container.className = "searchable-select-input-container";
+
+  const icon = document.createElement("span");
+  icon.className = "material-symbols-rounded input-icon";
+  icon.textContent = iconName;
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "searchable-select-input";
+  input.placeholder = selectEl.options[0]?.text || "Escribe para buscar...";
+  input.autocomplete = "off";
+
+  const clearBtn = document.createElement("button");
+  clearBtn.type = "button";
+  clearBtn.className = "searchable-select-clear-btn";
+  clearBtn.innerHTML = '<span class="material-symbols-rounded" style="font-size:16px;">close</span>';
+
+  const arrow = document.createElement("span");
+  arrow.className = "material-symbols-rounded searchable-select-arrow";
+  arrow.textContent = "keyboard_arrow_down";
+
+  const dropdown = document.createElement("div");
+  dropdown.className = "searchable-select-dropdown";
+
+  // Ensamblar
+  container.appendChild(icon);
+  container.appendChild(input);
+  container.appendChild(clearBtn);
+  container.appendChild(arrow);
+  wrapper.appendChild(container);
+  wrapper.appendChild(dropdown);
+
+  // Insertar en el DOM en la posición del select original
+  selectEl.parentNode.insertBefore(wrapper, selectEl);
+
+  // Sincronizar el texto del input al valor inicial o cuando cambia externamente
+  const syncInputText = () => {
+    const selectedOpt = selectEl.options[selectEl.selectedIndex];
+    input.value = (selectedOpt && selectEl.value) ? selectedOpt.text : "";
+    clearBtn.style.display = input.value ? "flex" : "none";
+  };
+  
+  syncInputText();
+  selectEl.addEventListener("change", syncInputText);
+
+  // Abrir y cerrar desplegable
+  const openDropdown = () => {
+    wrapper.classList.add("open");
+    // Al abrir, si está vacío mostramos todo, si tiene texto filtramos
+    filterOptions(input.value);
+  };
+
+  const closeDropdown = () => {
+    wrapper.classList.remove("open");
+  };
+
+  input.addEventListener("focus", openDropdown);
+  input.addEventListener("click", openDropdown);
+
+  // Cerrar al hacer click fuera del componente
+  document.addEventListener("click", (e) => {
+    if (!wrapper.contains(e.target)) {
+      closeDropdown();
+    }
+  });
+
+  // Limpiar valor
+  clearBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    input.value = "";
+    selectEl.value = "";
+    selectEl.dispatchEvent(new Event("change"));
+    filterOptions("");
+    input.focus();
+  });
+
+  // Filtrado de opciones
+  const filterOptions = (query) => {
+    const term = String(query).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    dropdown.innerHTML = "";
+
+    const matchingOpts = Array.from(selectEl.options).filter((opt, index) => {
+      // Ignorar el primer placeholder
+      if (index === 0 && !opt.value) return false;
+      const text = opt.text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      return text.includes(term);
+    });
+
+    if (matchingOpts.length === 0) {
+      const noResults = document.createElement("div");
+      noResults.className = "searchable-select-no-results";
+      noResults.textContent = "Sin coincidencias";
+      dropdown.appendChild(noResults);
+      return;
+    }
+
+    matchingOpts.forEach(opt => {
+      const optionDiv = document.createElement("div");
+      optionDiv.className = "searchable-select-option";
+      if (selectEl.value === opt.value) {
+        optionDiv.classList.add("selected");
+      }
+      optionDiv.textContent = opt.text;
+      
+      optionDiv.addEventListener("click", () => {
+        selectEl.value = opt.value;
+        selectEl.dispatchEvent(new Event("change"));
+        closeDropdown();
+      });
+
+      dropdown.appendChild(optionDiv);
+    });
+  };
+
+  input.addEventListener("input", () => {
+    clearBtn.style.display = input.value ? "flex" : "none";
+    filterOptions(input.value);
+  });
+}
+
+function updateSearchableSelectOptions(selectEl) {
+  const searchableId = selectEl.dataset.searchableId;
+  if (!searchableId) return;
+
+  const wrapper = document.getElementById(searchableId);
+  if (!wrapper) return;
+
+  const input = wrapper.querySelector(".searchable-select-input");
+  const clearBtn = wrapper.querySelector(".searchable-select-clear-btn");
+  
+  if (input) {
+    const selectedOpt = selectEl.options[selectEl.selectedIndex];
+    input.value = (selectedOpt && selectEl.value) ? selectedOpt.text : "";
+    input.placeholder = selectEl.options[0]?.text || "Escribe para buscar...";
+    if (clearBtn) clearBtn.style.display = input.value ? "flex" : "none";
+  }
+}
+
+// ===== CELEBRACIÓN CON CONFETTI PREMIUM (OPCIÓN 3 - CON PARCHADO DE CSP) =====
+let localConfetti = null;
+function triggerConfetti() {
+  try {
+    if (typeof window.confetti === "function") {
+      if (!localConfetti) {
+        // Creamos un canvas dedicado en el hilo principal para evitar violación de CSP por workers en blob:
+        let canvas = document.getElementById("confetti-canvas");
+        if (!canvas) {
+          canvas = document.createElement("canvas");
+          canvas.id = "confetti-canvas";
+          canvas.style.position = "fixed";
+          canvas.style.inset = "0";
+          canvas.style.width = "100vw";
+          canvas.style.height = "100vh";
+          canvas.style.pointerEvents = "none";
+          canvas.style.zIndex = "999999";
+          document.body.appendChild(canvas);
+        }
+        localConfetti = window.confetti.create(canvas, {
+          resize: true,
+          useWorker: false
+        });
+      }
+      
+      const duration = 2.0 * 1000;
+      const end = Date.now() + duration;
+
+      (function frame() {
+        localConfetti({
+          particleCount: 4,
+          angle: 55,
+          spread: 60,
+          origin: { x: 0, y: 0.8 },
+          colors: ['#0284c7', '#3b82f6', '#10b981', '#34d399', '#fbbf24']
+        });
+        localConfetti({
+          particleCount: 4,
+          angle: 125,
+          spread: 60,
+          origin: { x: 1, y: 0.8 },
+          colors: ['#0284c7', '#3b82f6', '#10b981', '#34d399', '#fbbf24']
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      }());
+    }
+  } catch (e) {
+    console.warn("Confetti animation failed:", e);
+  }
+}
+
+// ===== ANIMADOR DE CONTADORES KPI (MÉTRICAS) =====
+function animateKpiCounter(el, targetVal) {
+  if (!el) return;
+  const startVal = parseInt(el.textContent.replace(/,/g, '')) || 0;
+  if (startVal === targetVal) {
+    el.textContent = targetVal.toLocaleString('es-MX');
+    return;
+  }
+  const duration = 800; // ms
+  const startTime = performance.now();
+
+  function updateCounter(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    
+    // Curva de aceleración: EaseOutQuad
+    const easeProgress = progress * (2 - progress);
+    const currentVal = Math.floor(startVal + (targetVal - startVal) * easeProgress);
+    
+    el.textContent = currentVal.toLocaleString('es-MX');
+
+    if (progress < 1) {
+      requestAnimationFrame(updateCounter);
+    } else {
+      el.textContent = targetVal.toLocaleString('es-MX');
+    }
+  }
+  requestAnimationFrame(updateCounter);
+}
+
+// ===== RASTREADOR DE SPOTLIGHT GLOW PARA TARJETAS PREMIUM =====
+document.addEventListener("mousemove", (e) => {
+  const card = e.target.closest(".kpiCard, .liveFeedItem, .glow-card");
+  if (!card) return;
+  const rect = card.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  card.style.setProperty("--mx", `${x}px`);
+  card.style.setProperty("--my", `${y}px`);
+});
+
 
 

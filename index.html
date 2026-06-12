@@ -342,20 +342,22 @@
               </div>
             </div>
 
-            <div class="px-3 pb-2" id="passkeyRegContainer" style="display: none;">
-              <button id="btnRegisterPasskey"
-                class="w-full h-[48px] sm:h-[52px] rounded-xl sm:rounded-2xl bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-3 font-black text-[12px] sm:text-[13px] uppercase tracking-widest border-none cursor-pointer">
-                <span class="material-symbols-rounded text-[18px] sm:text-[20px]">fingerprint</span>
-                Registrar Datos Biométricos
-              </button>
-            </div>
-
-            <div class="p-3">
-              <button id="btnLogout"
-                class="w-full h-[48px] sm:h-[52px] rounded-xl sm:rounded-2xl bg-status-error/10 text-status-error hover:bg-status-error hover:text-white transition-all flex items-center justify-center gap-3 font-black text-[12px] sm:text-[13px] uppercase tracking-widest border-none cursor-pointer">
-                <span class="material-symbols-rounded text-[18px] sm:text-[20px]">logout</span>
-                Cerrar Sesión
-              </button>
+            <!-- Acciones del perfil en una sola fila minimalista con protección de padding (inline style) y SVG multi-path -->
+            <div style="padding: 12px 24px 32px 24px !important; display: flex !important; gap: 12px !important; align-items: center !important; justify-content: space-between !important;" id="profileActionsRow">
+              <div id="passkeyRegContainer" style="display: none; flex: 1;">
+                <button id="btnRegisterPasskey" class="profile-action-btn btn-biometric-minimal w-full btn-parallax-tilt">
+                  <span class="btn-parallax-tilt-inner">
+                    <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+                    <span>Biometría</span>
+                  </span>
+                </button>
+              </div>
+              <div style="flex: 1;">
+                <button id="btnLogout" class="profile-action-btn btn-logout-minimal w-full">
+                  <span class="material-symbols-rounded">logout</span>
+                  <span>Salir</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -404,13 +406,13 @@
         </div>
       </div>
 
-      <div style="position: relative; z-index: 10; color: white; padding-bottom: 2.5rem;">
+      <div style="position: relative; z-index: 10; color: white; padding-bottom: 1.2rem;">
         <h2
-          style="font-size: 2.8rem; font-weight: 600; margin-bottom: 1rem; line-height: 1.1; text-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+          style="font-size: 2.8rem; font-weight: 600; margin-bottom: 1.2rem; line-height: 1.1; text-shadow: 0 4px 10px rgba(0,0,0,0.3);">
           Plataforma Jurisdiccional</h2>
-        <p style="font-size: 1.15rem; color: #cbd5e1; max-width: 480px; line-height: 1.6; font-weight: 300; margin: 0;">
-          Centralizando la inteligencia y el análisis de datos en salud pública. Una visión integral para fortalecer la
-          toma de decisiones en la Jurisdicción Sanitaria No. 1.</p>
+        <p style="font-size: 1.1rem; color: #cbd5e1; max-width: 620px; line-height: 1.6; font-weight: 300; margin: 0;">
+          <strong style="color: #ffffff; font-weight: 700;">SIREVAQ</strong> (Sistema de Reportes y Evaluación en Vacunación de Querétaro) es la plataforma institucional diseñada para centralizar la inteligencia operativa y el análisis de datos en salud pública. Una visión tecnológica integral creada para optimizar el seguimiento de biológicos y fortalecer la toma de decisiones estratégicas dentro de la Jurisdicción Sanitaria No. 1.
+        </p>
       </div>
     </div>
 
@@ -429,7 +431,7 @@
           JS1 <span class="font-medium" style="color: #64748b !important;">SIREVAQ</span>
         </h1>
         <p id="mobileSubtitle" class="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mt-2 mb-6 sm:mb-10 opacity-60">
-          Plataforma Institucional de Gestión</p>
+          Sistema de Reportes y Evaluación en Vacunación de Querétaro</p>
 
         <!-- LOGO DESKTOP (Nuevo diseño Bicolor) -->
         <div id="desktopLogo" style="display: none; align-items: center; gap: 12px; margin-bottom: 2rem;">
@@ -505,20 +507,16 @@
               <div style="flex: 1; height: 1px; background: rgba(0,51,102,0.1);"></div>
             </div>
 
-            <!-- Clean outline button -->
-            <button type="button" id="btnBiometricLoginTrigger"
-              style="
-                display: flex; align-items: center; justify-content: center; gap: 10px;
-                width: 100%; height: 50px;
-                border-radius: 16px;
-                border: 1.5px solid rgba(0,51,102,0.18);
-                background: transparent;
-                color: #003366;
-                cursor: pointer;
-                font-family: inherit;
-              ">
-              <span class="material-symbols-rounded" style="font-size: 20px; color: rgba(0,51,102,0.55); font-variation-settings: 'FILL' 1;">fingerprint</span>
-              <span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(0,51,102,0.65);">Acceso Biométrico</span>
+            <!-- Premium pulse button -->
+            <button type="button" id="btnBiometricLoginTrigger" class="biometric-pulse-btn btn-parallax-tilt">
+              <span class="btn-parallax-tilt-inner">
+                <span class="biometric-scanner-ring">
+                  <span class="biometric-pulse-wave wave1"></span>
+                  <span class="biometric-pulse-wave wave2"></span>
+                  <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+                </span>
+                <span>Acceso Biométrico</span>
+              </span>
             </button>
           </div>
 
@@ -1500,11 +1498,11 @@
         <div class="p-6 bg-slate-50/50">
           <!-- COMPOSER DE NOTIFICACIONES (EXPANDIDO) -->
           <div
-            class="bg-white rounded-[32px] p-6 md:p-8 border border-outline-variant/30 shadow-[0_15px_40px_rgba(0,51,102,0.06)] flex flex-col max-w-5xl mx-auto"
+            class="bg-white rounded-[32px] p-6 md:p-8 border border-outline-variant/30 shadow-[0_15px_40px_rgba(0,51,102,0.06)] flex flex-col max-w-6xl mx-auto"
             id="notifComposerPane">
-            <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-outline-variant/30 mb-6 gap-4">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
                   <span class="material-symbols-rounded text-[24px]">campaign</span>
                 </div>
                 <div>
@@ -1513,96 +1511,186 @@
                     Centro de avisos institucionales</p>
                 </div>
               </div>
-              <span
-                class="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-primary/20"
-                id="notifBadgeRole">CARGANDO...</span>
+              <div class="flex flex-wrap items-center gap-3">
+                <span
+                  class="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-primary/20"
+                  id="notifBadgeRole">CARGANDO...</span>
+              </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <!-- IZQUIERDA: CONFIGURACIN DE DESTINO -->
-              <div class="flex flex-col gap-6">
-                <div>
-                  <label for="notifTargetScope"
-                    class="text-[12px] font-black text-primary/40 uppercase tracking-widest block mb-2.5 ml-1">1.
-                    Definir Alcance</label>
-                  <div class="modern-input-group">
-                    <span class="input-icon material-symbols-rounded">groups</span>
-                    <select id="notifTargetScope">
-                      <option value="ALL_MY_UNITS">Toda la Red / Jurisdicción</option>
-                      <option value="MUNICIPIO">A todas las unidades de un municipio</option>
-                      <option value="CLUES">A una unidad de salud (CLUES) específica</option>
-                      <option value="USUARIO">A un usuario en particular</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div id="notifMunicipioBox" style="display:none">
-                  <label for="notifTargetMunicipio"
-                    class="text-[12px] font-black text-primary/40 uppercase tracking-widest block mb-2.5 ml-1">2.
-                    Municipio Destino</label>
-                  <div class="modern-input-group">
-                    <span class="input-icon material-symbols-rounded">location_city</span>
-                    <select id="notifTargetMunicipio"></select>
-                  </div>
-                </div>
-
-                <div id="notifUnidadBox" style="display:none">
-                  <label for="notifTargetClues"
-                    class="text-[12px] font-black text-primary/40 uppercase tracking-widest block mb-2.5 ml-1">3.
-                    Unidad / CLUES</label>
-                  <select id="notifTargetClues"
-                    class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-white focus:border-primary outline-none transition-all shadow-sm"></select>
-                </div>
-
-                <div id="notifUserBox" style="display:none">
-                  <label for="notifTargetUser"
-                    class="text-[12px] font-black text-primary/40 uppercase tracking-widest block mb-2.5 ml-1">2.
-                    Usuario Destino</label>
-                  <select id="notifTargetUser"
-                    class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-white focus:border-primary outline-none transition-all shadow-sm"></select>
-                </div>
-
-                <div>
-                  <label for="notifType"
-                    class="text-[12px] font-black text-primary/40 uppercase tracking-widest block mb-2.5 ml-1">Tipo
-                    de
-                    Prioridad</label>
-                  <div class="modern-input-group">
-                    <span class="input-icon material-symbols-rounded">priority_high</span>
-                    <select id="notifType">
-                      <option value="INFO">💡 Información General</option>
-                      <option value="SUCCESS">✅ Operación Exitosa</option>
-                      <option value="WARN">⚠️ Alerta Operativa</option>
-                      <option value="ERROR">🚨 Bloqueo / Urgente</option>
-                    </select>
-                  </div>
-                </div>
+            <!-- Fila de Plantillas Rápidas (Chips Premium) -->
+            <div class="mb-8">
+              <label class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-3 ml-1">Plantillas Rápidas de Aviso</label>
+              <div class="flex flex-wrap gap-2.5" id="notifQuickTemplates">
+                <button type="button" class="notif-tpl-chip" data-template="CAPTURA_PENDIENTE">
+                  <span class="material-symbols-rounded">pending_actions</span>
+                  <span>Recordatorio de Captura</span>
+                </button>
+                <button type="button" class="notif-tpl-chip" data-template="OBS_ADMIN">
+                  <span class="material-symbols-rounded">summarize</span>
+                  <span>Observación Admin.</span>
+                </button>
+                <button type="button" class="notif-tpl-chip" data-template="AVISO_GENERAL">
+                  <span class="material-symbols-rounded">info</span>
+                  <span>Aviso General</span>
+                </button>
               </div>
+            </div>
 
-              <!-- DERECHA: CONTENIDO DEL MENSAJE -->
-              <div class="flex flex-col gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              <!-- COLUMNA IZQUIERDA (7 COLS): CONFIGURACIÓN Y CONTENIDO -->
+              <div class="lg:col-span-7 flex flex-col gap-6">
+                <!-- Fila: Alcance y Tipo -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div>
+                    <label for="notifTargetScope"
+                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">1. Alcance</label>
+                    <div class="modern-input-group">
+                      <span class="input-icon material-symbols-rounded">groups</span>
+                      <select id="notifTargetScope">
+                        <option value="ALL_MY_UNITS">Toda la Red / Jurisdicción</option>
+                        <option value="MUNICIPIO">A todas las unidades de un municipio</option>
+                        <option value="CLUES">A una unidad (CLUES) específica</option>
+                        <option value="USUARIO">A un usuario en particular</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label for="notifType"
+                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">2. Prioridad</label>
+                    <div class="modern-input-group">
+                      <span class="input-icon material-symbols-rounded">priority_high</span>
+                      <select id="notifType">
+                        <option value="INFO">💡 Información General</option>
+                        <option value="SUCCESS">✅ Operación Exitosa</option>
+                        <option value="WARN">⚠️ Alerta Operativa</option>
+                        <option value="ERROR">🚨 Bloqueo / Urgente</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Selectores Dinámicos de Ubicación/Destinatario (Grid side-by-side) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div id="notifMunicipioBox" style="display:none">
+                    <label for="notifTargetMunicipio"
+                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Municipio Destino</label>
+                    <div class="modern-input-group">
+                      <span class="input-icon material-symbols-rounded">location_city</span>
+                      <select id="notifTargetMunicipio"></select>
+                    </div>
+                  </div>
+
+                  <div id="notifUnidadBox" style="display:none">
+                    <label for="notifTargetClues"
+                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Unidad / CLUES</label>
+                    <select id="notifTargetClues"
+                      class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-white focus:border-primary outline-none transition-all shadow-sm"></select>
+                  </div>
+
+                  <div id="notifUserBox" style="display:none" class="sm:col-span-2">
+                    <label for="notifTargetUser"
+                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Usuario Destino</label>
+                    <select id="notifTargetUser"
+                      class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-white focus:border-primary outline-none transition-all shadow-sm"></select>
+                  </div>
+                </div>
+
+                <!-- Campos de Texto del Mensaje -->
                 <div>
                   <label for="notifTitle"
-                    class="text-[12px] font-black text-primary/40 uppercase tracking-widest block mb-2.5 ml-1">Título
-                    del Aviso</label>
-                  <input id="notifTitle" placeholder="Ej. Actualización de Inventario"
+                    class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Título del Aviso</label>
+                  <input id="notifTitle" placeholder="Ej. Actualización de Inventario" maxlength="60"
                     class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-white focus:border-primary outline-none transition-all shadow-sm placeholder:text-slate-300">
                 </div>
 
                 <div>
-                  <label for="notifMessage"
-                    class="text-[12px] font-black text-primary/40 uppercase tracking-widest block mb-2.5 ml-1">Mensaje
-                    Institucional</label>
-                  <textarea id="notifMessage" rows="6"
+                  <div class="flex justify-between items-center mb-2.5">
+                    <label for="notifMessage"
+                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block ml-1">Mensaje Institucional</label>
+                    <span id="notifCharCount" class="text-[10px] font-bold text-slate-400">0 / 250</span>
+                  </div>
+                  <textarea id="notifMessage" rows="5" maxlength="250"
                     class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 text-[15px] font-bold text-primary focus:bg-white focus:border-primary outline-none transition-all resize-none shadow-sm placeholder:text-slate-300"
                     placeholder="Escribe el cuerpo de la notificación..."></textarea>
+                  <!-- Character progress bar -->
+                  <div class="w-full h-1 bg-slate-100 rounded-full mt-2 overflow-hidden">
+                    <div id="notifCharBar" class="h-full bg-primary/40 transition-all duration-200" style="width: 0%;"></div>
+                  </div>
                 </div>
 
                 <button type="button"
-                  class="bg-primary text-white rounded-2xl h-[64px] font-black text-[16px] uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 w-full border-none cursor-pointer mt-2"
+                  class="bg-primary text-white rounded-2xl h-[64px] font-black text-[16px] uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-3 w-full border-none cursor-pointer mt-2"
                   id="btnSendNotification">
-                  <span class="material-symbols-rounded text-[24px]">send</span> Enviar Ahora
+                  <span class="material-symbols-rounded text-[24px]">send</span> Enviar comunicado
                 </button>
+              </div>
+
+              <!-- COLUMNA DERECHA (5 COLS): LIVE PREVIEW & CONTROLES EXTRA -->
+              <div class="lg:col-span-5 flex flex-col gap-6 lg:border-l lg:border-outline-variant/30 lg:pl-8">
+                <!-- Caja de Vista Previa -->
+                <div class="flex-1 flex flex-col">
+                  <span class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-3 ml-1">Previsualización en Vivo</span>
+                  
+                  <div class="preview-container flex-1 rounded-[24px] bg-slate-50 border border-slate-200/50 p-6 flex flex-col justify-center items-center relative overflow-hidden min-h-[200px]">
+                    <div class="absolute inset-0 bg-grid-pattern opacity-5"></div>
+                    
+                    <!-- Tarjeta de Notificación Previsualizada -->
+                    <div id="notifPreviewCard" class="liveFeedItem good w-full shadow-lg border border-outline-variant/20 max-w-md transform transition-all duration-300 hover:scale-[1.02]">
+                      <div class="liveFeedHead">
+                        <div class="flex items-center gap-2">
+                          <span class="material-symbols-rounded text-lg notif-icon-preview">info</span>
+                          <div class="liveFeedTitle font-black" id="lblPreviewTitle">Título del Aviso</div>
+                        </div>
+                        <div class="liveFeedTime">Ahora</div>
+                      </div>
+                      <div class="liveFeedBody text-[13px] font-medium leading-relaxed mt-2" id="lblPreviewBody">Escribe un mensaje para ver la previsualización interactiva aquí...</div>
+                      <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px] font-bold text-slate-400">
+                        <span id="lblPreviewScope" class="uppercase tracking-wider">Para: Toda la Red</span>
+                        <span class="flex items-center gap-1"><span class="material-symbols-rounded text-[12px]">verified</span> Oficial</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Configuración Extra -->
+                <div class="bg-slate-50/50 rounded-2xl p-5 border border-slate-200/50 flex flex-col gap-4">
+                  <span class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block ml-1">Ajustes & Integraciones</span>
+                  
+                  <!-- Switch de Sonido -->
+                  <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        <span id="lblSoundIcon" class="material-symbols-rounded text-[20px]">volume_up</span>
+                      </div>
+                      <div>
+                        <div class="text-[13px] font-bold text-primary">Efectos de Sonido</div>
+                        <div class="text-[10px] font-medium text-slate-400">Sonido sutil en envío/recepción</div>
+                      </div>
+                    </div>
+                    <label class="premium-switch">
+                      <input type="checkbox" id="chkNotifSound" checked>
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+
+                  <!-- Botón de Notificaciones de Escritorio -->
+                  <div class="flex items-center justify-between py-1">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                        <span class="material-symbols-rounded text-[20px]">notifications_active</span>
+                      </div>
+                      <div>
+                        <div class="text-[13px] font-bold text-primary">Notificaciones Push</div>
+                        <div class="text-[10px] font-medium text-slate-400" id="lblPushStatus">Alertas nativas de Windows</div>
+                      </div>
+                    </div>
+                    <button type="button" id="btnRequestPushPermission" class="miniBtn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border-none cursor-pointer bg-primary/10 text-primary hover:bg-primary/20 transition-all">
+                      <span class="material-symbols-rounded text-[14px]">sensors</span> Activar
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -3335,13 +3423,12 @@
 
       <!-- Body -->
       <div class="p-6 overflow-y-auto flex-1 min-h-0">
-        <!-- Drop Zone -->
         <div id="csvDropZone"
           class="w-full h-[200px] rounded-2xl border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-3 bg-surface-variant/20 transition-all cursor-pointer hover:border-primary hover:bg-primary/5"
           onclick="document.getElementById('rdaCsvInput').click()"
-          ondragover="event.preventDefault(); this.classList.add('border-primary', 'bg-primary/10')"
-          ondragleave="this.classList.remove('border-primary', 'bg-primary/10')"
-          ondrop="event.preventDefault(); this.classList.remove('border-primary', 'bg-primary/10'); handleCsvDrop(event)">
+          ondragover="event.preventDefault(); this.classList.add('dragover')"
+          ondragleave="this.classList.remove('dragover')"
+          ondrop="event.preventDefault(); this.classList.remove('dragover'); handleCsvDrop(event)">
           <span class="material-symbols-rounded text-[40px] text-primary/50 pointer-events-none">upload_file</span>
           <div class="text-center pointer-events-none">
             <h4 class="text-[14px] font-bold text-primary m-0">Arrastra y suelta tu archivo CSV aquí</h4>
@@ -4020,7 +4107,7 @@
 
           <div
             style="background: #fff; border-radius: 24px; padding: 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 20px;">
-            <div id="liveChartLeftContainer" style="width: 100px; height: 100px; flex-shrink: 0; position: relative;">
+            <div id="liveChartLeftContainer" class="chart-scale-wrapper" style="width: 100px; height: 100px; flex-shrink: 0; position: relative;">
               <div id="liveChartLeft" style="width: 100%; height: 100%;"></div>
             </div>
             <div style="flex: 1;">
@@ -4036,7 +4123,7 @@
 
           <div
             style="background: #fff; border-radius: 24px; padding: 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 20px;">
-            <div id="liveChartRightContainer" style="width: 140px; height: 100px; flex-shrink: 0; position: relative;">
+            <div id="liveChartRightContainer" class="chart-scale-wrapper" style="width: 140px; height: 100px; flex-shrink: 0; position: relative;">
               <div id="liveChartRight" style="width: 100%; height: 100%;"></div>
             </div>
             <div style="flex: 1;">

@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo Completo de Biometría Premium - SIREVAQ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+  <style>
+    :root {
+      --bg-dark: #050814;
+      --card-bg: rgba(255, 255, 255, 0.02);
+      --card-border: rgba(255, 255, 255, 0.06);
+      --primary: #6366f1;
+      --primary-glow: rgba(99, 102, 241, 0.3);
+      --secondary: #0ea5e9;
+      --secondary-glow: rgba(14, 165, 233, 0.3);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 40%),
+        radial-gradient(at 100% 100%, rgba(14, 165, 233, 0.12) 0px, transparent 40%);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      margin: 0;
+      padding: 40px 20px 80px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 50px;
+      max-width: 900px;
+    }
+
+    header h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 3rem;
+      font-weight: 800;
+      margin: 0 0 16px 0;
+      background: linear-gradient(135deg, #a5b4fc 0%, #6366f1 50%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -1.5px;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 1.15rem;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 30px;
+      max-width: 1440px;
+      width: 100%;
+    }
+
+    .anim-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 28px;
+      backdrop-filter: blur(16px);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .anim-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.06), transparent 60%);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .anim-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(99, 102, 241, 0.25);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(99, 102, 241, 0.03);
+    }
+
+    .anim-card:hover::before {
+      opacity: 1;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      background: rgba(99, 102, 241, 0.12);
+      color: #a5b4fc;
+      padding: 4px 12px;
+      border-radius: 100px;
+      margin-bottom: 16px;
+      z-index: 2;
+    }
+
+    .anim-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin: 0 0 8px 0;
+      color: #fff;
+      text-align: center;
+      z-index: 2;
+    }
+
+    .anim-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin: 0 0 24px 0;
+      line-height: 1.5;
+      height: 40px;
+      z-index: 2;
+    }
+
+    .button-container {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      margin-bottom: 24px;
+      height: 60px;
+      align-items: center;
+      z-index: 2;
+    }
+
+    .bio-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 200px;
+      height: 54px;
+      border-radius: 16px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text-main);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .fingerprint-icon {
+      font-size: 24px;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      display: block;
+      user-select: none;
+    }
+
+    .code-box {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      padding: 12px;
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    .code-box pre {
+      margin: 0;
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: #38bdf8;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font-size: 0.65rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 700;
+      text-transform: uppercase;
+      transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background: var(--primary);
+      border-color: transparent;
+    }
+
+    /* ========================================================
+       OPCIÓN 1 a 10 (Estilos Originales Adaptados)
+       ======================================================== */
+    .btn-opt-1 { border-color: rgba(99, 102, 241, 0.2); background: rgba(99, 102, 241, 0.05); color: #a5b4fc; }
+    .btn-opt-1:hover { background: var(--primary); color: #fff; box-shadow: 0 0 25px var(--primary-glow); border-color: transparent; }
+    .btn-opt-1 .fingerprint-icon { color: #6366f1; }
+    .btn-opt-1:hover .fingerprint-icon { color: #fff; transform: scale(1.4) rotate(-8deg); filter: drop-shadow(0 4px 8px rgba(255,255,255,0.4)); }
+
+    .btn-opt-2 { border-color: rgba(14, 165, 233, 0.2); background: rgba(14, 165, 233, 0.05); color: #38bdf8; }
+    .btn-opt-2 .fingerprint-icon { color: #0ea5e9; }
+    .laser-line { position: absolute; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #0ea5e9, #38bdf8, #0ea5e9, transparent); box-shadow: 0 0 10px #0ea5e9; opacity: 0; top: 0; pointer-events: none; }
+    .btn-opt-2:hover { background: rgba(14, 165, 233, 0.1); box-shadow: 0 0 20px rgba(14, 165, 233, 0.2); }
+    .btn-opt-2:hover .laser-line { opacity: 1; animation: laserSweep 1.8s infinite linear; }
+    .btn-opt-2:hover .fingerprint-icon { filter: drop-shadow(0 0 6px #0ea5e9); transform: scale(1.15); }
+
+    .btn-opt-3 { border-color: rgba(236, 72, 153, 0.2); background: rgba(236, 72, 153, 0.05); color: #f472b6; }
+    .btn-opt-3 .fingerprint-icon { color: #ec4899; }
+    .ripple-ring { position: absolute; border: 1.5px solid #ec4899; border-radius: 50%; width: 24px; height: 24px; opacity: 0; pointer-events: none; }
+    .btn-opt-3:hover .ripple-ring { animation: rippleEffect 1.5s infinite cubic-bezier(0.1, 0.8, 0.3, 1); }
+    .btn-opt-3:hover .fingerprint-icon { transform: scale(1.2); filter: drop-shadow(0 0 5px rgba(236, 72, 153, 0.5)); }
+
+    .btn-opt-4 { border-color: rgba(168, 85, 247, 0.2); background: rgba(168, 85, 247, 0.05); color: #c084fc; }
+    .btn-opt-4 .fingerprint-icon { color: #a855f7; }
+    .btn-opt-4:hover { background: #a855f7; color: #fff; box-shadow: 0 0 35px rgba(168, 85, 247, 0.6); border-color: transparent; }
+    .btn-opt-4:hover .fingerprint-icon { color: #fff; filter: drop-shadow(0 0 8px #fff); transform: scale(1.2) rotate(10deg); }
+
+    .btn-opt-5 { border-color: rgba(234, 179, 8, 0.2); background: rgba(234, 179, 8, 0.05); color: #fde047; }
+    .btn-opt-5 .fingerprint-icon { color: #eab308; }
+    .btn-opt-5:hover { background: rgba(234, 179, 8, 0.1); box-shadow: 0 0 20px rgba(234, 179, 8, 0.2); }
+    .btn-opt-5:hover .fingerprint-icon { transform: rotate(180deg) scale(1.15); }
+
+    .btn-opt-6 { border-color: rgba(34, 197, 94, 0.2); background: rgba(34, 197, 94, 0.05); color: #4ade80; }
+    .btn-opt-6 .fingerprint-icon { color: #22c55e; }
+    .btn-opt-6:hover { background: rgba(34, 197, 94, 0.15); box-shadow: 0 0 25px rgba(34, 197, 94, 0.3); }
+    .btn-opt-6:hover .fingerprint-icon { animation: heartbeat 1.2s infinite ease-in-out; }
+
+    .btn-opt-7 { border-color: rgba(20, 184, 166, 0.2); background: rgba(20, 184, 166, 0.05); color: #2dd4bf; }
+    .btn-opt-7 .fingerprint-icon { color: rgba(20, 184, 166, 0.4); }
+    .btn-opt-7:hover { background: rgba(20, 184, 166, 0.1); box-shadow: 0 0 20px rgba(20, 184, 166, 0.2); }
+    .btn-opt-7:hover .fingerprint-icon { animation: circuitCharge 1.2s infinite ease-out; }
+
+    .btn-opt-8 { border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05); color: #f87171; }
+    .btn-opt-8 .fingerprint-icon { color: #ef4848; }
+    .btn-opt-8:hover { background: rgba(239, 68, 68, 0.1); box-shadow: 0 0 25px rgba(239, 68, 68, 0.2); }
+    .btn-opt-8:hover .fingerprint-icon { animation: cyberGlitch 0.6s infinite steps(2); }
+
+    .btn-opt-9 { border-color: rgba(244, 63, 94, 0.2); background: rgba(244, 63, 94, 0.05); color: #fb7185; }
+    .btn-opt-9 .fingerprint-icon { color: #f43f5e; }
+    .btn-opt-9:hover { background: rgba(244, 63, 94, 0.1); box-shadow: 0 0 20px rgba(244, 63, 94, 0.2); }
+    .btn-opt-9:hover .fingerprint-icon { animation: wavePulse 1s infinite alternate ease-in-out; }
+
+    .btn-opt-10 { border-color: rgba(16, 185, 129, 0.2); background: rgba(16, 185, 129, 0.05); color: #34d399; }
+    .btn-opt-10 .fingerprint-icon { color: #10b981; }
+    .btn-opt-10:hover { background: rgba(16, 185, 129, 0.15); box-shadow: 0 0 25px rgba(16, 185, 129, 0.3); }
+    .btn-opt-10:hover .fingerprint-icon { animation: matrixFade 1.6s infinite ease-in-out; }
+
+    /* ========================================================
+       OPCIÓN 11: Friction Energy Charge (Fuego / Energía Fricción)
+       ======================================================== */
+    .btn-opt-11 {
+      border-color: rgba(249, 115, 22, 0.2);
+      background: rgba(249, 115, 22, 0.04);
+      color: #ffedd5;
+    }
+    .btn-opt-11 .fingerprint-icon {
+      color: #f97316;
+    }
+    .btn-opt-11:hover {
+      background: #f97316;
+      color: #fff;
+      box-shadow: 0 0 30px rgba(249, 115, 22, 0.6);
+      border-color: transparent;
+    }
+    .btn-opt-11:hover .fingerprint-icon {
+      color: #fff;
+      animation: frictionShake 0.15s infinite alternate linear;
+      filter: drop-shadow(0 0 10px #fff) drop-shadow(0 0 15px #f97316);
+    }
+    @keyframes frictionShake {
+      0% { transform: translate(1px, 1px) scale(1.2) rotate(1deg); }
+      100% { transform: translate(-1px, -1px) scale(1.2) rotate(-1deg); }
+    }
+
+    /* ========================================================
+       OPCIÓN 12: Double Scanning Rings (Doble Anillo Giro)
+       ======================================================== */
+    .btn-opt-12 {
+      border-color: rgba(6, 182, 212, 0.2);
+      background: rgba(6, 182, 212, 0.04);
+      color: #cffafe;
+    }
+    .btn-opt-12 .fingerprint-icon {
+      color: #06b6d4;
+    }
+    .ring-outer, .ring-inner {
+      position: absolute;
+      border: 1.5px dashed rgba(6, 182, 212, 0.4);
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.4s ease;
+    }
+    .ring-outer { width: 42px; height: 42px; }
+    .ring-inner { width: 32px; height: 32px; border-style: dotted; }
+    .btn-opt-12:hover {
+      background: rgba(6, 182, 212, 0.1);
+      box-shadow: 0 0 25px rgba(6, 182, 212, 0.25);
+    }
+    .btn-opt-12:hover .ring-outer {
+      opacity: 1;
+      animation: spinClockwise 4s infinite linear;
+    }
+    .btn-opt-12:hover .ring-inner {
+      opacity: 1;
+      animation: spinCounterClockwise 3s infinite linear;
+    }
+    .btn-opt-12:hover .fingerprint-icon {
+      transform: scale(1.15);
+      filter: drop-shadow(0 0 5px #06b6d4);
+    }
+    @keyframes spinClockwise { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    @keyframes spinCounterClockwise { 0% { transform: rotate(360deg); } 100% { transform: rotate(0deg); } }
+
+    /* ========================================================
+       OPCIÓN 13: Border Gradient Flow (Borde Degradado Líquido)
+       ======================================================== */
+    .btn-opt-13 {
+      border: none;
+      background: rgba(255, 255, 255, 0.02);
+      color: #fff;
+    }
+    .border-glow-wrap {
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      padding: 1.5px;
+      background: linear-gradient(90deg, #6366f1, #38bdf8, #6366f1);
+      background-size: 200% auto;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      opacity: 0.3;
+      transition: opacity 0.4s ease;
+    }
+    .btn-opt-13:hover .border-glow-wrap {
+      opacity: 1;
+      animation: borderFlow 1.5s infinite linear;
+    }
+    .btn-opt-13:hover {
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.25);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .btn-opt-13:hover .fingerprint-icon {
+      transform: scale(1.1) translateY(-2px);
+      color: #38bdf8;
+    }
+    @keyframes borderFlow {
+      0% { background-position: 0% center; }
+      100% { background-position: 200% center; }
+    }
+
+    /* ========================================================
+       OPCIÓN 14: Retro Grid Scan (Escáner de Retícula Retro)
+       ======================================================== */
+    .btn-opt-14 {
+      border-color: rgba(16, 185, 129, 0.2);
+      background: rgba(16, 185, 129, 0.04);
+      color: #a7f3d0;
+    }
+    .btn-opt-14 .fingerprint-icon {
+      color: #10b981;
+    }
+    .scan-reticle {
+      position: absolute;
+      inset: 6px;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 12px;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+    .btn-opt-14:hover .scan-reticle {
+      opacity: 1;
+      border-color: #10b981;
+      animation: reticlePulse 1.2s infinite ease-in-out;
+    }
+    .btn-opt-14:hover .fingerprint-icon {
+      transform: scale(1.1);
+      filter: drop-shadow(0 0 4px #10b981);
+    }
+    @keyframes reticlePulse {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 0.3; }
+    }
+
+    /* ========================================================
+       OPCIÓN 15: Split Slide Shift (Reflejo Desplazado)
+       ======================================================== */
+    .btn-opt-15 {
+      border-color: rgba(139, 92, 246, 0.2);
+      background: rgba(139, 92, 246, 0.04);
+      color: #ddd6fe;
+    }
+    .btn-opt-15 .fingerprint-icon {
+      color: #8b5cf6;
+    }
+    .btn-opt-15:hover {
+      background: rgba(139, 92, 246, 0.1);
+      box-shadow: 0 0 25px rgba(139, 92, 246, 0.25);
+    }
+    .btn-opt-15:hover .fingerprint-icon {
+      animation: splitShift 0.8s infinite ease-in-out;
+    }
+    @keyframes splitShift {
+      0%, 100% { transform: scale(1) translateX(0); filter: none; }
+      30% { transform: scale(1.1) translateX(-2px); filter: drop-shadow(2px 0 #38bdf8); }
+      70% { transform: scale(1.1) translateX(2px); filter: drop-shadow(-2px 0 #ec4899); }
+    }
+
+    /* ========================================================
+       OPCIÓN 16: Targeting Scope Brackets (Brackets de Enfoque)
+       ======================================================== */
+    .btn-opt-16 {
+      border-color: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    .scope-bracket {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-color: #38bdf8;
+      border-style: solid;
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .sb-tl { top: 12px; left: 16px; border-width: 1.5px 0 0 1.5px; }
+    .sb-tr { top: 12px; right: 16px; border-width: 1.5px 1.5px 0 0; }
+    .sb-bl { bottom: 12px; left: 16px; border-width: 0 0 1.5px 1.5px; }
+    .sb-br { bottom: 12px; right: 16px; border-width: 0 1.5px 1.5px 0; }
+
+    .btn-opt-16:hover {
+      border-color: rgba(56, 189, 248, 0.4);
+      background: rgba(56, 189, 248, 0.05);
+    }
+    .btn-opt-16:hover .scope-bracket {
+      opacity: 1;
+    }
+    .btn-opt-16:hover .sb-tl { top: 6px; left: 6px; }
+    .btn-opt-16:hover .sb-tr { top: 6px; right: 6px; }
+    .btn-opt-16:hover .sb-bl { bottom: 6px; left: 6px; }
+    .btn-opt-16:hover .sb-br { bottom: 6px; right: 6px; }
+    .btn-opt-16:hover .fingerprint-icon {
+      transform: scale(1.2);
+      color: #38bdf8;
+    }
+
+    /* ========================================================
+       OPCIÓN 17: Fluid Liquid Orb (Burbuja Líquida Glow)
+       ======================================================== */
+    .btn-opt-17 {
+      border-color: rgba(236, 72, 153, 0.15);
+      color: #fbcfe8;
+    }
+    .btn-opt-17 .fingerprint-icon {
+      color: #ec4899;
+      position: relative;
+      z-index: 2;
+    }
+    .liquid-orb {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      background: radial-gradient(circle, #db2777 0%, transparent 70%);
+      border-radius: 50%;
+      opacity: 0;
+      mix-blend-mode: screen;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+      filter: blur(2px);
+    }
+    .btn-opt-17:hover {
+      background: rgba(236, 72, 153, 0.08);
+      box-shadow: 0 0 20px rgba(236, 72, 153, 0.2);
+    }
+    .btn-opt-17:hover .liquid-orb {
+      opacity: 1;
+      animation: liquidFloat 2.5s infinite alternate ease-in-out;
+    }
+    .btn-opt-17:hover .fingerprint-icon {
+      color: #fff;
+      transform: scale(1.15);
+      filter: drop-shadow(0 0 4px #ec4899);
+    }
+    @keyframes liquidFloat {
+      0% { transform: translate(-10px, -10px) scale(1); }
+      100% { transform: translate(10px, 10px) scale(1.3); }
+    }
+
+    /* ========================================================
+       OPCIÓN 18: Parallax Tilt Card (Giro Parallax 3D)
+       ======================================================== */
+    .btn-opt-18 {
+      perspective: 1000px;
+      border-color: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .btn-opt-18-inner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      transform-style: preserve-3d;
+    }
+    .btn-opt-18:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 10px 25px rgba(255,255,255,0.06);
+    }
+    .btn-opt-18:hover .btn-opt-18-inner {
+      transform: rotateY(-15deg) rotateX(10deg);
+    }
+    .btn-opt-18:hover .fingerprint-icon {
+      transform: translateZ(10px) scale(1.2);
+      color: #6366f1;
+    }
+
+    /* ========================================================
+       OPCIÓN 19: DNA Helix Sweep (Barrido Hélice ADN)
+       ======================================================== */
+    .btn-opt-19 {
+      border-color: rgba(139, 92, 246, 0.2);
+      color: #ddd6fe;
+    }
+    .btn-opt-19 .fingerprint-icon {
+      color: #8b5cf6;
+    }
+    .dna-wave {
+      position: absolute;
+      width: 2px;
+      background: #8b5cf6;
+      opacity: 0;
+      pointer-events: none;
+      border-radius: 50%;
+    }
+    .dna-1 { height: 16px; left: 45px; }
+    .dna-2 { height: 16px; right: 45px; }
+    .btn-opt-19:hover .dna-wave {
+      opacity: 0.6;
+      animation: dnaOscillate 1.5s infinite ease-in-out;
+    }
+    .btn-opt-19:hover .dna-2 { animation-delay: 0.75s; }
+    .btn-opt-19:hover .fingerprint-icon {
+      transform: scale(1.1) translateY(-2px);
+      filter: drop-shadow(0 0 5px #8b5cf6);
+    }
+    @keyframes dnaOscillate {
+      0%, 100% { transform: translateY(-12px) scaleY(0.5); }
+      50% { transform: translateY(12px) scaleY(1.5); }
+    }
+
+    /* ========================================================
+       OPCIÓN 20: Shield Lock Transition (Protección Blindada)
+       ======================================================== */
+    .btn-opt-20 {
+      border-color: rgba(2, 132, 199, 0.2);
+      color: #bae6fd;
+    }
+    .btn-opt-20 .fingerprint-icon {
+      color: #0284c7;
+    }
+    .shield-overlay {
+      position: absolute;
+      inset: 0;
+      border: 1px solid #0284c7;
+      border-radius: 16px;
+      scale: 1.15;
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-opt-20:hover {
+      background: rgba(2, 132, 199, 0.08);
+      box-shadow: 0 0 20px rgba(2, 132, 199, 0.2);
+    }
+    .btn-opt-20:hover .shield-overlay {
+      scale: 1;
+      opacity: 0.4;
+    }
+    .btn-opt-20:hover .fingerprint-icon {
+      transform: scale(1.2);
+      color: #38bdf8;
+      filter: drop-shadow(0 0 5px #38bdf8);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Catálogo Completo de Biometría Premium</h1>
+    <p>He diseñado **10 opciones adicionales** (de la 11 a la 20) con conceptos completamente diferentes, como oscilaciones de ADN, enfoque de retícula, bordes de degradado dinámicos y giros parallax. Pasa el cursor (hover) para probar las 20 animaciones.</p>
+  </header>
+
+  <div class="gallery-grid">
+
+    <!-- Card 1 -->
+    <div class="anim-card">
+      <div class="badge">Opción 1</div>
+      <h3 class="anim-title">Zoom y Rotación Suave</h3>
+      <p class="anim-desc">El glifo de la huella dactilar aumenta de tamaño e integra una sutil rotación e iluminación blanca pura.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-1">
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(1)">Copiar</button>
+        <pre id="code-1">.btn-opt-1:hover .fingerprint-icon {
+  color: #fff;
+  transform: scale(1.4) rotate(-8deg);
+  filter: drop-shadow(0 4px 8px rgba(255, 255, 255, 0.4));
+}</pre>
+      </div>
+    </div>
+
+    <!-- Card 2 -->
+    <div class="anim-card">
+      <div class="badge">Opción 2</div>
+      <h3 class="anim-title">Láser de Barrido Ciclíco</h3>
+      <p class="anim-desc">Un haz horizontal recorre la huella iluminando las crestas dactilares y proyectando un brillo neon dinámico.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-2">
+          <span class="laser-line"></span>
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(2)">Copiar</button>
+        <pre id="code-2">.laser-line {
+  position: absolute; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, #0ea5e9, #38bdf8, #0ea5e9, transparent);
+  box-shadow: 0 0 10px #0ea5e9;
+  animation: laserSweep 1.8s infinite linear;
+}</pre>
+      </div>
+    </div>
+
+    <!-- Card 3 -->
+    <div class="anim-card">
+      <div class="badge">Opción 3</div>
+      <h3 class="anim-title">Ondas de Radar Concánicas</h3>
+      <p class="anim-desc">Genera pulsos circulares que se expanden a gran velocidad simulando el envío de datos de verificación.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-3">
+          <span class="ripple-ring"></span>
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(3)">Copiar</button>
+        <pre id="code-3">.ripple-ring {
+  position: absolute; border: 1.5px solid #ec4899;
+  border-radius: 50%; width: 24px; height: 24px;
+  animation: rippleEffect 1.5s infinite cubic-bezier(0.1, 0.8, 0.3, 1);
+}</pre>
+      </div>
+    </div>
+
+    <!-- Card 4 -->
+    <div class="anim-card">
+      <div class="badge">Opción 4</div>
+      <h3 class="anim-title">Resplandor Líquido (Glow)</h3>
+      <p class="anim-desc">La huella se tiñe de color neón intenso disolviendo los contornos en un haz de luz resplandeciente.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-4">
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(4)">Copiar</button>
+        <pre id="code-4">.btn-opt-4:hover {
+  background: #a855f7;
+  box-shadow: 0 0 35px rgba(168, 85, 247, 0.6);
+}
+.btn-opt-4:hover .fingerprint-icon {
+  color: #fff;
+  filter: drop-shadow(0 0 8px #fff);
+}</pre>
+      </div>
+    </div>
+
+    <!-- Card 5 -->
+    <div class="anim-card">
+      <div class="badge">Opción 5</div>
+      <h3 class="anim-title">Giro de Ajuste Seguro</h3>
+      <p class="anim-desc">El glifo rota de forma rápida simulando un mecanismo de acoplamiento seguro de biológicos.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-5">
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(5)">Copiar</button>
+        <pre id="code-5">.btn-opt-5:hover .fingerprint-icon {
+  transform: rotate(180deg) scale(1.15);
+}</pre>
+      </div>
+    </div>
+
+    <!-- Card 6 -->
+    <div class="anim-card">
+      <div class="badge">Opción 6</div>
+      <h3 class="anim-title">Latido Cardíaco Holográfico</h3>
+      <p class="anim-desc">Un pulso orgánico tipo latido que expande la huella en sincronía y proyecta reflejos de barrido.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-6">
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(6)">Copiar</button>
+        <pre id="code-6">@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  30%, 70% { transform: scale(1.3); filter: drop-shadow(0 0 8px #22c55e); }
+  50% { transform: scale(1.1); }
+}</pre>
+      </div>
+    </div>
+
+    <!-- Card 7 -->
+    <div class="anim-card">
+      <div class="badge">Opción 7</div>
+      <h3 class="anim-title">Impulsos Eléctricos</h3>
+      <p class="anim-desc">El glifo brilla intermitentemente en una secuencia de alta frecuencia como si cargara datos.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-7">
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(7)">Copiar</button>
+        <pre id="code-7">@keyframes circuitCharge {
+  0%, 100% { color: rgba(20, 184, 166, 0.4); }
+  30% { color: #2dd4bf; filter: drop-shadow(0 0 6px #2dd4bf); transform: scale(1.2); }
+}</pre>
+      </div>
+    </div>
+
+    <!-- Card 8 -->
+    <div class="anim-card">
+      <div class="badge">Opción 8</div>
+      <h3 class="anim-title">Glitch Analógico de Señal</h3>
+      <p class="anim-desc">Un efecto de distorsión cromática y glitch de interferencia que simula un escáner hackeado/inestable.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-8">
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(8)">Copiar</button>
+        <pre id="code-8">@keyframes cyberGlitch {
+  0% { transform: translate(1px, -1px) skewX(-5deg); filter: drop-shadow(-2px 0 red) drop-shadow(2px 0 cyan); }
+  25% { transform: translate(-2px, 2px) skewX(8deg); }
+}</pre>
+      </div>
+    </div>
+
+    <!-- Card 9 -->
+    <div class="anim-card">
+      <div class="badge">Opción 9</div>
+      <h3 class="anim-title">Frecuencia de Onda Radial</h3>
+      <p class="anim-desc">Cada cresta aumenta su grosor de trazo y escala progresivamente como si fuera un gráfico de audio.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-9">
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(9)">Copiar</button>
+        <pre id="code-9">@keyframes wavePulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.25); filter: drop-shadow(0 0 6px #f43f5e); }
+}</pre>
+      </div>
+    </div>
+
+    <!-- Card 10 -->
+    <div class="anim-card">
+      <div class="badge">Opción 10</div>
+      <h3 class="anim-title">Disolución Matrix</h3>
+      <p class="anim-desc">Un efecto de desvanecimiento en cascada de los trazos, recreando la disolución digital del sistema.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-10">
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(10)">Copiar</button>
+        <pre id="code-10">@keyframes matrixFade {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.2; transform: scale(0.9); }
+}</pre>
+      </div>
+    </div>
+
+    <!-- Card 11 -->
+    <div class="anim-card">
+      <div class="badge">Opción 11</div>
+      <h3 class="anim-title">Carga por Fricción Térmica</h3>
+      <p class="anim-desc">El botón e icono simulan calentamiento extremo con una vibración física y un resplandor naranja fuego.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-11">
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(11)">Copiar</button>
+        <pre id="code-11">.btn-opt-11:hover .fingerprint-icon {
+  color: #fff;
+  animation: frictionShake 0.15s infinite alternate linear;
+  filter: drop-shadow(0 0 10px #fff) drop-shadow(0 0 15px #f97316);
+}</pre>
+      </div>
+    </div>
+
+    <!-- Card 12 -->
+    <div class="anim-card">
+      <div class="badge">Opción 12</div>
+      <h3 class="anim-title">Anillos de Calibración</h3>
+      <p class="anim-desc">Dos anillos discontinuos concéntricos giran en sentidos opuestos simulando un lector mecánico.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-12">
+          <span class="ring-outer"></span>
+          <span class="ring-inner"></span>
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(12)">Copiar</button>
+        <pre id="code-12">.btn-opt-12:hover .ring-outer {
+  opacity: 1; animation: spinClockwise 4s infinite linear;
+}
+.btn-opt-12:hover .ring-inner {
+  opacity: 1; animation: spinCounterClockwise 3s infinite linear;
+}</pre>
+      </div>
+    </div>
+
+    <!-- Card 13 -->
+    <div class="anim-card">
+      <div class="badge">Opción 13</div>
+      <h3 class="anim-title">Borde Degradado Dinámico</h3>
+      <p class="anim-desc">El borde del botón cobra vida con un flujo degradado de color infinito mientras el icono se eleva.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-13">
+          <span class="border-glow-wrap"></span>
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(13)">Copiar</button>
+        <pre id="code-13">.btn-opt-13:hover .border-glow-wrap {
+  opacity: 1;
+  animation: borderFlow 1.5s infinite linear;
+}</pre>
+      </div>
+    </div>
+
+    <!-- Card 14 -->
+    <div class="anim-card">
+      <div class="badge">Opción 14</div>
+      <h3 class="anim-title">Retícula de Escaneo</h3>
+      <p class="anim-desc">Una retícula de enfoque digital encuadra el lector latiendo suavemente en verde cibernético.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-14">
+          <span class="scan-reticle"></span>
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(14)">Copiar</button>
+        <pre id="code-14">.btn-opt-14:hover .scan-reticle {
+  opacity: 1; border-color: #10b981;
+  animation: reticlePulse 1.2s infinite ease-in-out;
+}</pre>
+      </div>
+    </div>
+
+    <!-- Card 15 -->
+    <div class="anim-card">
+      <div class="badge">Opción 15</div>
+      <h3 class="anim-title">Reflejo Desfasado (Split)</h3>
+      <p class="anim-desc">El glifo se desplaza lateralmente proyectando reflejos cyan y rosa en un desfase de sincronización.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-15">
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(15)">Copiar</button>
+        <pre id="code-15">@keyframes splitShift {
+  30% { transform: scale(1.1) translateX(-2px); filter: drop-shadow(2px 0 #38bdf8); }
+  70% { transform: scale(1.1) translateX(2px); filter: drop-shadow(-2px 0 #ec4899); }
+}</pre>
+      </div>
+    </div>
+
+    <!-- Card 16 -->
+    <div class="anim-card">
+      <div class="badge">Opción 16</div>
+      <h3 class="anim-title">Brackets de Enfoque Activo</h3>
+      <p class="anim-desc">Cuatro corchetes de cámara/enfoque se cierran con precisión en las esquinas interiores del botón.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-16">
+          <span class="scope-bracket sb-tl"></span>
+          <span class="scope-bracket sb-tr"></span>
+          <span class="scope-bracket sb-bl"></span>
+          <span class="scope-bracket sb-br"></span>
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(16)">Copiar</button>
+        <pre id="code-16">.scope-bracket { border-color: #38bdf8; }
+.btn-opt-16:hover .sb-tl { top: 6px; left: 6px; }
+.btn-opt-16:hover .sb-tr { top: 6px; right: 6px; }</pre>
+      </div>
+    </div>
+
+    <!-- Card 17 -->
+    <div class="anim-card">
+      <div class="badge">Opción 17</div>
+      <h3 class="anim-title">Burbuja Líquida Glow</h3>
+      <p class="anim-desc">Un fluido de plasma luminoso flota y se deforma suavemente detrás de la huella al pasar el mouse.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-17">
+          <span class="liquid-orb"></span>
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(17)">Copiar</button>
+        <pre id="code-17">.liquid-orb {
+  background: radial-gradient(circle, #db2777 0%, transparent 70%);
+  animation: liquidFloat 2.5s infinite alternate ease-in-out;
+}</pre>
+      </div>
+    </div>
+
+    <!-- Card 18 -->
+    <div class="anim-card">
+      <div class="badge">Opción 18</div>
+      <h3 class="anim-title">Inclinación Parallax 3D</h3>
+      <p class="anim-desc">Toda la tarjeta física del botón se inclina e interactúa en perspectiva 3D según el ángulo del cursor.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-18">
+          <span class="btn-opt-18-inner">
+            <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+            <span>Biometría</span>
+          </span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(18)">Copiar</button>
+        <pre id="code-18">.btn-opt-18:hover .btn-opt-18-inner {
+  transform: rotateY(-15deg) rotateX(10deg);
+}
+.btn-opt-18:hover .fingerprint-icon {
+  transform: translateZ(10px) scale(1.2);
+}</pre>
+      </div>
+    </div>
+
+    <!-- Card 19 -->
+    <div class="anim-card">
+      <div class="badge">Opción 19</div>
+      <h3 class="anim-title">Hélice de Secuencia ADN</h3>
+      <p class="anim-desc">Dos filamentos de carga genética suben y bajan de manera sinusoidal a los lados de la huella dactilar.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-19">
+          <span class="dna-wave dna-1"></span>
+          <span class="dna-wave dna-2"></span>
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(19)">Copiar</button>
+        <pre id="code-19">.btn-opt-19:hover .dna-wave {
+  opacity: 0.6;
+  animation: dnaOscillate 1.5s infinite ease-in-out;
+}</pre>
+      </div>
+    </div>
+
+    <!-- Card 20 -->
+    <div class="anim-card">
+      <div class="badge">Opción 20</div>
+      <h3 class="anim-title">Escudo Blindado Activo</h3>
+      <p class="anim-desc">Un contorno protector de escudo de seguridad se cierra y resplandece en azul sobre la huella.</p>
+      <div class="button-container">
+        <button class="bio-btn btn-opt-20">
+          <span class="shield-overlay"></span>
+          <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
+          <span>Biometría</span>
+        </button>
+      </div>
+      <div class="code-box">
+        <button class="copy-btn" onclick="copyCode(20)">Copiar</button>
+        <pre id="code-20">.shield-overlay {
+  border: 1px solid #0284c7;
+  scale: 1.15; opacity: 0;
+}
+.btn-opt-20:hover .shield-overlay {
+  scale: 1; opacity: 0.4;
+}</pre>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function copyCode(id) {
+      const codeText = document.getElementById('code-' + id).innerText;
+      navigator.clipboard.writeText(codeText).then(() => {
+        alert('Código de la Opción ' + id + ' copiado al portapapeles.');
+      }).catch(err => {
+        console.error('Error al copiar: ', err);
+      });
+    }
+  </script>
+</body>
+</html>
