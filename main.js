@@ -16179,6 +16179,7 @@ document.addEventListener('click', (e) => {
 /* ==========================================================================
    REAL LIQUID GLASS OPTICAL ENGINE
    ========================================================================== */
+/* // MOTOR INACTIVO — Descomentar para reactivar
 const SurfaceEquations = {
   convex_squircle: (x) => Math.pow(1 - Math.pow(1 - x, 4), 1 / 4)
 };
