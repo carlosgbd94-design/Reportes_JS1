@@ -436,12 +436,32 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (formLogin) {
-    formLogin.addEventListener("submit", async (ev) => {
-      ev.preventDefault();
-      const email = document.getElementById("usuario").value.trim();
-      const password = document.getElementById("password").value.trim();
-      await handleLoginFlow(email, password);
-    });
+    if (window.JustValidate) {
+      const validator = new window.JustValidate('#loginForm', {
+        errorFieldCssClass: 'border-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]',
+        errorLabelCssClass: 'text-red-400 text-[11px] font-bold mt-1 ml-1 tracking-wider uppercase',
+      });
+      validator
+        .addField('#usuario', [
+          { rule: 'required', errorMessage: 'El correo es requerido' },
+          { rule: 'email', errorMessage: 'Formato de correo inválido' },
+        ])
+        .addField('#password', [
+          { rule: 'required', errorMessage: 'La contraseña es requerida' }
+        ])
+        .onSuccess(async (ev) => {
+          const email = document.getElementById("usuario").value.trim();
+          const password = document.getElementById("password").value.trim();
+          await handleLoginFlow(email, password);
+        });
+    } else {
+      formLogin.addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        const email = document.getElementById("usuario").value.trim();
+        const password = document.getElementById("password").value.trim();
+        await handleLoginFlow(email, password);
+      });
+    }
   }
 
   const btnBiometricLogin = document.getElementById("btnBiometricLogin");
@@ -2775,6 +2795,17 @@ function openTopNotifDropdown() {
   // 3. Hacer visible e iniciar la animación en la posición correcta
   box.style.visibility = "visible";
   box.classList.add("open");
+
+  // Animación Premium con GSAP (Staggered fade-up)
+  if (window.gsap) {
+    const animElements = box.querySelectorAll('.notifItem, .topNotifHeaderTop, .topNotifHeadActions');
+    if (animElements.length > 0) {
+      gsap.fromTo(animElements, 
+        { opacity: 0, y: 15, scale: 0.98 }, 
+        { opacity: 1, y: 0, scale: 1, duration: 0.4, stagger: 0.05, ease: "power3.out", overwrite: "auto" }
+      );
+    }
+  }
 }
 
 function closeTopNotifDropdown() {
@@ -8129,10 +8160,12 @@ function dateToLocalYmd(d) {
 }
 
 function isMexicanHoliday(date) {
-
-  const y = date.getFullYear();
-  const m = date.getMonth() + 1;
-  const d = date.getDate();
+  // Use dayjs for robust date parsing and timezone handling
+  const d = dayjs(date);
+  const y = d.year();
+  const m = d.month() + 1; // dayjs months are 0-indexed
+  const dayOfMonth = d.date();
+  const dayOfWeek = d.day();
 
   const fixed = [
     "01-01", // Año nuevo
@@ -8141,33 +8174,26 @@ function isMexicanHoliday(date) {
     "12-25"  // Navidad
   ];
 
-  const mmdd = `${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  const mmdd = `${String(m).padStart(2, "0")}-${String(dayOfMonth).padStart(2, "0")}`;
 
   if (fixed.includes(mmdd)) return true;
 
   // Constitución (primer lunes febrero)
-  if (m === 2 && date.getDay() === 1 && d <= 7) return true;
+  if (m === 2 && dayOfWeek === 1 && dayOfMonth <= 7) return true;
 
   // Benito Juárez (tercer lunes marzo)
-  if (m === 3 && date.getDay() === 1 && d >= 15 && d <= 21) return true;
+  if (m === 3 && dayOfWeek === 1 && dayOfMonth >= 15 && dayOfMonth <= 21) return true;
 
   // Revolución (tercer lunes noviembre)
-  if (m === 11 && date.getDay() === 1 && d >= 15 && d <= 21) return true;
+  if (m === 11 && dayOfWeek === 1 && dayOfMonth >= 15 && dayOfMonth <= 21) return true;
 
   // ===== CÁLCULO SEMANA SANTA =====
+  const easter = dayjs(getEasterDate(y));
+  
+  const juevesSanto = easter.subtract(3, 'day');
+  const viernesSanto = easter.subtract(2, 'day');
 
-  const easter = getEasterDate(y);
-
-  const juevesSanto = new Date(easter);
-  juevesSanto.setDate(easter.getDate() - 3);
-
-  const viernesSanto = new Date(easter);
-  viernesSanto.setDate(easter.getDate() - 2);
-
-  if (
-    sameDate(date, juevesSanto) ||
-    sameDate(date, viernesSanto)
-  ) {
+  if (d.isSame(juevesSanto, 'day') || d.isSame(viernesSanto, 'day')) {
     return true;
   }
 
