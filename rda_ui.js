@@ -761,67 +761,50 @@ function renderDoughnut(agg, esquema) {
         centerLabel = 'Total Dosis';
     }
 
-    const premiumDoughnutPlugin = {
-        id: 'premiumCenterText',
-        beforeDraw: (chart) => {
-            const { ctx, chartArea: { top, bottom, left, right } } = chart;
-            ctx.save();
-            const centerX = left + (right - left) / 2;
-            const centerY = top + (bottom - top) / 2;
-
-            const val = chart.options.plugins.premiumCenterText?.value || '';
-            const lbl = chart.options.plugins.premiumCenterText?.label || '';
-
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            
-            ctx.font = '800 32px Inter, sans-serif';
-            ctx.fillStyle = '#0f172a';
-            ctx.fillText(val, centerX, centerY - 10);
-
-            ctx.font = '600 12px Inter, sans-serif';
-            ctx.fillStyle = '#64748b';
-            ctx.fillText(lbl, centerX, centerY + 16);
-            ctx.restore();
-        }
-    };
-
-    if (_rdaCharts.d) {
-        const chart = _rdaCharts.d;
-        chart.data.labels = labels;
-        chart.data.datasets[0].data = data;
-        chart.data.datasets[0].backgroundColor = backgroundColors;
-        if (!chart.options.plugins.premiumCenterText) chart.options.plugins.premiumCenterText = {};
-        chart.options.plugins.premiumCenterText.value = centerValue;
-        chart.options.plugins.premiumCenterText.label = centerLabel;
-        chart.update();
-    } else {
-        _rdaCharts.d = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{ 
-                    data: data, 
-                    backgroundColor: backgroundColors, 
-                    hoverOffset: 12,
-                    borderWidth: 0,
-                    borderRadius: 12,
-                    spacing: 2
-                }]
-            },
-            options: { 
-                responsive: true, maintainAspectRatio: false, cutout: '80%', 
-                devicePixelRatio: 3,
-                animation: { duration: 1000, easing: 'easeOutQuart' },
-                plugins: { 
-                    legend: { position: 'bottom', labels: { font: { size: 12, weight: '700' }, color: '#64748b', padding: 20, usePointStyle: true, pointStyle: 'circle' } },
-                    tooltip: { backgroundColor: '#0f172a', titleFont: { size: 13 }, bodyFont: { size: 13 }, padding: 12, cornerRadius: 10 },
-                    premiumCenterText: { value: centerValue, label: centerLabel }
-                }
-            },
-            plugins: [premiumDoughnutPlugin]
-        });
+    if (!_rdaCharts.d) {
+        _rdaCharts.d = echarts.init(ctx);
     }
+    
+    let eData = [];
+    for(let i=0; i<data.length; i++) {
+        eData.push({ value: data[i], name: labels[i], itemStyle: { color: backgroundColors[i] } });
+    }
+
+    _rdaCharts.d.setOption({
+        animationDuration: 1000,
+        animationEasing: 'cubicOut',
+        title: {
+            text: centerValue,
+            subtext: centerLabel,
+            left: 'center',
+            top: '40%',
+            textStyle: { fontSize: 32, fontWeight: 800, color: '#0f172a', fontFamily: 'Inter, sans-serif' },
+            subtextStyle: { fontSize: 12, fontWeight: 600, color: '#64748b', fontFamily: 'Inter, sans-serif' },
+            itemGap: 4
+        },
+        tooltip: {
+            trigger: 'item',
+            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+            textStyle: { color: '#fff' },
+            borderWidth: 0,
+            borderRadius: 10
+        },
+        legend: {
+            bottom: 0,
+            icon: 'circle',
+            itemGap: 15,
+            textStyle: { color: '#64748b', fontWeight: 'bold' }
+        },
+        series: [{
+            type: 'pie',
+            radius: ['60%', '80%'],
+            center: ['50%', '45%'],
+            avoidLabelOverlap: false,
+            itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
+            label: { show: false },
+            data: eData
+        }]
+    }, true);
 }
 
 // Chart.js Recycler: In-Place Horizontal Bar / Combo chart update
@@ -1296,64 +1279,85 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                 }
             }
 
-            if (_rdaCharts.total) _rdaCharts.total.destroy();
-            _rdaCharts.total = new Chart(ctxTotal, {
-                type: 'bar',
-                data: { labels: tLabels, datasets: tDatasets },
-                options: tOptions
+            if (!_rdaCharts.total) _rdaCharts.total = echarts.init(ctxTotal);
+            let eSeries = tDatasets.map(ds => {
+                let series = { name: ds.label, type: ds.type || 'bar', data: ds.data };
+                if (series.type === 'bar') {
+                    series.itemStyle = { color: ds.backgroundColor, borderRadius: [4, 4, 0, 0] };
+                    if (ds.yAxisID === 'y1') series.yAxisIndex = 1;
+                } else if (series.type === 'line') {
+                    series.color = ds.backgroundColor || ds.borderColor || '#94a3b8';
+                    series.lineStyle = { color: ds.borderColor, width: ds.borderWidth || 3 };
+                    series.itemStyle = { color: ds.pointBackgroundColor || ds.borderColor };
+                    series.symbol = 'circle';
+                    series.symbolSize = 8;
+                    if (ds.yAxisID === 'y1') series.yAxisIndex = 1;
+                }
+                return series;
             });
+            _rdaCharts.total.resize();
+            _rdaCharts.total.setOption({
+                animationDuration: 1000,
+                animationEasing: 'cubicOut',
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff', fontFamily: 'Inter, sans-serif' }, borderWidth: 0, borderRadius: 12 },
+                legend: { bottom: 0, icon: 'circle', textStyle: { fontFamily: 'Inter, sans-serif', color: '#64748b', fontWeight: 'bold' } },
+                grid: { left: '2%', right: '2%', bottom: '15%', top: '15%', containLabel: true },
+                xAxis: { type: 'category', data: tLabels, axisLabel: { color: '#0f172a', fontWeight: 'bold', fontFamily: 'Inter, sans-serif' }, axisLine: { lineStyle: { color: '#e2e8f0' } } },
+                yAxis: [
+                    { type: 'value', axisLabel: { color: '#94a3b8', fontFamily: 'Inter, sans-serif' }, splitLine: { lineStyle: { type: 'dashed', color: '#f1f5f9' } } },
+                    { type: 'value', axisLabel: { color: '#64748b', formatter: '{value}%', fontFamily: 'Inter, sans-serif' }, splitLine: { show: false } }
+                ],
+                series: eSeries
+            }, true);
         }
     }
 
 
     if (titleEl) titleEl.textContent = titleText;
 
-    if (_rdaCharts.b) {
-        const wasHorizontal = _rdaCharts.b.config.options.indexAxis === 'y';
-        if (wasHorizontal !== isHorizontal) {
-            _rdaCharts.b.destroy();
-            _rdaCharts.b = null;
-        }
-    }
+    if (!_rdaCharts.b) _rdaCharts.b = echarts.init(ctx);
 
-    if (_rdaCharts.b) {
-        const chart = _rdaCharts.b;
-        chart.data.labels = labels;
-        chart.data.datasets = finalDatasets;
-        if (isSingleUnit && esquema === 'basico') {
-            chart.options.scales.y1 = { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#64748b', callback: v => v + '%' } };
-        } else if (chart.options.scales.y1) {
-            delete chart.options.scales.y1;
+    let eSeries = finalDatasets.map(ds => {
+        let series = { name: ds.label, type: ds.type || 'bar', data: ds.data };
+        if (series.type === 'bar') {
+            series.itemStyle = { color: ds.backgroundColor, borderRadius: isHorizontal ? [0, 4, 4, 0] : [4, 4, 0, 0] };
+            if (ds.yAxisID === 'y1') series.yAxisIndex = 1;
+        } else if (series.type === 'line') {
+            series.color = ds.backgroundColor || ds.borderColor || '#94a3b8';
+            series.lineStyle = { color: ds.borderColor, width: ds.borderWidth || 3 };
+            series.itemStyle = { color: ds.pointBackgroundColor || ds.borderColor };
+            series.symbol = 'circle';
+            series.symbolSize = 8;
+            if (ds.yAxisID === 'y1') series.yAxisIndex = 1;
         }
-        chart.update();
-    } else {
-        const options = {
-            responsive: true, maintainAspectRatio: false, 
-            devicePixelRatio: 3,
-            animation: { duration: 1000, easing: 'easeOutQuart' },
-            plugins: { 
-                legend: { display: isSingleUnit, position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle' } },
-                tooltip: { backgroundColor: '#0f172a', padding: 12, cornerRadius: 10, mode: 'index', intersect: false }
-            },
-            scales: {}
-        };
-        if (isHorizontal) {
-            options.indexAxis = 'y';
-            options.plugins.legend.display = true; // Mostrar leyendas para desglose
-            options.scales = {
-                x: { beginAtZero: true, ticks: { color: '#94a3b8', font: { size: 11, weight: '600' } }, grid: { color: '#f1f5f9', borderDash: [5,5] } },
-                y: { ticks: { color: '#0f172a', font: { size: 11, weight: '800' } }, grid: { display: false } }
-            };
-        } else {
-            options.scales = {
-                x: { ticks: { color: '#0f172a', font: { size: 12, weight: '800' } }, grid: { display: false } },
-                y: { beginAtZero: true, ticks: { color: '#94a3b8', font: { size: 11, weight: '600' } }, grid: { color: '#f1f5f9', borderDash: [5,5] } }
-            };
-            if (esquema === 'basico') {
-                options.scales.y1 = { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#64748b', callback: v => v + '%' } };
-            }
-        }
-        _rdaCharts.b = new Chart(ctx, { type: 'bar', data: { labels, datasets: finalDatasets }, options: options });
+        return series;
+    });
+
+    let eOptions = {
+        animationDuration: 1000,
+        animationEasing: 'cubicOut',
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, backgroundColor: 'rgba(15, 23, 42, 0.9)', textStyle: { color: '#fff', fontFamily: 'Inter, sans-serif' }, borderWidth: 0, borderRadius: 12 },
+        legend: { bottom: 0, icon: 'circle', show: isSingleUnit || isHorizontal, textStyle: { fontFamily: 'Inter, sans-serif', color: '#64748b', fontWeight: 'bold' } },
+        grid: { left: '2%', right: '2%', bottom: '15%', top: '15%', containLabel: true },
+        xAxis: isHorizontal ? { type: 'value', splitLine: { lineStyle: { type: 'dashed', color: '#f1f5f9' } }, axisLabel: { fontFamily: 'Inter, sans-serif' } } : { type: 'category', data: labels, axisLabel: { color: '#0f172a', fontWeight: 'bold', fontFamily: 'Inter, sans-serif' }, axisLine: { lineStyle: { color: '#e2e8f0' } } },
+        yAxis: isHorizontal ? { type: 'category', data: labels, axisLabel: { color: '#0f172a', fontWeight: 'bold', fontFamily: 'Inter, sans-serif' }, inverse: true, axisLine: { lineStyle: { color: '#e2e8f0' } } } : [
+            { type: 'value', axisLabel: { color: '#94a3b8', fontFamily: 'Inter, sans-serif' }, splitLine: { lineStyle: { type: 'dashed', color: '#f1f5f9' } } },
+            { type: 'value', axisLabel: { color: '#64748b', formatter: '{value}%', fontFamily: 'Inter, sans-serif' }, splitLine: { show: false } }
+        ],
+        series: eSeries
+    };
+
+    _rdaCharts.b.resize();
+    _rdaCharts.b.setOption(eOptions, true);
+
+    // Ensure ECharts resizes when window resizes
+    if (!window._rdaEchartsResizeAttached) {
+        window.addEventListener('resize', () => {
+            if (_rdaCharts.b) _rdaCharts.b.resize();
+            if (_rdaCharts.total) _rdaCharts.total.resize();
+            if (_rdaCharts.d) _rdaCharts.d.resize();
+        });
+        window._rdaEchartsResizeAttached = true;
     }
 }
 
@@ -1607,15 +1611,15 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
 
             if (isSingleUnit) {
                 const currentYear = new Date().getFullYear();
-                imgChart1Base64 = _rdaCharts.d ? _rdaCharts.d.toBase64Image() : '';
+                imgChart1Base64 = _rdaCharts.d ? _rdaCharts.d.getDataURL({ type: 'png', backgroundColor: '#fff', pixelRatio: 2 }) : '';
                 titleChart1 = "DISTRIBUCIÓN DE AVANCE";
                 titleChart2 = `AVANCE ANUAL ${currentYear}`;
             } else {
-                imgChart1Base64 = _rdaCharts.total ? _rdaCharts.total.toBase64Image() : '';
+                imgChart1Base64 = _rdaCharts.total ? _rdaCharts.total.getDataURL({ type: 'png', backgroundColor: '#fff', pixelRatio: 2 }) : '';
                 titleChart1 = isMuniFilter ? "AVANCE MUNICIPAL TOTAL" : "AVANCE JURISDICCIONAL TOTAL";
                 titleChart2 = isMuniFilter ? "TOP UNIDADES DEL MUNICIPIO" : "TOP 10 UNIDADES";
             }
-            const imgTopBase64 = _rdaCharts.b ? _rdaCharts.b.toBase64Image() : '';
+            const imgTopBase64 = _rdaCharts.b ? _rdaCharts.b.getDataURL({ type: 'png', backgroundColor: '#fff', pixelRatio: 2 }) : '';
             
             const tablesGrouped = [];
             let currentBody = [];

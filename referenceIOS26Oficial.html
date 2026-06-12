@@ -1,492 +1,326 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Especificación Oficial Liquid Glass — iOS 26 / macOS Tahoe</title>
-    
-    <!-- Tipografía Nunito Premium -->
+    <title>Liquid Glass - True Re-creation</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800;900&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-void: #09090b;
-            --bg-card: #141419;
-            --text-main: #fcfcfd;
-            --text-muted: #8a8a98;
-            --accent-border: rgba(255, 255, 255, 0.06);
-            --font-rounded: 'Nunito', sans-serif;
-
-            /* Variables de Vidrio (Liquid Glass Light & Dark) */
-            --glass-tint-light: rgba(255, 255, 255, 0.09);
-            --glass-tint-dark: rgba(10, 10, 12, 0.15);
-            --glass-border-light: rgba(255, 255, 255, 0.22);
-            --glass-border-dark: rgba(255, 255, 255, 0.08);
-            --glass-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.25);
-            --glass-rim-highlight: inset 0 1px 0 0 rgba(255, 255, 255, 0.45);
-            --glass-rim-shadow: inset 0 -1px 0 0 rgba(0, 0, 0, 0.15);
-        }
-
-        *, *::before, *::after {
+        * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-void);
-            color: var(--text-main);
-            font-family: var(--font-rounded);
-            line-height: 1.6;
-            background-image: radial-gradient(circle at 50% 0%, #1a1a24 0%, var(--bg-void) 75%);
-            padding-bottom: 100px;
+            background-color: #050505;
+            font-family: 'Outfit', sans-serif;
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            /* CRÍTICO: Usamos una imagen espacial con texturas nítidas. 
+               La aberración cromática SOLO se nota visualmente si hay bordes duros o texturas detrás.
+               Un fondo liso o muy difuminado no revela el desface RGB. */
+            background-image: url('https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?q=80&w=2000&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
         }
 
-        header {
-            padding: 80px 4vw 40px 4vw;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            gap: 1rem;
-        }
-
-        .meta-pill {
-            background: rgba(255,255,255,0.05);
-            padding: 6px 18px;
-            border-radius: 100px;
-            font-size: 0.8rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #67e8f9;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .title {
-            font-size: clamp(2.5rem, 6vw, 4.5rem);
-            font-weight: 900;
-            margin: 0;
-            letter-spacing: -0.03em;
-            background: linear-gradient(180deg, #ffffff 0%, #a1a1aa 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .desc {
-            font-size: 1.2rem;
-            color: var(--text-muted);
-            max-width: 700px;
-            margin: 0 auto;
-        }
-
-        main {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 4vw;
-            display: flex;
-            flex-direction: column;
-            gap: 60px;
-        }
-
-        .section-card {
-            background: var(--bg-card);
-            border-radius: 32px;
-            border: 1px solid var(--accent-border);
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-        }
-
-        .section-title {
-            font-size: 1.8rem;
-            font-weight: 800;
-            margin-top: 0;
-            margin-bottom: 20px;
+        /* Liquid Glass Base Styles */
+        .liquid-glass {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 30px rgba(0, 0, 0, 0.5);
             color: #fff;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 10px;
-        }
-
-        /* Demo Canvas */
-        .demo-canvas {
-            height: 250px;
-            background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #09090b 100%);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 30px;
+            text-decoration: none;
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            will-change: transform, filter, backdrop-filter;
             position: relative;
-            overflow: hidden;
         }
 
-        .bg-shape {
-            position: absolute;
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #f43f5e 0%, #ec4899 100%);
-            animation: float 6s ease-in-out infinite;
-        }
-
-        .bg-shape-2 {
-            position: absolute;
-            width: 160px;
-            height: 160px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-            right: 20%;
-            top: 10%;
-            animation: float 8s ease-in-out infinite reverse;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0) scale(1); }
-            50% { transform: translateY(-20px) scale(1.1); }
-        }
-
-        /* Glass Classes */
-        .glass-accelerated {
-            will-change: transform, backdrop-filter, filter;
-            transform: translateZ(0);
-            backface-visibility: hidden;
-            perspective: 1000px;
-        }
-
-        .glass-standard {
-            background: var(--glass-tint-light);
-            backdrop-filter: saturate(115%) blur(16px) brightness(1.02);
-            -webkit-backdrop-filter: saturate(115%) blur(16px) brightness(1.02);
-            border: 1px solid var(--glass-border-light);
-            box-shadow: var(--glass-rim-highlight), var(--glass-rim-shadow), var(--glass-shadow);
-            border-radius: 20px;
-            color: #fff;
-            padding: 30px;
-            width: 80%;
-            max-width: 500px;
-            z-index: 10;
-        }
-
-        .glass-liquid {
-            background: rgba(255, 255, 255, 0.06);
-            backdrop-filter: saturate(145%) blur(22px) brightness(1.04);
-            -webkit-backdrop-filter: saturate(145%) blur(22px) brightness(1.04);
-            box-shadow: 
-                inset 0 1.5px 0 0 rgba(255, 255, 255, 0.55),
-                inset 0 -1.5px 0 0 rgba(0, 0, 0, 0.12),
-                inset 0 0 0 1px rgba(255, 255, 255, 0.15),
-                var(--glass-shadow);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            color: #fff;
-            padding: 30px;
-            width: 80%;
-            max-width: 500px;
-            z-index: 10;
-            filter: url('#liquid-refraction');
-            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-
-        .glass-liquid:hover {
-            backdrop-filter: saturate(160%) blur(26px) brightness(1.08);
-            -webkit-backdrop-filter: saturate(160%) blur(26px) brightness(1.08);
-            box-shadow: 
-                inset 0 2px 0 0 rgba(255, 255, 255, 0.7),
-                inset 0 -1.5px 0 0 rgba(0, 0, 0, 0.08),
-                inset 0 0 0 1px rgba(255, 255, 255, 0.25),
-                0 16px 48px -6px rgba(0, 0, 0, 0.3);
-            transform: translateY(-2px) scale(1.01) translateZ(0);
-        }
-
-        .glass-frozen {
-            background: rgba(240, 240, 245, 0.22);
-            backdrop-filter: saturate(100%) blur(32px) brightness(0.95);
-            -webkit-backdrop-filter: saturate(100%) blur(32px) brightness(0.95);
-            border: 1px solid rgba(255, 255, 255, 0.35);
-            border-radius: 28px;
-            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.6), var(--glass-shadow);
-            color: #fff;
-            padding: 30px;
-            width: 80%;
-            max-width: 500px;
-            z-index: 10;
-            filter: url('#frozen-grain');
-        }
-
-        .glass-gooey-container {
-            filter: url('#gooey-morph');
-            background: transparent;
-            display: flex;
-            gap: 16px;
-            padding: 12px;
-            z-index: 10;
-        }
-
-        .glass-gooey-item {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: saturate(120%) blur(10px);
-            -webkit-backdrop-filter: saturate(120%) blur(10px);
+        .liquid-glass:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 20px 40px rgba(0, 0, 0, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.25);
-            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.45), var(--glass-shadow);
+            z-index: 10;
+        }
+
+        /* Header Layout */
+        .header-container {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 100;
+            padding: 8px;
+            border-radius: 100px;
+        }
+
+        .nav-item {
+            padding: 12px 28px;
+            border-radius: 100px;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .nav-button {
+            padding: 12px 32px;
+            border-radius: 100px;
+            font-size: 15px;
             font-weight: 800;
-            transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+            background: rgba(255, 255, 255, 0.25);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+
+        /* Main Content */
+        main {
+            padding-top: 150px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 60px;
+            padding-bottom: 100px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-title {
+            font-size: clamp(3rem, 8vw, 5rem);
+            font-weight: 900;
+            text-align: center;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            max-width: 800px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            width: 100%;
+            max-width: 1000px;
+            padding: 0 20px;
+        }
+
+        .card {
+            height: 350px;
+            border-radius: 40px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
             cursor: pointer;
         }
 
-        .glass-gooey-item:hover {
-            transform: scale(1.2) translateZ(0);
+        .card h2 {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
 
-        code, pre {
-            background: #09090b;
-            color: #34d399;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 0.95rem;
+        .card p {
+            font-size: 16px;
+            opacity: 0.9;
+            line-height: 1.5;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
         }
 
-        pre {
+        .sandbox-circle {
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+            text-align: center;
             padding: 20px;
-            overflow-x: auto;
-            border: 1px solid rgba(255,255,255,0.05);
+            text-shadow: 0 2px 5px rgba(0,0,0,0.8);
         }
+
     </style>
 </head>
 <body>
 
-    <!-- Filtros GPU (Inline SVG) -->
-    <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="0" height="0" style="position: absolute; pointer-events: none; visibility: hidden;">
-      <defs>
-        <filter id="liquid-refraction" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
-          <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="3" result="raw-noise" />
-          <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.25 0" in="raw-noise" result="noise-map"/>
-          <feDisplacementMap in="SourceGraphic" in2="noise-map" scale="22" xChannelSelector="R" yChannelSelector="G" result="refracted-source" />
-          <feOffset in="refracted-source" dx="-3" dy="0" result="red-layer" />
-          <feColorMatrix in="red-layer" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="red-only" />
-          <feOffset in="refracted-source" dx="3" dy="0" result="blue-layer" />
-          <feColorMatrix in="blue-layer" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="blue-only" />
-          <feColorMatrix in="refracted-source" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="green-only" />
-          <feBlend mode="screen" in="red-only" in2="green-only" result="rg-blend" />
-          <feBlend mode="screen" in="rg-blend" in2="blue-only" result="chromatic-aberration" />
-          <feComposite operator="over" in="chromatic-aberration" in2="SourceGraphic" />
-        </filter>
-
-        <filter id="frozen-grain" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
-          <feTurbulence type="fractalNoise" baseFrequency="0.95" numOctaves="4" result="grain-texture" />
-          <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.035 0" in="grain-texture" result="grain-overlay" />
-          <feComposite operator="over" in="grain-overlay" in2="SourceGraphic" />
-        </filter>
-
-        <filter id="gooey-morph" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blurred-field" />
-          <feColorMatrix in="blurred-field" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 25 -12" result="sharp-outline" />
-          <feComposite in="SourceGraphic" in2="sharp-outline" operator="atop" />
-        </filter>
-      </defs>
-    </svg>
-
-    <header>
-        <div class="meta-pill">Guía de Producción iOS 26</div>
-        <h1 class="title">Apple Liquid Glass</h1>
-        <p class="desc">Red de metamateriales refractivos, grano estocástico y fusión por tensión superficial para motores web modernos.</p>
+    <!-- Header identical to Sandbox requirements -->
+    <header class="header-container liquid-glass" data-depth="10" data-strength="100" data-aberration="10" data-blur="3" style="border-radius: 100px;">
+        <div class="nav-item liquid-glass active" data-depth="6" data-strength="100" data-aberration="5" data-blur="2">Inicio</div>
+        <div class="nav-item liquid-glass" data-depth="6" data-strength="100" data-aberration="5" data-blur="2">Productos</div>
+        <div class="nav-item liquid-glass" data-depth="6" data-strength="100" data-aberration="5" data-blur="2">Tecnología</div>
+        <div class="nav-item liquid-glass" data-depth="6" data-strength="100" data-aberration="5" data-blur="2">Empresa</div>
+        <div class="nav-button liquid-glass" data-depth="6" data-strength="100" data-aberration="10" data-blur="2">Comprar</div>
     </header>
 
     <main>
-        
-        <!-- VARIANT A -->
-        <section class="section-card">
-            <h2 class="section-title">Variante A: Standard Glass (Cristal Base)</h2>
-            <div class="demo-canvas">
-                <div class="bg-shape"></div>
-                <div class="glass-accelerated glass-standard">
-                    <h3 style="margin-top:0;">Standard Glass</h3>
-                    <p style="margin-bottom:0; opacity: 0.8;">Biselado especular clásico y desenfoque saturado al 115% de 16px.</p>
-                </div>
-            </div>
-            <p><strong>Uso recomendado:</strong> Paneles estáticos, contenedores secundarios, modales informativos.</p>
-            <pre><code>.glass-standard {
-  background: rgba(255, 255, 255, 0.09);
-  backdrop-filter: saturate(115%) blur(16px) brightness(1.02);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), 0 12px 40px rgba(0,0,0,0.25);
-}</code></pre>
-        </section>
+        <h1 class="hero-title">Liquid Glass<br>Chromatic Effect</h1>
 
-        <!-- VARIANT B -->
-        <section class="section-card">
-            <h2 class="section-title">Variante B: Liquid Glass (Metamaterial Activo)</h2>
-            <div class="demo-canvas">
-                <div class="bg-shape"></div>
-                <div class="bg-shape-2"></div>
-                <div class="glass-accelerated glass-liquid">
-                    <h3 style="margin-top:0;">Liquid Glass (Activo)</h3>
-                    <p style="margin-bottom:0; opacity: 0.9;">Refracción de lente (Displacement Mapping) y aberración cromática RGB en tiempo real.</p>
-                </div>
+        <div class="grid" style="margin-top: 20px; justify-items: center;">
+            <div class="liquid-glass sandbox-circle" data-depth="15" data-strength="100" data-aberration="15" data-blur="2">
+                Aberración Fuerte<br>(Mueve la ventana para ver el fondo)
             </div>
-            <p><strong>Uso recomendado:</strong> Elementos de navegación primarios, selectores interactivos principales, barras de control.</p>
-            <pre><code>.glass-liquid {
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: saturate(145%) blur(22px) brightness(1.04);
-  box-shadow: inset 0 1.5px 0 rgba(255,255,255,0.55), inset 0 0 0 1px rgba(255,255,255,0.15);
-  filter: url('#liquid-refraction');
-}</code></pre>
-        </section>
-
-        <!-- VARIANT C -->
-        <section class="section-card">
-            <h2 class="section-title">Variante C: Frozen Glass (Cristal Texturado)</h2>
-            <div class="demo-canvas">
-                <div class="bg-shape"></div>
-                <div class="glass-accelerated glass-frozen">
-                    <h3 style="margin-top:0;">Frozen Glass</h3>
-                    <p style="margin-bottom:0; opacity: 0.85;">Textura esmerilada de alta densidad y grano fino anti-color-banding.</p>
-                </div>
-            </div>
-            <p><strong>Uso recomendado:</strong> Modales urgentes de sistema, dropdowns contextuales y alertas de confirmación.</p>
-            <pre><code>.glass-frozen {
-  background: rgba(240, 240, 245, 0.22);
-  backdrop-filter: saturate(100%) blur(32px) brightness(0.95);
-  filter: url('#frozen-grain');
-}</code></pre>
-        </section>
-
-        <!-- VARIANT D -->
-        <section class="section-card">
-            <h2 class="section-title">Variante D: Gooey Glass (Fusión Líquida)</h2>
-            <div class="demo-canvas">
-                <div class="bg-shape"></div>
-                <div class="glass-gooey-container">
-                    <div class="glass-gooey-item">A</div>
-                    <div class="glass-gooey-item" style="transform: translateX(-15px);">B</div>
-                    <div class="glass-gooey-item" style="transform: translateX(-30px);">C</div>
-                </div>
-            </div>
-            <p><strong>Uso recomendado:</strong> Botones flotantes (FAB) expansivos, fusiones de menús, cargadores animados.</p>
-            <pre><code>.glass-gooey-container {
-  filter: url('#gooey-morph');
-}</code></pre>
-        </section>
-
-        <!-- VARIANT E: ANDROID PORTABILITY -->
-        <section class="section-card">
-            <h2 class="section-title">Portabilidad a Android (Jetpack Compose & AGSL Shaders)</h2>
-            <p>Para recrear el metamaterial óptico de <strong>Apple Liquid Glass</strong> en Android sin penalizar el hilo de UI, se debe utilizar <strong>Jetpack Compose</strong> (API 31+ para desenfoques de fondo) y <strong>AGSL (Android Graphics Shading Language)</strong> en API 33+ (Android 13+). Esto delega el cálculo refractivo de lentes y aberración cromática directamente en los shaders de fragmentos de la GPU de Android.</p>
             
-            <h3>1. Código del Shader AGSL (Deformación y Aberración)</h3>
-            <p>Este fragmento de shader AGSL calcula la turbulencia fractal en la GPU de Android para desplazar las coordenadas de textura del fondo:</p>
-            <pre><code>// shader_liquid_glass.agsl
-uniform shader inputTexture;
-uniform float2 size;
-uniform float scale; // Factor de refracción (Típicamente 15.0 - 25.0)
+            <div class="liquid-glass sandbox-circle" data-depth="10" data-strength="100" data-aberration="5" data-blur="4" style="border-radius: 40px;">
+                Aberración Suave
+            </div>
+        </div>
 
-// Generación de onda de refracción sutil
-float2 refractCoords(float2 uv) {
-    float angle = uv.y * 30.0;
-    float offset = sin(angle) * 0.008 * (scale / 20.0);
-    return uv + float2(offset, 0.0);
-}
-
-half4 main(float2 coords) {
-    float2 uv = coords / size;
-    
-    // 1. Muestrear canales independientes para aberración cromática
-    float2 uvRefracted = refractCoords(uv);
-    float2 uvRed = refractCoords(uv + float2(-0.003, 0.0));
-    float2 uvBlue = refractCoords(uv + float2(0.003, 0.0));
-    
-    half4 colorG = inputTexture.eval(uvRefracted * size);
-    half4 colorR = inputTexture.eval(uvRed * size);
-    half4 colorB = inputTexture.eval(uvBlue * size);
-    
-    // 2. Combinación y composición
-    half4 finalColor = half4(colorR.r, colorG.g, colorB.b, colorG.a);
-    
-    // 3. Incremento de saturación (Saturation Boost de Apple)
-    float luma = dot(finalColor.rgb, float3(0.299, 0.587, 0.114));
-    finalColor.rgb = mix(float3(luma), finalColor.rgb, 1.4); // 140% saturación
-    
-    return finalColor;
-}</code></pre>
-
-            <h3>2. Estructura del Modifier en Kotlin / Jetpack Compose</h3>
-            <pre><code>// LiquidGlassModifier.kt
-import android.graphics.RuntimeShader
-import android.os.Build
-import androidx.annotation.RequiresApi
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RenderEffect
-import androidx.compose.ui.graphics.ShaderBrush
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.unit.dp
-
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
-fun Modifier.liquidGlass(
-    scale: Float = 18f,
-    tint: Color = Color(0x0FFFFFFF)
-): Modifier = this.then(
-    Modifier
-        .graphicsLayer {
-            // 1. Aplicar desenfoque de fondo nativo (Frosted Glass)
-            renderEffect = RenderEffect.createBlurEffect(
-                22f, 22f, android.graphics.Shader.TileMode.CLAMP
-            )
-            clip = true
-        }
-        .drawWithCache {
-            val agslCode = """...""" // Pegar aquí el código AGSL superior
-            val shader = RuntimeShader(agslCode)
-            shader.setFloatUniform("scale", scale)
-            
-            onDrawWithContent {
-                // 2. Dibujar fondo con refracción y color de tinte
-                drawRect(
-                    brush = ShaderBrush(shader),
-                    alpha = 0.95f
-                )
-                drawRect(color = tint)
-                
-                // 3. Dibujar contenido del elemento DOM
-                drawContent()
-                
-                // 4. Dibujar Bisel Especular Superior (Highlight de Apple)
-                drawRoundRect(
-                    color = Color.White.copy(alpha = 0.45f),
-                    size = size,
-                    style = Stroke(width = 1.dp.toPx())
-                )
-            }
-        }
-)</code></pre>
-        </section>
-
-        <!-- PROMPT GOOGLE AI STUDIO -->
-        <section class="section-card" style="border-color: #a855f7;">
-            <h2 class="section-title" style="color: #c084fc;">Instrucciones Quirúrgicas para Google AI Studio (Prompt Copiador)</h2>
-            <p>Copia y pega el siguiente bloque de texto en Google AI Studio (usando Gemini 1.5 Pro o Gemini 2) para programar de forma autónoma componentes Liquid Glass de producción para Android:</p>
-            
-            <pre style="background: #0f172a; color: #e9d5ff; border: 1px solid rgba(168,85,247,0.3); font-size: 0.9rem; white-space: pre-wrap; word-wrap: break-word;">ACTÚA COMO UN INGENIERO DE RENDERIZADO MÓVIL EN ANDROID Y DISEÑADOR DE METAMATERIALES DE UI. TU OBJETIVO ES CODIFICAR E IMPLEMENTAR LA ESPECIFICACIÓN "LIQUID GLASS" DE APPLE EN ANDROID (JETPACK COMPOSE).
-
-Sigue rigurosamente estas pautas de producción:
-1. Crea un Modifier personalizado de Jetpack Compose llamado "Modifier.liquidGlass" compatible con Android 13+ (API 33+).
-2. Implementa un shader de fragmento en lenguaje AGSL (Android Graphics Shading Language) para procesar el desfase óptico del fondo (refracción de Snell-Descartes) y la aberración cromática RGB (separando los canales Rojo/Azul por +/- 2.5px en coordenadas de muestreo).
-3. Agrega un "Saturation Boost" del 140% en el shader mezclando la luminancia con la textura de fondo para evitar que el desenfoque opaque la interfaz.
-4. Para API &gt;= 31 (Android 12), encadena "RenderEffect.createBlurEffect" con un radio de 22f para lograr el desenfoque gaussiano de fondo nativo.
-5. Para el bisel de contorno de Apple (Highlight/Shadow), usa el método "drawWithCache" y dibuja líneas especulares de 1.dp (blanco al 45% arriba, oscuro al 12% abajo).
-6. Escribe todo el código Kotlin/AGSL completo y modular, sin comentarios elididos ni placeholders. Asegura que compile directamente en Android Studio.</pre>
-        </section>
-
+        <div class="grid" style="margin-top: 20px;">
+            <div class="card liquid-glass" data-depth="20" data-strength="150" data-aberration="25" data-blur="3">
+                <h2>Refracción Extrema</h2>
+                <p>La aberración cromática SOLO se hace visible cuando hay texturas o bordes nítidos detrás del cristal. Si el fondo es liso o muy borroso, la luz RGB se vuelve a mezclar y el ojo humano no nota la separación cromática.</p>
+            </div>
+            <div class="card liquid-glass" data-depth="15" data-strength="100" data-aberration="15" data-blur="2">
+                <h2>Filtros Inyectados</h2>
+                <p>Solucionamos el problema de Chrome inyectando el filtro SVG directo al DOM, evadiendo las políticas de bloqueo locales.</p>
+            </div>
+        </div>
     </main>
+
+    <script>
+        /**
+         * Recreación EXACTA del Sandbox (Solución Definitiva)
+         * 1. Inyecta los filtros en el DOM (evita bloqueos de origen local file:///).
+         * 2. Usa un fondo fotográfico nítido (SIN ESTO, LA ABERRACIÓN CROMÁTICA ES INVISIBLE AL OJO HUMANO).
+         */
+        const svgContainer = document.createElement('div');
+        svgContainer.style.position = 'absolute';
+        svgContainer.style.width = '0';
+        svgContainer.style.height = '0';
+        svgContainer.style.overflow = 'hidden';
+        svgContainer.style.pointerEvents = 'none';
+        document.body.appendChild(svgContainer);
+
+        let idCounter = 0;
+
+        function updateLiquidGlass(el) {
+            const rect = el.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+            
+            const style = window.getComputedStyle(el);
+            let radius = parseFloat(style.borderRadius);
+            if (isNaN(radius)) radius = 0;
+            
+            const maxRadius = Math.min(rect.width / 2, rect.height / 2);
+            if (radius > maxRadius || style.borderRadius.includes('%')) {
+                radius = maxRadius;
+            }
+            
+            const depth = parseFloat(el.dataset.depth || 10);
+            const strength = parseFloat(el.dataset.strength || 100);
+            const chromaticAberration = parseFloat(el.dataset.aberration || 10);
+            const blurAmount = parseFloat(el.dataset.blur || 2);
+            
+            const height = Math.round(rect.height);
+            const width = Math.round(rect.width);
+            
+            const y1 = Math.min(100, Math.ceil((radius / height) * 15));
+            const y2 = Math.max(0, Math.floor(100 - (radius / height) * 15));
+            const x1 = Math.min(100, Math.ceil((radius / width) * 15));
+            const x2 = Math.max(0, Math.floor(100 - (radius / width) * 15));
+
+            const scaleR = strength + chromaticAberration * 2;
+            const scaleG = strength + chromaticAberration;
+            const scaleB = strength;
+            
+            if (!el.dataset.lgId) el.dataset.lgId = 'lg-' + (++idCounter);
+            const id = el.dataset.lgId;
+            const filterId = 'filter-' + id;
+
+            // Limpiamos la instancia anterior
+            const oldSvg = document.getElementById('svg-' + id);
+            if (oldSvg) oldSvg.remove();
+
+            // Mapa de desplazamiento en base64 para el feImage
+            const mapSvg = `<svg height="${height}" width="${width}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+                <style>.mix { mix-blend-mode: screen; }</style>
+                <defs>
+                    <linearGradient id="Y" x1="0" x2="0" y1="${y1}%" y2="${y2}%">
+                        <stop offset="0%" stop-color="#0F0" />
+                        <stop offset="100%" stop-color="#000" />
+                    </linearGradient>
+                    <linearGradient id="X" x1="${x1}%" x2="${x2}%" y1="0" y2="0">
+                        <stop offset="0%" stop-color="#F00" />
+                        <stop offset="100%" stop-color="#000" />
+                    </linearGradient>
+                </defs>
+                <rect x="0" y="0" height="${height}" width="${width}" fill="#808080" />
+                <g filter="blur(2px)">
+                    <rect x="0" y="0" height="${height}" width="${width}" fill="#000080" />
+                    <rect x="0" y="0" height="${height}" width="${width}" fill="url(#Y)" class="mix" />
+                    <rect x="0" y="0" height="${height}" width="${width}" fill="url(#X)" class="mix" />
+                    <rect x="${depth}" y="${depth}" height="${Math.max(0, height - 2 * depth)}" width="${Math.max(0, width - 2 * depth)}" fill="#808080" rx="${radius}" ry="${radius}" filter="blur(${depth}px)" />
+                </g>
+            </svg>`;
+            
+            const mapUrl = "data:image/svg+xml;utf8," + encodeURIComponent(mapSvg);
+
+            // Inyectamos el filtro directo en el DOM para evitar bloqueos CORS por abrir archivo local (file:///)
+            const filterHTML = `
+            <svg id="svg-${id}" width="0" height="0" xmlns="http://www.w3.org/2000/svg">
+                <filter id="${filterId}" color-interpolation-filters="sRGB">
+                    <feImage x="0" y="0" height="${height}" width="${width}" href="${mapUrl}" result="displacementMap" />
+                    
+                    <feDisplacementMap transform-origin="center" in="SourceGraphic" in2="displacementMap" scale="${scaleR}" xChannelSelector="R" yChannelSelector="G" />
+                    <feColorMatrix type="matrix" values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0" result="displacedR" />
+                    
+                    <feDisplacementMap in="SourceGraphic" in2="displacementMap" scale="${scaleG}" xChannelSelector="R" yChannelSelector="G" />
+                    <feColorMatrix type="matrix" values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0" result="displacedG" />
+                    
+                    <feDisplacementMap in="SourceGraphic" in2="displacementMap" scale="${scaleB}" xChannelSelector="R" yChannelSelector="G" />
+                    <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0" result="displacedB" />
+                    
+                    <feBlend in="displacedR" in2="displacedG" mode="screen" result="rgBlend"/>
+                    <feBlend in="rgBlend" in2="displacedB" mode="screen"/>
+                </filter>
+            </svg>`;
+            
+            svgContainer.insertAdjacentHTML('beforeend', filterHTML);
+            
+            // Aplicamos usando url(#id) local
+            const filterString = \`blur(\${blurAmount / 2}px) url(#\${filterId}) blur(\${blurAmount}px) brightness(1.2) saturate(1.8)\`;
+            el.style.backdropFilter = filterString;
+            el.style.webkitBackdropFilter = filterString;
+        }
+
+        const resizeObserver = new ResizeObserver(entries => {
+            for (let entry of entries) {
+                updateLiquidGlass(entry.target);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.liquid-glass').forEach(el => {
+                resizeObserver.observe(el);
+            });
+        });
+
+        window.onload = () => {
+            document.querySelectorAll('.liquid-glass').forEach(el => updateLiquidGlass(el));
+        };
+    </script>
 </body>
 </html>

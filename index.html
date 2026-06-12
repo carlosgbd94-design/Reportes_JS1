@@ -57,7 +57,7 @@
   <!-- Scripts externos -->
   <script src="https://fastly.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://fastly.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
-  <script src="https://fastly.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://fastly.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -575,7 +575,7 @@
                 title="Marcar visibles como leídas">
                 <span class="material-symbols-rounded">done_all</span>
               </button>
-              <button type="button" class="ghostBtn" id="btnTopNotifClose" title="Cerrar panel">
+              <button type="button" class="premium-close-btn" id="btnTopNotifClose" title="Cerrar panel">
                 <span class="material-symbols-rounded">close</span>
               </button>
             </div>
@@ -601,9 +601,8 @@
                 <button type="button" class="premium-refresh-btn" id="btnRefreshArchivos" title="Actualizar lista">
                   <span class="material-symbols-rounded">refresh</span>
                 </button>
-                <button type="button" class="ghostBtn !w-9 !h-9 !min-w-[36px] !min-h-[36px] !rounded-xl"
-                  id="btnArchivosClose" title="Cerrar panel">
-                  <span class="material-symbols-rounded !text-[20px]">close</span>
+                <button type="button" class="premium-close-btn" id="btnArchivosClose" title="Cerrar panel">
+                  <span class="material-symbols-rounded">close</span>
                 </button>
               </div>
             </div>
@@ -2990,7 +2989,7 @@
                 style="margin: 0 0 20px 0; font-size: 14px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em;">
                 Balance de Cobertura</h3>
               <div style="flex: 1; min-height: 280px; position: relative;">
-                <canvas id="chartDoughnut"></canvas>
+                <div id="chartDoughnut" style="width: 100%; height: 100%;"></div>
               </div>
               <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #f1f5f9;">
                 <p style="margin: 0; font-size: 12px; color: #64748b; line-height: 1.6;">Proporción relativa del
@@ -3007,7 +3006,7 @@
                   Avance Jurisdiccional Total</h3>
               </div>
               <div style="flex: 1; min-height: 380px; position: relative;">
-                <canvas id="chartBarTotal"></canvas>
+                <div id="chartBarTotal" style="width: 100%; height: 100%; min-height: 380px;"></div>
               </div>
             </div>
 
@@ -3019,7 +3018,7 @@
                   Análisis Comparativo</h3>
               </div>
               <div style="flex: 1; min-height: 380px; position: relative;">
-                <canvas id="chartBar"></canvas>
+                <div id="chartBar" style="width: 100%; height: 100%; min-height: 380px;"></div>
               </div>
             </div>
           </div>
@@ -4022,7 +4021,7 @@
           <div
             style="background: #fff; border-radius: 24px; padding: 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 20px;">
             <div id="liveChartLeftContainer" style="width: 100px; height: 100px; flex-shrink: 0; position: relative;">
-              <canvas id="liveChartLeft"></canvas>
+              <div id="liveChartLeft" style="width: 100%; height: 100%;"></div>
             </div>
             <div style="flex: 1;">
               <div id="liveChartLeftKicker"
@@ -4038,7 +4037,7 @@
           <div
             style="background: #fff; border-radius: 24px; padding: 20px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 20px;">
             <div id="liveChartRightContainer" style="width: 140px; height: 100px; flex-shrink: 0; position: relative;">
-              <canvas id="liveChartRight"></canvas>
+              <div id="liveChartRight" style="width: 100%; height: 100%;"></div>
             </div>
             <div style="flex: 1;">
               <div id="liveChartRightKicker"

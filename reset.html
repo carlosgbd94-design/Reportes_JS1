@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restablecer Contraseña — SIREVAQ</title>
+  <meta name="theme-color" content="#0f172a">
+
+  <!-- Fuentes e iconos -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@0..1" rel="stylesheet">
+
+  <!-- Estilos -->
+  <link rel="stylesheet" href="style.css?v=2026.24" type="text/css">
+  <link rel="stylesheet" href="tailwind_compiled.css">
+  <link rel="stylesheet" href="mobile.css?v=2026.22">
+
+  <!-- Supabase -->
+  <script src="https://fastly.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body class="min-h-screen relative overflow-x-hidden flex items-center justify-center p-4">
+
+  <!-- Filtros GPU (Inline SVG) para Liquid Glass -->
+  <svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="0" height="0"
+    style="position: absolute; pointer-events: none; visibility: hidden;">
+    <defs>
+      <filter id="liquid-refraction" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+        <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" result="raw-noise" />
+        <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.18 0" in="raw-noise"
+          result="noise-map" />
+        <feDisplacementMap in="SourceGraphic" in2="noise-map" scale="18" xChannelSelector="R" yChannelSelector="G"
+          result="refracted-source" />
+        <feOffset in="refracted-source" dx="-2.5" dy="0" result="red-layer" />
+        <feColorMatrix in="red-layer" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
+          result="red-only" />
+        <feOffset in="refracted-source" dx="2.5" dy="0" result="blue-layer" />
+        <feColorMatrix in="blue-layer" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
+          result="blue-only" />
+        <feColorMatrix in="refracted-source" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"
+          result="green-only" />
+        <feComposite operator="over" in="chromatic-aberration" in2="SourceGraphic" />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- 🎨 PREMIUM BACKGROUND -->
+  <div id="mainAppBackground"
+    style="position: fixed; inset: 0; z-index: -3; pointer-events: none; overflow: hidden; background-color: #f8fafc;">
+    <div
+      style="position: absolute; inset: -50%; background-image: url('https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png'); background-size: 150px; background-repeat: repeat; opacity: 0.02; transform: rotate(-25deg);">
+    </div>
+    <div
+      style="position: absolute; inset: 0; background: radial-gradient(circle at 15% 50%, rgba(14, 165, 233, 0.04) 0%, transparent 40%), radial-gradient(circle at 85% 30%, rgba(15, 23, 42, 0.03) 0%, transparent 40%);">
+    </div>
+  </div>
+
+  <!-- Contenedor de Toasts -->
+  <div id="toast-container" class="toast-container" style="z-index: 100000;"></div>
+
+  <!-- Overlay de Carga -->
+  <div class="overlay" id="overlay" style="z-index: 99999;">
+    <div class="loader">
+      <div class="loaderCircle"></div>
+      <div class="loaderTitle" id="overlayTitle">Procesando</div>
+      <div class="loaderText" id="overlayMsg">Por favor espera...</div>
+    </div>
+  </div>
+
+  <!-- Tarjeta Central de Contenido -->
+  <div class="GlassContainer w-full max-w-[460px] relative z-10" style="--corner-radius: 32px;" id="mainCard">
+    <div class="GlassContent liquidGL p-8 sm:p-10 flex flex-col w-full">
+
+      <!-- Logo Superior -->
+      <div class="flex items-center justify-center gap-3 mb-6">
+        <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png"
+          alt="JS1 Logo" class="h-10 w-auto">
+        <div class="text-xl font-bold tracking-tighter">
+          <span class="text-primary">JS1</span><span style="color: #64748b; font-weight: 500;"> SIREVAQ</span>
+        </div>
+      </div>
+
+      <!-- SECCIÓN 1: FORMULARIO DE REESTABLECIMIENTO -->
+      <div id="sectionReset" class="w-full">
+        <div class="text-center mb-6">
+          <h1 class="text-xl font-extrabold text-primary mb-2">Restablecer tu contraseña</h1>
+          <p class="text-[13px] text-slate-500 font-medium">Ingresa tu nueva contraseña para recuperar el acceso a tu cuenta.</p>
+        </div>
+
+        <form id="resetForm" class="space-y-4">
+          <!-- Nueva Contraseña -->
+          <div class="fieldCard" style="background:transparent; border:none; padding:0;">
+            <label class="text-[11px] font-extrabold text-primary/50 tracking-wider mb-2 block uppercase">Nueva Contraseña</label>
+            <div class="modern-input-group relative">
+              <span class="input-icon material-symbols-rounded">lock</span>
+              <input id="pwdNew" type="password" placeholder="Mínimo 6 caracteres" class="h-12 w-full pr-12 rounded-xl text-sm font-bold" required>
+              <span class="material-symbols-rounded absolute right-4 top-1/2 -translate-y-1/2 text-primary/30 cursor-pointer hover:text-primary transition-colors text-[18px] z-10"
+                id="togglePwdNew" onclick="togglePassField('pwdNew', 'togglePwdNew')">visibility_off</span>
+            </div>
+          </div>
+
+          <!-- Confirmar Contraseña -->
+          <div class="fieldCard" style="background:transparent; border:none; padding:0;">
+            <label class="text-[11px] font-extrabold text-primary/50 tracking-wider mb-2 block uppercase">Confirmar Contraseña</label>
+            <div class="modern-input-group relative">
+              <span class="input-icon material-symbols-rounded">gpp_maybe</span>
+              <input id="pwdConfirm" type="password" placeholder="Repite la nueva contraseña" class="h-12 w-full pr-12 rounded-xl text-sm font-bold" required>
+              <span class="material-symbols-rounded absolute right-4 top-1/2 -translate-y-1/2 text-primary/30 cursor-pointer hover:text-primary transition-colors text-[18px] z-10"
+                id="togglePwdConfirm" onclick="togglePassField('pwdConfirm', 'togglePwdConfirm')">visibility_off</span>
+            </div>
+          </div>
+
+          <button type="submit" id="btnSubmit" class="btn-premium-action w-full h-14 text-sm tracking-widest mt-6">
+            ACTUALIZAR CONTRASEÑA
+          </button>
+        </form>
+      </div>
+
+      <!-- SECCIÓN 2: ERROR -->
+      <div id="sectionError" class="w-full hidden">
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-200">
+            <span class="material-symbols-rounded text-3xl">error</span>
+          </div>
+          <h1 class="text-lg font-black text-red-600 mb-2">Enlace inválido o expirado</h1>
+          <p id="errorDesc" class="text-[13px] text-slate-500 font-medium leading-relaxed">
+            El enlace para restablecer tu contraseña no es válido o ha caducado. Por favor, solicita uno nuevo desde la pantalla de login.
+          </p>
+        </div>
+
+        <a href="index.html" class="btn-premium-action w-full h-14 text-sm tracking-widest mt-4 flex items-center justify-center gap-2" style="text-decoration: none;">
+          VOLVER AL INICIO
+          <span class="material-symbols-rounded">arrow_forward</span>
+        </a>
+      </div>
+
+      <!-- SECCIÓN 3: ÉXITO -->
+      <div id="sectionSuccess" class="w-full hidden">
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-200">
+            <span class="material-symbols-rounded text-3xl">check_circle</span>
+          </div>
+          <h1 class="text-lg font-black text-emerald-600 mb-2">¡Contraseña actualizada!</h1>
+          <p class="text-[13px] text-slate-500 font-medium">
+            Tu contraseña ha sido restablecida exitosamente. Serás redirigido al inicio de sesión en unos momentos.
+          </p>
+          <div class="resetSuccess show mt-4">
+            Redireccionando en <span id="countdown" class="resetCountdown">5</span> segundos...
+          </div>
+        </div>
+
+        <a href="index.html" class="btn-premium-action w-full h-14 text-sm tracking-widest mt-4 flex items-center justify-center gap-2" style="text-decoration: none;">
+          INGRESAR AHORA
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Supabase Config
+    const SUPABASE_URL = "https://utclfqjietlxzlorxhrs.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Y2xmcWppZXRseHpsb3J4aHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNTYyNTQsImV4cCI6MjA5MTkzMjI1NH0.EgDK7xkSZHZyUlGF5m2C7bZjrfkx1M8cBXzxIFedDa4";
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+
+    // Toggle Password field visibility
+    function togglePassField(fieldId, toggleId) {
+      const input = document.getElementById(fieldId);
+      const toggle = document.getElementById(toggleId);
+      if (input && toggle) {
+        const isPass = input.type === "password";
+        input.type = isPass ? "text" : "password";
+        toggle.textContent = isPass ? "visibility" : "visibility_off";
+      }
+    }
+
+    // Toast notifications
+    function showToast(msg, ok = true, type = null) {
+      const container = document.getElementById("toast-container");
+      if (!container) return;
+
+      const finalType = type ? type : (ok ? "good" : "bad");
+      const duration = 4000;
+
+      const toastEl = document.createElement("div");
+      toastEl.className = `toast-new ${finalType}`;
+
+      let icon = "info";
+      if (finalType === "good") icon = "check_circle";
+      else if (finalType === "bad") icon = "error";
+      else if (finalType === "warn") icon = "warning";
+
+      toastEl.innerHTML = `
+        <div class="toast-icon">
+          <span class="material-symbols-rounded">${icon}</span>
+        </div>
+        <div class="toast-content">
+          <div class="toast-message">${msg}</div>
+        </div>
+        <div class="toast-timer"></div>
+      `;
+
+      toastEl.style.setProperty('--toast-duration', `${duration}ms`);
+      container.appendChild(toastEl);
+
+      requestAnimationFrame(() => {
+        toastEl.classList.add("show");
+      });
+
+      setTimeout(() => {
+        toastEl.classList.add("removing");
+        toastEl.addEventListener("transitionend", () => toastEl.remove(), { once: true });
+      }, duration);
+    }
+
+    // Overlays
+    function showOverlay(title, msg) {
+      const ov = document.getElementById("overlay");
+      document.getElementById("overlayTitle").textContent = title;
+      document.getElementById("overlayMsg").textContent = msg;
+      ov.classList.add("show");
+    }
+
+    function hideOverlay() {
+      document.getElementById("overlay").classList.remove("show");
+    }
+
+    // Parse params from Hash or Search parameters
+    function getParam(name) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      if (hashParams.has(name)) return hashParams.get(name);
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has(name)) return urlParams.get(name);
+      
+      return null;
+    }
+
+    // Main logic on DOM load
+    window.addEventListener("DOMContentLoaded", async () => {
+      const error = getParam("error") || getParam("error_code");
+      const errorDescription = getParam("error_description");
+
+      if (error) {
+        document.getElementById("sectionReset").classList.add("hidden");
+        document.getElementById("sectionError").classList.remove("hidden");
+        
+        let displayErrorMsg = "El enlace para restablecer tu contraseña no es válido o ha caducado. Por favor, solicita uno nuevo desde la pantalla de login.";
+        if (errorDescription) {
+          // Translate common Supabase messages
+          if (errorDescription.includes("Email link is invalid or has expired")) {
+            displayErrorMsg = "El enlace de recuperación ha expirado o ya fue utilizado. Por favor solicita uno nuevo.";
+          } else {
+            displayErrorMsg = decodeURIComponent(errorDescription.replace(/\+/g, " "));
+          }
+        }
+        document.getElementById("errorDesc").textContent = displayErrorMsg;
+        showToast("Error de acceso: Enlace inválido o expirado", false, "bad");
+        return;
+      }
+
+      // Check if user has an active recovery session in hash/session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      // If we don't have an active session, let's verify if we have the access token in URL
+      const accessToken = getParam("access_token");
+      if (!session && !accessToken) {
+        document.getElementById("sectionReset").classList.add("hidden");
+        document.getElementById("sectionError").classList.remove("hidden");
+        document.getElementById("errorDesc").textContent = "No se detectó un token de recuperación de contraseña activo. Por favor solicita un nuevo enlace de recuperación.";
+        return;
+      }
+
+      // If we have a session or access token, we can show the reset form
+      const resetForm = document.getElementById("resetForm");
+      resetForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        const pwdNew = document.getElementById("pwdNew").value.trim();
+        const pwdConfirm = document.getElementById("pwdConfirm").value.trim();
+
+        if (pwdNew.length < 6) {
+          showToast("La contraseña debe tener al menos 6 caracteres", false, "warn");
+          return;
+        }
+
+        if (pwdNew !== pwdConfirm) {
+          showToast("Las contraseñas no coinciden", false, "bad");
+          return;
+        }
+
+        showOverlay("Actualizando seguridad...", "Guardando contraseña");
+
+        try {
+          // update user password in Supabase Auth
+          const { data: { user }, error: updateError } = await supabase.auth.updateUser({
+            password: pwdNew,
+            data: { force_password_change: false }
+          });
+
+          if (updateError) throw updateError;
+
+          // Sync databases (perfiles & usuarios_legacy)
+          if (user) {
+            try {
+              // Update perfiles table
+              await supabase
+                .from('perfiles')
+                .update({ must_change: false })
+                .eq('id', user.id);
+
+              // Update usuarios_legacy table
+              const userEmail = user.email;
+              if (userEmail) {
+                const { data: legacyUser } = await supabase
+                  .from('usuarios_legacy')
+                  .select('usuario')
+                  .eq('email', userEmail)
+                  .maybeSingle();
+
+                if (legacyUser && legacyUser.usuario) {
+                  await supabase
+                    .from('usuarios_legacy')
+                    .update({ must_change: false })
+                    .eq('usuario', legacyUser.usuario);
+                }
+              }
+            } catch (dbErr) {
+              console.warn("[Auth Sync Error] No se pudieron sincronizar las tablas complementarias:", dbErr);
+            }
+          }
+
+          // Show success
+          hideOverlay();
+          document.getElementById("sectionReset").classList.add("hidden");
+          document.getElementById("sectionSuccess").classList.remove("hidden");
+          showToast("Contraseña restablecida con éxito", true, "good");
+
+          // Countdown to redirect
+          let secs = 5;
+          const countEl = document.getElementById("countdown");
+          const interval = setInterval(() => {
+            secs--;
+            if (countEl) countEl.textContent = secs;
+            if (secs <= 0) {
+              clearInterval(interval);
+              window.location.href = "index.html";
+            }
+          }, 1000);
+
+        } catch (err) {
+          hideOverlay();
+          console.error(err);
+          showToast(err.message || "Error al actualizar contraseña", false, "bad");
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

@@ -3620,7 +3620,6 @@ async function saveMyPasswordFlow() {
 
     // 🔐 Sincronizar cambio con las tablas perfiles y usuarios_legacy
     try {
-      const legacyHash = await hashPassword(newPassword);
       const userUid = USER.uid || USER.id || (await window.supabase.auth.getUser()).data.user?.id;
 
       // Actualizar tabla perfiles
@@ -3635,7 +3634,7 @@ async function saveMyPasswordFlow() {
       if (USER.usuario) {
         await window.supabase
           .from('usuarios_legacy')
-          .update({ password: legacyHash, must_change: false })
+          .update({ must_change: false })
           .eq('usuario', USER.usuario);
       }
     } catch (dbErr) {
