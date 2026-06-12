@@ -10313,7 +10313,7 @@ function renderCaptureSummary(data) {
 
 window.generateWhatsAppTemplate = function() {
   if (!window.currentFaltantesWhatsApp || window.currentFaltantesWhatsApp.length === 0) {
-    Swal.fire('Sin faltantes', 'No hay unidades pendientes para copiar.', 'info');
+    showToast('No hay unidades pendientes para copiar.', true, 'info');
     return;
   }
   
@@ -10329,18 +10329,10 @@ window.generateWhatsAppTemplate = function() {
   });
   
   navigator.clipboard.writeText(texto).then(() => {
-    Swal.fire({
-      icon: 'success',
-      title: '¡Copiado!',
-      text: 'La plantilla se ha copiado al portapapeles lista para pegar en WhatsApp.',
-      timer: 2000,
-      showConfirmButton: false,
-      toast: true,
-      position: 'top-end'
-    });
+    showToast('¡Copiado! La plantilla se ha copiado al portapapeles para WhatsApp.', true, 'good');
   }).catch(err => {
     console.error("Error copiando al portapapeles:", err);
-    Swal.fire('Error', 'No se pudo copiar el texto automáticamente.', 'error');
+    showToast('No se pudo copiar el texto automáticamente.', false, 'bad');
   });
 };
 
