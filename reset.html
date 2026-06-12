@@ -73,8 +73,9 @@
   </div>
 
   <!-- Tarjeta Central de Contenido -->
-  <div class="GlassContainer w-full max-w-[460px] relative z-10" style="--corner-radius: 32px;" id="mainCard">
-    <div class="GlassContent liquidGL p-8 sm:p-10 flex flex-col w-full">
+  <div class="w-full max-w-[460px] flex justify-center items-center relative z-10">
+    <div class="GlassContainer w-full relative" style="--corner-radius: 32px; width: 100%;" id="mainCard">
+      <div class="GlassContent liquidGL p-8 sm:p-10 flex flex-col w-full" style="width: 100%;">
 
       <!-- Logo Superior -->
       <div class="flex items-center justify-center gap-3 mb-6">
@@ -159,6 +160,7 @@
         </a>
       </div>
 
+      </div>
     </div>
   </div>
 
@@ -166,7 +168,10 @@
     // Supabase Config
     const SUPABASE_URL = "https://utclfqjietlxzlorxhrs.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Y2xmcWppZXRseHpsb3J4aHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNTYyNTQsImV4cCI6MjA5MTkzMjI1NH0.EgDK7xkSZHZyUlGF5m2C7bZjrfkx1M8cBXzxIFedDa4";
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Initialize global supabase client
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+      window.supabaseClientInstance = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
 
 
     // Toggle Password field visibility
@@ -266,7 +271,7 @@
       }
 
       // Check if user has an active recovery session in hash/session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await window.supabaseClientInstance.auth.getSession();
       
       // If we don't have an active session, let's verify if we have the access token in URL
       const accessToken = getParam("access_token");
@@ -299,7 +304,7 @@
 
         try {
           // update user password in Supabase Auth
-          const { data: { user }, error: updateError } = await supabase.auth.updateUser({
+          const { data: { user }, error: updateError } = await window.supabaseClientInstance.auth.updateUser({
             password: pwdNew,
             data: { force_password_change: false }
           });
@@ -310,7 +315,7 @@
           if (user) {
             try {
               // Update perfiles table
-              await supabase
+              await window.supabaseClientInstance
                 .from('perfiles')
                 .update({ must_change: false })
                 .eq('id', user.id);
@@ -318,14 +323,14 @@
               // Update usuarios_legacy table
               const userEmail = user.email;
               if (userEmail) {
-                const { data: legacyUser } = await supabase
+                const { data: legacyUser } = await window.supabaseClientInstance
                   .from('usuarios_legacy')
                   .select('usuario')
                   .eq('email', userEmail)
                   .maybeSingle();
 
                 if (legacyUser && legacyUser.usuario) {
-                  await supabase
+                  await window.supabaseClientInstance
                     .from('usuarios_legacy')
                     .update({ must_change: false })
                     .eq('usuario', legacyUser.usuario);
