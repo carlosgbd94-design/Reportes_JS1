@@ -1163,25 +1163,25 @@ function stopNotificationsAutoRefresh() {
     PINOL_SOLICITUDES_CHANNEL = null;
   }
   if (PRESENCE_CHANNEL) {
-    try { window.supabase.removeChannel(PRESENCE_CHANNEL); } catch (e) {}
+    try { window.supabase.removeChannel(PRESENCE_CHANNEL); } catch (e) { }
     PRESENCE_CHANNEL = null;
   }
 }
 
 function initPresenceRealtime() {
   if (!window.supabase || !TOKEN || !USER) return;
-  
+
   if (PRESENCE_CHANNEL) {
-    try { window.supabase.removeChannel(PRESENCE_CHANNEL); } catch (e) {}
+    try { window.supabase.removeChannel(PRESENCE_CHANNEL); } catch (e) { }
     PRESENCE_CHANNEL = null;
   }
-  
+
   PRESENCE_CHANNEL = window.supabase.channel('global_presence', {
     config: {
       presence: { key: USER.usuario }
     }
   });
-  
+
   PRESENCE_CHANNEL.on('presence', { event: 'sync' }, () => {
     ACTIVE_USERS = PRESENCE_CHANNEL.presenceState();
     renderActiveUsers();
@@ -1201,10 +1201,10 @@ function renderActiveUsers() {
   const activeUsersCount = document.getElementById('activeUsersCount');
   const activeUsersTbody = document.getElementById('activeUsersTbody');
   if (!activeUsersCount || !activeUsersTbody) return;
-  
+
   let totalUsers = 0;
   let html = '';
-  
+
   for (const [key, presences] of Object.entries(ACTIVE_USERS)) {
     if (presences.length > 0) {
       totalUsers++;
@@ -1213,7 +1213,7 @@ function renderActiveUsers() {
       if (data.rol === 'ADMIN') roleColor = 'text-red-500';
       else if (data.rol === 'MUNICIPAL') roleColor = 'text-blue-500';
       else if (data.rol === 'CARAVANAS') roleColor = 'text-teal-500';
-      
+
       html += `
         <tr class="hover:bg-primary/5 transition-colors">
           <td class="px-6 py-3 border-b border-outline-variant/10 text-xs font-bold text-primary">
@@ -1228,11 +1228,11 @@ function renderActiveUsers() {
       `;
     }
   }
-  
+
   if (totalUsers === 0) {
     html = `<tr><td colspan="3" class="text-center py-4 text-xs font-medium text-primary/50">Solo tú estás conectado</td></tr>`;
   }
-  
+
   activeUsersCount.textContent = `${totalUsers} En línea`;
   activeUsersTbody.innerHTML = html;
 }
@@ -2800,8 +2800,8 @@ function openTopNotifDropdown() {
   if (window.gsap) {
     const animElements = box.querySelectorAll('.notifItem, .topNotifHeaderTop, .topNotifHeadActions');
     if (animElements.length > 0) {
-      gsap.fromTo(animElements, 
-        { opacity: 0, y: 15, scale: 0.98 }, 
+      gsap.fromTo(animElements,
+        { opacity: 0, y: 15, scale: 0.98 },
         { opacity: 1, y: 0, scale: 1, duration: 0.4, stagger: 0.05, ease: "power3.out", overwrite: "auto" }
       );
     }
@@ -4867,18 +4867,18 @@ async function supabaseRequest(action = "", payload, options = {}) {
         // 3. Lógica Inteligente (Días festivos / Fines de semana)
         const consIntelligent = await getConsumiblesStatus(today, clues);
         const dow = new Date().getDay();
-        
+
         let canCaptureExistenciaBioStandard = false;
         const hoyDate = new Date();
         const d_dow = hoyDate.getDay();
         if (d_dow === 4 || d_dow === 5) {
-             canCaptureExistenciaBioStandard = true;
+          canCaptureExistenciaBioStandard = true;
         } else if (d_dow === 3) {
-             const jueDate = new Date(hoyDate); jueDate.setDate(hoyDate.getDate() + 1);
-             const vieDate = new Date(hoyDate); vieDate.setDate(hoyDate.getDate() + 2);
-             if (isMexicanHoliday(jueDate) && isMexicanHoliday(vieDate)) {
-                 canCaptureExistenciaBioStandard = true; // Open on Wednesday
-             }
+          const jueDate = new Date(hoyDate); jueDate.setDate(hoyDate.getDate() + 1);
+          const vieDate = new Date(hoyDate); vieDate.setDate(hoyDate.getDate() + 2);
+          if (isMexicanHoliday(jueDate) && isMexicanHoliday(vieDate)) {
+            canCaptureExistenciaBioStandard = true; // Open on Wednesday
+          }
         }
 
         const bioWindow = calculateBioIntelligentWindow(new Date().getFullYear(), new Date().getMonth());
@@ -5018,9 +5018,9 @@ async function supabaseRequest(action = "", payload, options = {}) {
 
             // Lógica Inteligente para Feriados (Existencia Biológico)
             if (isMexicanHoliday(dVie) && isMexicanHoliday(dJue)) {
-               const dMie = new Date(dJue);
-               dMie.setDate(dJue.getDate() - 1);
-               targetWindow.push(dateToLocalYmd(dMie));
+              const dMie = new Date(dJue);
+              dMie.setDate(dJue.getDate() - 1);
+              targetWindow.push(dateToLocalYmd(dMie));
             }
 
             units.forEach(u => {
@@ -5140,7 +5140,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
             });
             const caravanSum = caravanScores.reduce((sum, item) => sum + item.score, 0);
             compliance_pct = caravanScores.length > 0 ? Math.round(caravanSum / caravanScores.length) : 0;
-            
+
             let tier = "riesgo";
             if (compliance_pct === 100) tier = "diamante";
             else if (compliance_pct >= 90) tier = "oro";
@@ -7506,17 +7506,17 @@ $("btnAddLoteRow")?.addEventListener("click", async () => {
   $("loteTxt").focus();
 });
 
-window.startLoteEdit = function(idx) {
+window.startLoteEdit = function (idx) {
   window.LoteEditingIdx = idx;
   renderLotesAdmin();
 }
 
-window.cancelLoteEdit = function() {
+window.cancelLoteEdit = function () {
   window.LoteEditingIdx = null;
   renderLotesAdmin();
 }
 
-window.saveLoteEdit = async function(idx) {
+window.saveLoteEdit = async function (idx) {
   const item = BATCH_CATALOG[idx];
   if (!item) return;
 
@@ -7540,9 +7540,9 @@ window.saveLoteEdit = async function(idx) {
   item.biologico = bioInput.value;
   item.lote = rawLote;
   item.caducidad = rawCad;
-  
+
   window.LoteEditingIdx = null;
-  
+
   await AppService.runCapture({
     btnId: `editBio_${idx}`,
     title: "Actualizando",
@@ -7561,44 +7561,44 @@ window.saveLoteEdit = async function(idx) {
 
 let pendingDeleteIdx = null;
 
-window.openDeleteLoteModal = function(idx) {
+window.openDeleteLoteModal = function (idx) {
   const item = BATCH_CATALOG[idx];
-  if(!item) return;
+  if (!item) return;
   pendingDeleteIdx = idx;
-  
+
   const msgEl = document.getElementById("deleteModalMsg");
-  if(msgEl) {
+  if (msgEl) {
     msgEl.innerHTML = `Estás a punto de eliminar el lote <strong>${item.lote}</strong> del biológico <strong>${item.biologico}</strong> en <strong>${item.municipio}</strong>. Esta acción no se puede deshacer.`;
   }
-  
+
   const modal = document.getElementById("premiumDeleteModal");
-  if(modal) {
+  if (modal) {
     modal.style.display = 'flex'; // Overlay div display
   }
 }
 
-window.closeDeleteModal = function() {
+window.closeDeleteModal = function () {
   pendingDeleteIdx = null;
   const modal = document.getElementById("premiumDeleteModal");
-  if(modal) modal.style.display = 'none';
+  if (modal) modal.style.display = 'none';
 }
 
 window.confirmDeleteLote = async function () {
   if (pendingDeleteIdx === null) return;
   const idx = pendingDeleteIdx;
   const item = BATCH_CATALOG[idx];
-  
+
   closeDeleteModal();
 
   BATCH_CATALOG.splice(idx, 1);
-  
+
   await AppService.runCapture({
     title: "Eliminando",
     msg: "Actualizando catálogo...",
     successMsg: "Lote eliminado correctamente",
     action: () => AppService.call("savelotes", { lotes: BATCH_CATALOG })
   });
-  
+
   renderLotesAdmin();
 }
 
@@ -8189,7 +8189,7 @@ function isMexicanHoliday(date) {
 
   // ===== CÁLCULO SEMANA SANTA =====
   const easter = dayjs(getEasterDate(y));
-  
+
   const juevesSanto = easter.subtract(3, 'day');
   const viernesSanto = easter.subtract(2, 'day');
 
@@ -8757,7 +8757,7 @@ function paintStatusChips(status) {
               </div>
             </div>
           `;
-          
+
           const pendingList = [];
           if (hasPendingBio) pendingList.push(`Biológicos (${details.bio_ok}/${details.bio_expected})`);
           if (hasPendingCons) pendingList.push(`Consumibles (${details.cons_ok}/${details.cons_expected})`);
@@ -9545,7 +9545,7 @@ async function loadBioForm() {
   const chkNoPedido = $("chkNoPedido");
   if (chkNoPedido) {
     chkNoPedido.checked = isOnlyStockSaved;
-    
+
     // Listener interactivo para manejar la habilitación/deshabilitación y estilo de la tarjeta
     const updateStockOnlyUI = () => {
       const isChecked = chkNoPedido.checked;
@@ -9553,7 +9553,7 @@ async function loadBioForm() {
       const iconBg = $("iconNoPedidoBg");
       const label = $("labelNoPedido");
       const hint = $("hintNoPedido");
-      
+
       if (card) {
         if (isChecked) {
           card.style.backgroundColor = "#f0fdf4"; // Verde muy claro premium
@@ -9581,7 +9581,7 @@ async function loadBioForm() {
           }
         }
       }
-      
+
       // Bloquear/desbloquear inputs de la columna "pedido"
       document.querySelectorAll('input[data-kind="pedido"]').forEach(inp => {
         if (isChecked) {
@@ -9673,7 +9673,7 @@ function setEditModeBIO(on) {
   applyCaptureLockState();
   updateCaptureStateBanner();
   syncCommandHub();
-  
+
   // Forzar que el switch y los inputs de pedido se sincronicen con el nuevo estado de edición
   const chk = $("chkNoPedido");
   if (chk && typeof chk.onchange === "function") {
@@ -10363,28 +10363,28 @@ function renderCaptureSummary(data) {
 
   renderCapturadasOnly(capturadas);
   renderFaltantesOnly(faltantes);
-  
+
   window.currentFaltantesWhatsApp = faltantes;
   window.currentTipoWhatsApp = tipo;
 }
 
-window.generateWhatsAppTemplate = function() {
+window.generateWhatsAppTemplate = function () {
   if (!window.currentFaltantesWhatsApp || window.currentFaltantesWhatsApp.length === 0) {
     showToast('No hay unidades pendientes para copiar.', true, 'info');
     return;
   }
-  
+
   let titulo = "Pendientes";
   if (window.currentTipoWhatsApp === "BIO") titulo = "Pedido de biológico";
   else if (window.currentTipoWhatsApp === "CONS") titulo = "Consumibles";
   else if (window.currentTipoWhatsApp === "SR") titulo = "Existencia de biológico";
-  
+
   let texto = `${titulo}\n\n`;
   window.currentFaltantesWhatsApp.forEach(r => {
     const unitName = (r.unidad || '').toUpperCase().trim();
     texto += `*${unitName} - PENDIENTE*\n`;
   });
-  
+
   navigator.clipboard.writeText(texto).then(() => {
     showToast('¡Copiado! La plantilla se ha copiado al portapapeles para WhatsApp.', true, 'good');
   }).catch(err => {
@@ -10456,9 +10456,9 @@ function setLoggedInUI(user, status) {
       // Add any other strictly ADMIN-only parent containers here if necessary
     ];
     forbiddenPanels.forEach(p => {
-      if (p) { 
-        p.classList.add("hidden"); 
-        p.style.setProperty("display", "none", "important"); 
+      if (p) {
+        p.classList.add("hidden");
+        p.style.setProperty("display", "none", "important");
       }
     });
   }
@@ -10670,7 +10670,7 @@ function updateDynamicGreeting(timeGreeting = null, customSubtitle = null) {
           <h1 class="text-[24px] sm:text-[30px] font-black tracking-tight leading-none flex items-center flex-wrap gap-x-4 gap-y-2 drop-shadow-sm transition-colors duration-500" style="color: ${colorTitle};">
             ${title}
             <span class="text-[13px] sm:text-[14px] font-semibold opacity-85 tracking-normal hidden sm:inline-block" style="color: ${colorTitle};">
-              • hoy es ${longDate}
+              • Hoy es ${longDate}
             </span>
           </h1>
           <p class="text-[13px] sm:text-[14px] font-medium mt-1.5 max-w-[420px] leading-relaxed drop-shadow-sm transition-colors duration-500" style="color: ${colorSub};">
@@ -11029,9 +11029,9 @@ function syncTabGroupIndicator(containerSelector) {
   indicator.style.left = `${activeBtn.offsetLeft}px`;
 
   // Dynamic Liquid Glass update
-  if (typeof updateLiquidGlassMaps === 'function') {
-    updateLiquidGlassMaps(indicator.id, w, h);
-  }
+  // if (typeof updateLiquidGlassMaps === 'function') {
+  //   updateLiquidGlassMaps(indicator.id, w, h);
+  // }
 }
 
 window.addEventListener('resize', () => {
@@ -12354,7 +12354,7 @@ async function loadConsumiblesOverrideAdmin() {
     const data = r.data || {};
     if ($("consOverrideDate")) $("consOverrideDate").value = data.fecha || "";
     if ($("consOverrideReason")) $("consOverrideReason").value = data.motivo || "";
-    
+
     if (data.fecha) {
       setStatus("ACTIVA: " + formatDateMx(data.fecha), true);
     } else {
@@ -12388,7 +12388,7 @@ async function loadExistenciaOverrideAdmin() {
     const data = r.data || {};
     if ($("existenciaOverrideDate")) $("existenciaOverrideDate").value = data.fecha || "";
     if ($("existenciaOverrideReason")) $("existenciaOverrideReason").value = data.motivo || "";
-    
+
     if (data.fecha) {
       setStatus("ACTIVA: " + formatDateMx(data.fecha), true);
     } else {
@@ -13178,7 +13178,7 @@ async function getHistoryMetrics(mes, _ignored, force = false) {
         console.error("RPC Error in getHistoryMetrics:", error);
         return null;
       }
-      
+
       // Mapear campos devueltos por el RPC para coincidir con la nomenclatura del frontend camelCase
       const rows = (data || []).map(r => ({
         clues: r.clues,
@@ -14894,32 +14894,32 @@ function renderLiveCharts(tipo, leftData, rightData) {
           label: { show: false },
           emphasis: { scale: true, scaleSize: 6 }, // Usamos escala en lugar de sombras para evitar bugs de GPU
           data: [
-            { 
-              value: sem.pronto, name: 'Próxima', 
-              itemStyle: { 
+            {
+              value: sem.pronto, name: 'Próxima',
+              itemStyle: {
                 color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                   { offset: 0, color: '#f87171' },
                   { offset: 1, color: '#dc2626' }
-                ]) 
-              } 
+                ])
+              }
             },
-            { 
-              value: sem.normal, name: 'Media', 
-              itemStyle: { 
+            {
+              value: sem.normal, name: 'Media',
+              itemStyle: {
                 color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                   { offset: 0, color: '#fbbf24' },
                   { offset: 1, color: '#ea580c' }
-                ]) 
-              } 
+                ])
+              }
             },
-            { 
-              value: sem.lejana, name: 'Vigente', 
-              itemStyle: { 
+            {
+              value: sem.lejana, name: 'Vigente',
+              itemStyle: {
                 color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                   { offset: 0, color: '#34d399' },
                   { offset: 1, color: '#059669' }
-                ]) 
-              } 
+                ])
+              }
             }
           ]
         }]
@@ -14935,7 +14935,7 @@ function renderLiveCharts(tipo, leftData, rightData) {
         series: [{
           name: 'Lotes', type: 'bar', data: [cad.m3, cad.m6, cad.m12, cad.more],
           emphasis: { focus: 'series' },
-          itemStyle: { 
+          itemStyle: {
             borderRadius: [8, 8, 0, 0],
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
               { offset: 0, color: '#60a5fa' },
@@ -14961,23 +14961,23 @@ function renderLiveCharts(tipo, leftData, rightData) {
           label: { show: false },
           emphasis: { scale: true, scaleSize: 6 },
           data: [
-            { 
-              value: ex, name: 'Existencia Actual', 
-              itemStyle: { 
+            {
+              value: ex, name: 'Existencia Actual',
+              itemStyle: {
                 color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                   { offset: 0, color: '#cbd5e1' },
                   { offset: 1, color: '#64748b' }
-                ]) 
-              } 
+                ])
+              }
             },
-            { 
-              value: pd, name: 'Pedido Solicitado', 
-              itemStyle: { 
+            {
+              value: pd, name: 'Pedido Solicitado',
+              itemStyle: {
                 color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                   { offset: 0, color: '#c084fc' },
                   { offset: 1, color: '#7c3aed' }
-                ]) 
-              } 
+                ])
+              }
             }
           ]
         }]
@@ -14985,7 +14985,7 @@ function renderLiveCharts(tipo, leftData, rightData) {
 
       let topLabels = top.length ? top.map(t => t.bio) : ['Sin datos'];
       let topCant = top.length ? top.map(t => t.cant) : [0];
-      
+
       CHART_CAD = echarts.init(ctxRight);
       CHART_CAD.setOption({
         animationDuration: 1000, animationEasing: 'exponentialOut',
@@ -14996,7 +14996,7 @@ function renderLiveCharts(tipo, leftData, rightData) {
         series: [{
           name: 'Frascos', type: 'bar', data: topCant,
           emphasis: { focus: 'series' },
-          itemStyle: { 
+          itemStyle: {
             borderRadius: [8, 8, 0, 0],
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
               { offset: 0, color: '#d8b4fe' },
@@ -15021,32 +15021,32 @@ function renderLiveCharts(tipo, leftData, rightData) {
           label: { show: false },
           emphasis: { scale: true, scaleSize: 6 },
           data: [
-            { 
-              value: j5, name: 'Jeringa 5ml', 
-              itemStyle: { 
+            {
+              value: j5, name: 'Jeringa 5ml',
+              itemStyle: {
                 color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                   { offset: 0, color: '#7dd3fc' },
                   { offset: 1, color: '#0284c7' }
-                ]) 
-              } 
+                ])
+              }
             },
-            { 
-              value: j05, name: 'Jeringa 0.5ml', 
-              itemStyle: { 
+            {
+              value: j05, name: 'Jeringa 0.5ml',
+              itemStyle: {
                 color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                   { offset: 0, color: '#38bdf8' },
                   { offset: 1, color: '#0369a1' }
-                ]) 
-              } 
+                ])
+              }
             },
-            { 
-              value: ag, name: 'Agujas', 
-              itemStyle: { 
+            {
+              value: ag, name: 'Agujas',
+              itemStyle: {
                 color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                   { offset: 0, color: '#93c5fd' },
                   { offset: 1, color: '#1d4ed8' }
-                ]) 
-              } 
+                ])
+              }
             }
           ]
         }]
@@ -15062,7 +15062,7 @@ function renderLiveCharts(tipo, leftData, rightData) {
         series: [{
           name: 'Dosis', type: 'bar', data: [srp, sr],
           emphasis: { focus: 'series' },
-          itemStyle: { 
+          itemStyle: {
             borderRadius: [8, 8, 0, 0],
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
               { offset: 0, color: '#34d399' },
@@ -15862,11 +15862,11 @@ function syncCommandHub() {
   const captureTab = AppState.captureTab || "SR";
 
   const isEditing = (captureTab === "SR" && typeof EDIT_SR !== "undefined" && EDIT_SR) ||
-                    (captureTab === "CONS" && typeof EDIT_CONS !== "undefined" && EDIT_CONS) ||
-                    (captureTab === "BIO" && typeof EDIT_BIO !== "undefined" && EDIT_BIO);
+    (captureTab === "CONS" && typeof EDIT_CONS !== "undefined" && EDIT_CONS) ||
+    (captureTab === "BIO" && typeof EDIT_BIO !== "undefined" && EDIT_BIO);
   const isAlreadySaved = (captureTab === "SR" && typeof HAS_TODAY_SR !== "undefined" && HAS_TODAY_SR) ||
-                         (captureTab === "CONS" && typeof HAS_TODAY_CONS !== "undefined" && HAS_TODAY_CONS) ||
-                         (captureTab === "BIO" && typeof HAS_SAVED_BIO !== "undefined" && HAS_SAVED_BIO);
+    (captureTab === "CONS" && typeof HAS_TODAY_CONS !== "undefined" && HAS_TODAY_CONS) ||
+    (captureTab === "BIO" && typeof HAS_SAVED_BIO !== "undefined" && HAS_SAVED_BIO);
   const canEdit = isAlreadySaved && !isEditing;
 
   // 1. Visibilidad Global (Solo en paneles de captura)
@@ -16165,12 +16165,12 @@ document.addEventListener('click', (e) => {
     const rect = rippleBtn.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
+
     const ripple = document.createElement('span');
     ripple.className = 'ripple-effect';
     ripple.style.left = `${x}px`;
     ripple.style.top = `${y}px`;
-    
+
     rippleBtn.appendChild(ripple);
     setTimeout(() => ripple.remove(), 600);
   }
@@ -16179,14 +16179,14 @@ document.addEventListener('click', (e) => {
 /* ==========================================================================
    REAL LIQUID GLASS OPTICAL ENGINE
    ========================================================================== */
-const SurfaceEquations = { 
-  convex_squircle: (x) => Math.pow(1 - Math.pow(1 - x, 4), 1 / 4) 
+const SurfaceEquations = {
+  convex_squircle: (x) => Math.pow(1 - Math.pow(1 - x, 4), 1 / 4)
 };
 
-function calculateDisplacementMap1D(gt, bw, sf, ri, s = 128) { 
+function calculateDisplacementMap1D(gt, bw, sf, ri, s = 128) {
   const e = 1 / ri;
-  const r = []; 
-  for (let i = 0; i < s; i++) { 
+  const r = [];
+  for (let i = 0; i < s; i++) {
     const x = i / s;
     const y = sf(x);
     const dx = x < 1 ? 0.0001 : -0.0001;
@@ -16194,42 +16194,42 @@ function calculateDisplacementMap1D(gt, bw, sf, ri, s = 128) {
     const m = Math.sqrt(d * d + 1);
     const n = [-d / m, -1 / m];
     const dt = n[1];
-    const k = 1 - e * e * (1 - dt * dt); 
-    
+    const k = 1 - e * e * (1 - dt * dt);
+
     if (k < 0) {
-      r.push(0); 
-    } else { 
+      r.push(0);
+    } else {
       const rf = [
-        -(e * dt + Math.sqrt(k)) * n[0], 
+        -(e * dt + Math.sqrt(k)) * n[0],
         e - (e * dt + Math.sqrt(k)) * n[1]
-      ]; 
-      r.push(rf[0] * ((y * bw + gt) / rf[1])); 
-    } 
-  } 
-  return r; 
+      ];
+      r.push(rf[0] * ((y * bw + gt) / rf[1]));
+    }
+  }
+  return r;
 }
 
-function calculateDisplacementMap2D(cw, ch, ow, oh, rad, bw, md, pMap) { 
-  const img = new ImageData(cw, ch); 
+function calculateDisplacementMap2D(cw, ch, ow, oh, rad, bw, md, pMap) {
+  const img = new ImageData(cw, ch);
   for (let i = 0; i < img.data.length; i += 4) {
     img.data[i] = 128;
     img.data[i + 1] = 128;
     img.data[i + 3] = 255;
-  } 
+  }
   const rSq = rad * rad;
   const rp1Sq = (rad + 1) ** 2;
   const rmBwSq = Math.max(0, rad - bw) ** 2;
   const wB = ow - rad * 2;
   const hB = oh - rad * 2;
   const oX = (cw - ow) / 2;
-  const oY = (ch - oh) / 2; 
+  const oY = (ch - oh) / 2;
 
   for (let y1 = 0; y1 < oh; y1++) {
     for (let x1 = 0; x1 < ow; x1++) {
       const idx = ((oY + y1) * cw + oX + x1) * 4;
       const x = x1 < rad ? x1 - rad : x1 >= ow - rad ? x1 - rad - wB : 0;
       const y = y1 < rad ? y1 - rad : y1 >= oh - rad ? y1 - rad - hB : 0;
-      const dSq = x * x + y * y; 
+      const dSq = x * x + y * y;
 
       if (dSq <= rp1Sq && dSq >= rmBwSq) {
         const dist = Math.sqrt(dSq);
@@ -16237,28 +16237,28 @@ function calculateDisplacementMap2D(cw, ch, ow, oh, rad, bw, md, pMap) {
         const bIdx = Math.floor(Math.max(0, Math.min(1, (rad - dist) / bw)) * pMap.length);
         const dVal = pMap[Math.max(0, Math.min(bIdx, pMap.length - 1))] || 0;
         const dX = md > 0 ? (-(dist > 0 ? x / dist : 0) * dVal) / md : 0;
-        const dY = md > 0 ? (-(dist > 0 ? y / dist : 0) * dVal) / md : 0; 
+        const dY = md > 0 ? (-(dist > 0 ? y / dist : 0) * dVal) / md : 0;
 
-        img.data[idx] = Math.max(0, Math.min(255, 128 + dX * 127 * op)); 
+        img.data[idx] = Math.max(0, Math.min(255, 128 + dX * 127 * op));
         img.data[idx + 1] = Math.max(0, Math.min(255, 128 + dY * 127 * op));
       }
     }
-  } 
-  return img; 
+  }
+  return img;
 }
 
-function calculateSpecularHighlight(ow, oh, rad, bw) { 
+function calculateSpecularHighlight(ow, oh, rad, bw) {
   const img = new ImageData(ow, oh);
   const sVec = [Math.cos(Math.PI / 3), Math.sin(Math.PI / 3)];
   const rSq = rad * rad;
   const rp1Sq = (rad + 1) ** 2;
-  const rmSSq = Math.max(0, (rad - 1.5) ** 2); 
+  const rmSSq = Math.max(0, (rad - 1.5) ** 2);
 
   for (let y1 = 0; y1 < oh; y1++) {
     for (let x1 = 0; x1 < ow; x1++) {
       const x = x1 < rad ? x1 - rad : x1 >= ow - rad ? x1 - rad - (ow - rad * 2) : 0;
       const y = y1 < rad ? y1 - rad : y1 >= oh - rad ? y1 - rad - (oh - rad * 2) : 0;
-      const dSq = x * x + y * y; 
+      const dSq = x * x + y * y;
 
       if (dSq <= rp1Sq && dSq >= rmSSq) {
         const dist = Math.sqrt(dSq);
@@ -16266,22 +16266,22 @@ function calculateSpecularHighlight(ow, oh, rad, bw) {
         const dp = Math.abs((dist > 0 ? x / dist : 0) * sVec[0] + (dist > 0 ? -y / dist : 0) * sVec[1]);
         const cf = dp * Math.sqrt(1 - (1 - Math.max(0, Math.min(1, (rad - dist) / 1.5))) ** 2);
         const c = Math.min(255, 255 * cf);
-        const idx = (y1 * ow + x1) * 4; 
+        const idx = (y1 * ow + x1) * 4;
 
-        img.data[idx] = img.data[idx + 1] = img.data[idx + 2] = c; 
+        img.data[idx] = img.data[idx + 1] = img.data[idx + 2] = c;
         img.data[idx + 3] = Math.min(255, c * cf * op);
       }
     }
-  } 
-  return img; 
+  }
+  return img;
 }
 
-function imageDataToDataURL(img) { 
-  const c = document.createElement("canvas"); 
-  c.width = img.width; 
-  c.height = img.height; 
-  c.getContext("2d").putImageData(img, 0, 0); 
-  return c.toDataURL(); 
+function imageDataToDataURL(img) {
+  const c = document.createElement("canvas");
+  c.width = img.width;
+  c.height = img.height;
+  c.getContext("2d").putImageData(img, 0, 0);
+  return c.toDataURL();
 }
 
 function updateLiquidGlassMaps(indicatorId, w, h) {
@@ -16319,6 +16319,7 @@ function updateLiquidGlassMaps(indicatorId, w, h) {
 
   dispMap.setAttribute("scale", (maxDisp * 1.5).toString());
 }
+*/
 
 // ===== PREMIUM SKELETON HELPERS =====
 function getTableSkeletonHtml(rowsCount = 5) {
@@ -16395,13 +16396,13 @@ function getPinolSkeletonHtml(count = 4) {
 function animateCounter(elementId, start, end, duration = 1000) {
   const el = document.getElementById(elementId);
   if (!el) return;
-  
+
   const range = end - start;
   if (range === 0) {
     el.textContent = end;
     return;
   }
-  
+
   let current = start;
   const increment = range > 0 ? 1 : -1;
   const stepTime = Math.abs(Math.floor(duration / range));
@@ -16416,14 +16417,14 @@ function animateCounter(elementId, start, end, duration = 1000) {
 
 // ===== SUPABASE PASSKEYS (WEBAUTHN BIOMETRICS) =====
 async function checkPasskeySupport() {
-  if (window.PublicKeyCredential && 
-      window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+  if (window.PublicKeyCredential &&
+    window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
     try {
       const available = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
       if (available) {
         const biometricLoginBtn = document.getElementById("btnBiometricLogin");
         if (biometricLoginBtn) biometricLoginBtn.style.display = "flex";
-        
+
         const passkeyRegContainer = document.getElementById("passkeyRegContainer");
         if (passkeyRegContainer) passkeyRegContainer.style.display = "block";
       }
@@ -16498,14 +16499,14 @@ function playNotificationSound(type = "success") {
     osc.connect(gain);
     gain.connect(ctx.destination);
     const now = ctx.currentTime;
-    
+
     if (type === "success" || type === "sent") {
       osc.frequency.setValueAtTime(523.25, now);
       gain.gain.setValueAtTime(0.15, now);
       gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
       osc.start(now);
       osc.stop(now + 0.15);
-      
+
       const osc2 = ctx.createOscillator();
       const gain2 = ctx.createGain();
       osc2.connect(gain2);
@@ -16568,16 +16569,16 @@ function updateNotifPreviewCard() {
   const messageVal = $("notifMessage")?.value?.trim() || "Escribe un mensaje para ver la previsualización interactiva aquí...";
   const typeVal = $("notifType")?.value || "INFO";
   const scopeVal = $("notifTargetScope")?.value || "ALL_MY_UNITS";
-  
+
   const lblTitle = $("lblPreviewTitle");
   const lblBody = $("lblPreviewBody");
   const lblScope = $("lblPreviewScope");
   const previewCard = $("notifPreviewCard");
   const iconPreview = document.querySelector(".notif-icon-preview");
-  
+
   if (lblTitle) lblTitle.textContent = titleVal;
   if (lblBody) lblBody.textContent = messageVal;
-  
+
   // Update Scope Label
   if (lblScope) {
     let scopeText = "Para: Toda la Red";
@@ -16593,11 +16594,11 @@ function updateNotifPreviewCard() {
     }
     lblScope.textContent = scopeText;
   }
-  
+
   // Update priority card classes and icon
   if (previewCard) {
     previewCard.className = "liveFeedItem w-full shadow-lg border border-outline-variant/20 max-w-md transform transition-all duration-300 hover:scale-[1.02]";
-    
+
     let iconName = "info";
     if (typeVal === "INFO") {
       previewCard.classList.add("info");
@@ -16612,7 +16613,7 @@ function updateNotifPreviewCard() {
       previewCard.classList.add("error");
       iconName = "error";
     }
-    
+
     if (iconPreview) iconPreview.textContent = iconName;
   }
 }
@@ -16629,12 +16630,12 @@ function initNotificationComposerUX() {
   const btnRequestPushPermission = $("btnRequestPushPermission");
   const lblPushStatus = $("lblPushStatus");
   const lblSoundIcon = $("lblSoundIcon");
-  
+
   // 1. Text input listeners for live preview & character counter
   if (notifTitle) {
     notifTitle.addEventListener("input", updateNotifPreviewCard);
   }
-  
+
   if (notifMessage) {
     notifMessage.addEventListener("input", () => {
       const len = notifMessage.value.length;
@@ -16654,12 +16655,12 @@ function initNotificationComposerUX() {
       updateNotifPreviewCard();
     });
   }
-  
+
   // 2. Selects change listeners for live preview
   [notifType, notifTargetScope, notifTargetMunicipio, notifTargetClues, notifTargetUser].forEach(el => {
     el?.addEventListener("change", updateNotifPreviewCard);
   });
-  
+
   // 3. sound configuration persistence
   if (chkNotifSound) {
     const savedSound = localStorage.getItem("SIREVAQ_NOTIF_SOUND") !== "NO";
@@ -16667,7 +16668,7 @@ function initNotificationComposerUX() {
     if (lblSoundIcon) {
       lblSoundIcon.textContent = savedSound ? "volume_up" : "volume_off";
     }
-    
+
     chkNotifSound.addEventListener("change", () => {
       localStorage.setItem("SIREVAQ_NOTIF_SOUND", chkNotifSound.checked ? "YES" : "NO");
       if (lblSoundIcon) {
@@ -16676,7 +16677,7 @@ function initNotificationComposerUX() {
       if (chkNotifSound.checked) playNotificationSound("success");
     });
   }
-  
+
   // 4. Web Notifications API Permission Setup
   function updatePushStatusUi() {
     if (!btnRequestPushPermission || !lblPushStatus) return;
@@ -16685,7 +16686,7 @@ function initNotificationComposerUX() {
       btnRequestPushPermission.style.display = "none";
       return;
     }
-    
+
     if (Notification.permission === "granted") {
       lblPushStatus.textContent = "Permitido en este equipo";
       btnRequestPushPermission.innerHTML = `<span class="material-symbols-rounded text-[14px]">done</span> Permitido`;
@@ -16703,9 +16704,9 @@ function initNotificationComposerUX() {
       btnRequestPushPermission.style.opacity = "1";
     }
   }
-  
+
   updatePushStatusUi();
-  
+
   if (btnRequestPushPermission) {
     btnRequestPushPermission.addEventListener("click", () => {
       if (!("Notification" in window)) return;
@@ -16725,7 +16726,7 @@ function initNotificationComposerUX() {
   // Convertir selectores de destino a buscadores predictivos
   if (notifTargetClues) makeSelectSearchable(notifTargetClues, "location_city");
   if (notifTargetUser) makeSelectSearchable(notifTargetUser, "person");
-  
+
   // Initial Preview Card rendering
   updateNotifPreviewCard();
 
@@ -16736,11 +16737,11 @@ function initNotificationComposerUX() {
       chip.addEventListener("click", () => {
         const key = chip.getAttribute("data-template");
         if (!key) return;
-        
+
         // Apply template values
         const tpl = getNotifTemplatePayload(key);
         if (!tpl) return;
-        
+
         if (notifType) notifType.value = tpl.type || "INFO";
         if (notifTitle) notifTitle.value = tpl.title || "";
         if (notifMessage) {
@@ -16751,11 +16752,11 @@ function initNotificationComposerUX() {
           notifTargetScope.value = tpl.suggestScope || "ALL_MY_UNITS";
           notifTargetScope.dispatchEvent(new Event("change")); // Trigger dynamic visibility checks
         }
-        
+
         playNotificationSound("success");
         showToast("Plantilla aplicada");
         updateNotifPreviewCard();
-        
+
         // Add dynamic pulse effect to preview card on template application
         const previewCard = $("notifPreviewCard");
         if (previewCard) {
@@ -16827,7 +16828,7 @@ function makeSelectSearchable(selectEl, iconName = "search") {
     input.value = (selectedOpt && selectEl.value) ? selectedOpt.text : "";
     clearBtn.style.display = input.value ? "flex" : "none";
   };
-  
+
   syncInputText();
   selectEl.addEventListener("change", syncInputText);
 
@@ -16889,7 +16890,7 @@ function makeSelectSearchable(selectEl, iconName = "search") {
         optionDiv.classList.add("selected");
       }
       optionDiv.textContent = opt.text;
-      
+
       optionDiv.addEventListener("click", () => {
         selectEl.value = opt.value;
         selectEl.dispatchEvent(new Event("change"));
@@ -16915,7 +16916,7 @@ function updateSearchableSelectOptions(selectEl) {
 
   const input = wrapper.querySelector(".searchable-select-input");
   const clearBtn = wrapper.querySelector(".searchable-select-clear-btn");
-  
+
   if (input) {
     const selectedOpt = selectEl.options[selectEl.selectedIndex];
     input.value = (selectedOpt && selectEl.value) ? selectedOpt.text : "";
@@ -16948,7 +16949,7 @@ function triggerConfetti() {
           useWorker: false
         });
       }
-      
+
       const duration = 2.0 * 1000;
       const end = Date.now() + duration;
 
@@ -16992,11 +16993,11 @@ function animateKpiCounter(el, targetVal) {
   function updateCounter(currentTime) {
     const elapsed = currentTime - startTime;
     const progress = Math.min(elapsed / duration, 1);
-    
+
     // Curva de aceleración: EaseOutQuad
     const easeProgress = progress * (2 - progress);
     const currentVal = Math.floor(startVal + (targetVal - startVal) * easeProgress);
-    
+
     el.textContent = currentVal.toLocaleString('es-MX');
 
     if (progress < 1) {
