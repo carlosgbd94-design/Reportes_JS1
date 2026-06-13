@@ -3499,7 +3499,7 @@ async function loadUnitCatalog(force = false) {
   UNIT_CATALOG = (Array.isArray(data) ? data : []).map(u => {
     if (u && u.unidad) {
       const upper = u.unidad.toUpperCase().trim();
-      if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("ESPECIALIDADES DEL NIÑO Y LA MUJER")) {
+      if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("NIÑO Y LA MUJER") || upper === "HENM") {
         u.unidad = "HENM";
       }
     }
@@ -3985,7 +3985,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
                 const r = String(dataFromDb.rol).toUpperCase();
                 const rawUni = (r !== "UNIDAD" && !u) ? "OFICINAS DE LA JURISDICCIÓN SANITARIA" : u;
                 const upper = String(rawUni || "").toUpperCase().trim();
-                if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("ESPECIALIDADES DEL NIÑO Y LA MUJER")) {
+                if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("NIÑO Y LA MUJER") || upper === "HENM") {
                   return "HENM";
                 }
                 return rawUni;
@@ -4542,13 +4542,13 @@ async function supabaseRequest(action = "", payload, options = {}) {
         let allUnits = (resUnits.data || []).map(u => {
           if (u.unidad) {
             const upper = u.unidad.toUpperCase().trim();
-            if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("ESPECIALIDADES DEL NIÑO Y LA MUJER")) {
+            if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("NIÑO Y LA MUJER") || upper === "HENM") {
               u.unidad = "HENM";
             }
           }
           if (u.UNIDAD) {
             const upper = u.UNIDAD.toUpperCase().trim();
-            if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("ESPECIALIDADES DEL NIÑO Y LA MUJER")) {
+            if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("NIÑO Y LA MUJER") || upper === "HENM") {
               u.UNIDAD = "HENM";
             }
           }
@@ -4636,13 +4636,13 @@ async function supabaseRequest(action = "", payload, options = {}) {
         let units = (unitsData || []).map(u => {
           if (u.unidad) {
             const upper = u.unidad.toUpperCase().trim();
-            if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("ESPECIALIDADES DEL NIÑO Y LA MUJER")) {
+            if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("NIÑO Y LA MUJER") || upper === "HENM") {
               u.unidad = "HENM";
             }
           }
           if (u.UNIDAD) {
             const upper = u.UNIDAD.toUpperCase().trim();
-            if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("ESPECIALIDADES DEL NIÑO Y LA MUJER")) {
+            if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("NIÑO Y LA MUJER") || upper === "HENM") {
               u.UNIDAD = "HENM";
             }
           }
@@ -5569,13 +5569,16 @@ async function supabaseRequest(action = "", payload, options = {}) {
         }
 
         if (tipo === "SR") {
-          const { data, error } = await window.supabase
+          let query = window.supabase
             .from('existencia_detalle')
             .select('*')
-            .eq('clues', payload.clues)
             .gte('fecha', fIniStr)
             .lte('fecha', fFinStr)
             .order('fecha', { ascending: false });
+          
+          query = query.eq('clues', payload.clues);
+
+          const { data, error } = await query;
           if (error) throw error;
 
           let filteredData = [];
@@ -5586,13 +5589,16 @@ async function supabaseRequest(action = "", payload, options = {}) {
           }
           return { ok: true, data: filteredData, meta: { fecha: filteredData.length ? filteredData[0].fecha : targetFecha, tipo } };
         } else if (tipo === "BIO") {
-          const { data, error } = await window.supabase
+          let query = window.supabase
             .from('biologicos_pedido')
             .select('*')
-            .eq('clues', payload.clues)
             .gte('fecha_pedido_programada', fIniStr)
             .lte('fecha_pedido_programada', fFinStr)
             .order('fecha_pedido_programada', { ascending: false });
+
+          query = query.eq('clues', payload.clues);
+
+          const { data, error } = await query;
           if (error) throw error;
 
           let filteredData = [];
@@ -5603,14 +5609,17 @@ async function supabaseRequest(action = "", payload, options = {}) {
           }
           return { ok: true, data: filteredData, meta: { fecha: filteredData.length ? filteredData[0].fecha_pedido_programada : targetFecha, tipo } };
         } else {
-          const { data, error } = await window.supabase
+          let query = window.supabase
             .from('consumibles')
             .select('*')
-            .eq('clues', payload.clues)
             .gte('fecha', fIniStr)
             .lte('fecha', fFinStr)
             .order('fecha', { ascending: false })
             .limit(1);
+
+          query = query.eq('clues', payload.clues);
+
+          const { data, error } = await query;
           if (error) throw error;
           return { ok: true, data: data || [], meta: { fecha: data && data.length ? data[0].fecha : targetFecha, tipo } };
         }
@@ -8068,7 +8077,7 @@ function stopPublicClockTimer() {
 function escapeHtml(s) {
   s = (s == null) ? "" : String(s);
   const upper = s.toUpperCase().trim();
-  if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("ESPECIALIDADES DEL NIÑO Y LA MUJER")) {
+  if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("NIÑO Y LA MUJER") || upper === "HENM") {
     s = "HENM";
   }
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -11845,7 +11854,41 @@ if ($("btnDoExport")) $("btnDoExport").onclick = async () => {
       return;
     }
 
-    await generateProfessionalXLSX(tipo, res.data, fIni, fFin, municipios);
+    const splitCheckbox = $("exportSplitByMunicipio");
+    if (splitCheckbox && splitCheckbox.checked && typeof JSZip !== 'undefined') {
+      let targetMuns = municipios && municipios.length > 0 ? municipios : [];
+      if (targetMuns.length === 0) {
+        targetMuns = Array.from(new Set(res.data.map(d => d.municipio || (d.unidades && d.unidades.municipio)).filter(Boolean)));
+      }
+      if (targetMuns.length === 0 && USER && USER.municipio) {
+        targetMuns = String(USER.municipio).split(",").map(m => m.trim());
+      }
+      
+      if (targetMuns.length > 0) {
+        const zip = new JSZip();
+        for (const mun of targetMuns) {
+          const mData = res.data.filter(d => (d.municipio === mun) || (d.unidades && d.unidades.municipio === mun));
+          if (mData.length > 0) {
+             const result = await generateProfessionalXLSX(tipo, mData, fIni, fFin, [mun], true);
+             if (result && result.buffer) {
+               zip.file(result.fileName, result.buffer);
+             }
+          }
+        }
+        const zipContent = await zip.generateAsync({ type: "blob" });
+        const url = window.URL.createObjectURL(zipContent);
+        const a = document.createElement("a");
+        a.href = url;
+        const todayStr = new Date().toISOString().split('T')[0];
+        a.download = `Reportes_${tipo}_${todayStr}.zip`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+      } else {
+        await generateProfessionalXLSX(tipo, res.data, fIni, fFin, municipios);
+      }
+    } else {
+      await generateProfessionalXLSX(tipo, res.data, fIni, fFin, municipios);
+    }
     showToast("El reporte se generó correctamente");
 
   } catch (e) {
@@ -11859,7 +11902,7 @@ if ($("btnDoExport")) $("btnDoExport").onclick = async () => {
 /**
  * Generador de Excel Profesional (Cliente)
  */
-async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipios = []) {
+async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipios = [], returnBuffer = false) {
   if (!window.ExcelJS) {
     showToast("Librería de exportación no cargada", false);
     return;
@@ -11888,7 +11931,7 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
 
     if (targetMuns.length > 0) {
       try {
-        const { data: dbUnits, error: dbUnitsErr } = await supabase
+        const { data: dbUnits, error: dbUnitsErr } = await window.supabase
           .from('unidades')
           .select('clues, unidad')
           .in('municipio', targetMuns)
@@ -11896,7 +11939,9 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
 
         if (!dbUnitsErr && dbUnits && dbUnits.length > 0) {
           dbUnits.forEach(u => {
-            mapUnidades[u.clues] = u.unidad.toUpperCase();
+            let n = u.unidad.toUpperCase();
+            if (n.includes("FELIPE NUÑEZ LARA") || n.includes("NIÑO Y LA MUJER") || n === "HENM") n = "HENM";
+            mapUnidades[u.clues] = n;
           });
           arrClues = dbUnits.map(u => u.clues);
         }
@@ -11911,9 +11956,13 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
     data.forEach(d => {
       unidadesSet.add(d.clues);
       if (d.unidades && d.unidades.nombre) {
-        mapUnidades[d.clues] = d.unidades.nombre.toUpperCase();
+        let n = d.unidades.nombre.toUpperCase();
+        if (n.includes("FELIPE NUÑEZ LARA") || n.includes("NIÑO Y LA MUJER") || n === "HENM") n = "HENM";
+        mapUnidades[d.clues] = n;
       } else {
-        mapUnidades[d.clues] = (d.unidad || "UNIDAD DESCONOCIDA").toUpperCase();
+        let n = (d.unidad || "UNIDAD DESCONOCIDA").toUpperCase();
+        if (n.includes("FELIPE NUÑEZ LARA") || n.includes("NIÑO Y LA MUJER") || n === "HENM") n = "HENM";
+        mapUnidades[d.clues] = n;
       }
     });
     arrClues = Array.from(unidadesSet).sort();

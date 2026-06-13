@@ -423,7 +423,7 @@
 
     <!-- Premium Single Card Design -->
     <div class="GlassContainer relative z-10 w-full max-w-[440px] my-auto" style="--corner-radius: 32px;" id="cardLogin">
-      <div class="GlassContent liquidGL p-6 sm:p-10 flex flex-col items-center text-center" id="cardLoginContent">
+      <div class="GlassContent liquidGL p-6 sm:p-8 flex flex-col items-center text-center" id="cardLoginContent">
 
         <!-- LOGO MÓVIL ORIGINAL -->
         <div id="mobileLogo"
@@ -435,7 +435,7 @@
         <h1 id="mobileTitle" class="text-2xl sm:text-3xl font-black text-primary m-0 tracking-tighter">
           JS1 <span class="font-medium" style="color: #64748b !important;">SIREVAQ</span>
         </h1>
-        <p id="mobileSubtitle" class="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mt-2 mb-6 sm:mb-10 opacity-60">
+        <p id="mobileSubtitle" class="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mt-2 mb-6 sm:mb-8 opacity-60">
           Sistema de Reportes y Evaluación en Vacunación de Querétaro</p>
 
         <!-- LOGO DESKTOP (Nuevo diseño Bicolor) -->
@@ -478,17 +478,16 @@
           </div>
 
           <!-- Opciones de Contraseña (Contenedor Responsivo) -->
-          <div id="passwordOptionsContainer"
-            style="display: flex; flex-direction: column; width: 100%; align-items: center;">
+          <div id="passwordOptionsContainer" class="flex flex-col sm:flex-row items-center sm:justify-between w-full mt-2">
             <label id="desktopRememberMe"
-              style="display: none; align-items: center; gap: 0.5rem; color: #475569; cursor: pointer; font-size: 0.9rem;">
+              class="hidden sm:flex items-center gap-2 text-slate-600 cursor-pointer text-sm">
               <input type="checkbox" style="width: 16px; height: 16px; accent-color: #0ea5e9; cursor: pointer;">
               Recordarme
             </label>
 
             <!-- El BOTÓN ORIGINAL -->
             <button type="button" id="btnForgotPassword"
-              class="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-primary/40 hover:text-primary transition-all w-full text-center bg-transparent border-none cursor-pointer mt-2 sm:mt-4"
+              class="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-primary/40 hover:text-primary transition-all w-full sm:w-auto text-center sm:text-right bg-transparent border-none cursor-pointer mt-2 sm:mt-0"
               >
               ¿Olvidaste tu contraseña?
             </button>
@@ -3550,9 +3549,9 @@
           <select id="createMunicipio"
             class="bg-surface-variant/20 rounded-lg border border-outline-variant/50 outline-none h-9 px-2 text-xs font-bold w-full focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer">
             <option value="">Selecciona...</option>
-            <option value="QUERÉTARO">QUERÉTARO</option>
+            <option value="QUERETARO">QUERETARO</option>
             <option value="CORREGIDORA">CORREGIDORA</option>
-            <option value="EL MARQUÉS">EL MARQUÉS</option>
+            <option value="EL MARQUES">EL MARQUES</option>
             <option value="HUIMILPAN">HUIMILPAN</option>
           </select>
         </div>

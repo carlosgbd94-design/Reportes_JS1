@@ -11039,7 +11039,6 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
 .biometric-pulse-btn:hover {
   background: rgba(2, 132, 199, 0.05);
   border-color: #0284c7;
-  box-shadow: 0 0 20px rgba(2, 132, 199, 0.2);
   color: #0284c7;
 }
 
@@ -11460,7 +11459,6 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
 .btn-biometric-minimal:hover {
   background: #4f46e5;
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
 }
 
 .btn-logout-minimal {

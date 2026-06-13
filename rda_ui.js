@@ -378,13 +378,13 @@ async function fetchRDAData() {
     let filteredIndicators = (indicators || []).map(u => {
         if (u.nombre) {
             const upper = u.nombre.toUpperCase().trim();
-            if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("ESPECIALIDADES DEL NIÑO Y LA MUJER")) {
+            if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("NIÑO Y LA MUJER") || upper === "HENM") {
                 u.nombre = "HENM";
             }
         }
         if (u.unidad) {
             const upper = u.unidad.toUpperCase().trim();
-            if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("ESPECIALIDADES DEL NIÑO Y LA MUJER")) {
+            if (upper.includes("FELIPE NUÑEZ LARA") || upper.includes("NIÑO Y LA MUJER") || upper === "HENM") {
                 u.unidad = "HENM";
             }
         }
