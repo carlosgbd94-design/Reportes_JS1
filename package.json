@@ -4,7 +4,9 @@
   "description": "Este código ha sido creado para agilizar los procesos de captura y concentración de información de los centros de salud.",
   "main": "main.js",
   "scripts": {
-    "test": "playwright test"
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test"
   },
   "repository": {
     "type": "git",
@@ -20,7 +22,10 @@
   "homepage": "https://github.com/carlosgbd94-design/SIREVAQ#readme",
   "devDependencies": {
     "@playwright/test": "^1.60.0",
-    "serve": "^14.2.6"
+    "@vitest/browser": "^4.1.8",
+    "jsdom": "^29.1.1",
+    "serve": "^14.2.6",
+    "vitest": "^4.1.8"
   },
   "dependencies": {
     "@sentry/browser": "^10.57.0"
