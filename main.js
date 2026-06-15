@@ -17094,7 +17094,7 @@ document.addEventListener("mousemove", (e) => {
 });
 
 // ===== DISCORD FEEDBACK LOGIC =====
-const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1516174328327307276/xqmSCuqKEdsfjw_mxNTxb5-rP4hlx9V0FBGnDot98uS3GKfy6fXB54HJMYCHXT6itJeU";
+const DISCORD_WEBHOOK_URL = "";
 
 document.addEventListener("DOMContentLoaded", () => {
   const btnFeedbackFAB = document.getElementById("btnFeedbackFAB");
