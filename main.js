@@ -10642,20 +10642,29 @@ function updateDynamicGreeting(timeGreeting = null, customSubtitle = null) {
     }
   }
 
-  const weatherEmoji = CURRENT_WEATHER.emoji || "";
-  const weatherTemp = CURRENT_WEATHER.temp !== null ? `${CURRENT_WEATHER.temp}°C` : "";
-  const weatherText = CURRENT_WEATHER.text || "";
-  const weatherBg = CURRENT_WEATHER.bg || "";
-
   const theme = CURRENT_WEATHER.theme || 'dark-bg';
   const isDarkText = theme === 'light-bg';
 
   // Usar estilos inline (rgba) directos asegura que siempre haya contraste perfecto
-  // porque evita fallas si Tailwind no compiló las clases text-white/80 o text-primary/70
   const colorTitle = isDarkText ? '#1e293b' : '#ffffff';
   const colorSub = isDarkText ? 'rgba(30, 41, 59, 0.7)' : 'rgba(255, 255, 255, 0.8)';
   const colorResumen = isDarkText ? 'rgba(30, 41, 59, 0.6)' : 'rgba(255, 255, 255, 0.7)';
   const colorDivider = isDarkText ? 'rgba(30, 41, 59, 0.2)' : 'rgba(255, 255, 255, 0.2)';
+
+  const weatherEmoji = CURRENT_WEATHER.emoji || "";
+  const weatherIconHTML = CURRENT_WEATHER.iconSvg 
+    ? `<span class="material-symbols-rounded ml-2 drop-shadow-md transition-transform duration-500 hover:scale-110" style="font-size: 42px; animation: floatIcon 3s ease-in-out infinite;">${CURRENT_WEATHER.iconSvg}</span>
+       <style>
+         @keyframes floatIcon {
+           0% { transform: translateY(0px); }
+           50% { transform: translateY(-4px); }
+           100% { transform: translateY(0px); }
+         }
+       </style>`
+    : weatherEmoji;
+  const weatherTemp = CURRENT_WEATHER.temp !== null ? `${CURRENT_WEATHER.temp}°C` : "";
+  const weatherText = CURRENT_WEATHER.text || "";
+  const weatherBg = CURRENT_WEATHER.bg || "";
 
   const parentEl = welcomeEl.parentElement;
   if (parentEl) {
@@ -10690,7 +10699,7 @@ function updateDynamicGreeting(timeGreeting = null, customSubtitle = null) {
           <div class="h-8 w-px hidden lg:block transition-colors duration-500" style="background-color: ${colorDivider};"></div>
           <div class="flex flex-col items-end">
             <span class="text-[24px] sm:text-[32px] font-black flex items-center gap-2 drop-shadow-sm transition-colors duration-500 leading-none" style="color: ${colorTitle};">
-              ${weatherTemp} ${weatherEmoji}
+              ${weatherTemp} ${weatherIconHTML}
             </span>
             <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest mt-1.5 drop-shadow-sm transition-colors duration-500" style="line-height:1; color: ${colorSub};">
               ${weatherText}
@@ -14231,6 +14240,7 @@ async function initWeather() {
       CURRENT_WEATHER = {
         temp,
         emoji: details.emoji,
+        iconSvg: details.iconSvg,
         text: details.text,
         bg: details.bg,
         theme: details.theme,
@@ -14257,13 +14267,13 @@ async function initWeather() {
 }
 
 function getWeatherDetails(code, isDay) {
-  if (code === null) return { emoji: "🌡️", text: "Desconocido", bg: "", theme: "dark-bg" };
+  if (code === null) return { emoji: "🌡️", iconSvg: "device_thermostat", text: "Desconocido", bg: "", theme: "dark-bg" };
 
   const bgs = {
     clearDay: "https://images.unsplash.com/photo-1601297183305-6df142704ea2?auto=format&fit=crop&q=80&w=600",
     clearNight: "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&q=80&w=600",
     cloudyDay: "https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&q=80&w=600",
-    cloudyNight: "https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&q=80&w=600", // Placeholder for night clouds
+    cloudyNight: "https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&q=80&w=600",
     rain: "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&q=80&w=600",
     snow: "https://images.unsplash.com/photo-1478265409131-1f65c88f965c?auto=format&fit=crop&q=80&w=600",
     thunder: "https://images.unsplash.com/photo-1605727216801-e27ce1d0ce49?auto=format&fit=crop&q=80&w=600",
@@ -14275,17 +14285,17 @@ function getWeatherDetails(code, isDay) {
     theme = "light-bg";
   }
 
-  if (code === 0) return { emoji: isDay ? "☀️" : "🌙", text: isDay ? "Despejado" : "Noche clara", bg: isDay ? bgs.clearDay : bgs.clearNight, theme };
-  if ([1, 2].includes(code)) return { emoji: isDay ? "🌤️" : "☁️", text: isDay ? "Parcialmente nublado" : "Nubes dispersas", bg: isDay ? bgs.cloudyDay : bgs.cloudyNight, theme };
-  if (code === 3) return { emoji: "☁️", text: "Nublado", bg: isDay ? bgs.cloudyDay : bgs.cloudyNight, theme };
-  if ([45, 48].includes(code)) return { emoji: "🌫️", text: "Niebla", bg: bgs.fog, theme };
-  if ([51, 53, 55].includes(code)) return { emoji: "🌦️", text: "Llovizna", bg: bgs.rain, theme };
-  if ([61, 63, 65].includes(code)) return { emoji: "🌧️", text: "Lluvia", bg: bgs.rain, theme };
-  if ([71, 73, 75].includes(code)) return { emoji: "❄️", text: "Nieve", bg: bgs.snow, theme };
-  if ([80, 81, 82].includes(code)) return { emoji: "🌦️", text: "Chubascos", bg: bgs.rain, theme };
-  if ([95, 96, 99].includes(code)) return { emoji: "⛈️", text: "Tormenta", bg: bgs.thunder, theme };
+  if (code === 0) return { emoji: isDay ? "☀️" : "🌙", iconSvg: isDay ? "sunny" : "clear_night", text: isDay ? "Despejado" : "Noche clara", bg: isDay ? bgs.clearDay : bgs.clearNight, theme };
+  if ([1, 2].includes(code)) return { emoji: isDay ? "🌤️" : "☁️", iconSvg: isDay ? "partly_cloudy_day" : "partly_cloudy_night", text: isDay ? "Parcialmente nublado" : "Nubes dispersas", bg: isDay ? bgs.cloudyDay : bgs.cloudyNight, theme };
+  if (code === 3) return { emoji: "☁️", iconSvg: "cloud", text: "Nublado", bg: isDay ? bgs.cloudyDay : bgs.cloudyNight, theme };
+  if ([45, 48].includes(code)) return { emoji: "🌫️", iconSvg: "foggy", text: "Niebla", bg: bgs.fog, theme };
+  if ([51, 53, 55].includes(code)) return { emoji: "🌦️", iconSvg: "rainy", text: "Llovizna", bg: bgs.rain, theme };
+  if ([61, 63, 65].includes(code)) return { emoji: "🌧️", iconSvg: "rainy", text: "Lluvia", bg: bgs.rain, theme };
+  if ([71, 73, 75].includes(code)) return { emoji: "❄️", iconSvg: "weather_snowy", text: "Nieve", bg: bgs.snow, theme };
+  if ([80, 81, 82].includes(code)) return { emoji: "🌦️", iconSvg: "rainy", text: "Chubascos", bg: bgs.rain, theme };
+  if ([95, 96, 99].includes(code)) return { emoji: "⛈️", iconSvg: "thunderstorm", text: "Tormenta", bg: bgs.thunder, theme };
 
-  return { emoji: "🌤️", text: "Clima", bg: bgs.clearDay, theme: "light-bg" };
+  return { emoji: "🌤️", iconSvg: "partly_cloudy_day", text: "Clima", bg: bgs.clearDay, theme: "light-bg" };
 }
 
 // Esperar a que el DOM esté listo antes de arrancar

@@ -8468,7 +8468,7 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(110deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.75) 45%, rgba(255, 255, 255, 0.15) 100%);
+  background: linear-gradient(110deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.75) 45%, rgba(255, 255, 255, 0.35) 100%);
   z-index: 1;
   pointer-events: none;
 }
