@@ -80,6 +80,29 @@ async function handleLoginFlow(email, password) {
 
 // GLOBALS
 let CURRENT_WEATHER = { temp: null, emoji: "", code: null };
+
+/**
+ * 🌙 THEME & DARK MODE INIT
+ */
+function initializeTheme() {
+  const savedTheme = localStorage.getItem('sirevaq-theme');
+  if (savedTheme === 'dark') {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+}
+initializeTheme(); // Run immediately
+
+function toggleTheme() {
+  const isDark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('sirevaq-theme', isDark ? 'dark' : 'light');
+  
+  // Update ECharts if exist
+  if (typeof updateEChartsTheme === 'function') {
+    updateEChartsTheme(isDark);
+  }
+}
 let BATCH_FILTER = "all";
 let BATCH_SEARCH_QUERY = "";
 let BATCH_CATALOG = [];
@@ -7025,8 +7048,56 @@ async function hydrateSessionUi(user, status, opts = {}) {
     if (user && (user.rol === "ADMIN" || user.rol === "MUNICIPAL" || user.rol === "JURISDICCIONAL")) {
       await loadNotifUnitCatalog();
       refreshNotifScopeUi();
+      
+      // Init Realtime Command Center for Admin roles
+      setupRealtimeCommandCenter();
     }
   });
+}
+
+/**
+ * 📡 REALTIME COMMAND CENTER (Zero Lag Sync)
+ */
+let realtimeDebounceTimer = null;
+let realtimeChannel = null;
+
+function setupRealtimeCommandCenter() {
+  if (!window.supabase) return;
+
+  // Prevent multiple subscriptions
+  if (realtimeChannel) {
+    window.supabase.removeChannel(realtimeChannel);
+  }
+
+  // Subscribe to changes on report tables
+  realtimeChannel = window.supabase.channel('public:reportes_sr')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'reportes_sr' }, payload => handleRealtimeChange(payload))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'reportes_cons' }, payload => handleRealtimeChange(payload))
+    .subscribe((status) => {
+      console.log("[Realtime] Status:", status);
+    });
+}
+
+function handleRealtimeChange(payload) {
+  // If user is actively capturing, don't interrupt them
+  if (USER?.rol === "UNIDAD") return;
+
+  console.log("[Realtime] Cambio detectado en la red:", payload);
+
+  // Debounce: Wait 2.5 seconds of silence before refreshing
+  if (realtimeDebounceTimer) clearTimeout(realtimeDebounceTimer);
+  
+  realtimeDebounceTimer = setTimeout(() => {
+    // Show premium subtle toast
+    if (typeof showToast === 'function') {
+      showToast("Nueva información recibida en la red. Actualizando...", true, "ok");
+    }
+    
+    // Refresh only the dashboard numbers silently
+    if (typeof reloadCaptureSummarySilent === 'function') {
+      reloadCaptureSummarySilent();
+    }
+  }, 2500);
 }
 
 
@@ -8633,6 +8704,124 @@ window.getCaptureOverview = async function (fecha, tipo, force = false) {
 
 
 /**
+ * 🔍 FOCUS MODE (Premium Expand)
+ */
+let currentFocusedElement = null;
+
+function toggleFocusMode(elementId) {
+  const el = document.getElementById(elementId);
+  const overlay = document.getElementById("focusOverlay");
+  if (!el || !overlay) return;
+
+  if (currentFocusedElement === el) {
+    closeFocusMode();
+    return;
+  }
+
+  if (currentFocusedElement) closeFocusMode();
+
+  currentFocusedElement = el;
+  overlay.classList.add("active");
+  el.classList.add("focus-element-active");
+
+  if (typeof gsap !== 'undefined') {
+    const rect = el.getBoundingClientRect();
+    
+    // Create an invisible placeholder
+    const placeholder = document.createElement('div');
+    placeholder.id = 'focusPlaceholder';
+    placeholder.style.width = rect.width + 'px';
+    placeholder.style.height = rect.height + 'px';
+    placeholder.style.margin = getComputedStyle(el).margin;
+    el.parentNode.insertBefore(placeholder, el);
+
+    // Save parent to restore later
+    el.dataset.origParent = el.parentNode.id || '';
+    el.dataset.origNextSibling = el.nextSibling ? (el.nextSibling.id || '') : '';
+    el.dataset.origStyle = el.getAttribute('style') || '';
+    
+    // Move to body to escape ANY parent transforms!
+    document.body.appendChild(el);
+
+    gsap.set(el, {
+      position: 'fixed',
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+      zIndex: 100000,
+      margin: 0,
+      boxSizing: 'border-box'
+    });
+
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const targetW = Math.min(vw * 0.9, 1200);
+    const targetH = vh * 0.85;
+    const targetL = (vw - targetW) / 2;
+    const targetT = (vh - targetH) / 2;
+
+    gsap.to(el, {
+      top: targetT,
+      left: targetL,
+      width: targetW,
+      height: targetH,
+      duration: 0.6,
+      ease: "power4.inOut",
+      onUpdate: () => {
+        window.dispatchEvent(new Event('resize'));
+      }
+    });
+  }
+}
+
+function closeFocusMode() {
+  const overlay = document.getElementById("focusOverlay");
+  if (overlay) overlay.classList.remove("active");
+
+  if (currentFocusedElement) {
+    if (typeof gsap !== 'undefined') {
+      const placeholder = document.getElementById("focusPlaceholder");
+      const rect = placeholder ? placeholder.getBoundingClientRect() : null;
+
+      if (rect) {
+        gsap.to(currentFocusedElement, {
+          top: rect.top,
+          left: rect.left,
+          width: rect.width,
+          height: rect.height,
+          duration: 0.5,
+          ease: "power4.inOut",
+          onUpdate: () => {
+            window.dispatchEvent(new Event('resize'));
+          },
+          onComplete: () => {
+            if (currentFocusedElement && placeholder) {
+              placeholder.parentNode.insertBefore(currentFocusedElement, placeholder);
+              currentFocusedElement.setAttribute('style', currentFocusedElement.dataset.origStyle || '');
+              currentFocusedElement.classList.remove("focus-element-active");
+              placeholder.remove();
+              currentFocusedElement = null;
+              window.dispatchEvent(new Event('resize'));
+            }
+          }
+        });
+      } else {
+        currentFocusedElement.setAttribute('style', currentFocusedElement.dataset.origStyle || '');
+        currentFocusedElement.classList.remove("focus-element-active");
+        currentFocusedElement = null;
+        window.dispatchEvent(new Event('resize'));
+      }
+    } else {
+      currentFocusedElement.setAttribute('style', currentFocusedElement.dataset.origStyle || '');
+      currentFocusedElement.classList.remove("focus-element-active");
+      currentFocusedElement = null;
+      window.dispatchEvent(new Event('resize'));
+    }
+  }
+}
+
+/**
  * 🌓 CONTROL DE VISTAS (LOGIN vs APP)
  * Administra la entrada/salida del overlay premium y la visibilidad del dashboard.
  */
@@ -8647,16 +8836,43 @@ function showRightColumn(show) {
   toggleEl("mainHeader", show, "flex");
   if (footer) footer.style.display = show ? "block" : "none";
 
-  // 2. Login Overlay transition
+  // 2. Login Overlay transition with GSAP
   if (loginWrap) {
     if (show) {
-      // Exit: Fade out and slide up
-      if (cardLogin) cardLogin.style.transform = "translateY(-40px) scale(0.95)";
-      loginWrap.classList.add("hidden");
+      // Exit: Premium fade out and slide up for login card
+      if (typeof gsap !== 'undefined') {
+        gsap.to(cardLogin, { 
+          y: -40, scale: 0.95, opacity: 0, duration: 0.5, ease: "power3.inOut",
+          onComplete: () => {
+            loginWrap.classList.add("hidden");
+            // Stagger entrance for dashboard blocks
+            const blocks = [
+              document.getElementById("welcomeBlock"),
+              document.getElementById("panelUnidadOpsTabs"),
+              document.getElementById("panelCAP"),
+              document.getElementById("panelRDA"),
+              ...document.querySelectorAll(".kpiCard")
+            ].filter(Boolean); // solo elementos existentes y visibles
+
+            gsap.fromTo(blocks, 
+              { y: 30, opacity: 0 },
+              { y: 0, opacity: 1, duration: 0.6, stagger: 0.08, ease: "back.out(1.2)", clearProps: "opacity,transform" }
+            );
+          }
+        });
+      } else {
+        if (cardLogin) cardLogin.style.transform = "translateY(-40px) scale(0.95)";
+        loginWrap.classList.add("hidden");
+      }
     } else {
       // Entry: Show premium overlay
       loginWrap.classList.remove("hidden");
-      if (cardLogin) {
+      if (typeof gsap !== 'undefined' && cardLogin) {
+        gsap.fromTo(cardLogin, 
+          { y: 30, scale: 0.95, opacity: 0 }, 
+          { y: 0, scale: 1, opacity: 1, duration: 0.6, ease: "power3.out" }
+        );
+      } else if (cardLogin) {
         cardLogin.style.transform = "translateY(0) scale(1)";
         cardLogin.classList.add("animate-fade-in-up");
       }

@@ -372,7 +372,8 @@
               <!-- Tema de la App -->
               <div
                 class="flex items-center justify-between p-4 bg-surface rounded-2xl border border-outline-variant/30 shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all hover:border-primary/20 group cursor-pointer"
-                onclick="document.documentElement.classList.toggle('dark');">
+                role="button" tabindex="0" aria-label="Cambiar tema de apariencia"
+                onclick="toggleTheme()" onkeydown="if(event.key==='Enter') toggleTheme()">
                 <div class="flex items-center gap-4 min-w-0">
                   <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors bg-primary/5 group-hover:bg-primary/10">
                     <span class="material-symbols-rounded text-primary/60 text-[20px] light-only">dark_mode</span>
@@ -750,9 +751,8 @@
               </defs>
             </svg>
 
-            <!-- Compliance KPI (Completely Redesigned to Prevent Overlaps) -->
             <div id="bCumplimiento" data-tone="bad"
-              class="flex flex-col justify-between rounded-[24px] py-4 px-6 bg-surface border border-outline-variant/50 shadow-sm transition-all hover:shadow-md group cursor-help relative overflow-hidden w-full chip-equal-width">
+              class="flex flex-col justify-between rounded-[24px] py-4 px-6 bg-surface border border-outline-variant/50 shadow-sm transition-all hover:shadow-md group relative overflow-hidden w-full chip-equal-width">
 
               <!-- Top Row: Icon & Text content -->
               <div class="flex items-center justify-between gap-3 min-w-0 relative z-10 w-full">
@@ -3099,7 +3099,13 @@
             style="display: grid; grid-template-columns: 350px 1fr; gap: 24px; margin-bottom: 32px;">
             <!-- Doughnut Analysis -->
             <div id="chartDoughnutContainer"
-              style="background: var(--md-sys-color-surface); border-radius: 24px; padding: 24px; border: 1px solid var(--md-sys-color-outline-variant); display: flex; flex-direction: column;">
+              style="position: relative; background: var(--md-sys-color-surface); border-radius: 24px; padding: 24px; border: 1px solid var(--md-sys-color-outline-variant); display: flex; flex-direction: column;">
+              
+              <!-- Focus Expand Button -->
+              <button type="button" class="btn-focus-expand" style="position: absolute !important; top: 16px !important; right: 16px !important; z-index: 50;" onclick="toggleFocusMode('chartDoughnutContainer')" title="Expandir">
+                <span class="material-symbols-rounded" style="font-size: 18px;">open_in_full</span>
+              </button>
+
               <h3
                 style="margin: 0 0 20px 0; font-size: 14px; font-weight: 900; color: var(--md-sys-color-on-surface); text-transform: uppercase; letter-spacing: 0.05em;">
                 Balance de Cobertura</h3>
@@ -3113,8 +3119,14 @@
             </div>
 
             <!-- Horizontal Histogram (Detailed Analysis) -->
-            <div id="chartBarTotalContainer"
+            <div id="chartBarTotalContainer" class="group relative overflow-hidden"
               style="display: none; background: var(--md-sys-color-surface); border-radius: 24px; padding: 24px; border: 1px solid var(--md-sys-color-outline-variant); flex-direction: column;">
+              
+              <!-- Focus Expand Button -->
+              <button type="button" class="btn-focus-expand" style="position: absolute !important; top: 16px !important; right: 16px !important; z-index: 50;" onclick="toggleFocusMode('chartBarTotalContainer')" title="Expandir">
+                <span class="material-symbols-rounded" style="font-size: 18px;">open_in_full</span>
+              </button>
+
               <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
                 <h3 id="chartBarTotalTitle"
                   style="margin: 0; font-size: 14px; font-weight: 900; color: var(--md-sys-color-on-surface); text-transform: uppercase; letter-spacing: 0.05em;">
@@ -3125,8 +3137,14 @@
               </div>
             </div>
 
-            <div id="chartBarContainer"
+            <div id="chartBarContainer" class="group relative overflow-hidden"
               style="background: var(--md-sys-color-surface); border-radius: 24px; padding: 24px; border: 1px solid var(--md-sys-color-outline-variant); display: flex; flex-direction: column;">
+              
+              <!-- Focus Expand Button -->
+              <button type="button" class="btn-focus-expand" style="position: absolute !important; top: 16px !important; right: 16px !important; z-index: 50;" onclick="toggleFocusMode('chartBarContainer')" title="Expandir">
+                <span class="material-symbols-rounded" style="font-size: 18px;">open_in_full</span>
+              </button>
+
               <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
                 <h3 id="chartBarTitle"
                   style="margin: 0; font-size: 14px; font-weight: 900; color: var(--md-sys-color-on-surface); text-transform: uppercase; letter-spacing: 0.05em;">
@@ -4492,6 +4510,9 @@
       </div>
     </div>
   </div>
+
+  <!-- FOCUS OVERLAY -->
+  <div id="focusOverlay" onclick="closeFocusMode()"></div>
 
   <script src="rda_calculator.js?v=2026.14"></script>
   <script src="rda_parser.js?v=2026.14"></script>

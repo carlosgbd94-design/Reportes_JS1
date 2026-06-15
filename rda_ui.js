@@ -794,15 +794,18 @@ function renderDoughnut(agg, esquema) {
             borderRadius: 10
         },
         legend: {
+            type: 'scroll',
             bottom: 0,
             icon: 'circle',
             itemGap: 15,
-            textStyle: { color: '#64748b', fontWeight: 'bold' }
+            textStyle: { color: '#64748b', fontWeight: 'bold' },
+            pageIconColor: '#3b82f6',
+            pageTextStyle: { color: '#64748b' }
         },
         series: [{
             type: 'pie',
-            radius: ['60%', '80%'],
-            center: ['50%', '45%'],
+            radius: ['55%', '75%'],
+            center: ['50%', '42%'],
             avoidLabelOverlap: false,
             itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
             label: { show: false },
@@ -897,12 +900,12 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                         type: 'line',
                         label: 'Avance',
                         data: [covBCG, covHepB, covRota, covHexaM1, covHexa1A, covNeumoM1, covNeumo1A, covSRP, covDPT],
-                        borderColor: '#94a3b8',
+                        borderColor: '#3b82f6',
                         borderWidth: 4,
                         tension: 0.4,
                         fill: false,
                         pointBackgroundColor: '#ffffff',
-                        pointBorderColor: '#94a3b8',
+                        pointBorderColor: '#3b82f6',
                         pointBorderWidth: 2,
                         pointRadius: 6,
                         pointHoverRadius: 8,
@@ -951,12 +954,12 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                         type: 'line',
                         label: 'Avance',
                         data: [covM1, covUno, covCuatro],
-                        borderColor: '#94a3b8',
+                        borderColor: '#3b82f6',
                         borderWidth: 4,
                         tension: 0.4,
                         fill: false,
                         pointBackgroundColor: '#ffffff',
-                        pointBorderColor: '#94a3b8',
+                        pointBorderColor: '#3b82f6',
                         pointBorderWidth: 2,
                         pointRadius: 6,
                         pointHoverRadius: 8,
@@ -1225,12 +1228,12 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                             type: 'line',
                             label: 'Avance',
                             data: [covBCG, covHepB, covRota, covHexaM1, covHexa1A, covNeumoM1, covNeumo1A, covSRP, covDPT],
-                            borderColor: '#94a3b8',
+                            borderColor: '#3b82f6',
                             borderWidth: 4,
                             tension: 0.4,
                             fill: false,
                             pointBackgroundColor: '#ffffff',
-                            pointBorderColor: '#94a3b8',
+                            pointBorderColor: '#3b82f6',
                             pointBorderWidth: 2,
                             pointRadius: 6,
                             pointHoverRadius: 8,
@@ -1250,7 +1253,7 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                     tDatasets = [
                         { type: 'bar', label: 'Aplicaciones', data: [Math.round(dosisM1/4.0), Math.round(dosisUno/3.0), dosisCuatro], backgroundColor: '#e2e8f0', borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.8, yAxisID: 'y', order: 1 },
                         { type: 'bar', label: 'Meta', data: [Math.round(factorM1), Math.round(factorUno), Math.round(factorCuatro)], backgroundColor: '#0f172a', borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.8, yAxisID: 'y', order: 1 },
-                        { type: 'line', label: 'Avance', data: [covM1, covUno, covCuatro], borderColor: '#94a3b8', borderWidth: 4, tension: 0.4, fill: false, pointBackgroundColor: '#ffffff', pointBorderColor: '#94a3b8', pointBorderWidth: 2, pointRadius: 6, pointHoverRadius: 8, yAxisID: 'y1', order: 0 }
+                        { type: 'line', label: 'Avance', data: [covM1, covUno, covCuatro], borderColor: '#3b82f6', borderWidth: 4, tension: 0.4, fill: false, pointBackgroundColor: '#ffffff', pointBorderColor: '#3b82f6', pointBorderWidth: 2, pointRadius: 6, pointHoverRadius: 8, yAxisID: 'y1', order: 0 }
                     ];
                 }
                 tOptions.scales.y1 = { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#64748b', callback: v => v + '%' } };
@@ -1288,11 +1291,15 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                 let series = { name: ds.label, type: ds.type || 'bar', data: ds.data };
                 if (series.type === 'bar') {
                     series.itemStyle = { color: ds.backgroundColor, borderRadius: [4, 4, 0, 0] };
+                    series.emphasis = { itemStyle: { shadowBlur: 8, shadowColor: 'rgba(0,0,0,0.3)' } };
+                    if (ds.label === 'Aplicaciones' || ds.label === 'Dosis' || ds.label === 'Avance General') {
+                        series.emphasis.itemStyle.color = '#52525b';
+                    }
                     if (ds.yAxisID === 'y1') series.yAxisIndex = 1;
                 } else if (series.type === 'line') {
-                    series.color = ds.backgroundColor || ds.borderColor || '#94a3b8';
-                    series.lineStyle = { color: ds.borderColor, width: ds.borderWidth || 3 };
-                    series.itemStyle = { color: ds.pointBackgroundColor || ds.borderColor };
+                    series.color = ds.borderColor || ds.backgroundColor || '#3b82f6';
+                    series.lineStyle = { color: ds.borderColor || '#3b82f6', width: ds.borderWidth || 3 };
+                    series.itemStyle = { color: ds.borderColor || '#3b82f6', borderColor: ds.pointBackgroundColor || '#ffffff', borderWidth: 2 };
                     series.symbol = 'circle';
                     series.symbolSize = 8;
                     if (ds.yAxisID === 'y1') series.yAxisIndex = 1;
@@ -1325,11 +1332,15 @@ function renderBarChart(fUnits, muniFilter, esquema) {
         let series = { name: ds.label, type: ds.type || 'bar', data: ds.data };
         if (series.type === 'bar') {
             series.itemStyle = { color: ds.backgroundColor, borderRadius: isHorizontal ? [0, 4, 4, 0] : [4, 4, 0, 0] };
+            series.emphasis = { itemStyle: { shadowBlur: 8, shadowColor: 'rgba(0,0,0,0.3)' } };
+            if (ds.label === 'Aplicaciones' || ds.label === 'Dosis' || ds.label === 'Avance General' || ds.backgroundColor === '#e2e8f0') {
+                series.emphasis.itemStyle.color = '#52525b';
+            }
             if (ds.yAxisID === 'y1') series.yAxisIndex = 1;
         } else if (series.type === 'line') {
-            series.color = ds.backgroundColor || ds.borderColor || '#94a3b8';
-            series.lineStyle = { color: ds.borderColor, width: ds.borderWidth || 3 };
-            series.itemStyle = { color: ds.pointBackgroundColor || ds.borderColor };
+            series.color = ds.borderColor || ds.backgroundColor || '#3b82f6';
+            series.lineStyle = { color: ds.borderColor || '#3b82f6', width: ds.borderWidth || 3 };
+            series.itemStyle = { color: ds.borderColor || '#3b82f6', borderColor: ds.pointBackgroundColor || '#ffffff', borderWidth: 2 };
             series.symbol = 'circle';
             series.symbolSize = 8;
             if (ds.yAxisID === 'y1') series.yAxisIndex = 1;

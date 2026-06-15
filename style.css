@@ -11930,3 +11930,299 @@ html.dark .bg-surface-variant {
 html.dark .text-surface-onVariant {
   color: var(--md-sys-color-on-surface) !important;
 }
+
+/* =========================================
+   SKELETON LOADING ANIMATIONS
+   ========================================= */
+.skeleton {
+  background: linear-gradient(90deg, var(--md-sys-color-surface-variant) 25%, var(--md-sys-color-surface) 50%, var(--md-sys-color-surface-variant) 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite linear;
+  border-radius: 8px;
+  color: transparent !important;
+  pointer-events: none;
+  user-select: none;
+}
+.skeleton * {
+  visibility: hidden;
+}
+@keyframes skeletonShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Hover effects for KPI cards */
+.kpiCard {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.kpiCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 51, 102, 0.1), 0 8px 10px -6px rgba(0, 51, 102, 0.1) !important;
+html.dark body .modern-input-group input.flatpickr-input,
+html.dark body .modern-input-group input[type="date"],
+html.dark body .modern-input-group input,
+html.dark body .modern-input-group select {
+    background-color: var(--md-sys-color-surface) !important;
+    color: var(--md-sys-color-on-surface) !important;
+    border-color: var(--md-sys-color-outline-variant) !important;
+}
+
+/* =========================================
+   NOTIF SEARCH OVERRIDES
+   ========================================= */
+html.dark .notifSearchBox {
+    background: var(--md-sys-color-surface-container) !important;
+    border-color: var(--md-sys-color-outline-variant) !important;
+}
+html.dark .notifSearchBox:focus-within {
+    background: var(--md-sys-color-surface) !important;
+    border-color: var(--md-sys-color-primary) !important;
+}
+html.dark .notifSearchInput {
+    color: var(--md-sys-color-on-surface) !important;
+}
+
+/* FIX CAPTURE TABLE SELECTS */
+html.dark #srCaptureTable select,
+html.dark #srCaptureTable input {
+    background-color: var(--md-sys-color-surface-container-high) !important;
+    color: #f8fafc !important;
+    -webkit-text-fill-color: #f8fafc !important;
+}
+html.dark #srCaptureTable select option {
+    background-color: var(--md-sys-color-surface-container-high) !important;
+    color: #f8fafc !important;
+}
+
+
+/* Theme Toggle Switch in Profile */
+.theme-toggle-switch {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  background-color: var(--md-sys-color-outline-variant);
+  border-radius: 20px;
+  transition: background-color 0.3s ease;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+.theme-toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+html.dark .theme-toggle-switch {
+  background-color: var(--md-sys-color-primary);
+}
+html.dark .theme-toggle-switch::after {
+  transform: translateX(18px);
+}
+
+/* =========================================
+   FORCED LOGIN TEXT COLORS IN DARK MODE
+   ========================================= */
+html.dark #desktopWelcome h1,
+html.dark #desktopLogo span,
+html.dark #mobileTitle {
+  color: #f8fafc !important; /* Force Ice White */
+  -webkit-text-fill-color: #f8fafc !important;
+}
+
+html.dark #desktopWelcome p,
+html.dark #desktopLogo span:last-child,
+html.dark #mobileSubtitle {
+  color: #38bdf8 !important; /* Force Blue for variants */
+  -webkit-text-fill-color: #38bdf8 !important;
+}
+
+/* Force input labels to white */
+html.dark #cardLogin label,
+html.dark #cardLogin .text-primary\/50,
+html.dark #cardLogin .text-surface-on {
+  color: #f8fafc !important;
+}
+
+/* =========================================
+   PROFILE CARD DARK MODE FIXES
+   ========================================= */
+html.dark #userNameFull,
+html.dark #profileDropdown .text-primary {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+}
+
+html.dark #profileDropdown .text-primary\/40,
+html.dark #profileDropdown .text-primary\/30,
+html.dark #profileDropdown .text-surface-onVariant\/60 {
+  color: #38bdf8 !important; /* Make the muted blue text brighter and visible */
+  -webkit-text-fill-color: #38bdf8 !important;
+}
+
+html.dark #who,
+html.dark #munTxt {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+}
+
+/* =========================================
+   INFO CARDS DARK MODE FIXES (Consumibles, Pinol)
+   ========================================= */
+/* Consumibles Card (was light blue) */
+html.dark #formCONS > div:first-child {
+  background-color: var(--md-sys-color-surface-variant) !important;
+  border-color: var(--md-sys-color-outline-variant) !important;
+}
+html.dark #formCONS > div:first-child .bg-surface {
+  background-color: var(--md-sys-color-surface-container) !important;
+  border-color: var(--md-sys-color-outline-variant) !important;
+}
+
+/* Pinol Card (was light green) */
+html.dark #formPINOL > div:first-child {
+  background-color: var(--md-sys-color-surface-variant) !important;
+  border-color: var(--md-sys-color-outline-variant) !important;
+}
+html.dark #formPINOL > div:first-child .bg-surface {
+  background-color: var(--md-sys-color-surface-container) !important;
+  border-color: var(--md-sys-color-outline-variant) !important;
+}
+
+/* Insumos, Pinol & SR card texts */
+html.dark #formCONS > div:first-child .text-primary,
+html.dark #formPINOL > div:first-child .text-primary,
+html.dark #formSR > div:first-child .text-primary,
+html.dark #formCONS > div:first-child .text-surface-onVariant\/60,
+html.dark #formPINOL > div:first-child .text-surface-onVariant\/60,
+html.dark #formSR > div:first-child .text-surface-onVariant\/60 {
+  color: #f8fafc !important;
+}
+
+html.dark #formCONS > div:first-child .text-primary\/40,
+html.dark #formPINOL > div:first-child .text-primary\/40,
+html.dark #formSR > div:first-child .text-primary\/40 {
+  color: #38bdf8 !important;
+}
+
+/* Fix main background pure black */
+html.dark body::before {
+  background: radial-gradient(circle at 15% 50%, rgba(255, 255, 255, 0.02) 0%, transparent 50%) !important;
+}
+html.dark body::after {
+  opacity: 0.02 !important; /* Reduce noise filter slightly for cleaner OLED */
+}
+
+/* Fix Existencia de Biologico (SR) Table Headers */
+html.dark .bg-surface-variant {
+  background-color: var(--md-sys-color-surface-variant) !important;
+}
+html.dark .text-surface-onVariant {
+  color: var(--md-sys-color-on-surface) !important;
+}
+
+/* =========================================
+   SKELETON LOADING ANIMATIONS
+   ========================================= */
+.skeleton {
+  background: linear-gradient(90deg, var(--md-sys-color-surface-variant) 25%, var(--md-sys-color-surface) 50%, var(--md-sys-color-surface-variant) 75%);
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s infinite linear;
+  border-radius: 8px;
+  color: transparent !important;
+  pointer-events: none;
+  user-select: none;
+}
+.skeleton * {
+  visibility: hidden;
+}
+@keyframes skeletonShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Hover effects for KPI cards */
+.kpiCard {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.kpiCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 51, 102, 0.1), 0 8px 10px -6px rgba(0, 51, 102, 0.1) !important;
+}
+html.dark .kpiCard:hover {
+  box-shadow: 0 20px 25px -5px rgba(255, 255, 255, 0.05), 0 8px 10px -6px rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Focus Visible for A11y */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid var(--md-sys-color-secondary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* =========================================
+   FOCUS MODE (PREMIUM EXPANSION)
+   ========================================= */
+#focusOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 8000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+html.dark #focusOverlay {
+  background: rgba(0, 0, 0, 0.6);
+}
+#focusOverlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.focus-element-active {
+  position: relative !important;
+  z-index: 8001 !important;
+  /* La animación de escala/posición la manejará GSAP, aquí solo aseguramos que flote sobre el overlay */
+}
+
+.btn-focus-expand {
+  position: absolute !important;
+  top: 16px !important;
+  right: 16px !important;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--md-sys-color-surface);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  color: var(--md-sys-color-on-surface-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(5px);
+  transition: all 0.3s ease;
+  z-index: 20;
+}
+.kpiCard:hover .btn-focus-expand,
+.group:hover .btn-focus-expand,
+[data-focus-target]:hover .btn-focus-expand {
+  opacity: 1;
+  transform: translateY(0);
+}
+.btn-focus-expand:hover {
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+  border-color: var(--md-sys-color-primary);
+}
