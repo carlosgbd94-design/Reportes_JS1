@@ -51,7 +51,7 @@
 
   <!-- Estilos -->
   <link rel="stylesheet" href="tailwind_compiled.css">
-  <link rel="stylesheet" href="style.css?v=2026.48" type="text/css">
+  <link rel="stylesheet" href="style.css?v=2026.49" type="text/css">
   <link rel="stylesheet" href="mobile.css?v=2026.23">
 
   <!-- Scripts externos -->
@@ -239,7 +239,7 @@
             style="--glass-icon-color: var(--md-sys-color-primary); --corner-radius: 100px;">
             <div class="GlassContent liquidGL header-liquid-glass">
               <button class="header-action-btn" id="btnExport" data-tooltip="Exportar reportes"
-                title="Exportar reportes" style="display:none;">
+                title="Exportar reportes">
                 <span class="material-symbols-rounded">download</span>
               </button>
             </div>
@@ -248,8 +248,7 @@
           <div class="GlassContainer" id="glassBtnUpload" data-role-gate="UNIDAD,MUNICIPAL"
             style="--glass-icon-color: #005bb5; --corner-radius: 100px;">
             <div class="GlassContent liquidGL header-liquid-glass">
-              <button class="header-action-btn" id="btnOpenUpload" data-tooltip="Subir archivos" title="Subir archivos"
-                style="display:none;">
+              <button class="header-action-btn" id="btnOpenUpload" data-tooltip="Subir archivos" title="Subir archivos">
                 <span class="material-symbols-rounded">cloud_upload</span>
               </button>
             </div>
@@ -260,7 +259,7 @@
             style="--glass-icon-color: #00695c; --corner-radius: 100px;">
             <div class="GlassContent liquidGL header-liquid-glass">
               <button class="header-action-btn" id="btnViewArchivos" data-tooltip="Explorador de evidencias"
-                title="Ver evidencia" style="display:none;">
+                title="Ver evidencia">
                 <span class="material-symbols-rounded">folder_open</span>
               </button>
             </div>
@@ -271,7 +270,7 @@
             style="--glass-icon-color: #c41e3a; --corner-radius: 100px;">
             <div class="GlassContent liquidGL header-liquid-glass">
               <button class="header-action-btn" id="btnTopNotifications" data-tooltip="Notificaciones"
-                title="Notificaciones" style="display:none;">
+                title="Notificaciones">
                 <div class="flex items-center justify-center relative !overflow-visible">
                   <span class="material-symbols-rounded">notifications</span>
                   <span id="topNotifBadge"></span>
@@ -287,7 +286,7 @@
             style="--glass-icon-color: #4338ca; --corner-radius: 100px;">
             <div class="GlassContent liquidGL header-liquid-glass">
               <button class="header-action-btn" id="btnUploadRdaCsv" data-tooltip="Subir Archivo SIS (CSV)"
-                title="Cargar Reporte de Sistema (CSV)" style="display:none;"
+                title="Cargar Reporte de Sistema (CSV)"
                 onclick="document.getElementById('modalUploadCSV').classList.add('show')">
                 <span class="material-symbols-rounded">upload_file</span>
               </button>
@@ -4338,7 +4337,7 @@
     };
     console.log("Refractive Engine Active: SVG Displacement Map & Testing Utility Loaded");
   </script>
-  <script defer src="main.js?v=2026.24"></script>
+  <script defer src="main.js?v=2026.25"></script>
 
 
   <svg style="position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; opacity: 0;"
@@ -4477,18 +4476,7 @@
     </div>
   </div>
 
-  <!-- 🛠️ TECHNICAL LOGIC CONTAINER (Hidden from UI, required for JS references) -->
-  <div id="legacyLogicContainer" style="display: none !important;">
-    <button id="btnSaveSR"></button>
-    <button id="btnEditSR"></button>
-    <button id="btnCancelEditSR" style="display: none;"></button>
-    <button id="btnSaveCONS"></button>
-    <button id="btnEditCONS"></button>
-    <button id="btnCancelEditCONS" style="display: none;"></button>
-    <button id="btnSaveBIO"></button>
-    <button id="btnEditBIO"></button>
-    <button id="btnCancelEditBIO" style="display: none;"></button>
-  </div>
+
 
 
   <!-- UPLOAD COMPONENT (Hidden, triggered by Admin Button) -->

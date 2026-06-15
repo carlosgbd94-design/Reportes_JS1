@@ -374,14 +374,7 @@ function saveSession(token, user) {
   } catch (e) { console.warn("No se pudo guardar sesión:", e); }
 }
 
-function loadSession() {
-  try {
-    const t = localStorage.getItem("JS1_TOKEN");
-    const u = localStorage.getItem("JS1_USER");
-    if (t && u) return { token: t, user: JSON.parse(u) };
-  } catch (e) { }
-  return null;
-}
+
 
 
 function clearSession() {
@@ -1308,16 +1301,7 @@ function writeNotifPrefs() {
   }
 }
 
-function notifTypeLabel(type) {
-  const t = String(type || "INFO").toUpperCase();
-  const map = {
-    INFO: "Información",
-    SUCCESS: "Éxito",
-    WARN: "Alerta",
-    ERROR: "Crítica"
-  };
-  return map[t] || t;
-}
+
 
 function parseNotifMeta(metaJson) {
   if (!metaJson) return null;
@@ -1437,34 +1421,9 @@ function canConfirmPinolReceipt(item) {
     status !== "READ";
 }
 
-function buildPinolReceiptIndex(notifications = []) {
-  const map = new Map();
 
-  notifications.forEach(n => {
-    const meta = parseNotifMeta(n?.meta_json);
-    if (!meta) return;
 
-    if (
-      String(meta.source || "").toUpperCase() === "PINOL" &&
-      String(meta.event || "").toUpperCase() === "PINOL_ENTREGADO" &&
-      String(meta.confirmed_by_unit || "").toUpperCase() === "SI"
-    ) {
-      const id = String(meta.pinol_id || "").trim();
-      if (id) map.set(id, true);
-    }
-  });
 
-  return map;
-}
-
-function isPinolDeliveredNotif(item) {
-  const meta = parseNotifMeta(item?.meta_json);
-  return !!(
-    meta &&
-    String(meta.source || "").toUpperCase() === "PINOL" &&
-    String(meta.event || "").toUpperCase() === "PINOL_ENTREGADO"
-  );
-}
 
 function isPinolReceiptConfirmed(item) {
   const meta = parseNotifMeta(item?.meta_json);
@@ -1533,21 +1492,7 @@ function bindNotifTemplateEvents() {
   });
 }
 
-function createDeleteButtonHtml(onclick, title = "Eliminar") {
-  return `
-      <button 
-        type="button" 
-        class="md-delete-btn" 
-        title="${escapeAttr(title)}" 
-        onclick="${onclick}"
-      >
-        <svg viewBox="0 0 24 24">
-          <path class="trash-lid" d="M15 4V3H9v1H4v2h16V4h-5z" />
-          <path d="M5 21a2 2 0 002 2h10a2 2 0 002-2V7H5v14zM8 9h2v10H8V9zm4 0h2v10h-2V9zm4 0h2v10h-2V9z" />
-        </svg>
-      </button>
-    `;
-}
+
 
 function formatNotifDate(ts) {
   if (!ts) return "";
@@ -1829,18 +1774,7 @@ function renderNotifications(items = [], options = {}) {
 
 let NOTIF_BADGE_REFS = null;
 
-function getNotifBadgeRefs() {
-  if (NOTIF_BADGE_REFS) return NOTIF_BADGE_REFS;
 
-  NOTIF_BADGE_REFS = {
-    badge: $("notifBadgeMain"),
-    topBadge: $("topNotifBadge"),
-    tabNotifs: $("tabNOTIFS"),
-    btnTopNotifications: $("btnTopNotifications")
-  };
-
-  return NOTIF_BADGE_REFS;
-}
 
 function syncMainNotifBadge(unread = 0) {
   const n = Number(unread || 0);
@@ -3885,26 +3819,6 @@ const StateManager = {
 };
 
 // NUEVO WRAPPER UI (Ejecutor Asíncrono Centralizado)
-async function executeAction(actionName, payload, loadingMsg, successMsg = null) {
-  try {
-    if (loadingMsg) showOverlay(loadingMsg);
-
-    // Invocamos el puente asíncrono hacia GAS
-    const res = await apiCall(actionName, payload);
-
-    if (!res || !res.ok) {
-      throw new Error((res && res.error) || "Error desconocido en el servidor.");
-    }
-
-    if (successMsg) showToast(successMsg, "good");
-    return res.data;
-  } catch (error) {
-    showToast(error.message, "bad");
-    throw error;
-  } finally {
-    if (loadingMsg) hideOverlay();
-  }
-}
 // ==========================================
 // API CALL — PROXY A GOOGLE APPS SCRIPT
 // ==========================================
@@ -6186,10 +6100,7 @@ function getMexicoHolidayMap(year) {
   };
 }
 
-function isHolidayMx(ymd) {
-  const year = parseInt(ymd.split("-")[0]);
-  return !!getMexicoHolidayMap(year)[ymd];
-}
+
 
 function isWeekendMx(ymd) {
   const d = new Date(`${ymd}T12:00:00`);
@@ -6197,24 +6108,9 @@ function isWeekendMx(ymd) {
   return dow === 0 || dow === 6;
 }
 
-function moveToBusinessDayMx(baseYmd, direction = -1) {
-  let d = baseYmd;
-  while (isWeekendMx(d) || isMexicanHoliday(new Date(`${d}T12:00:00`))) {
-    d = addDaysYmd(d, direction);
-  }
-  return d;
-}
 
-function addBusinessDaysMx(baseYmd, count) {
-  let d = baseYmd;
-  let added = 0;
-  const dir = count > 0 ? 1 : -1;
-  while (added < Math.abs(count)) {
-    d = addDaysYmd(d, dir);
-    if (!isWeekendMx(d) && !isMexicanHoliday(new Date(`${d}T12:00:00`))) added++;
-  }
-  return d;
-}
+
+
 
 async function getConsumiblesStatus(todayYmd, clues) {
   const d = new Date(`${todayYmd}T12:00:00`);
@@ -6329,10 +6225,7 @@ function invalidateHistoryMetricsCache() {
   dropCacheByPrefix(buildCacheKey("HISTORY_METRICS", ""));
 }
 
-function invalidateUnitCatalogCache() {
-  dropCacheByPrefix(buildCacheKey("UNIT_CATALOG", ""));
-  UNIT_CATALOG = [];
-}
+
 
 function invalidatePinolCache() {
   dropCacheByPrefix(buildCacheKey("PINOL_LIST", ""));
@@ -6740,9 +6633,7 @@ function bindNavigationUiEvents() {
     USER = null;
     TOKEN = null;
     clearSession();
-    setLoggedOutUI();
-    hideOverlay();
-    showToast("Sesión cerrada");
+    window.location.reload();
   });
 }
 function bindSummaryUiEvents() {
@@ -6921,30 +6812,9 @@ function initAppShell() {
 
 let OPS_BOOTSTRAP_PROMISE = null;
 
-function bootstrapOpsUi() {
-  if (OPS_BOOTSTRAP_PROMISE) return OPS_BOOTSTRAP_PROMISE;
 
-  OPS_BOOTSTRAP_PROMISE = loadUnitCatalog()
-    .then(() => {
-      bindAdminAutocomplete();
-    })
-    .catch(err => console.error("loadUnitCatalog error:", err))
-    .finally(() => {
-      OPS_BOOTSTRAP_PROMISE = null;
-    });
 
-  return OPS_BOOTSTRAP_PROMISE;
-}
 
-function scheduleOpsPrewarmSafe(delay = 650) {
-  clearTimeout(OPS_PREWARM_TIMER);
-
-  OPS_PREWARM_TIMER = setTimeout(() => {
-    prewarmOpsData().catch((e) => {
-      console.warn("prewarmOpsData warning:", e);
-    });
-  }, delay);
-}
 
 async function runPostLoginInit(user) {
 
@@ -7999,23 +7869,7 @@ window.handleSRLoteChange = function (selectEl) {
 
 $("btnAddSRRow")?.addEventListener("click", () => addSRRow());
 
-function restoreUiFromState() {
-  if (!APP_STATE || !APP_STATE.initialized) return;
 
-  if (APP_STATE.mainPanel) {
-    activateMain(APP_STATE.mainPanel);
-  }
-
-  const role = String((USER && USER.rol) || "").trim().toUpperCase();
-  if (role === "UNIDAD" && APP_STATE.captureTab) {
-    activateCapture(APP_STATE.captureTab);
-  }
-
-  const isOps = role === "ADMIN" || role === "MUNICIPAL" || role === "JURISDICCIONAL";
-  if (isOps && APP_STATE.opsTab) {
-    activateOpsTab(APP_STATE.opsTab);
-  }
-}
 
 document.addEventListener("DOMContentLoaded", () => {
   initAppShell();
@@ -8163,24 +8017,9 @@ function formatDateMx(d = new Date()) {
   }).format(d);
 }
 
-function formatBadgeDayText(ymd = "") {
-  const d = ymd ? new Date(`${ymd}T00:00:00`) : new Date();
 
-  const weekday = new Intl.DateTimeFormat("es-MX", { weekday: "long" }).format(d);
-  const month = new Intl.DateTimeFormat("es-MX", { month: "long" }).format(d);
 
-  const weekdayCap = weekday.charAt(0).toUpperCase() + weekday.slice(1);
-  const monthCap = month.charAt(0).toUpperCase() + month.slice(1);
 
-  return `Hoy es ${weekdayCap} ${d.getDate()} de ${monthCap}`;
-}
-
-function getComplianceTone(pct = 0) {
-  const n = Number(pct || 0);
-  if (n >= 90) return "good";
-  if (n >= 70) return "warn";
-  return "bad";
-}
 
 function capitalizeFirstLetter(text = "") {
   const s = String(text || "").trim();
@@ -8289,20 +8128,7 @@ function isBusinessDay(date) {
 /**
  * Obtiene el X-ésimo día hábil anterior o posterior
  */
-function getBusinessDayOffset(date, offset) {
-  const d = new Date(date);
-  let count = 0;
-  const step = offset > 0 ? 1 : -1;
-  const target = Math.abs(offset);
 
-  while (count < target) {
-    d.setDate(d.getDate() + step);
-    if (isBusinessDay(d)) {
-      count++;
-    }
-  }
-  return new Date(d);
-}
 
 /**
  * Calcula la ventana inteligente centrada en el día 22
@@ -8313,13 +8139,7 @@ function calculateBioIntelligentWindow(year, month) {
   return getBioCaptureWindow(year, month + 1); // getBioCaptureWindow espera mes 1-12
 }
 
-function sameDate(a, b) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
+
 
 function getEasterDate(year) {
 
@@ -8342,9 +8162,7 @@ function getEasterDate(year) {
   return new Date(year, month - 1, day);
 }
 
-function shouldEnableConsumibles() {
-  return !!getConsumiblesCaptureDate();
-}
+
 
 function getConsumiblesCaptureDate() {
 
@@ -8443,13 +8261,7 @@ function setSavedStamp() {
   if ($("hdrGuardado")) $("hdrGuardado").textContent = `Guardado: ${t}`;
 }
 
-function runPostLoginVisualSetup() {
-  setTimeout(() => {
-    applyCaptureNameAutocomplete();
-    bindFastNumericFocus();
-    bindAdminAutocomplete();
-  }, 120);
-}
+
 
 /**
  * 🛡️ whoami() — Validación REAL de sesión Auth + perfil fresco
@@ -8661,7 +8473,7 @@ async function getTodayReports(fecha = "", force = false) {
   return data || null;
 }
 
-window.getCaptureOverview = async function (fecha, tipo, force = false) {
+async function getCaptureOverview(fecha, tipo, force = false) {
   console.log(`[getCaptureOverview DEBUG] Llamado con fecha=${fecha}, tipo=${tipo}`);
   if (!TOKEN) return null;
 
@@ -9516,10 +9328,9 @@ function refreshBioAlerts(force = false) {
     }
   });
 
-  if ($("btnSaveBIO")) {
-    $("btnSaveBIO").dataset.alert = hasStrongAlert ? "1" : "";
-    $("btnSaveBIO").dataset.blocked = hasBlockingError ? "1" : "";
-    $("btnSaveBIO").disabled = !BIO_STATE.canCapture;
+  if ($("hubSaveBtn")) {
+    $("hubSaveBtn").dataset.alert = hasStrongAlert ? "1" : "";
+    $("hubSaveBtn").dataset.blocked = hasBlockingError ? "1" : "";
   }
 
   return { hasStrongAlert, hasBlockingError };
@@ -10067,15 +9878,9 @@ function loadCONSIntoForm(consData) {
   };
 }
 
-function setExistenciaReadiness(hasTodayRecord) {
-  HAS_TODAY_SR = !!hasTodayRecord;
-  setEditModeSR(false);
-}
 
-function setCONSReadiness(hasTodayRecord) {
-  HAS_TODAY_CONS = !!hasTodayRecord;
-  setEditModeCONS(false);
-}
+
+
 
 function normalizeTodayReports(data) {
   const raw = (data && typeof data === "object") ? data : {};
@@ -10317,34 +10122,7 @@ function sanitizeExistenciaFieldValue(value) {
   return String(n);
 }
 
-function hasExistenciaNumericChanges() {
-  if (!ORIGINAL_SR) return true;
 
-  const current = {
-    bcg: sanitizeExistenciaFieldValue($("bcg") ? $("bcg").value : ""),
-    hepatitis_b: sanitizeExistenciaFieldValue($("hepatitis_b") ? $("hepatitis_b").value : ""),
-    hexavalente: sanitizeExistenciaFieldValue($("hexavalente") ? $("hexavalente").value : ""),
-    dpt: sanitizeExistenciaFieldValue($("dpt") ? $("dpt").value : ""),
-    rotavirus: sanitizeExistenciaFieldValue($("rotavirus") ? $("rotavirus").value : ""),
-    neumococica_13: sanitizeExistenciaFieldValue($("neumococica_13") ? $("neumococica_13").value : ""),
-    neumococica_20: sanitizeExistenciaFieldValue($("neumococica_20") ? $("neumococica_20").value : ""),
-    srp: sanitizeExistenciaFieldValue($("srp") ? $("srp").value : ""),
-    sr: sanitizeExistenciaFieldValue($("sr") ? $("sr").value : ""),
-    vph: sanitizeExistenciaFieldValue($("vph") ? $("vph").value : ""),
-    varicela: sanitizeExistenciaFieldValue($("varicela") ? $("varicela").value : ""),
-    hepatitis_a: sanitizeExistenciaFieldValue($("hepatitis_a") ? $("hepatitis_a").value : ""),
-    td: sanitizeExistenciaFieldValue($("td") ? $("td").value : ""),
-    tdpa: sanitizeExistenciaFieldValue($("tdpa") ? $("tdpa").value : ""),
-    covid_19: sanitizeExistenciaFieldValue($("covid_19") ? $("covid_19").value : ""),
-    influenza: sanitizeExistenciaFieldValue($("influenza") ? $("influenza").value : ""),
-    vsr: sanitizeExistenciaFieldValue($("vsr") ? $("vsr").value : "")
-  };
-
-  return Object.keys(current).some(key => {
-    const original = sanitizeExistenciaFieldValue(ORIGINAL_SR[key] ?? "");
-    return current[key] !== original;
-  });
-}
 function hasCONSNumericChanges() {
   syncAguja();
 
@@ -11659,8 +11437,7 @@ async function reloadHistorySilent(force = false) {
 // (El listener de loginForm ya está registrado al inicio del archivo)
 
 
-const bSaveSR = $("btnSaveSR");
-if (bSaveSR) bSaveSR.onclick = async () => {
+async function performSaveSR() {
   const nombre = $("nombreSR")?.value.trim() || "";
   if (!nombre) return showToast("Ingresa el nombre del responsable", false, "warn");
 
@@ -11813,8 +11590,7 @@ $("exportTipo").addEventListener("change", updateExportFechaHint);
 
 refreshExportSplitUi();
 
-const bSaveCONS = $("btnSaveCONS");
-if (bSaveCONS) bSaveCONS.onclick = async () => {
+async function performSaveCONS() {
   const nombre = $("nombreCONS")?.value.trim() || "";
   if (!nombre) return showToast("Ingresa el nombre del responsable", false, "warn");
 
@@ -11855,8 +11631,7 @@ if (bSaveCONS) bSaveCONS.onclick = async () => {
   });
 };
 
-const bSaveBIO = $("btnSaveBIO");
-if (bSaveBIO) bSaveBIO.onclick = async () => {
+async function performSaveBIO() {
   if (!BIO_STATE.canCapture) return showToast("Ventana de captura cerrada", false, "warn");
   if (HAS_SAVED_BIO && !EDIT_BIO) return showToast("Pedido ya capturado", false, "warn");
 
@@ -11992,36 +11767,36 @@ $("btnSavePINOL").onclick = async () => {
   });
 };
 
-$("btnEditSR").onclick = () => {
+function performEditSR() {
   if (!TODAY_CACHE || !TODAY_CACHE.sr) return;
   loadExistenciaIntoForm(TODAY_CACHE.sr);
   setEditModeSR(true);
   showToast("Modo edición activado (Existencia de biológicos)", true, "warn");
-};
-$("btnCancelEditSR").onclick = () => {
+}
+function performCancelEditSR() {
   resetExistencia();
   showToast("Edición cancelada");
-};
-$("btnEditCONS").onclick = () => {
+}
+function performEditCONS() {
   if (!TODAY_CACHE || !TODAY_CACHE.cons) return;
   loadCONSIntoForm(TODAY_CACHE.cons);
   setEditModeCONS(true);
   showToast("Modo edición activado (Consumibles)", true, "warn");
-};
-$("btnCancelEditCONS").onclick = () => {
+}
+function performCancelEditCONS() {
   resetCONS();
   showToast("Edición cancelada");
-};
-$("btnEditBIO").onclick = () => {
+}
+function performEditBIO() {
   if (!HAS_SAVED_BIO) return;
   setEditModeBIO(true);
   showToast("Modo edición activado (Pedido de biológico)", true, "warn");
-};
+}
 
-$("btnCancelEditBIO").onclick = async () => {
+async function performCancelEditBIO() {
   await loadBioForm();
   showToast("Edición cancelada");
-};
+}
 
 // EVENTOS DEL MODAL DE EXPORTACIÓN
 if ($("exportTipo")) $("exportTipo").addEventListener("change", updateExportFechaHint);
@@ -16035,11 +15810,7 @@ document.addEventListener("click", (e) => {
 document.getElementById("summaryTipo")?.addEventListener("change", () => reloadCaptureSummarySilent());
 document.getElementById("summaryFecha")?.addEventListener("change", () => reloadCaptureSummarySilent());
 
-function isWorkDay(d) {
-  if (!d) return false;
-  const dateObj = (d instanceof Date) ? d : new Date(d + "T00:00:00");
-  return isBusinessDay(dateObj);
-}
+
 
 function getBioCaptureWindow(year, month) {
   let target = new Date(year, month - 1, 22);
@@ -16143,18 +15914,9 @@ function applyRolePermissions(role) {
 }
 
 // Iniciar componentes al cargar
-function toggleProfileDropdown() {
-  const dropdown = document.getElementById("profileDropdown");
-  if (!dropdown) return;
 
 
-  dropdown.classList.toggle("hidden");
-}
 
-function toggleNotifications() {
-  const btn = document.getElementById("btnTopNotifications");
-  if (btn) btn.click(); // Trigger the existing logic
-}
 
 /**
  * 🛸 SYNC COMMAND HUB (Control Flotante Premium)
@@ -16185,19 +15947,6 @@ function syncCommandHub() {
     return;
   }
 
-  // 2. Mapeo de botones por pestaña
-  // Nota: Aunque los eliminamos del HTML, las funciones de JS siguen buscando estos IDs
-  // por lo que crearemos referencias virtuales o proxies.
-  let realSaveBtn = document.getElementById("btnSave" + captureTab);
-  let realEditBtn = document.getElementById("btnEdit" + captureTab);
-  let realCancelBtn = document.getElementById("btnCancelEdit" + captureTab);
-
-  if (captureTab === "SR") {
-    realSaveBtn = document.getElementById("btnSaveSR");
-    realEditBtn = document.getElementById("btnEditSR");
-    realCancelBtn = document.getElementById("btnCancelEditSR");
-  }
-
   // 3. Sincronizar visibilidad y estados en el Hub
   const hubEdit = document.getElementById("hubEditBtn");
   const hubCancel = document.getElementById("hubCancelBtn");
@@ -16208,6 +15957,7 @@ function syncCommandHub() {
   // Gatekeeper Logic
   let isValidDate = true;
   let reasonInvalid = "";
+  let isSaveDisabled = false;
 
   if (captureTab === "SR") {
     const day = new Date().getDay();
@@ -16216,16 +15966,19 @@ function syncCommandHub() {
       isValidDate = false;
       reasonInvalid = "El reporte de biológicos solo se puede capturar en jueves o viernes.";
     }
+    isSaveDisabled = !isValidDate || (HAS_TODAY_SR && !EDIT_SR);
   } else if (captureTab === "CONS") {
     if (!(STATUS && STATUS.canCaptureConsumibles)) {
       isValidDate = false;
       reasonInvalid = "El reporte de consumibles solo se puede capturar en jueves o por apertura extraordinaria.";
     }
+    isSaveDisabled = !isValidDate || (HAS_TODAY_CONS && !EDIT_CONS);
   } else if (captureTab === "BIO") {
     if (typeof BIO_STATE !== "undefined" && !BIO_STATE.canCapture) {
       isValidDate = false;
       reasonInvalid = "La ventana de pedidos de biológico se encuentra cerrada.";
     }
+    isSaveDisabled = !isValidDate || (HAS_SAVED_BIO && !EDIT_BIO);
   }
   // PINOL: always valid date (no window restriction for solicitudes)
 
@@ -16296,22 +16049,13 @@ function syncCommandHub() {
     }
   }
 
-  if (realSaveBtn && hubSave) {
-    hubSave.disabled = realSaveBtn.disabled;
-
-    if (realSaveBtn.hasAttribute("data-alert")) hubSave.setAttribute("data-alert", realSaveBtn.getAttribute("data-alert"));
-    else hubSave.removeAttribute("data-alert");
-
-    if (realSaveBtn.hasAttribute("data-blocked")) hubSave.setAttribute("data-blocked", realSaveBtn.getAttribute("data-blocked"));
-    else hubSave.removeAttribute("data-blocked");
-
+  if (hubSave) {
     const saveText = hubSave.querySelector('span:last-child');
     if (saveText) {
       if (isEditing) saveText.textContent = "Actualizar";
       else saveText.textContent = "Guardar";
     }
   }
-
 
   if (canEdit && captureTab !== "PINOL") hubEdit.style.display = "flex";
   else hubEdit.style.display = "none";
@@ -16320,7 +16064,6 @@ function syncCommandHub() {
   else hubCancel.style.display = "none";
 
   if (hubSave) {
-    const isSaveDisabled = !isValidDate || hubSave.disabled || (realSaveBtn && realSaveBtn.disabled);
     hubSave.disabled = isSaveDisabled;
 
     // Remove legacy Tailwind classes and ensure base class
@@ -16331,11 +16074,15 @@ function syncCommandHub() {
 
     if (isSaveDisabled) {
       hubSave.onclick = () => {
-        const alertMsg = (realSaveBtn && realSaveBtn.getAttribute("data-alert")) ? "Corrige las alertas antes de guardar" : "No es posible guardar en este momento";
+        const alertMsg = (hubSave.getAttribute("data-alert")) ? "Corrige las alertas antes de guardar" : "No es posible guardar en este momento";
         showToast(alertMsg, false, "warn");
       };
     } else {
-      hubSave.onclick = () => realSaveBtn && realSaveBtn.click();
+      hubSave.onclick = async () => {
+        if (captureTab === "SR") await performSaveSR();
+        if (captureTab === "CONS") await performSaveCONS();
+        if (captureTab === "BIO") await performSaveBIO();
+      };
     }
 
     // Minimalist design: always hide text, show only icon
@@ -16348,8 +16095,20 @@ function syncCommandHub() {
     });
   }
 
-  if (hubEdit) hubEdit.onclick = () => realEditBtn && realEditBtn.click();
-  if (hubCancel) hubCancel.onclick = () => realCancelBtn && realCancelBtn.click();
+  if (hubEdit) {
+    hubEdit.onclick = () => {
+      if (captureTab === "SR") performEditSR();
+      if (captureTab === "CONS") performEditCONS();
+      if (captureTab === "BIO") performEditBIO();
+    };
+  }
+  if (hubCancel) {
+    hubCancel.onclick = () => {
+      if (captureTab === "SR") performCancelEditSR();
+      if (captureTab === "CONS") performCancelEditCONS();
+      if (captureTab === "BIO") performCancelEditBIO();
+    };
+  }
 }
 
 // Hook into existing events
