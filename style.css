@@ -11665,8 +11665,14 @@ html.dark .ranking-row-val {
 /* Fix input boxes in cards */
 html.dark input, 
 html.dark select, 
-html.dark textarea {
-  background-color: var(--md-sys-color-surface) !important;
+html.dark textarea,
+html.dark option {
+  background-color: var(--md-sys-color-surface-container) !important;
+  color: var(--md-sys-color-on-surface) !important;
+}
+
+/* Force generic text colors inside inputs */
+html.dark input.text-slate-700, html.dark select.text-slate-700, html.dark input.text-slate-900, html.dark select.text-slate-900, html.dark input.text-primary, html.dark select.text-primary {
   color: var(--md-sys-color-on-surface) !important;
 }
 
@@ -11679,8 +11685,8 @@ html.dark textarea {
    TAILWIND DARK MODE OVERRIDES (MANUAL)
    ========================================= */
 html.dark .text-primary { color: var(--md-sys-color-primary) !important; }
-html.dark .text-primary\/60 { color: var(--md-sys-color-primary) !important; opacity: 0.6; }
-html.dark .text-primary\/50 { color: var(--md-sys-color-primary) !important; opacity: 0.5; }
+html.dark .text-primary\/60 { color: var(--md-sys-color-primary) !important; opacity: 0.8; }
+html.dark .text-primary\/50 { color: var(--md-sys-color-primary) !important; opacity: 0.7; }
 html.dark .bg-primary\/10 { background-color: rgba(56, 189, 248, 0.1) !important; }
 html.dark .bg-primary\/5 { background-color: rgba(56, 189, 248, 0.05) !important; }
 html.dark .hover\:bg-primary\/10:hover { background-color: rgba(56, 189, 248, 0.1) !important; }
@@ -11693,6 +11699,8 @@ html.dark .text-slate-600 { color: var(--md-sys-color-on-surface-variant) !impor
 html.dark .text-slate-500 { color: var(--md-sys-color-on-surface-variant) !important; }
 html.dark .text-slate-400 { color: var(--md-sys-color-outline) !important; }
 
+html.dark .bg-slate-300 { background-color: var(--md-sys-color-surface-variant) !important; }
+html.dark .bg-slate-200 { background-color: var(--md-sys-color-surface-container-high) !important; }
 html.dark .bg-slate-100 { background-color: var(--md-sys-color-surface-variant) !important; }
 html.dark .bg-slate-50 { background-color: var(--md-sys-color-surface-container) !important; }
 html.dark .hover\:bg-slate-100:hover { background-color: var(--md-sys-color-surface-variant) !important; }
@@ -11702,8 +11710,13 @@ html.dark .border-slate-300 { border-color: var(--md-sys-color-outline) !importa
 html.dark .border-slate-200 { border-color: var(--md-sys-color-outline-variant) !important; }
 html.dark .border-slate-100 { border-color: var(--md-sys-color-outline-variant) !important; }
 
-html.dark .bg-white { background-color: var(--md-sys-color-surface) !important; }
-html.dark .bg-surface { background-color: var(--md-sys-color-surface) !important; }
+/* FIX ALL BACKGROUND AND TEXT IN TABLES AND CARDS */
+html.dark .bg-white, html.dark .bg-surface { 
+  background-color: var(--md-sys-color-surface) !important; 
+  color: var(--md-sys-color-on-surface) !important;
+}
+html.dark .bg-white\/20, html.dark .bg-surface\/40 { background-color: var(--md-sys-color-surface-container) !important; }
+html.dark th.bg-white, html.dark td.bg-white, html.dark th.bg-slate-50, html.dark td.bg-slate-50 { background-color: var(--md-sys-color-surface-container) !important; color: var(--md-sys-color-on-surface) !important; }
 
 /* =========================================
    TAILWIND DARK MODE OVERRIDES (FIXES)
