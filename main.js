@@ -9654,31 +9654,35 @@ async function loadBioForm() {
     if (BIO_STATE.isInsideWindow) {
       if (BIO_STATE.isCaptureDay) {
         if (bioHint) bioHint.textContent = "Día objetivo de pedido mensual.";
-        bioDayAlert.className = "bioDayAlert show bg-blue-50 border-2 border-blue-200 text-blue-700";
+        bioDayAlert.className = "IntegratedHint tone-info mb-4 hidden";
+        bioDayAlert.classList.remove("hidden");
         const icon = bioDayAlert.querySelector(".bioDayIcon");
-        if (icon) icon.className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-100 text-blue-700";
+        if (icon) icon.className = "hint-icon-bg bioDayIcon text-blue-700";
         const msg = bioDayAlert.querySelector(".bioDayMsg");
         if (msg) msg.innerHTML = `<b>PEDIDO MENSUAL:</b> captura habilitada hoy (fecha objetivo). Ventana: ${BIO_STATE.captureWindowStart} al ${BIO_STATE.captureWindowEnd}.`;
       } else {
         if (bioHint) bioHint.textContent = "Captura de pedido mensual habilitada.";
-        bioDayAlert.className = "bioDayAlert show bg-blue-50 border-2 border-blue-200 text-blue-700";
+        bioDayAlert.className = "IntegratedHint tone-info mb-4 hidden";
+        bioDayAlert.classList.remove("hidden");
         const icon = bioDayAlert.querySelector(".bioDayIcon");
-        if (icon) icon.className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-100 text-blue-700";
+        if (icon) icon.className = "hint-icon-bg bioDayIcon text-blue-700";
         const msg = bioDayAlert.querySelector(".bioDayMsg");
         if (msg) msg.innerHTML = `<b>PEDIDO MENSUAL:</b> te encuentras dentro de la ventana operativa (${BIO_STATE.captureWindowStart} al ${BIO_STATE.captureWindowEnd}).`;
       }
     } else if (isExtraordinary) {
       if (bioHint) bioHint.textContent = "Apertura extraordinaria activa.";
-      bioDayAlert.className = "bioDayAlert show bg-amber-50 border-2 border-amber-300 text-amber-800";
+      bioDayAlert.className = "IntegratedHint tone-warn mb-4 hidden";
+      bioDayAlert.classList.remove("hidden");
       const icon = bioDayAlert.querySelector(".bioDayIcon");
-      if (icon) icon.className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-100 text-amber-800";
+      if (icon) icon.className = "hint-icon-bg bioDayIcon text-amber-700";
       const msg = bioDayAlert.querySelector(".bioDayMsg");
       if (msg) msg.innerHTML = `<b>PEDIDO EXTRAORDINARIO:</b> hoy te encuentras fuera del periodo ordinario, pero habilitado por instrucción administrativa. Ventana ordinaria era del ${BIO_STATE.captureWindowStart} al ${BIO_STATE.captureWindowEnd}.`;
     } else {
       if (bioHint) bioHint.textContent = "Ventana de captura cerrada.";
-      bioDayAlert.className = "bioDayAlert show bg-red-50 border-2 border-red-200 text-red-700";
+      bioDayAlert.className = "IntegratedHint tone-bad mb-4 hidden";
+      bioDayAlert.classList.remove("hidden");
       const icon = bioDayAlert.querySelector(".bioDayIcon");
-      if (icon) icon.className = "bioDayIcon w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-red-100 text-red-700";
+      if (icon) icon.className = "hint-icon-bg bioDayIcon text-red-700";
       const msg = bioDayAlert.querySelector(".bioDayMsg");
       if (msg) msg.innerHTML = `<b>VENTANA CERRADA:</b> la ventana operativa ordinaria (${BIO_STATE.captureWindowStart} al ${BIO_STATE.captureWindowEnd}) ha concluido.`;
     }
@@ -16112,18 +16116,22 @@ function syncCommandHub() {
 }
 
 // Hook into existing events
-const originalActivateCapture = window.activateCapture;
-window.activateCapture = function (tab) {
-  if (typeof originalActivateCapture === "function") originalActivateCapture(tab);
-  applyPinolFormLock();
-  syncCommandHub();
-};
+if (!window.originalActivateCapture) {
+  window.originalActivateCapture = window.activateCapture;
+  window.activateCapture = function (tab) {
+    if (typeof window.originalActivateCapture === "function") window.originalActivateCapture(tab);
+    applyPinolFormLock();
+    syncCommandHub();
+  };
+}
 
-const originalActivateMain = window.activateMain;
-window.activateMain = function (panel, sub) {
-  if (typeof originalActivateMain === "function") originalActivateMain(panel, sub);
-  syncCommandHub();
-};
+if (!window.originalActivateMain) {
+  window.originalActivateMain = window.activateMain;
+  window.activateMain = function (panel, sub) {
+    if (typeof window.originalActivateMain === "function") window.originalActivateMain(panel, sub);
+    syncCommandHub();
+  };
+}
 
 // ============================================================================
 // DYNAMIC HEADER LIQUID GLASS GENERATOR (Lens Refraction + Frosted Blur)
@@ -17085,5 +17093,114 @@ document.addEventListener("mousemove", (e) => {
   card.style.setProperty("--my", `${y}px`);
 });
 
+// ===== DISCORD FEEDBACK LOGIC =====
+const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1516174328327307276/xqmSCuqKEdsfjw_mxNTxb5-rP4hlx9V0FBGnDot98uS3GKfy6fXB54HJMYCHXT6itJeU";
 
+document.addEventListener("DOMContentLoaded", () => {
+  const btnFeedbackFAB = document.getElementById("btnFeedbackFAB");
+  const feedbackModal = document.getElementById("feedbackModal");
+  const btnCancelFeedback = document.getElementById("btnCancelFeedback");
+  const formFeedback = document.getElementById("formFeedback");
 
+  if (btnFeedbackFAB && feedbackModal) {
+    // Abrir Modal
+    btnFeedbackFAB.addEventListener("click", () => {
+      feedbackModal.classList.add("show");
+    });
+
+    // Cerrar Modal
+    const closeModal = () => {
+      feedbackModal.classList.remove("show");
+      formFeedback.reset();
+    };
+
+    btnCancelFeedback.addEventListener("click", closeModal);
+    
+    // Cerrar si se hace click fuera del modal
+    feedbackModal.addEventListener("click", (e) => {
+      if (e.target === feedbackModal) {
+        closeModal();
+      }
+    });
+
+    // Enviar Formulario
+    formFeedback.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      const type = document.getElementById("feedbackType").value;
+      const message = document.getElementById("feedbackMessage").value;
+      const submitBtn = document.getElementById("btnSubmitFeedback");
+      
+      // UI de carga
+      const originalBtnText = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<span class="material-symbols-rounded animate-spin">refresh</span> Enviando...';
+      submitBtn.disabled = true;
+
+      // Recopilar info del usuario si está logueado
+      const userName = typeof USER !== "undefined" && USER?.name ? USER.name : "Usuario Anónimo";
+      const userRole = typeof USER !== "undefined" && USER?.rol ? USER.rol : "Desconocido";
+      const userUnit = typeof USER !== "undefined" && USER?.clues ? USER.clues : "N/A";
+
+      // Colores según el tipo
+      let embedColor = 3447003; // Azul por defecto (Pregunta/Otro)
+      if (type === "Sugerencia") embedColor = 16766720; // Amarillo
+      else if (type === "Error") embedColor = 15158332; // Rojo
+
+      const payload = {
+        embeds: [{
+          title: `Nuevo Feedback: ${type}`,
+          description: message,
+          color: embedColor,
+          fields: [
+            { name: "Usuario", value: userName, inline: true },
+            { name: "Rol", value: userRole, inline: true },
+            { name: "CLUES", value: userUnit, inline: true }
+          ],
+          footer: { text: "SIREVAQ App" },
+          timestamp: new Date().toISOString()
+        }]
+      };
+
+      try {
+        const response = await fetch(DISCORD_WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+          if (typeof Swal !== "undefined") {
+            Swal.fire({
+              icon: 'success',
+              title: '¡Gracias por tu feedback!',
+              text: 'Hemos recibido tu mensaje correctamente.',
+              confirmButtonColor: '#0ea5e9',
+              background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#ffffff',
+              color: document.documentElement.classList.contains('dark') ? '#f8fafc' : '#0f172a'
+            });
+          } else {
+            alert('¡Gracias! Hemos recibido tu mensaje correctamente.');
+          }
+          closeModal();
+        } else {
+          throw new Error("Error al enviar a Discord");
+        }
+      } catch (error) {
+        console.error("Error sending feedback:", error);
+        if (typeof Swal !== "undefined") {
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Hubo un problema al enviar tu mensaje. Intenta de nuevo más tarde.',
+            confirmButtonColor: '#dc2626'
+          });
+        } else {
+          alert('Hubo un problema al enviar tu mensaje. Intenta de nuevo más tarde.');
+        }
+      } finally {
+        submitBtn.innerHTML = originalBtnText;
+        submitBtn.disabled = false;
+      }
+    });
+  }
+});

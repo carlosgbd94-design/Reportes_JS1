@@ -51,8 +51,99 @@
 
   <!-- Estilos -->
   <link rel="stylesheet" href="tailwind_compiled.css">
-  <link rel="stylesheet" href="style.css?v=2026.49" type="text/css">
+  <link rel="stylesheet" href="style.css?v=2026.52" type="text/css">
   <link rel="stylesheet" href="mobile.css?v=2026.23">
+
+  <style>
+    /* Premium Switch Styling inline to bypass SW cache issues */
+    .premium-switch {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      width: 50px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+    .premium-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+    .premium-switch-track {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #e2e8f0;
+      border: 2px solid #cbd5e1;
+      border-radius: 100px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    html.dark .premium-switch-track {
+      background-color: #334155;
+      border-color: #475569;
+    }
+    .premium-switch-thumb {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background-color: #94a3b8;
+      border-radius: 50%;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    html.dark .premium-switch-thumb {
+      background-color: #64748b;
+    }
+    .premium-switch-icon {
+      font-size: 13px !important;
+      color: #003366;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      font-weight: 900;
+    }
+    .premium-switch input:checked + .premium-switch-track {
+      background-color: #003366;
+      border-color: #003366;
+    }
+    html.dark .premium-switch input:checked + .premium-switch-track {
+      background-color: #3b82f6;
+      border-color: #3b82f6;
+    }
+    .premium-switch input:checked + .premium-switch-track .premium-switch-thumb {
+      left: 24px;
+      background-color: #ffffff;
+      transform: scale(1.05);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    }
+    .premium-switch input:checked + .premium-switch-track .premium-switch-icon {
+      opacity: 1;
+      transform: scale(1);
+    }
+    html.dark .premium-switch input:checked + .premium-switch-track .premium-switch-icon {
+      color: #1e3a8a;
+    }
+    .premium-switch:hover .premium-switch-track {
+      border-color: #94a3b8;
+    }
+    html.dark .premium-switch:hover .premium-switch-track {
+      border-color: #64748b;
+    }
+    .premium-switch input:checked:hover + .premium-switch-track {
+      filter: brightness(1.1);
+    }
+  </style>
 
   <!-- Scripts externos -->
   <script defer src="https://fastly.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -72,6 +163,8 @@
 
   <!-- Mobile Adaptation Layer (MAL) -->
   <script src="mobile.js?v=2026.22" defer></script>
+  <!-- Archivo Principal -->
+  <script src="main.js?v=2026.27" defer></script>
 
   <!-- 🔧 Service Worker Registration (PWA) -->
   <script>
@@ -1133,11 +1226,13 @@
                         class="text-[11px] font-black uppercase tracking-wider text-slate-600 group-hover:text-primary transition-colors">Solo
                         Existencias</span>
                     </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" id="chkNoPedido" class="sr-only peer">
-                      <div
-                        class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-surface after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary">
-                      </div>
+                    <label class="premium-switch">
+                      <input type="checkbox" id="chkNoPedido">
+                      <span class="premium-switch-track">
+                        <span class="premium-switch-thumb">
+                          <span class="premium-switch-icon material-symbols-rounded">check</span>
+                        </span>
+                      </span>
                     </label>
                   </div>
                   <div id="hintNoPedido"
@@ -4328,11 +4423,7 @@
       }
       console.log("Compliance chip override applied: " + type);
     };
-    console.log("Refractive Engine Active: SVG Displacement Map & Testing Utility Loaded");
   </script>
-  <script defer src="main.js?v=2026.25"></script>
-
-
   <svg style="position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; opacity: 0;"
     xmlns="http://www.w3.org/2000/svg">
     <filter id="glass-blur" x="-50%" y="-50%" width="200%" height="200%">
@@ -4499,7 +4590,347 @@
   <script defer src="rda_parser.js?v=2026.14"></script>
   <script defer src="rda_ui.js?v=2026.14"></script>
 
-</body>
+  <!-- FEEDBACK FAB & MODAL -->
+  <style>
+    /* =========================================
+       PREMIUM LIQUID GLASS FEEDBACK DISCORD (FAB & MODAL)
+       ========================================= */
+    .feedback-fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9990;
+      width: 60px;
+      height: 60px;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-top: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.2),
+        inset 0 0 16px rgba(255, 255, 255, 0.05);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      outline: none;
+    }
+    html.dark .feedback-fab {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      border-top: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    .feedback-fab:hover {
+      transform: translateY(-4px);
+      box-shadow: 
+        0 12px 40px rgba(0, 0, 0, 0.3),
+        inset 0 0 20px rgba(255, 255, 255, 0.1);
+      background: rgba(15, 23, 42, 0.8);
+    }
+    html.dark .feedback-fab:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+    .feedback-fab .material-symbols-rounded {
+      font-size: 26px;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .feedback-fab:hover .material-symbols-rounded {
+      transform: scale(1.1) rotate(-5deg);
+    }
 
+    .feedback-modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-end;
+      padding: 24px;
+      padding-bottom: 100px; /* Space for the FAB */
+      background: transparent;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    html.dark .feedback-modal-overlay {
+      background: transparent;
+    }
+    .feedback-modal-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .feedback-modal-card {
+      width: 100%;
+      max-width: 380px;
+      background: var(--md-sys-color-surface);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-radius: 24px;
+      box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.2);
+      transform-origin: bottom right;
+      transform: scale(0.8) translateY(20px) translateX(20px);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      overflow: hidden;
+    }
+    html.dark .feedback-modal-card {
+      box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.5);
+    }
+    .feedback-modal-overlay.show .feedback-modal-card {
+      transform: scale(1) translateY(0) translateX(0);
+      opacity: 1;
+    }
+
+    .feedback-modal-header {
+      padding: 24px 28px;
+      border-bottom: 1px solid var(--md-sys-color-outline-variant);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: relative;
+    }
+    .feedback-modal-header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.05) 0%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .feedback-modal-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #0ea5e9, #2563eb);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
+    }
+    .feedback-modal-icon .material-symbols-rounded {
+      font-size: 24px;
+    }
+
+    .feedback-modal-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--md-sys-color-primary);
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+    .feedback-modal-subtitle {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--md-sys-color-on-surface-variant);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin: 4px 0 0 0;
+    }
+
+    .feedback-form {
+      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .feedback-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .feedback-form-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--md-sys-color-primary);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-left: 4px;
+      opacity: 0.8;
+    }
+
+    .feedback-input-wrapper {
+      position: relative;
+      border-radius: 16px;
+      background: var(--md-sys-color-surface-container);
+      transition: all 0.3s ease;
+      border: 1px solid var(--md-sys-color-outline-variant);
+    }
+    .feedback-input-wrapper:focus-within {
+      background: var(--md-sys-color-surface);
+      border-color: rgba(14, 165, 233, 0.4);
+      box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+    }
+
+    .feedback-input-icon {
+      position: absolute;
+      left: 16px;
+      color: var(--md-sys-color-primary);
+      opacity: 0.4;
+      pointer-events: none;
+      transition: all 0.3s ease;
+    }
+    .feedback-input-wrapper:focus-within .feedback-input-icon {
+      opacity: 1;
+      color: #0ea5e9;
+      transform: scale(1.1);
+    }
+
+    .feedback-select {
+      width: 100%;
+      height: 52px;
+      background: transparent !important;
+      border: none !important;
+      padding: 0 48px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--md-sys-color-primary);
+      appearance: none;
+      outline: none;
+      cursor: pointer;
+    }
+    .feedback-select-arrow {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--md-sys-color-primary);
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .feedback-textarea {
+      width: 100%;
+      height: 120px;
+      background: transparent !important;
+      border: none !important;
+      padding: 16px 16px 16px 48px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--md-sys-color-primary);
+      resize: none;
+      outline: none;
+    }
+
+    .feedback-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 20px 28px;
+      background: rgba(0, 0, 0, 0.02);
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    html.dark .feedback-actions {
+      background: rgba(255, 255, 255, 0.02);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .feedback-btn-cancel {
+      background: transparent;
+      color: var(--md-sys-color-on-surface-variant);
+      padding: 0 20px;
+      height: 44px;
+      border-radius: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .feedback-btn-cancel:hover {
+      background: rgba(0, 0, 0, 0.05);
+      color: var(--md-sys-color-primary);
+    }
+    html.dark .feedback-btn-cancel:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .feedback-btn-submit {
+      background: linear-gradient(135deg, var(--md-sys-color-primary), var(--md-sys-color-on-surface));
+      color: var(--md-sys-color-on-primary);
+      padding: 0 24px;
+      height: 44px;
+      border-radius: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    html.dark .feedback-btn-submit {
+      background: linear-gradient(135deg, var(--md-sys-color-on-surface), #94a3b8);
+      color: var(--md-sys-color-surface);
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+    }
+    .feedback-btn-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
+    }
+    html.dark .feedback-btn-submit:hover {
+      box-shadow: 0 8px 24px rgba(255, 255, 255, 0.2);
+    }
+  </style>
+
+  <button id="btnFeedbackFAB" class="feedback-fab" title="Enviar Feedback">
+    <span class="material-symbols-rounded">chat</span>
+  </button>
+
+  <div id="feedbackModal" class="feedback-modal-overlay" aria-hidden="true">
+    <div class="feedback-modal-card">
+      <div class="feedback-modal-header">
+        <div class="feedback-modal-icon">
+          <span class="material-symbols-rounded">forum</span>
+        </div>
+        <div>
+          <h3 class="feedback-modal-title">Enviar Feedback</h3>
+          <p class="feedback-modal-subtitle">Ayúdanos a mejorar</p>
+        </div>
+      </div>
+      <form id="formFeedback" class="feedback-form">
+        <div class="feedback-input-group">
+          <label for="feedbackType" class="feedback-form-label">Tipo de mensaje</label>
+          <div class="feedback-input-wrapper">
+            <span class="material-symbols-rounded feedback-input-icon" style="top:50%; transform:translateY(-50%);">category</span>
+            <select id="feedbackType" required class="feedback-select">
+              <option value="Sugerencia">💡 Sugerencia</option>
+              <option value="Error">🐛 Reportar Error</option>
+              <option value="Pregunta">❓ Pregunta</option>
+              <option value="Otro">💬 Otro</option>
+            </select>
+            <span class="material-symbols-rounded feedback-select-arrow">expand_more</span>
+          </div>
+        </div>
+        <div class="feedback-input-group">
+          <label for="feedbackMessage" class="feedback-form-label">Mensaje</label>
+          <div class="feedback-input-wrapper">
+            <span class="material-symbols-rounded feedback-input-icon" style="top:16px;">notes</span>
+            <textarea id="feedbackMessage" required placeholder="Describe tu sugerencia, error o pregunta..." class="feedback-textarea"></textarea>
+          </div>
+        </div>
+      </form>
+      <div class="feedback-actions">
+        <button type="button" id="btnCancelFeedback" class="feedback-btn-cancel">
+          Cancelar
+        </button>
+        <button type="submit" form="formFeedback" id="btnSubmitFeedback" class="feedback-btn-submit">
+          <span class="material-symbols-rounded" style="font-size:20px;">send</span> Enviar
+        </button>
+      </div>
+    </div>
+  </div>
+
+</body>
 </html>
 
