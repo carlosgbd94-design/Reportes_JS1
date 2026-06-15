@@ -17094,7 +17094,7 @@ document.addEventListener("mousemove", (e) => {
 });
 
 // ===== DISCORD FEEDBACK LOGIC =====
-const DISCORD_WEBHOOK_URL = "";
+const DISCORD_WEBHOOK_URL = atob("aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTUxNjE5OTgzNTQzNzM3MTU1My8yU19XYW1qck9PcE5ybUdYbHV3QTdTcmRTa3FhZXNiTXY1aXpzWVByQlN4dnJPaDg0LWZIYThHQlFESnNVYWVLc0VIUw==");
 
 document.addEventListener("DOMContentLoaded", () => {
   const btnFeedbackFAB = document.getElementById("btnFeedbackFAB");
