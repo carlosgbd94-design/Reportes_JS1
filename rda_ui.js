@@ -173,50 +173,54 @@ function initRDADashboard() {
                 position: sticky !important;
                 top: 0 !important;
                 z-index: 20 !important;
-                background-color: #f8fafc !important;
-                box-shadow: 0 1px 0 #e2e8f0 !important;
+                background-color: var(--md-sys-color-surface-container) !important;
+                box-shadow: 0 1px 0 var(--md-sys-color-outline-variant) !important;
+                color: var(--md-sys-color-on-surface) !important;
             }
             #rdaDetailTable th:nth-child(1),
             #rdaDetailTable td:nth-child(1) {
                 position: sticky !important;
                 left: 0 !important;
                 z-index: 12 !important;
-                background-color: #ffffff !important;
+                background-color: var(--md-sys-color-surface) !important;
                 width: 140px !important;
                 min-width: 140px !important;
                 max-width: 140px !important;
-                box-shadow: 1px 0 0 #f1f5f9 !important;
+                box-shadow: 1px 0 0 var(--md-sys-color-surface-variant) !important;
+                color: var(--md-sys-color-on-surface) !important;
             }
             #rdaDetailTable th:nth-child(2),
             #rdaDetailTable td:nth-child(2) {
                 position: sticky !important;
                 left: 140px !important;
                 z-index: 12 !important;
-                background-color: #ffffff !important;
+                background-color: var(--md-sys-color-surface) !important;
                 min-width: 200px !important;
                 box-shadow: 2px 0 5px rgba(15, 23, 42, 0.04) !important;
+                color: var(--md-sys-color-on-surface) !important;
             }
             #rdaDetailTable th:nth-child(1),
             #rdaDetailTable th:nth-child(2) {
                 z-index: 22 !important;
-                background-color: #f8fafc !important;
+                background-color: var(--md-sys-color-surface-container) !important;
             }
             #rdaDetailTable tr:nth-child(even) td:nth-child(1),
             #rdaDetailTable tr:nth-child(even) td:nth-child(2) {
-                background-color: #f8fafc !important;
+                background-color: var(--md-sys-color-surface-container) !important;
             }
             #rdaDetailTable tr td[colspan] {
                 position: sticky !important;
                 left: 0 !important;
                 z-index: 11 !important;
-                background-color: #f8fafc !important;
+                background-color: var(--md-sys-color-surface-container) !important;
+                color: var(--md-sys-color-on-surface) !important;
             }
             #rdaDetailTable tbody tr:hover td {
-                background-color: #f1f5f9 !important;
+                background-color: var(--md-sys-color-surface-variant) !important;
             }
             #rdaDetailTable tbody tr:hover td:nth-child(1),
             #rdaDetailTable tbody tr:hover td:nth-child(2) {
-                background-color: #f1f5f9 !important;
+                background-color: var(--md-sys-color-surface-variant) !important;
             }
         `;
         document.head.appendChild(style);

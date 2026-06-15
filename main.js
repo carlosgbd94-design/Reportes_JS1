@@ -4785,10 +4785,11 @@ async function supabaseRequest(action = "", payload, options = {}) {
 
           let pPct = m.pedido_mensual ? 100 : 0;
           let isPedidoRequired = false;
-          const dToday = new Date(today + "T12:00:00");
-          const midMonth = new Date(`${mes}-15T12:00:00`);
+          
+          const targetYm = mes.split("-");
+          const windowForMonth = calculateBioIntelligentWindow(parseInt(targetYm[0]), parseInt(targetYm[1]) - 1);
 
-          if (!isCurrentMonth || dToday >= midMonth) {
+          if (!isCurrentMonth || today >= dateToLocalYmd(windowForMonth.start)) {
             isPedidoRequired = true;
           }
 
@@ -5035,9 +5036,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
           });
 
           const isCurrentMonth = today.startsWith(currentMonth);
-          const dToday = new Date(today + "T12:00:00");
-          const midMonth = new Date(`${currentMonth}-15T12:00:00`);
-          const isPedidoRequired = !isCurrentMonth || dToday >= midMonth;
+          const isPedidoRequired = !isCurrentMonth || today >= dateToLocalYmd(bioWindow.start);
 
           let unitScores = units.map(u => {
             const m = metricsMap[u.clues];
@@ -13228,21 +13227,52 @@ async function getHistoryMetrics(mes, _ignored, force = false) {
         return null;
       }
 
+      // Recalcular isPedidoRequired y el score para no depender de la lógica vieja del RPC
+      const targetYm = m.split("-");
+      const windowForMonth = calculateBioIntelligentWindow(parseInt(targetYm[0]), parseInt(targetYm[1]) - 1);
+      const isCurrentMonth = todayYmdLocal().startsWith(m);
+      const todayStr = todayYmdLocal();
+      const calculatedIsPedidoRequired = !isCurrentMonth || todayStr >= dateToLocalYmd(windowForMonth.start);
+
       // Mapear campos devueltos por el RPC para coincidir con la nomenclatura del frontend camelCase
-      const rows = (data || []).map(r => ({
-        clues: r.clues,
-        municipio: r.municipio,
-        unidad: r.unidad,
-        bio_semanas_ok: r.bio_semanas_ok,
-        cons_semanas_ok: r.cons_semanas_ok,
-        pedido_mensual: r.pedido_mensual,
-        ultima_captura: r.ultima_captura,
-        score: r.score,
-        tier: r.tier,
-        eBio: r.ebio,
-        eCons: r.econs,
-        isPedidoRequired: r.ispedidorequired
-      }));
+      const rows = (data || []).map(r => {
+        let isRequired = calculatedIsPedidoRequired;
+        
+        let expectedBio = r.ebio || 4;
+        let expectedCons = r.econs || 4;
+        let bPct = expectedBio > 0 ? (r.bio_semanas_ok / expectedBio) * 100 : 100;
+        let cPct = expectedCons > 0 ? (r.cons_semanas_ok / expectedCons) * 100 : 100;
+        let pPct = r.pedido_mensual ? 100 : 0;
+        
+        let score = isRequired ?
+          Math.round((bPct * 0.4) + (cPct * 0.4) + (pPct * 0.2)) :
+          Math.round((bPct * 0.5) + (cPct * 0.5));
+        
+        if (score > 100) score = 100;
+
+        let tier = "riesgo";
+        if (score === 100) tier = "diamante";
+        else if (score >= 90) tier = "oro";
+        else if (score >= 80) tier = "plata";
+        else if (score >= 70) tier = "bronce";
+        else if (score >= 60) tier = "acero";
+        else if (score >= 50) tier = "jade";
+
+        return {
+          clues: r.clues,
+          municipio: r.municipio,
+          unidad: r.unidad,
+          bio_semanas_ok: r.bio_semanas_ok,
+          cons_semanas_ok: r.cons_semanas_ok,
+          pedido_mensual: r.pedido_mensual,
+          ultima_captura: r.ultima_captura,
+          score: score,
+          tier: tier,
+          eBio: expectedBio,
+          eCons: expectedCons,
+          isPedidoRequired: isRequired
+        };
+      });
 
       const role = String(USER?.rol || "").toUpperCase();
       return { rows, role };

@@ -42,26 +42,26 @@
 
 html.dark {
   color-scheme: dark;
-  --md-sys-color-surface-container-low: #1e293b;
-  --md-sys-color-surface-container-high: #1e293b;
-  --md-sys-color-surface-container-highest: #334155;
-  /* Dark Mode Premium Palette */
-  --md-sys-color-primary: #38bdf8; /* Sky blue vibrante que resalta en oscuro */
-  --md-sys-color-on-primary: #0f172a;
-  --md-sys-color-secondary: #7dd3fc;
-  --md-sys-color-on-secondary: #0f172a;
+  --md-sys-color-surface-container-low: #000000;
+  --md-sys-color-surface-container-high: #000000;
+  --md-sys-color-surface-container-highest: #09090b;
+  /* Dark Mode Premium Palette - Pure Black (OLED) */
+  --md-sys-color-primary: #f8fafc; /* Blanco hielo para acentos principales */
+  --md-sys-color-on-primary: #000000;
+  --md-sys-color-secondary: #e2e8f0;
+  --md-sys-color-on-secondary: #000000;
 
-  --primary: #38bdf8; 
-  --primary-action: #0ea5e9;
+  --primary: #f8fafc; 
+  --primary-action: #e2e8f0;
 
-  --md-sys-color-surface: #111827; /* Cards y modales */
-  --md-sys-color-on-surface: #f8fafc;
-  --md-sys-color-surface-container: #0B0F19; /* Fondo principal de la app */
-  --md-sys-color-surface-variant: #1e293b;
-  --md-sys-color-on-surface-variant: #94a3b8;
+  --md-sys-color-surface: #000000; /* Cards y modales en negro puro */
+  --md-sys-color-on-surface: #f8fafc; /* Textos principales en blanco hielo */
+  --md-sys-color-surface-container: #000000; /* Fondo principal negro puro */
+  --md-sys-color-surface-variant: #09090b; /* Ligerísima elevación para contraste */
+  --md-sys-color-on-surface-variant: #38bdf8; /* Azul para textos que son grises en claro */
   
-  --md-sys-color-outline: #334155;
-  --md-sys-color-outline-variant: #1e293b;
+  --md-sys-color-outline: #27272a;
+  --md-sys-color-outline-variant: #27272a;
 
   --md-shadow-1: 0 4px 6px -1px rgba(0,0,0,0.5);
   --md-shadow-2: 0 10px 15px -3px rgba(0,0,0,0.5);
@@ -2120,10 +2120,11 @@ label,
   transition: background 0.2s ease;
 }
 
-/* Alineaci*/
+/* Alineación de Tabla de Captura */
 #srCaptureTable {
   table-layout: fixed;
   width: 100%;
+  min-width: 800px; /* Enable responsive horizontal scroll on narrow screens */
 }
 
 #srCaptureTable th, 
@@ -2133,13 +2134,17 @@ label,
   vertical-align: middle;
 }
 
-/* Distribuci*/
-#srCaptureTable th:nth-child(1), #srCaptureTable td:nth-child(1) { width: 22%; text-align: left; }   /* Biol*/
-#srCaptureTable th:nth-child(2), #srCaptureTable td:nth-child(2) { width: 18%; }                     /* Lote */
-#srCaptureTable th:nth-child(3), #srCaptureTable td:nth-child(3) { width: 14%; text-align: center; } /* Caducidad */
-#srCaptureTable th:nth-child(4), #srCaptureTable td:nth-child(4) { width: 18%; text-align: center; } /* Recepci*/
-#srCaptureTable th:nth-child(5), #srCaptureTable td:nth-child(5) { width: 18%; text-align: center; } /* Cantidad */
-#srCaptureTable th:nth-child(6), #srCaptureTable td:nth-child(6) { width: 10%; text-align: center; } /* Acci*/
+/* Distribución de Anchos (100% Total) */
+#srCaptureTable th:nth-child(1), #srCaptureTable td:nth-child(1) { width: 21%; text-align: left; }   /* Biol */
+#srCaptureTable th:nth-child(2), #srCaptureTable td:nth-child(2) { width: 16%; }                     /* Lote */
+#srCaptureTable th:nth-child(3), #srCaptureTable td:nth-child(3) { width: 13%; text-align: center; } /* Caducidad */
+#srCaptureTable th:nth-child(4), #srCaptureTable td:nth-child(4) { width: 18%; text-align: center; } /* Recepción */
+#srCaptureTable th:nth-child(5), #srCaptureTable td:nth-child(5) { width: 16%; text-align: center; } /* Cantidad */
+#srCaptureTable th:nth-child(6), #srCaptureTable td:nth-child(6) { 
+  width: 16%; 
+  text-align: center; 
+  padding-right: 24px !important; /* Guarantee professional breathing room on the right edge */
+} /* Acción */
 
 #srCaptureTable select, 
 #srCaptureTable input {
@@ -6693,7 +6698,6 @@ body.bioConfirmOpen {
 
 /* Centrado absoluto del icono de eliminar */
 #srCaptureTable .md-delete-btn {
-  margin: 0 auto !important;
   display: flex !important;
 }
 
@@ -11674,6 +11678,10 @@ html.dark option {
 /* Force generic text colors inside inputs */
 html.dark input.text-slate-700, html.dark select.text-slate-700, html.dark input.text-slate-900, html.dark select.text-slate-900, html.dark input.text-primary, html.dark select.text-primary {
   color: var(--md-sys-color-on-surface) !important;
+  -webkit-text-fill-color: var(--md-sys-color-on-surface) !important;
+}
+html.dark select option {
+  color: var(--md-sys-color-on-surface) !important;
 }
 
 /* MANUALLY ADDED TAILWIND HELPERS */
@@ -11705,6 +11713,10 @@ html.dark .bg-slate-100 { background-color: var(--md-sys-color-surface-variant) 
 html.dark .bg-slate-50 { background-color: var(--md-sys-color-surface-container) !important; }
 html.dark .hover\:bg-slate-100:hover { background-color: var(--md-sys-color-surface-variant) !important; }
 html.dark .hover\:bg-slate-50:hover { background-color: var(--md-sys-color-surface-container) !important; }
+html.dark .bg-blue-50 { background-color: var(--md-sys-color-surface-variant) !important; color: var(--md-sys-color-on-surface) !important; }
+html.dark .border-blue-200 { border-color: var(--md-sys-color-outline-variant) !important; }
+html.dark select.sr-bio-select, html.dark select.sr-lote-select { color: #f8fafc !important; }
+html.dark .sr-bio-select option, html.dark .sr-lote-select option { color: #f8fafc !important; }
 
 html.dark .border-slate-300 { border-color: var(--md-sys-color-outline) !important; }
 html.dark .border-slate-200 { border-color: var(--md-sys-color-outline-variant) !important; }
@@ -11775,35 +11787,18 @@ html.dark .notifSearchInput {
     color: var(--md-sys-color-on-surface) !important;
 }
 
-/* BRUTE FORCE DARK MODE INPUTS */
-html.dark body .modern-input-group,
-html.dark body .modern-input-group:focus-within {
-    background-color: var(--md-sys-color-surface) !important;
-    border-color: var(--md-sys-color-outline-variant) !important;
+/* FIX CAPTURE TABLE SELECTS */
+html.dark #srCaptureTable select,
+html.dark #srCaptureTable input {
+    background-color: var(--md-sys-color-surface-container-high) !important;
+    color: #f8fafc !important;
+    -webkit-text-fill-color: #f8fafc !important;
+}
+html.dark #srCaptureTable select option {
+    background-color: var(--md-sys-color-surface-container-high) !important;
+    color: #f8fafc !important;
 }
 
-html.dark body .modern-input-group input,
-html.dark body .modern-input-group select,
-html.dark body .modern-input-group input[type="date"] {
-    background-color: transparent !important;
-    color: var(--md-sys-color-on-surface) !important;
-    -webkit-text-fill-color: var(--md-sys-color-on-surface) !important;
-    color-scheme: dark !important;
-}
-
-/* GLOBAL COLOR SCHEME FOR DARK MODE NATIVE CONTROLS */
-html.dark input,
-html.dark select,
-html.dark textarea,
-html.dark button {
-    color-scheme: dark !important;
-}
-
-/* FIX INLINE INPUT TEXT COLOR */
-html.dark input[type="date"] {
-    -webkit-text-fill-color: var(--md-sys-color-on-surface) !important;
-    color: var(--md-sys-color-on-surface) !important;
-}
 
 /* Theme Toggle Switch in Profile */
 .theme-toggle-switch {
@@ -11833,4 +11828,105 @@ html.dark .theme-toggle-switch {
 }
 html.dark .theme-toggle-switch::after {
   transform: translateX(18px);
+}
+
+/* =========================================
+   FORCED LOGIN TEXT COLORS IN DARK MODE
+   ========================================= */
+html.dark #desktopWelcome h1,
+html.dark #desktopLogo span,
+html.dark #mobileTitle {
+  color: #f8fafc !important; /* Force Ice White */
+  -webkit-text-fill-color: #f8fafc !important;
+}
+
+html.dark #desktopWelcome p,
+html.dark #desktopLogo span:last-child,
+html.dark #mobileSubtitle {
+  color: #38bdf8 !important; /* Force Blue for variants */
+  -webkit-text-fill-color: #38bdf8 !important;
+}
+
+/* Force input labels to white */
+html.dark #cardLogin label,
+html.dark #cardLogin .text-primary\/50,
+html.dark #cardLogin .text-surface-on {
+  color: #f8fafc !important;
+}
+
+/* =========================================
+   PROFILE CARD DARK MODE FIXES
+   ========================================= */
+html.dark #userNameFull,
+html.dark #profileDropdown .text-primary {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+}
+
+html.dark #profileDropdown .text-primary\/40,
+html.dark #profileDropdown .text-primary\/30,
+html.dark #profileDropdown .text-surface-onVariant\/60 {
+  color: #38bdf8 !important; /* Make the muted blue text brighter and visible */
+  -webkit-text-fill-color: #38bdf8 !important;
+}
+
+html.dark #who,
+html.dark #munTxt {
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+}
+
+/* =========================================
+   INFO CARDS DARK MODE FIXES (Consumibles, Pinol)
+   ========================================= */
+/* Consumibles Card (was light blue) */
+html.dark #formCONS > div:first-child {
+  background-color: var(--md-sys-color-surface-variant) !important;
+  border-color: var(--md-sys-color-outline-variant) !important;
+}
+html.dark #formCONS > div:first-child .bg-surface {
+  background-color: var(--md-sys-color-surface-container) !important;
+  border-color: var(--md-sys-color-outline-variant) !important;
+}
+
+/* Pinol Card (was light green) */
+html.dark #formPINOL > div:first-child {
+  background-color: var(--md-sys-color-surface-variant) !important;
+  border-color: var(--md-sys-color-outline-variant) !important;
+}
+html.dark #formPINOL > div:first-child .bg-surface {
+  background-color: var(--md-sys-color-surface-container) !important;
+  border-color: var(--md-sys-color-outline-variant) !important;
+}
+
+/* Insumos, Pinol & SR card texts */
+html.dark #formCONS > div:first-child .text-primary,
+html.dark #formPINOL > div:first-child .text-primary,
+html.dark #formSR > div:first-child .text-primary,
+html.dark #formCONS > div:first-child .text-surface-onVariant\/60,
+html.dark #formPINOL > div:first-child .text-surface-onVariant\/60,
+html.dark #formSR > div:first-child .text-surface-onVariant\/60 {
+  color: #f8fafc !important;
+}
+
+html.dark #formCONS > div:first-child .text-primary\/40,
+html.dark #formPINOL > div:first-child .text-primary\/40,
+html.dark #formSR > div:first-child .text-primary\/40 {
+  color: #38bdf8 !important;
+}
+
+/* Fix main background pure black */
+html.dark body::before {
+  background: radial-gradient(circle at 15% 50%, rgba(255, 255, 255, 0.02) 0%, transparent 50%) !important;
+}
+html.dark body::after {
+  opacity: 0.02 !important; /* Reduce noise filter slightly for cleaner OLED */
+}
+
+/* Fix Existencia de Biologico (SR) Table Headers */
+html.dark .bg-surface-variant {
+  background-color: var(--md-sys-color-surface-variant) !important;
+}
+html.dark .text-surface-onVariant {
+  color: var(--md-sys-color-on-surface) !important;
 }
