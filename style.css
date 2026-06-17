@@ -9451,6 +9451,9 @@ html body .modern-input-group input[type="date"]:focus,
 
 /* ===== FIX ADMIN ACTION BUTTONS HOVER STYLES ===== */
 .adminActionBtn {
+  width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
   transition: all 0.2s ease-in-out !important;
 }
 
