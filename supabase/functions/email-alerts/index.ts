@@ -50,6 +50,15 @@ serve(async (req) => {
     const normalizeMuni = (m: string) => {
       return String(m || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase()
     }
+
+    // Función para limpiar HTML y evitar codificación "=20" de espacios al final de las líneas
+    const cleanHtml = (html: string) => {
+      return html
+        .split('\n')
+        .map(line => line.trimEnd())
+        .filter(line => line.trim().length > 0)
+        .join('\n')
+    }
     
     const todayYmd = formatter.format(localTime) // YYYY-MM-DD
     
@@ -118,7 +127,7 @@ serve(async (req) => {
           // Viernes: Solo verificamos biológicos. Si no capturó ni jueves ni viernes, enviamos recordatorio
           const bioOk = capturedBioToday.has(unitClues) || capturedBioYesterday.has(unitClues)
           if (!bioOk) {
-            missingItems.push('Biológicos (Existencias)')
+            missingItems.push('Existencias de biológico')
           }
         } else {
           // Jueves (o cualquier otro día de prueba): Verificamos ambos del día de hoy
@@ -126,15 +135,15 @@ serve(async (req) => {
           const consOk = capturedConsToday.has(unitClues)
 
           if (!consOk) missingItems.push('Consumibles')
-          if (!bioOk) missingItems.push('Biológicos (Existencias)')
+          if (!bioOk) missingItems.push('Existencias de biológico')
         }
 
         if (missingItems.length > 0) {
           const htmlBody = `
 <div style="font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0;">
   <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 30px 20px; text-align: center;">
-    <div style="background-color: rgba(255, 255, 255, 0.2); width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 15px auto; display: flex; align-items: center; justify-content: center;">
-      <span style="font-size: 30px;">⏱️</span>
+    <div style="background-color: rgba(255, 255, 255, 0.2); width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 15px auto; text-align: center;">
+      <span style="font-size: 30px; line-height: 60px; display: block;">⏱️</span>
     </div>
     <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Acción Requerida</h1>
     <p style="color: #dbeafe; margin: 8px 0 0 0; font-size: 15px; font-weight: 500;">Recordatorio de Captura Diario</p>
@@ -170,8 +179,9 @@ serve(async (req) => {
             to: userForUnit.email,
             subject: `Aviso Pendiente: Captura en ${unit.unidad}`,
             content: `Recordatorio de captura pendiente para ${unit.unidad}: ${missingItems.join(', ')}`,
-            html: htmlBody,
-            replyTo: 'no-reply@js1reportes.com'
+            html: cleanHtml(htmlBody),
+            replyTo: 'no-reply@js1reportes.com',
+            encodeLB: true
           })
           sentCount++
         }
@@ -296,8 +306,9 @@ serve(async (req) => {
           to: supervisor.email,
           subject: `Reporte ${reportType}: Región ${muniLabel} (${pct}% Capturado) - ${todayYmd}`,
           content: `Resumen de captura para ${muniLabel}.`,
-          html: htmlBody,
-          replyTo: 'no-reply@js1reportes.com'
+          html: cleanHtml(htmlBody),
+          replyTo: 'no-reply@js1reportes.com',
+          encodeLB: true
         })
         sentCount++
       }
@@ -382,8 +393,9 @@ serve(async (req) => {
           to: supervisor.email,
           subject: `Reporte ${reportType}: CARAVANAS (${pct}% Capturado) - ${todayYmd}`,
           content: `Resumen de captura para Caravanas Móviles.`,
-          html: htmlBody,
-          replyTo: 'no-reply@js1reportes.com'
+          html: cleanHtml(htmlBody),
+          replyTo: 'no-reply@js1reportes.com',
+          encodeLB: true
         })
         sentCount++
       }
@@ -481,8 +493,9 @@ serve(async (req) => {
             to: admin.email,
             subject: `[GENERAL] Reporte JS1 ${reportType} (${totalPct}% Global) - ${todayYmd}`,
             content: `Estatus general de captura: ${totalCompleted}/${activeUnits.length} completadas.`,
-            html: htmlBodyAdmin,
-            replyTo: 'no-reply@js1reportes.com'
+            html: cleanHtml(htmlBodyAdmin),
+            replyTo: 'no-reply@js1reportes.com',
+            encodeLB: true
           })
           sentCount++
         }
