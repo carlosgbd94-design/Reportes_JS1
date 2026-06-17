@@ -214,8 +214,8 @@ serve(async (req) => {
       // Helper para renderizar los badges de estado
       const renderStatusBadge = (isOk: boolean) => {
         return isOk 
-          ? `<span style="background-color: #d1fae5; color: #065f46; padding: 4px 8px; border-radius: 9999px; font-size: 12px; font-weight: 600;">Completado</span>`
-          : `<span style="background-color: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 9999px; font-size: 12px; font-weight: 600;">Pendiente</span>`
+          ? `<span style="background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; padding: 5px 12px; border-radius: 9999px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block;">Completado</span>`
+          : `<span style="background-color: #fff5f5; color: #e53e3e; border: 1px solid #fed7d7; padding: 5px 12px; border-radius: 9999px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block;">Pendiente</span>`
       }
 
       // Enviar a perfiles MUNICIPALES (solo sus unidades correspondientes)
@@ -260,31 +260,34 @@ serve(async (req) => {
         const progressColor = pct === 100 ? '#10b981' : (pct >= 70 ? '#f59e0b' : '#ef4444')
 
         const htmlBody = `
-<div style="font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 650px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0;">
-  <div style="background: linear-gradient(135deg, #0f172a 0%, #334155 100%); padding: 30px 25px; text-align: center;">
-    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Resumen de Captura</h1>
-    <p style="color: #94a3b8; margin: 8px 0 0 0; font-size: 13px; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;">Módulo: ${reportType} | Región: ${muniLabel}</p>
+<div style="font-family: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', sans-serif; max-width: 650px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 15px 35px -5px rgba(0, 51, 102, 0.08), 0 10px 15px -8px rgba(0, 51, 102, 0.04); border: 1px solid #e2e8f0; border-top: 6px solid #2563eb;">
+  <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); padding: 35px 25px; text-align: center;">
+    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px; text-transform: uppercase;">Resumen de Captura</h1>
+    <p style="color: #38bdf8; margin: 8px 0 0 0; font-size: 12px; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px;">Módulo: ${reportType} | Región: ${muniLabel}</p>
   </div>
   
-  <div style="padding: 30px 25px; color: #334155; line-height: 1.6;">
-    <p style="font-size: 16px; margin-top: 0; color: #0f172a;">Estimado(a) Coordinador(a),</p>
-    <p style="font-size: 15px; color: #475569;">Te compartimos el estatus de captura para las unidades adscritas a tu supervisión el día de hoy <strong style="color: #1e293b;">${todayYmd}</strong>:</p>
+  <div style="padding: 35px 30px; color: #334155; line-height: 1.6;">
+    <p style="font-size: 16px; margin-top: 0; color: #0f172a; font-weight: 700;">Estimado(a) Coordinador(a),</p>
+    <p style="font-size: 15px; color: #475569; margin-bottom: 25px;">Te compartimos el estatus de captura de hoy <strong style="color: #1e293b; font-weight: 800;">${todayYmd}</strong> para las unidades a tu cargo:</p>
     
-    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center;">
-      <div style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Avance General</div>
-      <div style="font-size: 48px; font-weight: 800; color: ${progressColor}; margin: 8px 0;">${pct}%</div>
-      <div style="font-size: 14px; color: #475569; font-weight: 500;">
-        Unidades Completadas: <strong style="color: #0f172a;">${completedCount}</strong> de <strong style="color: #0f172a;">${muniUnits.length}</strong>
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 25px; margin: 25px 0; text-align: center; box-shadow: 0 10px 25px -10px rgba(0,0,0,0.04);">
+      <div style="font-size: 11px; color: #64748b; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Avance de Captura</div>
+      <div style="font-size: 54px; font-weight: 900; color: ${progressColor}; margin: 8px 0 4px 0; letter-spacing: -2px; line-height: 1;">${pct}%</div>
+      <div style="background-color: #f1f5f9; border-radius: 9999px; height: 8px; width: 80%; margin: 15px auto 12px auto; overflow: hidden; border: 1px solid #e2e8f0;">
+        <div style="background: ${progressColor}; height: 100%; width: ${pct}%; border-radius: 9999px;"></div>
+      </div>
+      <div style="font-size: 13.5px; color: #475569; font-weight: 600;">
+        Unidades Completadas: <strong style="color: #0f172a; font-weight: 800;">${completedCount}</strong> de <strong style="color: #0f172a; font-weight: 800;">${muniUnits.length}</strong>
       </div>
     </div>
     
-    <div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-top: 25px;">
+    <div style="border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; margin-top: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.01);">
       <table style="width: 100%; border-collapse: collapse;">
         <thead>
-          <tr style="background-color: #f1f5f9; text-align: left; border-bottom: 2px solid #e2e8f0;">
-            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Unidad</th>
-            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">CLUES</th>
-            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">Estado</th>
+          <tr style="background-color: #f8fafc; text-align: left; border-bottom: 1px solid #e2e8f0;">
+            <th style="padding: 14px 20px; font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Unidad</th>
+            <th style="padding: 14px 20px; font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">CLUES</th>
+            <th style="padding: 14px 20px; font-size: 11px; font-weight: 800; color: #475569; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">Estado</th>
           </tr>
         </thead>
         <tbody>
@@ -294,9 +297,9 @@ serve(async (req) => {
     </div>
   </div>
 
-  <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
-    <p style="margin: 0; color: #64748b; font-size: 12px; font-weight: 500;">Jurisdicción Sanitaria 1 - Sistema de Indicadores JS1</p>
-    <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 11px;">Este es un correo automático de no-reply. Favor de no responder a esta dirección.</p>
+  <div style="background-color: #f8fafc; padding: 25px; text-align: center; border-top: 1px solid #e2e8f0;">
+    <p style="margin: 0; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">SIREVAQ - Jurisdicción Sanitaria 1</p>
+    <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 11px;">Este es un correo automático de no-reply. Favor de no responder a esta dirección.</p>
   </div>
 </div>
 `
@@ -347,31 +350,34 @@ serve(async (req) => {
         const regionLabel = 'CARAVANAS MÓVILES (UMME/FAM)'
 
         const htmlBody = `
-<div style="font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 650px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0;">
-  <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 30px 25px; text-align: center;">
-    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Resumen de Captura</h1>
-    <p style="color: #d1fae5; margin: 8px 0 0 0; font-size: 13px; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;">Módulo: ${reportType} | Región: ${regionLabel}</p>
+<div style="font-family: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', sans-serif; max-width: 650px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 15px 35px -5px rgba(0, 51, 102, 0.08), 0 10px 15px -8px rgba(0, 51, 102, 0.04); border: 1px solid #e2e8f0; border-top: 6px solid #10b981;">
+  <div style="background: linear-gradient(135deg, #047857 0%, #065f46 50%, #022c22 100%); padding: 35px 25px; text-align: center;">
+    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px; text-transform: uppercase;">Resumen de Captura</h1>
+    <p style="color: #a7f3d0; margin: 8px 0 0 0; font-size: 12px; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px;">Módulo: ${reportType} | Región: ${regionLabel}</p>
   </div>
   
-  <div style="padding: 30px 25px; color: #334155; line-height: 1.6;">
-    <p style="font-size: 16px; margin-top: 0; color: #0f172a;">Estimado(a) Coordinador(a),</p>
-    <p style="font-size: 15px; color: #475569;">Te compartimos el estatus de captura para las unidades adscritas a tu supervisión el día de hoy <strong style="color: #1e293b;">${todayYmd}</strong>:</p>
+  <div style="padding: 35px 30px; color: #334155; line-height: 1.6;">
+    <p style="font-size: 16px; margin-top: 0; color: #0f172a; font-weight: 700;">Estimado(a) Coordinador(a),</p>
+    <p style="font-size: 15px; color: #475569; margin-bottom: 25px;">Te compartimos el estatus de captura de hoy <strong style="color: #1e293b; font-weight: 800;">${todayYmd}</strong> para las caravanas a tu cargo:</p>
     
-    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center;">
-      <div style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Avance General</div>
-      <div style="font-size: 48px; font-weight: 800; color: ${progressColor}; margin: 8px 0;">${pct}%</div>
-      <div style="font-size: 14px; color: #475569; font-weight: 500;">
-        Unidades Completadas: <strong style="color: #0f172a;">${completedCount}</strong> de <strong style="color: #0f172a;">${caravanaUnits.length}</strong>
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 25px; margin: 25px 0; text-align: center; box-shadow: 0 10px 25px -10px rgba(0,0,0,0.04);">
+      <div style="font-size: 11px; color: #64748b; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Avance de Captura</div>
+      <div style="font-size: 54px; font-weight: 900; color: ${progressColor}; margin: 8px 0 4px 0; letter-spacing: -2px; line-height: 1;">${pct}%</div>
+      <div style="background-color: #f1f5f9; border-radius: 9999px; height: 8px; width: 80%; margin: 15px auto 12px auto; overflow: hidden; border: 1px solid #e2e8f0;">
+        <div style="background: ${progressColor}; height: 100%; width: ${pct}%; border-radius: 9999px;"></div>
+      </div>
+      <div style="font-size: 13.5px; color: #475569; font-weight: 600;">
+        Unidades Completadas: <strong style="color: #0f172a; font-weight: 800;">${completedCount}</strong> de <strong style="color: #0f172a; font-weight: 800;">${caravanaUnits.length}</strong>
       </div>
     </div>
     
-    <div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-top: 25px;">
+    <div style="border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; margin-top: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.01);">
       <table style="width: 100%; border-collapse: collapse;">
         <thead>
-          <tr style="background-color: #f1f5f9; text-align: left; border-bottom: 2px solid #e2e8f0;">
-            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Unidad</th>
-            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">CLUES</th>
-            <th style="padding: 14px 16px; font-size: 12px; font-weight: 700; color: #475569; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">Estado</th>
+          <tr style="background-color: #f8fafc; text-align: left; border-bottom: 1px solid #e2e8f0;">
+            <th style="padding: 14px 20px; font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">Unidad</th>
+            <th style="padding: 14px 20px; font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px;">CLUES</th>
+            <th style="padding: 14px 20px; font-size: 11px; font-weight: 800; color: #475569; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">Estado</th>
           </tr>
         </thead>
         <tbody>
@@ -381,9 +387,9 @@ serve(async (req) => {
     </div>
   </div>
 
-  <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
-    <p style="margin: 0; color: #64748b; font-size: 12px; font-weight: 500;">Jurisdicción Sanitaria 1 - Sistema de Indicadores JS1</p>
-    <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 11px;">Este es un correo automático de no-reply. Favor de no responder a esta dirección.</p>
+  <div style="background-color: #f8fafc; padding: 25px; text-align: center; border-top: 1px solid #e2e8f0;">
+    <p style="margin: 0; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">SIREVAQ - Jurisdicción Sanitaria 1</p>
+    <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 11px;">Este es un correo automático de no-reply. Favor de no responder a esta dirección.</p>
   </div>
 </div>
 `
@@ -441,11 +447,15 @@ serve(async (req) => {
           const muniPct = muniUnits.length > 0 ? Math.round((muniCompleted / muniUnits.length) * 100) : 0
 
           return `
-            <div style="margin-top: 25px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
-              <div style="background-color: #f8fafc; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-weight: 700; color: #1e293b; font-size: 14px;">📍 Municipio: ${muniName}</span>
-                <span style="font-weight: 700; color: ${muniPct === 100 ? '#10b981' : '#f59e0b'}; font-size: 13px;">${muniPct}% (${muniCompleted}/${muniUnits.length})</span>
-              </div>
+            <div style="margin-top: 25px; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+              <table style="width: 100%; border-collapse: collapse; background-color: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                <tr>
+                  <td style="padding: 14px 20px; font-weight: 800; color: #0f172a; font-size: 13.5px; text-transform: uppercase; letter-spacing: 0.5px; text-align: left;">📍 Municipio: ${muniName}</td>
+                  <td style="padding: 14px 20px; text-align: right;">
+                    <span style="font-weight: 800; color: ${muniPct === 100 ? '#10b981' : '#f59e0b'}; font-size: 13px; background: ${muniPct === 100 ? '#e6fbf2' : '#fffdf0'}; padding: 4px 12px; border-radius: 9999px; display: inline-block;">${muniPct}% (${muniCompleted}/${muniUnits.length})</span>
+                  </td>
+                </tr>
+              </table>
               <table style="width: 100%; border-collapse: collapse;">
                 <tbody>
                   ${rows}
@@ -458,31 +468,34 @@ serve(async (req) => {
         const totalPct = activeUnits.length > 0 ? Math.round((totalCompleted / activeUnits.length) * 100) : 0
 
         const htmlBodyAdmin = `
-<div style="font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 750px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0;">
-  <div style="background: linear-gradient(135deg, #1e3a8a 0%, #1e293b 100%); padding: 30px 25px; text-align: center;">
-    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Reporte General Jurisdiccional</h1>
-    <p style="color: #94a3b8; margin: 8px 0 0 0; font-size: 13px; text-transform: uppercase; font-weight: 600; letter-spacing: 1px;">Jurisdicción Sanitaria 1 | Módulo: ${reportType}</p>
+<div style="font-family: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', sans-serif; max-width: 750px; margin: 0 auto; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 15px 35px -5px rgba(0, 51, 102, 0.08), 0 10px 15px -8px rgba(0, 51, 102, 0.04); border: 1px solid #e2e8f0; border-top: 6px solid #1e3a8a;">
+  <div style="background: linear-gradient(135deg, #1e3a8a 0%, #1e293b 50%, #0f172a 100%); padding: 35px 25px; text-align: center;">
+    <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px; text-transform: uppercase;">Reporte General Jurisdiccional</h1>
+    <p style="color: #93c5fd; margin: 8px 0 0 0; font-size: 12px; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px;">Jurisdicción Sanitaria 1 | Módulo: ${reportType}</p>
   </div>
   
   <div style="padding: 35px 30px; color: #334155; line-height: 1.6;">
-    <p style="font-size: 16px; margin-top: 0; color: #0f172a;">Estimado(a) Administrador(a) / Personal Jurisdiccional,</p>
-    <p style="font-size: 15px; color: #475569;">Se presenta el consolidado de capturas generales para el día de hoy <strong style="color: #1e293b;">${todayYmd}</strong>:</p>
+    <p style="font-size: 16px; margin-top: 0; color: #0f172a; font-weight: 700;">Estimado(a) Administrador(a) / Personal Jurisdiccional,</p>
+    <p style="font-size: 15px; color: #475569; margin-bottom: 25px;">Se presenta el consolidado de capturas generales de hoy <strong style="color: #1e293b; font-weight: 800;">${todayYmd}</strong>:</p>
     
-    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 12px; margin: 25px 0; text-align: center; box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.02);">
-      <div style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Estatus Jurisdiccional Global</div>
-      <div style="font-size: 52px; font-weight: 800; color: #1e3a8a; margin: 8px 0;">${totalPct}%</div>
-      <div style="font-size: 15px; color: #475569; font-weight: 500;">
-        Total General: <strong style="color: #0f172a;">${totalCompleted}</strong> de <strong style="color: #0f172a;">${activeUnits.length}</strong> unidades capturadas
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 25px; margin: 25px 0; text-align: center; box-shadow: 0 10px 25px -10px rgba(0,0,0,0.04);">
+      <div style="font-size: 11px; color: #64748b; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Estatus Jurisdiccional Global</div>
+      <div style="font-size: 54px; font-weight: 900; color: #1e3a8a; margin: 8px 0 4px 0; letter-spacing: -2px; line-height: 1;">${totalPct}%</div>
+      <div style="background-color: #f1f5f9; border-radius: 9999px; height: 8px; width: 80%; margin: 15px auto 12px auto; overflow: hidden; border: 1px solid #e2e8f0;">
+        <div style="background: #1e3a8a; height: 100%; width: ${totalPct}%; border-radius: 9999px;"></div>
+      </div>
+      <div style="font-size: 13.5px; color: #475569; font-weight: 600;">
+        Total General: <strong style="color: #0f172a; font-weight: 800;">${totalCompleted}</strong> de <strong style="color: #0f172a; font-weight: 800;">${activeUnits.length}</strong> unidades capturadas
       </div>
     </div>
     
-    <h3 style="color: #0f172a; font-size: 18px; font-weight: 800; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">Consolidado por Municipios</h3>
+    <h3 style="color: #0f172a; font-size: 18px; font-weight: 900; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Consolidado por Municipios</h3>
     ${municipiosHtml}
   </div>
 
-  <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
-    <p style="margin: 0; color: #64748b; font-size: 12px; font-weight: 500;">Jurisdicción Sanitaria 1 - Sistema de Indicadores JS1</p>
-    <p style="margin: 5px 0 0 0; color: #94a3b8; font-size: 11px;">Este es un correo automático de no-reply. Favor de no responder a esta dirección.</p>
+  <div style="background-color: #f8fafc; padding: 25px; text-align: center; border-top: 1px solid #e2e8f0;">
+    <p style="margin: 0; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">SIREVAQ - Jurisdicción Sanitaria 1</p>
+    <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 11px;">Este es un correo automático de no-reply. Favor de no responder a esta dirección.</p>
   </div>
 </div>
 `
