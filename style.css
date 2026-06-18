@@ -7785,7 +7785,7 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
   align-items: center !important;
   justify-content: center !important;
   box-shadow: 0 4px 10px rgba(0, 51, 102, 0.15) !important;
-  outline: none !important;
+  outline: none !important; padding: 0 !important; flex-shrink: 0 !important;
 }
 
 .live-view-btn-v2 span {
@@ -7980,7 +7980,7 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
   align-items: center !important;
   justify-content: center !important;
   box-shadow: 0 4px 10px rgba(0, 51, 102, 0.15) !important;
-  outline: none !important;
+  outline: none !important; padding: 0 !important; flex-shrink: 0 !important;
 }
 
 .live-view-btn-v2 span {
@@ -10085,13 +10085,23 @@ html body .modern-input-group input[type="date"]:focus,
 
 .leaderboard-table thead tr th, .summaryTable thead tr th {
   border: none !important;
-  background: transparent !important;
+  background: var(--md-sys-color-surface-container) !important;
   color: var(--md-sys-color-on-surface-variant) !important;
   font-weight: 800 !important;
   text-transform: uppercase;
   font-size: 11px !important;
   letter-spacing: 0.1em;
   padding: 12px 16px !important;
+}
+
+.leaderboard-table thead tr th:first-child, .summaryTable thead tr th:first-child {
+  border-top-left-radius: 12px !important;
+  border-bottom-left-radius: 12px !important;
+}
+
+.leaderboard-table thead tr th:last-child, .summaryTable thead tr th:last-child {
+  border-top-right-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
 }
 
 .leaderboard-table tbody tr, .summaryTable tbody tr {
@@ -10280,13 +10290,23 @@ html body .modern-input-group input[type="date"]:focus,
 
 .leaderboard-table thead tr th, .summaryTable thead tr th {
   border: none !important;
-  background: transparent !important;
+  background: var(--md-sys-color-surface-container) !important;
   color: var(--md-sys-color-on-surface-variant) !important;
   font-weight: 800 !important;
   text-transform: uppercase;
   font-size: 11px !important;
   letter-spacing: 0.1em;
   padding: 12px 16px !important;
+}
+
+.leaderboard-table thead tr th:first-child, .summaryTable thead tr th:first-child {
+  border-top-left-radius: 12px !important;
+  border-bottom-left-radius: 12px !important;
+}
+
+.leaderboard-table thead tr th:last-child, .summaryTable thead tr th:last-child {
+  border-top-right-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
 }
 
 .leaderboard-table tbody tr, .summaryTable tbody tr {
