@@ -6883,7 +6883,8 @@ async function hydrateSessionUi(user, status, opts = {}) {
     if (!isLotesAdmin) toggleEl("panelLOTES", false);
 
     if (user?.rol === "UNIDAD") {
-      // Para unidades, delegamos la carga y el pre-llenado de forma secuencial y limpia a reloadTodayState(true)
+      // Para unidades, primero cargamos los lotes necesarios y luego delegamos la carga y el pre-llenado
+      await loadBatchesForSession(user);
       await reloadTodayState(true);
     } else {
       // Lanzamos peticiones. El batcher las atrapará.
