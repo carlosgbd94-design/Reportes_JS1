@@ -342,10 +342,31 @@
       <!-- 💎 BRANDING CLUSTER (Pure Spectral Glass) -->
       <div class="GlassContainer flex-none" id="logoCluster"
         style="display: flex !important; width: fit-content !important;">
+        <style>
+          .quick-info-chip {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 6px 14px;
+            border-radius: 100px;
+            font-size: 11px;
+            font-weight: 800;
+            color: #ffffff;
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          html.dark .quick-info-chip {
+            background: rgba(0, 0, 0, 0.2);
+            border-color: rgba(255, 255, 255, 0.05);
+          }
+        </style>
         <div
           class="GlassContent liquidGL header-liquid-glass px-4 sm:px-8 py-2 sm:py-3 flex items-center flex-row flex-nowrap gap-3 sm:gap-8 bg-transparent! whitespace-nowrap overflow-visible transition-all duration-300"
           style="display: flex !important; flex-direction: row !important; align-items: center !important;">
 
+          <!-- Clima izquierdo -->
+          <div class="quick-info-chip hidden sm:flex" id="hdrClima">Qro --°C</div>
 
           <!-- Logo Q -->
           <img id="logoB" class="hidden sm:block object-contain flex-none transition-all duration-300"
@@ -365,6 +386,9 @@
               class="hidden sm:block text-[8.5px] text-primary/60 m-0 mt-1 font-black uppercase tracking-widest leading-none">
               Jurisdicción Sanitaria 1</p>
           </div>
+
+          <!-- Clima derecho (por compatibilidad) -->
+          <div class="quick-info-chip" id="hdrClima2" style="display:none">--°C</div>
         </div>
       </div>
 
