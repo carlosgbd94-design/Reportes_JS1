@@ -5,8 +5,14 @@
  */
 
 (function () {
-    // Rely on touch-ui class activation rather than browser feature/UA detection
-    if (!document.documentElement.classList.contains('touch-ui')) return;
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isMobileSize = window.innerWidth <= 1024;
+    
+    // Solo activar si tiene capacidades táctiles, un UA móvil (o tablet) y la pantalla no es gigante
+    if (!isTouch || !isMobileUA || !isMobileSize) return;
+
+    document.documentElement.classList.add('touch-ui');
     console.log('📱 Mobile Adaptation Layer: Refractive Engine Active');
 
     // ─── CORE OPTICS UTILITIES (from Pebble & Void reference) ───
