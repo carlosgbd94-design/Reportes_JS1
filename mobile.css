@@ -42,6 +42,11 @@
     min-height: 48px !important;
 }
 
+.touch-ui select {
+    appearance: auto !important;
+    -webkit-appearance: auto !important;
+}
+
 /* B. Layout Stacking - Force 1 column on touch devices for main grids */
 .touch-ui .flex-col.lg\:flex-row {
     flex-direction: column !important;
@@ -934,12 +939,21 @@
     margin-left: auto !important;
 }
 
-.touch-ui #srCaptureTable td input,
-.touch-ui #srCaptureTable td select {
+.touch-ui #srCaptureTable td input {
     text-align: right !important;
     background: #f8fafc !important;
     width: 100% !important;
     box-sizing: border-box !important;
+}
+
+.touch-ui #srCaptureTable td select {
+    text-align: left !important;
+    background: #f8fafc !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding-left: 8px !important;
+    appearance: auto !important;
+    -webkit-appearance: auto !important;
 }
 
 /* Bio name cell in cards should be prominent */
