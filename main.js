@@ -6882,15 +6882,20 @@ async function hydrateSessionUi(user, status, opts = {}) {
     toggleEl("tabLOTES", isLotesAdmin, "flex");
     if (!isLotesAdmin) toggleEl("panelLOTES", false);
 
-    // Lanzamos peticiones. El batcher las atrapará.
-    const pLotes = loadBatchesForSession(user);
-    const pReports = getTodayReports(todayYmdLocal(), true);
-    const pStatus = status ? Promise.resolve(status) : apiCall("unitStatus");
+    if (user?.rol === "UNIDAD") {
+      // Para unidades, delegamos la carga y el pre-llenado de forma secuencial y limpia a reloadTodayState(true)
+      await reloadTodayState(true);
+    } else {
+      // Lanzamos peticiones. El batcher las atrapará.
+      const pLotes = loadBatchesForSession(user);
+      const pReports = getTodayReports(todayYmdLocal(), true);
+      const pStatus = status ? Promise.resolve(status) : apiCall("unitStatus");
 
-    const [_, today, finalStatus] = await Promise.all([pLotes, pReports, pStatus]);
+      const [_, today, finalStatus] = await Promise.all([pLotes, pReports, pStatus]);
 
-    if (finalStatus) setLoggedInUI(user, finalStatus); // Refrescar si no venía
-    if (today) hydrateTodayForms(today);
+      if (finalStatus) setLoggedInUI(user, finalStatus); // Refrescar si no venía
+      if (today) hydrateTodayForms(today);
+    }
 
 
     if (isOps) {
@@ -9899,10 +9904,10 @@ function normalizeTodayReports(data) {
   return { sr, cons };
 }
 
-async function reloadTodayState() {
+async function reloadTodayState(force = false) {
   try {
     const todayStr = todayYmdLocal();
-    let today = await getTodayReports(todayStr);
+    let today = await getTodayReports(todayStr, force);
 
     const dow = new Date().getDay();
     let isPrefill = false;
@@ -10579,7 +10584,7 @@ function setLoggedInUI(user, status) {
     Object.assign(AppState, { mainPanel: "CAP", captureTab: "SR" });
     activateDefaultMainForRole();
     loadBioForm().catch(err => console.error("loadBioForm error:", err));
-    reloadTodayState();
+    // reloadTodayState se llamará de forma controlada y secuencial en hydrateSessionUi
   } else {
     Object.assign(AppState, { mainPanel: "CAP" });
     activateMain("CAP");
