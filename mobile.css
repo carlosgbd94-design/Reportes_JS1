@@ -988,30 +988,9 @@
    PREMIUM MOBILE OPTIMIZATIONS (Antigravity MAL Engine V2)
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* 1. Header Branding Compression (Clean Text & Logo layout) */
+/* 1. Header Branding Compression (Only Logo on Mobile) */
 .touch-ui #logoCluster .GlassContent > div {
-    display: flex !important;
-}
-.touch-ui #logoCluster .GlassContent > div.bg-primary\/20 {
     display: none !important;
-}
-.touch-ui #logoCluster h1 {
-    font-size: clamp(13px, 4vw, 15px) !important;
-    font-weight: 900 !important;
-    color: var(--primary, #003366) !important;
-    white-space: nowrap !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 4px !important;
-}
-.touch-ui #logoCluster h1 span.hidden {
-    display: inline !important;
-    font-size: clamp(13px, 4vw, 15px) !important;
-    color: #64748b !important;
-    font-weight: 500 !important;
-}
-.touch-ui #logoCluster p.hidden {
-    display: none !important; /* Hide long subtitle "Plataforma Institucional" on mobile to prevent overflow */
 }
 .touch-ui #logoB {
     display: block !important;
