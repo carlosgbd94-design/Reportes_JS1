@@ -10,20 +10,18 @@
   <meta name="theme-color" content="var(--md-sys-color-on-surface)">
 
   <!-- Content Security Policy (CSP) -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fastly.jsdelivr.net https://cdnjs.cloudflare.com https://js.sentry-cdn.com https://browser.sentry-cdn.com https://us-assets.i.posthog.com https://us.i.posthog.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://images.unsplash.com; connect-src 'self' https: wss: https://challenges.cloudflare.com; frame-src 'self' https://challenges.cloudflare.com;">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fastly.jsdelivr.net https://cdnjs.cloudflare.com https://js.sentry-cdn.com https://browser.sentry-cdn.com https://us-assets.i.posthog.com https://us.i.posthog.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://images.unsplash.com; connect-src 'self' https: wss: https://challenges.cloudflare.com; frame-src 'self' https://challenges.cloudflare.com;">
 
   <!-- Sentry Error Monitoring -->
-  <script
-    src="https://js.sentry-cdn.com/ad5eb763bc0b321edddbb0ce59e2c0f0.min.js"
-    crossorigin="anonymous"
-  ></script>
+  <script src="https://js.sentry-cdn.com/ad5eb763bc0b321edddbb0ce59e2c0f0.min.js" crossorigin="anonymous"></script>
 
   <!-- PostHog Analytics -->
   <script>
-    !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group reset groups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags resetActiveView Exception clear_session_tracking group reset groups set_config session_recording_started".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+    !function (t, e) { var o, n, p, r; e.__SV || (window.posthog = e, e._i = [], e.init = function (i, s, a) { function g(t, e) { var o = e.split("."); 2 == o.length && (t = t[o[0]], e = o[1]), t[e] = function () { t.push([e].concat(Array.prototype.slice.call(arguments, 0))) } } (p = t.createElement("script")).type = "text/javascript", p.async = !0, p.src = s.api_host.replace(".i.posthog.com", "-assets.i.posthog.com") + "/static/array.js", (r = t.getElementsByTagName("script")[0]).parentNode.insertBefore(p, r); var u = e; for (void 0 !== a ? u = e[a] = [] : a = "posthog", u.people = u.people || [], u.toString = function (t) { var e = "posthog"; return "posthog" !== a && (e += "." + a), t || (e += " (stub)"), e }, u.people.toString = function () { return u.toString(1) + ".people (stub)" }, o = "init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group reset groups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags resetActiveView Exception clear_session_tracking group reset groups set_config session_recording_started".split(" "), n = 0; n < o.length; n++)g(u, o[n]); e._i.push([i, s, a]) }, e.__SV = 1) }(document, window.posthog || []);
     posthog.init('phc_usAQVRLvwXqvKzvsUXRQyA5jjyak8nEAwqfKNGmxoUd5', {
-        api_host: 'https://us.i.posthog.com',
-        person_profiles: 'identified_only' // or 'always' to create profiles for anonymous users as well
+      api_host: 'https://us.i.posthog.com',
+      person_profiles: 'identified_only' // or 'always' to create profiles for anonymous users as well
     })
   </script>
 
@@ -70,12 +68,14 @@
       height: 28px;
       flex-shrink: 0;
     }
+
     .premium-switch input {
       opacity: 0;
       width: 0;
       height: 0;
       position: absolute;
     }
+
     .premium-switch-track {
       position: absolute;
       top: 0;
@@ -88,10 +88,12 @@
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
     }
+
     html.dark .premium-switch-track {
       background-color: #334155;
       border-color: #475569;
     }
+
     .premium-switch-thumb {
       position: absolute;
       top: 2px;
@@ -106,9 +108,11 @@
       align-items: center;
       justify-content: center;
     }
+
     html.dark .premium-switch-thumb {
       background-color: #64748b;
     }
+
     .premium-switch-icon {
       font-size: 13px !important;
       color: #003366;
@@ -117,34 +121,42 @@
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       font-weight: 900;
     }
-    .premium-switch input:checked + .premium-switch-track {
+
+    .premium-switch input:checked+.premium-switch-track {
       background-color: #003366;
       border-color: #003366;
     }
-    html.dark .premium-switch input:checked + .premium-switch-track {
+
+    html.dark .premium-switch input:checked+.premium-switch-track {
       background-color: #3b82f6;
       border-color: #3b82f6;
     }
-    .premium-switch input:checked + .premium-switch-track .premium-switch-thumb {
+
+    .premium-switch input:checked+.premium-switch-track .premium-switch-thumb {
       left: 24px;
       background-color: #ffffff;
       transform: scale(1.05);
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
     }
-    .premium-switch input:checked + .premium-switch-track .premium-switch-icon {
+
+    .premium-switch input:checked+.premium-switch-track .premium-switch-icon {
       opacity: 1;
       transform: scale(1);
     }
-    html.dark .premium-switch input:checked + .premium-switch-track .premium-switch-icon {
+
+    html.dark .premium-switch input:checked+.premium-switch-track .premium-switch-icon {
       color: #1e3a8a;
     }
+
     .premium-switch:hover .premium-switch-track {
       border-color: #94a3b8;
     }
+
     html.dark .premium-switch:hover .premium-switch-track {
       border-color: #64748b;
     }
-    .premium-switch input:checked:hover + .premium-switch-track {
+
+    .premium-switch input:checked:hover+.premium-switch-track {
       filter: brightness(1.1);
     }
 
@@ -157,15 +169,18 @@
       border-color: rgba(37, 211, 102, 0.5) !important;
       box-shadow: 0 8px 20px -6px rgba(37, 211, 102, 0.25);
     }
+
     .whatsapp-support-card:hover span.material-symbols-rounded {
       opacity: 1 !important;
       transform: translateX(3.5px);
       color: #25d366 !important;
     }
+
     html.dark .whatsapp-support-card {
       background: linear-gradient(135deg, rgba(37, 211, 102, 0.05) 0%, rgba(18, 140, 126, 0.02) 100%) !important;
       border-color: rgba(37, 211, 102, 0.15) !important;
     }
+
     html.dark .whatsapp-support-card:hover {
       background: linear-gradient(135deg, rgba(37, 211, 102, 0.08) 0%, rgba(18, 140, 126, 0.04) 100%) !important;
       border-color: rgba(37, 211, 102, 0.3) !important;
@@ -179,10 +194,11 @@
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script defer
+    src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script defer src="https://fastly.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  
+
   <!-- Modern Libraries (Dates, Validation, Animations) -->
   <script defer src="https://fastly.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
   <script defer src="https://fastly.jsdelivr.net/npm/just-validate@4.3.0/dist/just-validate.production.min.js"></script>
@@ -235,7 +251,7 @@
   <!-- 🎨 PREMIUM INSTITUTIONAL BACKGROUND (Light & Dark Variants) -->
   <div id="mainAppBackground"
     style="position: fixed; inset: 0; z-index: -3; pointer-events: none; overflow: hidden; background-color: var(--md-sys-color-surface-container); transition: var(--transition-theme);">
-    
+
     <!-- Light Mode Background Pattern -->
     <div class="light-bg-pattern"
       style="position: absolute; inset: -50%; background-image: url('https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png'); background-size: 150px; background-repeat: repeat; opacity: 0.02; transform: rotate(-25deg); transition: opacity 0.4s ease;">
@@ -254,12 +270,18 @@
 
     <!-- Nodos y líneas conectados (Adaptables por variables CSS) -->
     <svg style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.15;">
-      <line x1="15%" y1="20%" x2="45%" y2="55%" stroke="var(--primary-action)" stroke-width="1.5" stroke-dasharray="4 6" style="transition: stroke 0.4s ease;" />
-      <line x1="45%" y1="55%" x2="80%" y2="35%" stroke="var(--primary-action)" stroke-width="1.5" stroke-dasharray="4 6" style="transition: stroke 0.4s ease;" />
-      <line x1="80%" y1="35%" x2="70%" y2="75%" stroke="var(--primary-action)" stroke-width="1.5" stroke-dasharray="4 6" style="transition: stroke 0.4s ease;" />
-      <line x1="70%" y1="75%" x2="30%" y2="80%" stroke="var(--primary-action)" stroke-width="1.5" stroke-dasharray="4 6" style="transition: stroke 0.4s ease;" />
-      <line x1="30%" y1="80%" x2="15%" y2="20%" stroke="var(--primary-action)" stroke-width="1.5" stroke-dasharray="4 6" style="transition: stroke 0.4s ease;" />
-      <line x1="45%" y1="55%" x2="70%" y2="75%" stroke="var(--primary-action)" stroke-width="1.5" stroke-dasharray="4 6" style="transition: stroke 0.4s ease;" />
+      <line x1="15%" y1="20%" x2="45%" y2="55%" stroke="var(--primary-action)" stroke-width="1.5" stroke-dasharray="4 6"
+        style="transition: stroke 0.4s ease;" />
+      <line x1="45%" y1="55%" x2="80%" y2="35%" stroke="var(--primary-action)" stroke-width="1.5" stroke-dasharray="4 6"
+        style="transition: stroke 0.4s ease;" />
+      <line x1="80%" y1="35%" x2="70%" y2="75%" stroke="var(--primary-action)" stroke-width="1.5" stroke-dasharray="4 6"
+        style="transition: stroke 0.4s ease;" />
+      <line x1="70%" y1="75%" x2="30%" y2="80%" stroke="var(--primary-action)" stroke-width="1.5" stroke-dasharray="4 6"
+        style="transition: stroke 0.4s ease;" />
+      <line x1="30%" y1="80%" x2="15%" y2="20%" stroke="var(--primary-action)" stroke-width="1.5" stroke-dasharray="4 6"
+        style="transition: stroke 0.4s ease;" />
+      <line x1="45%" y1="55%" x2="70%" y2="75%" stroke="var(--primary-action)" stroke-width="1.5" stroke-dasharray="4 6"
+        style="transition: stroke 0.4s ease;" />
     </svg>
     <!-- Nodos animados -->
     <style>
@@ -274,19 +296,22 @@
         will-change: opacity, transform;
         transition: filter 0.4s ease;
       }
-      
+
       html.dark .tech-node-light {
-         filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.8)) brightness(1.5);
+        filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.8)) brightness(1.5);
       }
 
-      html.dark .light-bg-pattern, html.dark .light-bg-gradient {
-         opacity: 0 !important;
+      html.dark .light-bg-pattern,
+      html.dark .light-bg-gradient {
+        opacity: 0 !important;
       }
+
       html.dark .dark-bg-pattern {
-         opacity: 0.05 !important;
+        opacity: 0.05 !important;
       }
+
       html.dark .dark-bg-gradient {
-         opacity: 1 !important;
+        opacity: 1 !important;
       }
 
       @keyframes twinkleLight {
@@ -322,7 +347,7 @@
         <div
           class="GlassContent liquidGL header-liquid-glass px-4 sm:px-8 py-2 sm:py-3 flex items-center flex-row flex-nowrap gap-3 sm:gap-8 bg-transparent! whitespace-nowrap overflow-visible transition-all duration-300"
           style="display: flex !important; flex-direction: row !important; align-items: center !important;">
-          
+
 
           <!-- Logo Q -->
           <img id="logoB" class="hidden sm:block object-contain flex-none transition-all duration-300"
@@ -335,7 +360,8 @@
           <!-- JS1 Branding Text -->
           <div class="flex flex-col flex-none justify-center transition-all duration-300">
             <h1 class="text-lg sm:text-2xl font-black text-primary m-0 leading-none flex items-center gap-1 sm:gap-2">
-              JS1 <span class="font-medium hidden sm:inline" style="color: var(--md-sys-color-on-surface-variant) !important;">SIREVAQ</span>
+              JS1 <span class="font-medium hidden sm:inline"
+                style="color: var(--md-sys-color-on-surface-variant) !important;">SIREVAQ</span>
             </h1>
             <p
               class="hidden sm:block text-[8.5px] text-primary/60 m-0 mt-1 font-black uppercase tracking-widest leading-none">
@@ -392,7 +418,7 @@
             </div>
           </div>
 
-          
+
 
           <!-- CSV UPLOAD BUTTON (JURISDICCIONAL/ADMIN ONLY) -->
           <div class="GlassContainer" id="glassBtnUploadRdaCsv" data-role-gate="ADMIN,JURISDICCIONAL"
@@ -480,20 +506,23 @@
                   <span id="munTxt" class="text-[12px] font-bold text-primary leading-tight">Cargando...</span>
                 </div>
               </div>
-              
+
               <!-- Tema de la App -->
               <div
                 class="flex items-center justify-between p-4 bg-surface rounded-2xl border border-outline-variant/30 shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all hover:border-primary/20 group cursor-pointer"
-                role="button" tabindex="0" aria-label="Cambiar tema de apariencia"
-                onclick="toggleTheme()" onkeydown="if(event.key==='Enter') toggleTheme()">
+                role="button" tabindex="0" aria-label="Cambiar tema de apariencia" onclick="toggleTheme()"
+                onkeydown="if(event.key==='Enter') toggleTheme()">
                 <div class="flex items-center gap-4 min-w-0">
-                  <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors bg-primary/5 group-hover:bg-primary/10">
+                  <div
+                    class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors bg-primary/5 group-hover:bg-primary/10">
                     <span class="material-symbols-rounded text-primary/60 text-[20px] light-only">dark_mode</span>
                     <span class="material-symbols-rounded text-amber-500 text-[20px] dark-only">light_mode</span>
                   </div>
                   <div class="flex flex-col min-w-0">
-                    <span class="text-[9px] font-black text-primary/30 uppercase tracking-widest mb-0.5">Apariencia</span>
-                    <span class="text-[12px] font-bold text-primary leading-tight"><span class="light-only">Modo Claro</span><span class="dark-only">Modo Oscuro</span></span>
+                    <span
+                      class="text-[9px] font-black text-primary/30 uppercase tracking-widest mb-0.5">Apariencia</span>
+                    <span class="text-[12px] font-bold text-primary leading-tight"><span class="light-only">Modo
+                        Claro</span><span class="dark-only">Modo Oscuro</span></span>
                   </div>
                 </div>
                 <div class="theme-toggle-switch"></div>
@@ -501,9 +530,12 @@
             </div>
 
             <!-- Acciones del perfil en una sola fila minimalista con protección de padding (inline style) y SVG multi-path -->
-            <div style="padding: 4px 20px 20px 20px !important; display: flex !important; align-items: center !important; justify-content: space-between !important;" id="profileActionsRow">
+            <div
+              style="padding: 4px 20px 20px 20px !important; display: flex !important; align-items: center !important; justify-content: space-between !important;"
+              id="profileActionsRow">
               <div id="passkeyRegContainer" style="display: none; width: 48%;">
-                <button id="btnRegisterPasskey" class="profile-action-btn btn-biometric-minimal w-full btn-parallax-tilt">
+                <button id="btnRegisterPasskey"
+                  class="profile-action-btn btn-biometric-minimal w-full btn-parallax-tilt">
                   <span class="btn-parallax-tilt-inner">
                     <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
                     <span>Biometría</span>
@@ -569,13 +601,17 @@
           style="font-size: 2.8rem; font-weight: 600; margin-bottom: 1.2rem; line-height: 1.1; text-shadow: 0 4px 10px rgba(0,0,0,0.3);">
           Plataforma Jurisdiccional</h2>
         <p style="font-size: 1.1rem; color: #cbd5e1; max-width: 620px; line-height: 1.6; font-weight: 300; margin: 0;">
-          <strong style="color: white; font-weight: 700;">SIREVAQ</strong> (Sistema de Reportes y Evaluación en Vacunación de Querétaro) es la plataforma institucional diseñada para centralizar la inteligencia operativa y el análisis de datos en salud pública. Una visión tecnológica integral creada para optimizar el seguimiento de biológicos y fortalecer la toma de decisiones estratégicas dentro de la Jurisdicción Sanitaria No. 1.
+          <strong style="color: white; font-weight: 700;">SIREVAQ</strong> (Sistema de Reportes y Evaluación en
+          Vacunación de Querétaro) es la plataforma institucional diseñada para centralizar la inteligencia operativa y
+          el análisis de datos en salud pública. Una visión tecnológica integral creada para optimizar el seguimiento de
+          biológicos y fortalecer la toma de decisiones estratégicas dentro de la Jurisdicción Sanitaria No. 1.
         </p>
       </div>
     </div>
 
     <!-- Premium Single Card Design -->
-    <div class="GlassContainer relative z-10 w-full max-w-[440px] my-auto" style="--corner-radius: 32px;" id="cardLogin">
+    <div class="GlassContainer relative z-10 w-full max-w-[440px] my-auto" style="--corner-radius: 32px;"
+      id="cardLogin">
       <div class="GlassContent liquidGL p-6 sm:p-8 flex flex-col items-center text-center" id="cardLoginContent">
 
         <!-- LOGO MÓVIL ORIGINAL -->
@@ -588,7 +624,8 @@
         <h1 id="mobileTitle" class="text-2xl sm:text-3xl font-black text-primary m-0 tracking-tighter">
           JS1 <span class="font-medium" style="color: var(--md-sys-color-on-surface-variant) !important;">SIREVAQ</span>
         </h1>
-        <p id="mobileSubtitle" class="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mt-2 mb-6 sm:mb-8 opacity-60">
+        <p id="mobileSubtitle"
+          class="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mt-2 mb-6 sm:mb-8 opacity-60">
           Sistema de Reportes y Evaluación en Vacunación de Querétaro</p>
 
         <!-- LOGO DESKTOP (Nuevo diseño Bicolor) -->
@@ -596,7 +633,8 @@
           <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png"
             alt="JS1 Logo" style="width: 50px; height: auto;">
           <div style="font-size: 1.8rem; font-weight: 700; letter-spacing: -0.5px;">
-            <span style="color: var(--md-sys-color-on-surface);">JS1</span><span style="color: var(--md-sys-color-on-surface-variant) !important; font-weight: 500;">
+            <span style="color: var(--md-sys-color-on-surface);">JS1</span><span
+              style="color: var(--md-sys-color-on-surface-variant) !important; font-weight: 500;">
               SIREVAQ</span>
           </div>
         </div>
@@ -605,7 +643,8 @@
           <h1
             style="font-size: 2.2rem; font-weight: 600; color: var(--md-sys-color-on-surface); margin-bottom: 0.5rem; letter-spacing: -0.5px; line-height: 1.2;">
             Bienvenido de nuevo</h1>
-          <p style="font-size: 1.05rem; color: var(--md-sys-color-on-surface-variant); font-weight: 300; margin: 0;">Por favor, ingresa a tu cuenta
+          <p style="font-size: 1.05rem; color: var(--md-sys-color-on-surface-variant); font-weight: 300; margin: 0;">Por
+            favor, ingresa a tu cuenta
             para continuar.</p>
         </div>
 
@@ -615,14 +654,16 @@
             <!-- Usuario -->
             <div class="modern-input-group">
               <span class="input-icon material-symbols-rounded">person</span>
-              <input id="usuario" name="username" class="h-12 sm:h-14 rounded-2xl w-full text-[14px] sm:text-[15px] font-bold"
-                autocomplete="username" placeholder="Correo electrónico">
+              <input id="usuario" name="username"
+                class="h-12 sm:h-14 rounded-2xl w-full text-[14px] sm:text-[15px] font-bold" autocomplete="username"
+                placeholder="Correo electrónico">
             </div>
 
             <!-- Contraseña -->
             <div class="modern-input-group">
               <span class="input-icon material-symbols-rounded">lock</span>
-              <input id="password" name="password" type="password" class="h-12 sm:h-14 rounded-2xl w-full text-[14px] sm:text-[15px] font-bold"
+              <input id="password" name="password" type="password"
+                class="h-12 sm:h-14 rounded-2xl w-full text-[14px] sm:text-[15px] font-bold"
                 autocomplete="current-password" placeholder="••••••••">
               <span
                 class="material-symbols-rounded absolute right-4 top-1/2 -translate-y-1/2 text-primary/30 cursor-pointer hover:text-primary transition-colors text-[18px] z-10"
@@ -631,28 +672,33 @@
           </div>
 
           <!-- Opciones de Contraseña -->
-          <div id="passwordOptionsContainer" style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 12px; gap: 8px;">
+          <div id="passwordOptionsContainer"
+            style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 12px; gap: 8px;">
 
             <!-- Recordarme + Olvidé contraseña (izquierda, apilados) -->
             <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px; flex-shrink: 0;">
-              <label id="desktopRememberMe" style="display: flex; align-items: center; gap: 6px; color: #64748b; cursor: pointer; font-size: 13px;">
+              <label id="desktopRememberMe"
+                style="display: flex; align-items: center; gap: 6px; color: #64748b; cursor: pointer; font-size: 13px;">
                 <input type="checkbox" style="width: 15px; height: 15px; accent-color: #0ea5e9; cursor: pointer;">
                 Recordarme
               </label>
               <button type="button" id="btnForgotPassword"
                 style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.2em; color: rgba(0,51,102,0.35); background: transparent; border: none; cursor: pointer; padding: 0; transition: color 0.2s;"
-                onmouseover="this.style.color='var(--md-sys-color-primary)'" onmouseout="this.style.color='rgba(0,51,102,0.35)'">
+                onmouseover="this.style.color='var(--md-sys-color-primary)'"
+                onmouseout="this.style.color='rgba(0,51,102,0.35)'">
                 ¿Olvidaste tu contraseña?
               </button>
             </div>
 
             <!-- Cloudflare Turnstile (derecha, compacto y discreto) -->
-            <div style="transform: scaleX(0.95) scaleY(0.6); transform-origin: right center; flex-shrink: 0;">
-              <div id="loginTurnstile" class="cf-turnstile" data-sitekey="0x4AAAAAADnWmqeYIwiqEuyL" data-theme="light" data-size="compact"></div>
+            <div style="transform: scale(0.75); transform-origin: right center; flex-shrink: 0;">
+              <div id="loginTurnstile" class="cf-turnstile" data-sitekey="0x4AAAAAADnWmqeYIwiqEuyL" data-theme="light"
+                data-size="compact"></div>
             </div>
           </div>
 
-          <button type="submit" id="btnLogin" class="btn-premium-action w-full h-14 sm:h-16 text-[14px] sm:text-base tracking-widest mt-5 sm:mt-8">
+          <button type="submit" id="btnLogin"
+            class="btn-premium-action w-full h-14 sm:h-16 text-[14px] sm:text-base tracking-widest mt-5 sm:mt-8">
             <span id="btnTextMobile">ENTRAR</span>
             <span id="btnTextDesktop" style="display: none; align-items: center; gap: 8px;">
               ENTRAR
@@ -662,11 +708,14 @@
           </button>
 
           <!-- BIOMETRIC LOGIN — Movido abajo del botón ENTRAR -->
-          <div id="btnBiometricLogin" style="display: none; flex-direction: column; align-items: center; width: 100%; gap: 0; margin-top: 12px;">
+          <div id="btnBiometricLogin"
+            style="display: none; flex-direction: column; align-items: center; width: 100%; gap: 0; margin-top: 12px;">
             <!-- Divider -->
-            <div style="display: flex; align-items: center; gap: 16px; width: 100%; margin-bottom: 12px; margin-top: 4px;">
+            <div
+              style="display: flex; align-items: center; gap: 16px; width: 100%; margin-bottom: 12px; margin-top: 4px;">
               <div style="flex: 1; height: 1px; background: rgba(0,51,102,0.1);"></div>
-              <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: rgba(0,51,102,0.3); text-transform: uppercase;">o</span>
+              <span
+                style="font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: rgba(0,51,102,0.3); text-transform: uppercase;">o</span>
               <div style="flex: 1; height: 1px; background: rgba(0,51,102,0.1);"></div>
             </div>
 
@@ -686,7 +735,8 @@
         </form>
 
         <footer class="mt-5 sm:mt-8 border-t border-primary/5 pt-4 text-center w-full" id="loginFooter">
-          <p class="text-[8px] sm:text-[9px] text-primary/30 font-black uppercase tracking-[0.2em]">Jurisdicción Sanitaria No. 1</p>
+          <p class="text-[8px] sm:text-[9px] text-primary/30 font-black uppercase tracking-[0.2em]">Jurisdicción
+            Sanitaria No. 1</p>
         </footer>
       </div>
     </div>
@@ -1021,7 +1071,8 @@
           <!-- SR (EXISTENCIA DE BIOLÓGICOS) -->
           <div id="formSR" style="display:none">
             <!-- Info Header Grande (Estilo Consumibles/Pinol) -->
-            <div class="flex items-center gap-6 p-6 rounded-[32px] shadow-md mb-2 mt-4 relative z-10 bg-blue-50 border-2 border-blue-200">
+            <div
+              class="flex items-center gap-6 p-6 rounded-[32px] shadow-md mb-2 mt-4 relative z-10 bg-blue-50 border-2 border-blue-200">
               <div
                 class="w-16 h-16 rounded-2xl bg-surface border border-[#e0f2fe] flex items-center justify-center text-4xl shadow-sm shrink-0">
                 📦
@@ -1289,7 +1340,8 @@
 
             <div
               class="overflow-hidden rounded-[20px] border border-outline-variant/30 shadow-[0_2px_8px_rgba(0,0,0,0.02)] mt-2 w-full bg-surface relative">
-              <div class="max-h-[560px] overflow-y-auto w-full p-4" style="scrollbar-width: thin; background: var(--md-sys-color-surface-container);">
+              <div class="max-h-[560px] overflow-y-auto w-full p-4"
+                style="scrollbar-width: thin; background: var(--md-sys-color-surface-container);">
 
                 <div class="bio-card-sticky-header mb-3">
                   <div class="pl-2">Biológico</div>
@@ -1651,7 +1703,8 @@
           <div
             class="bg-surface rounded-[32px] p-6 md:p-8 border border-outline-variant/30 shadow-[0_15px_40px_rgba(0,51,102,0.06)] flex flex-col max-w-6xl mx-auto"
             id="notifComposerPane">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-outline-variant/30 mb-6 gap-4">
+            <div
+              class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-outline-variant/30 mb-6 gap-4">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
                   <span class="material-symbols-rounded text-[24px]">campaign</span>
@@ -1671,7 +1724,9 @@
 
             <!-- Fila de Plantillas Rápidas (Chips Premium) -->
             <div class="mb-8">
-              <label class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-3 ml-1">Plantillas Rápidas de Aviso</label>
+              <label
+                class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-3 ml-1">Plantillas
+                Rápidas de Aviso</label>
               <div class="flex flex-wrap gap-2.5" id="notifQuickTemplates">
                 <button type="button" class="notif-tpl-chip" data-template="CAPTURA_PENDIENTE">
                   <span class="material-symbols-rounded">pending_actions</span>
@@ -1695,7 +1750,8 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div>
                     <label for="notifTargetScope"
-                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">1. Alcance</label>
+                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">1.
+                      Alcance</label>
                     <div class="modern-input-group">
                       <span class="input-icon material-symbols-rounded">groups</span>
                       <select id="notifTargetScope">
@@ -1709,7 +1765,8 @@
 
                   <div>
                     <label for="notifType"
-                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">2. Prioridad</label>
+                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">2.
+                      Prioridad</label>
                     <div class="modern-input-group">
                       <span class="input-icon material-symbols-rounded">priority_high</span>
                       <select id="notifType">
@@ -1726,7 +1783,8 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div id="notifMunicipioBox" style="display:none">
                     <label for="notifTargetMunicipio"
-                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Municipio Destino</label>
+                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Municipio
+                      Destino</label>
                     <div class="modern-input-group">
                       <span class="input-icon material-symbols-rounded">location_city</span>
                       <select id="notifTargetMunicipio"></select>
@@ -1735,14 +1793,16 @@
 
                   <div id="notifUnidadBox" style="display:none">
                     <label for="notifTargetClues"
-                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Unidad / CLUES</label>
+                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Unidad
+                      / CLUES</label>
                     <select id="notifTargetClues"
                       class="w-full bg-surface-container border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-surface focus:border-primary outline-none transition-all shadow-sm"></select>
                   </div>
 
                   <div id="notifUserBox" style="display:none" class="sm:col-span-2">
                     <label for="notifTargetUser"
-                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Usuario Destino</label>
+                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Usuario
+                      Destino</label>
                     <select id="notifTargetUser"
                       class="w-full bg-surface-container border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-surface focus:border-primary outline-none transition-all shadow-sm"></select>
                   </div>
@@ -1751,7 +1811,8 @@
                 <!-- Campos de Texto del Mensaje -->
                 <div>
                   <label for="notifTitle"
-                    class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Título del Aviso</label>
+                    class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Título
+                    del Aviso</label>
                   <input id="notifTitle" placeholder="Ej. Actualización de Inventario" maxlength="60"
                     class="w-full bg-surface-container border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-surface focus:border-primary outline-none transition-all shadow-sm placeholder:text-slate-300">
                 </div>
@@ -1759,7 +1820,8 @@
                 <div>
                   <div class="flex justify-between items-center mb-2.5">
                     <label for="notifMessage"
-                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block ml-1">Mensaje Institucional</label>
+                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block ml-1">Mensaje
+                      Institucional</label>
                     <span id="notifCharCount" class="text-[10px] font-bold text-slate-400">0 / 250</span>
                   </div>
                   <textarea id="notifMessage" rows="5" maxlength="250"
@@ -1767,7 +1829,8 @@
                     placeholder="Escribe el cuerpo de la notificación..."></textarea>
                   <!-- Character progress bar -->
                   <div class="w-full h-1 bg-slate-100 rounded-full mt-2 overflow-hidden">
-                    <div id="notifCharBar" class="h-full bg-primary/40 transition-all duration-200" style="width: 0%;"></div>
+                    <div id="notifCharBar" class="h-full bg-primary/40 transition-all duration-200" style="width: 0%;">
+                    </div>
                   </div>
                 </div>
 
@@ -1782,13 +1845,17 @@
               <div class="lg:col-span-5 flex flex-col gap-6 lg:border-l lg:border-outline-variant/30 lg:pl-8">
                 <!-- Caja de Vista Previa -->
                 <div class="flex-1 flex flex-col">
-                  <span class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-3 ml-1">Previsualización en Vivo</span>
-                  
-                  <div class="preview-container flex-1 rounded-[24px] bg-surface-container border border-slate-200/50 p-6 flex flex-col justify-center items-center relative overflow-hidden min-h-[200px]">
+                  <span
+                    class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-3 ml-1">Previsualización
+                    en Vivo</span>
+
+                  <div
+                    class="preview-container flex-1 rounded-[24px] bg-surface-container border border-slate-200/50 p-6 flex flex-col justify-center items-center relative overflow-hidden min-h-[200px]">
                     <div class="absolute inset-0 bg-grid-pattern opacity-5"></div>
-                    
+
                     <!-- Tarjeta de Notificación Previsualizada -->
-                    <div id="notifPreviewCard" class="liveFeedItem good w-full shadow-lg border border-outline-variant/20 max-w-md transform transition-all duration-300 hover:scale-[1.02]">
+                    <div id="notifPreviewCard"
+                      class="liveFeedItem good w-full shadow-lg border border-outline-variant/20 max-w-md transform transition-all duration-300 hover:scale-[1.02]">
                       <div class="liveFeedHead">
                         <div class="flex items-center gap-2">
                           <span class="material-symbols-rounded text-lg notif-icon-preview">info</span>
@@ -1796,10 +1863,13 @@
                         </div>
                         <div class="liveFeedTime">Ahora</div>
                       </div>
-                      <div class="liveFeedBody text-[13px] font-medium leading-relaxed mt-2" id="lblPreviewBody">Escribe un mensaje para ver la previsualización interactiva aquí...</div>
-                      <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px] font-bold text-slate-400">
+                      <div class="liveFeedBody text-[13px] font-medium leading-relaxed mt-2" id="lblPreviewBody">Escribe
+                        un mensaje para ver la previsualización interactiva aquí...</div>
+                      <div
+                        class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px] font-bold text-slate-400">
                         <span id="lblPreviewScope" class="uppercase tracking-wider">Para: Toda la Red</span>
-                        <span class="flex items-center gap-1"><span class="material-symbols-rounded text-[12px]">verified</span> Oficial</span>
+                        <span class="flex items-center gap-1"><span
+                            class="material-symbols-rounded text-[12px]">verified</span> Oficial</span>
                       </div>
                     </div>
                   </div>
@@ -1807,8 +1877,9 @@
 
                 <!-- Configuración Extra -->
                 <div class="bg-surface-container/50 rounded-2xl p-5 border border-slate-200/50 flex flex-col gap-4">
-                  <span class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block ml-1">Ajustes & Integraciones</span>
-                  
+                  <span class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block ml-1">Ajustes &
+                    Integraciones</span>
+
                   <!-- Switch de Sonido -->
                   <div class="flex items-center justify-between py-2 border-b border-slate-100">
                     <div class="flex items-center gap-3">
@@ -1834,10 +1905,12 @@
                       </div>
                       <div>
                         <div class="text-[13px] font-bold text-primary">Notificaciones Push</div>
-                        <div class="text-[10px] font-medium text-slate-400" id="lblPushStatus">Alertas nativas de Windows</div>
+                        <div class="text-[10px] font-medium text-slate-400" id="lblPushStatus">Alertas nativas de
+                          Windows</div>
                       </div>
                     </div>
-                    <button type="button" id="btnRequestPushPermission" class="miniBtn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border-none cursor-pointer bg-primary/10 text-primary hover:bg-primary/20 transition-all">
+                    <button type="button" id="btnRequestPushPermission"
+                      class="miniBtn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border-none cursor-pointer bg-primary/10 text-primary hover:bg-primary/20 transition-all">
                       <span class="material-symbols-rounded text-[14px]">sensors</span> Activar
                     </button>
                   </div>
@@ -1938,13 +2011,16 @@
                 style="display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 12px; width: 100%;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <span class="material-symbols-rounded" style="color: #22c55e; font-size: 20px;">check_circle</span>
-                  <h3 style="font-size: 13px; font-weight: 800; color: var(--md-sys-color-on-surface); margin: 0; font-family: inherit;">
+                  <h3
+                    style="font-size: 13px; font-weight: 800; color: var(--md-sys-color-on-surface); margin: 0; font-family: inherit;">
                     Unidades que ya capturaron</h3>
                 </div>
                 <!-- Nomenclatura dinámica para Pedido de Biológico (Solo Existencias) - Enseguida del título -->
                 <div id="legendBioSinPedido" style="display: none; align-items: center; gap: 6px; margin-left: 4px;">
                   <span class="material-symbols-rounded" style="color: #3b82f6; font-size: 20px;">check_circle</span>
-                  <span style="font-size: 13px; font-weight: 800; color: var(--md-sys-color-on-surface); font-family: inherit;">Sin pedido de
+                  <span
+                    style="font-size: 13px; font-weight: 800; color: var(--md-sys-color-on-surface); font-family: inherit;">Sin
+                    pedido de
                     biológico</span>
                 </div>
                 <!-- Nomenclatura dinámica para Existencias con Biológicos en Cero -->
@@ -1981,7 +2057,8 @@
               style="border-left-color: var(--warn); display: flex; justify-content: space-between; align-items: center;">
               <div class="sectionTitleWrap" style="display: flex; align-items: center; gap: 8px;">
                 <span class="material-symbols-rounded" style="color: var(--warn); font-size: 20px;">pending</span>
-                <h3 style="font-size: 13px; font-weight: 800; color: var(--md-sys-color-on-surface); margin: 0; font-family: inherit;">
+                <h3
+                  style="font-size: 13px; font-weight: 800; color: var(--md-sys-color-on-surface); margin: 0; font-family: inherit;">
                   Faltantes por capturar</h3>
               </div>
               <button onclick="generateWhatsAppTemplate()" title="Copiar plantilla para WhatsApp"
@@ -2281,7 +2358,8 @@
         </div>
 
         <div style="max-width: 1100px; margin: 0 auto;">
-          <div class="loteEntryRow bg-surface-container/50 p-6 rounded-[28px] border border-slate-200/60 shadow-sm mt-6">
+          <div
+            class="loteEntryRow bg-surface-container/50 p-6 rounded-[28px] border border-slate-200/60 shadow-sm mt-6">
             <!-- Fila 1: Biológico -->
             <div class="mb-5">
               <label
@@ -2790,7 +2868,8 @@
             </div>
 
             <div class="overflow-x-auto min-h-[400px]">
-              <table class="w-full text-left border-collapse" id="usersTableDesktop" style="table-layout: fixed; width: 100%; min-width: 850px;">
+              <table class="w-full text-left border-collapse" id="usersTableDesktop"
+                style="table-layout: fixed; width: 100%; min-width: 850px;">
                 <thead>
                   <tr class="bg-primary/5">
                     <th
@@ -3071,7 +3150,8 @@
               <span class="material-symbols-rounded premium-anim-bar" style="font-size: 24px;">stacked_bar_chart</span>
             </div>
             <div>
-              <h2 style="margin: 0; font-size: 20px; font-weight: 900; color: var(--md-sys-color-on-surface); letter-spacing: -0.03em;">
+              <h2
+                style="margin: 0; font-size: 20px; font-weight: 900; color: var(--md-sys-color-on-surface); letter-spacing: -0.03em;">
                 Indicadores vacunas 2026</h2>
               <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
                 <span id="rdaScopeLabel"
@@ -3152,7 +3232,8 @@
         </div>
 
         <!-- ═══════════ CONTENT ═══════════ -->
-        <div id="rdaDashboardContent" style="flex: 1; overflow-y: auto; padding: 32px; background: var(--md-sys-color-surface-container);">
+        <div id="rdaDashboardContent"
+          style="flex: 1; overflow-y: auto; padding: 32px; background: var(--md-sys-color-surface-container);">
 
           <!-- KPI GRID -->
           <div id="rdaKpiGrid"
@@ -3165,9 +3246,12 @@
               <div
                 style="font-size: 12px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">
                 Menores de 1 Año</div>
-              <div id="kpiMenor1" style="font-size: 40px; font-weight: 900; color: var(--md-sys-color-on-surface); letter-spacing: -0.04em;">
+              <div id="kpiMenor1"
+                style="font-size: 40px; font-weight: 900; color: var(--md-sys-color-on-surface); letter-spacing: -0.04em;">
                 0%</div>
-              <div id="kpiMenor1Dosis" style="font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface-variant); margin-top: 8px;">—
+              <div id="kpiMenor1Dosis"
+                style="font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface-variant); margin-top: 8px;">
+                —
                 aplicaciones</div>
             </div>
 
@@ -3179,9 +3263,13 @@
               <div
                 style="font-size: 12px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">
                 Niños de 1 Año</div>
-              <div id="kpi1Ano" style="font-size: 40px; font-weight: 900; color: var(--md-sys-color-on-surface); letter-spacing: -0.04em;">0%
+              <div id="kpi1Ano"
+                style="font-size: 40px; font-weight: 900; color: var(--md-sys-color-on-surface); letter-spacing: -0.04em;">
+                0%
               </div>
-              <div id="kpi1AnoDosis" style="font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface-variant); margin-top: 8px;">—
+              <div id="kpi1AnoDosis"
+                style="font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface-variant); margin-top: 8px;">
+                —
                 aplicaciones</div>
             </div>
 
@@ -3193,9 +3281,12 @@
               <div
                 style="font-size: 12px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">
                 Niños de 4 Años</div>
-              <div id="kpi4Anos" style="font-size: 40px; font-weight: 900; color: var(--md-sys-color-on-surface); letter-spacing: -0.04em;">
+              <div id="kpi4Anos"
+                style="font-size: 40px; font-weight: 900; color: var(--md-sys-color-on-surface); letter-spacing: -0.04em;">
                 0%</div>
-              <div id="kpi4AnosDosis" style="font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface-variant); margin-top: 8px;">—
+              <div id="kpi4AnosDosis"
+                style="font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface-variant); margin-top: 8px;">
+                —
                 aplicaciones</div>
             </div>
 
@@ -3208,8 +3299,11 @@
                 style="font-size: 12px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">
                 Meta Poblacional</div>
               <div id="kpiPoblacion"
-                style="font-size: 40px; font-weight: 900; color: var(--md-sys-color-on-surface); letter-spacing: -0.04em;">0</div>
-              <div id="kpiUnidades" style="font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface-variant); margin-top: 8px;">—
+                style="font-size: 40px; font-weight: 900; color: var(--md-sys-color-on-surface); letter-spacing: -0.04em;">
+                0</div>
+              <div id="kpiUnidades"
+                style="font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface-variant); margin-top: 8px;">
+                —
                 unidades</div>
             </div>
           </div>
@@ -3220,9 +3314,11 @@
             <!-- Doughnut Analysis -->
             <div id="chartDoughnutContainer"
               style="position: relative; background: var(--md-sys-color-surface); border-radius: 24px; padding: 24px; border: 1px solid var(--md-sys-color-outline-variant); display: flex; flex-direction: column;">
-              
+
               <!-- Focus Expand Button -->
-              <button type="button" class="btn-focus-expand" style="position: absolute !important; top: 16px !important; right: 16px !important; z-index: 50;" onclick="toggleFocusMode('chartDoughnutContainer')" title="Expandir">
+              <button type="button" class="btn-focus-expand"
+                style="position: absolute !important; top: 16px !important; right: 16px !important; z-index: 50;"
+                onclick="toggleFocusMode('chartDoughnutContainer')" title="Expandir">
                 <span class="material-symbols-rounded" style="font-size: 18px;">open_in_full</span>
               </button>
 
@@ -3232,8 +3328,10 @@
               <div style="flex: 1; min-height: 280px; position: relative;">
                 <div id="chartDoughnut" style="width: 100%; height: 100%;"></div>
               </div>
-              <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--md-sys-color-surface-container);">
-                <p style="margin: 0; font-size: 12px; color: var(--md-sys-color-on-surface-variant); line-height: 1.6;">Proporción relativa del
+              <div
+                style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--md-sys-color-surface-container);">
+                <p style="margin: 0; font-size: 12px; color: var(--md-sys-color-on-surface-variant); line-height: 1.6;">
+                  Proporción relativa del
                   cumplimiento de esquemas básicos por grupo de edad.</p>
               </div>
             </div>
@@ -3241,9 +3339,11 @@
             <!-- Horizontal Histogram (Detailed Analysis) -->
             <div id="chartBarTotalContainer" class="group relative overflow-hidden"
               style="display: none; background: var(--md-sys-color-surface); border-radius: 24px; padding: 24px; border: 1px solid var(--md-sys-color-outline-variant); flex-direction: column;">
-              
+
               <!-- Focus Expand Button -->
-              <button type="button" class="btn-focus-expand" style="position: absolute !important; top: 16px !important; right: 16px !important; z-index: 50;" onclick="toggleFocusMode('chartBarTotalContainer')" title="Expandir">
+              <button type="button" class="btn-focus-expand"
+                style="position: absolute !important; top: 16px !important; right: 16px !important; z-index: 50;"
+                onclick="toggleFocusMode('chartBarTotalContainer')" title="Expandir">
                 <span class="material-symbols-rounded" style="font-size: 18px;">open_in_full</span>
               </button>
 
@@ -3259,9 +3359,11 @@
 
             <div id="chartBarContainer" class="group relative overflow-hidden"
               style="background: var(--md-sys-color-surface); border-radius: 24px; padding: 24px; border: 1px solid var(--md-sys-color-outline-variant); display: flex; flex-direction: column;">
-              
+
               <!-- Focus Expand Button -->
-              <button type="button" class="btn-focus-expand" style="position: absolute !important; top: 16px !important; right: 16px !important; z-index: 50;" onclick="toggleFocusMode('chartBarContainer')" title="Expandir">
+              <button type="button" class="btn-focus-expand"
+                style="position: absolute !important; top: 16px !important; right: 16px !important; z-index: 50;"
+                onclick="toggleFocusMode('chartBarContainer')" title="Expandir">
                 <span class="material-symbols-rounded" style="font-size: 18px;">open_in_full</span>
               </button>
 
@@ -3281,7 +3383,8 @@
             style="background: var(--md-sys-color-surface); border-radius: 24px; border: 1px solid var(--md-sys-color-outline-variant); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
             <div
               style="padding: 24px 32px; background: var(--md-sys-color-surface); border-bottom: 1px solid var(--md-sys-color-surface-container); display: flex; align-items: center; justify-content: space-between;">
-              <h3 style="margin: 0; font-size: 16px; font-weight: 900; color: var(--md-sys-color-on-surface);">Detalle por Unidad Médica</h3>
+              <h3 style="margin: 0; font-size: 16px; font-weight: 900; color: var(--md-sys-color-on-surface);">Detalle
+                por Unidad Médica</h3>
               <span id="rdaTableCount"
                 style="font-size: 12px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); background: var(--md-sys-color-surface-container); padding: 6px 14px; border-radius: 10px; border: 1px solid var(--md-sys-color-outline-variant);">0
                 unidades</span>
@@ -3320,7 +3423,8 @@
                 </thead>
                 <tbody id="rdaDetailTbody">
                   <tr>
-                    <td colspan="7" style="padding: 80px; text-align: center; color: var(--md-sys-color-on-surface-variant); font-weight: 600;">
+                    <td colspan="7"
+                      style="padding: 80px; text-align: center; color: var(--md-sys-color-on-surface-variant); font-weight: 600;">
                       Cargando análisis de datos...</td>
                   </tr>
                 </tbody>
@@ -3346,7 +3450,8 @@
                 src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/Seseq_vertical_2025.png"
                 alt="Seseq Logo" style="height: 60px;">
               <div>
-                <h1 style="margin: 0; font-size: 32px; font-weight: 900; color: var(--md-sys-color-on-surface); letter-spacing: -0.03em;">
+                <h1
+                  style="margin: 0; font-size: 32px; font-weight: 900; color: var(--md-sys-color-on-surface); letter-spacing: -0.03em;">
                   Indicadores RDA 2026</h1>
                 <p id="pdfEsquemaMuni"
                   style="margin: 4px 0 0 0; font-size: 14px; font-weight: 700; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.1em;">
@@ -3358,7 +3463,8 @@
               <div
                 style="font-size: 11px; font-weight: 900; color: #0d9488; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">
                 Avance al Cierre</div>
-              <div id="pdfAvanceCierre" style="font-size: 20px; font-weight: 900; color: var(--md-sys-color-on-surface);"></div>
+              <div id="pdfAvanceCierre"
+                style="font-size: 20px; font-weight: 900; color: var(--md-sys-color-on-surface);"></div>
             </div>
           </div>
 
@@ -3898,7 +4004,8 @@
             </div>
             <!-- Cloudflare Turnstile (Compact Premium Layout) -->
             <div class="flex justify-center w-full mt-4">
-              <div id="forgotTurnstile" class="cf-turnstile" data-sitekey="0x4AAAAAADnWmqeYIwiqEuyL" data-theme="light" data-size="compact"></div>
+              <div id="forgotTurnstile" class="cf-turnstile" data-sitekey="0x4AAAAAADnWmqeYIwiqEuyL" data-theme="light"
+                data-size="compact"></div>
             </div>
           </div>
         </div>
@@ -4014,9 +4121,11 @@
       </div>
 
       <div style="width: 100%;">
-        <div id="uploadProgressTitle" style="font-weight: 900; font-size: 20px; color: var(--md-sys-color-on-surface); margin-bottom: 8px;">
+        <div id="uploadProgressTitle"
+          style="font-weight: 900; font-size: 20px; color: var(--md-sys-color-on-surface); margin-bottom: 8px;">
           Subiendo a Servidor Central...</div>
-        <div id="uploadProgressSub" style="color: var(--md-sys-color-on-surface-variant); font-size: 13px; line-height: 1.5; margin-bottom: 20px;">
+        <div id="uploadProgressSub"
+          style="color: var(--md-sys-color-on-surface-variant); font-size: 13px; line-height: 1.5; margin-bottom: 20px;">
           Estableciendo conexión segura y transfiriendo paquetes de datos.</div>
 
         <!-- Bar/Progress -->
@@ -4043,24 +4152,29 @@
 
       <!-- Premium Header -->
       <div style="padding: 28px 28px 16px 28px; background: var(--md-sys-color-surface);">
-        <div style="color: #0ea5e9; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+        <div
+          style="color: #0ea5e9; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
           <span class="material-symbols-rounded" style="font-size: 16px;">download</span>
           Exportación de datos
         </div>
-        <h2 id="exportModalTitle" style="margin: 0; font-size: 20px; font-weight: 850; color: var(--md-sys-color-on-surface); letter-spacing: -0.01em;">
+        <h2 id="exportModalTitle"
+          style="margin: 0; font-size: 20px; font-weight: 850; color: var(--md-sys-color-on-surface); letter-spacing: -0.01em;">
           Exportar Existencia de Biológicos
         </h2>
-        <p style="margin: 4px 0 0 0; color: var(--md-sys-color-on-surface-variant); font-size: 13px; line-height: 1.4; font-weight: 500;">
+        <p
+          style="margin: 4px 0 0 0; color: var(--md-sys-color-on-surface-variant); font-size: 13px; line-height: 1.4; font-weight: 500;">
           Configura los parámetros del reporte a continuación.
         </p>
       </div>
 
       <!-- Scrollable Body -->
-      <div style="padding: 12px 28px 24px 28px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 20px; background: var(--md-sys-color-surface);">
+      <div
+        style="padding: 12px 28px 24px 28px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 20px; background: var(--md-sys-color-surface);">
 
         <!-- Tipo de Reporte -->
         <div style="display: flex; flex-direction: column; gap: 6px;">
-          <label style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.05em;">
+          <label
+            style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.05em;">
             Tipo de reporte
           </label>
           <div style="position: relative;">
@@ -4075,7 +4189,8 @@
 
         <!-- Fechas (Mes / exact / range) -->
         <div id="exportFechaMonthBox" style="display:none; flex-direction: column; gap: 6px;">
-          <label style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.05em;">
+          <label
+            style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.05em;">
             Mes a exportar
           </label>
           <div style="display: flex; gap: 10px;">
@@ -4107,19 +4222,23 @@
           </div>
         </div>
 
-        <div id="exportBioExactDateBox" style="display: none; background: var(--md-sys-color-surface-container); border: 1px solid var(--md-sys-color-outline-variant); border-radius: 14px; padding: 14px; flex-direction: column; gap: 8px;">
-          <label style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface); text-transform: uppercase; letter-spacing: 0.05em;">
+        <div id="exportBioExactDateBox"
+          style="display: none; background: var(--md-sys-color-surface-container); border: 1px solid var(--md-sys-color-outline-variant); border-radius: 14px; padding: 14px; flex-direction: column; gap: 8px;">
+          <label
+            style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface); text-transform: uppercase; letter-spacing: 0.05em;">
             Corte específico
           </label>
           <div style="position: relative;">
             <select id="exportBioExactDate"
               style="width: 100%; height: 44px; appearance: none; background: var(--md-sys-color-surface); border: 1px solid var(--md-sys-color-outline-variant); border-radius: 10px; padding: 0 36px 0 14px; font-size: 14px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer; outline: none;"></select>
           </div>
-          <p style="margin: 0; font-size: 11px; color: var(--md-sys-color-on-surface-variant); font-weight: 600;">Se detectaron múltiples cortes este mes. Elige uno exacto.</p>
+          <p style="margin: 0; font-size: 11px; color: var(--md-sys-color-on-surface-variant); font-weight: 600;">Se
+            detectaron múltiples cortes este mes. Elige uno exacto.</p>
         </div>
 
         <div id="exportFechaSingleBox" style="display:none; flex-direction: column; gap: 6px;">
-          <label style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.05em;">
+          <label
+            style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.05em;">
             Fecha a exportar
           </label>
           <div style="position: relative;">
@@ -4131,7 +4250,8 @@
         <div id="exportFechaRangeBox" style="display:block;">
           <div style="display: flex; gap: 12px;">
             <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
-              <label style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.05em;">
+              <label
+                style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.05em;">
                 Inicio
               </label>
               <div style="position: relative;">
@@ -4140,7 +4260,8 @@
               </div>
             </div>
             <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
-              <label style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.05em;">
+              <label
+                style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.05em;">
                 Fin
               </label>
               <div style="position: relative;">
@@ -4151,14 +4272,17 @@
           </div>
         </div>
 
-        <p id="exportFechaHint" style="margin: -4px 0 0 0; font-size: 12px; font-weight: 600; color: var(--md-sys-color-on-surface-variant);">Reporte de existencia por rango de fechas.</p>
+        <p id="exportFechaHint"
+          style="margin: -4px 0 0 0; font-size: 12px; font-weight: 600; color: var(--md-sys-color-on-surface-variant);">
+          Reporte de existencia por rango de fechas.</p>
 
         <div style="height: 1px; background: var(--md-sys-color-surface-container); margin: 4px 0;"></div>
 
         <!-- Municipios -->
         <div id="exportMunicipiosBox" style="display:block; display: flex; flex-direction: column; gap: 12px;">
           <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-            <label style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface); text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">
+            <label
+              style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface); text-transform: uppercase; letter-spacing: 0.05em; margin: 0;">
               Municipios a exportar
             </label>
             <div style="display: flex; gap: 6px;">
@@ -4168,7 +4292,8 @@
               </button>
               <button type="button" id="btnExportClearAll"
                 style="display: flex; align-items: center; gap: 4px; padding: 6px 12px; background: var(--md-sys-color-surface-container); border-radius: 8px; font-size: 10px; font-weight: 800; color: #334155; cursor: pointer; transition: all 0.2s; border: 1px solid var(--md-sys-color-outline-variant);">
-                <span class="material-symbols-rounded" style="font-size: 14px; color: var(--md-sys-color-on-surface-variant);">deselect</span> NINGUNO
+                <span class="material-symbols-rounded"
+                  style="font-size: 14px; color: var(--md-sys-color-on-surface-variant);">deselect</span> NINGUNO
               </button>
             </div>
           </div>
@@ -4264,11 +4389,13 @@
         </div>
         <button class="btn-modal-close-md3" id="btnLiveViewClose" title="Cerrar vista"
           style="background: var(--md-sys-color-surface-container); border-radius: 16px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; transition: all 0.2s ease;">
-          <span class="material-symbols-rounded" style="color: var(--md-sys-color-on-surface); font-size: 28px;">close</span>
+          <span class="material-symbols-rounded"
+            style="color: var(--md-sys-color-on-surface); font-size: 28px;">close</span>
         </button>
       </div>
 
-      <div class="modalBody" style="flex: 1; overflow-y: auto; padding: 24px 32px; background: var(--md-sys-color-surface-container);">
+      <div class="modalBody"
+        style="flex: 1; overflow-y: auto; padding: 24px 32px; background: var(--md-sys-color-surface-container);">
 
         <!-- Summary Metrics & Resumen Visual Compacto -->
         <div
@@ -4276,32 +4403,40 @@
 
           <div
             style="background: var(--md-sys-color-surface); border-radius: 24px; padding: 20px; border: 1px solid var(--md-sys-color-outline-variant); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 20px;">
-            <div id="liveChartLeftContainer" class="chart-scale-wrapper" style="width: 100px; height: 100px; flex-shrink: 0; position: relative;">
+            <div id="liveChartLeftContainer" class="chart-scale-wrapper"
+              style="width: 100px; height: 100px; flex-shrink: 0; position: relative;">
               <div id="liveChartLeft" style="width: 100%; height: 100%;"></div>
             </div>
             <div style="flex: 1;">
               <div id="liveChartLeftKicker"
                 style="font-size: 10px; font-weight: 900; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">
                 Salud del Inventario</div>
-              <div id="liveChartLeftTitle" style="font-size: 18px; font-weight: 900; color: var(--md-sys-color-on-surface);">Estado Semafórico
+              <div id="liveChartLeftTitle"
+                style="font-size: 18px; font-weight: 900; color: var(--md-sys-color-on-surface);">Estado Semafórico
               </div>
-              <div id="liveChartLeftDesc" style="font-size: 12px; color: var(--md-sys-color-on-surface-variant); margin-top: 2px;">Distribución por
+              <div id="liveChartLeftDesc"
+                style="font-size: 12px; color: var(--md-sys-color-on-surface-variant); margin-top: 2px;">Distribución
+                por
                 vigencia</div>
             </div>
           </div>
 
           <div
             style="background: var(--md-sys-color-surface); border-radius: 24px; padding: 20px; border: 1px solid var(--md-sys-color-outline-variant); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 20px;">
-            <div id="liveChartRightContainer" class="chart-scale-wrapper" style="width: 140px; height: 100px; flex-shrink: 0; position: relative;">
+            <div id="liveChartRightContainer" class="chart-scale-wrapper"
+              style="width: 140px; height: 100px; flex-shrink: 0; position: relative;">
               <div id="liveChartRight" style="width: 100%; height: 100%;"></div>
             </div>
             <div style="flex: 1;">
               <div id="liveChartRightKicker"
                 style="font-size: 10px; font-weight: 900; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">
                 Riesgo de Caducidad</div>
-              <div id="liveChartRightTitle" style="font-size: 18px; font-weight: 900; color: var(--md-sys-color-on-surface);">Próximos
+              <div id="liveChartRightTitle"
+                style="font-size: 18px; font-weight: 900; color: var(--md-sys-color-on-surface);">Próximos
                 Vencimientos</div>
-              <div id="liveChartRightDesc" style="font-size: 12px; color: var(--md-sys-color-on-surface-variant); margin-top: 2px;">Análisis de tiempo
+              <div id="liveChartRightDesc"
+                style="font-size: 12px; color: var(--md-sys-color-on-surface-variant); margin-top: 2px;">Análisis de
+                tiempo
               </div>
             </div>
           </div>
@@ -4316,7 +4451,8 @@
           style="background: var(--md-sys-color-surface); border-radius: 24px; overflow: hidden; border: 1px solid var(--md-sys-color-outline-variant); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);">
           <div
             style="padding: 16px 24px; background: var(--md-sys-color-surface); border-bottom: 1px solid var(--md-sys-color-surface-container); display: flex; align-items: center; justify-content: space-between;">
-            <div id="liveViewTableTitle" style="font-size: 14px; font-weight: 900; color: var(--md-sys-color-on-surface);">Detalle de
+            <div id="liveViewTableTitle"
+              style="font-size: 14px; font-weight: 900; color: var(--md-sys-color-on-surface);">Detalle de
               Existencia Actual</div>
             <div
               style="font-size: 11px; font-weight: 700; color: var(--md-sys-color-on-surface-variant); background: var(--md-sys-color-surface-container); padding: 4px 12px; border-radius: 8px;">
@@ -4325,7 +4461,8 @@
 
           <table id="liveViewTable" style="width: 100%; border-collapse: collapse; margin: 0;">
             <thead>
-              <tr style="background: var(--md-sys-color-surface-container); border-bottom: 1px solid var(--md-sys-color-surface-container);">
+              <tr
+                style="background: var(--md-sys-color-surface-container); border-bottom: 1px solid var(--md-sys-color-surface-container);">
                 <th
                   style="padding: 16px 24px; text-align: left; font-size: 11px; font-weight: 900; color: var(--md-sys-color-on-surface); text-transform: uppercase; letter-spacing: 0.05em;">
                   Biológico</th>
@@ -4348,7 +4485,9 @@
             </thead>
             <tbody id="liveViewTbody">
               <tr>
-                <td colspan="6" style="padding: 60px; text-align:center; color: var(--md-sys-color-on-surface-variant); font-weight: 600;">Selecciona
+                <td colspan="6"
+                  style="padding: 60px; text-align:center; color: var(--md-sys-color-on-surface-variant); font-weight: 600;">
+                  Selecciona
                   una unidad para ver detalles</td>
               </tr>
             </tbody>
@@ -4606,16 +4745,24 @@
   <!-- ==================================================================================== -->
 
   <!-- PREMIUM DELETE MODAL (LOTES) -->
-  <div id="premiumDeleteModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 999999; align-items: center; justify-content: center; padding: 20px;">
+  <div id="premiumDeleteModal"
+    style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 999999; align-items: center; justify-content: center; padding: 20px;">
     <div class="premium-delete-card">
       <div class="modal-icon-warning">
         <span class="material-symbols-rounded">warning</span>
       </div>
-      <h3 style="margin:0; font-size: 20px; font-weight: 900; color: var(--md-sys-color-on-surface); text-align: center;">Confirmar Eliminación</h3>
-      <p id="deleteModalMsg" style="text-align: center; font-size: 14px; color: var(--md-sys-color-on-surface); margin: 16px 0 24px; line-height: 1.5;"></p>
+      <h3
+        style="margin:0; font-size: 20px; font-weight: 900; color: var(--md-sys-color-on-surface); text-align: center;">
+        Confirmar Eliminación</h3>
+      <p id="deleteModalMsg"
+        style="text-align: center; font-size: 14px; color: var(--md-sys-color-on-surface); margin: 16px 0 24px; line-height: 1.5;">
+      </p>
       <div style="display: flex; gap: 12px; justify-content: center;">
-        <button class="btn-ghost" onclick="closeDeleteModal()" style="padding: 12px 24px; border-radius: 12px; font-weight: 800; color: var(--md-sys-color-on-surface); background: var(--md-sys-color-surface-container); border: none; cursor: pointer;">Cancelar</button>
-        <button class="btn-danger" id="btnConfirmDeleteLote" onclick="confirmDeleteLote()" style="padding: 12px 24px; border-radius: 12px; font-weight: 800; color: white; background: #dc2626; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);">Eliminar Lote</button>
+        <button class="btn-ghost" onclick="closeDeleteModal()"
+          style="padding: 12px 24px; border-radius: 12px; font-weight: 800; color: var(--md-sys-color-on-surface); background: var(--md-sys-color-surface-container); border: none; cursor: pointer;">Cancelar</button>
+        <button class="btn-danger" id="btnConfirmDeleteLote" onclick="confirmDeleteLote()"
+          style="padding: 12px 24px; border-radius: 12px; font-weight: 800; color: white; background: #dc2626; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);">Eliminar
+          Lote</button>
       </div>
     </div>
   </div>
@@ -4644,7 +4791,7 @@
       -webkit-backdrop-filter: blur(20px) saturate(180%);
       border: 1px solid rgba(255, 255, 255, 0.15);
       border-top: 1px solid rgba(255, 255, 255, 0.3);
-      box-shadow: 
+      box-shadow:
         0 8px 32px rgba(0, 0, 0, 0.2),
         inset 0 0 16px rgba(255, 255, 255, 0.05);
       color: #fff;
@@ -4656,25 +4803,30 @@
       transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
       outline: none;
     }
+
     html.dark .feedback-fab {
       background: rgba(255, 255, 255, 0.15);
       color: #fff;
       border-top: 1px solid rgba(255, 255, 255, 0.4);
     }
+
     .feedback-fab:hover {
       transform: translateY(-4px);
-      box-shadow: 
+      box-shadow:
         0 12px 40px rgba(0, 0, 0, 0.3),
         inset 0 0 20px rgba(255, 255, 255, 0.1);
       background: rgba(15, 23, 42, 0.8);
     }
+
     html.dark .feedback-fab:hover {
       background: rgba(255, 255, 255, 0.25);
     }
+
     .feedback-fab .material-symbols-rounded {
       font-size: 26px;
       transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
+
     .feedback-fab:hover .material-symbols-rounded {
       transform: scale(1.1) rotate(-5deg);
     }
@@ -4687,15 +4839,18 @@
       align-items: flex-end;
       justify-content: flex-end;
       padding: 24px;
-      padding-bottom: 100px; /* Space for the FAB */
+      padding-bottom: 100px;
+      /* Space for the FAB */
       background: transparent;
       opacity: 0;
       visibility: hidden;
       transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
+
     html.dark .feedback-modal-overlay {
       background: transparent;
     }
+
     .feedback-modal-overlay.show {
       opacity: 1;
       visibility: visible;
@@ -4714,9 +4869,11 @@
       transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
       overflow: hidden;
     }
+
     html.dark .feedback-modal-card {
       box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.5);
     }
+
     .feedback-modal-overlay.show .feedback-modal-card {
       transform: scale(1) translateY(0) translateX(0);
       opacity: 1;
@@ -4730,6 +4887,7 @@
       gap: 16px;
       position: relative;
     }
+
     .feedback-modal-header::before {
       content: '';
       position: absolute;
@@ -4749,6 +4907,7 @@
       justify-content: center;
       box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
     }
+
     .feedback-modal-icon .material-symbols-rounded {
       font-size: 24px;
     }
@@ -4760,6 +4919,7 @@
       margin: 0;
       letter-spacing: -0.02em;
     }
+
     .feedback-modal-subtitle {
       font-size: 12px;
       font-weight: 600;
@@ -4799,6 +4959,7 @@
       transition: all 0.3s ease;
       border: 1px solid var(--md-sys-color-outline-variant);
     }
+
     .feedback-input-wrapper:focus-within {
       background: var(--md-sys-color-surface);
       border-color: rgba(14, 165, 233, 0.4);
@@ -4813,6 +4974,7 @@
       pointer-events: none;
       transition: all 0.3s ease;
     }
+
     .feedback-input-wrapper:focus-within .feedback-input-icon {
       opacity: 1;
       color: #0ea5e9;
@@ -4832,6 +4994,7 @@
       outline: none;
       cursor: pointer;
     }
+
     .feedback-select-arrow {
       position: absolute;
       right: 16px;
@@ -4864,6 +5027,7 @@
       background: rgba(0, 0, 0, 0.02);
       border-top: 1px solid rgba(0, 0, 0, 0.05);
     }
+
     html.dark .feedback-actions {
       background: rgba(255, 255, 255, 0.02);
       border-top: 1px solid rgba(255, 255, 255, 0.05);
@@ -4883,10 +5047,12 @@
       cursor: pointer;
       transition: all 0.2s ease;
     }
+
     .feedback-btn-cancel:hover {
       background: rgba(0, 0, 0, 0.05);
       color: var(--md-sys-color-primary);
     }
+
     html.dark .feedback-btn-cancel:hover {
       background: rgba(255, 255, 255, 0.1);
     }
@@ -4906,15 +5072,18 @@
       box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
       transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
+
     html.dark .feedback-btn-submit {
       background: linear-gradient(135deg, var(--md-sys-color-on-surface), #94a3b8);
       color: var(--md-sys-color-surface);
       box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
     }
+
     .feedback-btn-submit:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
     }
+
     html.dark .feedback-btn-submit:hover {
       box-shadow: 0 8px 24px rgba(255, 255, 255, 0.2);
     }
@@ -4937,25 +5106,37 @@
       </div>
 
       <!-- WhatsApp Direct Support -->
-      <a id="whatsappSupportLink" href="https://wa.me/524425507146?text=Hola%20Carlos,%20necesito%20soporte%20con%20la%20plataforma%20SIREVAQ..." 
-         target="_blank" 
-         class="whatsapp-support-card" 
-         style="text-decoration: none; display: flex !important; align-items: center !important; gap: 14px !important; margin: 16px 24px 0 24px !important; padding: 14px 18px !important; border-radius: 20px !important; border: 1px solid rgba(37, 211, 102, 0.25) !important; background: linear-gradient(135deg, rgba(37, 211, 102, 0.08) 0%, rgba(18, 140, 126, 0.03) 100%) !important; transition: all 0.3s ease !important;">
-        <div class="whatsapp-support-icon" style="width: 40px !important; height: 40px !important; border-radius: 12px !important; background: #25d366 !important; color: #fff !important; display: flex !important; align-items: center !important; justify-content: center !important; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.25) !important; flex-shrink: 0 !important;">
-          <svg viewBox="0 0 24 24" style="width: 22px !important; height: 22px !important; fill: #ffffff !important; display: block !important;"><path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.761.46 3.475 1.332 4.988L2 22l5.176-1.357c1.468.8 3.123 1.22 4.825 1.22 5.506 0 9.988-4.482 9.988-9.988C22 6.482 17.518 2 12.012 2zm3.844 14.241c-.244.688-1.222 1.259-1.688 1.312-.456.052-.907.245-2.909-.589-2.56-1.066-4.212-3.67-4.339-3.839-.127-.17-1.026-1.365-1.026-2.605 0-1.24.646-1.848.874-2.095.228-.248.498-.31.664-.31.166 0 .332.002.477.009.15.007.352-.057.552.428.2.485.684 1.663.743 1.782.059.12.098.258.019.414-.079.156-.119.255-.239.395-.12.14-.252.312-.359.419-.119.119-.244.25-.104.49.14.24.622 1.025 1.332 1.657.917.817 1.693 1.07 1.932 1.189.239.119.38.101.522-.059.143-.16.622-.724.789-.968.167-.244.332-.206.56-.12.228.086 1.448.683 1.7.808.252.125.42.188.481.294.062.106.062.615-.182 1.303z"/></svg>
+      <a id="whatsappSupportLink"
+        href="https://wa.me/524425507146?text=Hola%20Carlos,%20necesito%20soporte%20con%20la%20plataforma%20SIREVAQ..."
+        target="_blank" class="whatsapp-support-card"
+        style="text-decoration: none; display: flex !important; align-items: center !important; gap: 14px !important; margin: 16px 24px 0 24px !important; padding: 14px 18px !important; border-radius: 20px !important; border: 1px solid rgba(37, 211, 102, 0.25) !important; background: linear-gradient(135deg, rgba(37, 211, 102, 0.08) 0%, rgba(18, 140, 126, 0.03) 100%) !important; transition: all 0.3s ease !important;">
+        <div class="whatsapp-support-icon"
+          style="width: 40px !important; height: 40px !important; border-radius: 12px !important; background: #25d366 !important; color: #fff !important; display: flex !important; align-items: center !important; justify-content: center !important; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.25) !important; flex-shrink: 0 !important;">
+          <svg viewBox="0 0 24 24"
+            style="width: 22px !important; height: 22px !important; fill: #ffffff !important; display: block !important;">
+            <path
+              d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.761.46 3.475 1.332 4.988L2 22l5.176-1.357c1.468.8 3.123 1.22 4.825 1.22 5.506 0 9.988-4.482 9.988-9.988C22 6.482 17.518 2 12.012 2zm3.844 14.241c-.244.688-1.222 1.259-1.688 1.312-.456.052-.907.245-2.909-.589-2.56-1.066-4.212-3.67-4.339-3.839-.127-.17-1.026-1.365-1.026-2.605 0-1.24.646-1.848.874-2.095.228-.248.498-.31.664-.31.166 0 .332.002.477.009.15.007.352-.057.552.428.2.485.684 1.663.743 1.782.059.12.098.258.019.414-.079.156-.119.255-.239.395-.12.14-.252.312-.359.419-.119.119-.244.25-.104.49.14.24.622 1.025 1.332 1.657.917.817 1.693 1.07 1.932 1.189.239.119.38.101.522-.059.143-.16.622-.724.789-.968.167-.244.332-.206.56-.12.228.086 1.448.683 1.7.808.252.125.42.188.481.294.062.106.062.615-.182 1.303z" />
+          </svg>
         </div>
-        <div class="whatsapp-support-content" style="flex: 1 !important; text-align: left !important; display: flex !important; flex-direction: column !important; gap: 2px !important;">
-          <div class="whatsapp-support-title" style="font-size: 13.5px !important; font-weight: 800 !important; color: var(--md-sys-color-primary) !important; letter-spacing: -0.01em !important; margin: 0 !important; padding: 0 !important; line-height: 1.2 !important;">Soporte por WhatsApp</div>
-          <div class="whatsapp-support-desc" style="font-size: 11px !important; font-weight: 600 !important; color: var(--md-sys-color-on-surface-variant) !important; opacity: 0.8 !important; margin-top: 3px !important; line-height: 1.3 !important;">¿Tienes una duda o urgencia? Chatea directo con el administrador.</div>
+        <div class="whatsapp-support-content"
+          style="flex: 1 !important; text-align: left !important; display: flex !important; flex-direction: column !important; gap: 2px !important;">
+          <div class="whatsapp-support-title"
+            style="font-size: 13.5px !important; font-weight: 800 !important; color: var(--md-sys-color-primary) !important; letter-spacing: -0.01em !important; margin: 0 !important; padding: 0 !important; line-height: 1.2 !important;">
+            Soporte por WhatsApp</div>
+          <div class="whatsapp-support-desc"
+            style="font-size: 11px !important; font-weight: 600 !important; color: var(--md-sys-color-on-surface-variant) !important; opacity: 0.8 !important; margin-top: 3px !important; line-height: 1.3 !important;">
+            ¿Tienes una duda o urgencia? Chatea directo con el administrador.</div>
         </div>
-        <span class="material-symbols-rounded" style="color: var(--md-sys-color-primary) !important; opacity: 0.5 !important; font-size: 20px !important; flex-shrink: 0 !important;">chevron_right</span>
+        <span class="material-symbols-rounded"
+          style="color: var(--md-sys-color-primary) !important; opacity: 0.5 !important; font-size: 20px !important; flex-shrink: 0 !important;">chevron_right</span>
       </a>
 
       <form id="formFeedback" class="feedback-form">
         <div class="feedback-input-group">
           <label for="feedbackType" class="feedback-form-label">Tipo de mensaje</label>
           <div class="feedback-input-wrapper">
-            <span class="material-symbols-rounded feedback-input-icon" style="top:50%; transform:translateY(-50%);">category</span>
+            <span class="material-symbols-rounded feedback-input-icon"
+              style="top:50%; transform:translateY(-50%);">category</span>
             <select id="feedbackType" required class="feedback-select">
               <option value="Sugerencia">💡 Sugerencia</option>
               <option value="Error">🐛 Reportar Error</option>
@@ -4969,7 +5150,8 @@
           <label for="feedbackMessage" class="feedback-form-label">Mensaje</label>
           <div class="feedback-input-wrapper">
             <span class="material-symbols-rounded feedback-input-icon" style="top:16px;">notes</span>
-            <textarea id="feedbackMessage" required placeholder="Describe tu sugerencia, error o pregunta..." class="feedback-textarea"></textarea>
+            <textarea id="feedbackMessage" required placeholder="Describe tu sugerencia, error o pregunta..."
+              class="feedback-textarea"></textarea>
           </div>
         </div>
       </form>
@@ -4985,5 +5167,5 @@
   </div>
 
 </body>
-</html>
 
+</html>
