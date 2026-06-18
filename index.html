@@ -630,25 +630,23 @@
             </div>
           </div>
 
-          <!-- Opciones de Contraseña (Contenedor Responsivo con Captcha y Recordarme) -->
-          <div id="passwordOptionsContainer" class="flex flex-col sm:flex-row items-center sm:justify-between w-full mt-2 gap-4">
-            
-            <!-- Cloudflare Turnstile (Ubicado en el espacio izquierdo, tamaño compacto y escalado para discreción) -->
-            <div style="transform: scale(0.8); transform-origin: left center; height: 62px; width: 130px; overflow: hidden;" class="flex items-center">
+          <!-- Opciones de Contraseña -->
+          <div id="passwordOptionsContainer" style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 12px; gap: 8px;">
+
+            <!-- Cloudflare Turnstile (izquierda, compacto y discreto) -->
+            <div style="transform: scale(0.75); transform-origin: left center; flex-shrink: 0;">
               <div id="loginTurnstile" class="cf-turnstile" data-sitekey="0x4AAAAAADnWmqeYIwiqEuyL" data-theme="light" data-size="compact"></div>
             </div>
 
-            <!-- Columna derecha: Recordarme y Olvidé mi contraseña alineados verticalmente -->
-            <div class="flex flex-col items-center sm:items-end gap-1 w-full sm:w-auto">
-              <label id="desktopRememberMe" class="flex items-center gap-2 text-slate-600 cursor-pointer text-sm">
+            <!-- Recordarme + Olvidé contraseña (derecha, apilados) -->
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;">
+              <label id="desktopRememberMe" style="display: flex; align-items: center; gap: 6px; color: #64748b; cursor: pointer; font-size: 13px;">
                 <input type="checkbox" style="width: 15px; height: 15px; accent-color: #0ea5e9; cursor: pointer;">
                 Recordarme
               </label>
-
-              <!-- El BOTÓN ORIGINAL -->
               <button type="button" id="btnForgotPassword"
-                class="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-primary/40 hover:text-primary transition-all text-center sm:text-right bg-transparent border-none cursor-pointer mt-1"
-                >
+                style="font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.2em; color: rgba(0,51,102,0.35); background: transparent; border: none; cursor: pointer; padding: 0; transition: color 0.2s;"
+                onmouseover="this.style.color='var(--md-sys-color-primary)'" onmouseout="this.style.color='rgba(0,51,102,0.35)'">
                 ¿Olvidaste tu contraseña?
               </button>
             </div>
