@@ -633,13 +633,8 @@
           <!-- Opciones de Contraseña -->
           <div id="passwordOptionsContainer" style="display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 12px; gap: 8px;">
 
-            <!-- Cloudflare Turnstile (izquierda, compacto y discreto) -->
-            <div style="transform: scale(0.75); transform-origin: left center; flex-shrink: 0;">
-              <div id="loginTurnstile" class="cf-turnstile" data-sitekey="0x4AAAAAADnWmqeYIwiqEuyL" data-theme="light" data-size="compact"></div>
-            </div>
-
-            <!-- Recordarme + Olvidé contraseña (derecha, apilados) -->
-            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;">
+            <!-- Recordarme + Olvidé contraseña (izquierda, apilados) -->
+            <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px; flex-shrink: 0;">
               <label id="desktopRememberMe" style="display: flex; align-items: center; gap: 6px; color: #64748b; cursor: pointer; font-size: 13px;">
                 <input type="checkbox" style="width: 15px; height: 15px; accent-color: #0ea5e9; cursor: pointer;">
                 Recordarme
@@ -649,6 +644,11 @@
                 onmouseover="this.style.color='var(--md-sys-color-primary)'" onmouseout="this.style.color='rgba(0,51,102,0.35)'">
                 ¿Olvidaste tu contraseña?
               </button>
+            </div>
+
+            <!-- Cloudflare Turnstile (derecha, compacto y discreto) -->
+            <div style="transform: scale(0.85); transform-origin: right center; flex-shrink: 0;">
+              <div id="loginTurnstile" class="cf-turnstile" data-sitekey="0x4AAAAAADnWmqeYIwiqEuyL" data-theme="light" data-size="compact"></div>
             </div>
           </div>
 
