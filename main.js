@@ -3743,7 +3743,6 @@ async function requestPasswordResetFlow() {
         // Volvemos a abrir el modal
         openForgotModal();
         if ($("forgotUsuario")) $("forgotUsuario").value = emailOrUser;
-        if (window.turnstile) window.turnstile.reset("#forgotTurnstile");
         return;
       }
       finalEmail = data.email;
