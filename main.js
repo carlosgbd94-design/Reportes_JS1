@@ -8073,6 +8073,9 @@ function getComplianceBadgeTone(pct = 0) {
 }
 
 function todayYmdLocal() {
+  if (typeof STATUS !== "undefined" && STATUS && STATUS.today) {
+    return STATUS.today;
+  }
   return dateToLocalYmd(new Date());
 }
 
@@ -9523,7 +9526,7 @@ async function loadBioForm() {
   }
 
   // --- NUEVO ALGORITMO INTELIGENTE (FRONTEND OVERRIDE) ---
-  const now = new Date();
+  const now = (typeof STATUS !== "undefined" && STATUS && STATUS.today) ? new Date(STATUS.today + "T12:00:00") : new Date();
   const currentWindow = calculateBioIntelligentWindow(now.getFullYear(), now.getMonth());
 
   // Fechas ISO para lógica de validación
@@ -9914,12 +9917,13 @@ async function reloadTodayState(force = false) {
     const todayStr = todayYmdLocal();
     let today = await getTodayReports(todayStr, force);
 
-    const dow = new Date().getDay();
+    const baseDate = (typeof STATUS !== "undefined" && STATUS && STATUS.today) ? new Date(STATUS.today + "T12:00:00") : new Date();
+    const dow = baseDate.getDay();
     let isPrefill = false;
 
     // Persistencia Viernes (edita Jueves)
     if ((!today || !today.sr) && dow === 5) {
-      const dYesterday = new Date();
+      const dYesterday = new Date(baseDate);
       dYesterday.setDate(dYesterday.getDate() - 1);
       const yesterdayStr = dYesterday.toISOString().split('T')[0];
       const yesterday = await getTodayReports(yesterdayStr, true);
