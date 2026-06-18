@@ -11350,3 +11350,87 @@ html.dark .premium-switch:hover .premium-switch-track {
   filter: brightness(1.1);
 }
 
+/* =========================================
+   PREMIUM WHATSAPP SUPPORT CARD
+   ========================================= */
+.whatsapp-support-card {
+  margin: 16px 24px 0 24px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(37, 211, 102, 0.08) 0%, rgba(18, 140, 126, 0.03) 100%);
+  border: 1px solid rgba(37, 211, 102, 0.2);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--md-sys-color-on-surface);
+}
+
+.whatsapp-support-card:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, rgba(37, 211, 102, 0.12) 0%, rgba(18, 140, 126, 0.06) 100%);
+  border-color: rgba(37, 211, 102, 0.4);
+  box-shadow: 0 8px 20px -6px rgba(37, 211, 102, 0.25);
+}
+
+.whatsapp-support-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #25d366;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+  flex-shrink: 0;
+}
+
+.whatsapp-support-icon svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.whatsapp-support-content {
+  flex: 1;
+}
+
+.whatsapp-support-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--md-sys-color-primary);
+  letter-spacing: -0.01em;
+}
+
+.whatsapp-support-desc {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 0.8;
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+.whatsapp-support-card span.material-symbols-rounded {
+  color: var(--md-sys-color-primary);
+  opacity: 0.4;
+  transition: all 0.3s ease;
+}
+
+.whatsapp-support-card:hover span.material-symbols-rounded {
+  opacity: 1;
+  transform: translateX(3px);
+  color: #25d366;
+}
+
+html.dark .whatsapp-support-card {
+  background: linear-gradient(135deg, rgba(37, 211, 102, 0.05) 0%, rgba(18, 140, 126, 0.02) 100%);
+  border-color: rgba(37, 211, 102, 0.15);
+}
+html.dark .whatsapp-support-card:hover {
+  background: linear-gradient(135deg, rgba(37, 211, 102, 0.08) 0%, rgba(18, 140, 126, 0.04) 100%);
+  border-color: rgba(37, 211, 102, 0.3);
+}
+
