@@ -646,10 +646,7 @@
             </button>
           </div>
 
-          <!-- Cloudflare Turnstile (Compact Premium Layout) -->
-          <div class="flex justify-center w-full my-3">
-            <div id="loginTurnstile" class="cf-turnstile" data-sitekey="0x4AAAAAADnWmqeYIwiqEuyL" data-theme="light" data-size="compact"></div>
-          </div>
+
 
           <button type="submit" id="btnLogin" class="btn-premium-action w-full h-14 sm:h-16 text-[14px] sm:text-base tracking-widest mt-5 sm:mt-8">
             <span id="btnTextMobile">ENTRAR</span>
@@ -680,6 +677,11 @@
                 <span>Acceso Biométrico</span>
               </span>
             </button>
+          </div>
+
+          <!-- Cloudflare Turnstile (Discreet Compact Premium Layout) -->
+          <div class="flex justify-center w-full mt-6 mb-2" style="transform: scale(0.8); transform-origin: top center; height: 65px; overflow: hidden;">
+            <div id="loginTurnstile" class="cf-turnstile" data-sitekey="0x4AAAAAADnWmqeYIwiqEuyL" data-theme="light" data-size="compact"></div>
           </div>
 
         </form>
