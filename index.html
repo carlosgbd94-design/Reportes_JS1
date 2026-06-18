@@ -45,6 +45,9 @@
     rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@0..1" rel="stylesheet">
 
+  <!-- Cloudflare Turnstile Captcha -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
   <!-- Favicons -->
   <link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
@@ -642,6 +645,9 @@
               ¿Olvidaste tu contraseña?
             </button>
           </div>
+
+          <!-- Cloudflare Turnstile -->
+          <div id="loginTurnstile" class="cf-turnstile my-4 flex justify-center" data-sitekey="1x00000000000000000000AA" data-theme="auto"></div>
 
           <button type="submit" id="btnLogin" class="btn-premium-action w-full h-14 sm:h-16 text-[14px] sm:text-base tracking-widest mt-5 sm:mt-8">
             <span id="btnTextMobile">ENTRAR</span>
@@ -3887,10 +3893,12 @@
               <span class="input-icon material-symbols-rounded">contact_mail</span>
               <input id="forgotUsuario" type="text" placeholder="ejemplo@js1.com o tu usuario" class="rounded-xl h-12">
             </div>
+            <!-- Cloudflare Turnstile -->
+            <div id="forgotTurnstile" class="cf-turnstile mt-4 flex justify-center" data-sitekey="1x00000000000000000000AA" data-theme="auto"></div>
           </div>
         </div>
 
-        <div class="modalFooter" style="margin-top:32px; display:flex; justify-content:flex-end; gap:12px;">
+        <div class="modalFooter" style="margin-top:24px; display:flex; justify-content:flex-end; gap:12px;">
           <button class="ghostBtn" id="btnForgotClose" type="button"
             style="border:none; background:transparent; font-weight:700;">
             <span class="material-symbols-rounded">close</span> Cerrar
@@ -4924,7 +4932,7 @@
       </div>
 
       <!-- WhatsApp Direct Support -->
-      <a href="https://wa.me/524425507146?text=Hola%20Carlos,%20necesito%20soporte%20con%20la%20plataforma%20SIREVAQ..." 
+      <a id="whatsappSupportLink" href="https://wa.me/524425507146?text=Hola%20Carlos,%20necesito%20soporte%20con%20la%20plataforma%20SIREVAQ..." 
          target="_blank" 
          class="whatsapp-support-card" 
          style="text-decoration: none; display: flex !important; align-items: center !important; gap: 14px !important; margin: 16px 24px 0 24px !important; padding: 14px 18px !important; border-radius: 20px !important; border: 1px solid rgba(37, 211, 102, 0.25) !important; background: linear-gradient(135deg, rgba(37, 211, 102, 0.08) 0%, rgba(18, 140, 126, 0.03) 100%) !important; transition: all 0.3s ease !important;">
