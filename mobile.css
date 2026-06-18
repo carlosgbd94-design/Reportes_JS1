@@ -119,32 +119,21 @@
     line-height: 1.2 !important;
 }
 
+.touch-ui #logoCluster h1,
+.touch-ui #logoCluster p,
+.touch-ui #logoCluster .mx-2 {
+    display: none !important;
+}
+
 /* Force-show elements hidden by Tailwind's sm: responsive classes */
 .touch-ui #logoB {
     display: block !important;
 }
 
-.touch-ui #logoCluster h1 span.hidden {
-    display: inline !important;
-    font-size: clamp(10px, 3vw, 14px) !important;
-}
-
-.touch-ui #logoCluster p.hidden {
-    display: block !important;
-    font-size: clamp(6px, 1.8vw, 9px) !important;
-    margin-top: 1px !important;
-}
-
-/* Very small screens: hide subtitle, shrink further */
+/* Very small screens: shrink further */
 @media (max-width: 360px) {
-    .touch-ui #logoCluster p.hidden {
-        display: none !important;
-    }
     .touch-ui #logoB {
         height: 20px !important;
-    }
-    .touch-ui #logoCluster h1 {
-        font-size: 11px !important;
     }
 }
 
