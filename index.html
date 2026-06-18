@@ -630,23 +630,29 @@
             </div>
           </div>
 
-          <!-- Opciones de Contraseña (Contenedor Responsivo) -->
-          <div id="passwordOptionsContainer" class="flex flex-col sm:flex-row items-center sm:justify-between w-full mt-2">
-            <label id="desktopRememberMe"
-              class="hidden sm:flex items-center gap-2 text-slate-600 cursor-pointer text-sm">
-              <input type="checkbox" style="width: 16px; height: 16px; accent-color: #0ea5e9; cursor: pointer;">
-              Recordarme
-            </label>
+          <!-- Opciones de Contraseña (Contenedor Responsivo con Captcha y Recordarme) -->
+          <div id="passwordOptionsContainer" class="flex flex-col sm:flex-row items-center sm:justify-between w-full mt-2 gap-4">
+            
+            <!-- Cloudflare Turnstile (Ubicado en el espacio izquierdo, tamaño compacto y escalado para discreción) -->
+            <div style="transform: scale(0.8); transform-origin: left center; height: 62px; width: 130px; overflow: hidden;" class="flex items-center">
+              <div id="loginTurnstile" class="cf-turnstile" data-sitekey="0x4AAAAAADnWmqeYIwiqEuyL" data-theme="light" data-size="compact"></div>
+            </div>
 
-            <!-- El BOTÓN ORIGINAL -->
-            <button type="button" id="btnForgotPassword"
-              class="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-primary/40 hover:text-primary transition-all w-full sm:w-auto text-center sm:text-right bg-transparent border-none cursor-pointer mt-2 sm:mt-0"
-              >
-              ¿Olvidaste tu contraseña?
-            </button>
+            <!-- Columna derecha: Recordarme y Olvidé mi contraseña alineados verticalmente -->
+            <div class="flex flex-col items-center sm:items-end gap-1 w-full sm:w-auto">
+              <label id="desktopRememberMe" class="flex items-center gap-2 text-slate-600 cursor-pointer text-sm">
+                <input type="checkbox" style="width: 15px; height: 15px; accent-color: #0ea5e9; cursor: pointer;">
+                Recordarme
+              </label>
+
+              <!-- El BOTÓN ORIGINAL -->
+              <button type="button" id="btnForgotPassword"
+                class="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-primary/40 hover:text-primary transition-all text-center sm:text-right bg-transparent border-none cursor-pointer mt-1"
+                >
+                ¿Olvidaste tu contraseña?
+              </button>
+            </div>
           </div>
-
-
 
           <button type="submit" id="btnLogin" class="btn-premium-action w-full h-14 sm:h-16 text-[14px] sm:text-base tracking-widest mt-5 sm:mt-8">
             <span id="btnTextMobile">ENTRAR</span>
@@ -677,11 +683,6 @@
                 <span>Acceso Biométrico</span>
               </span>
             </button>
-          </div>
-
-          <!-- Cloudflare Turnstile (Discreet Compact Premium Layout) -->
-          <div class="flex justify-center w-full mt-6 mb-2" style="transform: scale(0.8); transform-origin: top center; height: 65px; overflow: hidden;">
-            <div id="loginTurnstile" class="cf-turnstile" data-sitekey="0x4AAAAAADnWmqeYIwiqEuyL" data-theme="light" data-size="compact"></div>
           </div>
 
         </form>
