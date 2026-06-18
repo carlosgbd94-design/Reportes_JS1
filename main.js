@@ -31,29 +31,13 @@ async function handleLoginFlow(email, password) {
 
   showOverlay("Iniciando sesión...", "Conectando");
 
-  let captchaToken = null;
-  if (window.turnstile) {
-    captchaToken = window.turnstile.getResponse("#loginTurnstile");
-    if (!captchaToken) {
-      hideOverlay();
-      showToast("Por favor, completa el captcha de seguridad.", false, "warn");
-      return;
-    }
-  }
-
   try {
     const { data, error } = await window.supabase.auth.signInWithPassword({
       email: email,
-      password: password,
-      options: {
-        captchaToken: captchaToken || undefined
-      }
+      password: password
     });
 
-    if (error) {
-      if (window.turnstile) window.turnstile.reset("#loginTurnstile");
-      throw new Error("Supabase dice: " + error.message);
-    }
+    if (error) throw new Error("Supabase dice: " + error.message);
 
     const { data: perfil, error: perfilError } = await window.supabase
       .from('perfiles')
@@ -3737,14 +3721,6 @@ async function requestPasswordResetFlow() {
     return;
   }
 
-  let captchaToken = null;
-  if (window.turnstile) {
-    captchaToken = window.turnstile.getResponse("#forgotTurnstile");
-    if (!captchaToken) {
-      showToast("Por favor, completa el captcha de seguridad.", false, "warn");
-      return;
-    }
-  }
 
   // Si no contiene '@', asumimos que es un usuario y buscamos su correo en usuarios_legacy
   let finalEmail = emailOrUser;
@@ -3777,8 +3753,7 @@ async function requestPasswordResetFlow() {
       showToast("Error al verificar el usuario. Reintenta.", false, "bad");
       openForgotModal();
       if ($("forgotUsuario")) $("forgotUsuario").value = emailOrUser;
-      if (window.turnstile) window.turnstile.reset("#forgotTurnstile");
-      return;
+        return;
     } finally {
       hideOverlay();
     }
@@ -3793,14 +3768,10 @@ async function requestPasswordResetFlow() {
   try {
     // Usamos el cliente global window.supabase inicializado en main.js
     const { data, error } = await window.supabase.auth.resetPasswordForEmail(finalEmail, {
-      redirectTo: window.location.origin + window.location.pathname.replace('index.html', '') + 'reset.html',
-      options: {
-        captchaToken: captchaToken || undefined
-      }
+      redirectTo: window.location.origin + window.location.pathname.replace('index.html', '') + 'reset.html'
     });
 
     if (error) {
-      if (window.turnstile) window.turnstile.reset("#forgotTurnstile");
       showToast(error.message || "No se pudo enviar el enlace", false, "bad");
       openForgotModal();
       if ($("forgotUsuario")) $("forgotUsuario").value = emailOrUser;
@@ -3809,10 +3780,8 @@ async function requestPasswordResetFlow() {
 
     const masked = maskEmailAddress(finalEmail);
     showToast(`Se envió un correo de recuperación al correo ${masked}`, true, "good");
-    if (window.turnstile) window.turnstile.reset("#forgotTurnstile");
   } catch (e) {
     console.error(e);
-    if (window.turnstile) window.turnstile.reset("#forgotTurnstile");
     showToast("Error al solicitar recuperación", false, "bad");
     openForgotModal();
     if ($("forgotUsuario")) $("forgotUsuario").value = emailOrUser;
