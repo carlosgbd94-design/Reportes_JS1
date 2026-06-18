@@ -10454,9 +10454,18 @@ function populateHistoryMunicipioFilter(user) {
 
 function setLoggedInUI(user, status) {
   USER = user;
-  try { updateWhatsAppSupportLink(USER); } catch(e) { console.warn(e); }
   document.body.setAttribute("data-role", USER.rol);
   STATUS = (status && status.data) ? status.data : (status || null);
+
+  // Sincronizar enlace dinámico de Soporte por WhatsApp para pre-identificar al usuario
+  const waLink = document.getElementById("whatsappSupportLink");
+  if (waLink && USER) {
+    const wName = USER.nombre || USER.usuario || "Usuario";
+    const wUnit = USER.unidad || "N/A";
+    const wClues = USER.clues || "N/A";
+    const wText = encodeURIComponent(`Hola Carlos, necesito soporte con la plataforma SIREVAQ. Mi nombre es ${wName} de la unidad ${wUnit} (CLUES: ${wClues}). `);
+    waLink.href = `https://wa.me/524425507146?text=${wText}`;
+  }
 
   Object.assign(AppState, {
     user: USER,
@@ -10803,7 +10812,6 @@ function resetApplicationState() {
 
 function setLoggedOutUI() {
   resetApplicationState();
-  try { updateWhatsAppSupportLink(null); } catch(e) {}
   stopRealtimeUX();
 
   localStorage.removeItem("JS1_TOKEN");
@@ -17153,9 +17161,10 @@ document.addEventListener("DOMContentLoaded", () => {
       submitBtn.disabled = true;
 
       // Recopilar info del usuario si está logueado
-      const userName = (typeof USER !== "undefined" && USER) ? (USER.nombre || USER.usuario || "Usuario") : "Usuario Anónimo";
-      const userRole = (typeof USER !== "undefined" && USER) ? USER.rol : "Desconocido";
-      const userUnit = (typeof USER !== "undefined" && USER) ? `${USER.unidad} (${USER.clues})` : "N/A";
+      const userName = typeof USER !== "undefined" && USER?.nombre ? USER.nombre : (typeof USER !== "undefined" && USER?.usuario ? USER.usuario : "Usuario Anónimo");
+      const userRole = typeof USER !== "undefined" && USER?.rol ? USER.rol : "Desconocido";
+      const userUnit = typeof USER !== "undefined" && USER?.unidad ? USER.unidad : "N/A";
+      const userClues = typeof USER !== "undefined" && USER?.clues ? USER.clues : "N/A";
 
       // Colores según el tipo
       let embedColor = 3447003; // Azul por defecto (Pregunta/Otro)
@@ -17170,7 +17179,8 @@ document.addEventListener("DOMContentLoaded", () => {
           fields: [
             { name: "Usuario", value: userName, inline: true },
             { name: "Rol", value: userRole, inline: true },
-            { name: "CLUES", value: userUnit, inline: true }
+            { name: "Unidad", value: userUnit, inline: true },
+            { name: "CLUES", value: userClues, inline: true }
           ],
           footer: { text: "SIREVAQ App" },
           timestamp: new Date().toISOString()
@@ -17220,18 +17230,3 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
-
-function updateWhatsAppSupportLink(user) {
-  const waCard = document.querySelector(".whatsapp-support-card");
-  if (!waCard) return;
-
-  const phone = "524425507146";
-  let text = "Hola Carlos, necesito soporte con la plataforma SIREVAQ.";
-  if (user) {
-    const nombre = user.nombre || user.usuario || "Usuario";
-    const unidad = user.unidad || "N/A";
-    const clues = user.clues || "N/A";
-    text = `Hola Carlos, necesito soporte con la plataforma SIREVAQ. Mi nombre es ${nombre}, de la unidad ${unidad} (${clues}).`;
-  }
-  waCard.href = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
-}
