@@ -970,10 +970,25 @@
 
 /* The ::before pseudo-element for the first cell is no longer hidden, restoring the "Biológico" label */
 
-/* Action button at bottom of card */
-.touch-ui #srCaptureTable td:last-child button {
-    width: 100% !important;
-    margin-top: 8px !important;
+.touch-ui #srCaptureTable .md-delete-btn,
+.touch-ui #srCaptureTable .md-clone-btn {
+    width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    padding: 0 !important;
+    border-radius: 14px !important;
+    margin-top: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+}
+
+.touch-ui #srCaptureTable .md-clone-btn {
+    background: #f1f5f9 !important;
+    border: none !important;
+    color: #64748b !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
 }
 
 /* Ensure enough bottom padding so floating command hub doesn't block the last card's buttons */
@@ -1026,21 +1041,24 @@
 }
 .touch-ui .stepper-btn {
     display: flex !important;
-    align-items: center;
-    justify-content: center;
+    align-items: center !important;
+    justify-content: center !important;
     width: 44px !important;
     height: 44px !important;
+    min-height: 44px !important;
+    padding: 0 !important;
     border-radius: 14px !important;
     background: #f1f5f9 !important;
     border: 1px solid #cbd5e1 !important;
     color: #0f172a !important;
-    font-size: 20px !important;
+    font-size: 24px !important; /* Slightly larger symbols for better legibility */
     font-weight: 900 !important;
     cursor: pointer !important;
     user-select: none !important;
     flex-shrink: 0 !important;
     transition: background 0.2s, transform 0.1s !important;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+    line-height: 1 !important;
 }
 .touch-ui .stepper-btn:active {
     background: #cbd5e1 !important;
