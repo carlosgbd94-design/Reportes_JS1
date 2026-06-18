@@ -10454,6 +10454,7 @@ function populateHistoryMunicipioFilter(user) {
 
 function setLoggedInUI(user, status) {
   USER = user;
+  try { updateWhatsAppSupportLink(USER); } catch(e) { console.warn(e); }
   document.body.setAttribute("data-role", USER.rol);
   STATUS = (status && status.data) ? status.data : (status || null);
 
@@ -10802,6 +10803,7 @@ function resetApplicationState() {
 
 function setLoggedOutUI() {
   resetApplicationState();
+  try { updateWhatsAppSupportLink(null); } catch(e) {}
   stopRealtimeUX();
 
   localStorage.removeItem("JS1_TOKEN");
@@ -17151,9 +17153,9 @@ document.addEventListener("DOMContentLoaded", () => {
       submitBtn.disabled = true;
 
       // Recopilar info del usuario si está logueado
-      const userName = typeof USER !== "undefined" && USER?.name ? USER.name : "Usuario Anónimo";
-      const userRole = typeof USER !== "undefined" && USER?.rol ? USER.rol : "Desconocido";
-      const userUnit = typeof USER !== "undefined" && USER?.clues ? USER.clues : "N/A";
+      const userName = (typeof USER !== "undefined" && USER) ? (USER.nombre || USER.usuario || "Usuario") : "Usuario Anónimo";
+      const userRole = (typeof USER !== "undefined" && USER) ? USER.rol : "Desconocido";
+      const userUnit = (typeof USER !== "undefined" && USER) ? `${USER.unidad} (${USER.clues})` : "N/A";
 
       // Colores según el tipo
       let embedColor = 3447003; // Azul por defecto (Pregunta/Otro)
@@ -17218,3 +17220,18 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+function updateWhatsAppSupportLink(user) {
+  const waCard = document.querySelector(".whatsapp-support-card");
+  if (!waCard) return;
+
+  const phone = "524425507146";
+  let text = "Hola Carlos, necesito soporte con la plataforma SIREVAQ.";
+  if (user) {
+    const nombre = user.nombre || user.usuario || "Usuario";
+    const unidad = user.unidad || "N/A";
+    const clues = user.clues || "N/A";
+    text = `Hola Carlos, necesito soporte con la plataforma SIREVAQ. Mi nombre es ${nombre}, de la unidad ${unidad} (${clues}).`;
+  }
+  waCard.href = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+}
