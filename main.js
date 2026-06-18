@@ -17141,9 +17141,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     btnCancelFeedback.addEventListener("click", closeModal);
     
-    // Cerrar si se hace click fuera del modal
+    // Cerrar si se hace click fuera del modal o con Escape
     feedbackModal.addEventListener("click", (e) => {
-      if (e.target === feedbackModal) {
+      if (!e.target.closest(".feedback-modal-card")) {
+        closeModal();
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && feedbackModal.classList.contains("show")) {
         closeModal();
       }
     });
