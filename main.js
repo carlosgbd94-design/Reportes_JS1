@@ -6883,8 +6883,12 @@ async function hydrateSessionUi(user, status, opts = {}) {
     if (!isLotesAdmin) toggleEl("panelLOTES", false);
 
     if (user?.rol === "UNIDAD") {
-      // Para unidades, primero cargamos los lotes necesarios y luego delegamos la carga y el pre-llenado
-      await loadBatchesForSession(user);
+      // Para unidades, cargamos lotes y status en paralelo, actualizamos la UI con el status fresco, y finalmente recargamos el estado de hoy
+      const pLotes = loadBatchesForSession(user);
+      const pStatus = status ? Promise.resolve(status) : apiCall("unitStatus");
+      const [_, finalStatus] = await Promise.all([pLotes, pStatus]);
+
+      if (finalStatus) setLoggedInUI(user, finalStatus);
       await reloadTodayState(true);
     } else {
       // Lanzamos peticiones. El batcher las atrapará.
