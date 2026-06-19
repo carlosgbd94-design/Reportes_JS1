@@ -4135,8 +4135,76 @@
     </div>
   </div>
 
+  <!-- ✅ PDF LIMIT ALERT MODAL -->
+  <div class="overlay" id="pdfLimitAlertOverlay" style="display:none; background: rgba(3,8,18,0.55) !important; z-index:9999;">
+    <div class="modal" style="max-width:460px; background:var(--md-sys-color-surface); border-radius:28px; box-shadow:var(--md-shadow-5); overflow:hidden; padding:0;">
+      <div class="modalHead" style="background:linear-gradient(135deg,#7c2d12,#b45309); padding:28px 28px 20px;">
+        <div class="modalEyebrow" style="color:rgba(255,255,255,0.8);">
+          <span class="material-symbols-rounded" style="font-size:16px;">warning</span>
+          Archivo grande detectado
+        </div>
+        <div class="modalTitle" style="color:#fff;">El archivo supera los 10 MB</div>
+        <div class="modalSub" style="color:rgba(255,255,255,0.75);">
+          El archivo que intentas subir supera el límite de 10 MB. Se procederá a comprimir el PDF para reducir su tamaño antes de la subida.
+        </div>
+      </div>
+      <div class="modalBody" style="padding:24px 28px;">
+        <div style="display:flex; align-items:flex-start; gap:14px; background:var(--md-sys-color-surface-container); border-radius:16px; padding:16px;">
+          <span class="material-symbols-rounded" style="color:#b45309; font-size:28px; flex-shrink:0; margin-top:2px;">compress</span>
+          <div>
+            <div style="font-weight:800; font-size:14px; color:var(--md-sys-color-on-surface); margin-bottom:4px;">¿Qué pasará?</div>
+            <div style="font-size:13px; color:var(--md-sys-color-on-surface-variant); line-height:1.6;">
+              El sistema comprimirá el PDF automáticamente. La calidad visual se mantiene, pero el tamaño se reduce para cumplir con el límite del servidor.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modalFooter" style="padding:0 28px 24px; gap:12px;">
+        <button class="ghostBtn" id="btnCancelPdfCompress" type="button">
+          <span class="material-symbols-rounded">close</span> Cancelar
+        </button>
+        <button class="btn-premium-action" id="btnConfirmPdfCompress" type="button" style="margin-top:0; background:linear-gradient(135deg,#7c2d12,#b45309);">
+          <span class="material-symbols-rounded">compress</span> Sí, comprimir y subir
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ PDF COMPRESSION PROGRESS MODAL -->
+  <div class="overlay" id="pdfCompressionOverlay" style="display:none; background: rgba(3,8,18,0.55) !important; z-index:9999;">
+    <div class="modal" style="max-width:400px; background:var(--md-sys-color-surface); border-radius:28px; box-shadow:var(--md-shadow-5); overflow:hidden; padding:36px 32px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:20px;">
+      <div style="color:var(--md-sys-color-primary); font-weight:800; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; display:flex; align-items:center; gap:8px;">
+        <span class="material-symbols-rounded" style="font-size:18px;">compress</span>
+        Optimizando PDF
+      </div>
+
+      <div class="elastic-bounce-container" style="margin:4px 0;">
+        <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png"
+          alt="Comprimiendo..." class="bounce-logo">
+      </div>
+
+      <div style="width:100%;">
+        <div style="font-weight:900; font-size:18px; color:var(--md-sys-color-on-surface); margin-bottom:6px;">Comprimiendo documento...</div>
+        <div id="pdfCompressStatusText" style="color:var(--md-sys-color-on-surface-variant); font-size:13px; margin-bottom:18px; min-height:20px;">
+          Analizando documento...
+        </div>
+
+        <div style="width:100%; height:8px; background:var(--md-sys-color-outline-variant); border-radius:100px; overflow:hidden; margin-bottom:10px;">
+          <div id="pdfCompressProgressBar"
+            style="width:0%; height:100%; background:linear-gradient(90deg,var(--md-sys-color-primary),var(--md-sys-color-secondary)); border-radius:100px; transition:width 0.2s ease-out;">
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; font-size:14px; font-weight:800; color:var(--md-sys-color-primary);">
+          <span id="pdfCompressPercent">0%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ✅ DRIVE UPLOAD PROGRESS OVERLAY -->
   <div class="overlay" id="uploadProgressOverlay" style="background: rgba(3, 8, 18, 0.4) !important;">
+
     <div class="modal"
       style="max-width: 420px; background: var(--md-sys-color-surface); border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden; padding: 32px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 24px;">
       <div class="modalEyebrow"
