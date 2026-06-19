@@ -3714,6 +3714,18 @@ function maskEmailAddress(email) {
 }
 
 async function requestPasswordResetFlow() {
+  const lastRequest = localStorage.getItem("JS1_last_reset_request");
+  const now = Date.now();
+  const cooldownMs = 60000; // 60 segundos de bloqueo para evitar saturar Supabase
+  if (lastRequest) {
+    const elapsed = now - parseInt(lastRequest, 10);
+    if (elapsed < cooldownMs) {
+      const remaining = Math.ceil((cooldownMs - elapsed) / 1000);
+      showToast(`Por favor, espera ${remaining} segundos antes de solicitar una nueva recuperación para evitar saturar el sistema.`, false, "warn");
+      return;
+    }
+  }
+
   let emailOrUser = $("forgotUsuario") ? $("forgotUsuario").value.trim() : "";
 
   if (!emailOrUser) {
@@ -3777,8 +3789,10 @@ async function requestPasswordResetFlow() {
       return;
     }
 
+    // Guardamos el timestamp en localStorage sólo si el envío fue exitoso
+    localStorage.setItem("JS1_last_reset_request", Date.now().toString());
     const masked = maskEmailAddress(finalEmail);
-    showToast(`Se envió un correo de recuperación al correo ${masked}`, true, "good");
+    showToast(`Correo de recuperación enviado con éxito a ${masked}. Por favor, verifica tu bandeja de SPAM o correos no deseados antes de solicitar una nueva recuperación.`, true, "good");
   } catch (e) {
     console.error(e);
     showToast("Error al solicitar recuperación", false, "bad");
