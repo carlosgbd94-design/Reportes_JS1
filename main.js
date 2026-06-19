@@ -4924,7 +4924,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
             supabase.from('unidades').select('clues, unidad, municipio').eq('activo', 'SI'),
             supabase.from('biologicos_existencia').select('clues, fecha').gte('fecha', monthStartStr).lte('fecha', today),
             supabase.from('consumibles').select('clues, fecha').gte('fecha', monthStartStr).lte('fecha', today),
-            supabase.from('biologicos_pedido').select('clues').gte('fecha_captura', monthStartStr).lte('fecha_captura', today).eq('tipo_pedido', 'MENSUAL')
+            supabase.from('biologicos_pedido').select('clues').gte('fecha_captura', monthStartStr).eq('tipo_pedido', 'MENSUAL')
           ]);
 
           const units = resUnits.data || [];
