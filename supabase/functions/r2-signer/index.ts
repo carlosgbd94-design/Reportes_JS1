@@ -61,7 +61,62 @@ Deno.serve(async (req) => {
       throw new Error("Missing required parameter: folderPath");
     }
 
-    // 4. Initialise S3 Client for Cloudflare R2
+    // 4. Verificación de tamaño de almacenamiento (Límite 9.5 GB)
+    const { data: totalSizeBytes, error: rpcError } = await supabaseClient.rpc("get_r2_storage_size");
+    if (rpcError) {
+      console.warn("Error consultando tamaño de almacenamiento R2:", rpcError);
+    } else {
+      const currentTotal = Number(totalSizeBytes || 0);
+      const newFileSize = fileBody.byteLength;
+      const LIMIT_BYTES = 9.5 * 1024 * 1024 * 1024; // 9.5 GB
+
+      if (currentTotal + newFileSize > LIMIT_BYTES) {
+        // Registrar notificación en la base de datos
+        const msg = `El almacenamiento en Cloudflare R2 ha alcanzado los ${(currentTotal / (1024 * 1024 * 1024)).toFixed(2)} GB. Se bloqueó la subida del archivo '${folderPath.split("/").pop()}' de ${(newFileSize / (1024 * 1024)).toFixed(2)} MB para evitar cargos.`;
+        
+        await supabaseClient.from("notificaciones").insert({
+          title: "Límite de Almacenamiento Crítico R2",
+          message: msg,
+          type: "alert",
+          target_scope: "ROL",
+          target_usuario: "CARLOS_BECERRA"
+        });
+
+        // Intentar enviar correo con Resend si está la API key configurada
+        const resendKey = Deno.env.get("RESEND_API_KEY");
+        if (resendKey) {
+          try {
+            await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${resendKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                from: "SIREVAQ Storage <storage@sirevaq.com>",
+                to: ["carlosgbd94@gmail.com"],
+                subject: "⚠️ ALERTA: Límite de Almacenamiento Crítico en SIREVAQ R2",
+                html: `<p>Hola Carlos,</p>
+                       <p>El almacenamiento de tu bucket en Cloudflare R2 está por alcanzar el límite de la cuota gratuita (<strong>9.5 GB</strong>).</p>
+                       <p><strong>Detalles:</strong></p>
+                       <ul>
+                         <li><strong>Uso actual:</strong> ${(currentTotal / (1024 * 1024 * 1024)).toFixed(3)} GB</li>
+                         <li><strong>Archivo bloqueado:</strong> ${folderPath.split("/").pop()}</li>
+                         <li><strong>Tamaño del archivo:</strong> ${(newFileSize / (1024 * 1024)).toFixed(2)} MB</li>
+                       </ul>
+                       <p>Las subidas de archivos se mantendrán suspendidas hasta que liberes espacio o aumentes el límite.</p>`
+              })
+            });
+          } catch (mailErr) {
+            console.error("Fallo al enviar correo de alerta:", mailErr);
+          }
+        }
+
+        throw new Error("Límite de almacenamiento alcanzado (9.5 GB). No se pueden subir más archivos.");
+      }
+    }
+
+    // 5. Initialise S3 Client for Cloudflare R2
     const s3 = new S3Client({
       region: "auto",
       endpoint: creds.endpoint,
