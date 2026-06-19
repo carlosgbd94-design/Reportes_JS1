@@ -276,7 +276,7 @@ const PRIORITY_VACCINES = {
   "COVID-19": { priority: 2, seasonal: true }
 };
 
-window.apiCall = (action, payload) => AppService.call(action, payload);
+window.apiCall = (actionOrPayload, payload = {}, options = {}) => AppService.call(actionOrPayload, payload, options);
 const $ = (id) => DOM.get(id);
 window.$ = $; // Alias global experto
 
@@ -5673,33 +5673,91 @@ async function supabaseRequest(action = "", payload, options = {}) {
         const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         const extension = file.name.split('.').pop().toLowerCase();
 
-        // 🧼 Normalización de Nombres para Rutas Seguras
         const cleanUnit = normalizePath(targetUnidad || "SIN_UNIDAD").replace(/[\s\/]/g, '_');
         const cleanCategory = normalizePath(category || "OTROS").replace(/[\s\/]/g, '_');
         const clues = targetClues || USER.clues || "SIN_CLUES";
 
         if (category.toUpperCase().includes("SUPERVISI")) {
-          // 🛡️ REGLA: SÓLO MUNICIPAL SUBE SUPERVISIONES
           if (role !== "MUNICIPAL" && role !== "ADMIN") throw new Error("Acceso denegado: Solo usuarios Municipales pueden subir supervisiones.");
-
           folderName = `Supervision/${clues}_${cleanUnit}`;
           fileName = `${dateStr}-EVIDENCIA-SUPERVISION-${clues}_${cleanUnit}.${extension}`;
         } else {
-          // 🛡️ REGLA: SÓLO UNIDAD SUBE EVIDENCIAS/CAPACITACIONES
           if (role !== "UNIDAD" && role !== "ADMIN") throw new Error("Acceso denegado: Solo Unidades pueden subir evidencias.");
-
           folderName = `${cleanCategory}/${clues}_${cleanUnit}`;
           fileName = `${dateStr}-${cleanCategory}_${clues}_${cleanUnit}.${extension}`;
         }
 
         const folderPath = `${folderName}/${fileName}`.replace(/\/\//g, '/');
 
-        const { error } = await supabase.storage.from('evidencias').upload(folderPath, file, {
-          cacheControl: '3600',
-          upsert: true,
-          onUploadProgress: options.onUploadProgress
+        // 1. Construir la URL de la Edge Function (proxy uploader sin CORS)
+        const edgeFunctionUrl = `${SUPABASE_URL}/functions/v1/r2-signer`;
+        const supabaseAnonKey = SUPABASE_KEY;
+
+        // 2. Subir el archivo via FormData a la Edge Function (que sube a R2 server-side, sin CORS)
+        const formData = new FormData();
+        formData.append("file", file, fileName);
+        formData.append("folderPath", folderPath);
+        formData.append("contentType", file.type || "application/octet-stream");
+
+        await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", edgeFunctionUrl, true);
+          xhr.setRequestHeader("apikey", supabaseAnonKey);
+
+          if (options.onUploadProgress && xhr.upload) {
+            xhr.upload.addEventListener("progress", (event) => {
+              if (event.lengthComputable) {
+                options.onUploadProgress({
+                  loaded: event.loaded,
+                  total: event.total
+                });
+              }
+            });
+          }
+
+          xhr.onload = () => {
+            try {
+              const result = JSON.parse(xhr.responseText);
+              if (xhr.status >= 200 && xhr.status < 300 && result.ok) {
+                resolve(result);
+              } else {
+                reject(new Error(result?.error || `Error de carga: código ${xhr.status}`));
+              }
+            } catch (e) {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                resolve({});
+              } else {
+                reject(new Error(`Carga falló con código de estado: ${xhr.status}`));
+              }
+            }
+          };
+          xhr.onerror = () => reject(new Error("Error de red durante la transmisión"));
+          xhr.send(formData);
         });
-        if (error) throw error;
+
+        // 3. Construir la URL pública y registrar metadato en la base de datos
+        const publicUrl = `https://pub-149cbeba11c04e8c9ba986d1addcdcc0.r2.dev/${folderPath}`;
+        const { data: { user } } = await supabase.auth.getUser();
+        const ownerId = user?.id || USER?.id || USER?.uid || null;
+
+        const { error: dbError } = await supabase
+          .from('r2_objects')
+          .insert({
+            name: folderPath,
+            bucket_id: 'sirevaq-evidencias',
+            owner: ownerId,
+            public_url: publicUrl,
+            metadata: {
+              size: file.size,
+              mimetype: file.type,
+              cacheControl: '3600'
+            }
+          });
+
+        if (dbError) {
+          console.warn("Registro en r2_objects falló, pero el archivo fue subido con éxito a R2:", dbError);
+        }
+
         return { ok: true, data: { path: folderPath } };
       }
 
@@ -14644,7 +14702,24 @@ async function handleFileUploadFlow() {
     return;
   }
 
-  // 1. Close current upload modal
+  let targetClues = USER.clues;
+  let targetUnidad = USER.unidad;
+  let targetMunicipio = USER.municipio; // Valor por defecto del usuario
+
+  if (USER.rol === "MUNICIPAL") {
+    const unitSelect = $("uploadUnitSelect");
+    targetClues = unitSelect.value;
+    if (!targetClues) {
+      showToast("Debes seleccionar una unidad a supervisar", false, "bad");
+      return;
+    }
+    const option = unitSelect.options[unitSelect.selectedIndex];
+    targetUnidad = option.getAttribute("data-name") || "";
+    // REGLA: Detectar municipio de la unidad para crear la carpeta correcta
+    targetMunicipio = option.getAttribute("data-muni") || "";
+  }
+
+  // 1. Close current upload modal (DESPUÉS de leer las selecciones para no borrarlas)
   closeUploadFilesModal();
 
   let uploadFile = file;
@@ -14748,24 +14823,6 @@ async function handleFileUploadFlow() {
   if (progressBar) progressBar.style.width = "0%";
   if (progressPercent) progressPercent.textContent = "0%";
   if (progressBytes) progressBytes.textContent = `0 MB / ${(uploadFile.size / (1024 * 1024)).toFixed(2)} MB`;
-
-  let targetClues = USER.clues;
-  let targetUnidad = USER.unidad;
-  let targetMunicipio = USER.municipio; // Valor por defecto del usuario
-
-  if (USER.rol === "MUNICIPAL") {
-    const unitSelect = $("uploadUnitSelect");
-    targetClues = unitSelect.value;
-    if (!targetClues) {
-      showToast("Debes seleccionar una unidad a supervisar", false, "bad");
-      if (progressOverlay) progressOverlay.classList.remove("show");
-      return;
-    }
-    const option = unitSelect.options[unitSelect.selectedIndex];
-    targetUnidad = option.getAttribute("data-name") || "";
-    // REGLA: Detectar municipio de la unidad para crear la carpeta correcta
-    targetMunicipio = option.getAttribute("data-muni") || "";
-  }
 
   try {
     const res = await apiCall({
@@ -15662,7 +15719,7 @@ function filterArchivosGrid() {
 
   // Helper para extraer datos enriquecidos del path
   const enrichFile = (f) => {
-    const url = `${SUPABASE_URL}/storage/v1/object/public/evidencias/${encodeURIComponent(f.name)}`;
+    const url = f.public_url || `${SUPABASE_URL}/storage/v1/object/public/evidencias/${encodeURIComponent(f.name)}`;
     const parts = f.name.split("/");
     const fileName = parts[2] || "Desconocido";
     const cluesUnidadStr = parts[1] || "";
