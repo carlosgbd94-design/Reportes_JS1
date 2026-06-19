@@ -7981,10 +7981,12 @@ function activateDefaultMainForRole() {
   const role = String((USER && USER.rol) || "").trim().toUpperCase();
   if (!role) return;
 
-  activateMain("CAP");
-
   if (role === "UNIDAD") {
+    AppState.opsTab = ""; // Reset to force activateUnidadTab to run
+    activateUnidadTab("CAPTURE");
     activateCapture(APP_STATE.captureTab || "SR");
+  } else {
+    activateMain("CAP");
   }
 }
 
@@ -11282,6 +11284,9 @@ window.activateOpsTab = function (tab) {
     }
     if (tab === "HISTORY") {
       if (typeof runSinglePanelTask === 'function') runSinglePanelTask("ops-tab-history", () => reloadHistorySilent());
+      if (typeof triggerConfetti === "function") {
+        setTimeout(triggerConfetti, 400);
+      }
     }
     if (tab === "PINOL") {
       if (typeof runSinglePanelTask === 'function') runSinglePanelTask("ops-tab-pinol", () => refreshPinol());
@@ -13963,7 +13968,7 @@ function renderHistoryMetrics(data) {
   }
 
   function triggerConfettiFallback() {
-    if (typeof triggerConfetti === "function") {
+    if (typeof window.confetti === "function") {
       triggerConfetti();
       return;
     }
@@ -16665,21 +16670,24 @@ function playNotificationSound(type = "success") {
     const now = ctx.currentTime;
 
     if (type === "success" || type === "sent") {
-      osc.frequency.setValueAtTime(523.25, now);
-      gain.gain.setValueAtTime(0.15, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-      osc.start(now);
-      osc.stop(now + 0.15);
-
-      const osc2 = ctx.createOscillator();
-      const gain2 = ctx.createGain();
-      osc2.connect(gain2);
-      gain2.connect(ctx.destination);
-      osc2.frequency.setValueAtTime(659.25, now + 0.12);
-      gain2.gain.setValueAtTime(0.15, now + 0.12);
-      gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-      osc2.start(now + 0.12);
-      osc2.stop(now + 0.3);
+      const notes = [
+        { f: 523.25, d: 0.3, t: 0.0 },  // C5
+        { f: 659.25, d: 0.3, t: 0.08 }, // E5
+        { f: 783.99, d: 0.3, t: 0.16 }, // G5
+        { f: 1046.50, d: 0.5, t: 0.24 } // C6
+      ];
+      notes.forEach(note => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = "sine";
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.frequency.setValueAtTime(note.f, now + note.t);
+        g.gain.setValueAtTime(0.1, now + note.t);
+        g.gain.exponentialRampToValueAtTime(0.001, now + note.t + note.d);
+        o.start(now + note.t);
+        o.stop(now + note.t + note.d);
+      });
     } else if (type === "incoming" || type === "receive") {
       const freqs = [587.33, 698.46, 880.00];
       freqs.forEach((f, idx) => {
@@ -17090,24 +17098,161 @@ function updateSearchableSelectOptions(selectEl) {
 }
 
 // ===== CELEBRACIÓN CON CONFETTI PREMIUM (OPCIÓN 3 - CON PARCHADO DE CSP) =====
+const confettiLogoImg = new Image();
+confettiLogoImg.src = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png";
+
+const confettiColorCache = {};
+function getSolidRgb(colorStr) {
+  const norm = String(colorStr).trim().toLowerCase();
+  if (confettiColorCache[norm]) return confettiColorCache[norm];
+  try {
+    const dummy = document.createElement('div');
+    dummy.style.color = norm;
+    document.body.appendChild(dummy);
+    const computed = window.getComputedStyle(dummy).color;
+    document.body.removeChild(dummy);
+    const match = computed.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+    const result = match ? `rgb(${match[1]},${match[2]},${match[3]})` : norm;
+    confettiColorCache[norm] = result;
+    return result;
+  } catch (e) {
+    return norm;
+  }
+}
+
+const confettiTintCache = {};
+function getConfettiTintedLogo(colorStr) {
+  if (!confettiLogoImg.complete || confettiLogoImg.naturalWidth === 0) return null;
+
+  const baseColor = getSolidRgb(colorStr);
+  if (confettiTintCache[baseColor]) return confettiTintCache[baseColor];
+
+  const offscreen = document.createElement('canvas');
+  offscreen.width = 64;
+  offscreen.height = 64;
+  const oCtx = offscreen.getContext('2d');
+  oCtx.drawImage(confettiLogoImg, 0, 0, 64, 64);
+  oCtx.globalCompositeOperation = 'source-in';
+  oCtx.fillStyle = baseColor;
+  oCtx.fillRect(0, 0, 64, 64);
+
+  confettiTintCache[baseColor] = offscreen;
+  return offscreen;
+}
+
 let localConfetti = null;
 function triggerConfetti() {
   try {
     if (typeof window.confetti === "function") {
-      if (!localConfetti) {
-        // Creamos un canvas dedicado en el hilo principal para evitar violación de CSP por workers en blob:
-        let canvas = document.getElementById("confetti-canvas");
-        if (!canvas) {
-          canvas = document.createElement("canvas");
-          canvas.id = "confetti-canvas";
-          canvas.style.position = "fixed";
-          canvas.style.inset = "0";
-          canvas.style.width = "100vw";
-          canvas.style.height = "100vh";
-          canvas.style.pointerEvents = "none";
-          canvas.style.zIndex = "999999";
-          document.body.appendChild(canvas);
+      let canvas = document.getElementById("confetti-canvas");
+      if (!canvas) {
+        canvas = document.createElement("canvas");
+        canvas.id = "confetti-canvas";
+        canvas.style.position = "fixed";
+        canvas.style.inset = "0";
+        canvas.style.width = "100vw";
+        canvas.style.height = "100vh";
+        canvas.style.pointerEvents = "none";
+        canvas.style.zIndex = "999999";
+        document.body.appendChild(canvas);
+      }
+
+      const ctx = canvas.getContext('2d');
+      if (ctx && !ctx.fill._patched) {
+        let pathPoints = [];
+        let lastArcCenter = null;
+
+        const originalBeginPath = ctx.beginPath;
+        ctx.beginPath = function() {
+          pathPoints = [];
+          lastArcCenter = null;
+          originalBeginPath.apply(this, arguments);
+        };
+
+        const originalMoveTo = ctx.moveTo;
+        ctx.moveTo = function(x, y) {
+          pathPoints.push({ x, y });
+          originalMoveTo.apply(this, arguments);
+        };
+
+        const originalLineTo = ctx.lineTo;
+        ctx.lineTo = function(x, y) {
+          pathPoints.push({ x, y });
+          originalLineTo.apply(this, arguments);
+        };
+
+        const originalArc = ctx.arc;
+        ctx.arc = function(x, y, radius, ...args) {
+          lastArcCenter = { x, y, r: radius };
+          originalArc.apply(this, [x, y, radius, ...args]);
+        };
+
+        if (ctx.ellipse) {
+          const originalEllipse = ctx.ellipse;
+          ctx.ellipse = function(x, y, radiusX, radiusY, rotation, ...args) {
+            lastArcCenter = { x, y, r: radiusX, rotation };
+            originalEllipse.apply(this, [x, y, radiusX, radiusY, rotation, ...args]);
+          };
         }
+
+        const originalFill = ctx.fill;
+        ctx.fill = function(...fillArgs) {
+          try {
+            const colorStr = ctx.fillStyle;
+            const tinted = getConfettiTintedLogo(colorStr);
+            if (tinted) {
+              let cx = 0, cy = 0, size = 16, angle = 0;
+              if (lastArcCenter) {
+                cx = lastArcCenter.x;
+                cy = lastArcCenter.y;
+                size = lastArcCenter.r * 2;
+                angle = lastArcCenter.rotation || 0;
+              } else if (pathPoints.length >= 3) {
+                let sumX = 0, sumY = 0;
+                pathPoints.forEach(p => {
+                  sumX += p.x;
+                  sumY += p.y;
+                });
+                cx = sumX / pathPoints.length;
+                cy = sumY / pathPoints.length;
+                const dx = pathPoints[1].x - pathPoints[0].x;
+                const dy = pathPoints[1].y - pathPoints[0].y;
+                size = Math.sqrt(dx*dx + dy*dy) * 1.2;
+                angle = Math.atan2(dy, dx);
+              } else {
+                originalFill.apply(ctx, fillArgs);
+                return;
+              }
+              
+              // Extract alpha to preserve fade-out animation if fillStyle has it
+              let alpha = 1;
+              const rgbaMatch = String(colorStr).match(/rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([\d.]+)\)/);
+              if (rgbaMatch) {
+                alpha = parseFloat(rgbaMatch[1]);
+              }
+
+              ctx.save();
+              ctx.translate(cx, cy);
+              ctx.rotate(angle);
+              
+              // Apply alpha multiplier
+              const prevAlpha = ctx.globalAlpha;
+              ctx.globalAlpha = prevAlpha * alpha;
+
+              ctx.drawImage(tinted, -size / 2, -size / 2, size, size);
+              ctx.restore();
+            } else {
+              originalFill.apply(ctx, fillArgs);
+            }
+          } catch (e) {
+            console.warn("Confetti drawImage failed, falling back to original fill:", e);
+            originalFill.apply(ctx, fillArgs);
+          }
+        };
+        ctx.fill._patched = true;
+      }
+
+      if (!localConfetti) {
         localConfetti = window.confetti.create(canvas, {
           resize: true,
           useWorker: false
@@ -17116,6 +17261,7 @@ function triggerConfetti() {
 
       const duration = 2.0 * 1000;
       const end = Date.now() + duration;
+      const palette = ['#ff3366', '#ff6600', '#ffcc00', '#33cc33', '#00cccc', '#3366ff', '#9933ff', '#ff33cc'];
 
       (function frame() {
         localConfetti({
@@ -17123,14 +17269,14 @@ function triggerConfetti() {
           angle: 55,
           spread: 60,
           origin: { x: 0, y: 0.8 },
-          colors: ['#0284c7', '#3b82f6', '#10b981', '#34d399', '#fbbf24']
+          colors: palette
         });
         localConfetti({
           particleCount: 4,
           angle: 125,
           spread: 60,
           origin: { x: 1, y: 0.8 },
-          colors: ['#0284c7', '#3b82f6', '#10b981', '#34d399', '#fbbf24']
+          colors: palette
         });
 
         if (Date.now() < end) {
