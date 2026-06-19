@@ -6,7 +6,7 @@
 // ══════════════════════════════════════════════════════════════
 // DICCIONARIO COMPLETO DE VARIABLES SIS
 // ══════════════════════════════════════════════════════════════
-const DICT_RDA = {
+let DICT_RDA = {
     // ── ESQUEMA BÁSICO 0-8 AÑOS (Fórmula Federal RDA) ──
     BCG:        ['VBC01', 'VBC02', 'BIO50'],
     HepB_0_7:   ['VAC06'],
@@ -26,6 +26,8 @@ const DICT_RDA = {
     Neumo_C2:   ['VCC02'],
     Neumo_C3:   ['VCC03'],
     SRP_1:      ['VAC23'],
+    VARICELA:   ['VAR02', 'VAR03'],
+    HEPATITIS_A: ['VHA01', 'VHA02', 'BIO88'],
 
     // ── ADOLESCENTES Y ADULTOS (Solo aplicaciones) ──
     ADOL_HB:  ['VHB01','VHB02','VHB03','VHB04','VHB05','VHB06'],
@@ -43,7 +45,7 @@ const DICT_RDA = {
     // ── EMBARAZADAS (Solo aplicaciones) ──
     EMB_TDPA: ['VAC63'],
     EMB_VSR:  ['VS001'],
-
+ 
     // ── TEMPORADA INVERNAL (Solo aplicaciones) ──
     INFLUENZA: [
         'BIE01','BIE28','BIE29','BIE30','BIE31','BIE04','BIE32','BIE33',
@@ -57,8 +59,30 @@ const DICT_RDA = {
 };
 
 // Set rápido para filtrado en parser
-const ALL_RDA_VARIABLES = Object.values(DICT_RDA).flat();
-const ALL_RDA_SET = new Set(ALL_RDA_VARIABLES);
+let ALL_RDA_VARIABLES = Object.values(DICT_RDA).flat();
+let ALL_RDA_SET = new Set(ALL_RDA_VARIABLES);
+
+/**
+ * Actualiza dinámicamente el diccionario de variables del SIS (DICT_RDA)
+ * y recalcula ALL_RDA_VARIABLES y ALL_RDA_SET.
+ */
+function updateRdaDictionary(newMapping) {
+    if (!newMapping || typeof newMapping !== 'object') return;
+    for (const key in newMapping) {
+        if (Array.isArray(newMapping[key])) {
+            DICT_RDA[key] = newMapping[key];
+        }
+    }
+    // Reconstruir variables auxiliares
+    ALL_RDA_VARIABLES = Object.values(DICT_RDA).flat();
+    ALL_RDA_SET = new Set(ALL_RDA_VARIABLES);
+    
+    // Sincronizar en window si es necesario
+    window.ALL_RDA_VARIABLES = ALL_RDA_VARIABLES;
+    window.ALL_RDA_SET = ALL_RDA_SET;
+}
+
+window.updateRdaDictionary = updateRdaDictionary;
 
 // ══════════════════════════════════════════════════════════════
 // CLASE PRINCIPAL

@@ -34,6 +34,10 @@ const SCHEME_KPIS = {
     invernal: [
         { label: 'Influenza', icon: 'ac_unit', bg: '#f0f9ff', fg: '#0284c7', key: 'inv_influenza' },
         { label: 'COVID-19', icon: 'coronavirus', bg: '#f5f3ff', fg: '#7c3aed', key: 'inv_covid' }
+    ],
+    adicionales: [
+        { label: 'Varicela', icon: 'vaccines', bg: '#ecfdf5', fg: '#059669', key: 'varicela' },
+        { label: 'Hepatitis A', icon: 'vaccines', bg: '#eff6ff', fg: '#2563eb', key: 'hepatitis_a' }
     ]
 };
 
@@ -81,7 +85,7 @@ function initRDADashboard() {
                 box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.12) !important;
             }
             #rdaViewToggleContainer {
-                display: inline-flex !important;
+                display: inline-flex;
                 align-items: center !important;
                 padding: 3px !important;
                 box-sizing: border-box !important;
@@ -234,6 +238,7 @@ function initRDADashboard() {
             <option value="mayores">Esquemas Adultos Mayores</option>
             <option value="embarazadas">Esquema Embarazadas (Tdpa, VSR)</option>
             <option value="invernal">Temporada Invernal (Influenza, COVID)</option>
+            <option value="adicionales">Biológicos Adicionales (Varicela, Hep A)</option>
         `;
         sel.addEventListener('change', () => {
             _rdaState.esquema = sel.value;
@@ -524,7 +529,7 @@ function renderDashboard() {
 
     const toggleContainer = document.getElementById('rdaViewToggleContainer');
     if (toggleContainer) {
-        toggleContainer.style.display = (esquema === 'basico') ? 'flex' : 'none';
+        toggleContainer.style.display = (esquema === 'basico') ? 'inline-flex' : 'none';
     }
 
     let fUnits = unidades;
@@ -560,6 +565,7 @@ function renderDashboard() {
         am_neumo13: 0, am_neumo20: 0, am_td: 0,
         emb_tdpa: 0, emb_vsr: 0,
         inv_influenza: 0, inv_covid: 0,
+        varicela: 0, hepatitis_a: 0,
         // Campos de dosis adicionales para biológicos individuales
         hexa_1_dosis: 0, hexa_2_dosis: 0, neumo_1_dosis: 0,
         neumo_c1_dosis: 0, neumo_c2_dosis: 0, neumo_c3_dosis: 0, srp_1_dosis: 0,
@@ -597,6 +603,9 @@ function renderDashboard() {
 
         agg.inv_influenza += u.inv_influenza || 0;
         agg.inv_covid += u.inv_covid || 0;
+        
+        agg.varicela += u.varicela || 0;
+        agg.hepatitis_a += u.hepatitis_a || 0;
 
         // Nuevos campos agregados
         agg.hexa_1_dosis += u.hexa_1_dosis || 0;
@@ -757,6 +766,10 @@ function renderDoughnut(agg, esquema) {
         labels = ['Influenza', 'COVID-19'];
         data = [agg.inv_influenza, agg.inv_covid];
         backgroundColors = ['#0284c7', '#7c3aed'];
+    } else if (esquema === 'adicionales') {
+        labels = ['Varicela', 'Hepatitis A'];
+        data = [agg.varicela, agg.hepatitis_a];
+        backgroundColors = ['#8ED1C2', '#BDBDBD'];
     }
 
     if (esquema !== 'basico') {
@@ -994,6 +1007,11 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                     { type: 'bar', label: 'Influenza', data: [u.inv_influenza||0], backgroundColor: '#f1bdad', borderRadius: 6, barThickness: 40 },
                     { type: 'bar', label: 'COVID-19', data: [u.inv_covid||0], backgroundColor: '#4a4a4a', borderRadius: 6, barThickness: 40 }
                 ];
+            } else if (esquema === 'adicionales') {
+                finalDatasets = [
+                    { type: 'bar', label: 'Varicela', data: [u.varicela||0], backgroundColor: '#8ED1C2', borderRadius: 6, barThickness: 40 },
+                    { type: 'bar', label: 'Hepatitis A', data: [u.hepatitis_a||0], backgroundColor: '#BDBDBD', borderRadius: 6, barThickness: 40 }
+                ];
             }
         }
     } else {
@@ -1043,6 +1061,11 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                 { label: 'Influenza', data: d1, backgroundColor: '#f1bdad' },
                 { label: 'COVID-19', data: d2, backgroundColor: '#4a4a4a' }
             ];
+        } else if (esquema === 'adicionales') {
+            datasetConfigs = [
+                { label: 'Varicela', data: d1, backgroundColor: '#8ED1C2' },
+                { label: 'Hepatitis A', data: d2, backgroundColor: '#BDBDBD' }
+            ];
         }
 
         if (!muniFilter && (role === 'ADMIN' || role === 'JURISDICCIONAL')) {
@@ -1055,7 +1078,8 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                     pob_menor_1: 0, pob_1_ano: 0, pob_4_anos: 0, bcg_dosis: 0, hepb_0_7_dosis: 0, hexa_3_dosis: 0, rota_2_dosis: 0, neumo_2_dosis: 0,
                     hexa_ref_dosis: 0, neumo_ref_dosis: 0, srp_2_dosis: 0, dpt_4_dosis: 0, adol_hb: 0, adol_sr: 0, adol_vph: 0, adol_td: 0, adol_tdpa: 0,
                     am_neumo13: 0, am_neumo20: 0, am_td: 0, emb_tdpa: 0, emb_vsr: 0, inv_influenza: 0, inv_covid: 0,
-                    hexa_1_dosis: 0, hexa_2_dosis: 0, neumo_1_dosis: 0, neumo_c1_dosis: 0, neumo_c2_dosis: 0, neumo_c3_dosis: 0, srp_1_dosis: 0
+                    hexa_1_dosis: 0, hexa_2_dosis: 0, neumo_1_dosis: 0, neumo_c1_dosis: 0, neumo_c2_dosis: 0, neumo_c3_dosis: 0, srp_1_dosis: 0,
+                    varicela: 0, hepatitis_a: 0
                 };
                 for (const u of muniUnits) {
                     mAgg.pob_menor_1 += u.pob_menor_1 || 0; mAgg.pob_1_ano += u.pob_1_ano || 0; mAgg.pob_4_anos += u.pob_4_anos || 0;
@@ -1066,6 +1090,7 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                     mAgg.emb_tdpa += u.emb_tdpa || 0; mAgg.emb_vsr += u.emb_vsr || 0; mAgg.inv_influenza += u.inv_influenza || 0; mAgg.inv_covid += u.inv_covid || 0;
                     mAgg.hexa_1_dosis += u.hexa_1_dosis || 0; mAgg.hexa_2_dosis += u.hexa_2_dosis || 0; mAgg.neumo_1_dosis += u.neumo_1_dosis || 0;
                     mAgg.neumo_c1_dosis += u.neumo_c1_dosis || 0; mAgg.neumo_c2_dosis += u.neumo_c2_dosis || 0; mAgg.neumo_c3_dosis += u.neumo_c3_dosis || 0; mAgg.srp_1_dosis += u.srp_1_dosis || 0;
+                    mAgg.varicela += u.varicela || 0; mAgg.hepatitis_a += u.hepatitis_a || 0;
                 }
                 if (esquema === 'basico') {
                     const factorM1 = (mAgg.pob_menor_1 * 0.0833) * maxMes; const factorUno = (mAgg.pob_1_ano * 0.0833) * maxMes; const factorCuatro = (mAgg.pob_4_anos * 0.0833) * maxMes;
@@ -1089,7 +1114,8 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                 } else if (esquema === 'adultos') { d1.push(mAgg.adol_hb); d2.push(mAgg.adol_sr); d3.push(mAgg.adol_vph); d4.push(mAgg.adol_td); d5.push(mAgg.adol_tdpa);
                 } else if (esquema === 'mayores') { d1.push(mAgg.am_neumo13); d2.push(mAgg.am_neumo20); d3.push(mAgg.am_td);
                 } else if (esquema === 'embarazadas') { d1.push(mAgg.emb_tdpa); d2.push(mAgg.emb_vsr);
-                } else if (esquema === 'invernal') { d1.push(mAgg.inv_influenza); d2.push(mAgg.inv_covid); }
+                } else if (esquema === 'invernal') { d1.push(mAgg.inv_influenza); d2.push(mAgg.inv_covid);
+                } else if (esquema === 'adicionales') { d1.push(mAgg.varicela); d2.push(mAgg.hepatitis_a); }
             }
         } else {
             titleText = 'Top 10 Unidades';
@@ -1119,7 +1145,8 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                 } else if (esquema === 'adultos') { res.v1 = u.adol_hb || 0; res.v2 = u.adol_sr || 0; res.v3 = u.adol_vph || 0; res.v4 = u.adol_td || 0; res.v5 = u.adol_tdpa || 0; res.sortVal = res.v1 + res.v2 + res.v3 + res.v4 + res.v5;
                 } else if (esquema === 'mayores') { res.v1 = u.am_neumo13 || 0; res.v2 = u.am_neumo20 || 0; res.v3 = u.am_td || 0; res.sortVal = res.v1 + res.v2 + res.v3;
                 } else if (esquema === 'embarazadas') { res.v1 = u.emb_tdpa || 0; res.v2 = u.emb_vsr || 0; res.sortVal = res.v1 + res.v2;
-                } else if (esquema === 'invernal') { res.v1 = u.inv_influenza || 0; res.v2 = u.inv_covid || 0; res.sortVal = res.v1 + res.v2; }
+                } else if (esquema === 'invernal') { res.v1 = u.inv_influenza || 0; res.v2 = u.inv_covid || 0; res.sortVal = res.v1 + res.v2;
+                } else if (esquema === 'adicionales') { res.v1 = u.varicela || 0; res.v2 = u.hepatitis_a || 0; res.sortVal = res.v1 + res.v2; }
                 return res;
             }).sort((a, b) => b.sortVal - a.sortVal).slice(0, 10);
 
@@ -1146,6 +1173,7 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                 pob_menor_1: 0, pob_1_ano: 0, pob_4_anos: 0, bcg_dosis: 0, hepb_0_7_dosis: 0, hexa_3_dosis: 0, rota_2_dosis: 0, neumo_2_dosis: 0,
                 hexa_ref_dosis: 0, neumo_ref_dosis: 0, srp_2_dosis: 0, dpt_4_dosis: 0, adol_hb: 0, adol_sr: 0, adol_vph: 0, adol_td: 0, adol_tdpa: 0,
                 am_neumo13: 0, am_neumo20: 0, am_td: 0, emb_tdpa: 0, emb_vsr: 0, inv_influenza: 0, inv_covid: 0,
+                varicela: 0, hepatitis_a: 0,
                 hexa_1_dosis: 0, hexa_2_dosis: 0, neumo_1_dosis: 0, neumo_c1_dosis: 0, neumo_c2_dosis: 0, neumo_c3_dosis: 0, srp_1_dosis: 0
             };
             for (const u of fUnits) {
@@ -1155,6 +1183,7 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                 tAgg.adol_hb += u.adol_hb || 0; tAgg.adol_sr += u.adol_sr || 0; tAgg.adol_vph += u.adol_vph || 0; tAgg.adol_td += u.adol_td || 0; tAgg.adol_tdpa += u.adol_tdpa || 0;
                 tAgg.am_neumo13 += u.am_neumo13 || 0; tAgg.am_neumo20 += u.am_neumo20 || 0; tAgg.am_td += u.am_td || 0;
                 tAgg.emb_tdpa += u.emb_tdpa || 0; tAgg.emb_vsr += u.emb_vsr || 0; tAgg.inv_influenza += u.inv_influenza || 0; tAgg.inv_covid += u.inv_covid || 0;
+                tAgg.varicela += u.varicela || 0; tAgg.hepatitis_a += u.hepatitis_a || 0;
                 tAgg.hexa_1_dosis += u.hexa_1_dosis || 0; tAgg.hexa_2_dosis += u.hexa_2_dosis || 0; tAgg.neumo_1_dosis += u.neumo_1_dosis || 0;
                 tAgg.neumo_c1_dosis += u.neumo_c1_dosis || 0; tAgg.neumo_c2_dosis += u.neumo_c2_dosis || 0; tAgg.neumo_c3_dosis += u.neumo_c3_dosis || 0; tAgg.srp_1_dosis += u.srp_1_dosis || 0;
             }
@@ -1282,6 +1311,11 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                     tDatasets = [
                         { type: 'bar', label: 'Influenza', data: [tAgg.inv_influenza], backgroundColor: '#f1bdad', borderRadius: 6, barThickness: 40 },
                         { type: 'bar', label: 'COVID-19', data: [tAgg.inv_covid], backgroundColor: '#4a4a4a', borderRadius: 6, barThickness: 40 }
+                    ];
+                } else if (esquema === 'adicionales') {
+                    tDatasets = [
+                        { type: 'bar', label: 'Varicela', data: [tAgg.varicela], backgroundColor: '#8ED1C2', borderRadius: 6, barThickness: 40 },
+                        { type: 'bar', label: 'Hepatitis A', data: [tAgg.hepatitis_a], backgroundColor: '#BDBDBD', borderRadius: 6, barThickness: 40 }
                     ];
                 }
             }
@@ -1414,6 +1448,8 @@ function renderTable(fUnits, esquema) {
         vCols = [{ n: 'Tdpa', s: 'v1' }, { n: 'VSR', s: 'v2' }];
     } else if (esquema === 'invernal') {
         vCols = [{ n: 'Influenza', s: 'v1' }, { n: 'COVID-19', s: 'v2' }];
+    } else if (esquema === 'adicionales') {
+        vCols = [{ n: 'Varicela', s: 'v1' }, { n: 'Hepatitis A', s: 'v2' }];
     }
 
     // "Meta" sólo es visible para el esquema "basico"
@@ -1496,6 +1532,10 @@ function renderTable(fUnits, esquema) {
             res.v1 = u.inv_influenza || 0;
             res.v2 = u.inv_covid || 0;
             res.dosis = res.v1 + res.v2;
+        } else if (esquema === 'adicionales') {
+            res.v1 = u.varicela || 0;
+            res.v2 = u.hepatitis_a || 0;
+            res.dosis = res.v1 + res.v2;
         }
         return res;
     });
@@ -1538,10 +1578,11 @@ function renderTable(fUnits, esquema) {
                 'Td Mayores': { bg: '#C0C0C0', fg: '#5C5C5C' },
                 'Tdpa': { bg: '#F3B9AB', fg: '#E76F51' },
                 'SR': { bg: '#C1B3D5', fg: '#7B5EA7' },
-                'Varicela': { bg: '#BEE4DC', fg: '#8ED1C2' },
+                'Varicela': { bg: '#d1fae5', fg: '#059669' },
                 'VSR': { bg: '#EBD8CD', fg: '#A66B50' },
                 'COVID-19': { bg: '#BCBCBC', fg: '#4A4A4A' },
-                'HepA': { bg: '#DBDBDB', fg: '#BDBDBD' }
+                'HepA': { bg: '#e5e7eb', fg: '#4b5563' },
+                'Hepatitis A': { bg: '#e5e7eb', fg: '#4b5563' }
             };
             if (vName && nameMap[vName]) {
                 bg = nameMap[vName].bg;
@@ -2400,4 +2441,492 @@ function renderMobileDashboard() {
         listEl.innerHTML = listHtml;
     }
 }
+
+// ==========================================
+// CALCULADORA DE PARÁMETROS (ADMIN)
+// ==========================================
+
+let _calculatedParams = [];
+
+window.runBioParamCalculation = async function() {
+    const anio = document.getElementById('paramCalcAnio').value;
+    const bufferPercent = parseFloat(document.getElementById('paramCalcBuffer').value) || 0;
+
+    if (typeof showOverlay === 'function') {
+        showOverlay("Consultando base de datos...", "Calculadora de Parámetros");
+    }
+
+    try {
+        const { data: regs, error: errRegs } = await window.supabase
+            .from('registros_sis')
+            .select('*')
+            .eq('anio', anio);
+        
+        if (errRegs) throw errRegs;
+
+        const { data: units, error: errUnits } = await window.supabase
+            .from('unidades')
+            .select('clues, unidad, municipio')
+            .eq('activo', 'SI');
+            
+        if (errUnits) throw errUnits;
+
+        const { data: existingParams, error: errParams } = await window.supabase
+            .from('biologicos_params')
+            .select('*');
+            
+        if (errParams) throw errParams;
+
+        const paramMap = {};
+        if (existingParams) {
+            existingParams.forEach(p => {
+                paramMap[`${p.clues}|${p.biologico}`] = p;
+            });
+        }
+
+        const D = window.DICT_RDA || {};
+        const bioMapping = {
+            "BCG": D.BCG || ['VBC01', 'VBC02', 'BIO50'],
+            "HEPATITIS B": [...(D.HepB_0_7 || ['VAC06']), ...(D.ADOL_HB || ['VHB01','VHB02','VHB03','VHB04','VHB05','VHB06'])],
+            "HEXAVALENTE": [...(D.Hexa_1 || ['VAC67']), ...(D.Hexa_2 || ['VAC68']), ...(D.Hexa_3 || ['VAC69']), ...(D.Hexa_Ref || ['VAC70'])],
+            "DPT": D.DPT_4 || ['VAC12'],
+            "ROTAVIRUS": D.Rota_2 || ['VRV02'],
+            "NEUMOCÓCICA 13": [...(D.Neumo_1 || ['VAC17']), ...(D.Neumo_2 || ['VAC18', 'VCC02']), ...(D.Neumo_Ref || ['VAC19', 'VCC03']), ...(D.Neumo_C1 || ['VCC01']), ...(D.Neumo_C2 || ['VCC02']), ...(D.Neumo_C3 || ['VCC03']), ...(D.AM_NEUMO13 || ['VNC04'])],
+            "NEUMOCÓCICA 20": D.AM_NEUMO20 || ['VCC07'],
+            "SRP": [...(D.SRP_1 || ['VAC23']), ...(D.SRP_2 || ['VTV01'])],
+            "SR": D.ADOL_SR || ['VDV01','VDV02','VDV03','VDV04','VDV05','VDV06'],
+            "VPH": D.ADOL_VPH || ['VPH05','VPH06','VPH07','VPH08','VPH12','VPH13','VPH14'],
+            "VARICELA": D.VARICELA || ['VAR02', 'VAR03'],
+            "HEPATITIS A": D.HEPATITIS_A || ['VHA01', 'VHA02', 'BIO88'],
+            "TD": [...(D.ADOL_TD || ['VAC39','VAC40','VAC47','VAC48','VTD01','VTD02','VAC55','VAC56','VTT01','VTT02','VTT04','VTT05','VTT07','VTT08','VTT10','VTT11']), ...(D.AM_TD || ['VTT03','VTT06','VTT09','VTT12'])],
+            "TDPA": D.ADOL_TDPA || ['VAC63'],
+            "COVID-19": D.COVID || ['VCV38','VCV39','VCV40','VCV28','VCV16','VCV20','VCV21'],
+            "INFLUENZA": D.INFLUENZA || [
+                'BIE01','BIE28','BIE29','BIE30','BIE31','BIE04','BIE32','BIE33',
+                'BIE34','BIE35','BIE36','BIE37','BIE38','BIE39','BIE40','BIO96',
+                'BIO97','BIE09','BIE10','BIE41','BIE12','BIE13','BIE42','BIE15',
+                'BIE16','BIE43','BIE18','BIE19','BIE44','BIE48','BIE49','BIE50',
+                'BIE24','BIE25','BIE46','BIE51','BIE52','BIE53','BIE54','BIE55',
+                'BIE56','BIE57','BIE58','BIE59','BIE60','BIE61'
+            ],
+            "VSR": D.EMB_VSR || ['VS001']
+        };
+
+        const activeMonths = [...new Set(regs.map(r => r.mes))];
+        const numMonths = Math.max(1, activeMonths.length);
+        const monthsList = activeMonths.sort((a,b)=>a-b).map(m => MONTH_NAMES[m-1] || m).join(', ');
+
+        const results = [];
+        
+        const regMap = {};
+        regs.forEach(r => {
+            const k = `${r.clues}|${r.variable_sis}`;
+            regMap[k] = (regMap[k] || 0) + (r.valor || 0);
+        });
+
+        const biosList = window.BIOS_LIST || Object.keys(bioMapping);
+
+        for (const u of units) {
+            for (const bio of biosList) {
+                const vars = bioMapping[bio] || [];
+                let totalDoses = 0;
+                vars.forEach(v => {
+                    totalDoses += regMap[`${u.clues}|${v}`] || 0;
+                });
+
+                const avgDoses = totalDoses / numMonths;
+                const minDoses = Math.round(avgDoses);
+                const maxDoses = Math.round(avgDoses * 1.5 * (1 + bufferPercent / 100));
+
+                const paramKey = `${u.clues}|${bio}`;
+                const existing = paramMap[paramKey];
+                const multiplo = existing ? (existing.multiplo || 1) : 1;
+                const promedioFrascos = Math.ceil(avgDoses / multiplo);
+
+                results.push({
+                    clues: u.clues,
+                    unidad: u.unidad || 'Unidad Desconocida',
+                    municipio: u.municipio || '*',
+                    biologico: bio,
+                    min_dosis: minDoses,
+                    max_dosis: maxDoses,
+                    promedio_frascos: promedioFrascos,
+                    multiplo: multiplo,
+                    activo: existing ? existing.activo : 'SI'
+                });
+            }
+        }
+
+        _calculatedParams = results;
+
+        document.getElementById('paramCalcUnitsCount').textContent = units.length;
+        document.getElementById('paramCalcBiosCount').textContent = biosList.length;
+        document.getElementById('paramCalcMonths').textContent = `${numMonths} (${monthsList || 'Ninguno'})`;
+        document.getElementById('paramCalcBufferVal').textContent = bufferPercent;
+
+        document.getElementById('paramCalcSummary').style.display = 'block';
+        document.getElementById('paramCalcFilterRow').style.display = 'flex';
+        document.getElementById('paramCalcTable').style.display = 'table';
+        document.getElementById('paramCalcEmpty').style.display = 'none';
+        document.getElementById('paramCalcFooter').style.display = 'flex';
+
+        filterParamCalcTable();
+
+        if (typeof showToast === 'function') {
+            showToast(`Cálculo finalizado para ${units.length} unidades`, true, 'good');
+        }
+
+    } catch (e) {
+        console.error("Error calculating parameters:", e);
+        if (typeof showToast === 'function') {
+            showToast("Error al calcular parámetros: " + e.message, false, 'bad');
+        }
+    } finally {
+        if (typeof hideOverlay === 'function') {
+            hideOverlay();
+        }
+    }
+};
+
+window.filterParamCalcTable = function() {
+    const filterText = (document.getElementById('paramCalcFilter').value || '').toLowerCase().trim();
+    const tbody = document.getElementById('paramCalcTbody');
+    if (!tbody) return;
+
+    let filtered = _calculatedParams;
+    if (filterText) {
+        filtered = _calculatedParams.filter(p => 
+            p.clues.toLowerCase().includes(filterText) ||
+            p.unidad.toLowerCase().includes(filterText) ||
+            p.biologico.toLowerCase().includes(filterText) ||
+            p.municipio.toLowerCase().includes(filterText)
+        );
+    }
+
+    const maxRender = 150;
+    const toRender = filtered.slice(0, maxRender);
+
+    const escapeFn = typeof escapeHtml === 'function' ? escapeHtml : (str) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    tbody.innerHTML = toRender.map(p => `
+        <tr class="hover:bg-slate-50 transition-colors">
+            <td class="px-4 py-3 text-[11px] font-bold text-slate-700 sticky left-0 bg-white z-10">
+                <div class="flex flex-col">
+                    <span class="text-primary font-black">${escapeFn(p.unidad)}</span>
+                    <span class="text-[9px] text-slate-400 font-mono">${escapeFn(p.clues)} (${escapeFn(p.municipio)})</span>
+                </div>
+            </td>
+            <td class="px-4 py-3 text-[11px] font-black text-slate-600">${escapeFn(p.biologico)}</td>
+            <td class="px-4 py-3 text-[11px] font-bold text-slate-700 text-center">${p.min_dosis}</td>
+            <td class="px-4 py-3 text-[11px] font-bold text-slate-700 text-center">${p.max_dosis}</td>
+            <td class="px-4 py-3 text-[11px] font-bold text-slate-700 text-center">${p.promedio_frascos} <span class="text-[9px] text-slate-400 font-medium">(m: ${p.multiplo})</span></td>
+            <td class="px-4 py-3 text-[11px] font-black text-center">
+                <span class="px-2 py-0.5 rounded text-[9px] ${p.activo === 'SI' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'}">
+                    ${p.activo === 'SI' ? 'ACTIVO' : 'INACTIVO'}
+                </span>
+            </td>
+        </tr>
+    `).join('');
+
+    if (filtered.length > maxRender) {
+        tbody.innerHTML += `
+            <tr>
+                <td colspan="6" class="text-center py-3 text-[11px] font-bold text-slate-400 bg-slate-50/50">
+                    Mostrando ${maxRender} de ${filtered.length} resultados. Usa el filtro para refinar la búsqueda.
+                </td>
+            </tr>
+        `;
+    }
+};
+
+window.saveCalculatedBioParams = async function() {
+    if (!_calculatedParams.length) {
+        if (typeof showToast === 'function') showToast("No hay parámetros calculados para guardar", false, "warn");
+        return;
+    }
+
+    if (!confirm(`¿Estás seguro de guardar los parámetros para ${_calculatedParams.length} combinaciones de unidad-biológico? Esto sobrescribirá los valores existentes en biologicos_params.`)) {
+        return;
+    }
+
+    if (typeof showOverlay === 'function') {
+        showOverlay("Guardando en base de datos...", "Guardar Parámetros");
+    }
+
+    try {
+        const { data: existing, error: errExist } = await window.supabase
+            .from('biologicos_params')
+            .select('id, clues, biologico');
+
+        if (errExist) throw errExist;
+
+        const existingMap = {};
+        if (existing) {
+            existing.forEach(p => {
+                existingMap[`${p.clues}|${p.biologico}`] = p.id;
+            });
+        }
+
+        const allRecords = _calculatedParams.map(p => {
+            const key = `${p.clues}|${p.biologico}`;
+            const id = existingMap[key];
+            const record = {
+                clues: p.clues,
+                biologico: p.biologico,
+                activo: p.activo,
+                unidad: p.unidad,
+                municipio: p.municipio,
+                min_dosis: p.min_dosis,
+                max_dosis: p.max_dosis,
+                promedio_frascos: p.promedio_frascos,
+                multiplo: p.multiplo
+            };
+            if (id) {
+                record.id = id;
+            }
+            return record;
+        });
+
+        const batchSize = 100;
+        let successCount = 0;
+
+        for (let i = 0; i < allRecords.length; i += batchSize) {
+            const batch = allRecords.slice(i, i + batchSize);
+            const { error: upsertErr } = await window.supabase
+                .from('biologicos_params')
+                .upsert(batch, { onConflict: 'clues,biologico' });
+
+            if (upsertErr) throw upsertErr;
+            successCount += batch.length;
+        }
+
+        if (typeof showToast === 'function') {
+            showToast(`¡Se guardaron ${successCount} parámetros con éxito!`, true, 'good');
+        }
+
+    } catch (e) {
+        console.error("Error saving bio params:", e);
+        if (typeof showToast === 'function') {
+            showToast("Error al guardar en base de datos: " + e.message, false, 'bad');
+        }
+    } finally {
+        if (typeof hideOverlay === 'function') {
+            hideOverlay();
+        }
+    }
+};
+
+/**
+ * Manejadores interactivos para el sistema de etiquetas (chips) del mapeador de SIS
+ */
+window.handleSisTagKeydown = function(e, bio) {
+    if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        const val = e.target.value.trim().toUpperCase().replace(/,/g, '');
+        if (val) {
+            const container = e.target.closest('.sis-tags-input-container');
+            const wrapper = container.querySelector('.sis-chips-wrapper');
+            const existing = Array.from(wrapper.querySelectorAll('.sis-chip')).map(c => c.dataset.val);
+            if (!existing.includes(val)) {
+                const chip = document.createElement('span');
+                chip.className = 'sis-chip';
+                chip.dataset.val = val;
+                chip.style.cssText = "display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; background: #e2e8f0; color: #1e293b; font-size: 11px; font-weight: 800; border: 1px solid #cbd5e1; transition: all 0.2s;";
+                chip.innerHTML = `${val} <span class="sis-chip-remove" style="cursor: pointer; font-size: 14px; font-weight: 900; color: #64748b; user-select: none; margin-left: 2px;" onclick="this.parentElement.remove();">&times;</span>`;
+                wrapper.appendChild(chip);
+            }
+        }
+        e.target.value = '';
+    } else if (e.key === 'Backspace' && e.target.value === '') {
+        const container = e.target.closest('.sis-tags-input-container');
+        const wrapper = container.querySelector('.sis-chips-wrapper');
+        const chips = wrapper.querySelectorAll('.sis-chip');
+        if (chips.length > 0) {
+            chips[chips.length - 1].remove();
+        }
+    }
+};
+
+window.handleSisTagBlur = function(e, bio) {
+    const val = e.target.value.trim().toUpperCase().replace(/,/g, '');
+    if (val) {
+        const container = e.target.closest('.sis-tags-input-container');
+        const wrapper = container.querySelector('.sis-chips-wrapper');
+        const existing = Array.from(wrapper.querySelectorAll('.sis-chip')).map(c => c.dataset.val);
+        if (!existing.includes(val)) {
+            const chip = document.createElement('span');
+            chip.className = 'sis-chip';
+            chip.dataset.val = val;
+            chip.style.cssText = "display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; background: #e2e8f0; color: #1e293b; font-size: 11px; font-weight: 800; border: 1px solid #cbd5e1; transition: all 0.2s;";
+            chip.innerHTML = `${val} <span class="sis-chip-remove" style="cursor: pointer; font-size: 14px; font-weight: 900; color: #64748b; user-select: none; margin-left: 2px;" onclick="this.parentElement.remove();">&times;</span>`;
+            wrapper.appendChild(chip);
+        }
+    }
+    e.target.value = '';
+};
+
+/**
+ * Renderiza la tabla de mapeo de variables SIS en el panel Admin.
+ */
+/**
+ * Renderiza la tabla de mapeo de variables SIS en el panel Admin.
+ */
+window.renderSisMappingTable = function(searchQuery = '') {
+    const tbody = document.getElementById('sisMappingTbody');
+    if (!tbody) return;
+
+    const query = String(searchQuery || '').trim().toLowerCase();
+    const D = window.DICT_RDA || {};
+    
+    // Metadata de mapeo humana con etiquetas descriptivas y grupos
+    const metadata = {
+        BCG: { label: "BCG (Dosis Única)", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
+        HepB_0_7: { label: "Hepatitis B (Dosis Nacimiento)", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año (primeras horas)" },
+        Hexa_1: { label: "Hexavalente - 1ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
+        Hexa_2: { label: "Hexavalente - 2ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
+        Hexa_3: { label: "Hexavalente - 3ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
+        Hexa_Ref: { label: "Hexavalente - Refuerzo", group: "Esquema Básico (0-8 años)", desc: "Niños de 1 año" },
+        Rota_2: { label: "Rotavirus - 2ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
+        Neumo_1: { label: "Neumocócica Conjugada - 1ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
+        Neumo_2: { label: "Neumocócica Conjugada - 2ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
+        Neumo_Ref: { label: "Neumocócica Conjugada - Refuerzo", group: "Esquema Básico (0-8 años)", desc: "Niños de 1 año" },
+        Neumo_C1: { label: "Neumocócica Conjugada - Catch-up 1", group: "Esquema Básico (0-8 años)", desc: "Recuperación <1 año" },
+        Neumo_C2: { label: "Neumocócica Conjugada - Catch-up 2", group: "Esquema Básico (0-8 años)", desc: "Recuperación <1 año" },
+        Neumo_C3: { label: "Neumocócica Conjugada - Catch-up Refuerzo", group: "Esquema Básico (0-8 años)", desc: "Recuperación 1 año" },
+        SRP_1: { label: "SRP - 1ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Niños de 1 año" },
+        SRP_2: { label: "SRP - 2ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Niños de 1 año" },
+        DPT_4: { label: "DPT - 4ª Dosis / Refuerzo", group: "Esquema Básico (0-8 años)", desc: "Niños de 4 años" },
+        VARICELA: { label: "Varicela", group: "Biológicos Adicionales", desc: "Dosis adicionales" },
+        HEPATITIS_A: { label: "Hepatitis A", group: "Biológicos Adicionales", desc: "Dosis adicionales" },
+        ADOL_HB: { label: "Hepatitis B (Adolescentes y Adultos)", group: "Esquema Adolescentes y Adultos", desc: "Dosis para este grupo de edad" },
+        ADOL_SR: { label: "SR - Sarampión y Rubéola", group: "Esquema Adolescentes y Adultos", desc: "Dosis para este grupo de edad" },
+        ADOL_VPH: { label: "VPH - Virus del Papiloma Humano", group: "Esquema Adolescentes y Adultos", desc: "Dosis para adolescentes" },
+        ADOL_TD: { label: "Td - Tétanos y Difteria", group: "Esquema Adolescentes y Adultos", desc: "Dosis para este grupo de edad" },
+        ADOL_TDPA: { label: "Tdpa - Tétanos, Difteria, Tos Ferina", group: "Esquema Adolescentes y Adultos", desc: "Dosis para este grupo de edad" },
+        AM_NEUMO13: { label: "Neumocócica 13 Valente (Adultos Mayores)", group: "Esquema Adultos Mayores", desc: "Dosis para adultos mayores" },
+        AM_NEUMO20: { label: "Neumocócica 20 Valente (Adultos Mayores)", group: "Esquema Adultos Mayores", desc: "Dosis para adultos mayores" },
+        AM_TD: { label: "Td - Tétanos y Difteria (Adultos Mayores)", group: "Esquema Adultos Mayores", desc: "Dosis para este grupo de edad" },
+        EMB_TDPA: { label: "Tdpa (Embarazadas)", group: "Esquema Embarazadas", desc: "Dosis específicas para gestantes" },
+        EMB_VSR: { label: "VSR - Virus Sincicial Respiratorio", group: "Esquema Embarazadas", desc: "Dosis específicas para gestantes" },
+        INFLUENZA: { label: "Influenza Estacional", group: "Temporada Invernal", desc: "Todas las dosis aplicadas" },
+        COVID: { label: "COVID-19", group: "Temporada Invernal", desc: "Todas las dosis aplicadas" }
+    };
+
+    // Agrupar claves por grupo
+    const groups = {};
+    Object.keys(D).forEach(key => {
+        const meta = metadata[key] || { label: key, group: "Otros Mapeos", desc: "" };
+        
+        // Filtrar por búsqueda
+        const labelMatches = meta.label.toLowerCase().includes(query);
+        const groupMatches = meta.group.toLowerCase().includes(query);
+        const keyMatches = key.toLowerCase().includes(query);
+        if (query && !labelMatches && !groupMatches && !keyMatches) {
+            return;
+        }
+
+        if (!groups[meta.group]) groups[meta.group] = [];
+        groups[meta.group].push({ key, label: meta.label, desc: meta.desc });
+    });
+
+    let html = '';
+    const sortedGroupNames = Object.keys(groups).sort();
+    
+    if (sortedGroupNames.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="2" class="px-6 py-8 text-center text-[13px] font-bold text-slate-400">
+                    No se encontraron biológicos que coincidan con tu búsqueda.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    sortedGroupNames.forEach(groupName => {
+        // Renderizar fila de cabecera de grupo
+        html += `
+            <tr class="bg-slate-100/60 font-black text-slate-700">
+                <td colspan="2" class="px-6 py-2.5 text-[11px] uppercase tracking-wider border-y border-outline-variant/30 text-primary" style="background-color: var(--md-sys-color-surface-container-high);">
+                    ${groupName}
+                </td>
+            </tr>
+        `;
+
+        groups[groupName].forEach(item => {
+            const vars = D[item.key] || [];
+            html += `
+                <tr class="hover:bg-slate-50/50">
+                    <td class="px-6 py-4 text-[12px] font-bold text-slate-800" style="width: 300px; vertical-align: middle;">
+                        <div class="font-black text-primary text-[13px]">${item.label}</div>
+                        <div class="text-[10px] text-slate-400 font-bold mt-0.5">${item.desc} <code class="text-slate-400/80 bg-slate-100 px-1 py-0.2 rounded text-[9px] ml-1 font-mono">${item.key}</code></div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="sis-tags-input-container" data-bio="${item.key}" 
+                             style="display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 16px; border-radius: 14px; border: 1px solid #cbd5e1; background: #ffffff; min-height: 48px; align-items: center; cursor: text;"
+                             onclick="this.querySelector('input').focus();">
+                            <div class="sis-chips-wrapper" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                                ${vars.map(v => `
+                                    <span class="sis-chip" data-val="${v}" 
+                                          style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; background: #e2e8f0; color: #1e293b; font-size: 11px; font-weight: 800; border: 1px solid #cbd5e1; transition: all 0.2s;">
+                                        ${v}
+                                        <span class="sis-chip-remove" style="cursor: pointer; font-size: 14px; font-weight: 900; color: #64748b; user-select: none; margin-left: 2px;" onclick="event.stopPropagation(); this.parentElement.remove();">&times;</span>
+                                    </span>
+                                `).join('')}
+                            </div>
+                            <input type="text" placeholder="+ Agregar" class="sis-tag-input" 
+                                   style="flex: 1; min-width: 90px; border: none; outline: none; font-size: 13px; font-weight: 700; color: #0f172a; padding: 4px 0; background: transparent;" 
+                                   onkeydown="window.handleSisTagKeydown(event, '${item.key}')" 
+                                   onblur="window.handleSisTagBlur(event, '${item.key}')" />
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+    });
+
+    tbody.innerHTML = html;
+};
+
+/**
+ * Guarda los cambios realizados en el mapeo de variables SIS en la base de datos Supabase.
+ */
+window.saveSisMappingUi = async function() {
+    const containers = document.querySelectorAll('.sis-tags-input-container[data-bio]');
+    const mapping = {};
+
+    containers.forEach(container => {
+        const bio = container.dataset.bio;
+        const chips = container.querySelectorAll('.sis-chip');
+        const val = Array.from(chips).map(c => c.dataset.val.trim().toUpperCase()).filter(Boolean);
+        mapping[bio] = val;
+    });
+
+    if (typeof showOverlay === 'function') {
+        showOverlay("Guardando mapeo de variables SIS...", "Mapeador de Variables");
+    }
+
+    try {
+        const res = await apiCall("saveSisMapping", { mapping });
+        if (!res || !res.ok) throw new Error(res?.error || "Error en apiCall saveSisMapping");
+
+        // Actualizar localmente
+        if (typeof window.updateRdaDictionary === 'function') {
+            window.updateRdaDictionary(mapping);
+        }
+
+        if (typeof showToast === 'function') {
+            showToast("¡Mapeo de variables SIS guardado con éxito!", true, 'good');
+        }
+    } catch (e) {
+        console.error("Error saving SIS mapping:", e);
+        if (typeof showToast === 'function') {
+            showToast("Error al guardar mapeo: " + e.message, false, 'bad');
+        }
+    } finally {
+        if (typeof hideOverlay === 'function') {
+            hideOverlay();
+        }
+    }
+};
 

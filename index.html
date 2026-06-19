@@ -2527,6 +2527,11 @@
                 <span class="material-symbols-rounded">tune</span>
                 <span>Parámetros</span>
               </button>
+
+              <button class="nav-tab" id="tabAdminMapeador" onclick="activateAdminSubPanel('mapeador')">
+                <span class="material-symbols-rounded">account_tree</span>
+                <span>Mapeador SIS</span>
+              </button>
             </div>
           </div>
 
@@ -3043,6 +3048,50 @@
             </div>
           </div>
         </div>
+
+        <!-- SUB-PANEL 6: MAPEADOR DE VARIABLES SIS -->
+        <div id="adminSection_mapeador" class="admin-sub-panel animate-in fade-in slide-in-from-bottom-4 duration-500" style="display:none;">
+          <div class="mb-6">
+            <h4 class="text-[18px] font-black text-primary m-0 tracking-tight">Mapeador Dinámico de Variables SIS</h4>
+            <p class="text-[12px] font-bold text-slate-400 mt-1">Configura las claves/variables SIS del CSV asociadas a cada tipo de biológico del sistema para los cálculos del RDA.</p>
+          </div>
+
+          <div class="bg-surface rounded-3xl border border-outline-variant/30 shadow-sm overflow-hidden">
+            <div class="p-6 flex flex-wrap items-center justify-between gap-4 border-b border-outline-variant/10">
+              <div class="flex flex-wrap items-center gap-4">
+                <span class="text-xs font-bold text-primary/60">Edita la lista de variables separadas por comas o presionando Enter.</span>
+                <div style="position: relative; display: inline-block;">
+                  <span class="material-symbols-rounded" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 18px;">search</span>
+                  <input type="text" id="sisMappingSearch" placeholder="Buscar biológico..." 
+                         style="height: 38px; padding-left: 38px; padding-right: 16px; border-radius: 9999px; border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; font-size: 12px; font-weight: 700; outline: none; width: 240px; transition: all 0.2s;"
+                         oninput="window.renderSisMappingTable(this.value)" />
+                </div>
+              </div>
+              <button id="btnSaveSisMapping" onclick="window.saveSisMappingUi()"
+                class="h-10 px-6 rounded-full bg-primary text-primary-on text-[12px] font-bold border-none cursor-pointer shadow-sm hover:translate-y-[-1px] hover:shadow-md transition-all flex items-center gap-2">
+                <span class="material-symbols-rounded text-[18px]">save</span>
+                Guardar Mapeo
+              </button>
+            </div>
+
+            <div class="p-6">
+              <div class="overflow-x-auto rounded-2xl border border-outline-variant/20" style="max-height: 480px; overflow-y: auto;">
+                <table class="w-full text-left border-collapse bg-surface/50 shadow-sm" style="position: relative;">
+                  <thead>
+                    <tr class="bg-primary/5" style="position: sticky; top: 0; z-index: 10; background-color: var(--md-sys-color-surface-container);">
+                      <th class="px-6 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">Biológico</th>
+                      <th class="px-6 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">Variables SIS Asignadas</th>
+                    </tr>
+                  </thead>
+                  <tbody id="sisMappingTbody" class="divide-y divide-outline-variant/20">
+                    <!-- Se inyecta por JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
 
       </div>
     </div>
@@ -4696,6 +4745,7 @@
         <button class="rda-scheme-btn snap-start shrink-0" data-scheme="mayores">Adultos Mayores</button>
         <button class="rda-scheme-btn snap-start shrink-0" data-scheme="embarazadas">Embarazadas</button>
         <button class="rda-scheme-btn snap-start shrink-0" data-scheme="invernal">Temp. Invernal</button>
+        <button class="rda-scheme-btn snap-start shrink-0" data-scheme="adicionales">Adicionales</button>
       </div>
 
       <!-- KPI Grid (2 Columns) -->

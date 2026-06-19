@@ -3859,6 +3859,40 @@ async function supabaseRequest(action = "", payload, options = {}) {
 
   try {
     switch (actionLower) {
+      case "getsismapping": {
+        const { data, error } = await supabase
+          .from('sis_variables_mapeo')
+          .select('*');
+        if (error) throw error;
+        // Convertir array de filas a un objeto { biologico: [variables...] }
+        const mapping = {};
+        if (data) {
+          data.forEach(row => {
+            mapping[row.biologico] = row.variables || [];
+          });
+        }
+        return { ok: true, data: mapping };
+      }
+
+      case "savesismapping": {
+        const { mapping } = payload;
+        if (!mapping || typeof mapping !== 'object') {
+          throw new Error("Mapeo inválido");
+        }
+        // Preparar filas para upsert
+        const rows = Object.keys(mapping).map(bio => ({
+          biologico: bio,
+          variables: mapping[bio]
+        }));
+        
+        const { error } = await supabase
+          .from('sis_variables_mapeo')
+          .upsert(rows, { onConflict: 'biologico' });
+        if (error) throw error;
+        
+        return { ok: true };
+      }
+
       case "login": {
         const { data, error } = await supabase
           .from('usuarios_legacy')
@@ -6857,6 +6891,19 @@ function deferPostLoginTask(task, delay = 0) {
 async function hydrateSessionUi(user, status, opts = {}) {
   exposeAppFns();
   assertCriticalFns();
+
+  // Cargar el mapeo de variables SIS dinámico desde Supabase
+  try {
+    const mappingRes = await apiCall("getSisMapping");
+    if (mappingRes && mappingRes.ok && mappingRes.data) {
+      console.log("[hydrateSessionUi] Mapeo dinámico cargado:", mappingRes.data);
+      if (typeof window.updateRdaDictionary === 'function') {
+        window.updateRdaDictionary(mappingRes.data);
+      }
+    }
+  } catch (err) {
+    console.error("[hydrateSessionUi] Error al cargar mapeo dinámico:", err);
+  }
 
   const {
     showSuccessToast = false,
@@ -12220,6 +12267,11 @@ window.activateAdminSubPanel = function (panelId) {
   if (panelId === 'seguridad') refreshUsers();
   if (panelId === 'aperturas') loadConsumiblesOverrideAdmin();
   if (panelId === 'catalogo') refreshBulkBioSetup();
+  if (panelId === 'mapeador') {
+    if (typeof window.renderSisMappingTable === 'function') {
+      window.renderSisMappingTable();
+    }
+  }
 };
 
 const rBtn = $("btnRefreshUsers");
