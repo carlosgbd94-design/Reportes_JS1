@@ -14731,7 +14731,7 @@ async function handleFileUploadFlow() {
     const alertModal = alertOverlay?.querySelector(".modal");
     
     if (alertOverlay && alertModal) {
-      alertOverlay.style.display = "flex";
+      alertOverlay.classList.add("show");
       gsap.fromTo(alertOverlay, { opacity: 0 }, { opacity: 1, duration: 0.3 });
       gsap.fromTo(alertModal, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power2.out" });
     }
@@ -14749,12 +14749,12 @@ async function handleFileUploadFlow() {
         resolve(false);
       };
       const cleanup = () => {
-        confirmBtn.removeEventListener("click", onConfirm);
-        cancelBtn.removeEventListener("click", onCancel);
+        confirmBtn?.removeEventListener("click", onConfirm);
+        cancelBtn?.removeEventListener("click", onCancel);
         if (alertOverlay && alertModal) {
           gsap.to(alertModal, { y: 20, opacity: 0, duration: 0.25 });
           gsap.to(alertOverlay, { opacity: 0, duration: 0.25, onComplete: () => {
-            alertOverlay.style.display = "none";
+            alertOverlay.classList.remove("show");
           }});
         }
       };
@@ -14777,7 +14777,7 @@ async function handleFileUploadFlow() {
     const compressStatusText = $("pdfCompressStatusText");
 
     if (compressOverlay && compressModal) {
-      compressOverlay.style.display = "flex";
+      compressOverlay.classList.add("show");
       gsap.fromTo(compressOverlay, { opacity: 0 }, { opacity: 1, duration: 0.3 });
       gsap.fromTo(compressModal, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.7)" });
     }
@@ -14792,7 +14792,7 @@ async function handleFileUploadFlow() {
       if (compressOverlay && compressModal) {
         gsap.to(compressModal, { scale: 0.9, opacity: 0, duration: 0.25 });
         gsap.to(compressOverlay, { opacity: 0, duration: 0.25, onComplete: () => {
-          compressOverlay.style.display = "none";
+          compressOverlay.classList.remove("show");
         }});
       }
 
@@ -14801,9 +14801,10 @@ async function handleFileUploadFlow() {
       console.warn("Fallo la compresión de PDF, se subirá el original:", compressErr);
       showToast("No se pudo comprimir el PDF. Se intentará subir original.", false, "warn");
       
-      if (compressOverlay && compressModal) {
-        gsap.to(compressOverlay, { opacity: 0, duration: 0.2 });
-        compressOverlay.style.display = "none";
+      if (compressOverlay) {
+        gsap.to(compressOverlay, { opacity: 0, duration: 0.2, onComplete: () => {
+          compressOverlay.classList.remove("show");
+        }});
       }
     }
   }
