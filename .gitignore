@@ -1,3 +1,10 @@
 node_modules/
 playwright-report/
 test-results/
+.env
+.env*
+*.env
+*.key
+*.json
+!package.json
+!deno.json
