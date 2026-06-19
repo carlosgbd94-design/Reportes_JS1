@@ -14547,6 +14547,64 @@ $("btnBrowseFile")?.addEventListener("click", () => {
   $("uploadFileInput")?.click();
 });
 
+async function compressPDF(file, onProgress) {
+  if (!window['pdfjs-dist/build/pdf']) {
+    if (onProgress) onProgress(0, "Cargando motor PDF...");
+    await new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js";
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  const pdfjsLib = window['pdfjs-dist/build/pdf'];
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+  if (onProgress) onProgress(5, "Analizando documento...");
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const numPages = pdf.numPages;
+
+  const { jsPDF } = window.jspdf;
+  let newPdf = null;
+
+  for (let i = 1; i <= numPages; i++) {
+    if (onProgress) {
+      const pagePct = Math.round(5 + ((i - 1) / numPages) * 85);
+      onProgress(pagePct, `Procesando página ${i} de ${numPages}...`);
+    }
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 2.0 });
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+
+    await page.render({ canvasContext: ctx, viewport }).promise;
+
+    const imgData = canvas.toDataURL("image/jpeg", 0.7);
+
+    const orientation = viewport.width > viewport.height ? "l" : "p";
+    if (i === 1) {
+      newPdf = new jsPDF({
+        orientation,
+        unit: "px",
+        format: [viewport.width, viewport.height]
+      });
+    } else {
+      newPdf.addPage([viewport.width, viewport.height], orientation);
+    }
+    newPdf.addImage(imgData, "JPEG", 0, 0, viewport.width, viewport.height);
+  }
+
+  if (onProgress) onProgress(95, "Generando archivo optimizado...");
+  const pdfOutput = newPdf.output("blob");
+  if (onProgress) onProgress(100, "¡Compresión finalizada!");
+  return new File([pdfOutput], file.name, { type: "application/pdf" });
+}
+
 $("uploadFileInput")?.addEventListener("change", (e) => {
   const file = e.target.files[0];
   const fileNameLabel = $("fileNameLabel");
@@ -14554,12 +14612,19 @@ $("uploadFileInput")?.addEventListener("change", (e) => {
   const btnDoUpload = $("btnDoUpload");
 
   if (file) {
-    if (file.size > 15 * 1024 * 1024) {
-      showToast("El archivo excede el límite de 15MB. Por favor selecciona un archivo más pequeño.", false, "bad");
+    const isPDF = file.name.toLowerCase().endsWith(".pdf");
+    const limit = isPDF ? 40 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > limit) {
+      const msg = isPDF 
+        ? "El PDF original supera el límite permitido de 40MB." 
+        : "El archivo excede el límite de 10MB. Por favor selecciona un archivo más pequeño.";
+      showToast(msg, false, "bad");
       resetUploadForm();
       return;
     }
-    if (fileNameLabel) fileNameLabel.textContent = file.name;
+    if (fileNameLabel) {
+      fileNameLabel.textContent = file.name + (isPDF && file.size > 2 * 1024 * 1024 ? " (Se comprimirá al subir)" : "");
+    }
     if (btnBrowse) btnBrowse.classList.add("hasFile");
     if (btnDoUpload) btnDoUpload.disabled = false;
   } else {
@@ -14579,10 +14644,110 @@ async function handleFileUploadFlow() {
     return;
   }
 
-  if (file.size > 15 * 1024 * 1024) {
-    showToast("El archivo excede el límite de 15MB. Por favor selecciona un archivo más pequeño.", false, "bad");
+  // 1. Close current upload modal
+  closeUploadFilesModal();
+
+  let uploadFile = file;
+  const isPDF = file.name.toLowerCase().endsWith(".pdf");
+
+  // Mostrar advertencia interactiva si el PDF supera los 10MB
+  if (isPDF && file.size > 10 * 1024 * 1024) {
+    const alertOverlay = $("pdfLimitAlertOverlay");
+    const alertModal = alertOverlay?.querySelector(".modal");
+    
+    if (alertOverlay && alertModal) {
+      alertOverlay.style.display = "flex";
+      gsap.fromTo(alertOverlay, { opacity: 0 }, { opacity: 1, duration: 0.3 });
+      gsap.fromTo(alertModal, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power2.out" });
+    }
+
+    const userConfirmed = await new Promise((resolve) => {
+      const confirmBtn = $("btnConfirmPdfCompress");
+      const cancelBtn = $("btnCancelPdfCompress");
+
+      const onConfirm = () => {
+        cleanup();
+        resolve(true);
+      };
+      const onCancel = () => {
+        cleanup();
+        resolve(false);
+      };
+      const cleanup = () => {
+        confirmBtn.removeEventListener("click", onConfirm);
+        cancelBtn.removeEventListener("click", onCancel);
+        if (alertOverlay && alertModal) {
+          gsap.to(alertModal, { y: 20, opacity: 0, duration: 0.25 });
+          gsap.to(alertOverlay, { opacity: 0, duration: 0.25, onComplete: () => {
+            alertOverlay.style.display = "none";
+          }});
+        }
+      };
+
+      confirmBtn?.addEventListener("click", onConfirm);
+      cancelBtn?.addEventListener("click", onCancel);
+    });
+
+    if (!userConfirmed) {
+      return; // El usuario canceló
+    }
+  }
+
+  // Activar compresión si es PDF y supera los 2MB
+  if (isPDF && file.size > 2 * 1024 * 1024) {
+    const compressOverlay = $("pdfCompressionOverlay");
+    const compressModal = compressOverlay?.querySelector(".modal");
+    const compressProgressBar = $("pdfCompressProgressBar");
+    const compressPercent = $("pdfCompressPercent");
+    const compressStatusText = $("pdfCompressStatusText");
+
+    if (compressOverlay && compressModal) {
+      compressOverlay.style.display = "flex";
+      gsap.fromTo(compressOverlay, { opacity: 0 }, { opacity: 1, duration: 0.3 });
+      gsap.fromTo(compressModal, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.7)" });
+    }
+
+    try {
+      uploadFile = await compressPDF(file, (pct, statusText) => {
+        if (compressProgressBar) compressProgressBar.style.width = `${pct}%`;
+        if (compressPercent) compressPercent.textContent = `${pct}%`;
+        if (compressStatusText) compressStatusText.textContent = statusText;
+      });
+
+      if (compressOverlay && compressModal) {
+        gsap.to(compressModal, { scale: 0.9, opacity: 0, duration: 0.25 });
+        gsap.to(compressOverlay, { opacity: 0, duration: 0.25, onComplete: () => {
+          compressOverlay.style.display = "none";
+        }});
+      }
+
+      showToast(`¡PDF optimizado con éxito! (${(uploadFile.size / (1024 * 1024)).toFixed(2)} MB)`, true, "good");
+    } catch (compressErr) {
+      console.warn("Fallo la compresión de PDF, se subirá el original:", compressErr);
+      showToast("No se pudo comprimir el PDF. Se intentará subir original.", false, "warn");
+      
+      if (compressOverlay && compressModal) {
+        gsap.to(compressOverlay, { opacity: 0, duration: 0.2 });
+        compressOverlay.style.display = "none";
+      }
+    }
+  }
+
+  if (uploadFile.size > 10 * 1024 * 1024) {
+    showToast("El archivo excede el límite de 10MB. Por favor selecciona un archivo más pequeño.", false, "bad");
     return;
   }
+
+  // 2. Setup progress overlay UI elements para la subida
+  const progressOverlay = $("uploadProgressOverlay");
+  const progressBar = $("uploadProgressBar");
+  const progressPercent = $("uploadProgressPercent");
+  const progressBytes = $("uploadProgressBytes");
+
+  if (progressOverlay) progressOverlay.classList.add("show");
+  if (progressBar) progressBar.style.width = "0%";
+  if (progressPercent) progressPercent.textContent = "0%";
+  if (progressBytes) progressBytes.textContent = `0 MB / ${(uploadFile.size / (1024 * 1024)).toFixed(2)} MB`;
 
   let targetClues = USER.clues;
   let targetUnidad = USER.unidad;
@@ -14593,6 +14758,7 @@ async function handleFileUploadFlow() {
     targetClues = unitSelect.value;
     if (!targetClues) {
       showToast("Debes seleccionar una unidad a supervisar", false, "bad");
+      if (progressOverlay) progressOverlay.classList.remove("show");
       return;
     }
     const option = unitSelect.options[unitSelect.selectedIndex];
@@ -14601,24 +14767,10 @@ async function handleFileUploadFlow() {
     targetMunicipio = option.getAttribute("data-muni") || "";
   }
 
-  // 1. Close current upload modal
-  closeUploadFilesModal();
-
-  // 2. Setup progress overlay UI elements
-  const progressOverlay = $("uploadProgressOverlay");
-  const progressBar = $("uploadProgressBar");
-  const progressPercent = $("uploadProgressPercent");
-  const progressBytes = $("uploadProgressBytes");
-
-  if (progressOverlay) progressOverlay.classList.add("show");
-  if (progressBar) progressBar.style.width = "0%";
-  if (progressPercent) progressPercent.textContent = "0%";
-  if (progressBytes) progressBytes.textContent = `0 MB / ${(file.size / (1024 * 1024)).toFixed(2)} MB`;
-
   try {
     const res = await apiCall({
       action: "uploadFile",
-      file: file,
+      file: uploadFile,
       category: category,
       targetClues: targetClues,
       targetUnidad: targetUnidad,
@@ -14626,7 +14778,7 @@ async function handleFileUploadFlow() {
     }, {}, {
       onUploadProgress: (progress) => {
         const loaded = progress.loaded || 0;
-        const total = progress.total || file.size;
+        const total = progress.total || uploadFile.size;
         const pct = Math.min(100, Math.round((loaded / total) * 100));
 
         if (progressBar) progressBar.style.width = `${pct}%`;
@@ -14646,7 +14798,7 @@ async function handleFileUploadFlow() {
     console.error("Upload Error:", err);
     let errMsg = "Error de conexión al subir el archivo";
     if (err.message && (err.message.includes("Payload Too Large") || err.message.includes("413") || err.message.includes("size") || err.message.includes("limit"))) {
-      errMsg = "El archivo excede el límite permitido de 15MB.";
+      errMsg = "El archivo excede el límite permitido de 10MB.";
     } else if (err.message) {
       errMsg = err.message;
     }

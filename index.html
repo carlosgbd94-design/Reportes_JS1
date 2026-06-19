@@ -4106,7 +4106,7 @@
 
 
           <div class="fieldCard">
-            <label for="uploadFileInput">Seleccionar archivo (Máx. 15MB)</label>
+            <label for="uploadFileInput">Seleccionar archivo (Máx. 10MB)</label>
             <div class="fileInputWrap">
               <input type="file" id="uploadFileInput" style="display:none">
               <button type="button" class="btn" id="btnBrowseFile" style="width:100%; justify-content:center; gap:8px;">
@@ -4391,6 +4391,70 @@
           style="background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); font-weight:800;">
           Sí, Continuar
         </button>
+      </div>
+  <!-- ⚠️ ALERTA DE COMPRESIÓN DE PDF (>10MB) -->
+  <div class="modalOverlay" id="pdfLimitAlertOverlay" style="display: none; z-index: 11000; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(3, 8, 18, 0.4);">
+    <div class="modal"
+      style="width: 100%; max-width: 480px; background: var(--md-sys-color-surface); border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden; padding: 32px; display: flex; flex-direction: column; gap: 24px;">
+      <div class="modalHead" style="text-align: center; display: flex; flex-direction: column; align-items: center;">
+        <div class="modalEyebrow"
+          style="background: #fffbeb; color: #d97706; padding: 6px 14px; border-radius: 12px; display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 11px; text-transform: uppercase; margin-bottom: 12px;">
+          <span class="material-symbols-rounded" style="font-size:16px; color:#d97706;">warning</span> Optimización Necesaria
+        </div>
+        <div class="modalTitle" style="font-weight:900; margin-bottom:8px; font-size: 20px;">Archivo muy pesado</div>
+        <div class="modalSub" style="color:var(--md-sys-color-on-surface-variant); line-height:1.5; font-size: 14px;">
+          El archivo PDF que intentas subir supera el límite permitido de <strong>10 MB</strong>. Se procederá a comprimir y optimizar el archivo automáticamente para reducir su tamaño y permitir la subida.
+        </div>
+      </div>
+      <div class="modalFooter" style="display:flex; justify-content:center; gap:12px; width: 100%; margin-top: 8px;">
+        <button class="ghostBtn" id="btnCancelPdfCompress" type="button" style="border:none; background:transparent; font-weight:700; flex: 1; display:flex; align-items:center; justify-content:center; gap:8px;">
+          <span class="material-symbols-rounded">close</span> Cancelar
+        </button>
+        <button class="btn" id="btnConfirmPdfCompress" type="button"
+          style="background: #d97706; color: white; font-weight:800; padding: 12px 20px; border-radius: 12px; border: none; flex: 1.5; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);">
+          <span class="material-symbols-rounded">compress</span> Comprimir y continuar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⚙️ PANTALLA DE CARGA DE COMPRESIÓN DE PDF -->
+  <div class="overlay" id="pdfCompressionOverlay" style="display: none; background: rgba(3, 8, 18, 0.4) !important; z-index: 12000; align-items: center; justify-content: center; position: fixed; inset: 0;">
+    <div class="modal"
+      style="max-width: 420px; background: var(--md-sys-color-surface); border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden; padding: 32px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 24px;">
+      <div class="modalEyebrow"
+        style="color: #d97706; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 8px;">
+        <span class="material-symbols-rounded" style="font-size: 18px; color: #d97706;">settings_suggest</span>
+        Optimizador de PDF
+      </div>
+
+      <div class="elastic-bounce-container" style="margin-bottom: 8px;">
+        <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png"
+          alt="Procesando..." class="bounce-logo" style="filter: drop-shadow(0 0 10px rgba(217, 119, 6, 0.4));">
+      </div>
+
+      <div style="width: 100%;">
+        <div id="pdfCompressTitle"
+          style="font-weight: 900; font-size: 20px; color: var(--md-sys-color-on-surface); margin-bottom: 8px;">
+          Comprimiendo PDF...</div>
+        <div id="pdfCompressSub"
+          style="color: var(--md-sys-color-on-surface-variant); font-size: 13px; line-height: 1.5; margin-bottom: 20px;">
+          Renderizando páginas en alta resolución y optimizando imágenes.</div>
+
+        <!-- Bar/Progress -->
+        <div
+          style="width: 100%; height: 8px; background: var(--md-sys-color-outline-variant); border-radius: 100px; overflow: hidden; position: relative; margin-bottom: 12px;">
+          <div id="pdfCompressProgressBar"
+            style="width: 0%; height: 100%; background: linear-gradient(90deg, #d97706 0%, #f59e0b 100%); border-radius: 100px; transition: width 0.2s ease-out;">
+          </div>
+        </div>
+
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 13px; font-weight: 700;">
+          <span id="pdfCompressStatusText" style="color: var(--md-sys-color-on-surface-variant);">Preparando...</span>
+          <span id="pdfCompressPercent"
+            style="color: #d97706; font-size: 15px; font-weight: 900;">0%</span>
+        </div>
       </div>
     </div>
   </div>
