@@ -4022,7 +4022,8 @@ async function supabaseRequest(action = "", payload, options = {}) {
           municipio: finalMuni,
           clues,
           unidad,
-          capturado_por: nombreResp
+          capturado_por: nombreResp,
+          sin_movimiento: payload.sin_movimiento || false
         };
 
         // Inicializar biológicos según auditoría exacta
@@ -4201,7 +4202,8 @@ async function supabaseRequest(action = "", payload, options = {}) {
           jeringa_aplic_05ml_0605502657: Number(payload.jeringa_aplic_05ml_0605502657 || 0),
           aguja_0600403711: Number(payload.aguja_0600403711 || payload.aguja_06004037 || 0),
           capturado_por: String(payload.nombre || USER.nombre || USER.usuario || "").toUpperCase(),
-          editado: payload.editado || 'NO'
+          editado: payload.editado || 'NO',
+          sin_movimiento: payload.sin_movimiento || false
         };
 
         const { error } = await supabase.from('consumibles').upsert(record, { onConflict: 'id' });
@@ -9340,6 +9342,377 @@ async function updateExportFechaHint() {
   refreshExportSplitUi();
 }
 
+// ============================================================
+// 🛡️ SIN PEDIDO CONFIRM MODAL (BIO)
+// ============================================================
+let SIN_PEDIDO_CONFIRM_RESOLVER = null;
+
+function openSinPedidoConfirm() {
+  return new Promise((resolve) => {
+    const overlay = $("sinPedidoConfirmOverlay");
+    if (!overlay) { resolve(true); return; }
+    if (overlay.parentNode !== document.body) document.body.appendChild(overlay);
+
+    const btnCancel = overlay.querySelector("#btnSinPedidoConfirmCancel");
+    const btnAccept = overlay.querySelector("#btnSinPedidoConfirmAccept");
+
+    const close = (result) => {
+      overlay.classList.remove("show");
+      document.body.classList.remove("sinPedidoConfirmOpen");
+      const r = SIN_PEDIDO_CONFIRM_RESOLVER;
+      SIN_PEDIDO_CONFIRM_RESOLVER = null;
+      if (typeof r === "function") setTimeout(() => r(!!result), 300);
+    };
+
+    overlay.onclick = (e) => { if (e.target === overlay) close(false); };
+    if (btnCancel) btnCancel.onclick = () => close(false);
+    if (btnAccept) btnAccept.onclick = () => close(true);
+
+    SIN_PEDIDO_CONFIRM_RESOLVER = resolve;
+    requestAnimationFrame(() => {
+      overlay.classList.add("show");
+      document.body.classList.add("sinPedidoConfirmOpen");
+    });
+  });
+}
+
+// ============================================================
+// 🛡️ SIN MOVIMIENTO — ESTADO GLOBAL
+// ============================================================
+let SIN_MOVIMIENTO_SR = false;   // true cuando el toggle SR está activo
+let SIN_MOVIMIENTO_CONS = false; // true cuando el toggle CONS está activo
+let PREFILL_CONS_DATA = null;    // últimos datos de consumibles precargados
+
+// ---- Prefill semanal para CONS ----
+async function execPrefillSemanalCONS(todayStr) {
+  if (!USER || !USER.clues || !window.supabase) return null;
+  try {
+    const { data: lastRec } = await window.supabase
+      .from('consumibles')
+      .select('*')
+      .eq('clues', USER.clues)
+      .lt('fecha', todayStr)
+      .order('fecha', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (lastRec) return lastRec;
+  } catch (err) {
+    console.error("execPrefillSemanalCONS error:", err);
+  }
+  return null;
+}
+
+// ---- Helpers para abrir/cerrar modales de Sin Movimiento ----
+let SIN_MOV_SR_RESOLVER = null;
+let SIN_MOV_CONS_RESOLVER = null;
+
+function openSinMovimientoSRModal(items) {
+  return new Promise((resolve) => {
+    const overlay = $("sinMovimientoSROverlay");
+    if (!overlay) { resolve(false); return; }
+    if (overlay.parentNode !== document.body) document.body.appendChild(overlay);
+
+    // Llenar lista de valores
+    const list = $("sinMovimientoSRList");
+    if (list) {
+      if (items && items.length) {
+        list.innerHTML = items.map(it => `
+          <div class="flex items-center gap-3 py-1.5 px-3 bg-surface rounded-xl border border-outline-variant/20">
+            <span class="material-symbols-rounded text-[16px] text-primary/50">vaccines</span>
+            <span class="text-[12px] font-bold text-surface-onVariant/90 flex-1">${escapeHtml(it.biologico || it.bio || "")}</span>
+            <span class="text-[12px] font-black text-primary">${it.cantidad ?? it.qty ?? 0} fr.</span>
+          </div>`).join("");
+      } else {
+        list.innerHTML = `<div class="text-[12px] text-surface-onVariant/60 italic">Sin datos de la semana anterior.</div>`;
+      }
+    }
+
+    const btnCancel = overlay.querySelector("#btnSinMovimientoSRCancel");
+    const btnConfirm = overlay.querySelector("#btnSinMovimientoSRConfirm");
+
+    const close = (result) => {
+      overlay.classList.remove("show");
+      const r = SIN_MOV_SR_RESOLVER;
+      SIN_MOV_SR_RESOLVER = null;
+      if (typeof r === "function") setTimeout(() => r(!!result), 300);
+    };
+
+    overlay.onclick = (e) => { if (e.target === overlay) close(false); };
+    if (btnCancel) btnCancel.onclick = () => close(false);
+    if (btnConfirm) btnConfirm.onclick = () => close(true);
+
+    SIN_MOV_SR_RESOLVER = resolve;
+    requestAnimationFrame(() => overlay.classList.add("show"));
+  });
+}
+
+function openSinMovimientoConsModal(consData) {
+  return new Promise((resolve) => {
+    const overlay = $("sinMovimientoConsOverlay");
+    if (!overlay) { resolve(false); return; }
+    if (overlay.parentNode !== document.body) document.body.appendChild(overlay);
+
+    const list = $("sinMovimientoConsList");
+    if (list && consData) {
+      const fields = [
+        { label: "SRP (Dosis)", val: consData.srp_dosis },
+        { label: "SR (Dosis)", val: consData.sr_dosis },
+        { label: "Jeringa 0.5 ml", val: consData.jeringa_aplic_05ml_0605502657 },
+        { label: "Jeringa 5 ml", val: consData.jeringa_reconst_5ml_0605500438 },
+        { label: "Aguja (Auto)", val: consData.aguja_0600403711 }
+      ];
+      list.innerHTML = fields.map(f => `
+        <div class="flex items-center gap-3 py-1.5 px-3 bg-surface rounded-xl border border-outline-variant/20">
+          <span class="material-symbols-rounded text-[16px] text-primary/50">medical_services</span>
+          <span class="text-[12px] font-bold text-surface-onVariant/90 flex-1">${f.label}</span>
+          <span class="text-[12px] font-black text-primary">${f.val ?? 0}</span>
+        </div>`).join("");
+    }
+
+    const btnCancel = overlay.querySelector("#btnSinMovimientoConsCancel");
+    const btnConfirm = overlay.querySelector("#btnSinMovimientoConsConfirm");
+
+    const close = (result) => {
+      overlay.classList.remove("show");
+      const r = SIN_MOV_CONS_RESOLVER;
+      SIN_MOV_CONS_RESOLVER = null;
+      if (typeof r === "function") setTimeout(() => r(!!result), 300);
+    };
+
+    overlay.onclick = (e) => { if (e.target === overlay) close(false); };
+    if (btnCancel) btnCancel.onclick = () => close(false);
+    if (btnConfirm) btnConfirm.onclick = () => close(true);
+
+    SIN_MOV_CONS_RESOLVER = resolve;
+    requestAnimationFrame(() => overlay.classList.add("show"));
+  });
+}
+
+// ---- Actualizar UI tarjeta Sin Movimiento SR ----
+function applySinMovimientoSRUI(isActive) {
+  SIN_MOVIMIENTO_SR = !!isActive;
+  const card = $("cardSinMovimientoSR");
+  const iconBg = $("iconSinMovimientoSRBg");
+  const label = $("labelSinMovimientoSR");
+  const hint = $("hintSinMovimientoSR");
+
+  if (card) {
+    if (isActive) {
+      card.style.backgroundColor = "#eff6ff";
+      card.style.borderColor = "#bfdbfe";
+      if (iconBg) { iconBg.style.backgroundColor = "#dbeafe"; iconBg.style.color = "#1d4ed8"; }
+      if (label) label.style.color = "#1e40af";
+      if (hint) { hint.innerHTML = "Modo activo: <b>Sin Movimiento</b>. Los valores del último reporte serán replicados con la fecha de hoy."; hint.style.color = "#1e3a8a"; }
+    } else {
+      card.style.backgroundColor = "";
+      card.style.borderColor = "";
+      if (iconBg) { iconBg.style.backgroundColor = ""; iconBg.style.color = ""; }
+      if (label) label.style.color = "";
+      if (hint) { hint.innerHTML = "Activa esta opción si <b>NO</b> hubo cambios en tus existencias esta semana."; hint.style.color = ""; }
+    }
+  }
+
+  // Bloquear/desbloquear inputs de la tabla SR (excepto el nombre)
+  const formSR = $("formSR");
+  if (formSR) {
+    formSR.querySelectorAll("input:not(#nombreSR), select").forEach(el => {
+      if (el.id === "chkSinMovimientoSR") return; // no bloquear el propio toggle
+      if (isActive) {
+        el.dataset.smPreDisabled = el.disabled ? "1" : "0";
+        el.disabled = true;
+        el.style.opacity = "0.55";
+        el.style.pointerEvents = "none";
+      } else {
+        if (el.dataset.smPreDisabled === "0") { el.disabled = false; }
+        el.style.opacity = "";
+        el.style.pointerEvents = "";
+        delete el.dataset.smPreDisabled;
+      }
+    });
+    // El botón de agregar fila también se bloquea
+    const btnAdd = $("btnAddSRRow");
+    if (btnAdd) { btnAdd.disabled = isActive; btnAdd.style.opacity = isActive ? "0.5" : ""; }
+  }
+}
+
+// ---- Actualizar UI tarjeta Sin Movimiento CONS ----
+function applySinMovimientoConsUI(isActive) {
+  SIN_MOVIMIENTO_CONS = !!isActive;
+  const card = $("cardSinMovimientoCONS");
+  const iconBg = $("iconSinMovimientoCONSBg");
+  const label = $("labelSinMovimientoCONS");
+  const hint = $("hintSinMovimientoCONS");
+
+  if (card) {
+    if (isActive) {
+      card.style.backgroundColor = "#eff6ff";
+      card.style.borderColor = "#bfdbfe";
+      if (iconBg) { iconBg.style.backgroundColor = "#dbeafe"; iconBg.style.color = "#1d4ed8"; }
+      if (label) label.style.color = "#1e40af";
+      if (hint) { hint.innerHTML = "Modo activo: <b>Sin Movimiento</b>. Los valores del último reporte serán replicados con la fecha de hoy."; hint.style.color = "#1e3a8a"; }
+    } else {
+      card.style.backgroundColor = "";
+      card.style.borderColor = "";
+      if (iconBg) { iconBg.style.backgroundColor = ""; iconBg.style.color = ""; }
+      if (label) label.style.color = "";
+      if (hint) { hint.innerHTML = "Activa esta opción si <b>NO</b> hubo cambios en los consumibles esta semana."; hint.style.color = ""; }
+    }
+  }
+
+  // Bloquear/desbloquear inputs numéricos de CONS (no el nombre)
+  const formCONS = $("formCONS");
+  if (formCONS) {
+    formCONS.querySelectorAll("input:not(#nombreCONS):not(#aguja_0600403711), select").forEach(el => {
+      if (el.id === "chkSinMovimientoCONS") return;
+      if (isActive) {
+        el.dataset.smPreDisabled = el.disabled ? "1" : "0";
+        el.disabled = true;
+        el.style.opacity = "0.55";
+        el.style.pointerEvents = "none";
+      } else {
+        if (el.dataset.smPreDisabled === "0") { el.disabled = false; }
+        el.style.opacity = "";
+        el.style.pointerEvents = "";
+        delete el.dataset.smPreDisabled;
+      }
+    });
+    // Botones stepper
+    formCONS.querySelectorAll(".stepper-btn").forEach(btn => {
+      btn.disabled = isActive;
+      btn.style.opacity = isActive ? "0.5" : "";
+    });
+  }
+}
+
+// ---- Inicializar toggles Sin Movimiento ----
+function initSinMovimientoToggles(prefillSRItems, prefillConsData) {
+  // ---- SR ----
+  const chkSR = $("chkSinMovimientoSR");
+  const cardSR = $("cardSinMovimientoSR");
+
+  if (chkSR && cardSR) {
+    // Mostrar la tarjeta solo si hay datos previos disponibles
+    const hasPrefillSR = prefillSRItems && prefillSRItems.length > 0;
+    cardSR.style.display = hasPrefillSR ? "flex" : "none";
+
+    chkSR.checked = false;
+    chkSR.onchange = async () => {
+      if (chkSR.checked) {
+        // Confirmar
+        chkSR.checked = false; // revertir temporalmente
+        const confirmed = await openSinMovimientoSRModal(prefillSRItems || []);
+        if (!confirmed) {
+          applySinMovimientoSRUI(false);
+          return;
+        }
+        chkSR.checked = true;
+        applySinMovimientoSRUI(true);
+      } else {
+        applySinMovimientoSRUI(false);
+        // Si hay prefill disponible, restaurarlo en el formulario
+        if (window.PREFILL_SNAPSHOT && typeof addSRRow === "function") {
+          // Ya está cargado; simplemente desbloquear
+        }
+      }
+    };
+  }
+
+  // ---- CONS ----
+  const chkCONS = $("chkSinMovimientoCONS");
+  const cardCONS = $("cardSinMovimientoCONS");
+
+  if (chkCONS && cardCONS) {
+    const hasPrefillCONS = !!prefillConsData;
+    cardCONS.style.display = hasPrefillCONS ? "flex" : "none";
+    PREFILL_CONS_DATA = prefillConsData || null;
+
+    chkCONS.checked = false;
+    chkCONS.onchange = async () => {
+      if (chkCONS.checked) {
+        chkCONS.checked = false;
+        const confirmed = await openSinMovimientoConsModal(prefillConsData);
+        if (!confirmed) {
+          applySinMovimientoConsUI(false);
+          return;
+        }
+        // Precargar valores de CONS en el form
+        if (prefillConsData) {
+          loadCONSIntoForm(prefillConsData);
+        }
+        chkCONS.checked = true;
+        applySinMovimientoConsUI(true);
+      } else {
+        applySinMovimientoConsUI(false);
+        // Limpiar si no había captura de hoy
+        if (!HAS_TODAY_CONS) {
+          if ($("srp_dosis")) $("srp_dosis").value = "";
+          if ($("sr_dosis")) $("sr_dosis").value = "";
+          if ($("jeringa_reconst_5ml_0605500438")) $("jeringa_reconst_5ml_0605500438").value = "";
+          if ($("jeringa_aplic_05ml_0605502657")) $("jeringa_aplic_05ml_0605502657").value = "";
+          if (typeof syncAguja === "function") syncAguja();
+        }
+      }
+    };
+  }
+
+  // Cerrar con Escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      const srOv = $("sinMovimientoSROverlay");
+      if (srOv && srOv.classList.contains("show")) {
+        srOv.classList.remove("show");
+        const r = SIN_MOV_SR_RESOLVER; SIN_MOV_SR_RESOLVER = null;
+        if (typeof r === "function") setTimeout(() => r(false), 300);
+        const chk = $("chkSinMovimientoSR"); if (chk) chk.checked = false;
+        applySinMovimientoSRUI(false);
+      }
+      const consOv = $("sinMovimientoConsOverlay");
+      if (consOv && consOv.classList.contains("show")) {
+        consOv.classList.remove("show");
+        const r = SIN_MOV_CONS_RESOLVER; SIN_MOV_CONS_RESOLVER = null;
+        if (typeof r === "function") setTimeout(() => r(false), 300);
+        const chk = $("chkSinMovimientoCONS"); if (chk) chk.checked = false;
+        applySinMovimientoConsUI(false);
+      }
+      const spOv = $("sinPedidoConfirmOverlay");
+      if (spOv && spOv.classList.contains("show")) {
+        spOv.classList.remove("show");
+        const r = SIN_PEDIDO_CONFIRM_RESOLVER; SIN_PEDIDO_CONFIRM_RESOLVER = null;
+        if (typeof r === "function") setTimeout(() => r(false), 300);
+        const chk = $("chkNoPedido"); if (chk) chk.checked = false;
+      }
+    }
+  }, { once: false });
+}
+
+// ---- Alerta de intento de edición con Sin Movimiento activo ----
+function bindSinMovimientoEditGuard() {
+  // Para SR
+  const formSR = $("formSR");
+  if (formSR) {
+    formSR.addEventListener("click", (e) => {
+      if (!SIN_MOVIMIENTO_SR) return;
+      const el = e.target.closest("input, select, button");
+      if (!el) return;
+      if (el.id === "chkSinMovimientoSR" || el.id === "btnSaveSR" || el.id === "btnEditSR" || el.id === "btnCancelEditSR") return;
+      // Mostrar alerta
+      showToast("Desactiva el modo \"Sin Movimiento\" para poder editar las existencias.", false, "warn");
+    }, true);
+  }
+  // Para CONS
+  const formCONS = $("formCONS");
+  if (formCONS) {
+    formCONS.addEventListener("click", (e) => {
+      if (!SIN_MOVIMIENTO_CONS) return;
+      const el = e.target.closest("input, select, button");
+      if (!el) return;
+      if (el.id === "chkSinMovimientoCONS" || el.id === "btnSaveCONS" || el.id === "btnEditCONS" || el.id === "btnCancelEditCONS") return;
+      showToast("Desactiva el modo \"Sin Movimiento\" para poder editar los consumibles.", false, "warn");
+    }, true);
+  }
+}
+
 function refreshBioAlerts(force = false) {
   let hasStrongAlert = false;
   let hasBlockingError = false;
@@ -9724,9 +10097,8 @@ async function loadBioForm() {
   if (chkNoPedido) {
     chkNoPedido.checked = isOnlyStockSaved;
 
-    // Listener interactivo para manejar la habilitación/deshabilitación y estilo de la tarjeta
-    const updateStockOnlyUI = () => {
-      const isChecked = chkNoPedido.checked;
+    // Aplicar UI según estado (sin modal) — usado también al restaurar estado
+    const applyNoPedidoUI = (isChecked) => {
       const card = $("cardNoPedido");
       const iconBg = $("iconNoPedidoBg");
       const label = $("labelNoPedido");
@@ -9734,48 +10106,30 @@ async function loadBioForm() {
 
       if (card) {
         if (isChecked) {
-          card.style.backgroundColor = "#f0fdf4"; // Verde muy claro premium
+          card.style.backgroundColor = "#f0fdf4";
           card.style.borderColor = "#bbf7d0";
-          if (iconBg) {
-            iconBg.style.backgroundColor = "#dcfce7";
-            iconBg.style.color = "#16a34a";
-          }
+          if (iconBg) { iconBg.style.backgroundColor = "#dcfce7"; iconBg.style.color = "#16a34a"; }
           if (label) label.style.color = "#15803d";
-          if (hint) {
-            hint.innerHTML = "Modo: <b>Reportando solo existencias</b> (pedido en ceros).";
-            hint.style.color = "#166534";
-          }
+          if (hint) { hint.innerHTML = "Modo: <b>Reportando solo existencias</b> (pedido en ceros)."; hint.style.color = "#166534"; }
         } else {
           card.style.backgroundColor = "#ffffff";
           card.style.borderColor = "#e2e8f0";
-          if (iconBg) {
-            iconBg.style.backgroundColor = "";
-            iconBg.style.color = "";
-          }
+          if (iconBg) { iconBg.style.backgroundColor = ""; iconBg.style.color = ""; }
           if (label) label.style.color = "";
-          if (hint) {
-            hint.innerHTML = "Activa esta opción si <b>NO</b> necesitas realizar pedido este mes.";
-            hint.style.color = "";
-          }
+          if (hint) { hint.innerHTML = "Activa esta opción si <b>NO</b> necesitas realizar pedido este mes."; hint.style.color = ""; }
         }
       }
 
       // Bloquear/desbloquear inputs de la columna "pedido"
       document.querySelectorAll('input[data-kind="pedido"]').forEach(inp => {
         if (isChecked) {
-          // Guardar valor anterior en memoria antes de poner a 0
           if (!inp.dataset.preVal) inp.dataset.preVal = inp.value;
           inp.value = "0";
           inp.disabled = true;
           inp.style.opacity = "0.5";
           inp.style.backgroundColor = "#f1f5f9";
         } else {
-          // Restaurar valor anterior si existía
-          if (inp.dataset.preVal !== undefined) {
-            inp.value = inp.dataset.preVal;
-            delete inp.dataset.preVal;
-          }
-          // Habilitar solo si el formulario global no está bloqueado
+          if (inp.dataset.preVal !== undefined) { inp.value = inp.dataset.preVal; delete inp.dataset.preVal; }
           const formBioLocked = HAS_SAVED_BIO && !EDIT_BIO;
           inp.disabled = formBioLocked;
           inp.style.opacity = "";
@@ -9785,9 +10139,25 @@ async function loadBioForm() {
       refreshBioAlerts();
     };
 
-    chkNoPedido.onchange = updateStockOnlyUI;
-    // Ejecutar inmediatamente para configurar el estado inicial
-    setTimeout(updateStockOnlyUI, 50);
+    // Listener interactivo con confirmación al ACTIVAR el toggle
+    chkNoPedido.onchange = async () => {
+      const wantsCheck = chkNoPedido.checked;
+      if (wantsCheck) {
+        // Mostrar modal de confirmación antes de activar
+        chkNoPedido.checked = false; // revertir temporalmente mientras espera
+        const confirmed = await openSinPedidoConfirm();
+        if (!confirmed) {
+          // Usuario canceló: dejar desmarcado
+          applyNoPedidoUI(false);
+          return;
+        }
+        chkNoPedido.checked = true;
+      }
+      applyNoPedidoUI(chkNoPedido.checked);
+    };
+
+    // Ejecutar inmediatamente para configurar el estado inicial (sin modal)
+    setTimeout(() => applyNoPedidoUI(chkNoPedido.checked), 50);
   }
 
   const bioHint = $("bioHint");
@@ -10064,7 +10434,7 @@ async function reloadTodayState(force = false) {
       }
     }
 
-    // Pre-llenado semanal
+    // Pre-llenado semanal SR
     if (!today || !today.sr) {
       // Visual feedback on Friday if empty
       if (dow === 5) {
@@ -10082,8 +10452,27 @@ async function reloadTodayState(force = false) {
       }
     }
 
+    // 🆕 Pre-llenado semanal CONS (siempre buscar datos previos para Sin Movimiento)
+    const prefillConsForSinMov = await execPrefillSemanalCONS(todayStr);
+
     console.log("reloadTodayState today:", today);
     hydrateTodayForms(today);
+
+    // 🆕 Resetear estado Sin Movimiento al recargar
+    SIN_MOVIMIENTO_SR = false;
+    SIN_MOVIMIENTO_CONS = false;
+    const chkSinMovSR = $("chkSinMovimientoSR");
+    const chkSinMovCONS = $("chkSinMovimientoCONS");
+    if (chkSinMovSR) chkSinMovSR.checked = false;
+    if (chkSinMovCONS) chkSinMovCONS.checked = false;
+
+    // 🆕 Inicializar toggles Sin Movimiento (solo si no hay captura de hoy)
+    // Para SR: usar items del prefill; para CONS: usar registro previo completo
+    const prefillSRItems = (isPrefill && today && today.sr && today.sr.items) ? today.sr.items : null;
+    // Para SR: también mostrar si hay prefill aunque ya se guardó, para la próxima semana
+    const srItemsForToggle = prefillSRItems || (today && today.sr && today.sr.items ? today.sr.items : null);
+    initSinMovimientoToggles(srItemsForToggle, prefillConsForSinMov);
+    bindSinMovimientoEditGuard();
 
     if (isPrefill) {
       const prefillDate = today.sr.fecha_prefill || today.sr.fecha;
@@ -11160,7 +11549,7 @@ function activateCapture(tab) {
 
   let targetId = "formSR";
   if (tab === "SR") { if ($("formSR")) $("formSR").style.display = "block"; targetId = "formSR"; }
-  if (tab === "CONS") { if ($("formCONS")) $("formCONS").style.display = "block"; targetId = "formCONS"; }
+  if (tab === "CONS") { if ($("formCONS")) $("formCONS").style.display = "flex"; targetId = "formCONS"; }
   if (tab === "BIO") { if ($("formBIO")) $("formBIO").style.display = "block"; targetId = "formBIO"; }
   if (tab === "PINOL") { if ($("formPINOL")) $("formPINOL").style.display = "block"; targetId = "formPINOL"; }
 
@@ -11602,6 +11991,44 @@ async function performSaveSR() {
   const nombre = $("nombreSR")?.value.trim() || "";
   if (!nombre) return showToast("Ingresa el nombre del responsable", false, "warn");
 
+  // 🛡️ Modo Sin Movimiento: usar items del prefill directamente (ya validados)
+  if (SIN_MOVIMIENTO_SR) {
+    if (HAS_TODAY_SR && !EDIT_SR) return showToast("Ya existe una captura de hoy", false, "warn");
+    const sinMovItems = [];
+    document.querySelectorAll("#srCaptureTbody tr").forEach(tr => {
+      const row = tr._cache || {};
+      const bio = (row.bioSelect || tr.querySelector(".sr-bio-select"))?.value;
+      const lote = (row.loteSelect || tr.querySelector(".sr-lote-select"))?.value;
+      const cant = (row.cantidadInput || tr.querySelector(".sr-cantidad-input"))?.value;
+      const recep = (row.recepcionInput || tr.querySelector(".sr-recepcion-input"))?.value;
+      if (bio && lote && cant && recep) {
+        sinMovItems.push({ biologico: bio, lote, cantidad: Number(cant), fecha_recepcion: recep });
+      }
+    });
+    if (!sinMovItems.length) return showToast("No hay datos previos para replicar", false, "warn");
+
+    await AppService.runCapture({
+      btnId: "btnSaveSR",
+      title: "Guardando",
+      msg: "Registrando sin movimiento...",
+      successMsg: "Sin movimiento registrado",
+      eventTitle: "Existencia de biológicos",
+      eventMsg: "Sin movimiento registrado correctamente.",
+      mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true },
+      action: () => {
+        saveUxValue(UX_KEYS.existenciaName, nombre);
+        return AppService.call("saveSR", {
+          fecha: todayYmdLocal(),
+          nombre,
+          items: sinMovItems,
+          editado: "NO",
+          sin_movimiento: true
+        });
+      }
+    });
+    return;
+  }
+
   const isBatchExpired = (cad) => {
     if (!cad) return false;
     let cadDate = null;
@@ -11733,7 +12160,8 @@ async function performSaveSR() {
         fecha: todayYmdLocal(),
         nombre,
         items,
-        editado: EDIT_SR ? "SI" : "NO"
+        editado: EDIT_SR ? "SI" : "NO",
+        sin_movimiento: SIN_MOVIMIENTO_SR || false
       });
     }
   });
@@ -11754,6 +12182,37 @@ refreshExportSplitUi();
 async function performSaveCONS() {
   const nombre = $("nombreCONS")?.value.trim() || "";
   if (!nombre) return showToast("Ingresa el nombre del responsable", false, "warn");
+
+  // 🛡️ Modo Sin Movimiento: replicar datos del último reporte CONS
+  if (SIN_MOVIMIENTO_CONS) {
+    if (HAS_TODAY_CONS && !EDIT_CONS) return showToast("Ya existe un reporte de hoy", false, "warn");
+    if (!PREFILL_CONS_DATA) return showToast("No hay datos previos de consumibles para replicar", false, "warn");
+
+    const safeNum = (val) => Number(val || 0);
+    await AppService.runCapture({
+      btnId: "btnSaveCONS",
+      title: "Guardando",
+      msg: "Registrando sin movimiento...",
+      successMsg: "Sin movimiento de consumibles registrado",
+      eventTitle: "Consumibles",
+      eventMsg: "Sin movimiento registrado correctamente.",
+      mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true },
+      action: () => {
+        saveUxValue(UX_KEYS.consName, nombre);
+        return AppService.call("saveConsumibles", {
+          nombre,
+          srp_dosis: safeNum(PREFILL_CONS_DATA.srp_dosis),
+          sr_dosis: safeNum(PREFILL_CONS_DATA.sr_dosis),
+          jeringa_reconst_5ml_0605500438: safeNum(PREFILL_CONS_DATA.jeringa_reconst_5ml_0605500438),
+          jeringa_aplic_05ml_0605502657: safeNum(PREFILL_CONS_DATA.jeringa_aplic_05ml_0605502657),
+          aguja_0600403711: safeNum(PREFILL_CONS_DATA.aguja_0600403711),
+          editado: "NO",
+          sin_movimiento: true
+        });
+      }
+    });
+    return;
+  }
 
   const numFields = ["srp_dosis", "sr_dosis", "jeringa_reconst_5ml_0605500438", "jeringa_aplic_05ml_0605502657"];
   for (const f of numFields) {
@@ -11786,7 +12245,8 @@ async function performSaveCONS() {
         jeringa_reconst_5ml_0605500438: safeNum("jeringa_reconst_5ml_0605500438"),
         jeringa_aplic_05ml_0605502657: safeNum("jeringa_aplic_05ml_0605502657"),
         aguja_0600403711: safeNum("aguja_0600403711"),
-        editado: EDIT_CONS ? "SI" : "NO"
+        editado: EDIT_CONS ? "SI" : "NO",
+        sin_movimiento: SIN_MOVIMIENTO_CONS || false
       });
     }
   });

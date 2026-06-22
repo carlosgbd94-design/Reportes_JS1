@@ -1062,31 +1062,51 @@
 
           <!-- SR (EXISTENCIA DE BIOLÓGICOS) -->
           <div id="formSR" style="display:none">
-            <!-- Info Header Grande (Estilo Consumibles/Pinol) -->
-            <div
-              class="flex items-center gap-6 p-6 rounded-[32px] shadow-md mb-2 mt-4 relative z-10 bg-blue-50 border-2 border-blue-200">
-              <div
-                class="w-16 h-16 rounded-2xl bg-surface border border-[#e0f2fe] flex items-center justify-center text-4xl shadow-sm shrink-0">
-                📦
-              </div>
-              <div class="flex-1">
-                <div class="text-[17px] font-black text-primary leading-tight">Existencia de Biológicos (SR)</div>
-                <div class="text-[12px] font-bold text-surface-onVariant/60 mt-2 italic flex flex-col gap-2">
-                  <div class="flex items-center gap-2">
-                    <span class="material-symbols-rounded text-base">info</span>
-                    La captura de existencias está habilitada únicamente los días Jueves y Viernes. (Solo se requiere
-                    una captura semanal).
-                  </div>
-                  <div class="mt-1 text-[#b45309] font-black uppercase tracking-wider pl-6 text-[11px]">
-                    Únicamente reportar existencias físicas del biológico en la unidad refrigerante <strong>*NO CAPTURAR
-                      ARF O CANJES*</strong>
+            <!-- Fila superior: Info Header (3/4) + Toggle Sin Movimiento (1/4) -->
+            <div class="flex items-stretch gap-4 mb-2 mt-4">
+
+              <!-- Info Header (3/4) -->
+              <div class="flex items-center gap-4 p-4 rounded-[28px] shadow-md relative z-10 bg-blue-50 border-2 border-blue-200" style="flex: 3;">
+                <div class="w-12 h-12 rounded-2xl bg-surface border border-[#e0f2fe] flex items-center justify-center text-3xl shadow-sm shrink-0">📦</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[15px] font-black text-primary leading-tight">Existencia de Biológicos (SR)</div>
+                  <div class="text-[11px] font-bold text-surface-onVariant/60 mt-1 italic flex flex-col gap-1">
+                    <div class="flex items-center gap-1.5">
+                      <span class="material-symbols-rounded text-[14px]">info</span>
+                      Captura habilitada Jueves y Viernes (una captura semanal).
+                    </div>
+                    <div class="text-[#b45309] font-black uppercase tracking-wider text-[10px]">
+                      Solo existencias físicas en unidad refrigerante <strong>*NO ARF/CANJES*</strong>
+                    </div>
                   </div>
                 </div>
+                <div class="text-right hidden md:block border-l-2 border-primary/10 pl-5 shrink-0">
+                  <div class="text-[9px] font-black text-primary/40 uppercase tracking-[0.2em] leading-none mb-1">Frecuencia</div>
+                  <div class="text-[13px] font-black text-primary">Semanal (Jue/Vie)</div>
+                </div>
               </div>
-              <div class="text-right hidden md:block border-l-2 border-primary/10 pl-8">
-                <div class="text-[10px] font-black text-primary/40 uppercase tracking-[0.2em] leading-none mb-2">
-                  Frecuencia</div>
-                <div class="text-[14px] font-black text-primary">Semanal (Jue/Vie)</div>
+
+              <!-- 🛡️ Toggle Sin Movimiento SR (1/4) — oculto hasta que JS detecte datos previos -->
+              <div id="cardSinMovimientoSR" style="display:none; flex:1;"
+                class="flex flex-col items-center justify-center gap-2 p-4 rounded-[28px] border-2 border-slate-200 bg-surface shadow-sm transition-all duration-300 min-w-[120px]">
+                <div id="iconSinMovimientoSRBg"
+                  class="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 transition-colors shrink-0">
+                  <span class="material-symbols-rounded text-[20px]">pause_circle</span>
+                </div>
+                <span id="labelSinMovimientoSR"
+                  class="text-[10px] font-black uppercase tracking-wider text-slate-600 text-center transition-colors leading-tight">Sin Movimiento</span>
+                <label class="premium-switch">
+                  <input type="checkbox" id="chkSinMovimientoSR">
+                  <span class="premium-switch-track">
+                    <span class="premium-switch-thumb">
+                      <span class="premium-switch-icon material-symbols-rounded">check</span>
+                    </span>
+                  </span>
+                </label>
+                <div id="hintSinMovimientoSR"
+                  class="text-[9px] font-bold text-slate-400 text-center leading-tight transition-colors">
+                  Sin cambios esta semana
+                </div>
               </div>
             </div>
 
@@ -1150,24 +1170,46 @@
           <!-- CONSUMIBLES -->
           <!-- PANEL DE CONSUMIBLES (REDISEÑO PRO UX UNIFICADO) -->
           <div id="formCONS" style="display:none" class="flex flex-col gap-8">
-            <!-- Info Header Grande (Estilo Pinol Original) -->
-            <div class="flex items-center gap-6 p-6 rounded-[32px] shadow-md mb-2 relative z-10"
-              style="background-color: #f0f9ff; border: 2px solid #bae6fd;">
-              <div
-                class="w-16 h-16 rounded-2xl bg-surface border border-[#e0f2fe] flex items-center justify-center text-4xl shadow-sm shrink-0">
-                💉
-              </div>
-              <div class="flex-1">
-                <div class="text-[17px] font-black text-primary leading-tight">Control de Insumos y Consumibles</div>
-                <div class="text-[12px] font-bold text-surface-onVariant/60 mt-2 italic flex items-center gap-2">
-                  <span class="material-symbols-rounded text-base">info</span>
-                  Reporte semanal obligatorio para el control de inventario de jeringas.
+            <!-- Fila superior: Info Header (3/4) + Toggle Sin Movimiento (1/4) -->
+            <div class="flex items-stretch gap-4">
+
+              <!-- Info Header CONS (3/4) -->
+              <div class="flex items-center gap-4 p-4 rounded-[28px] shadow-md relative z-10" style="background-color:#f0f9ff; border:2px solid #bae6fd; flex:3;">
+                <div class="w-12 h-12 rounded-2xl bg-surface border border-[#e0f2fe] flex items-center justify-center text-3xl shadow-sm shrink-0">💉</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[15px] font-black text-primary leading-tight">Control de Insumos y Consumibles</div>
+                  <div class="text-[11px] font-bold text-surface-onVariant/60 mt-1 italic flex items-center gap-1.5">
+                    <span class="material-symbols-rounded text-[14px]">info</span>
+                    Reporte semanal obligatorio para el control de inventario de jeringas.
+                  </div>
+                </div>
+                <div class="text-right hidden md:block border-l-2 border-primary/10 pl-5 shrink-0">
+                  <div class="text-[9px] font-black text-primary/40 uppercase tracking-[0.2em] leading-none mb-1">Frecuencia</div>
+                  <div class="text-[13px] font-black text-primary">Semanal (Jueves)</div>
                 </div>
               </div>
-              <div class="text-right hidden md:block border-l-2 border-primary/10 pl-8">
-                <div class="text-[10px] font-black text-primary/40 uppercase tracking-[0.2em] leading-none mb-2">
-                  Frecuencia</div>
-                <div class="text-[14px] font-black text-primary">Semanal (Jueves)</div>
+
+              <!-- 🛡️ Toggle Sin Movimiento CONS (1/4) -->
+              <div id="cardSinMovimientoCONS" style="display:none; flex:1;"
+                class="flex flex-col items-center justify-center gap-2 p-4 rounded-[28px] border-2 border-slate-200 bg-surface shadow-sm transition-all duration-300 min-w-[120px]">
+                <div id="iconSinMovimientoCONSBg"
+                  class="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 transition-colors shrink-0">
+                  <span class="material-symbols-rounded text-[20px]">pause_circle</span>
+                </div>
+                <span id="labelSinMovimientoCONS"
+                  class="text-[10px] font-black uppercase tracking-wider text-slate-600 text-center transition-colors leading-tight">Sin Movimiento</span>
+                <label class="premium-switch">
+                  <input type="checkbox" id="chkSinMovimientoCONS">
+                  <span class="premium-switch-track">
+                    <span class="premium-switch-thumb">
+                      <span class="premium-switch-icon material-symbols-rounded">check</span>
+                    </span>
+                  </span>
+                </label>
+                <div id="hintSinMovimientoCONS"
+                  class="text-[9px] font-bold text-slate-400 text-center leading-tight transition-colors">
+                  Sin cambios esta semana
+                </div>
               </div>
             </div>
 
@@ -1253,6 +1295,7 @@
                 </div>
               </div>
             </div>
+
 
             <!-- Espacio reservado para flujo de consumibles -->
           </div>
@@ -1360,7 +1403,7 @@
             <!-- Espacio reservado para flujo de biológicos -->
           </div>
 
-          <!-- ✅ CONFIRMACIÓN DE BIOLÓGICO (Migrado a Tailwind) -->
+          <!-- ✅ CONFIRMACIÓN DE BIOLÓGICO (Stock bajo promedio) -->
           <div id="bioConfirmOverlay"
             class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
             aria-hidden="true">
@@ -1370,21 +1413,24 @@
                 class="p-8 pb-6 bg-gradient-to-br from-status-warning/10 to-transparent border-b border-outline-variant/20">
                 <div
                   class="flex items-center gap-2 text-status-warning text-xs font-bold uppercase tracking-[0.1em] mb-3">
-                  <span class="material-symbols-rounded text-base">warning</span>
-                  Validación preventiva
+                  <span class="material-symbols-rounded text-base">inventory_2</span>
+                  Aviso de Stock
                 </div>
-                <div class="text-[22px] font-extrabold text-primary tracking-tight mb-2">Revisar pedido</div>
+                <div class="text-[22px] font-extrabold text-primary tracking-tight mb-2">Verificación de abasto</div>
                 <div class="text-[13px] font-medium text-surface-onVariant/80" id="bioConfirmIntro">
-                  Se han detectado observaciones en tu captura.
+                  Algunos biológicos presentan stock estimado por debajo del promedio mensual de consumo.
                 </div>
               </div>
 
               <div class="p-8 bg-surface-variant/20 max-h-[60vh] overflow-y-auto">
                 <div id="bioConfirmList" class="flex flex-col gap-3"></div>
                 <div
-                  class="mt-6 p-4 bg-status-warning/10 border border-status-warning/20 rounded-xl text-[13px] text-surface-onVariant">
-                  <strong class="text-status-warning block mb-1">¿Deseas continuar?</strong> Una vez guardado, no se
-                  podrán realizar correcciones automáticas.
+                  class="mt-6 p-4 bg-status-warning/10 border border-status-warning/20 rounded-xl text-[13px] text-surface-onVariant leading-relaxed">
+                  <strong class="text-status-warning block mb-1">⚠️ Responsabilidad de la unidad</strong>
+                  La unidad de salud asume la plena responsabilidad de garantizar el abasto continuo de los biológicos
+                  enlistados. Si el stock resulta insuficiente antes del próximo pedido, recaerá en la unidad la
+                  responsabilidad de gestionar el reabasto de forma oportuna. ¿Confirma que desea continuar con el
+                  pedido tal como está?
                 </div>
               </div>
 
@@ -1392,12 +1438,140 @@
                 <button
                   class="bg-transparent text-primary hover:bg-primary/5 px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer"
                   id="btnBioConfirmCancel" type="button">
-                  <span class="material-symbols-rounded text-[20px]">close</span> Corregir
+                  <span class="material-symbols-rounded text-[20px]">edit</span> Revisar y corregir
                 </button>
                 <button
                   class="bg-[#d97706] text-primary-on hover:bg-[#b45309] hover:-translate-y-0.5 px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all shadow-md3-1 border-none cursor-pointer"
                   id="btnBioConfirmAccept" type="button">
-                  <span class="material-symbols-rounded text-[20px]">done_all</span> Confirmar y Guardar
+                  <span class="material-symbols-rounded text-[20px]">done_all</span> Confirmo y Guardo
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ✅ CONFIRMACIÓN TOGGLE SIN PEDIDO (BIO) -->
+          <div id="sinPedidoConfirmOverlay"
+            class="fixed inset-0 z-[2100] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
+            aria-hidden="true">
+            <div
+              class="w-full max-w-[440px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
+              <div class="p-8 pb-6 border-b border-outline-variant/20"
+                style="background: linear-gradient(to bottom right, rgba(234,179,8,0.08), transparent);">
+                <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] mb-3"
+                  style="color: #ca8a04;">
+                  <span class="material-symbols-rounded text-base">info</span>
+                  Modo Solo Existencias
+                </div>
+                <div class="text-[20px] font-extrabold text-primary tracking-tight mb-2">Pedido en ceros</div>
+                <div class="text-[13px] font-medium text-surface-onVariant/80 leading-relaxed">
+                  Estás activando el modo <b>Solo Existencias</b>. Tu pedido se enviará en <b>ceros</b>.
+                  Recuerda que <b>deberás registrar tus existencias de biológico</b> antes de guardar.<br><br>
+                  Si tu unidad requiere biológico, considera si es conveniente proceder sin pedido.
+                </div>
+              </div>
+              <div class="flex items-center justify-end gap-3 p-5 bg-surface border-t border-outline-variant/30">
+                <button
+                  class="bg-transparent text-primary hover:bg-primary/5 px-5 h-[44px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer"
+                  id="btnSinPedidoConfirmCancel" type="button">
+                  <span class="material-symbols-rounded text-[18px]">close</span> Cancelar
+                </button>
+                <button
+                  class="px-5 h-[44px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer hover:-translate-y-0.5"
+                  style="background: #ca8a04; color: #fff;"
+                  id="btnSinPedidoConfirmAccept" type="button">
+                  <span class="material-symbols-rounded text-[18px]">done</span> Entendido, continuar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ✅ MODAL SIN MOVIMIENTO SR -->
+          <div id="sinMovimientoSROverlay"
+            class="fixed inset-0 z-[2100] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
+            aria-hidden="true">
+            <div
+              class="w-full max-w-[480px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
+              <div class="p-8 pb-6 border-b border-outline-variant/20"
+                style="background: linear-gradient(to bottom right, rgba(14,165,233,0.08), transparent);">
+                <div class="flex items-center gap-3 mb-4">
+                  <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm"
+                    style="background:#e0f2fe; color:#0284c7;">
+                    <span class="material-symbols-rounded text-[26px]">pause_circle</span>
+                  </div>
+                  <div>
+                    <div class="text-[10px] font-black uppercase tracking-[0.15em] mb-0.5" style="color:#0284c7;">Sin
+                      Movimiento</div>
+                    <div class="text-[20px] font-extrabold text-primary tracking-tight">Existencia sin cambios</div>
+                  </div>
+                </div>
+                <div class="text-[13px] font-medium text-surface-onVariant/80 leading-relaxed">
+                  Se registrará que <b>no hubo cambios</b> en las existencias esta semana. Se replicarán
+                  automáticamente los valores del último reporte con la fecha de hoy, lo que contará para tu
+                  cumplimiento semanal.
+                </div>
+              </div>
+              <div class="p-6 bg-surface-variant/20 max-h-[40vh] overflow-y-auto">
+                <div class="text-[11px] font-black uppercase tracking-widest text-primary/40 mb-3">Valores que se
+                  replicarán:</div>
+                <div id="sinMovimientoSRList" class="flex flex-col gap-2"></div>
+              </div>
+              <div class="flex items-center justify-end gap-3 p-5 bg-surface border-t border-outline-variant/30">
+                <button
+                  class="bg-transparent text-primary hover:bg-primary/5 px-5 h-[44px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer"
+                  id="btnSinMovimientoSRCancel" type="button">
+                  <span class="material-symbols-rounded text-[18px]">close</span> Cancelar
+                </button>
+                <button
+                  class="px-5 h-[44px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer hover:-translate-y-0.5"
+                  style="background:#0284c7; color:#fff;"
+                  id="btnSinMovimientoSRConfirm" type="button">
+                  <span class="material-symbols-rounded text-[18px]">task_alt</span> Confirmar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ✅ MODAL SIN MOVIMIENTO CONS -->
+          <div id="sinMovimientoConsOverlay"
+            class="fixed inset-0 z-[2100] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
+            aria-hidden="true">
+            <div
+              class="w-full max-w-[480px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
+              <div class="p-8 pb-6 border-b border-outline-variant/20"
+                style="background: linear-gradient(to bottom right, rgba(14,165,233,0.08), transparent);">
+                <div class="flex items-center gap-3 mb-4">
+                  <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm"
+                    style="background:#e0f2fe; color:#0284c7;">
+                    <span class="material-symbols-rounded text-[26px]">pause_circle</span>
+                  </div>
+                  <div>
+                    <div class="text-[10px] font-black uppercase tracking-[0.15em] mb-0.5" style="color:#0284c7;">Sin
+                      Movimiento</div>
+                    <div class="text-[20px] font-extrabold text-primary tracking-tight">Consumibles sin cambios</div>
+                  </div>
+                </div>
+                <div class="text-[13px] font-medium text-surface-onVariant/80 leading-relaxed">
+                  Se registrará que <b>no hubo cambios</b> en los consumibles esta semana. Se replicarán
+                  automáticamente los valores del último reporte con la fecha de hoy, lo que contará para tu
+                  cumplimiento semanal.
+                </div>
+              </div>
+              <div class="p-6 bg-surface-variant/20">
+                <div class="text-[11px] font-black uppercase tracking-widest text-primary/40 mb-3">Valores que se
+                  replicarán:</div>
+                <div id="sinMovimientoConsList" class="flex flex-col gap-2"></div>
+              </div>
+              <div class="flex items-center justify-end gap-3 p-5 bg-surface border-t border-outline-variant/30">
+                <button
+                  class="bg-transparent text-primary hover:bg-primary/5 px-5 h-[44px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer"
+                  id="btnSinMovimientoConsCancel" type="button">
+                  <span class="material-symbols-rounded text-[18px]">close</span> Cancelar
+                </button>
+                <button
+                  class="px-5 h-[44px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer hover:-translate-y-0.5"
+                  style="background:#0284c7; color:#fff;"
+                  id="btnSinMovimientoConsConfirm" type="button">
+                  <span class="material-symbols-rounded text-[18px]">task_alt</span> Confirmar
                 </button>
               </div>
             </div>
