@@ -51,7 +51,7 @@
 
   <!-- Estilos -->
   <link rel="stylesheet" href="tailwind_compiled.css">
-  <link rel="stylesheet" href="style.css?v=2026.52" type="text/css">
+  <link rel="stylesheet" href="style.css?v=2026.53" type="text/css">
   <link rel="stylesheet" href="mobile.css?v=2026.24">
 
   <style>
@@ -212,7 +212,7 @@
   <!-- Mobile Adaptation Layer (MAL) -->
   <script src="mobile.js?v=2026.22" defer></script>
   <!-- Archivo Principal -->
-  <script src="main.js?v=2026.27" defer></script>
+  <script src="main.js?v=2026.28" defer></script>
 
   <!-- 🔧 Service Worker Registration (PWA) -->
   <script>
@@ -1410,244 +1410,7 @@
             <!-- Espacio reservado para flujo de biológicos -->
           </div>
 
-          <!-- ✅ CONFIRMACIÓN DE BIOLÓGICO (Stock bajo promedio) -->
-          <div id="bioConfirmOverlay"
-            class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
-            aria-hidden="true">
-            <div
-              class="w-full max-w-[500px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
-              <div
-                class="p-8 pb-6 bg-gradient-to-br from-status-warning/10 to-transparent border-b border-outline-variant/20">
-                <div
-                  class="flex items-center gap-2 text-status-warning text-xs font-bold uppercase tracking-[0.1em] mb-3">
-                  <span class="material-symbols-rounded text-base">inventory_2</span>
-                  Aviso de Stock
-                </div>
-                <div class="text-[22px] font-extrabold text-primary tracking-tight mb-2">Verificación de abasto</div>
-                <div class="text-[13px] font-medium text-surface-onVariant/80" id="bioConfirmIntro">
-                  Algunos biológicos presentan stock estimado por debajo del promedio mensual de consumo.
-                </div>
-              </div>
 
-              <div class="p-8 bg-surface-variant/20 max-h-[60vh] overflow-y-auto">
-                <div id="bioConfirmList" class="flex flex-col gap-3"></div>
-                <div
-                  class="mt-6 p-4 bg-status-warning/10 border border-status-warning/20 rounded-xl text-[13px] text-surface-onVariant leading-relaxed">
-                  <strong class="text-status-warning block mb-1">⚠️ Responsabilidad de la unidad</strong>
-                  La unidad de salud asume la plena responsabilidad de garantizar el abasto continuo de los biológicos
-                  enlistados. Si el stock resulta insuficiente antes del próximo pedido, recaerá en la unidad la
-                  responsabilidad de gestionar el reabasto de forma oportuna. ¿Confirma que desea continuar con el
-                  pedido tal como está?
-                </div>
-              </div>
-
-              <div class="flex items-center justify-end gap-3 p-6 bg-surface border-t border-outline-variant/30">
-                <button
-                  class="bg-transparent text-primary hover:bg-primary/5 px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer"
-                  id="btnBioConfirmCancel" type="button">
-                  <span class="material-symbols-rounded text-[20px]">edit</span> Revisar y corregir
-                </button>
-                <button
-                  class="bg-[#d97706] text-primary-on hover:bg-[#b45309] hover:-translate-y-0.5 px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all shadow-md3-1 border-none cursor-pointer"
-                  id="btnBioConfirmAccept" type="button">
-                  <span class="material-symbols-rounded text-[20px]">done_all</span> Confirmo y Guardo
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- ✅ CONFIRMACIÓN TOGGLE SIN PEDIDO (BIO) -->
-          <div id="sinPedidoConfirmOverlay"
-            class="fixed inset-0 z-[2100] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
-            aria-hidden="true">
-            <div
-              class="w-full max-w-[440px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
-              <div class="p-8 pb-6 border-b border-outline-variant/20"
-                style="background: linear-gradient(to bottom right, rgba(234,179,8,0.08), transparent);">
-                <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] mb-3"
-                  style="color: #ca8a04;">
-                  <span class="material-symbols-rounded text-base">info</span>
-                  Modo Solo Existencias
-                </div>
-                <div class="text-[20px] font-extrabold text-primary tracking-tight mb-2">Pedido en ceros</div>
-                <div class="text-[13px] font-medium text-surface-onVariant/80 leading-relaxed">
-                  Estás activando el modo <b>Solo Existencias</b>. Tu pedido se enviará en <b>ceros</b>.
-                  Recuerda que <b>deberás registrar tus existencias de biológico</b> antes de guardar.<br><br>
-                  Si tu unidad requiere biológico, considera si es conveniente proceder sin pedido.
-                </div>
-              </div>
-              <div class="flex items-center justify-end gap-3 p-5 bg-surface border-t border-outline-variant/30">
-                <button
-                  class="bg-transparent text-primary hover:bg-primary/5 px-5 h-[44px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer"
-                  id="btnSinPedidoConfirmCancel" type="button">
-                  <span class="material-symbols-rounded text-[18px]">close</span> Cancelar
-                </button>
-                <button
-                  class="px-5 h-[44px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer hover:-translate-y-0.5"
-                  style="background: #ca8a04; color: #fff;"
-                  id="btnSinPedidoConfirmAccept" type="button">
-                  <span class="material-symbols-rounded text-[18px]">done</span> Entendido, continuar
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- ✅ MODAL SIN MOVIMIENTO SR -->
-          <div id="sinMovimientoSROverlay"
-            class="fixed inset-0 z-[2100] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
-            aria-hidden="true">
-            <div
-              class="w-full max-w-[480px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
-              <div class="p-8 pb-6 border-b border-outline-variant/20"
-                style="background: linear-gradient(to bottom right, rgba(14,165,233,0.08), transparent);">
-                <div class="flex items-center gap-3 mb-4">
-                  <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm"
-                    style="background:#e0f2fe; color:#0284c7;">
-                    <span class="material-symbols-rounded text-[26px]">pause_circle</span>
-                  </div>
-                  <div>
-                    <div class="text-[10px] font-black uppercase tracking-[0.15em] mb-0.5" style="color:#0284c7;">Sin
-                      Movimiento</div>
-                    <div class="text-[20px] font-extrabold text-primary tracking-tight">Existencia sin cambios</div>
-                  </div>
-                </div>
-                <div class="text-[13px] font-medium text-surface-onVariant/80 leading-relaxed">
-                  Se registrará que <b>no hubo cambios</b> en las existencias esta semana. Se replicarán
-                  automáticamente los valores del último reporte con la fecha de hoy, lo que contará para tu
-                  cumplimiento semanal.
-                </div>
-              </div>
-              <div class="p-6 bg-surface-variant/20 max-h-[40vh] overflow-y-auto">
-                <div class="text-[11px] font-black uppercase tracking-widest text-primary/40 mb-3">Valores que se
-                  replicarán:</div>
-                <div id="sinMovimientoSRList" class="flex flex-col gap-2"></div>
-              </div>
-              <div class="flex items-center justify-end gap-3 p-5 bg-surface border-t border-outline-variant/30">
-                <button
-                  class="bg-transparent text-primary hover:bg-primary/5 px-5 h-[44px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer"
-                  id="btnSinMovimientoSRCancel" type="button">
-                  <span class="material-symbols-rounded text-[18px]">close</span> Cancelar
-                </button>
-                <button
-                  class="px-5 h-[44px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer hover:-translate-y-0.5"
-                  style="background:#0284c7; color:#fff;"
-                  id="btnSinMovimientoSRConfirm" type="button">
-                  <span class="material-symbols-rounded text-[18px]">task_alt</span> Confirmar
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- ✅ MODAL SIN MOVIMIENTO CONS -->
-          <div id="sinMovimientoConsOverlay"
-            class="fixed inset-0 z-[2100] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
-            aria-hidden="true">
-            <div
-              class="w-full max-w-[480px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
-              <div class="p-8 pb-6 border-b border-outline-variant/20"
-                style="background: linear-gradient(to bottom right, rgba(14,165,233,0.08), transparent);">
-                <div class="flex items-center gap-3 mb-4">
-                  <div class="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm"
-                    style="background:#e0f2fe; color:#0284c7;">
-                    <span class="material-symbols-rounded text-[26px]">pause_circle</span>
-                  </div>
-                  <div>
-                    <div class="text-[10px] font-black uppercase tracking-[0.15em] mb-0.5" style="color:#0284c7;">Sin
-                      Movimiento</div>
-                    <div class="text-[20px] font-extrabold text-primary tracking-tight">Consumibles sin cambios</div>
-                  </div>
-                </div>
-                <div class="text-[13px] font-medium text-surface-onVariant/80 leading-relaxed">
-                  Se registrará que <b>no hubo cambios</b> en los consumibles esta semana. Se replicarán
-                  automáticamente los valores del último reporte con la fecha de hoy, lo que contará para tu
-                  cumplimiento semanal.
-                </div>
-              </div>
-              <div class="p-6 bg-surface-variant/20">
-                <div class="text-[11px] font-black uppercase tracking-widest text-primary/40 mb-3">Valores que se
-                  replicarán:</div>
-                <div id="sinMovimientoConsList" class="flex flex-col gap-2"></div>
-              </div>
-              <div class="flex items-center justify-end gap-3 p-5 bg-surface border-t border-outline-variant/30">
-                <button
-                  class="bg-transparent text-primary hover:bg-primary/5 px-5 h-[44px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer"
-                  id="btnSinMovimientoConsCancel" type="button">
-                  <span class="material-symbols-rounded text-[18px]">close</span> Cancelar
-                </button>
-                <button
-                  class="px-5 h-[44px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer hover:-translate-y-0.5"
-                  style="background:#0284c7; color:#fff;"
-                  id="btnSinMovimientoConsConfirm" type="button">
-                  <span class="material-symbols-rounded text-[18px]">task_alt</span> Confirmar
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- ✅ NOTIFICACIÓN PRECARGA DE BIOLÓGICO -->
-          <div id="prefillNoticeOverlay"
-            class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
-            aria-hidden="true">
-            <div
-              class="bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100"
-              style="width: 100%; max-width: 420px; min-width: 300px;">
-              <div class="p-8 pb-6 border-b border-outline-variant/20 flex flex-col items-center text-center"
-                style="background: linear-gradient(to bottom right, rgba(2, 132, 199, 0.08), transparent);">
-                <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4 shadow-sm"
-                  style="background-color: #e0f2fe; color: #0284c7;">
-                  <span class="material-symbols-rounded text-[32px]">info</span>
-                </div>
-                <div class="text-[20px] font-extrabold text-primary tracking-tight mb-2">Información Recuperada</div>
-                <div class="text-[14px] font-medium text-surface-onVariant/80 leading-relaxed" id="prefillNoticeMsg">
-                  Hemos precargado tu última captura de biológicos para ahorrarte tiempo.
-                </div>
-              </div>
-              <div class="flex items-center justify-center p-5 bg-surface">
-                <button
-                  class="px-8 h-[46px] rounded-xl font-bold flex items-center justify-center transition-all shadow-md w-full border-none cursor-pointer"
-                  id="btnPrefillNoticeAccept" type="button" style="background-color: #0ea5e9; color: white;">
-                  Entendido
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- ✅ CONFIRMACIÓN DE GUARDADO SIN CAMBIOS -->
-          <div id="prefillConfirmOverlay"
-            class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
-            aria-hidden="true">
-            <div
-              class="bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100"
-              style="width: 100%; max-width: 450px; min-width: 300px;">
-              <div class="p-8 pb-6 border-b border-outline-variant/20"
-                style="background: linear-gradient(to bottom right, rgba(217, 119, 6, 0.08), transparent);">
-                <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] mb-3"
-                  style="color: #d97706;">
-                  <span class="material-symbols-rounded text-base">warning</span>
-                  Validación preventiva
-                </div>
-                <div class="text-[20px] font-extrabold text-primary tracking-tight mb-2">Guardado sin modificaciones
-                </div>
-                <div class="text-[13px] font-medium text-surface-onVariant/80 leading-relaxed">
-                  Estás guardando la existencia sin modificación alguna respecto a la captura anterior.<br><br><strong
-                    style="color: var(--md-sys-color-on-surface);">¿Deseas continuar?</strong>
-                </div>
-              </div>
-              <div
-                class="flex items-center justify-end gap-3 p-6 bg-surface-variant/20 border-t border-outline-variant/30">
-                <button
-                  class="bg-transparent text-primary px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer hover:bg-primary/5"
-                  id="btnPrefillConfirmCancel" type="button">
-                  <span class="material-symbols-rounded text-[20px]">close</span> Cancelar
-                </button>
-                <button
-                  class="px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all shadow-md3-1 border-none cursor-pointer"
-                  id="btnPrefillConfirmAccept" type="button" style="background-color: #d97706; color: white;">
-                  <span class="material-symbols-rounded text-[20px]">done_all</span> Sí, continuar
-                </button>
-              </div>
-            </div>
-          </div>
 
           <!-- PINOL -->
           <div id="formPINOL" style="display:none" class="flex flex-col gap-8">
@@ -5670,6 +5433,245 @@
         </button>
         <button type="submit" form="formFeedback" id="btnSubmitFeedback" class="feedback-btn-submit">
           <span class="material-symbols-rounded" style="font-size:20px;">send</span> Enviar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ CONFIRMACIÓN DE BIOLÓGICO (Stock bajo promedio) -->
+  <div id="bioConfirmOverlay"
+    class="fixed inset-0 flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
+    style="z-index: 999999 !important;"
+    aria-hidden="true">
+    <div
+      class="w-full max-w-[500px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
+      <div
+        class="p-8 pb-6 bg-gradient-to-br from-status-warning/10 to-transparent border-b border-outline-variant/20">
+        <div
+          class="flex items-center gap-2 text-status-warning text-xs font-bold uppercase tracking-[0.1em] mb-3">
+          <span class="material-symbols-rounded text-base">inventory_2</span>
+          Aviso de Stock
+        </div>
+        <div class="text-[22px] font-extrabold text-primary tracking-tight mb-2">Verificación de abasto</div>
+        <div class="text-[13px] font-medium text-surface-onVariant/80" id="bioConfirmIntro">
+          Algunos biológicos presentan stock estimado por debajo del promedio mensual de consumo.
+        </div>
+      </div>
+
+      <div class="p-8 bg-surface-variant/20 max-h-[60vh] overflow-y-auto">
+        <div id="bioConfirmList" class="flex flex-col gap-3"></div>
+        <div
+          class="mt-6 p-4 bg-status-warning/10 border border-status-warning/20 rounded-xl text-[13px] text-surface-onVariant leading-relaxed">
+          <strong class="text-status-warning block mb-1">⚠️ Responsabilidad de la unidad</strong>
+          La unidad de salud asume la plena responsabilidad de garantizar el abasto continuo de los biológicos
+          enlistados. Si el stock resulta insuficiente antes del próximo pedido, recaerá en la unidad la
+          responsabilidad de gestionar el reabasto de forma oportuna. ¿Confirma que desea continuar con el
+          pedido tal como está?
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 p-6 bg-surface border-t border-outline-variant/30">
+        <button
+          class="bg-transparent text-primary hover:bg-primary/5 px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer"
+          id="btnBioConfirmCancel" type="button">
+          <span class="material-symbols-rounded text-[20px]">edit</span> Revisar y corregir
+        </button>
+        <button
+          class="bg-[#d97706] text-primary-on hover:bg-[#b45309] hover:-translate-y-0.5 px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all shadow-md3-1 border-none cursor-pointer"
+          id="btnBioConfirmAccept" type="button">
+          <span class="material-symbols-rounded text-[20px]">done_all</span> Confirmo y Guardo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ CONFIRMACIÓN TOGGLE SIN PEDIDO (BIO) -->
+  <div id="sinPedidoConfirmOverlay"
+    class="fixed inset-0 flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
+    style="z-index: 999999 !important;"
+    aria-hidden="true">
+    <div
+      class="w-full max-w-[440px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
+      <div class="p-8 pb-6 border-b border-outline-variant/20"
+        style="background: linear-gradient(to bottom right, rgba(234,179,8,0.08), transparent);">
+        <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] mb-3"
+          style="color: #ca8a04;">
+          <span class="material-symbols-rounded text-base">info</span>
+          Modo Solo Existencias
+        </div>
+        <div class="text-[20px] font-extrabold text-primary tracking-tight mb-2">Pedido en ceros</div>
+        <div class="text-[13px] font-medium text-surface-onVariant/80 leading-relaxed">
+          Estás activando el modo <b>Solo Existencias</b>. Tu pedido se enviará en <b>ceros</b>.
+          Recuerda que <b>deberás registrar tus existencias de biológico</b> antes de guardar.<br><br>
+          Si tu unidad requiere biológico, considera si es conveniente proceder sin pedido.
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-3 p-5 bg-surface border-t border-outline-variant/30">
+        <button
+          class="bg-transparent text-primary hover:bg-primary/5 px-5 h-[44px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer"
+          id="btnSinPedidoConfirmCancel" type="button">
+          <span class="material-symbols-rounded text-[18px]">close</span> Cancelar
+        </button>
+        <button
+          class="px-5 h-[44px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer hover:-translate-y-0.5"
+          style="background: #ca8a04; color: #fff;"
+          id="btnSinPedidoConfirmAccept" type="button">
+          <span class="material-symbols-rounded text-[18px]">done</span> Entendido, continuar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ MODAL SIN MOVIMIENTO SR -->
+  <div id="sinMovimientoSROverlay"
+    class="fixed inset-0 flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
+    style="z-index: 999999 !important;"
+    aria-hidden="true">
+    <div
+      class="w-full bg-surface border border-outline-variant/30 rounded-[24px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100"
+      style="max-width: 500px !important; width: 100%;">
+      <div class="p-6 pb-4 border-b border-outline-variant/20"
+        style="background: linear-gradient(to bottom right, rgba(14,165,233,0.06), transparent);">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
+            style="background:#e0f2fe; color:#0284c7;">
+            <span class="material-symbols-rounded text-[22px]">pause_circle</span>
+          </div>
+          <div>
+            <div class="text-[9px] font-black uppercase tracking-[0.15em] mb-0.5" style="color:#0284c7;">Sin Movimiento</div>
+            <div class="text-[16px] font-extrabold text-primary tracking-tight">Existencia sin cambios</div>
+          </div>
+        </div>
+        <div class="text-[12px] font-medium text-surface-onVariant/80 leading-normal">
+          Se registrará que no hubo cambios esta semana. Se replicarán los valores del último reporte para tu cumplimiento semanal.
+        </div>
+      </div>
+      <div class="p-5 bg-surface-variant/10">
+        <div class="text-[9px] font-black uppercase tracking-widest text-primary/40 mb-2.5">Valores que se replicarán:</div>
+        <div id="sinMovimientoSRList" class="flex flex-wrap gap-1.5 justify-start" style="max-height: 200px; overflow-y: auto; padding-right: 4px;"></div>
+      </div>
+      <div class="flex items-center justify-end gap-3 p-4 bg-surface border-t border-outline-variant/20">
+        <button
+          class="bg-transparent text-primary hover:bg-primary/5 px-4 h-[38px] rounded-lg font-bold text-[13px] flex items-center gap-1.5 transition-all border-none cursor-pointer"
+          id="btnSinMovimientoSRCancel" type="button">
+          Cancelar
+        </button>
+        <button
+          class="px-4 h-[38px] rounded-lg font-bold text-[13px] flex items-center gap-1.5 transition-all border-none cursor-pointer hover:-translate-y-0.5"
+          style="background:#0284c7; color:#fff;"
+          id="btnSinMovimientoSRConfirm" type="button">
+          <span class="material-symbols-rounded text-[16px]">task_alt</span> Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ MODAL SIN MOVIMIENTO CONS -->
+  <div id="sinMovimientoConsOverlay"
+    class="fixed inset-0 flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
+    style="z-index: 999999 !important;"
+    aria-hidden="true">
+    <div
+      class="w-full bg-surface border border-outline-variant/30 rounded-[24px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100"
+      style="max-width: 500px !important; width: 100%;">
+      <div class="p-6 pb-4 border-b border-outline-variant/20"
+        style="background: linear-gradient(to bottom right, rgba(14,165,233,0.06), transparent);">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
+            style="background:#e0f2fe; color:#0284c7;">
+            <span class="material-symbols-rounded text-[22px]">pause_circle</span>
+          </div>
+          <div>
+            <div class="text-[9px] font-black uppercase tracking-[0.15em] mb-0.5" style="color:#0284c7;">Sin Movimiento</div>
+            <div class="text-[16px] font-extrabold text-primary tracking-tight">Consumibles sin cambios</div>
+          </div>
+        </div>
+        <div class="text-[12px] font-medium text-surface-onVariant/80 leading-normal">
+          Se registrará que no hubo cambios esta semana. Se replicarán los valores del último reporte para tu cumplimiento semanal.
+        </div>
+      </div>
+      <div class="p-5 bg-surface-variant/10">
+        <div class="text-[9px] font-black uppercase tracking-widest text-primary/40 mb-2.5">Valores que se replicarán:</div>
+        <div id="sinMovimientoConsList" class="flex flex-wrap gap-1.5 justify-start"></div>
+      </div>
+      <div class="flex items-center justify-end gap-3 p-4 bg-surface border-t border-outline-variant/20">
+        <button
+          class="bg-transparent text-primary hover:bg-primary/5 px-4 h-[38px] rounded-lg font-bold text-[13px] flex items-center gap-1.5 transition-all border-none cursor-pointer"
+          id="btnSinMovimientoConsCancel" type="button">
+          Cancelar
+        </button>
+        <button
+          class="px-4 h-[38px] rounded-lg font-bold text-[13px] flex items-center gap-1.5 transition-all border-none cursor-pointer hover:-translate-y-0.5"
+          style="background:#0284c7; color:#fff;"
+          id="btnSinMovimientoConsConfirm" type="button">
+          <span class="material-symbols-rounded text-[16px]">task_alt</span> Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ NOTIFICACIÓN PRECARGA DE BIOLÓGICO -->
+  <div id="prefillNoticeOverlay"
+    class="fixed inset-0 flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
+    style="z-index: 999999 !important;"
+    aria-hidden="true">
+    <div
+      class="bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100"
+      style="width: 100%; max-width: 420px; min-width: 300px;">
+      <div class="p-8 pb-6 border-b border-outline-variant/20 flex flex-col items-center text-center"
+        style="background: linear-gradient(to bottom right, rgba(2, 132, 199, 0.08), transparent);">
+        <div class="w-16 h-16 rounded-full flex items-center justify-center mb-4 shadow-sm"
+          style="background-color: #e0f2fe; color: #0284c7;">
+          <span class="material-symbols-rounded text-[32px]">info</span>
+        </div>
+        <div class="text-[20px] font-extrabold text-primary tracking-tight mb-2">Información Recuperada</div>
+        <div class="text-[14px] font-medium text-surface-onVariant/80 leading-relaxed" id="prefillNoticeMsg">
+          Hemos precargado tu última captura de biológicos para ahorrarte tiempo.
+        </div>
+      </div>
+      <div class="flex items-center justify-center p-5 bg-surface">
+        <button
+          class="px-8 h-[46px] rounded-xl font-bold flex items-center justify-center transition-all shadow-md w-full border-none cursor-pointer"
+          id="btnPrefillNoticeAccept" type="button" style="background-color: #0ea5e9; color: white;">
+          Entendido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ CONFIRMACIÓN DE GUARDADO SIN CAMBIOS -->
+  <div id="prefillConfirmOverlay"
+    class="fixed inset-0 flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
+    style="z-index: 999999 !important;"
+    aria-hidden="true">
+    <div
+      class="bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100"
+      style="width: 100%; max-width: 450px; min-width: 300px;">
+      <div class="p-8 pb-6 border-b border-outline-variant/20"
+        style="background: linear-gradient(to bottom right, rgba(217, 119, 6, 0.08), transparent);">
+        <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] mb-3"
+          style="color: #d97706;">
+          <span class="material-symbols-rounded text-base">warning</span>
+          Validación preventiva
+        </div>
+        <div class="text-[20px] font-extrabold text-primary tracking-tight mb-2">Guardado sin modificaciones
+        </div>
+        <div class="text-[13px] font-medium text-surface-onVariant/80 leading-relaxed">
+          Estás guardando la existencia sin modificación alguna respecto a la captura anterior.<br><br><strong
+            style="color: var(--md-sys-color-on-surface);">¿Deseas continuar?</strong>
+        </div>
+      </div>
+      <div
+        class="flex items-center justify-end gap-3 p-6 bg-surface-variant/20 border-t border-outline-variant/30">
+        <button
+          class="bg-transparent text-primary px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer hover:bg-primary/5"
+          id="btnPrefillConfirmCancel" type="button">
+          <span class="material-symbols-rounded text-[20px]">close</span> Cancelar
+        </button>
+        <button
+          class="px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all shadow-md3-1 border-none cursor-pointer"
+          id="btnPrefillConfirmAccept" type="button" style="background-color: #d97706; color: white;">
+          <span class="material-symbols-rounded text-[20px]">done_all</span> Sí, continuar
         </button>
       </div>
     </div>

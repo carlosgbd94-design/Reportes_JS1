@@ -1887,11 +1887,6 @@ label,
   border: 1px solid var(--md-outline-variant);
 }
 
-.shelf-life-ok,
-.shelf-life-warn,
-.shelf-life-danger,
-
-
 .shelf-life-ok {
   background-color: #d1fae5;
   color: #065f46;
@@ -1904,8 +1899,11 @@ label,
   border: 1.5px solid #f59e0b40;
 }
 
-.shelf-life-danger,
-
+.shelf-life-danger {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1.5px solid #ef444440;
+}
 
 /* Modern Delete Button */
 /* Modern Delete Button - Enhanced for Animations */
@@ -9570,14 +9568,14 @@ html body .modern-input-group input[type="date"]:focus,
 #topNotifDropdown:not([style*="display: none"]),
 #archivosDropdown:not([style*="display: none"]),
 .topNotifDropdown:not([style*="display: none"]) {
-  animation: premiumDropdownIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  animation: premiumDropdownIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
   transform-origin: top right;
 }
 
 @keyframes premiumDropdownIn {
   0% {
     opacity: 0;
-    transform: scale(0.95) translateY(-8px);
+    transform: scale(0.95) translateY(-12px);
   }
   100% {
     opacity: 1;
@@ -9611,6 +9609,8 @@ html body .modern-input-group input[type="date"]:focus,
 }
 
 /* Modal Content/Card Scale-in Animations */
+.overlay.show > div,
+.overlay.show .modal,
 .overlay.show .modalContainer,
 .overlay.show .GlassContainer,
 #modalUploadCSV.show .GlassContainer,
@@ -11432,5 +11432,39 @@ html.dark .whatsapp-support-card {
 html.dark .whatsapp-support-card:hover {
   background: linear-gradient(135deg, rgba(37, 211, 102, 0.08) 0%, rgba(18, 140, 126, 0.04) 100%);
   border-color: rgba(37, 211, 102, 0.3);
+}
+
+/* ===== 🖥️ CAPTURE PANELS SWITCHING ANIMATIONS ===== */
+.capture-panel-fade-in {
+  animation: capturePanelIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+  will-change: transform, opacity;
+}
+
+@keyframes capturePanelIn {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ===== 🖥️ MAIN PANELS TRANSITION ANIMATIONS ===== */
+.main-panel-fade-in {
+  animation: mainPanelIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+  will-change: transform, opacity;
+}
+
+@keyframes mainPanelIn {
+  0% {
+    opacity: 0;
+    transform: translateY(28px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 

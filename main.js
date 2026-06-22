@@ -617,6 +617,43 @@ function smartLoader(taskFn, options = {}) {
     });
 }
 
+function playPremiumConfirmSound() {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+    
+    // Alert chime: two quick sharp beeps (880Hz / A5)
+    // First beep
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = "triangle";
+    osc1.frequency.setValueAtTime(880, now);
+    gain1.gain.setValueAtTime(0.12, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.1);
+    
+    // Second beep slightly delayed
+    const delay = 0.12;
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = "triangle";
+    osc2.frequency.setValueAtTime(880, now + delay);
+    gain2.gain.setValueAtTime(0.12, now + delay);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.15);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + delay);
+    osc2.stop(now + delay + 0.15);
+  } catch (e) {
+    console.warn("AudioContext error:", e);
+  }
+}
+
 function showToast(msg, ok = true, type = null, options = {}) {
   const container = $("toast-container");
   if (!container) return;
@@ -9380,6 +9417,7 @@ function openSinPedidoConfirm() {
     requestAnimationFrame(() => {
       overlay.classList.add("show");
       document.body.classList.add("sinPedidoConfirmOpen");
+      playPremiumConfirmSound();
     });
   });
 }
@@ -9426,10 +9464,10 @@ function openSinMovimientoSRModal(items) {
     if (list) {
       if (items && items.length) {
         list.innerHTML = items.map(it => `
-          <div class="flex items-center gap-3 py-1.5 px-3 bg-surface rounded-xl border border-outline-variant/20">
-            <span class="material-symbols-rounded text-[16px] text-primary/50">vaccines</span>
-            <span class="text-[12px] font-bold text-surface-onVariant/90 flex-1">${escapeHtml(it.biologico || it.bio || "")}</span>
-            <span class="text-[12px] font-black text-primary">${it.cantidad ?? it.qty ?? 0} fr.</span>
+          <div class="inline-flex items-center gap-2 py-1 px-2.5 bg-surface border border-outline-variant/30 rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+            <span class="material-symbols-rounded text-[14px] text-primary/60">vaccines</span>
+            <span class="text-[11px] font-bold text-surface-onVariant/90">${escapeHtml(it.biologico || it.bio || "")}</span>
+            <span class="text-[11px] font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded-lg ml-1">${it.cantidad ?? it.qty ?? 0} fr.</span>
           </div>`).join("");
       } else {
         list.innerHTML = `<div class="text-[12px] text-surface-onVariant/60 italic">Sin datos de la semana anterior.</div>`;
@@ -9451,7 +9489,10 @@ function openSinMovimientoSRModal(items) {
     if (btnConfirm) btnConfirm.onclick = () => close(true);
 
     SIN_MOV_SR_RESOLVER = resolve;
-    requestAnimationFrame(() => overlay.classList.add("show"));
+    requestAnimationFrame(() => {
+      overlay.classList.add("show");
+      playPremiumConfirmSound();
+    });
   });
 }
 
@@ -9471,10 +9512,10 @@ function openSinMovimientoConsModal(consData) {
         { label: "Aguja (Auto)", val: consData.aguja_0600403711 }
       ];
       list.innerHTML = fields.map(f => `
-        <div class="flex items-center gap-3 py-1.5 px-3 bg-surface rounded-xl border border-outline-variant/20">
-          <span class="material-symbols-rounded text-[16px] text-primary/50">medical_services</span>
-          <span class="text-[12px] font-bold text-surface-onVariant/90 flex-1">${f.label}</span>
-          <span class="text-[12px] font-black text-primary">${f.val ?? 0}</span>
+        <div class="inline-flex items-center gap-2 py-1 px-2.5 bg-surface border border-outline-variant/30 rounded-xl shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+          <span class="material-symbols-rounded text-[14px] text-primary/60">medical_services</span>
+          <span class="text-[11px] font-bold text-surface-onVariant/90">${f.label}</span>
+          <span class="text-[11px] font-black text-primary bg-primary/5 px-1.5 py-0.5 rounded-lg ml-1">${f.val ?? 0}</span>
         </div>`).join("");
     }
 
@@ -9493,7 +9534,10 @@ function openSinMovimientoConsModal(consData) {
     if (btnConfirm) btnConfirm.onclick = () => close(true);
 
     SIN_MOV_CONS_RESOLVER = resolve;
-    requestAnimationFrame(() => overlay.classList.add("show"));
+    requestAnimationFrame(() => {
+      overlay.classList.add("show");
+      playPremiumConfirmSound();
+    });
   });
 }
 
@@ -9910,6 +9954,7 @@ function openBioConfirm(warningRows) {
     requestAnimationFrame(() => {
       overlay.classList.add("show");
       document.body.classList.add("bioConfirmOpen");
+      playPremiumConfirmSound();
     });
 
     if (btnCancel) btnCancel.focus();
@@ -11375,6 +11420,13 @@ function activateMain(tab) {
     pCapSummary.classList.add("hidden");
   }
 
+  // Remove animation class from all panels
+  const allPanels = ["panelWelcome", "panelADMIN", "panelCAP", "panelSEC", "panelCaptureSummary", "rdaDashboardOverlay"];
+  allPanels.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("main-panel-fade-in");
+  });
+
   if (tab === AppState.mainTab) return;
   AppState.mainTab = tab;
 
@@ -11452,17 +11504,14 @@ function activateMain(tab) {
   }
 
   // --- ARCHITECTURAL FIX: HIDE LOOSE SIBLING FORMS ---
-  // Corrected to the ACTUAL DOM IDs used in index.html
   const looseForms = ["formSR", "formCONS", "formBIO", "formPINOL", "panelDIST"];
 
   if (tab !== "CAP" && tab !== "ADMIN") {
-    // Lock them down with !important
     looseForms.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.setAttribute("style", "display: none !important;");
     });
   } else {
-    // Unlock them safely (removes !important but keeps them hidden natively)
     looseForms.forEach(id => {
       const el = document.getElementById(id);
       if (el) el.setAttribute("style", "display: none;");
@@ -11482,7 +11531,6 @@ function activateMain(tab) {
     if (AppState.rol !== "UNIDAD") {
       activateOpsTab("CAPTURE");
     } else {
-      // Restore the specifically selected capture form for UNIDAD
       if (typeof activateCapture === 'function') {
         const currentCap = AppState.capTab || "SR";
         AppState.capTab = null; // Force DOM refresh
@@ -11494,6 +11542,25 @@ function activateMain(tab) {
   } else if (tab === "RDA") {
     if (typeof resetRDAEsquemaToBasico === 'function') resetRDAEsquemaToBasico();
     if (typeof loadAndRender === 'function') loadAndRender();
+  }
+
+  // Trigger animation for the active panel
+  let activePanel = null;
+  if (tab === "WELCOME") activePanel = pWelcome;
+  else if (tab === "ADMIN") activePanel = pAdmin;
+  else if (tab === "SEC") activePanel = pSec;
+  else if (tab === "CAP") activePanel = pCap;
+  else if (tab === "RDA" && !isMobileRda) activePanel = pRda;
+  else if (isMobileRda) activePanel = pRdaMob;
+
+  if (activePanel) {
+    void activePanel.offsetWidth; // Force reflow
+    activePanel.classList.add("main-panel-fade-in");
+  }
+
+  if (pCapSummary && tab === "CAP" && AppState.rol !== "UNIDAD") {
+    void pCapSummary.offsetWidth;
+    pCapSummary.classList.add("main-panel-fade-in");
   }
 }
 
@@ -11550,16 +11617,32 @@ function activateCapture(tab) {
   updateTabClass("tabBIO", tab === "BIO");
   updateTabClass("tabPINOL", tab === "PINOL");
 
-  if ($("formSR")) $("formSR").style.display = "none";
-  if ($("formCONS")) $("formCONS").style.display = "none";
-  if ($("formBIO")) $("formBIO").style.display = "none";
-  if ($("formPINOL")) $("formPINOL").style.display = "none";
+  const panels = ["formSR", "formCONS", "formBIO", "formPINOL"];
+  panels.forEach(id => {
+    const el = $(id);
+    if (el) {
+      el.style.display = "none";
+      el.classList.remove("capture-panel-fade-in");
+    }
+  });
 
   let targetId = "formSR";
-  if (tab === "SR") { if ($("formSR")) $("formSR").style.display = "block"; targetId = "formSR"; }
-  if (tab === "CONS") { if ($("formCONS")) $("formCONS").style.display = "flex"; targetId = "formCONS"; }
-  if (tab === "BIO") { if ($("formBIO")) $("formBIO").style.display = "block"; targetId = "formBIO"; }
-  if (tab === "PINOL") { if ($("formPINOL")) $("formPINOL").style.display = "block"; targetId = "formPINOL"; }
+  const activeEl = $(
+    tab === "SR" ? "formSR" :
+    tab === "CONS" ? "formCONS" :
+    tab === "BIO" ? "formBIO" :
+    tab === "PINOL" ? "formPINOL" : ""
+  );
+
+  if (activeEl) {
+    if (tab === "CONS") activeEl.style.display = "flex";
+    else activeEl.style.display = "block";
+
+    console.log(`[Capture Tabs] Triggering smooth entry animation for panel: ${activeEl.id}`);
+    void activeEl.offsetWidth; // Force reflow
+    activeEl.classList.add("capture-panel-fade-in");
+    targetId = activeEl.id;
+  }
 
   updateCaptureStateBanner();
   applyCaptureLockState();
@@ -12320,7 +12403,7 @@ async function performSaveBIO() {
     successMsg: EDIT_BIO ? "Pedido actualizado" : "Pedido guardado",
     eventTitle: "Pedido de biológico",
     eventMsg: EDIT_BIO ? "Actualizado correctamente." : "Guardado correctamente.",
-    mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true, touchBio: true },
+    mutation: { touchToday: false, touchCaptureSummary: true, touchHistory: true, touchBio: true },
     action: async () => {
       saveUxValue(UX_KEYS.bioName, nombre);
       const res = await AppService.call("saveBio", {
@@ -16450,7 +16533,6 @@ function positionArchivosDropdown() {
   box.style.zIndex = "10000";
 }
 
-
 function toggleArchivosDropdown() {
   const box = $("archivosDropdown");
   if (!box) return;
@@ -16463,12 +16545,15 @@ function toggleArchivosDropdown() {
     // Ocultar notif si está abierto
     if (typeof closeTopNotifDropdown === "function") closeTopNotifDropdown();
 
+    box.style.visibility = "hidden";
     box.style.display = "block";
-    // Force reflow for animation
-    void box.offsetWidth;
-    box.classList.add("open");
     positionArchivosDropdown();
     renderArchivosView();
+
+    // Force reflow for animation
+    void box.offsetWidth;
+    box.style.visibility = "visible";
+    box.classList.add("open");
   }
 }
 
