@@ -212,15 +212,26 @@
   <!-- Mobile Adaptation Layer (MAL) -->
   <script src="mobile.js?v=2026.22" defer></script>
   <!-- Archivo Principal -->
-  <script src="main.js?v=2026.28" defer></script>
+  <script src="main.js?v=2026.29" defer></script>
 
   <!-- 🔧 Service Worker Registration (PWA) -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('[PWA] Service Worker registrado:', reg.scope))
+          .then(reg => {
+            console.log('[PWA] Service Worker registrado:', reg.scope);
+            reg.update(); // Buscar actualizaciones
+          })
           .catch(err => console.warn('[PWA] Error al registrar Service Worker:', err));
+      });
+      // Recargar automáticamente cuando el nuevo Service Worker tome control
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          window.location.reload();
+        }
       });
     }
   </script>
@@ -5058,9 +5069,7 @@
       z-index: 9990;
       width: 60px;
       height: 60px;
-      background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      background: #0f172a;
       border: 1px solid rgba(255, 255, 255, 0.15);
       border-top: 1px solid rgba(255, 255, 255, 0.3);
       box-shadow:
@@ -5077,7 +5086,7 @@
     }
 
     html.dark .feedback-fab {
-      background: rgba(255, 255, 255, 0.15);
+      background: #1e293b;
       color: #fff;
       border-top: 1px solid rgba(255, 255, 255, 0.4);
     }
@@ -5087,11 +5096,11 @@
       box-shadow:
         0 12px 40px rgba(0, 0, 0, 0.3),
         inset 0 0 20px rgba(255, 255, 255, 0.1);
-      background: rgba(15, 23, 42, 0.8);
+      background: #1e293b;
     }
 
     html.dark .feedback-fab:hover {
-      background: rgba(255, 255, 255, 0.25);
+      background: #334155;
     }
 
     .feedback-fab .material-symbols-rounded {
