@@ -956,29 +956,36 @@
             </div>
             <!-- ✨ CRYSTALLINE INSIGHT HUB (Dato Curioso - Dynamic) -->
             <div id="factCard"
-              class="flex items-center gap-5 py-4 px-6 rounded-[24px] border relative overflow-hidden w-full chip-equal-width"
+              class="flex flex-col justify-between rounded-[24px] py-4 px-6 bg-surface border border-outline-variant/50 shadow-sm transition-all hover:shadow-md group relative overflow-hidden w-full chip-equal-width"
               style="transition: background-color 0.5s ease, border-color 0.5s ease;">
 
-              <!-- Icon Hub -->
-              <div id="factIconContainer" style="transition: border-color 0.5s ease;"
-                class="w-14 h-14 rounded-xl bg-surface border flex items-center justify-center shrink-0 relative z-10 shadow-sm">
-                <span class="material-symbols-rounded text-[28px]" id="factIcon"
-                  style="transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);">auto_awesome</span>
+              <!-- Top Row: Icon & Title Area -->
+              <div class="flex items-center gap-3 min-w-0 relative z-10 w-full">
+                <!-- Icon container matching bCumplimiento style -->
+                <div id="factIconContainer" style="transition: border-color 0.5s ease;"
+                  class="w-10 h-10 rounded-xl bg-primary/5 border flex items-center justify-center shrink-0 shadow-sm">
+                  <span class="material-symbols-rounded text-[20px]" id="factIcon"
+                    style="transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);">auto_awesome</span>
+                </div>
+
+                <div class="flex flex-col leading-tight min-w-0">
+                  <span class="text-[9px] font-black uppercase tracking-widest opacity-40 mb-1" id="factTag">Cargando...</span>
+                  <div class="flex items-baseline gap-1">
+                    <span id="factTitle" class="text-[14px] font-black tracking-tighter text-primary truncate" style="transition: color 0.5s ease;">...</span>
+                  </div>
+                </div>
               </div>
 
-              <div class="flex flex-col leading-tight relative z-10 overflow-hidden min-w-0">
-                <div class="flex items-center gap-2 mb-1">
-                  <div id="factDot" class="w-1.5 h-1.5 rounded-full" style="transition: background-color 0.5s ease;">
-                  </div>
-                  <span class="text-[10px] font-black uppercase tracking-[0.2em]" id="factTitle"
-                    style="transition: color 0.5s ease;">Cargando...</span>
-                </div>
-                <span id="factBody" class="text-[13px] font-bold pr-4 leading-snug"
+              <!-- Bottom Row: Fact Body (separated by dashed border) -->
+              <div class="min-w-0 flex flex-col items-start border-t border-dashed border-outline-variant/30 pt-2 mt-2 relative z-10">
+                <span id="factBody" class="text-[11px] font-bold leading-relaxed text-slate-500"
                   style="transition: opacity 0.3s ease, color 0.5s ease;">...</span>
               </div>
 
-              <!-- Hidden Tag/ID compatibility -->
-              <div id="factTag" class="hidden"></div>
+              <!-- Glass Reflection Effect -->
+              <div
+                class="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/10 opacity-30 transition-opacity pointer-events-none">
+              </div>
             </div>
           </div>
         </div>

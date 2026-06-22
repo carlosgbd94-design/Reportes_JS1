@@ -175,8 +175,13 @@ const defaultTheme = { bg: "#f8fafc", border: "#f1f5f9", icon: "#475569", text: 
 
 function renderFact() {
   if (!FACTS || !FACTS.length) return;
-  const card = document.getElementById("factCard"), iconCont = document.getElementById("factIconContainer"), iconEl = document.getElementById("factIcon"), dot = document.getElementById("factDot"), titleEl = document.getElementById("factTitle"), bodyEl = document.getElementById("factBody"), tagEl = document.getElementById("factTag");
-  if (!card || !iconCont || !iconEl || !dot || !titleEl || !bodyEl || !tagEl) return;
+  const card = document.getElementById("factCard"),
+        iconCont = document.getElementById("factIconContainer"),
+        iconEl = document.getElementById("factIcon"),
+        titleEl = document.getElementById("factTitle"),
+        bodyEl = document.getElementById("factBody"),
+        tagEl = document.getElementById("factTag");
+  if (!card || !iconCont || !iconEl || !titleEl || !bodyEl || !tagEl) return;
 
   const f = FACTS[factIdx % FACTS.length];
   const tagIconMap = { "Cadena fría": "ac_unit", "Frascos": "science", "Inventario": "inventory_2", "Planeación": "analytics", "Registro": "edit_note", "Cobertura": "query_stats", "Operación": "settings" };
@@ -194,12 +199,13 @@ function renderFact() {
     card.style.borderColor = theme.border;
     iconCont.style.borderColor = theme.border;
     iconEl.style.color = theme.icon;
-    dot.style.backgroundColor = theme.title;
-    titleEl.style.color = theme.title;
-    bodyEl.style.color = theme.text;
-
-    tagEl.innerHTML = '<span class="material-symbols-rounded" style="font-size:18px; margin-right:8px;">' + curIcon + '</span>' + (f.tag || "");
-    titleEl.textContent = f.tag || "";
+    
+    // Set title and body text color using the theme text colors
+    titleEl.style.color = theme.text;
+    bodyEl.style.color = "var(--md-sys-color-on-surface-variant)"; 
+    
+    tagEl.textContent = (f.tag || "").toUpperCase();
+    titleEl.textContent = f.title || "";
     bodyEl.textContent = f.body || "";
     iconEl.textContent = curIcon;
 
