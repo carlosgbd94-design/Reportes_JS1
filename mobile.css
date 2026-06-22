@@ -1347,6 +1347,39 @@
     display: none !important;
 }
 
+/* 🛡️ MOBILE OVERLAYS POSITIONING & Z-INDEX PATCH (Liquid Glass Dock Escape) */
+.touch-ui #bioConfirmOverlay,
+.touch-ui #sinPedidoConfirmOverlay,
+.touch-ui #sinMovimientoSROverlay,
+.touch-ui #sinMovimientoConsOverlay,
+.touch-ui #prefillNoticeOverlay,
+.touch-ui #prefillConfirmOverlay {
+    z-index: 100000000 !important; /* Escape stacking context and render over dock */
+}
+
+/* Center card, constrain height and offset from bottom dock */
+.touch-ui #bioConfirmOverlay > div,
+.touch-ui #sinPedidoConfirmOverlay > div,
+.touch-ui #sinMovimientoSROverlay > div,
+.touch-ui #sinMovimientoConsOverlay > div,
+.touch-ui #prefillNoticeOverlay > div,
+.touch-ui #prefillConfirmOverlay > div {
+    max-height: 82dvh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    margin-bottom: 85px !important; /* Push up away from the active dock area */
+}
+
+/* Allow middle content scroll dynamically */
+.touch-ui #bioConfirmOverlay > div > div:nth-child(2),
+.touch-ui #sinMovimientoSROverlay > div > div:nth-child(2),
+.touch-ui #sinMovimientoConsOverlay > div > div:nth-child(2) {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    min-height: 0 !important;
+}
+
+
 
 
 
