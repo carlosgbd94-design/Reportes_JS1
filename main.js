@@ -2991,7 +2991,7 @@ function refillNotifUsers() {
   const scope = $("notifTargetScope")?.value || "";
   const municipio = $("notifTargetMunicipio")?.value || "";
   const clues = $("notifTargetClues")?.value || "";
-  const userSel = $("notifTargetUsuario");
+  const userSel = $("notifTargetUser");
 
   if (!userSel) return;
 
@@ -5399,7 +5399,9 @@ async function supabaseRequest(action = "", payload, options = {}) {
           return { ok: true, data: [] };
         } else if (USER.rol === 'MUNICIPAL' || USER.rol === 'JURISDICCIONAL') {
           const mList = Array.isArray(USER?.municipiosAllowed) ? USER.municipiosAllowed : [];
-          if (mList.length > 0) {
+          if (mList.includes('*')) {
+            // No filter, full access
+          } else if (mList.length > 0) {
             query = query.in('municipio', mList);
           } else if (USER.municipio) {
             query = query.eq('municipio', USER.municipio);
@@ -7097,6 +7099,24 @@ async function hydrateSessionUi(user, status, opts = {}) {
   if (showSuccessToast) showToast("Sesión iniciada correctamente");
 
   deferPostLoginTask(async () => {
+    // Solicitar permiso de notificaciones de forma automática
+    if (typeof Notification !== "undefined" && Notification.permission === "default") {
+      Notification.requestPermission().then(permission => {
+        if (typeof updatePushStatusUi === "function") {
+          updatePushStatusUi();
+        }
+        if (permission === "granted") {
+          if (typeof playNotificationSound === "function") {
+            playNotificationSound("success");
+          }
+          new Notification("SIREVAQ", {
+            body: "Notificaciones de escritorio activadas correctamente",
+            tag: 'sirevaq-setup'
+          });
+        }
+      }).catch(e => console.warn("Error al solicitar permiso de notificaciones:", e));
+    }
+
     await loadNotifications({ silent: true });
     startNotificationsAutoRefresh();
 
@@ -12406,11 +12426,12 @@ async function performSaveBIO() {
     mutation: { touchToday: false, touchCaptureSummary: true, touchHistory: true, touchBio: true },
     action: async () => {
       saveUxValue(UX_KEYS.bioName, nombre);
+      const isAllZeros = items.every(it => !it.pedido_frascos || Number(it.pedido_frascos) === 0);
       const res = await AppService.call("saveBio", {
         nombre,
         items,
         tipo_pedido: BIO_STATE.isInsideWindow ? "MENSUAL" : "EXTRAORDINARIO",
-        sin_pedido: $("chkNoPedido")?.checked || false,
+        sin_pedido: ($("chkNoPedido")?.checked || isAllZeros) || false,
         fecha: BIO_STATE.fechaPedidoProgramada,
         fechaPedidoProgramada: BIO_STATE.fechaPedidoProgramada,
         windowStartYmd: BIO_STATE.captureWindowStartYmd,
@@ -18291,6 +18312,7 @@ function makeSelectSearchable(selectEl, iconName = "search") {
   const input = document.createElement("input");
   input.type = "text";
   input.className = "searchable-select-input";
+  input.style.paddingLeft = "72px";
   input.placeholder = selectEl.options[0]?.text || "Escribe para buscar...";
   input.autocomplete = "off";
 

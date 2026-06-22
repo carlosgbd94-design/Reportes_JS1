@@ -568,9 +568,10 @@ label {
 
 .modern-input-group:focus-within :is(input, select):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not(.notifSearchInput) {
     padding-left: 56px !important;
-    border-color: var(--md-sys-color-primary) !important;
-    background-color: var(--md-sys-color-surface) !important;
+    border: none !important;
+    background-color: transparent !important;
     box-shadow: none !important;
+    outline: none !important;
 }
 
 .modern-input-group:focus-within input::placeholder {
@@ -590,9 +591,11 @@ label {
   padding-left: 56px !important;
   font-size: 15px !important;
   font-weight: 700 !important;
-  background-color: var(--md-sys-color-surface) !important;
-  border: 2px solid #cbd5e1 !important;
-  border-radius: 16px !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
   display: flex;
   align-items: center;
   line-height: 1.2 !important;
@@ -9807,26 +9810,28 @@ html body .modern-input-group input[type="date"]:focus,
   margin: 0;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
   animation: none;
+  opacity: 1 !important;
+  transform: none !important;
 }
 
 #notifPreviewCard.info {
   border-left: 5px solid #0ea5e9;
-  background: linear-gradient(to right, rgba(14, 165, 233, 0.02), #ffffff);
+  background: radial-gradient(700px 220px at 0% 0%, rgba(14, 165, 233, 0.12), transparent 55%), #ffffff !important;
 }
 
 #notifPreviewCard.success {
   border-left: 5px solid #10b981;
-  background: linear-gradient(to right, rgba(16, 185, 129, 0.02), #ffffff);
+  background: radial-gradient(700px 220px at 0% 0%, rgba(16, 185, 129, 0.12), transparent 55%), #ffffff !important;
 }
 
 #notifPreviewCard.warn {
   border-left: 5px solid #f59e0b;
-  background: linear-gradient(to right, rgba(245, 158, 11, 0.02), #ffffff);
+  background: radial-gradient(700px 220px at 0% 0%, rgba(245, 158, 11, 0.12), transparent 55%), #ffffff !important;
 }
 
 #notifPreviewCard.error {
   border-left: 5px solid #ef4444;
-  background: linear-gradient(to right, rgba(239, 68, 68, 0.02), #ffffff);
+  background: radial-gradient(700px 220px at 0% 0%, rgba(239, 68, 68, 0.12), transparent 55%), #ffffff !important;
 }
 
 /* Custom Searchable Select Styles */
@@ -9855,7 +9860,7 @@ html body .modern-input-group input[type="date"]:focus,
   background-color: #f8fafc;
   border: 2px solid #e2e8f0;
   border-radius: 16px;
-  padding: 0 44px 0 48px;
+  padding: 0 44px 0 72px !important;
   font-size: 14px;
   font-weight: 700;
   color: #003366;
