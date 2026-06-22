@@ -195,8 +195,10 @@ function renderFact() {
 
   setTimeout(() => {
     // 2. Update Content & Colors
-    card.style.backgroundColor = theme.bg;
+    card.style.background = `linear-gradient(135deg, ${theme.bg} 0%, #ffffff 100%)`;
     card.style.borderColor = theme.border;
+    card.style.boxShadow = `0 12px 24px -10px ${theme.border}, 0 2px 4px rgba(0,0,0,0.02)`;
+    iconCont.style.backgroundColor = `${theme.bg}`;
     iconCont.style.borderColor = theme.border;
     iconEl.style.color = theme.icon;
     
