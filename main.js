@@ -12373,6 +12373,12 @@ async function performSaveBIO() {
   const nombre = $("nombreBIO")?.value.trim() || "";
   const items = collectBioItems();
 
+  const sinPedido = $("chkNoPedido") ? $("chkNoPedido").checked : false;
+  const isAllZeros = items.every(it => !it.pedido_frascos || Number(it.pedido_frascos) === 0);
+  if (!sinPedido && isAllZeros) {
+    return showToast("No se puede guardar un pedido sin cantidades solicitadas. Si únicamente reportará existencias sin solicitar insumos este mes, por favor active la opción 'Solo Existencias'.", false, "warn");
+  }
+
   // --- REGLAS MATEMÁTICAS ESTRICTAS (PHASE 2) ---
   const criticalBioNames = ["HEXAVALENTE", "NEUMOCOCICA 13", "NEUMOCOCICA 20", "SRP", "ROTAVIRUS"];
   const normalizeStr = (str) => {
@@ -12426,12 +12432,11 @@ async function performSaveBIO() {
     mutation: { touchToday: false, touchCaptureSummary: true, touchHistory: true, touchBio: true },
     action: async () => {
       saveUxValue(UX_KEYS.bioName, nombre);
-      const isAllZeros = items.every(it => !it.pedido_frascos || Number(it.pedido_frascos) === 0);
       const res = await AppService.call("saveBio", {
         nombre,
         items,
         tipo_pedido: BIO_STATE.isInsideWindow ? "MENSUAL" : "EXTRAORDINARIO",
-        sin_pedido: ($("chkNoPedido")?.checked || isAllZeros) || false,
+        sin_pedido: $("chkNoPedido")?.checked || false,
         fecha: BIO_STATE.fechaPedidoProgramada,
         fechaPedidoProgramada: BIO_STATE.fechaPedidoProgramada,
         windowStartYmd: BIO_STATE.captureWindowStartYmd,
@@ -18684,16 +18689,55 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnCancelFeedback = document.getElementById("btnCancelFeedback");
   const formFeedback = document.getElementById("formFeedback");
 
+  const feedbackImagesInput = document.getElementById("feedbackImagesInput");
+  const feedbackUploadArea = document.getElementById("feedbackUploadArea");
+  const feedbackPreviewGrid = document.getElementById("feedbackPreviewGrid");
+
+  let uploadedFiles = [];
+
   if (btnFeedbackFAB && feedbackModal) {
     // Abrir Modal
     btnFeedbackFAB.addEventListener("click", () => {
       feedbackModal.classList.add("show");
     });
 
+    // Renderizar previsualizaciones
+    const renderPreviews = () => {
+      if (!feedbackPreviewGrid) return;
+      feedbackPreviewGrid.innerHTML = "";
+      uploadedFiles.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const item = document.createElement("div");
+          item.className = "feedback-preview-item";
+          
+          const img = document.createElement("img");
+          img.src = e.target.result;
+          img.alt = `Preview ${index}`;
+          
+          const removeBtn = document.createElement("button");
+          removeBtn.type = "button";
+          removeBtn.className = "feedback-preview-remove";
+          removeBtn.innerHTML = "✕";
+          removeBtn.addEventListener("click", () => {
+            uploadedFiles.splice(index, 1);
+            renderPreviews();
+          });
+          
+          item.appendChild(img);
+          item.appendChild(removeBtn);
+          feedbackPreviewGrid.appendChild(item);
+        };
+        reader.readAsDataURL(file);
+      });
+    };
+
     // Cerrar Modal
     const closeModal = () => {
       feedbackModal.classList.remove("show");
       formFeedback.reset();
+      uploadedFiles = [];
+      renderPreviews();
     };
 
     btnCancelFeedback.addEventListener("click", closeModal);
@@ -18711,11 +18755,75 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
+    // Selección tradicional de archivos
+    if (feedbackUploadArea && feedbackImagesInput) {
+      feedbackUploadArea.addEventListener("click", () => {
+        feedbackImagesInput.click();
+      });
+
+      feedbackImagesInput.addEventListener("change", (e) => {
+        if (e.target.files) {
+          Array.from(e.target.files).forEach(file => {
+            if (file.type.startsWith("image/")) {
+              uploadedFiles.push(file);
+            }
+          });
+          renderPreviews();
+          feedbackImagesInput.value = ""; // Limpiar
+        }
+      });
+
+      // Drag and Drop
+      feedbackUploadArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        feedbackUploadArea.classList.add("dragover");
+      });
+
+      feedbackUploadArea.addEventListener("dragleave", () => {
+        feedbackUploadArea.classList.remove("dragover");
+      });
+
+      feedbackUploadArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        feedbackUploadArea.classList.remove("dragover");
+        if (e.dataTransfer.files) {
+          Array.from(e.dataTransfer.files).forEach(file => {
+            if (file.type.startsWith("image/")) {
+              uploadedFiles.push(file);
+            }
+          });
+          renderPreviews();
+        }
+      });
+    }
+
+    // Escuchador de pegar (onPaste) desde portapapeles
+    feedbackModal.addEventListener("paste", (e) => {
+      if (!feedbackModal.classList.contains("show")) return;
+      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      let hasImage = false;
+      for (let item of items) {
+        if (item.type.indexOf("image") !== -1) {
+          const file = item.getAsFile();
+          if (file) {
+            const timestamp = new Date().getTime();
+            const pFile = new File([file], `paste_${timestamp}.png`, { type: file.type });
+            uploadedFiles.push(pFile);
+            hasImage = true;
+          }
+        }
+      }
+      if (hasImage) {
+        renderPreviews();
+      }
+    });
+
     // Enviar Formulario
     formFeedback.addEventListener("submit", async (e) => {
       e.preventDefault();
       
       const type = document.getElementById("feedbackType").value;
+      const moduleVal = document.getElementById("feedbackModule").value;
       const message = document.getElementById("feedbackMessage").value;
       const submitBtn = document.getElementById("btnSubmitFeedback");
       
@@ -18735,27 +18843,42 @@ document.addEventListener("DOMContentLoaded", () => {
       if (type === "Sugerencia") embedColor = 16766720; // Amarillo
       else if (type === "Error") embedColor = 15158332; // Rojo
 
-      const payload = {
-        embeds: [{
-          title: `Nuevo Feedback: ${type}`,
-          description: message,
-          color: embedColor,
-          fields: [
-            { name: "Usuario", value: userName, inline: true },
-            { name: "Rol", value: userRole, inline: true },
-            { name: "Unidad", value: userUnit, inline: true },
-            { name: "CLUES", value: userClues, inline: true }
-          ],
-          footer: { text: "SIREVAQ App" },
-          timestamp: new Date().toISOString()
-        }]
+      const embed = {
+        title: `Nuevo Feedback: ${type}`,
+        description: message,
+        color: embedColor,
+        fields: [
+          { name: "Usuario", value: userName, inline: true },
+          { name: "Rol", value: userRole, inline: true },
+          { name: "Unidad", value: userUnit, inline: true },
+          { name: "CLUES", value: userClues, inline: true },
+          { name: "Módulo Afectado", value: moduleVal, inline: true }
+        ],
+        footer: { text: "SIREVAQ App" },
+        timestamp: new Date().toISOString()
       };
+
+      // Si hay imágenes añadidas, referenciamos la primera en el embed principal
+      if (uploadedFiles.length > 0) {
+        embed.image = { url: "attachment://image_0.png" };
+      }
+
+      const payload = {
+        embeds: [embed]
+      };
+
+      const formData = new FormData();
+      formData.append("payload_json", JSON.stringify(payload));
+
+      uploadedFiles.forEach((file, index) => {
+        const extension = file.name.split('.').pop() || "png";
+        formData.append(`files[${index}]`, file, `image_${index}.${extension}`);
+      });
 
       try {
         const response = await fetch(DISCORD_WEBHOOK_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: formData
         });
 
         if (response.ok) {
@@ -18763,7 +18886,7 @@ document.addEventListener("DOMContentLoaded", () => {
             Swal.fire({
               icon: 'success',
               title: '¡Gracias por tu feedback!',
-              text: 'Hemos recibido tu mensaje correctamente.',
+              text: 'Hemos recibido tu mensaje y capturas correctamente.',
               confirmButtonColor: '#0ea5e9',
               background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#ffffff',
               color: document.documentElement.classList.contains('dark') ? '#f8fafc' : '#0f172a'

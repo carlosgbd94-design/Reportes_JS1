@@ -5205,7 +5205,156 @@
       padding: 24px 28px;
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 20px;
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+
+    .feedback-form::-webkit-scrollbar {
+      width: 6px;
+    }
+    .feedback-form::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .feedback-form::-webkit-scrollbar-thumb {
+      background: var(--md-sys-color-outline-variant);
+      border-radius: 3px;
+    }
+    .feedback-form::-webkit-scrollbar-thumb:hover {
+      background: var(--md-sys-color-primary);
+      opacity: 0.5;
+    }
+
+    /* Shortcut visual guide */
+    .feedback-shortcut-guide {
+      background: rgba(14, 165, 233, 0.05);
+      border: 1px dashed rgba(14, 165, 233, 0.2);
+      border-radius: 16px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      text-align: center;
+      margin-top: -4px;
+    }
+    html.dark .feedback-shortcut-guide {
+      background: rgba(14, 165, 233, 0.08);
+      border-color: rgba(14, 165, 233, 0.3);
+    }
+    .shortcut-tip-text {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--md-sys-color-on-surface-variant);
+      opacity: 0.8;
+    }
+    .shortcut-keys {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .shortcut-kbd {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--md-sys-color-surface-container-high);
+      border: 1px solid var(--md-sys-color-outline-variant);
+      border-bottom: 2px solid var(--md-sys-color-outline);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-family: inherit;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--md-sys-color-primary);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .win-logo-svg {
+      width: 10px;
+      height: 10px;
+      fill: currentColor;
+    }
+    .shortcut-plus {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--md-sys-color-outline);
+    }
+
+    /* Drag and Drop Upload Area */
+    .feedback-upload-area {
+      border: 2px dashed var(--md-sys-color-outline-variant);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      background: var(--md-sys-color-surface-container);
+      transition: all 0.3s ease;
+    }
+    .feedback-upload-area:hover, .feedback-upload-area.dragover {
+      border-color: #0ea5e9;
+      background: rgba(14, 165, 233, 0.04);
+    }
+    .upload-area-icon {
+      font-size: 28px;
+      color: #0ea5e9;
+      opacity: 0.7;
+    }
+    .upload-area-text {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--md-sys-color-on-surface-variant);
+      text-align: center;
+    }
+
+    /* Previews Grid */
+    .feedback-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .feedback-preview-item {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--md-sys-color-outline-variant);
+      background: var(--md-sys-color-surface-container-high);
+      animation: previewFadeIn 0.3s ease;
+    }
+    @keyframes previewFadeIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .feedback-preview-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .feedback-preview-remove {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #ef4444;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 900;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      transition: background 0.2s;
+    }
+    .feedback-preview-remove:hover {
+      background: #dc2626;
     }
 
     .feedback-input-group {
@@ -5418,6 +5567,45 @@
             <span class="material-symbols-rounded feedback-select-arrow">expand_more</span>
           </div>
         </div>
+        
+        <div class="feedback-input-group">
+          <label for="feedbackModule" class="feedback-form-label">Módulo afectado</label>
+          <div class="feedback-input-wrapper">
+            <span class="material-symbols-rounded feedback-input-icon"
+              style="top:50%; transform:translateY(-50%);">layers</span>
+            <select id="feedbackModule" required class="feedback-select">
+              <option value="General">🌐 General / Otro</option>
+              <option value="Ficha">📋 Ficha Logística</option>
+              <option value="Catálogo">📦 Catálogo (Lotes/Vencimientos)</option>
+              <option value="Histórico">📊 Histórico / Reportes</option>
+              <option value="RDA">🔍 RDA (Revisión de Archivos)</option>
+              <option value="Seguridad">🔒 Seguridad y Acceso</option>
+              <option value="Mapeador SIS">🗺️ Mapeador SIS</option>
+            </select>
+            <span class="material-symbols-rounded feedback-select-arrow">expand_more</span>
+          </div>
+        </div>
+
+        <div class="feedback-shortcut-guide">
+          <span class="shortcut-tip-text">Tip: Puedes tomar una captura de pantalla usando:</span>
+          <div class="shortcut-keys">
+            <kbd class="shortcut-kbd">
+              <svg class="win-logo-svg" viewBox="0 0 24 24">
+                <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM11.25 1.89l12.75-1.8v11.36h-12.75V1.89zm12.75 11.47v11.36l-12.75-1.8v-9.56h12.75z"/>
+              </svg>
+              <span>Win</span>
+            </kbd>
+            <span class="shortcut-plus">+</span>
+            <kbd class="shortcut-kbd">
+              <span class="material-symbols-rounded" style="font-size: 10px;">shift</span>
+              <span>Shift</span>
+            </kbd>
+            <span class="shortcut-plus">+</span>
+            <kbd class="shortcut-kbd">S</kbd>
+          </div>
+          <span class="shortcut-tip-text">y pegarla directamente aquí con Ctrl + V</span>
+        </div>
+
         <div class="feedback-input-group">
           <label for="feedbackMessage" class="feedback-form-label">Mensaje</label>
           <div class="feedback-input-wrapper">
@@ -5425,6 +5613,16 @@
             <textarea id="feedbackMessage" required placeholder="Describe tu sugerencia, error o pregunta..."
               class="feedback-textarea"></textarea>
           </div>
+        </div>
+
+        <div class="feedback-input-group">
+          <label class="feedback-form-label">Imágenes / Capturas</label>
+          <input type="file" id="feedbackImagesInput" accept="image/*" multiple style="display: none;">
+          <div class="feedback-upload-area" id="feedbackUploadArea">
+            <span class="material-symbols-rounded upload-area-icon">cloud_upload</span>
+            <span class="upload-area-text">Arrastra imágenes, pégalas (Ctrl+V) o haz clic aquí</span>
+          </div>
+          <div class="feedback-preview-grid" id="feedbackPreviewGrid"></div>
         </div>
       </form>
       <div class="feedback-actions">
