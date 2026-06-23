@@ -4535,11 +4535,11 @@ async function supabaseRequest(action = "", payload, options = {}) {
         const currentMonth = fIniStr.substring(0, 7); // YYYY-MM
 
         const [resSR, resBio, resUnits, resCalendar, resCons] = await Promise.all([
-          supabase.rpc('get_captures_sr_range_bypass', { p_fecha_inicio: fIniStr, p_fecha_fin: fFinStr }),
-          supabase.rpc('get_captures_bio_range_bypass', { p_fecha_inicio: fIniStr, p_fecha_fin: fFinStr }),
+          supabase.rpc('get_captures_sr_range_bypass', { p_fecha_inicio: fIniStr, p_fecha_fin: fFinStr }).range(0, 5000),
+          supabase.rpc('get_captures_bio_range_bypass', { p_fecha_inicio: fIniStr, p_fecha_fin: fFinStr }).range(0, 5000),
           unitsQuery,
           supabase.from('calendario_pedidos').select('*').eq('anio_mes', currentMonth).eq('activo', 'SI').maybeSingle(),
-          supabase.rpc('get_captures_cons_range_bypass', { p_fecha_inicio: fIniStr, p_fecha_fin: fFinStr })
+          supabase.rpc('get_captures_cons_range_bypass', { p_fecha_inicio: fIniStr, p_fecha_fin: fFinStr }).range(0, 5000)
         ]);
 
         let captureRecords = [];
@@ -5351,7 +5351,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
         const { data, error } = await supabase.rpc(rpcName, {
           p_fecha_inicio: payload.fechaInicio,
           p_fecha_fin: payload.fechaFin
-        });
+        }).range(0, 5000);
 
         if (error) throw error;
 
@@ -5374,7 +5374,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
         const { data, error } = await supabase.rpc("get_export_bio_range_bypass", {
           p_fecha_inicio: payload.fechaInicio,
           p_fecha_fin: payload.fechaFin
-        });
+        }).range(0, 5000);
 
         if (error) throw error;
 
