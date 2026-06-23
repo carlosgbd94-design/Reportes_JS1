@@ -18463,7 +18463,7 @@ const confettiLogoImg = new Image();
 confettiLogoImg.crossOrigin = "anonymous";
 confettiLogoImg.onload = () => console.log("🟢 Confetti Logo loaded successfully");
 confettiLogoImg.onerror = (e) => console.error("🔴 Confetti Logo failed to load:", e);
-confettiLogoImg.src = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png";
+confettiLogoImg.src = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png?v=2026.1";
 
 const confettiColorCache = {};
 function getSolidRgb(colorStr) {
@@ -18504,19 +18504,22 @@ function getConfettiTintedLogo(colorStr) {
   return offscreen;
 }
 
+let localConfetti = null;
 function triggerConfetti() {
   try {
     if (typeof window.confetti === "function") {
-      // Always create a fresh canvas for the animation to clean up completely afterward
-      const canvas = document.createElement("canvas");
-      canvas.id = "confetti-canvas";
-      canvas.style.position = "fixed";
-      canvas.style.inset = "0";
-      canvas.style.width = "100vw";
-      canvas.style.height = "100vh";
-      canvas.style.pointerEvents = "none";
-      canvas.style.zIndex = "999999";
-      document.body.appendChild(canvas);
+      let canvas = document.getElementById("confetti-canvas");
+      if (!canvas) {
+        canvas = document.createElement("canvas");
+        canvas.id = "confetti-canvas";
+        canvas.style.position = "fixed";
+        canvas.style.inset = "0";
+        canvas.style.width = "100vw";
+        canvas.style.height = "100vh";
+        canvas.style.pointerEvents = "none";
+        canvas.style.zIndex = "999999";
+        document.body.appendChild(canvas);
+      }
 
       const ctx = canvas.getContext('2d');
       if (ctx && !ctx.fill._patched) {
@@ -18586,7 +18589,7 @@ function triggerConfetti() {
               }
               
               let alpha = 1;
-              const rgbaMatch = String(colorStr).match(/rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([\d.]+)\)/);
+              const rgbaMatch = String(colorStr).match(/rgba?\(\s*\d+\s*,\s*\d+\s*,\s*([\d.]+)\)/);
               if (rgbaMatch) {
                 alpha = parseFloat(rgbaMatch[1]);
               }
@@ -18609,44 +18612,35 @@ function triggerConfetti() {
         ctx.fill._patched = true;
       }
 
-      // useWorker MUST be false for the context monkey-patch to function
-      const myConfetti = window.confetti.create(canvas, {
-        resize: true,
-        useWorker: false
-      });
+      if (!localConfetti) {
+        localConfetti = window.confetti.create(canvas, {
+          resize: true,
+          useWorker: false
+        });
+      }
 
       const palette = ['#003366', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
       // Fire bursts
-      const p1 = myConfetti({
+      localConfetti({
         particleCount: 35,
         spread: 55,
         origin: { x: 0.15, y: 0.8 },
         colors: palette
       });
-      const p2 = myConfetti({
+      localConfetti({
         particleCount: 35,
         spread: 55,
         origin: { x: 0.85, y: 0.85 },
         colors: palette
       });
 
-      // Cleanup logic when animations finish (or absolute fallback timeout)
-      let cleaned = false;
-      const cleanup = () => {
-        if (cleaned) return;
-        cleaned = true;
-        try {
-          myConfetti.reset();
-          canvas.remove();
-        } catch (err) {
-          console.warn("Confetti cleanup error:", err);
+      // Clear particles after 4.5s to free CPU/GPU rendering resources without removing canvas
+      setTimeout(() => {
+        if (localConfetti) {
+          localConfetti.reset();
         }
-      };
-
-      Promise.all([p1, p2]).then(cleanup).catch(cleanup);
-      // Failsafe cleanup after 4.5 seconds
-      setTimeout(cleanup, 4500);
+      }, 4500);
     }
   } catch (e) {
     console.warn("Confetti animation failed:", e);
