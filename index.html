@@ -193,26 +193,26 @@
   </style>
 
   <!-- Scripts externos -->
-  <script defer src="https://fastly.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script defer src="https://fastly.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
-  <script defer src="https://fastly.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.39.3/supabase.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script defer
     src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script defer src="https://fastly.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.9.2/confetti.browser.min.js"></script>
 
   <!-- Modern Libraries (Dates, Validation, Animations) -->
-  <script defer src="https://fastly.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
-  <script defer src="https://fastly.jsdelivr.net/npm/just-validate@4.3.0/dist/just-validate.production.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/dayjs.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/just-validate/4.3.0/just-validate.production.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
   <!-- Mobile Adaptation Layer (MAL) -->
-  <script src="mobile.js?v=2026.22" defer></script>
+  <script src="mobile.js?v=2026.23" defer></script>
   <!-- Archivo Principal -->
-  <script src="main.js?v=2026.31" defer></script>
+  <script src="main.js?v=2026.35" defer></script>
 
   <!-- 🔧 Service Worker Registration (PWA) -->
   <script>
@@ -5117,17 +5117,25 @@
       inset: 0;
       z-index: 9999;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      background: rgba(15, 23, 42, 0.4);
+      align-items: flex-end;
+      justify-content: flex-end;
+      padding: 24px;
+      padding-bottom: 96px;
+      background: rgba(15, 23, 42, 0.15);
       opacity: 0;
       visibility: hidden;
       transition: all 0.3s ease;
     }
 
     html.dark .feedback-modal-overlay {
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    @media (max-width: 480px) {
+      .feedback-modal-overlay {
+        padding: 12px;
+        padding-bottom: 96px;
+      }
     }
 
     .feedback-modal-overlay.show {
@@ -5138,7 +5146,7 @@
     .feedback-modal-card {
       width: 100%;
       max-width: 380px;
-      max-height: 85vh;
+      max-height: calc(100vh - 150px);
       display: flex;
       flex-direction: column;
       background: var(--md-sys-color-surface);
@@ -5146,9 +5154,9 @@
       border-radius: 24px;
       box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.2);
       transform-origin: bottom right;
-      transform: scale(0.05) translate(300px, 300px);
+      transform: scale(0);
       opacity: 0;
-      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
       overflow: hidden;
     }
 
@@ -5157,58 +5165,95 @@
     }
 
     .feedback-modal-overlay.show .feedback-modal-card {
-      transform: scale(1) translate(0, 0);
+      transform: scale(1);
       opacity: 1;
     }
 
     .feedback-modal-header {
-      padding: 24px 28px;
+      padding: 20px 24px;
       border-bottom: 1px solid var(--md-sys-color-outline-variant);
       display: flex;
       align-items: center;
-      gap: 16px;
+      justify-content: space-between;
       position: relative;
     }
 
-    .feedback-modal-header::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(14, 165, 233, 0.05) 0%, transparent 100%);
-      pointer-events: none;
-    }
-
-    .feedback-modal-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 16px;
-      background: linear-gradient(135deg, #0ea5e9, #2563eb);
-      color: #fff;
+    .feedback-header-text {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 8px 16px rgba(37, 99, 235, 0.2);
+      flex-direction: column;
     }
 
-    .feedback-modal-icon .material-symbols-rounded {
-      font-size: 24px;
+    .feedback-close-x {
+      background: transparent !important;
+      border: none !important;
+      font-size: 20px !important;
+      color: var(--md-sys-color-on-surface-variant) !important;
+      opacity: 0.5 !important;
+      cursor: pointer !important;
+      transition: opacity 0.2s !important;
+      padding: 4px !important;
+      margin: 0 !important;
+      line-height: 1 !important;
+      box-shadow: none !important;
+      height: auto !important;
+      width: auto !important;
+    }
+    .feedback-close-x:hover {
+      opacity: 1 !important;
     }
 
     .feedback-modal-title {
-      font-size: 20px;
-      font-weight: 800;
+      font-size: 18px;
+      font-weight: 900;
       color: var(--md-sys-color-primary);
       margin: 0;
       letter-spacing: -0.02em;
     }
 
     .feedback-modal-subtitle {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       color: var(--md-sys-color-on-surface-variant);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin: 4px 0 0 0;
+      opacity: 0.7;
+      margin: 2px 0 0 0;
+    }
+
+    .feedback-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2px;
+    }
+
+    .feedback-select-link {
+      background: transparent !important;
+      border: none !important;
+      font-size: 11px !important;
+      font-weight: 800 !important;
+      color: #0ea5e9 !important;
+      cursor: pointer !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+      height: auto !important;
+      width: auto !important;
+      transition: opacity 0.2s !important;
+    }
+    .feedback-select-link:hover {
+      opacity: 0.8 !important;
+    }
+
+    .feedback-info-note {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--md-sys-color-on-surface-variant);
+      opacity: 0.6;
+      margin-top: 4px;
     }
 
     .feedback-form {
@@ -5235,33 +5280,31 @@
       opacity: 0.5;
     }
 
-    /* Shortcut visual guide */
-    .feedback-shortcut-guide {
-      background: rgba(14, 165, 233, 0.05);
-      border: 1px dashed rgba(14, 165, 233, 0.2);
-      border-radius: 16px;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      text-align: center;
-      margin-top: -4px;
+    /* Drag and Drop Upload Area */
+    .feedback-upload-area {
+      background: rgba(14, 165, 233, 0.02);
+      border: 1px dashed rgba(14, 165, 233, 0.25);
+      border-radius: 12px;
+      padding: 10px 14px;
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 8px !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+      margin-top: 4px;
     }
-    html.dark .feedback-shortcut-guide {
+    .feedback-upload-area:hover, .feedback-upload-area.dragover {
+      border-color: #0ea5e9;
       background: rgba(14, 165, 233, 0.08);
+    }
+    html.dark .feedback-upload-area {
+      background: rgba(14, 165, 233, 0.04);
       border-color: rgba(14, 165, 233, 0.3);
     }
-    .shortcut-tip-text {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--md-sys-color-on-surface-variant);
-      opacity: 0.8;
-    }
-    .shortcut-keys {
-      display: flex;
-      align-items: center;
-      gap: 4px;
+    html.dark .feedback-upload-area:hover, html.dark .feedback-upload-area.dragover {
+      background: rgba(14, 165, 233, 0.12);
     }
     .shortcut-kbd {
       display: inline-flex;
@@ -5277,46 +5320,6 @@
       font-weight: 800;
       color: var(--md-sys-color-primary);
       box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
-    .win-logo-svg {
-      width: 10px;
-      height: 10px;
-      fill: currentColor;
-    }
-    .shortcut-plus {
-      font-size: 11px;
-      font-weight: 800;
-      color: var(--md-sys-color-outline);
-    }
-
-    /* Drag and Drop Upload Area */
-    .feedback-upload-area {
-      border: 2px dashed var(--md-sys-color-outline-variant);
-      border-radius: 16px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      cursor: pointer;
-      background: var(--md-sys-color-surface-container);
-      transition: all 0.3s ease;
-    }
-    .feedback-upload-area:hover, .feedback-upload-area.dragover {
-      border-color: #0ea5e9;
-      background: rgba(14, 165, 233, 0.04);
-    }
-    .upload-area-icon {
-      font-size: 28px;
-      color: #0ea5e9;
-      opacity: 0.7;
-    }
-    .upload-area-text {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--md-sys-color-on-surface-variant);
-      text-align: center;
     }
 
     /* Previews Grid */
@@ -5406,28 +5409,13 @@
       box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
     }
 
-    .feedback-input-icon {
-      position: absolute;
-      left: 16px;
-      color: var(--md-sys-color-primary);
-      opacity: 0.4;
-      pointer-events: none;
-      transition: all 0.3s ease;
-    }
-
-    .feedback-input-wrapper:focus-within .feedback-input-icon {
-      opacity: 1;
-      color: #0ea5e9;
-      transform: scale(1.1);
-    }
-
     .feedback-form select.feedback-select {
       width: 100% !important;
       height: 52px !important;
       background: transparent !important;
       background-image: none !important;
       border: none !important;
-      padding: 0 48px !important;
+      padding: 0 16px !important;
       font-size: 14px !important;
       font-weight: 700 !important;
       color: var(--md-sys-color-primary) !important;
@@ -5452,7 +5440,7 @@
       height: 120px !important;
       background: transparent !important;
       border: none !important;
-      padding: 16px 16px 16px 48px !important;
+      padding: 16px !important;
       font-size: 14px !important;
       font-weight: 500 !important;
       color: var(--md-sys-color-primary) !important;
@@ -5539,13 +5527,11 @@
   <div id="feedbackModal" class="feedback-modal-overlay" aria-hidden="true">
     <div class="feedback-modal-card">
       <div class="feedback-modal-header">
-        <div class="feedback-modal-icon">
-          <span class="material-symbols-rounded">forum</span>
+        <div class="feedback-header-text">
+          <h3 class="feedback-modal-title">Soporte Técnico</h3>
+          <p class="feedback-modal-subtitle">Reporta un error o sugiere mejoras</p>
         </div>
-        <div>
-          <h3 class="feedback-modal-title">Enviar Feedback</h3>
-          <p class="feedback-modal-subtitle">Ayúdanos a mejorar</p>
-        </div>
+        <button type="button" id="btnCloseFeedbackHeader" class="feedback-close-x">✕</button>
       </div>
 
       <!-- WhatsApp Direct Support -->
@@ -5578,8 +5564,6 @@
         <div class="feedback-input-group">
           <label for="feedbackType" class="feedback-form-label">Tipo de mensaje</label>
           <div class="feedback-input-wrapper">
-            <span class="material-symbols-rounded feedback-input-icon"
-              style="top:50%; transform:translateY(-50%);">category</span>
             <select id="feedbackType" required class="feedback-select">
               <option value="Sugerencia">💡 Sugerencia</option>
               <option value="Error">🐛 Reportar Error</option>
@@ -5591,60 +5575,57 @@
         </div>
         
         <div class="feedback-input-group">
-          <label for="feedbackModule" class="feedback-form-label">Módulo afectado</label>
+          <label for="feedbackModule" class="feedback-form-label">¿En qué sección/pantalla ocurre?</label>
           <div class="feedback-input-wrapper">
-            <span class="material-symbols-rounded feedback-input-icon"
-              style="top:50%; transform:translateY(-50%);">layers</span>
             <select id="feedbackModule" required class="feedback-select">
-              <option value="General">🌐 General / Otro</option>
-              <option value="Ficha">📋 Ficha Logística</option>
-              <option value="Catálogo">📦 Catálogo (Lotes/Vencimientos)</option>
-              <option value="Histórico">📊 Histórico / Reportes</option>
-              <option value="RDA">🔍 RDA (Revisión de Archivos)</option>
-              <option value="Seguridad">🔒 Seguridad y Acceso</option>
-              <option value="Mapeador SIS">🗺️ Mapeador SIS</option>
+              <option value="General">General / Sistema</option>
+              <option value="Ficha">Ficha Logística</option>
+              <option value="Catálogo">Catálogo (Lotes/Vencimientos)</option>
+              <option value="Histórico">Histórico / Reportes</option>
+              <option value="RDA">RDA (Revisión de Archivos)</option>
+              <option value="Seguridad">Seguridad y Acceso</option>
+              <option value="Mapeador SIS">Mapeador SIS</option>
             </select>
             <span class="material-symbols-rounded feedback-select-arrow">expand_more</span>
           </div>
         </div>
 
-        <div class="feedback-shortcut-guide">
-          <span class="shortcut-tip-text">Tip: Puedes tomar una captura de pantalla usando:</span>
-          <div class="shortcut-keys">
-            <kbd class="shortcut-kbd">
-              <svg class="win-logo-svg" viewBox="0 0 24 24">
-                <path d="M0 3.449L9.75 2.1v9.45H0V3.449zM0 12.45h9.75v9.45L0 20.551v-8.1zM11.25 1.89l12.75-1.8v11.36h-12.75V1.89zm12.75 11.47v11.36l-12.75-1.8v-9.56h12.75z"/>
-              </svg>
-              <span>Win</span>
-            </kbd>
-            <span class="shortcut-plus">+</span>
-            <kbd class="shortcut-kbd">
-              <span class="material-symbols-rounded" style="font-size: 10px;">shift</span>
-              <span>Shift</span>
-            </kbd>
-            <span class="shortcut-plus">+</span>
-            <kbd class="shortcut-kbd">S</kbd>
-          </div>
-          <span class="shortcut-tip-text">y pegarla directamente aquí con Ctrl + V</span>
-        </div>
-
         <div class="feedback-input-group">
-          <label for="feedbackMessage" class="feedback-form-label">Mensaje</label>
+          <label for="feedbackMessage" class="feedback-form-label">¿Qué problema encontraste o qué te gustaría sugerir?</label>
           <div class="feedback-input-wrapper">
-            <span class="material-symbols-rounded feedback-input-icon" style="top:16px;">notes</span>
-            <textarea id="feedbackMessage" required placeholder="Describe tu sugerencia, error o pregunta..."
+            <textarea id="feedbackMessage" required placeholder="Ej. Al intentar guardar la consulta se queda cargando..."
               class="feedback-textarea"></textarea>
           </div>
         </div>
 
         <div class="feedback-input-group">
-          <label class="feedback-form-label">Imágenes / Capturas</label>
-          <input type="file" id="feedbackImagesInput" accept="image/*" multiple style="display: none;">
-          <div class="feedback-upload-area" id="feedbackUploadArea">
-            <span class="material-symbols-rounded upload-area-icon">cloud_upload</span>
-            <span class="upload-area-text">Arrastra imágenes, pégalas (Ctrl+V) o haz clic aquí</span>
+          <div class="feedback-label-row">
+            <span class="feedback-form-label" style="margin: 0;">Adjuntar imágenes</span>
+            <button type="button" id="btnSelectFilesTrigger" class="feedback-select-link">Seleccionar archivos</button>
           </div>
+          <input type="file" id="feedbackImagesInput" accept="image/*" multiple style="display: none;">
+          
+          <div class="feedback-upload-area" id="feedbackUploadArea">
+            <span class="material-symbols-rounded" style="font-size: 18px; color: #0ea5e9;">cloud_upload</span>
+            <span style="font-size: 11px; font-weight: 700; color: var(--md-sys-color-on-surface-variant); opacity: 0.8;">Arrastra imágenes, pégalas o haz clic aquí</span>
+          </div>
+
+          <div style="font-size: 11px; font-weight: 600; color: var(--md-sys-color-on-surface-variant); opacity: 0.8; display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 6px; flex-wrap: nowrap; white-space: nowrap;">
+            <span>Tip: Captura con</span>
+            <kbd class="shortcut-kbd" style="padding: 2px 5px !important; font-size: 9px !important; height: auto !important; min-height: 0 !important; line-height: 1 !important; display: inline-flex !important; align-items: center !important;">Win</kbd>
+            <span>+</span>
+            <kbd class="shortcut-kbd" style="padding: 2px 5px !important; font-size: 9px !important; height: auto !important; min-height: 0 !important; line-height: 1 !important; display: inline-flex !important; align-items: center !important;">Shift</kbd>
+            <span>+</span>
+            <kbd class="shortcut-kbd" style="padding: 2px 5px !important; font-size: 9px !important; height: auto !important; min-height: 0 !important; line-height: 1 !important; display: inline-flex !important; align-items: center !important;">S</kbd>
+            <span>y pégala aquí (Ctrl + V)</span>
+          </div>
+          
           <div class="feedback-preview-grid" id="feedbackPreviewGrid"></div>
+        </div>
+
+        <div class="feedback-info-note">
+          <span class="material-symbols-rounded" style="font-size: 16px;">info</span>
+          <span>Se adjuntará información del usuario para ayudar al desarrollador.</span>
         </div>
       </form>
       <div class="feedback-actions">
@@ -5652,7 +5633,7 @@
           Cancelar
         </button>
         <button type="submit" form="formFeedback" id="btnSubmitFeedback" class="feedback-btn-submit">
-          <span class="material-symbols-rounded" style="font-size:20px;">send</span> Enviar
+          <span class="material-symbols-rounded" style="font-size:18px;">send</span> Enviar Reporte
         </button>
       </div>
     </div>

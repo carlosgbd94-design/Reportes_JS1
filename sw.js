@@ -4,16 +4,16 @@
  * Versión: 2026.1
  */
 
-const CACHE_NAME = 'js1-reportes-v2026-11';
+const CACHE_NAME = 'js1-reportes-v2026-15';
 
 // Activos estáticos a cachear en la instalación
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './style.css?v=2026.52',
-  './mobile.css?v=2026.23',
-  './main.js?v=2026.31',
-  './mobile.js?v=2026.22',
+  './style.css?v=2026.54',
+  './mobile.css?v=2026.24',
+  './main.js?v=2026.35',
+  './mobile.js?v=2026.23',
   './rda_calculator.js?v=2026.14',
   './rda_parser.js?v=2026.14',
   './rda_ui.js?v=2026.14',

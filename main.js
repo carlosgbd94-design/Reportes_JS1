@@ -18695,6 +18695,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let uploadedFiles = [];
 
+  const btnCloseFeedbackHeader = document.getElementById("btnCloseFeedbackHeader");
+  const btnSelectFilesTrigger = document.getElementById("btnSelectFilesTrigger");
+
   if (btnFeedbackFAB && feedbackModal) {
     // Abrir Modal
     btnFeedbackFAB.addEventListener("click", () => {
@@ -18719,7 +18722,10 @@ document.addEventListener("DOMContentLoaded", () => {
           removeBtn.type = "button";
           removeBtn.className = "feedback-preview-remove";
           removeBtn.innerHTML = "✕";
-          removeBtn.addEventListener("click", () => {
+          
+          // Detener propagación para evitar que el click cierre el modal
+          removeBtn.addEventListener("click", (evt) => {
+            evt.stopPropagation();
             uploadedFiles.splice(index, 1);
             renderPreviews();
           });
@@ -18741,6 +18747,9 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     btnCancelFeedback.addEventListener("click", closeModal);
+    if (btnCloseFeedbackHeader) {
+      btnCloseFeedbackHeader.addEventListener("click", closeModal);
+    }
     
     // Cerrar si se hace click fuera del modal o con Escape
     feedbackModal.addEventListener("click", (e) => {
@@ -18755,25 +18764,19 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // Selección tradicional de archivos
+    // Selección tradicional de archivos vía link y click en la zona de carga
+    if (btnSelectFilesTrigger && feedbackImagesInput) {
+      btnSelectFilesTrigger.addEventListener("click", (e) => {
+        e.preventDefault();
+        feedbackImagesInput.click();
+      });
+    }
+
     if (feedbackUploadArea && feedbackImagesInput) {
       feedbackUploadArea.addEventListener("click", () => {
         feedbackImagesInput.click();
       });
 
-      feedbackImagesInput.addEventListener("change", (e) => {
-        if (e.target.files) {
-          Array.from(e.target.files).forEach(file => {
-            if (file.type.startsWith("image/")) {
-              uploadedFiles.push(file);
-            }
-          });
-          renderPreviews();
-          feedbackImagesInput.value = ""; // Limpiar
-        }
-      });
-
-      // Drag and Drop
       feedbackUploadArea.addEventListener("dragover", (e) => {
         e.preventDefault();
         feedbackUploadArea.classList.add("dragover");
@@ -18793,6 +18796,20 @@ document.addEventListener("DOMContentLoaded", () => {
             }
           });
           renderPreviews();
+        }
+      });
+    }
+
+    if (feedbackImagesInput) {
+      feedbackImagesInput.addEventListener("change", (e) => {
+        if (e.target.files) {
+          Array.from(e.target.files).forEach(file => {
+            if (file.type.startsWith("image/")) {
+              uploadedFiles.push(file);
+            }
+          });
+          renderPreviews();
+          feedbackImagesInput.value = ""; // Limpiar
         }
       });
     }
