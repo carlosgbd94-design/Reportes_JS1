@@ -18460,6 +18460,9 @@ function updateSearchableSelectOptions(selectEl) {
 
 // ===== CELEBRACIÓN CON CONFETTI PREMIUM (OPCIÓN 3 - CON PARCHADO DE CSP) =====
 const confettiLogoImg = new Image();
+confettiLogoImg.crossOrigin = "anonymous";
+confettiLogoImg.onload = () => console.log("🟢 Confetti Logo loaded successfully");
+confettiLogoImg.onerror = (e) => console.error("🔴 Confetti Logo failed to load:", e);
 confettiLogoImg.src = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png";
 
 const confettiColorCache = {};
