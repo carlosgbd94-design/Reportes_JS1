@@ -3921,6 +3921,30 @@ async function hashPassword(text) {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+async function fetchAllRpc(rpcName, params) {
+  let allData = [];
+  let from = 0;
+  let to = 999;
+  let finished = false;
+
+  while (!finished) {
+    const { data, error } = await supabase.rpc(rpcName, params).range(from, to);
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      finished = true;
+    } else {
+      allData = allData.concat(data);
+      if (data.length < 1000) {
+        finished = true;
+      } else {
+        from += 1000;
+        to += 1000;
+      }
+    }
+  }
+  return allData;
+}
+
 /**
  * INTERCEPTOR SUPABASE
  * Reemplaza la lógica de GAS por llamadas directas a Supabase.
@@ -4538,17 +4562,17 @@ async function supabaseRequest(action = "", payload, options = {}) {
         const currentMonth = fIniStr.substring(0, 7); // YYYY-MM
 
         const [resSR, resBio, resUnits, resCalendar, resCons] = await Promise.all([
-          supabase.rpc('get_captures_sr_range_bypass', { p_fecha_inicio: fIniStr, p_fecha_fin: fFinStr }).range(0, 5000),
-          supabase.rpc('get_captures_bio_range_bypass', { p_fecha_inicio: fIniStr, p_fecha_fin: fFinStr }).range(0, 5000),
+          fetchAllRpc('get_captures_sr_range_bypass', { p_fecha_inicio: fIniStr, p_fecha_fin: fFinStr }),
+          fetchAllRpc('get_captures_bio_range_bypass', { p_fecha_inicio: fIniStr, p_fecha_fin: fFinStr }),
           unitsQuery,
           supabase.from('calendario_pedidos').select('*').eq('anio_mes', currentMonth).eq('activo', 'SI').maybeSingle(),
-          supabase.rpc('get_captures_cons_range_bypass', { p_fecha_inicio: fIniStr, p_fecha_fin: fFinStr }).range(0, 5000)
+          fetchAllRpc('get_captures_cons_range_bypass', { p_fecha_inicio: fIniStr, p_fecha_fin: fFinStr })
         ]);
 
         let captureRecords = [];
-        if (tipo === "SR") captureRecords = resSR.data || [];
-        else if (tipo === "CONS") captureRecords = resCons.data || [];
-        else if (tipo === "BIO") captureRecords = resBio.data || [];
+        if (tipo === "SR") captureRecords = resSR || [];
+        else if (tipo === "CONS") captureRecords = resCons || [];
+        else if (tipo === "BIO") captureRecords = resBio || [];
 
         console.log(`[admincaptureoverview DEBUG] Registros de captura encontrados en DB para ${tipo}:`, captureRecords);
 
@@ -5351,12 +5375,10 @@ async function supabaseRequest(action = "", payload, options = {}) {
         const tipo = (payload.tipo || "SR").toUpperCase();
         const rpcName = tipo === "SR" ? "get_export_sr_range_bypass" : "get_export_cons_range_bypass";
 
-        const { data, error } = await supabase.rpc(rpcName, {
+        const data = await fetchAllRpc(rpcName, {
           p_fecha_inicio: payload.fechaInicio,
           p_fecha_fin: payload.fechaFin
-        }).range(0, 5000);
-
-        if (error) throw error;
+        });
 
         let filteredData = data || [];
         if (role === "UNIDAD") {
@@ -5375,15 +5397,10 @@ async function supabaseRequest(action = "", payload, options = {}) {
         const role = String(USER?.rol || "").toUpperCase();
         console.log("[bioexportmatrix DEBUG] payload:", payload, "USER:", USER);
 
-        const { data, error } = await supabase.rpc("get_export_bio_range_bypass", {
+        const data = await fetchAllRpc("get_export_bio_range_bypass", {
           p_fecha_inicio: payload.fechaInicio,
           p_fecha_fin: payload.fechaFin
-        }).range(0, 5000);
-
-        if (error) {
-          console.error("[bioexportmatrix DEBUG] RPC error:", error);
-          throw error;
-        }
+        });
 
         console.log("[bioexportmatrix DEBUG] RPC data count:", data?.length);
 
