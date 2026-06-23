@@ -18501,45 +18501,57 @@ function getConfettiTintedLogo(colorStr) {
   return offscreen;
 }
 
-let localConfetti = null;
 function triggerConfetti() {
   try {
     if (typeof window.confetti === "function") {
-      let canvas = document.getElementById("confetti-canvas");
-      if (!canvas) {
-        canvas = document.createElement("canvas");
-        canvas.id = "confetti-canvas";
-        canvas.style.position = "fixed";
-        canvas.style.inset = "0";
-        canvas.style.width = "100vw";
-        canvas.style.height = "100vh";
-        canvas.style.pointerEvents = "none";
-        canvas.style.zIndex = "999999";
-        document.body.appendChild(canvas);
-      }
+      // Always create a fresh canvas for the animation to clean up completely afterward
+      const canvas = document.createElement("canvas");
+      canvas.id = "confetti-canvas";
+      canvas.style.position = "fixed";
+      canvas.style.inset = "0";
+      canvas.style.width = "100vw";
+      canvas.style.height = "100vh";
+      canvas.style.pointerEvents = "none";
+      canvas.style.zIndex = "999999";
+      document.body.appendChild(canvas);
 
-      if (!localConfetti) {
-        localConfetti = window.confetti.create(canvas, {
-          resize: true,
-          useWorker: true
-        });
-      }
+      const myConfetti = window.confetti.create(canvas, {
+        resize: true,
+        useWorker: true
+      });
 
       const palette = ['#003366', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-      // Burst of confetti from both sides - light, hardware accelerated, and super responsive
-      localConfetti({
-        particleCount: 60,
+      // Fire bursts
+      const p1 = myConfetti({
+        particleCount: 50,
         spread: 60,
         origin: { x: 0.1, y: 0.85 },
         colors: palette
       });
-      localConfetti({
-        particleCount: 60,
+      const p2 = myConfetti({
+        particleCount: 50,
         spread: 60,
         origin: { x: 0.9, y: 0.85 },
         colors: palette
       });
+
+      // Cleanup logic when animations finish (or absolute fallback timeout)
+      let cleaned = false;
+      const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        try {
+          myConfetti.reset();
+          canvas.remove();
+        } catch (err) {
+          console.warn("Confetti cleanup error:", err);
+        }
+      };
+
+      Promise.all([p1, p2]).then(cleanup).catch(cleanup);
+      // Failsafe cleanup after 4.5 seconds
+      setTimeout(cleanup, 4500);
     }
   } catch (e) {
     console.warn("Confetti animation failed:", e);
