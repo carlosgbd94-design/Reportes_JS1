@@ -12836,7 +12836,8 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
 
     arrClues.forEach(clues => {
       let val = 0;
-      const matchingRecords = data.filter(d => d.clues === clues);
+      const targetClues = String(clues || "").trim().toUpperCase();
+      const matchingRecords = data.filter(d => String(d.clues || "").trim().toUpperCase() === targetClues);
 
       if (tipo === "CONS") {
         matchingRecords.forEach(d => { val += Number(d[insumo.key] || 0); });
@@ -12845,7 +12846,10 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
       } else {
         const norm = (s) => String(s || "").toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         matchingRecords.filter(d => norm(d.biologico) === norm(insumo.label))
-          .forEach(d => { val += Number(d.solicitud || d.frascos || d.pedido_frascos || 0); });
+          .forEach(d => {
+            const cant = d.pedido_frascos ?? d.solicitud ?? d.frascos ?? 0;
+            val += Number(cant);
+          });
       }
 
       rowTotal += val;
@@ -12882,10 +12886,6 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
   });
 
   const buffer = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { type: 'application/octet-stream' });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
   const todayStr = new Date().toISOString().split('T')[0];
   let exportFileName = `Reporte_${tipo}_${fIni}.xlsx`;
   if (tipo === "BIO") {
@@ -12899,6 +12899,14 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
     exportFileName = `Existencia de biologico ${fIni}.xlsx`;
   }
 
+  if (returnBuffer) {
+    return { fileName: exportFileName, buffer: buffer };
+  }
+
+  const blob = new Blob([buffer], { type: 'application/octet-stream' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
   a.download = exportFileName;
   a.click();
   window.URL.revokeObjectURL(url);
