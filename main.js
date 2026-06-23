@@ -12947,15 +12947,16 @@ async function generateProfessionalXLSX(tipo, data, fIni, fFin, selectedMunicipi
   const buffer = await wb.xlsx.writeBuffer();
   const todayStr = new Date().toISOString().split('T')[0];
   let exportFileName = `Reporte_${tipo}_${fIni}.xlsx`;
+  const muniSuffix = (selectedMunicipios && selectedMunicipios.length > 0) ? ` - ${selectedMunicipios.join('_').toUpperCase()}` : "";
   if (tipo === "BIO") {
     const [yyyy, mm] = (fIni || "").split('-');
     const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
     const mesNombre = mm ? (months[parseInt(mm, 10) - 1] || mm) : "";
-    exportFileName = `Pedido de biologico ${mesNombre} ${yyyy} - Exportado ${todayStr}.xlsx`;
+    exportFileName = `Pedido de biologico ${mesNombre} ${yyyy}${muniSuffix} - Exportado ${todayStr}.xlsx`;
   } else if (tipo === "CONS") {
-    exportFileName = (fIni !== fFin && fFin) ? `Reporte de consumibles ${fIni} al ${fFin}.xlsx` : `Reporte de consumibles ${fIni}.xlsx`;
+    exportFileName = (fIni !== fFin && fFin) ? `Reporte de consumibles ${fIni} al ${fFin}${muniSuffix}.xlsx` : `Reporte de consumibles ${fIni}${muniSuffix}.xlsx`;
   } else if (tipo === "SR") {
-    exportFileName = `Existencia de biologico ${fIni}.xlsx`;
+    exportFileName = `Existencia de biologico ${fIni}${muniSuffix}.xlsx`;
   }
 
   if (returnBuffer) {
