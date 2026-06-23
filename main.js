@@ -5370,13 +5370,19 @@ async function supabaseRequest(action = "", payload, options = {}) {
 
       case "bioexportmatrix": {
         const role = String(USER?.rol || "").toUpperCase();
+        console.log("[bioexportmatrix DEBUG] payload:", payload, "USER:", USER);
 
         const { data, error } = await supabase.rpc("get_export_bio_range_bypass", {
           p_fecha_inicio: payload.fechaInicio,
           p_fecha_fin: payload.fechaFin
         }).range(0, 5000);
 
-        if (error) throw error;
+        if (error) {
+          console.error("[bioexportmatrix DEBUG] RPC error:", error);
+          throw error;
+        }
+
+        console.log("[bioexportmatrix DEBUG] RPC data count:", data?.length);
 
         let filteredData = data || [];
 
@@ -5389,10 +5395,15 @@ async function supabaseRequest(action = "", payload, options = {}) {
           filteredData = filteredData.filter(row => isCaravanaUnit_(row));
         }
 
-        const requestedMunis = (payload.municipios || []).map(m => String(m).toUpperCase());
+        console.log("[bioexportmatrix DEBUG] filteredData after role check count:", filteredData.length);
+
+        const normText = (s) => String(s || "").trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const requestedMunis = (payload.municipios || []).map(m => normText(m));
         const filtered = requestedMunis.length > 0
-          ? filteredData.filter(d => requestedMunis.includes(String(d.municipio || "").toUpperCase()))
+          ? filteredData.filter(d => requestedMunis.includes(normText(d.municipio)))
           : filteredData;
+
+        console.log("[bioexportmatrix DEBUG] final filtered count:", filtered.length);
 
         return { ok: true, data: filtered };
       }
@@ -12604,6 +12615,8 @@ if ($("btnDoExport")) $("btnDoExport").onclick = async () => {
     }
 
     const splitCheckbox = $("exportSplitByMunicipio");
+    console.log("[btnDoExport DEBUG] splitCheckbox checked:", splitCheckbox?.checked, "res data count:", res.data?.length);
+
     if (splitCheckbox && splitCheckbox.checked && typeof JSZip !== 'undefined') {
       let targetMuns = municipios && municipios.length > 0 ? municipios : [];
       if (targetMuns.length === 0) {
@@ -12613,25 +12626,47 @@ if ($("btnDoExport")) $("btnDoExport").onclick = async () => {
         targetMuns = String(USER.municipio).split(",").map(m => m.trim());
       }
       
+      console.log("[btnDoExport DEBUG] targetMuns to process:", targetMuns);
+
       if (targetMuns.length > 0) {
         const zip = new JSZip();
+        let addedFilesCount = 0;
+        
+        const normText = (s) => String(s || "").trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
         for (const mun of targetMuns) {
-          const mData = res.data.filter(d => (d.municipio === mun) || (d.unidades && d.unidades.municipio === mun));
+          const normMun = normText(mun);
+          const mData = res.data.filter(d => {
+            const rowMun = normText(d.municipio || (d.unidades && d.unidades.municipio));
+            return rowMun === normMun;
+          });
+
+          console.log(`[btnDoExport DEBUG] Mun: "${mun}" (normalized: "${normMun}"), mData count:`, mData.length);
+
           if (mData.length > 0) {
              const result = await generateProfessionalXLSX(tipo, mData, fIni, fFin, [mun], true);
              if (result && result.buffer) {
                zip.file(result.fileName, result.buffer);
+               addedFilesCount++;
              }
           }
         }
-        const zipContent = await zip.generateAsync({ type: "blob" });
-        const url = window.URL.createObjectURL(zipContent);
-        const a = document.createElement("a");
-        a.href = url;
-        const todayStr = new Date().toISOString().split('T')[0];
-        a.download = `Reportes_${tipo}_${todayStr}.zip`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        
+        console.log("[btnDoExport DEBUG] zip files added:", addedFilesCount);
+
+        if (addedFilesCount > 0) {
+          const zipContent = await zip.generateAsync({ type: "blob" });
+          const url = window.URL.createObjectURL(zipContent);
+          const a = document.createElement("a");
+          a.href = url;
+          const todayStr = new Date().toISOString().split('T')[0];
+          a.download = `Reportes_${tipo}_${todayStr}.zip`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        } else {
+          console.warn("[btnDoExport DEBUG] No files were added to zip, falling back to consolidated excel");
+          await generateProfessionalXLSX(tipo, res.data, fIni, fFin, municipios);
+        }
       } else {
         await generateProfessionalXLSX(tipo, res.data, fIni, fFin, municipios);
       }
