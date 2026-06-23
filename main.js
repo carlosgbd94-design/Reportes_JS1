@@ -18515,24 +18515,116 @@ function triggerConfetti() {
       canvas.style.zIndex = "999999";
       document.body.appendChild(canvas);
 
+      const ctx = canvas.getContext('2d');
+      if (ctx && !ctx.fill._patched) {
+        let pathPoints = [];
+        let lastArcCenter = null;
+
+        const originalBeginPath = ctx.beginPath;
+        ctx.beginPath = function() {
+          pathPoints = [];
+          lastArcCenter = null;
+          originalBeginPath.apply(this, arguments);
+        };
+
+        const originalMoveTo = ctx.moveTo;
+        ctx.moveTo = function(x, y) {
+          pathPoints.push({ x, y });
+          originalMoveTo.apply(this, arguments);
+        };
+
+        const originalLineTo = ctx.lineTo;
+        ctx.lineTo = function(x, y) {
+          pathPoints.push({ x, y });
+          originalLineTo.apply(this, arguments);
+        };
+
+        const originalArc = ctx.arc;
+        ctx.arc = function(x, y, radius, ...args) {
+          lastArcCenter = { x, y, r: radius };
+          originalArc.apply(this, [x, y, radius, ...args]);
+        };
+
+        if (ctx.ellipse) {
+          const originalEllipse = ctx.ellipse;
+          ctx.ellipse = function(x, y, radiusX, radiusY, rotation, ...args) {
+            lastArcCenter = { x, y, r: radiusX, rotation };
+            originalEllipse.apply(this, [x, y, radiusX, radiusY, rotation, ...args]);
+          };
+        }
+
+        const originalFill = ctx.fill;
+        ctx.fill = function(...fillArgs) {
+          try {
+            const colorStr = ctx.fillStyle;
+            const tinted = getConfettiTintedLogo(colorStr);
+            if (tinted) {
+              let cx = 0, cy = 0, size = 16, angle = 0;
+              if (lastArcCenter) {
+                cx = lastArcCenter.x;
+                cy = lastArcCenter.y;
+                size = lastArcCenter.r * 2;
+                angle = lastArcCenter.rotation || 0;
+              } else if (pathPoints.length >= 3) {
+                let sumX = 0, sumY = 0;
+                pathPoints.forEach(p => {
+                  sumX += p.x;
+                  sumY += p.y;
+                });
+                cx = sumX / pathPoints.length;
+                cy = sumY / pathPoints.length;
+                const dx = pathPoints[1].x - pathPoints[0].x;
+                const dy = pathPoints[1].y - pathPoints[0].y;
+                size = Math.sqrt(dx*dx + dy*dy) * 1.2;
+                angle = Math.atan2(dy, dx);
+              } else {
+                originalFill.apply(ctx, fillArgs);
+                return;
+              }
+              
+              let alpha = 1;
+              const rgbaMatch = String(colorStr).match(/rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([\d.]+)\)/);
+              if (rgbaMatch) {
+                alpha = parseFloat(rgbaMatch[1]);
+              }
+
+              ctx.save();
+              ctx.translate(cx, cy);
+              ctx.rotate(angle);
+              const prevAlpha = ctx.globalAlpha;
+              ctx.globalAlpha = prevAlpha * alpha;
+              ctx.drawImage(tinted, -size / 2, -size / 2, size, size);
+              ctx.restore();
+            } else {
+              originalFill.apply(ctx, fillArgs);
+            }
+          } catch (e) {
+            console.warn("Confetti drawImage failed, falling back to original fill:", e);
+            originalFill.apply(ctx, fillArgs);
+          }
+        };
+        ctx.fill._patched = true;
+      }
+
+      // useWorker MUST be false for the context monkey-patch to function
       const myConfetti = window.confetti.create(canvas, {
         resize: true,
-        useWorker: true
+        useWorker: false
       });
 
       const palette = ['#003366', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
       // Fire bursts
       const p1 = myConfetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { x: 0.1, y: 0.85 },
+        particleCount: 35,
+        spread: 55,
+        origin: { x: 0.15, y: 0.8 },
         colors: palette
       });
       const p2 = myConfetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { x: 0.9, y: 0.85 },
+        particleCount: 35,
+        spread: 55,
+        origin: { x: 0.85, y: 0.85 },
         colors: palette
       });
 
