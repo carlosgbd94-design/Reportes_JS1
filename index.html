@@ -5702,10 +5702,19 @@
         </div>
         <div class="text-[20px] font-extrabold text-primary tracking-tight mb-2">Pedido en ceros</div>
         <div class="text-[13px] font-medium text-surface-onVariant/80 leading-relaxed">
-          Estás activando el modo <b>Solo Existencias</b>. Tu pedido se enviará en <b>ceros</b>.
+          Estás activando el modo <b>Solo Existencias</b>. Tu pedido se enviará en <b>ceros</b>.<br><br>
           Recuerda que <b>deberás registrar tus existencias de biológico</b> antes de guardar.<br><br>
           Si tu unidad requiere biológico, considera si es conveniente proceder sin pedido.
         </div>
+      </div>
+      <!-- 🛡️ SWITCH DE AUTORIZACIÓN OBLIGATORIO -->
+      <div class="p-6 bg-slate-50 border-b border-outline-variant/20 flex flex-col gap-3">
+        <label class="flex items-center gap-3 cursor-pointer select-none">
+          <input type="checkbox" id="chkModalSinPedidoAuth" class="w-5 h-5 accent-[#ca8a04] cursor-pointer">
+          <span class="text-[12px] font-bold text-slate-700 leading-tight">
+            Confirmo que enviaré mi pedido en ceros y solo reporto existencias.
+          </span>
+        </label>
       </div>
       <div class="flex items-center justify-end gap-3 p-5 bg-surface border-t border-outline-variant/30">
         <button

@@ -9466,6 +9466,9 @@ function openSinPedidoConfirm() {
 
     const btnCancel = overlay.querySelector("#btnSinPedidoConfirmCancel");
     const btnAccept = overlay.querySelector("#btnSinPedidoConfirmAccept");
+    const chkAuth = overlay.querySelector("#chkModalSinPedidoAuth");
+
+    if (chkAuth) chkAuth.checked = false; // Reset state on open
 
     const close = (result) => {
       overlay.classList.remove("show");
@@ -9477,7 +9480,16 @@ function openSinPedidoConfirm() {
 
     overlay.onclick = (e) => { if (e.target === overlay) close(false); };
     if (btnCancel) btnCancel.onclick = () => close(false);
-    if (btnAccept) btnAccept.onclick = () => close(true);
+    
+    if (btnAccept) {
+      btnAccept.onclick = () => {
+        if (chkAuth && !chkAuth.checked) {
+          showToast("Error: Por favor, confirma y activa el indicador de autorización antes de proceder.", false, "bad");
+          return;
+        }
+        close(true);
+      };
+    }
 
     SIN_PEDIDO_CONFIRM_RESOLVER = resolve;
     requestAnimationFrame(() => {
@@ -12420,10 +12432,63 @@ async function performSaveBIO() {
   if (!nombre) return showToast("Por favor, ingresa el nombre de la persona que realiza la captura.", false, "warn");
   const items = collectBioItems();
 
-  const sinPedido = $("chkNoPedido") ? $("chkNoPedido").checked : false;
+  let sinPedido = $("chkNoPedido") ? $("chkNoPedido").checked : false;
   const isAllZeros = items.every(it => !it.pedido_frascos || Number(it.pedido_frascos) === 0);
-  if (!sinPedido && isAllZeros) {
-    return showToast("No se puede guardar un pedido sin cantidades solicitadas. Si únicamente reportará existencias sin solicitar insumos este mes, por favor active la opción 'Solo Existencias'.", false, "warn");
+
+  if (isAllZeros && !sinPedido) {
+    // 🛡️ Mecanismo de Seguridad: Mostrar el modal especial e indicarle que debe autorizar activamente
+    const acceptedSinPedido = await openSinPedidoConfirm();
+    if (!acceptedSinPedido) return;
+
+    // Si confirma en el modal, activar el toggle de "Solo existencias" en la interfaz
+    const chkMain = $("chkNoPedido");
+    if (chkMain) {
+      chkMain.checked = true;
+      if (typeof chkMain.onchange === "function") {
+        // Ejecutar applyNoPedidoUI para deshabilitar las columnas y colorear la interfaz
+        const applyNoPedidoUI = (isChecked) => {
+          const card = $("cardNoPedido");
+          const iconBg = $("iconNoPedidoBg");
+          const label = $("labelNoPedido");
+          const hint = $("hintNoPedido");
+
+          if (card) {
+            if (isChecked) {
+              card.style.backgroundColor = "#f0fdf4";
+              card.style.borderColor = "#bbf7d0";
+              if (iconBg) { iconBg.style.backgroundColor = "#dcfce7"; iconBg.style.color = "#16a34a"; }
+              if (label) label.style.color = "#15803d";
+              if (hint) { hint.innerHTML = "Modo: <b>Reportando solo existencias</b> (pedido en ceros)."; hint.style.color = "#166534"; }
+            } else {
+              card.style.backgroundColor = "#ffffff";
+              card.style.borderColor = "#e2e8f0";
+              if (iconBg) { iconBg.style.backgroundColor = ""; iconBg.style.color = ""; }
+              if (label) label.style.color = "";
+              if (hint) { hint.innerHTML = "Activa esta opción si <b>NO</b> necesitas realizar pedido este mes."; hint.style.color = ""; }
+            }
+          }
+
+          document.querySelectorAll('input[data-kind="pedido"]').forEach(inp => {
+            if (isChecked) {
+              if (!inp.dataset.preVal) inp.dataset.preVal = inp.value;
+              inp.value = "0";
+              inp.disabled = true;
+              inp.style.opacity = "0.5";
+              inp.style.backgroundColor = "#f1f5f9";
+            } else {
+              if (inp.dataset.preVal !== undefined) { inp.value = inp.dataset.preVal; delete inp.dataset.preVal; }
+              const formBioLocked = HAS_SAVED_BIO && !EDIT_BIO;
+              inp.disabled = formBioLocked;
+              inp.style.opacity = "";
+              inp.style.backgroundColor = "";
+            }
+          });
+          refreshBioAlerts();
+        };
+        applyNoPedidoUI(true);
+      }
+    }
+    sinPedido = true;
   }
 
   // --- REGLAS MATEMÁTICAS ESTRICTAS (PHASE 2) ---
