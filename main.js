@@ -763,9 +763,12 @@ function fixUtf8Text_(v) {
 function canSeeMunicipio_(user, municipio) {
   if (!user) return false;
   if (user.rol === "ADMIN" || user.rol === "JURISDICCIONAL") return true;
-  const allowed = Array.isArray(user.municipiosAllowed)
+  let allowed = Array.isArray(user.municipiosAllowed)
     ? user.municipiosAllowed.map(x => normalizeTextKey_(x)).filter(Boolean)
     : [];
+  if (allowed.length === 0 && user.municipio) {
+    allowed = String(user.municipio).split(/[;,]/).map(x => normalizeTextKey_(x)).filter(Boolean);
+  }
   if (allowed.includes("*")) return true;
   const m = normalizeTextKey_(fixUtf8Text_(municipio));
   if (!m) return false;
@@ -8648,7 +8651,11 @@ function canSeeMunicipio_(user, targetMuni) {
   const role = String(user.rol || "").toUpperCase();
   if (role === "ADMIN" || role === "JURISDICCIONAL") return true;
 
-  const allowed = Array.isArray(user.municipiosAllowed) ? user.municipiosAllowed : [];
+  let allowed = Array.isArray(user.municipiosAllowed) ? user.municipiosAllowed : [];
+  if (allowed.length === 0 && user.municipio) {
+    allowed = String(user.municipio).split(/[;,]/).map(x => x.trim()).filter(Boolean);
+  }
+
   if (allowed.includes("*")) return true;
 
   const normalizedTarget = normalizeText(targetMuni);
