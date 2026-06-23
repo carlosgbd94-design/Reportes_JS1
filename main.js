@@ -18460,28 +18460,47 @@ function updateSearchableSelectOptions(selectEl) {
 
 // ===== CELEBRACIÓN CON CONFETTI PREMIUM (OPCIÓN 3 - CON PARCHADO DE CSP) =====
 const confettiLogoImg = new Image();
-confettiLogoImg.crossOrigin = "anonymous";
-confettiLogoImg.onload = () => console.log("🟢 Confetti Logo loaded successfully");
-confettiLogoImg.onerror = (e) => console.error("🔴 Confetti Logo failed to load:", e);
-confettiLogoImg.src = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png?v=2026.1";
+fetch("https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png")
+  .then(res => {
+    if (!res.ok) throw new Error("Network response was not ok");
+    return res.blob();
+  })
+  .then(blob => {
+    const objectURL = URL.createObjectURL(blob);
+    confettiLogoImg.onload = () => {
+      console.log("🟢 Confetti Logo loaded successfully from Blob URL");
+      try {
+        const palette = ['#003366', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+        palette.forEach(color => getConfettiTintedLogo(color));
+        console.log("🟢 All confetti logos pre-tinted successfully");
+      } catch (err) {
+        console.error("🔴 Error pre-tinting logos:", err);
+      }
+    };
+    confettiLogoImg.src = objectURL;
+  })
+  .catch(err => {
+    console.error("🔴 Failed to fetch confetti logo:", err);
+  });
 
 const confettiColorCache = {};
 function getSolidRgb(colorStr) {
   const norm = String(colorStr).trim().toLowerCase();
   if (confettiColorCache[norm]) return confettiColorCache[norm];
-  try {
-    const dummy = document.createElement('div');
-    dummy.style.color = norm;
-    document.body.appendChild(dummy);
-    const computed = window.getComputedStyle(dummy).color;
-    document.body.removeChild(dummy);
-    const match = computed.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
-    const result = match ? `rgb(${match[1]},${match[2]},${match[3]})` : norm;
+  
+  // High-performance parser: extract rgb values directly without touching the DOM
+  const match = norm.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+  if (match) {
+    const result = `rgb(${match[1]},${match[2]},${match[3]})`;
     confettiColorCache[norm] = result;
     return result;
-  } catch (e) {
+  }
+  if (norm.startsWith('#')) {
+    confettiColorCache[norm] = norm;
     return norm;
   }
+  confettiColorCache[norm] = norm;
+  return norm;
 }
 
 const confettiTintCache = {};
