@@ -6393,6 +6393,7 @@ function invalidateTodayCache() {
 
 function invalidateCaptureOverviewCache() {
   dropCacheByPrefix(buildCacheKey("CAPTURE_OVERVIEW", ""));
+  dropCacheByPrefix(buildCacheKey("CAPTURE_OVERVIEW_V2", ""));
 }
 
 function invalidateHistoryMetricsCache() {
