@@ -661,7 +661,8 @@ function showToast(msg, ok = true, type = null, options = {}) {
   const {
     force = false,
     cooldownMs = 1500,
-    duration = 4000
+    duration = 4000,
+    title = ""
   } = options || {};
 
   const finalType = type ? type : (ok ? "good" : "bad");
@@ -687,11 +688,20 @@ function showToast(msg, ok = true, type = null, options = {}) {
   else if (finalType === "warn") icon = "warning";
   else if (finalType === "info") icon = "info";
 
+  let displayTitle = title;
+  if (!displayTitle) {
+    if (finalType === "good") displayTitle = "Éxito";
+    else if (finalType === "bad") displayTitle = "Error";
+    else if (finalType === "warn") displayTitle = "Atención";
+    else if (finalType === "info") displayTitle = "Información";
+  }
+
   toastEl.innerHTML = `
       <div class="toast-icon">
         <span class="material-symbols-rounded">${icon}</span>
       </div>
       <div class="toast-content">
+        <div class="toast-title">${displayTitle}</div>
         <div class="toast-message">${cleanMsg}</div>
       </div>
       <div class="toast-timer"></div>
@@ -12371,6 +12381,7 @@ async function performSaveBIO() {
   if (bioValidation?.hasBlockingError) return showToast("Corrige los errores antes de guardar", false, "warn");
 
   const nombre = $("nombreBIO")?.value.trim() || "";
+  if (!nombre) return showToast("Por favor, ingresa el nombre de la persona que realiza la captura.", false, "warn");
   const items = collectBioItems();
 
   const sinPedido = $("chkNoPedido") ? $("chkNoPedido").checked : false;
@@ -18507,132 +18518,28 @@ function triggerConfetti() {
         document.body.appendChild(canvas);
       }
 
-      const ctx = canvas.getContext('2d');
-      if (ctx && !ctx.fill._patched) {
-        let pathPoints = [];
-        let lastArcCenter = null;
-
-        const originalBeginPath = ctx.beginPath;
-        ctx.beginPath = function() {
-          pathPoints = [];
-          lastArcCenter = null;
-          originalBeginPath.apply(this, arguments);
-        };
-
-        const originalMoveTo = ctx.moveTo;
-        ctx.moveTo = function(x, y) {
-          pathPoints.push({ x, y });
-          originalMoveTo.apply(this, arguments);
-        };
-
-        const originalLineTo = ctx.lineTo;
-        ctx.lineTo = function(x, y) {
-          pathPoints.push({ x, y });
-          originalLineTo.apply(this, arguments);
-        };
-
-        const originalArc = ctx.arc;
-        ctx.arc = function(x, y, radius, ...args) {
-          lastArcCenter = { x, y, r: radius };
-          originalArc.apply(this, [x, y, radius, ...args]);
-        };
-
-        if (ctx.ellipse) {
-          const originalEllipse = ctx.ellipse;
-          ctx.ellipse = function(x, y, radiusX, radiusY, rotation, ...args) {
-            lastArcCenter = { x, y, r: radiusX, rotation };
-            originalEllipse.apply(this, [x, y, radiusX, radiusY, rotation, ...args]);
-          };
-        }
-
-        const originalFill = ctx.fill;
-        ctx.fill = function(...fillArgs) {
-          try {
-            const colorStr = ctx.fillStyle;
-            const tinted = getConfettiTintedLogo(colorStr);
-            if (tinted) {
-              let cx = 0, cy = 0, size = 16, angle = 0;
-              if (lastArcCenter) {
-                cx = lastArcCenter.x;
-                cy = lastArcCenter.y;
-                size = lastArcCenter.r * 2;
-                angle = lastArcCenter.rotation || 0;
-              } else if (pathPoints.length >= 3) {
-                let sumX = 0, sumY = 0;
-                pathPoints.forEach(p => {
-                  sumX += p.x;
-                  sumY += p.y;
-                });
-                cx = sumX / pathPoints.length;
-                cy = sumY / pathPoints.length;
-                const dx = pathPoints[1].x - pathPoints[0].x;
-                const dy = pathPoints[1].y - pathPoints[0].y;
-                size = Math.sqrt(dx*dx + dy*dy) * 1.2;
-                angle = Math.atan2(dy, dx);
-              } else {
-                originalFill.apply(ctx, fillArgs);
-                return;
-              }
-              
-              // Extract alpha to preserve fade-out animation if fillStyle has it
-              let alpha = 1;
-              const rgbaMatch = String(colorStr).match(/rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([\d.]+)\)/);
-              if (rgbaMatch) {
-                alpha = parseFloat(rgbaMatch[1]);
-              }
-
-              ctx.save();
-              ctx.translate(cx, cy);
-              ctx.rotate(angle);
-              
-              // Apply alpha multiplier
-              const prevAlpha = ctx.globalAlpha;
-              ctx.globalAlpha = prevAlpha * alpha;
-
-              ctx.drawImage(tinted, -size / 2, -size / 2, size, size);
-              ctx.restore();
-            } else {
-              originalFill.apply(ctx, fillArgs);
-            }
-          } catch (e) {
-            console.warn("Confetti drawImage failed, falling back to original fill:", e);
-            originalFill.apply(ctx, fillArgs);
-          }
-        };
-        ctx.fill._patched = true;
-      }
-
       if (!localConfetti) {
         localConfetti = window.confetti.create(canvas, {
           resize: true,
-          useWorker: false
+          useWorker: true
         });
       }
 
-      const duration = 2.0 * 1000;
-      const end = Date.now() + duration;
-      const palette = ['#ff3366', '#ff6600', '#ffcc00', '#33cc33', '#00cccc', '#3366ff', '#9933ff', '#ff33cc'];
+      const palette = ['#003366', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-      (function frame() {
-        localConfetti({
-          particleCount: 4,
-          angle: 55,
-          spread: 60,
-          origin: { x: 0, y: 0.8 },
-          colors: palette
-        });
-        localConfetti({
-          particleCount: 4,
-          angle: 125,
-          spread: 60,
-          origin: { x: 1, y: 0.8 },
-          colors: palette
-        });
-
-        if (Date.now() < end) {
-          requestAnimationFrame(frame);
-        }
-      }());
+      // Burst of confetti from both sides - light, hardware accelerated, and super responsive
+      localConfetti({
+        particleCount: 60,
+        spread: 60,
+        origin: { x: 0.1, y: 0.85 },
+        colors: palette
+      });
+      localConfetti({
+        particleCount: 60,
+        spread: 60,
+        origin: { x: 0.9, y: 0.85 },
+        colors: palette
+      });
     }
   } catch (e) {
     console.warn("Confetti animation failed:", e);

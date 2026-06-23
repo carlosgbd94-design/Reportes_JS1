@@ -11392,6 +11392,41 @@ html.dark .premium-switch:hover .premium-switch-track {
   flex-shrink: 0;
 }
 
+.toast-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toast-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--toast-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.toast-message {
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  line-height: 1.4;
+}
+
+html.dark .toast-new {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: var(--toast-border, rgba(255, 255, 255, 0.1));
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+html.dark .toast-message {
+  color: #cbd5e1;
+}
+
 .whatsapp-support-icon svg {
   width: 24px;
   height: 24px;
