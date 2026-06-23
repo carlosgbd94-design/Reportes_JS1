@@ -5969,8 +5969,10 @@ body.bioConfirmOpen {
   box-shadow: 
     0 20px 40px rgba(0, 0, 0, 0.1),
     0 0 0 1px rgba(0, 0, 0, 0.05);
-  transform: translateY(-100px) scale(0.9);
-  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: translate3d(0, -100px, 0) scale(0.95);
+  opacity: 0;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease-out;
+  will-change: transform, opacity;
   position: relative;
   overflow: hidden;
   border: 1px solid var(--toast-border, rgba(255, 255, 255, 0.6));
@@ -5978,11 +5980,12 @@ body.bioConfirmOpen {
 }
 
 .toast-new.show {
-  transform: translateY(0) scale(1);
+  transform: translate3d(0, 0, 0) scale(1);
+  opacity: 1;
 }
 
 .toast-new.removing {
-  transform: scale(0.8);
+  transform: translate3d(0, 30px, 0) scale(0.85);
   opacity: 0;
 }
 
