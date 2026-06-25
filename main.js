@@ -8400,12 +8400,9 @@ function dateToLocalYmd(d) {
 function isMexicanHoliday(date) {
   // Use dayjs for robust date parsing and timezone handling
   if (typeof dayjs === 'undefined') {
-    // Fallback sin dayjs: usar Date nativo
-    const raw = new Date(date);
-    const m = raw.getMonth() + 1;
-    const dayOfMonth = raw.getDate();
-    const mmdd = `${String(m).padStart(2,'0')}-${String(dayOfMonth).padStart(2,'0')}`;
-    return ['01-01','05-01','09-16','12-25'].includes(mmdd);
+    // dayjs aún no cargó del CDN — devolvemos false para no bloquear flujo.
+    // En condiciones normales dayjs carga antes de que esta función sea invocada.
+    return false;
   }
   const d = dayjs(date);
   const y = d.year();
