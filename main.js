@@ -242,7 +242,8 @@ const _InternalState = {
   pinolPendientes: null, summaryCapturadas: null, summaryFaltantes: null,
   todayExistenciaCaptured: null, todayConsCaptured: null, lastHistoryRows: null,
   todayCache: null, lastLoginUser: "", initialized: false,
-  get rol() { return this.user?.rol; }
+  get rol() { return this.user?.rol; },
+  get municipio() { return this.user?.municipio; }
 };
 
 const AppState = new Proxy(_InternalState, {
@@ -8027,13 +8028,17 @@ window.handleSRBioChange = function (selectEl, preselectLote = null) {
     return;
   }
 
+  const preselectLoteUpper = preselectLote ? String(preselectLote).trim().toUpperCase() : null;
+
   filtered.forEach(l => {
     const opt = document.createElement("option");
     opt.value = l.lote;
     opt.textContent = l.lote;
     opt.dataset.cad = l.caducidad;
     opt.dataset.rec = l.fecha_recepcion || "";
-    if (preselectLote === l.lote) opt.selected = true;
+    if (preselectLoteUpper && String(l.lote).trim().toUpperCase() === preselectLoteUpper) {
+      opt.selected = true;
+    }
     loteSelect.appendChild(opt);
   });
 
