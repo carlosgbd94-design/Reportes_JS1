@@ -28,13 +28,20 @@ if (window.location.hash && window.location.hash.includes('type=recovery')) {
 }
 const SUPABASE_URL = "https://utclfqjietlxzlorxhrs.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Y2xmcWppZXRseHpsb3J4aHJzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNTYyNTQsImV4cCI6MjA5MTkzMjI1NH0.EgDK7xkSZHZyUlGF5m2C7bZjrfkx1M8cBXzxIFedDa4";
-window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: {
-    experimental: {
-      passkey: true
+if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+  console.error('[INIT] Supabase SDK no disponible. Verifica tu conexión a internet.');
+  document.addEventListener('DOMContentLoaded', () => {
+    document.body.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Inter,sans-serif;gap:16px;padding:24px;text-align:center"><div style="font-size:48px">⚠️</div><h2 style="color:#0f172a;margin:0">Error de Conexión</h2><p style="color:#64748b;max-width:400px;margin:0">No se pudo cargar el SDK de autenticación. Por favor verifica tu conexión a internet y recarga la página.</p><button onclick="location.reload()" style="background:#003366;color:white;border:none;border-radius:12px;padding:12px 28px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Recargar</button></div>`;
+  });
+} else {
+  window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: {
+      experimental: {
+        passkey: true
+      }
     }
-  }
-});
+  });
+}
 
 
 /**
@@ -8392,6 +8399,14 @@ function dateToLocalYmd(d) {
 
 function isMexicanHoliday(date) {
   // Use dayjs for robust date parsing and timezone handling
+  if (typeof dayjs === 'undefined') {
+    // Fallback sin dayjs: usar Date nativo
+    const raw = new Date(date);
+    const m = raw.getMonth() + 1;
+    const dayOfMonth = raw.getDate();
+    const mmdd = `${String(m).padStart(2,'0')}-${String(dayOfMonth).padStart(2,'0')}`;
+    return ['01-01','05-01','09-16','12-25'].includes(mmdd);
+  }
   const d = dayjs(date);
   const y = d.year();
   const m = d.month() + 1; // dayjs months are 0-indexed
@@ -13216,8 +13231,10 @@ $("btnOpenNewCapacitacionModal")?.addEventListener("click", () => {
   const modal = overlay?.querySelector(".modal");
   if (overlay && modal) {
     overlay.classList.add("show");
-    gsap.fromTo(overlay, { opacity: 0 }, { opacity: 1, duration: 0.3 });
-    gsap.fromTo(modal, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.7)" });
+    if (typeof gsap !== 'undefined') {
+      gsap.fromTo(overlay, { opacity: 0 }, { opacity: 1, duration: 0.3 });
+      gsap.fromTo(modal, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.7)" });
+    }
   }
 });
 
@@ -13225,12 +13242,18 @@ function closeNewCapacitacionModal() {
   const overlay = $("newCapacitacionOverlay");
   const modal = overlay?.querySelector(".modal");
   if (overlay && modal) {
-    gsap.to(modal, { scale: 0.9, opacity: 0, duration: 0.25 });
-    gsap.to(overlay, { opacity: 0, duration: 0.25, onComplete: () => {
+    if (typeof gsap !== 'undefined') {
+      gsap.to(modal, { scale: 0.9, opacity: 0, duration: 0.25 });
+      gsap.to(overlay, { opacity: 0, duration: 0.25, onComplete: () => {
+        overlay.classList.remove("show");
+        $("newCapNombre").value = "";
+        $("newCapFecha").value = "";
+      }});
+    } else {
       overlay.classList.remove("show");
       $("newCapNombre").value = "";
       $("newCapFecha").value = "";
-    }});
+    }
   }
 }
 
@@ -13386,8 +13409,10 @@ $("btnOpenNewCampanaModal")?.addEventListener("click", () => {
   const modal = overlay?.querySelector(".modal");
   if (overlay && modal) {
     overlay.classList.add("show");
-    gsap.fromTo(overlay, { opacity: 0 }, { opacity: 1, duration: 0.3 });
-    gsap.fromTo(modal, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.7)" });
+    if (typeof gsap !== 'undefined') {
+      gsap.fromTo(overlay, { opacity: 0 }, { opacity: 1, duration: 0.3 });
+      gsap.fromTo(modal, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.7)" });
+    }
   }
 });
 
@@ -13395,12 +13420,18 @@ function closeNewCampanaModal() {
   const overlay = $("newCampanaOverlay");
   const modal = overlay?.querySelector(".modal");
   if (overlay && modal) {
-    gsap.to(modal, { scale: 0.9, opacity: 0, duration: 0.25 });
-    gsap.to(overlay, { opacity: 0, duration: 0.25, onComplete: () => {
+    if (typeof gsap !== 'undefined') {
+      gsap.to(modal, { scale: 0.9, opacity: 0, duration: 0.25 });
+      gsap.to(overlay, { opacity: 0, duration: 0.25, onComplete: () => {
+        overlay.classList.remove("show");
+        $("newCampNombre").value = "";
+        $("newCampFecha").value = "";
+      }});
+    } else {
       overlay.classList.remove("show");
       $("newCampNombre").value = "";
       $("newCampFecha").value = "";
-    }});
+    }
   }
 }
 
@@ -15812,6 +15843,9 @@ async function compressPDF(file, onProgress) {
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const numPages = pdf.numPages;
 
+  if (!window.jspdf || typeof window.jspdf.jsPDF !== 'function') {
+    throw new Error('jsPDF no está disponible. Verifica tu conexión a internet.');
+  }
   const { jsPDF } = window.jspdf;
   let newPdf = null;
 
@@ -15965,8 +15999,10 @@ async function handleFileUploadFlow() {
       
       if (alertOverlay && alertModal) {
         alertOverlay.classList.add("show");
-        gsap.fromTo(alertOverlay, { opacity: 0 }, { opacity: 1, duration: 0.3 });
-        gsap.fromTo(alertModal, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power2.out" });
+        if (typeof gsap !== 'undefined') {
+          gsap.fromTo(alertOverlay, { opacity: 0 }, { opacity: 1, duration: 0.3 });
+          gsap.fromTo(alertModal, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power2.out" });
+        }
       }
 
       userConfirmed = await new Promise((resolve) => {
@@ -15985,10 +16021,14 @@ async function handleFileUploadFlow() {
           confirmBtn?.removeEventListener("click", onConfirm);
           cancelBtn?.removeEventListener("click", onCancel);
           if (alertOverlay && alertModal) {
-            gsap.to(alertModal, { y: 20, opacity: 0, duration: 0.25 });
-            gsap.to(alertOverlay, { opacity: 0, duration: 0.25, onComplete: () => {
+            if (typeof gsap !== 'undefined') {
+              gsap.to(alertModal, { y: 20, opacity: 0, duration: 0.25 });
+              gsap.to(alertOverlay, { opacity: 0, duration: 0.25, onComplete: () => {
+                alertOverlay.classList.remove("show");
+              }});
+            } else {
               alertOverlay.classList.remove("show");
-            }});
+            }
           }
         };
 
@@ -16012,8 +16052,10 @@ async function handleFileUploadFlow() {
 
     if (compressOverlay && compressModal) {
       compressOverlay.classList.add("show");
-      gsap.fromTo(compressOverlay, { opacity: 0 }, { opacity: 1, duration: 0.3 });
-      gsap.fromTo(compressModal, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.7)" });
+      if (typeof gsap !== 'undefined') {
+        gsap.fromTo(compressOverlay, { opacity: 0 }, { opacity: 1, duration: 0.3 });
+        gsap.fromTo(compressModal, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.7)" });
+      }
     }
 
     try {
@@ -16024,10 +16066,14 @@ async function handleFileUploadFlow() {
       });
 
       if (compressOverlay && compressModal) {
-        gsap.to(compressModal, { scale: 0.9, opacity: 0, duration: 0.25 });
-        gsap.to(compressOverlay, { opacity: 0, duration: 0.25, onComplete: () => {
+        if (typeof gsap !== 'undefined') {
+          gsap.to(compressModal, { scale: 0.9, opacity: 0, duration: 0.25 });
+          gsap.to(compressOverlay, { opacity: 0, duration: 0.25, onComplete: () => {
+            compressOverlay.classList.remove("show");
+          }});
+        } else {
           compressOverlay.classList.remove("show");
-        }});
+        }
       }
 
       showToast(`¡PDF optimizado con éxito! (${(uploadFile.size / (1024 * 1024)).toFixed(2)} MB)`, true, "good");
@@ -16036,9 +16082,13 @@ async function handleFileUploadFlow() {
       showToast("No se pudo comprimir el PDF. Se intentará subir original.", false, "warn");
       
       if (compressOverlay) {
-        gsap.to(compressOverlay, { opacity: 0, duration: 0.2, onComplete: () => {
+        if (typeof gsap !== 'undefined') {
+          gsap.to(compressOverlay, { opacity: 0, duration: 0.2, onComplete: () => {
+            compressOverlay.classList.remove("show");
+          }});
+        } else {
           compressOverlay.classList.remove("show");
-        }});
+        }
       }
     }
   }

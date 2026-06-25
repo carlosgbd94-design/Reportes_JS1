@@ -13,7 +13,7 @@ const STATIC_ASSETS = [
   './index.html',
   './style.css?v=2026.56',
   './mobile.css?v=2026.24',
-  './main.js?v=2026.48',
+  './main.js?v=2026.49',
   './mobile.js?v=2026.23',
   './rda_calculator.js?v=2026.14',
   './rda_parser.js?v=2026.14',
