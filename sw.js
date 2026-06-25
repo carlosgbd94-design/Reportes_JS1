@@ -17,7 +17,7 @@ const STATIC_ASSETS = [
   './rda_calculator.js?v=2026.14',
   './rda_parser.js?v=2026.14',
   './rda_ui.js?v=2026.14',
-  './manifest.json',
+  './site.webmanifest',
   './favicon.svg',
   './favicon.ico',
   './favicon-96x96.png',
@@ -31,8 +31,9 @@ self.addEventListener('install', (event) => {
   console.log('[SW] Instalando y cacheando activos estáticos...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // addAll falla si algún recurso no carga. Usamos Promise.allSettled para ser resilientes.
-      return Promise.allSettled(
+      // addAll falla si algún recurso no carga. Usamos Promise.all para máxima compatibilidad.
+      // Como cada promesa tiene su propio .catch(), Promise.all siempre resuelve exitosamente.
+      return Promise.all(
         STATIC_ASSETS.map((url) =>
           cache.add(url).catch((err) => {
             console.warn(`[SW] No se pudo cachear: ${url}`, err);
