@@ -31,7 +31,33 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 if (!window.supabase || typeof window.supabase.createClient !== 'function') {
   console.error('[INIT] Supabase SDK no disponible. Verifica tu conexión a internet.');
   document.addEventListener('DOMContentLoaded', () => {
-    document.body.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:Inter,sans-serif;gap:16px;padding:24px;text-align:center"><div style="font-size:48px">⚠️</div><h2 style="color:#0f172a;margin:0">Error de Conexión</h2><p style="color:#64748b;max-width:400px;margin:0">No se pudo cargar el SDK de autenticación. Por favor verifica tu conexión a internet y recarga la página.</p><button onclick="location.reload()" style="background:#003366;color:white;border:none;border-radius:12px;padding:12px 28px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px">Recargar</button></div>`;
+    // Construir overlay con DOM API (no innerHTML) para evitar falsos positivos de antivirus
+    const overlay = document.createElement('div');
+    overlay.id = 'supabase-error-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f8fafc;font-family:Inter,sans-serif;gap:16px;padding:24px;text-align:center';
+
+    const icon = document.createElement('div');
+    icon.textContent = '⚠️';
+    icon.style.fontSize = '48px';
+
+    const title = document.createElement('h2');
+    title.textContent = 'Error de Conexión';
+    title.style.cssText = 'color:#0f172a;margin:0';
+
+    const msg = document.createElement('p');
+    msg.textContent = 'No se pudo cargar el SDK de autenticación. Por favor verifica tu conexión a internet y recarga la página.';
+    msg.style.cssText = 'color:#64748b;max-width:400px;margin:0';
+
+    const btn = document.createElement('button');
+    btn.textContent = 'Recargar';
+    btn.style.cssText = 'background:#003366;color:white;border:none;border-radius:12px;padding:12px 28px;font-size:15px;font-weight:700;cursor:pointer;margin-top:8px';
+    btn.addEventListener('click', () => location.reload());
+
+    overlay.appendChild(icon);
+    overlay.appendChild(title);
+    overlay.appendChild(msg);
+    overlay.appendChild(btn);
+    document.body.appendChild(overlay);
   });
 } else {
   window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
