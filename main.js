@@ -19065,34 +19065,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         if (response.ok) {
-          if (typeof Swal !== "undefined") {
-            Swal.fire({
-              icon: 'success',
-              title: '¡Gracias por tu feedback!',
-              text: 'Hemos recibido tu mensaje y capturas correctamente.',
-              confirmButtonColor: '#0ea5e9',
-              background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#ffffff',
-              color: document.documentElement.classList.contains('dark') ? '#f8fafc' : '#0f172a'
-            });
-          } else {
-            alert('¡Gracias! Hemos recibido tu mensaje correctamente.');
-          }
+          showToast('¡Gracias! Hemos recibido tu mensaje y capturas correctamente.', true, 'good');
           closeModal();
         } else {
           throw new Error("Error al enviar a Discord");
         }
       } catch (error) {
         console.error("Error sending feedback:", error);
-        if (typeof Swal !== "undefined") {
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Hubo un problema al enviar tu mensaje. Intenta de nuevo más tarde.',
-            confirmButtonColor: '#dc2626'
-          });
-        } else {
-          alert('Hubo un problema al enviar tu mensaje. Intenta de nuevo más tarde.');
-        }
+        showToast('Hubo un problema al enviar tu mensaje. Intenta de nuevo más tarde.', false, 'bad');
       } finally {
         submitBtn.innerHTML = originalBtnText;
         submitBtn.disabled = false;
