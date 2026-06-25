@@ -2,7 +2,25 @@
 // SIREVAQ — ARQUITECTURA EXPERTA (V2026)
 // ============================================
 // Firebase & GAS completamente eliminados.
-// Arquitectura basada en Servicios (Service Layer) y Estado Reactivo (AppState).
+// Captura global de errores recientes para reporte de feedback
+window.RECENT_ERRORS = [];
+window.onerror = function (message, source, lineno, colno, error) {
+  const errStr = `${new Date().toLocaleTimeString()} - Error: ${message} at ${source}:${lineno}:${colno}`;
+  window.RECENT_ERRORS.push(errStr);
+  if (window.RECENT_ERRORS.length > 5) window.RECENT_ERRORS.shift();
+};
+window.onunhandledrejection = function (event) {
+  const errStr = `${new Date().toLocaleTimeString()} - Unhandled Promise Rejection: ${event.reason}`;
+  window.RECENT_ERRORS.push(errStr);
+  if (window.RECENT_ERRORS.length > 5) window.RECENT_ERRORS.shift();
+};
+const originalConsoleError = console.error;
+console.error = function (...args) {
+  const errStr = `${new Date().toLocaleTimeString()} - Console Error: ${args.map(x => typeof x === 'object' ? JSON.stringify(x) : String(x)).join(' ')}`;
+  window.RECENT_ERRORS.push(errStr);
+  if (window.RECENT_ERRORS.length > 5) window.RECENT_ERRORS.shift();
+  originalConsoleError.apply(console, args);
+};
 
 // SUPABASE CONFIG (CORE SERVICE)
 if (window.location.hash && window.location.hash.includes('type=recovery')) {
@@ -19021,22 +19039,39 @@ document.addEventListener("DOMContentLoaded", () => {
       const userUnit = typeof USER !== "undefined" && USER?.unidad ? USER.unidad : "N/A";
       const userClues = typeof USER !== "undefined" && USER?.clues ? USER.clues : "N/A";
 
-      // Colores según el tipo
+      // Colores y emojis según el tipo
       let embedColor = 3447003; // Azul por defecto (Pregunta/Otro)
-      if (type === "Sugerencia") embedColor = 16766720; // Amarillo
-      else if (type === "Error") embedColor = 15158332; // Rojo
+      let typeEmoji = "❓ Pregunta/Duda";
+      if (type === "Sugerencia") {
+        embedColor = 16766720; // Amarillo
+        typeEmoji = "💡 Sugerencia";
+      } else if (type === "Error") {
+        embedColor = 15158332; // Rojo
+        typeEmoji = "🚨 Reporte de Error";
+      }
+
+      const fields = [
+        { name: "👤 Usuario", value: userName, inline: true },
+        { name: "🔑 Rol", value: userRole, inline: true },
+        { name: "🏥 Unidad", value: userUnit, inline: true },
+        { name: "🏢 CLUES", value: userClues, inline: true },
+        { name: "🛠️ Módulo Afectado", value: moduleVal, inline: true }
+      ];
+
+      // Si es un error y hay registros en consola, los agregamos en un bloque de código
+      if (type === "Error" && window.RECENT_ERRORS && window.RECENT_ERRORS.length > 0) {
+        fields.push({
+          name: "💻 Errores Recientes de Consola",
+          value: "```js\n" + window.RECENT_ERRORS.join("\n") + "\n```",
+          inline: false
+        });
+      }
 
       const embed = {
-        title: `Nuevo Feedback: ${type}`,
-        description: message,
+        title: `${typeEmoji}`,
+        description: `**Mensaje del Usuario:**\n${message}`,
         color: embedColor,
-        fields: [
-          { name: "Usuario", value: userName, inline: true },
-          { name: "Rol", value: userRole, inline: true },
-          { name: "Unidad", value: userUnit, inline: true },
-          { name: "CLUES", value: userClues, inline: true },
-          { name: "Módulo Afectado", value: moduleVal, inline: true }
-        ],
+        fields: fields,
         footer: { text: "SIREVAQ App" },
         timestamp: new Date().toISOString()
       };
