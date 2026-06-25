@@ -778,6 +778,11 @@ function renderDoughnut(agg, esquema) {
         centerLabel = 'Total Dosis';
     }
 
+    if (typeof echarts === 'undefined') {
+        console.warn('[RDA] ECharts aún no está disponible (CDN pendiente). Reintentando en 500ms...');
+        setTimeout(() => renderDoughnut(agg, esquema), 500);
+        return;
+    }
     if (!_rdaCharts.d) {
         _rdaCharts.d = echarts.init(ctx);
     }
@@ -1320,6 +1325,7 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                 }
             }
 
+            if (typeof echarts === 'undefined') { console.warn('[RDA] ECharts no disponible para chartBarTotal'); return; }
             if (!_rdaCharts.total) _rdaCharts.total = echarts.init(ctxTotal);
             let eSeries = tDatasets.map(ds => {
                 let series = { name: ds.label, type: ds.type || 'bar', data: ds.data };
@@ -1360,6 +1366,11 @@ function renderBarChart(fUnits, muniFilter, esquema) {
 
     if (titleEl) titleEl.textContent = titleText;
 
+    if (typeof echarts === 'undefined') {
+        console.warn('[RDA] ECharts aún no está disponible (CDN pendiente). Reintentando en 500ms...');
+        setTimeout(() => renderBarChart(fUnits, muniFilter, esquema), 500);
+        return;
+    }
     if (!_rdaCharts.b) _rdaCharts.b = echarts.init(ctx);
 
     let eSeries = finalDatasets.map(ds => {

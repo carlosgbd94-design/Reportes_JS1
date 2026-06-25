@@ -17,7 +17,7 @@ const STATIC_ASSETS = [
   './mobile.js?v=2026.23',
   './rda_calculator.js?v=2026.14',
   './rda_parser.js?v=2026.14',
-  './rda_ui.js?v=2026.14',
+  './rda_ui.js?v=2026.15',
   './site.webmanifest',
   './favicon.svg',
   './favicon.ico',
