@@ -5676,12 +5676,50 @@ async function supabaseRequest(action = "", payload, options = {}) {
           if (error) throw error;
 
           let filteredData = [];
+          let latestDate = null;
           if (data && data.length > 0) {
-            const latestDate = data[0].fecha;
+            latestDate = data[0].fecha;
             filteredData = data.filter(r => r.fecha === latestDate);
             filteredData.sort((a, b) => (a.biologico || "").localeCompare(b.biologico || ""));
           }
-          return { ok: true, data: filteredData, meta: { fecha: filteredData.length ? filteredData[0].fecha : targetFecha, tipo } };
+
+          if (latestDate) {
+            const { data: prevData, error: prevError } = await window.supabase
+              .from('existencia_detalle')
+              .select('*')
+              .eq('clues', payload.clues)
+              .lt('fecha', latestDate)
+              .order('fecha', { ascending: false });
+
+            if (!prevError && prevData && prevData.length > 0) {
+              const prevLatestDate = prevData[0].fecha;
+              const prevFiltered = prevData.filter(r => r.fecha === prevLatestDate);
+              const currentBios = new Set(filteredData.map(r => (r.biologico || "").trim().toUpperCase()));
+              
+              const missingRows = prevFiltered.filter(r => {
+                const name = (r.biologico || "").trim().toUpperCase();
+                return name && !currentBios.has(name);
+              });
+
+              if (missingRows.length > 0) {
+                const dummyRows = missingRows.map(r => ({
+                  id: `dummy-${r.id || Math.random().toString(36).substr(2, 9)}`,
+                  clues: payload.clues,
+                  biologico: r.biologico,
+                  lote: r.lote,
+                  cantidad: 0,
+                  caducidad: r.caducidad,
+                  fecha_recepcion: r.fecha_recepcion,
+                  fecha: latestDate,
+                  is_desabasto: true,
+                  capturado_por: filteredData[0]?.capturado_por || "SISTEMA"
+                }));
+                filteredData = [...filteredData, ...dummyRows];
+                filteredData.sort((a, b) => (a.biologico || "").localeCompare(b.biologico || ""));
+              }
+            }
+          }
+          return { ok: true, data: filteredData, meta: { fecha: latestDate || targetFecha, tipo } };
         } else if (tipo === "BIO") {
           let query = window.supabase
             .from('biologicos_pedido')
