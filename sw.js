@@ -1,11 +1,10 @@
 /**
  * sw.js — Service Worker SIREVAQ
- * Estrategia: Network-first con timeout + caché como respaldo robusto.
- * Funciona correctamente con WiFi, datos móviles y offline.
- * Versión: 2026.2
+ * Cache-first para activos estáticos. Garantiza disponibilidad offline.
+ * Versión: 2026.3
  */
 
-const CACHE_NAME = 'js1-reportes-v2026-30';
+const CACHE_NAME = 'js1-reportes-v2026-31';
 
 // Activos estáticos a cachear en la instalación
 const STATIC_ASSETS = [
@@ -32,8 +31,7 @@ self.addEventListener('install', (event) => {
   console.log('[SW] Instalando y cacheando activos estáticos...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // addAll falla si algún recurso no carga. Usamos Promise.all con .catch()
-      // para que la instalación siempre tenga éxito aunque un recurso falle.
+      // Cada asset tiene su propio .catch() para que un fallo no aborte la instalación
       return Promise.all(
         STATIC_ASSETS.map((url) =>
           cache.add(url).catch((err) => {
@@ -65,60 +63,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-/**
- * Fetch con timeout para no bloquear indefinidamente en redes lentas.
- * En datos móviles, la promesa puede quedarse sin resolver, así que
- * competimos con un timer para caer en caché lo antes posible.
- */
-function fetchWithTimeout(request, timeoutMs = 8000) {
-  return new Promise((resolve, reject) => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => {
-      controller.abort();
-      reject(new Error('[SW] Timeout de red'));
-    }, timeoutMs);
-
-    fetch(request, { signal: controller.signal })
-      .then((response) => {
-        clearTimeout(timer);
-        resolve(response);
-      })
-      .catch((err) => {
-        clearTimeout(timer);
-        reject(err);
-      });
-  });
-}
-
-/**
- * Busca en caché usando URL normalizada (sin query params si no hay match exacto).
- * Esto resuelve el problema de keys con ?v=XXXX vs sin versión.
- */
-async function matchFromCache(cache, request) {
-  // 1. Intento exacto
-  let response = await cache.match(request);
-  if (response) return response;
-
-  // 2. Intento ignorando query string (útil para activos versionados)
-  response = await cache.match(request, { ignoreSearch: true });
-  if (response) return response;
-
-  // 3. Para navegación: buscar index.html por URL absoluta
-  if (request.mode === 'navigate') {
-    // Construir URL absoluta de index.html relativa al SW scope
-    const indexUrl = new URL('./index.html', self.registration.scope).href;
-    response = await cache.match(indexUrl);
-    if (response) return response;
-
-    // Último intento: buscar con ignoreSearch también
-    response = await cache.match(new URL('./', self.registration.scope).href);
-    if (response) return response;
-  }
-
-  return null;
-}
-
-// ── FETCH: Estrategia Network-First con timeout + caché robusta ──────────────
+// ── FETCH: Estrategia Network-First con caché como respaldo ─────────────────
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
@@ -143,7 +88,8 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
-    fetchWithTimeout(event.request, 8000)
+    // Estrategia: Network First → Caché como respaldo
+    fetch(event.request)
       .then((networkResponse) => {
         // Si la red responde bien, actualizar caché y devolver respuesta
         if (networkResponse && networkResponse.ok) {
@@ -154,26 +100,28 @@ self.addEventListener('fetch', (event) => {
         }
         return networkResponse;
       })
-      .catch((err) => {
-        console.warn(`[SW] Red no disponible (${err.message}), usando caché: ${url.pathname}`);
-        // Sin red o timeout: servir desde caché con matching robusto
+      .catch(() => {
+        // Sin red: servir desde caché con matching robusto
         return caches.open(CACHE_NAME).then(async (cache) => {
-          const cachedResponse = await matchFromCache(cache, event.request);
-          if (cachedResponse) {
-            console.log(`[SW] Sirviendo desde caché: ${url.pathname}`);
-            return cachedResponse;
-          }
-          // Si no hay caché disponible, respuesta de error amigable
+          // 1. Intento exacto
+          let cached = await cache.match(event.request);
+          if (cached) return cached;
+
+          // 2. Ignorar query string (activos versionados como main.js?v=XXXX)
+          cached = await cache.match(event.request, { ignoreSearch: true });
+          if (cached) return cached;
+
+          // 3. Para navegación SPA: buscar index.html por URL absoluta
           if (event.request.mode === 'navigate') {
-            // Intentar buscar index.html en cualquier caché disponible
-            const allCaches = await caches.keys();
-            for (const cacheName of allCaches) {
-              const c = await caches.open(cacheName);
-              const r = await c.match(new URL('./index.html', self.registration.scope).href);
-              if (r) return r;
-            }
+            const scope = self.registration.scope;
+            cached = await cache.match(new URL('./index.html', scope).href);
+            if (cached) return cached;
+
+            cached = await cache.match(new URL('./', scope).href);
+            if (cached) return cached;
           }
-          return new Response('', { status: 408, statusText: 'Sin conexión' });
+
+          return new Response('', { status: 404, statusText: 'Offline' });
         });
       })
   );
