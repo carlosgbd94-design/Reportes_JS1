@@ -472,8 +472,8 @@
           </div>
 
           <!-- Dropdown Menu (Glassmorphism) -->
-          <div id="profileDropdown" style="overflow: hidden;"
-            class="hidden absolute right-0 mt-4 w-[300px] sm:w-[360px] bg-surface border border-outline-variant/40 rounded-[32px] shadow-[0_32px_64px_-12px_rgba(0,51,102,0.2)] z-[5000] overflow-hidden transform origin-top-right transition-all animate-dropdownIn gpu-accelerated">
+          <div id="profileDropdown"
+            class="hidden absolute right-0 mt-4 w-[300px] sm:w-[360px] bg-surface border border-outline-variant/40 rounded-[32px] shadow-[0_32px_64px_-12px_rgba(0,51,102,0.2)] z-[5000] transform origin-top-right transition-all animate-dropdownIn gpu-accelerated">
 
             <!-- 👤 PREMIUM IDENTITY HUB -->
             <div
@@ -486,16 +486,31 @@
                 <div class="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-110 opacity-30"></div>
               </div>
 
-              <span class="text-[10px] font-black text-primary/40 uppercase tracking-[0.25em] mb-2">Usuario
-                Activo</span>
+              <span class="text-[10px] font-black text-primary/40 uppercase tracking-[0.25em] mb-2">Usuario Activo</span>
               <div id="userNameFull"
                 class="text-[16px] sm:text-[18px] font-black text-primary leading-tight break-words w-full px-2"
                 style="text-wrap: balance;">
                 Cargando...
               </div>
             </div>
+              <!-- Tabs segmentados dentro del perfil (Notion/iOS Style Inset) -->
+            <div class="mx-6 my-4 p-1 flex items-center justify-around" id="profileCardTabSwitcher" style="display: flex; gap: 4px; background: var(--md-sys-color-surface-container-high, #f1f5f9); border-radius: 14px; border: 1px solid rgba(0, 0, 0, 0.03);">
+              <button type="button" class="profile-card-tab active" onclick="window.switchProfileCardTab('datos')" style="flex: 1; padding: 7px 0; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--md-sys-color-primary, #0f172a); background: #ffffff; border-radius: 10px; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08); transition: all 0.2s;" id="profileTabBtn_datos">
+                <span class="material-symbols-rounded" style="font-size: 18px;">info</span>
+                <span style="font-size: 11px; font-weight: 800;">Datos</span>
+              </button>
+              <button type="button" class="profile-card-tab" onclick="window.switchProfileCardTab('bcg')" style="flex: 1; padding: 7px 0; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--md-sys-color-on-surface-variant, #64748b); background: transparent; border-radius: 10px; transition: all 0.2s;" id="profileTabBtn_bcg">
+                <span class="material-symbols-rounded" style="font-size: 18px;">vaccines</span>
+                <span style="font-size: 11px; font-weight: 800;">BCG</span>
+              </button>
+              <button type="button" class="profile-card-tab" onclick="window.switchProfileCardTab('cuenta')" style="flex: 1; padding: 7px 0; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--md-sys-color-on-surface-variant, #64748b); background: transparent; border-radius: 10px; transition: all 0.2s;" id="profileTabBtn_cuenta">
+                <span class="material-symbols-rounded" style="font-size: 18px;">settings</span>
+                <span style="font-size: 11px; font-weight: 800;">Cuenta</span>
+              </button>
+            </div>
 
-            <div class="p-4 sm:p-5 space-y-4">
+            <!-- CONTENIDO DE TABS -->
+            <div id="profileTabContent_datos" class="p-4 sm:p-5 space-y-4">
               <!-- DATA BLOCKS (Adaptive & Clean) -->
               <div
                 class="flex items-center gap-4 p-4 bg-surface rounded-2xl border border-outline-variant/30 shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all hover:border-primary/20 group">
@@ -545,24 +560,40 @@
               </div>
             </div>
 
-            <!-- Acciones del perfil en una sola fila minimalista con protección de padding (inline style) y SVG multi-path -->
-            <div
-              style="padding: 4px 20px 20px 20px !important; display: flex !important; align-items: center !important; justify-content: space-between !important;"
-              id="profileActionsRow">
-              <div id="passkeyRegContainer" style="display: none; width: 48%;">
-                <button id="btnRegisterPasskey"
-                  class="profile-action-btn btn-biometric-minimal w-full btn-parallax-tilt">
-                  <span class="btn-parallax-tilt-inner">
-                    <span class="material-symbols-rounded fingerprint-icon">fingerprint</span>
-                    <span>Biometría</span>
-                  </span>
+            <div id="profileTabContent_bcg" class="p-4 sm:p-5 space-y-4" style="display: none;">
+              <!-- 🛡️ SECCIÓN BCG (Establecer apertura y Directorio) -->
+              <div class="flex flex-col" id="profileBCGSection" style="padding: 0 !important;">
+                <button id="btnSetBCG" class="profile-action-btn w-full" style="display: none; height: 38px; border-radius: 12px; font-weight: 700; font-size: 13px; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid #0ea5e9; background: transparent; color: #0ea5e9; cursor: pointer; transition: all 0.2s;">
+                  <span class="material-symbols-rounded" style="font-size: 18px;">vaccines</span>
+                  <span>Establecer apertura BCG</span>
+                </button>
+                <button id="btnDirBCG" class="profile-action-btn w-full" style="display: flex; height: 38px; border-radius: 12px; font-weight: 700; font-size: 13px; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid #cbd5e1; background: transparent; color: #475569; cursor: pointer; margin-top: 6px; transition: all 0.2s;">
+                  <span class="material-symbols-rounded" style="font-size: 18px;">menu_book</span>
+                  <span>Directorio BCG</span>
                 </button>
               </div>
-              <div style="width: 48%;">
-                <button id="btnLogout" class="profile-action-btn btn-logout-minimal w-full">
-                  <span class="material-symbols-rounded">logout</span>
-                  <span>Salir</span>
-                </button>
+            </div>
+
+            <div id="profileTabContent_cuenta" class="p-4 sm:p-5 space-y-4" style="display: none;">
+              <!-- Acciones del perfil en una sola fila minimalista con protección de padding (inline style) y SVG multi-path -->
+              <div
+                style="padding: 0 !important; display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 8px;"
+                id="profileActionsRow">
+                <div id="passkeyRegContainer" style="display: none; flex: 1;">
+                  <button id="btnRegisterPasskey"
+                    class="profile-action-btn btn-biometric-minimal w-full btn-parallax-tilt" style="height: 38px; border-radius: 12px;">
+                    <span class="btn-parallax-tilt-inner" style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                      <span class="material-symbols-rounded fingerprint-icon" style="font-size: 18px;">fingerprint</span>
+                      <span style="font-size: 13px; font-weight: 700;">Biometría</span>
+                    </span>
+                  </button>
+                </div>
+                <div style="flex: 1;">
+                  <button id="btnLogout" class="profile-action-btn btn-logout-minimal w-full" style="height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                    <span class="material-symbols-rounded" style="font-size: 18px;">logout</span>
+                    <span style="font-size: 13px; font-weight: 700;">Salir</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -3016,7 +3047,83 @@
                 class="h-10 px-6 rounded-full bg-green-600 text-primary-on text-[12px] font-bold border-none cursor-pointer shadow-sm hover:translate-y-[-1px] hover:shadow-md transition-all flex items-center gap-2">
                 <span class="material-symbols-rounded text-[18px]">save</span>
                 Guardar Todo en Base de Datos
-              </button>
+            </div>
+          </div>
+
+          <!-- Card: Configuración de Turnos BCG por Unidad -->
+          <div class="bg-surface/50 rounded-[32px] overflow-hidden border border-outline-variant/30 shadow-sm mt-6">
+            <!-- Header -->
+            <div class="p-6 bg-primary/5 border-b border-outline-variant/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div class="flex items-center gap-3">
+                <span class="material-symbols-rounded text-primary text-[24px]">vaccines</span>
+                <div>
+                  <h4 class="text-[14px] font-black text-primary m-0 uppercase tracking-widest">Turnos BCG Autorizados</h4>
+                  <p class="text-[11px] font-medium text-primary/50 m-0 mt-0.5">Autoriza qué turnos puede seleccionar cada unidad para la apertura de vacuna BCG.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Controles -->
+            <div class="p-6 flex flex-col gap-6">
+              <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px; align-items:start;">
+                <!-- Selección y Filtros -->
+                <div class="flex flex-col gap-3">
+                  <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-black text-primary/60 uppercase tracking-widest">Filtrar por Municipio</label>
+                    <select id="paramBCGAdminMuniSelect" onchange="window.filterBCGAdminUnits()"
+                      class="h-10 px-4 rounded-xl border border-outline-variant/40 bg-surface text-[13px] font-bold text-primary focus:ring-2 focus:ring-primary/30 outline-none w-full">
+                      <option value="">Todos los Municipios</option>
+                    </select>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-black text-primary/60 uppercase tracking-widest">Buscar Unidad</label>
+                    <input id="paramBCGAdminSearch" type="text" placeholder="Buscar por CLUES o nombre..." oninput="window.filterBCGAdminUnits()"
+                      class="h-10 px-4 rounded-xl border border-outline-variant/40 bg-surface text-[13px] font-medium text-primary focus:ring-2 focus:ring-primary/30 outline-none w-full">
+                  </div>
+                </div>
+
+                <!-- Lista de Unidades con Checkboxes -->
+                <div class="flex flex-col gap-1">
+                  <div class="flex justify-between items-center">
+                    <label class="text-[10px] font-black text-primary/60 uppercase tracking-widest">Unidades a Configurar</label>
+                    <label style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:800; color:var(--md-sys-color-primary); cursor:pointer;">
+                      <input type="checkbox" id="paramBCGSelectAllUnits" onchange="window.toggleAllBCGAdminUnits(this.checked)" style="width:14px; height:14px; accent-color: #0ea5e9;">
+                      <span>Marcar todas</span>
+                    </label>
+                  </div>
+                  <div id="paramBCGUnitsChecklist" style="max-height:160px; overflow-y:auto; border:1px solid var(--md-sys-color-outline-variant); padding:12px; border-radius:16px; background:var(--md-sys-color-surface); display:flex; flex-direction:column; gap:8px;">
+                    <span style="font-size:11px; color:var(--md-sys-color-on-surface-variant); font-weight:600;">Cargando unidades...</span>
+                  </div>
+                </div>
+
+                <!-- Turnos a autorizar -->
+                <div class="flex flex-col gap-2">
+                  <label class="text-[10px] font-black text-primary/60 uppercase tracking-widest">Turnos Permitidos</label>
+                  <div style="display: flex; flex-direction: column; gap: 10px; background: rgba(14, 165, 233, 0.05); padding: 14px 20px; border-radius: 18px; border: 1px solid rgba(14, 165, 233, 0.15);">
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer;">
+                      <input type="checkbox" id="paramBCGShiftMatutino" value="MATUTINO" style="width:16px; height:16px; accent-color: #0ea5e9;">
+                      <span>Matutino</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer;">
+                      <input type="checkbox" id="paramBCGShiftVespertino" value="VESPERTINO" style="width:16px; height:16px; accent-color: #0ea5e9;">
+                      <span>Vespertino</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer;">
+                      <input type="checkbox" id="paramBCGShiftEspecial" value="ESPECIAL" style="width:16px; height:16px; accent-color: #0ea5e9;">
+                      <span>Especial</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Botones de Acción -->
+              <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--md-sys-color-outline-variant); padding-top: 16px;">
+                <button onclick="window.saveBCGUnitConfig()"
+                  class="h-10 px-6 rounded-full bg-primary text-primary-on text-[12px] font-bold border-none cursor-pointer shadow-sm hover:translate-y-[-1px] hover:shadow-md transition-all flex items-center gap-2">
+                  <span class="material-symbols-rounded text-[18px]">save</span>
+                  Guardar Configuración en Lote
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -4736,9 +4843,14 @@
             <div id="liveViewTableTitle"
               style="font-size: 14px; font-weight: 900; color: var(--md-sys-color-on-surface);">Detalle de
               Existencia Actual</div>
-            <div
-              style="font-size: 11px; font-weight: 700; color: var(--md-sys-color-on-surface-variant); background: var(--md-sys-color-surface-container); padding: 4px 12px; border-radius: 8px;">
-              Vista Operativa</div>
+            <div class="flex items-center gap-1 p-1 rounded-xl" id="liveViewTabSwitcher" style="display: flex; background: rgba(14, 165, 233, 0.08); border-radius: 14px; border: 1.5px solid rgba(14, 165, 233, 0.15);">
+              <button type="button" id="btnLiveTabExistencia" style="padding: 6px 14px; border-radius: 10px; font-size: 11px; font-weight: 800; border: none; cursor: pointer; transition: all 0.2s; background: #0ea5e9; color: #ffffff; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);" onclick="switchLiveViewTab('existencia')">
+                Existencias
+              </button>
+              <button type="button" id="btnLiveTabMovimiento" style="padding: 6px 14px; border-radius: 10px; font-size: 11px; font-weight: 800; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #0284c7;" onclick="switchLiveViewTab('movimiento')">
+                Movimientos
+              </button>
+            </div>
           </div>
 
           <table id="liveViewTable" style="width: 100%; border-collapse: collapse; margin: 0;">
@@ -5883,6 +5995,89 @@
           id="btnPrefillConfirmAccept" type="button" style="background-color: #d97706; color: white;">
           <span class="material-symbols-rounded text-[20px]">done_all</span> Sí, continuar
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🛡️ MODAL ESTABLECER APERTURA BCG -->
+  <div class="overlay" id="bcgAperturaOverlay" style="display:none; background: rgba(3,8,18,0.55) !important; z-index:9999; align-items: center; justify-content: center; position: fixed; inset: 0;">
+    <div class="modal" style="width: 100%; max-width:440px; background: var(--md-sys-color-surface); border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden; display: flex; flex-direction: column; padding: 0;">
+      <div class="modalHead" style="background: linear-gradient(135deg, #0f172a 0%, #334155 100%); padding: 24px 24px 20px; color: white;">
+        <div class="modalEyebrow" style="color: #0ea5e9; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+          <span class="material-symbols-rounded" style="font-size: 16px;">vaccines</span>
+          Configuración BCG
+        </div>
+        <div class="modalTitle" style="font-weight:900; font-size: 20px; color: white;">Apertura de BCG</div>
+        <div class="modalSub" style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 4px;">Selecciona el día de la semana y los turnos para abrir el biológico.</div>
+      </div>
+      <div class="modalBody" style="padding: 24px; display: flex; flex-direction: column; gap: 16px; background: var(--md-sys-color-surface);">
+        <!-- Día de la semana -->
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <label style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.05em;">Día de Apertura</label>
+          <select id="bcgAperturaDia" style="width: 100%; height: 44px; background: var(--md-sys-color-surface); border: 1.5px solid var(--md-sys-color-outline-variant); border-radius: 12px; padding: 0 12px; font-size: 14px; font-weight: 700; color: var(--md-sys-color-on-surface); outline: none;">
+            <option value="Lunes">Lunes</option>
+            <option value="Martes">Martes</option>
+            <option value="Miércoles">Miércoles</option>
+            <option value="Jueves">Jueves</option>
+            <option value="Viernes">Viernes</option>
+            <option value="Sábado">Sábado</option>
+            <option value="Domingo">Domingo</option>
+          </select>
+        </div>
+        <!-- Turnos (Autorizados) -->
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <label style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.05em;">Turnos Autorizados</label>
+          <div id="bcgAperturaTurnosBox" style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
+            <!-- Renderizado dinámico de checkboxes -->
+          </div>
+        </div>
+      </div>
+      <div class="modalFooter" style="padding: 16px 24px; display:flex; justify-content:flex-end; gap:12px; background: var(--md-sys-color-surface); border-top: 1px solid var(--md-sys-color-surface-container);">
+        <button id="btnCancelBCGApertura" type="button" class="ghostBtn" style="border:none; background:transparent; font-weight:700; cursor: pointer; color: var(--md-sys-color-on-surface-variant);">Cancelar</button>
+        <button id="btnSaveBCGApertura" type="button" style="background: #0ea5e9; color: white; border: none; font-weight: 800; padding: 10px 20px; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🛡️ MODAL DIRECTORIO BCG -->
+  <div class="overlay" id="bcgDirectorioOverlay" style="display:none; background: rgba(3,8,18,0.55) !important; z-index:9999; align-items: center; justify-content: center; position: fixed; inset: 0;">
+    <div class="modal" style="width: 100%; max-width:640px; height: 85vh; background: var(--md-sys-color-surface); border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden; display: flex; flex-direction: column; padding: 0;">
+      <div class="modalHead" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); padding: 24px 24px 20px; color: white; flex-shrink: 0;">
+        <div class="modalEyebrow" style="color: rgba(255,255,255,0.85); font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+          <span class="material-symbols-rounded" style="font-size: 16px;">menu_book</span>
+          Directorio
+        </div>
+        <div class="modalTitle" style="font-weight:900; font-size: 22px; color: white;">Aperturas de BCG por Unidad</div>
+        <div class="modalSub" style="color: rgba(255,255,255,0.85); font-size: 13px; margin-top: 4px;">Consulta qué días abren BCG las diferentes unidades de la Jurisdicción.</div>
+      </div>
+      <!-- Barra de Filtros y Búsqueda -->
+      <div style="padding: 16px 24px; background: var(--md-sys-color-surface-container); border-bottom: 1px solid var(--md-sys-color-outline-variant); display: flex; flex-direction: column; gap: 12px; flex-shrink: 0;">
+        <div style="position: relative; width: 100%;">
+          <span class="material-symbols-rounded" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--md-sys-color-on-surface-variant); font-size: 20px;">search</span>
+          <input type="text" id="bcgDirSearchInput" placeholder="Buscar unidad o CLUES..." style="width: 100%; height: 40px; border-radius: 10px; border: 1.5px solid var(--md-sys-color-outline-variant); padding: 0 16px 0 40px; font-size: 13px; outline: none; background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface); font-weight: 700;">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <select id="bcgDirMuniSelect" style="height: 38px; border-radius: 8px; border: 1.5px solid var(--md-sys-color-outline-variant); background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface); padding: 0 8px; font-size: 12px; font-weight: 700; outline: none;">
+            <option value="">Todos los Municipios</option>
+          </select>
+          <select id="bcgDirDaySelect" style="height: 38px; border-radius: 8px; border: 1.5px solid var(--md-sys-color-outline-variant); background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface); padding: 0 8px; font-size: 12px; font-weight: 700; outline: none;">
+            <option value="">Todos los Días</option>
+            <option value="Lunes">Lunes</option>
+            <option value="Martes">Martes</option>
+            <option value="Miércoles">Miércoles</option>
+            <option value="Jueves">Jueves</option>
+            <option value="Viernes">Viernes</option>
+            <option value="Sábado">Sábado</option>
+            <option value="Domingo">Domingo</option>
+          </select>
+        </div>
+      </div>
+      <!-- Listado de Unidades -->
+      <div id="bcgDirList" style="flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; background: var(--md-sys-color-surface);">
+        <!-- Lista inyectada por JS -->
+      </div>
+      <div class="modalFooter" style="padding: 16px 24px; display:flex; justify-content:flex-end; background: var(--md-sys-color-surface-container); border-top: 1px solid var(--md-sys-color-outline-variant); flex-shrink: 0;">
+        <button id="btnCancelBCGDir" type="button" class="ghostBtn" style="border:none; background:transparent; font-weight:700; cursor: pointer; color: var(--md-sys-color-on-surface); padding: 8px 16px;">Cerrar</button>
       </div>
     </div>
   </div>

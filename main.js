@@ -5716,6 +5716,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
             filteredData.sort((a, b) => (a.biologico || "").localeCompare(b.biologico || ""));
           }
 
+          let prevFiltered = [];
           if (latestDate) {
             const { data: prevData, error: prevError } = await window.supabase
               .from('existencia_detalle')
@@ -5726,7 +5727,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
 
             if (!prevError && prevData && prevData.length > 0) {
               const prevLatestDate = prevData[0].fecha;
-              const prevFiltered = prevData.filter(r => r.fecha === prevLatestDate);
+              prevFiltered = prevData.filter(r => r.fecha === prevLatestDate);
               const currentBios = new Set(filteredData.map(r => (r.biologico || "").trim().toUpperCase()));
               
               const missingRows = prevFiltered.filter(r => {
@@ -5752,7 +5753,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
               }
             }
           }
-          return { ok: true, data: filteredData, meta: { fecha: latestDate || targetFecha, tipo } };
+          return { ok: true, data: filteredData, prevData: prevFiltered, meta: { fecha: latestDate || targetFecha, tipo } };
         } else if (tipo === "BIO") {
           let query = window.supabase
             .from('biologicos_pedido')
@@ -9391,25 +9392,28 @@ function renderBioRows(rows) {
       <div class="bio-name">
         💉 ${escapeHtml(r.biologico || "")}
       </div>
-      <div class="text-center flex items-center justify-center gap-1 touch-stepper-wrap">
-        <button type="button" class="stepper-btn stepper-btn-minus" onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
-        <input
-          class="bioInput"
-          style="width: 80px; height: 48px; text-align: center; font-size: 18px; font-weight: 900; border: 2px solid #cbd5e1; border-radius: 12px; background: #ffffff; outline: none; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"
-          type="number" min="0" step="any" inputmode="decimal"
-          data-i="${i}" data-kind="existencia"
-          value="${r.existencia_actual_frascos ?? ""}" placeholder="0">
-        <button type="button" class="stepper-btn stepper-btn-plus" onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
-      </div>
-      <div class="text-center flex items-center justify-center gap-1 touch-stepper-wrap">
-        <button type="button" class="stepper-btn stepper-btn-minus" onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
-        <input
-          class="bioInput"
-          style="width: 80px; height: 48px; text-align: center; font-size: 18px; font-weight: 900; border: 2px solid #cbd5e1; border-radius: 12px; background: #ffffff; outline: none; color: #0f172a; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"
-          type="number" min="0" step="1" inputmode="numeric"
-          data-i="${i}" data-kind="pedido"
-          value="${r.pedido_frascos ?? ""}" placeholder="0">
-        <button type="button" class="stepper-btn stepper-btn-plus" onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
+      <!-- 🛡️ WRAPPER GRID HORIZONTAL DE INPUTS (Optimizado para Mobile y Desktop) -->
+      <div class="bio-card-inputs-row">
+        <div class="text-center flex items-center justify-center gap-1 touch-stepper-wrap">
+          <button type="button" class="stepper-btn stepper-btn-minus" onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
+          <input
+            class="bioInput"
+            style="width: 80px; height: 48px; text-align: center; font-size: 18px; font-weight: 900; border: 2px solid #cbd5e1; border-radius: 12px; background: #ffffff; outline: none; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"
+            type="number" min="0" step="any" inputmode="decimal"
+            data-i="${i}" data-kind="existencia"
+            value="${r.existencia_actual_frascos ?? ""}" placeholder="0">
+          <button type="button" class="stepper-btn stepper-btn-plus" onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
+        </div>
+        <div class="text-center flex items-center justify-center gap-1 touch-stepper-wrap">
+          <button type="button" class="stepper-btn stepper-btn-minus" onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
+          <input
+            class="bioInput"
+            style="width: 80px; height: 48px; text-align: center; font-size: 18px; font-weight: 900; border: 2px solid #cbd5e1; border-radius: 12px; background: #ffffff; outline: none; color: #0f172a; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"
+            type="number" min="0" step="1" inputmode="numeric"
+            data-i="${i}" data-kind="pedido"
+            value="${r.pedido_frascos ?? ""}" placeholder="0">
+          <button type="button" class="stepper-btn stepper-btn-plus" onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
+        </div>
       </div>
       <div class="text-center">
         <span class="bio-metric-pill">${isCamp ? "N/A" : (r.promedio_frascos ?? "") + " fr."}</span>
@@ -16249,6 +16253,26 @@ async function openLiveView(clues, unidad, municipio) {
     const res = await apiCall("adminGetUnitDetail", { clues, fecha, tipo });
     if (!res || !res.ok) throw new Error((res && res.error) || "Sin respuesta del servidor");
 
+    // Guardar estado globalmente para alternar pestañas
+    window.currentLiveViewRes = res;
+    window.currentLiveViewTab = 'existencia';
+
+    // Mostrar/Ocultar tab switcher y restablecer botones
+    const tabSwitcher = $("liveViewTabSwitcher");
+    if (tabSwitcher) {
+      tabSwitcher.style.display = (tipo === "SR") ? "flex" : "none";
+      const btnExistencia = $("btnLiveTabExistencia");
+      const btnMovimiento = $("btnLiveTabMovimiento");
+      if (btnExistencia && btnMovimiento) {
+        btnExistencia.style.background = "var(--md-sys-color-surface)";
+        btnExistencia.style.color = "var(--md-sys-color-on-surface)";
+        btnExistencia.style.boxShadow = "0 2px 4px rgba(0,0,0,0.05)";
+        btnMovimiento.style.background = "transparent";
+        btnMovimiento.style.color = "var(--md-sys-color-on-surface-variant)";
+        btnMovimiento.style.boxShadow = "none";
+      }
+    }
+
     // 3.5 Actualizar la fecha y capturista
     let capturistaStr = "—";
     if (res.data && res.data.length > 0) {
@@ -16265,226 +16289,8 @@ async function openLiveView(clues, unidad, municipio) {
       $("liveViewMunicipio").insertAdjacentHTML('beforeend', `<span style="margin-left:8px; font-size:11px; background:#f1f5f9; color:#475569; padding:2px 10px; border-radius:20px; font-weight:700;">👤 Capturó: ${escapeHtml(capturistaStr)}</span>`);
     }
 
-    // 4. Renderizar según tipo
-    if (tipo === "SR") {
-      // Ajustar headers Bio
-      if (headRow) {
-        headRow.innerHTML = `
-             <th style="padding: 16px 24px; text-align: left;">Biológico</th>
-             <th style="padding: 16px 24px; text-align: left;">Lote</th>
-             <th style="padding: 16px 24px; text-align: center;">Existencia</th>
-             <th style="padding: 16px 24px; text-align: center;">Caducidad</th>
-             <th style="padding: 16px 24px; text-align: center;">Vigencia</th>
-             <th style="padding: 16px 24px; text-align: center; white-space: nowrap; min-width: 190px;">Periodo de almacenamiento</th>
-           `;
-      }
-
-      if (!res.data || !res.data.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay registros detallados para esta fecha.</td></tr>';
-        const zeroAlertEmpty = $("liveViewZeroAlert");
-        if (zeroAlertEmpty) { zeroAlertEmpty.style.display = 'none'; zeroAlertEmpty.innerHTML = ''; }
-        renderLiveCharts("SR", null, null);
-      } else {
-        const items = res.data;
-        let semStats = { pronto: 0, normal: 0, lejana: 0 };
-        let cadStats = { m3: 0, m6: 0, m12: 0, more: 0 };
-
-        const getPermanenciaStatus = (recepcionIso) => {
-          if (!recepcionIso) return { html: `<span style="color:#94a3b8; font-size:11px;">Sin fecha</span>` };
-          const dRec = new Date(recepcionIso);
-          const now = new Date();
-          dRec.setHours(0, 0, 0, 0); now.setHours(0, 0, 0, 0);
-          const diffDays = Math.floor((now - dRec) / (1000 * 60 * 60 * 24));
-
-          const formatTime = (d) => {
-            const m = Math.floor(d / 30); const rd = d % 30;
-            let p = [];
-            if (m > 0) p.push(`${m}m`);
-            if (rd > 0 || m === 0) p.push(`${rd}d`);
-            return p.join(' ');
-          };
-
-          let tone = "good", icon = "check_circle", text = formatTime(diffDays);
-          if (diffDays > 90) { tone = "bad"; icon = "error"; text = "Límite excedido (" + formatTime(diffDays) + ")"; }
-          else if (diffDays >= 60) { tone = "warn"; icon = "warning"; text = "Alerta: " + text; }
-
-          let bg = tone === "bad" ? "#fef2f2" : tone === "warn" ? "#fffbeb" : "#f0fdf4";
-          let color = tone === "bad" ? "#ef4444" : tone === "warn" ? "#d97706" : "#10b981";
-
-          return {
-            html: `
-              <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
-                <span style="font-size:11px; color:#64748b; font-weight:700; white-space: nowrap;">${formatAppDate(recepcionIso)}</span>
-                <span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:12px; background:${bg}; color:${color}; font-size:10px; font-weight:800; border: 1px solid ${color}40; white-space: nowrap;">
-                  <span class="material-symbols-rounded" style="font-size:12px;">${icon}</span> ${text}
-                </span>
-              </div>
-            `
-          };
-        };
-
-        tbody.innerHTML = items.map(r => {
-          const status = getSemaforoStatus(r.caducidad);
-          semStats[status.key]++;
-          const diffMonths = getMonthsTo(r.caducidad);
-          if (diffMonths <= 3) cadStats.m3++;
-          else if (diffMonths <= 6) cadStats.m6++;
-          else if (diffMonths <= 12) cadStats.m12++;
-          else cadStats.more++;
-
-          const perm = getPermanenciaStatus(r.fecha_recepcion);
-
-          return `
-                <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
-                  <td style="padding:14px 24px; font-weight:800; color:#0f172a;">${escapeHtml(r.biologico || "—")}</td>
-                  <td style="padding:14px 24px; font-weight:600; color:#475569;">${escapeHtml(r.lote || "—")}</td>
-                  <td style="padding:14px 24px; text-align:center;">
-                    <span class="live-view-count-badge">${escapeHtml(r.cantidad || 0)}</span>
-                  </td>
-                  <td style="padding:14px 24px; font-weight:700; text-align:center; color:#1e293b;">${escapeHtml(isoToMmmaa(r.caducidad))}</td>
-                  <td style="padding:14px 24px; text-align:center;">
-                    <span class="status-pill-pro ${status.key}">${status.label}</span>
-                  </td>
-                  <td style="padding:14px 24px; text-align:center; min-width: 190px;">
-                    ${perm.html}
-                  </td>
-                </tr>
-              `;
-        }).join("");
-
-        // --- Panel de Alerta: Vacunas en Cero ---
-        const bioTotals = {};
-        items.forEach(r => {
-          const bioName = (r.biologico || '').trim().toUpperCase();
-          if (bioName) {
-            bioTotals[bioName] = (bioTotals[bioName] || 0) + Number(r.cantidad || 0);
-          }
-        });
-
-        const biosConCeroTotal = Object.keys(bioTotals).filter(name => bioTotals[name] === 0);
-
-        const zeroAlertEl = $("liveViewZeroAlert");
-        if (zeroAlertEl) {
-          if (biosConCeroTotal.length > 0) {
-            const pillsHtml = biosConCeroTotal.map(name => {
-              const origItem = items.find(r => (r.biologico || '').trim().toUpperCase() === name);
-              const displayName = origItem ? (origItem.biologico || '').trim() : name;
-              return `<span style="display:inline-flex; align-items:center; gap:4px; background:#fff; border:1.5px solid #fecdd3; color:#be123c; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:800; white-space:nowrap;">
-                <span class="material-symbols-rounded" style="font-size:14px; color:#f43f5e;">inventory_2</span>
-                ${escapeHtml(displayName || '—')}
-              </span>`;
-            }).join('');
-            zeroAlertEl.style.display = 'block';
-            zeroAlertEl.innerHTML = `
-              <div style="background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #fecdd3; border-radius: 20px; padding: 16px 20px; display:flex; flex-wrap:wrap; align-items:center; gap:12px;">
-                <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
-                  <span class="material-symbols-rounded" style="font-size:24px; color:#f43f5e;">warning</span>
-                  <div>
-                    <div style="font-size:12px; font-weight:900; color:#be123c; text-transform:uppercase; letter-spacing:0.05em;">Vacunas sin existencia</div>
-                    <div style="font-size:11px; color:#e11d48; font-weight:600;">Esta unidad capturó con ${biosConCeroTotal.length} biológico${biosConCeroTotal.length > 1 ? 's' : ''} en cero</div>
-                  </div>
-                </div>
-                <div style="display:flex; flex-wrap:wrap; gap:6px; flex:1;">
-                  ${pillsHtml}
-                </div>
-              </div>
-            `;
-          } else {
-            zeroAlertEl.style.display = 'none';
-            zeroAlertEl.innerHTML = '';
-          }
-        }
-
-        // Resaltar filas con cantidad = 0 en carmesí/rosa dentro de la tabla si y solo si el stock total de ese biológico es 0
-        if (biosConCeroTotal.length > 0) {
-          Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
-            const cells = tr.querySelectorAll('td');
-            if (cells.length > 0) {
-              const bioText = cells[0].textContent.trim().toUpperCase();
-              const countBadge = tr.querySelector('.live-view-count-badge');
-              if (countBadge && (countBadge.textContent.trim() === '0') && bioTotals[bioText] === 0) {
-                tr.style.background = '#fff5f5';
-                countBadge.style.background = '#ffe4e6';
-                countBadge.style.color = '#be123c';
-                countBadge.style.borderColor = '#fecdd3';
-              }
-            }
-          });
-        }
-
-        renderLiveCharts("SR", semStats, cadStats);
-      }
-    } else if (tipo === "BIO") {
-      if (headRow) {
-        headRow.innerHTML = `
-             <th style="padding: 16px 24px; text-align: left;">Biológico</th>
-             <th style="padding: 16px 24px; text-align: center;">Existencia (Frascos)</th>
-             <th style="padding: 16px 24px; text-align: center;">Pedido (Frascos)</th>
-             <th style="padding: 16px 24px; text-align: center;">Promedio</th>
-             <th style="padding: 16px 24px; text-align: center;">Dosis Mín/Máx</th>
-           `;
-      }
-
-      if (!res.data || !res.data.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay pedido de biológicos para esta fecha.</td></tr>';
-        renderLiveCharts("BIO", null, null);
-      } else {
-        const items = res.data;
-        tbody.innerHTML = items.map(r => `
-             <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
-               <td style="padding:14px 24px; font-weight:800; color:#0f172a;">${escapeHtml(r.biologico || "—")}</td>
-               <td style="padding:14px 24px; text-align:center;">
-                 <span class="live-view-count-badge bg-slate-100 text-slate-800">${r.existencia_actual_frascos ?? r.existencia ?? 0}</span>
-               </td>
-               <td style="padding:14px 24px; text-align:center;">
-                 <span class="live-view-count-badge">${r.pedido_frascos ?? r.solicitud ?? 0}</span>
-               </td>
-               <td style="padding:14px 24px; text-align:center; font-weight:700; color:#475569;">${r.promedio_frascos ?? 0}</td>
-               <td style="padding:14px 24px; text-align:center; font-weight:600; color:#64748b;">${r.min_dosis ?? 0} / ${r.max_dosis ?? 0}</td>
-             </tr>
-           `).join("");
-        let sumExistencia = 0, sumPedido = 0;
-        let topBio = items.map(r => ({ bio: r.biologico, cant: r.pedido_frascos ?? r.solicitud ?? 0 })).sort((a, b) => b.cant - a.cant).slice(0, 4);
-        items.forEach(r => {
-          sumExistencia += (r.existencia_actual_frascos ?? r.existencia ?? 0);
-          sumPedido += (r.pedido_frascos ?? r.solicitud ?? 0);
-        });
-        renderLiveCharts("BIO", { existencia: sumExistencia, pedido: sumPedido }, topBio);
-      }
-    } else {
-      // Tipo CONSUMIBLES
-      if (headRow) {
-        headRow.innerHTML = `
-             <th style="padding: 16px 24px; text-align: left;">Insumo / Concepto</th>
-             <th style="padding: 16px 24px; text-align: center;">Cantidad / Dosis</th>
-           `;
-      }
-
-      if (!res.data || !res.data.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay reporte de consumibles hoy.</td></tr>';
-        renderLiveCharts("CONS", null, null);
-      } else {
-        const c = res.data[0];
-        const rows = [
-          { label: "Existencia SRP (Dosis)", val: c.srp_dosis || 0 },
-          { label: "Existencia SR (Dosis)", val: c.sr_dosis || 0 },
-          { label: "Jeringa de 5 ml", val: c.jeringa_reconst_5ml_0605500438 || 0 },
-          { label: "Jeringa de 0.5 ml", val: c.jeringa_aplic_05ml_0605502657 || 0 },
-          { label: "Aguja", val: c.aguja_0600403711 || 0 }
-        ];
-        tbody.innerHTML = rows.map(r => `
-             <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
-               <td style="padding:16px 24px; font-weight:800; color:#0f172a;">${r.label}</td>
-               <td style="padding:16px 24px; text-align:center;">
-                 <span class="live-view-count-badge">${r.val || 0}</span>
-               </td>
-             </tr>
-           `).join("");
-        let srp = c.srp_dosis || 0, sr = c.sr_dosis || 0;
-        let j5 = c.jeringa_reconst_5ml_0605500438 || 0, j05 = c.jeringa_aplic_05ml_0605502657 || 0, ag = c.aguja_0600403711 || 0;
-        renderLiveCharts("CONS", { j5, j05, ag }, { srp, sr });
-      }
-    }
+    // 4. Renderizar el contenido inicial
+    renderLiveViewTableContent();
 
     // --- EFECTO PREMIUM CHARTS: CARGA ESCALA ---
     setTimeout(() => {
@@ -16787,6 +16593,368 @@ if ($("btnLiveViewClose")) {
 }
 
 window.openLiveView = openLiveView;
+
+// 🛡️ CONTROLADOR DE PESTAÑAS PARA VISTA EN VIVO (Existencia vs Movimiento)
+window.switchLiveViewTab = function(tab) {
+  window.currentLiveViewTab = tab;
+  const btnExistencia = document.getElementById("btnLiveTabExistencia");
+  const btnMovimiento = document.getElementById("btnLiveTabMovimiento");
+  if (btnExistencia && btnMovimiento) {
+    if (tab === 'existencia') {
+      btnExistencia.style.background = "#0ea5e9";
+      btnExistencia.style.color = "#ffffff";
+      btnExistencia.style.boxShadow = "0 4px 12px rgba(14, 165, 233, 0.25)";
+      btnMovimiento.style.background = "transparent";
+      btnMovimiento.style.color = "#0284c7";
+      btnMovimiento.style.boxShadow = "none";
+    } else {
+      btnMovimiento.style.background = "#0ea5e9";
+      btnMovimiento.style.color = "#ffffff";
+      btnMovimiento.style.boxShadow = "0 4px 12px rgba(14, 165, 233, 0.25)";
+      btnExistencia.style.background = "transparent";
+      btnExistencia.style.color = "#0284c7";
+      btnExistencia.style.boxShadow = "none";
+    }
+  }
+  renderLiveViewTableContent();
+};
+
+function getPermanenciaStatusHelper(recepcionIso) {
+  if (!recepcionIso) return { html: `<span style="color:#94a3b8; font-size:11px;">Sin fecha</span>` };
+  const dRec = new Date(recepcionIso);
+  const now = new Date();
+  dRec.setHours(0, 0, 0, 0); now.setHours(0, 0, 0, 0);
+  const diffDays = Math.floor((now - dRec) / (1000 * 60 * 60 * 24));
+
+  const formatTime = (d) => {
+    const m = Math.floor(d / 30); const rd = d % 30;
+    let p = [];
+    if (m > 0) p.push(`${m}m`);
+    if (rd > 0 || m === 0) p.push(`${rd}d`);
+    return p.join(' ');
+  };
+
+  let tone = "good", icon = "check_circle", text = formatTime(diffDays);
+  if (diffDays > 90) { tone = "bad"; icon = "error"; text = "Límite excedido (" + formatTime(diffDays) + ")"; }
+  else if (diffDays >= 60) { tone = "warn"; icon = "warning"; text = "Alerta: " + text; }
+
+  let bg = tone === "bad" ? "#fef2f2" : tone === "warn" ? "#fffbeb" : "#f0fdf4";
+  let color = tone === "bad" ? "#ef4444" : tone === "warn" ? "#d97706" : "#10b981";
+
+  return {
+    html: `
+      <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+        <span style="font-size:11px; color:#64748b; font-weight:700; white-space: nowrap;">${formatAppDate(recepcionIso)}</span>
+        <span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:12px; background:${bg}; color:${color}; font-size:10px; font-weight:800; border: 1px solid ${color}40; white-space: nowrap;">
+          <span class="material-symbols-rounded" style="font-size:12px;">${icon}</span> ${text}
+        </span>
+      </div>
+    `
+  };
+}
+
+function highlightZeroRows(items) {
+  const tbody = $("liveViewTbody");
+  if (!tbody) return;
+  const bioTotals = {};
+  items.forEach(r => {
+    const bioName = (r.biologico || '').trim().toUpperCase();
+    if (bioName) {
+      bioTotals[bioName] = (bioTotals[bioName] || 0) + Number(r.cantidad || 0);
+    }
+  });
+
+  const biosConCeroTotal = Object.keys(bioTotals).filter(name => bioTotals[name] === 0);
+
+  const zeroAlertEl = $("liveViewZeroAlert");
+  if (zeroAlertEl) {
+    if (biosConCeroTotal.length > 0) {
+      const pillsHtml = biosConCeroTotal.map(name => {
+        const origItem = items.find(r => (r.biologico || '').trim().toUpperCase() === name);
+        const displayName = origItem ? (origItem.biologico || '').trim() : name;
+        return `<span style="display:inline-flex; align-items:center; gap:4px; background:#fff; border:1.5px solid #fecdd3; color:#be123c; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:800; white-space:nowrap;">
+          <span class="material-symbols-rounded" style="font-size:14px; color:#f43f5e;">inventory_2</span>
+          ${escapeHtml(displayName || '—')}
+        </span>`;
+      }).join('');
+      zeroAlertEl.style.display = 'block';
+      zeroAlertEl.innerHTML = `
+        <div style="background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #fecdd3; border-radius: 20px; padding: 16px 20px; display:flex; flex-wrap:wrap; align-items:center; gap:12px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+            <span class="material-symbols-rounded" style="font-size:24px; color:#f43f5e;">warning</span>
+            <div>
+              <div style="font-size:12px; font-weight:900; color:#be123c; text-transform:uppercase; letter-spacing:0.05em;">Vacunas sin existencia</div>
+              <div style="font-size:11px; color:#e11d48; font-weight:600;">Esta unidad capturó con ${biosConCeroTotal.length} biológico${biosConCeroTotal.length > 1 ? 's' : ''} en cero</div>
+            </div>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:6px; flex:1;">
+            ${pillsHtml}
+          </div>
+        </div>
+      `;
+    } else {
+      zeroAlertEl.style.display = 'none';
+      zeroAlertEl.innerHTML = '';
+    }
+  }
+
+  if (biosConCeroTotal.length > 0) {
+    Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+      const cells = tr.querySelectorAll('td');
+      if (cells.length > 0) {
+        const bioText = cells[0].textContent.trim().toUpperCase();
+        const countBadge = tr.querySelector('.live-view-count-badge');
+        if (countBadge && (countBadge.textContent.trim() === '0') && bioTotals[bioText] === 0) {
+          tr.style.background = '#fff5f5';
+          countBadge.style.background = '#ffe4e6';
+          countBadge.style.color = '#be123c';
+          countBadge.style.borderColor = '#fecdd3';
+        }
+      }
+    });
+  }
+}
+
+function getDosesPerVial(biologico) {
+  const name = String(biologico || '').toUpperCase().trim();
+  // Monodosis (1 dosis)
+  if (name.includes("HEXAVALENTE") || 
+      name.includes("ROTAVIRUS") || 
+      name.includes("NEUMO") || 
+      name.includes("VPH") || 
+      name.includes("TDPA") || 
+      name.includes("HEPATITIS A") || 
+      name.includes("VARICELA") || 
+      name.includes("DENGUE")) {
+    return 1;
+  }
+  // Multidosis (10 dosis)
+  return 10;
+}
+
+window.renderLiveViewTableContent = function() {
+  const res = window.currentLiveViewRes;
+  if (!res) return;
+  const tbody = $("liveViewTbody");
+  const headRow = $("liveViewTable")?.querySelector("thead tr");
+  if (!tbody) return;
+
+  const tipo = (res.meta && res.meta.tipo) ? res.meta.tipo.toUpperCase() : "SR";
+  const tab = window.currentLiveViewTab || 'existencia';
+
+  if (tipo === "SR") {
+    if (tab === 'existencia') {
+      if (headRow) {
+        headRow.innerHTML = `
+             <th style="padding: 16px 24px; text-align: left;">Biológico</th>
+             <th style="padding: 16px 24px; text-align: left;">Lote</th>
+             <th style="padding: 16px 24px; text-align: center;">Existencia</th>
+             <th style="padding: 16px 24px; text-align: center;">Caducidad</th>
+             <th style="padding: 16px 24px; text-align: center;">Vigencia</th>
+             <th style="padding: 16px 24px; text-align: center; white-space: nowrap; min-width: 190px;">Periodo de almacenamiento</th>
+           `;
+      }
+
+      if (!res.data || !res.data.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay registros detallados para esta fecha.</td></tr>';
+        const zeroAlertEmpty = $("liveViewZeroAlert");
+        if (zeroAlertEmpty) { zeroAlertEmpty.style.display = 'none'; zeroAlertEmpty.innerHTML = ''; }
+        renderLiveCharts("SR", null, null);
+      } else {
+        const items = res.data;
+        let semStats = { pronto: 0, normal: 0, lejana: 0 };
+        let cadStats = { m3: 0, m6: 0, m12: 0, more: 0 };
+
+        tbody.innerHTML = items.map(r => {
+          const status = getSemaforoStatus(r.caducidad);
+          semStats[status.key]++;
+          const diffMonths = getMonthsTo(r.caducidad);
+          if (diffMonths <= 3) cadStats.m3++;
+          else if (diffMonths <= 6) cadStats.m6++;
+          else if (diffMonths <= 12) cadStats.m12++;
+          else cadStats.more++;
+
+          const perm = getPermanenciaStatusHelper(r.fecha_recepcion);
+
+          return `
+                <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
+                  <td style="padding:14px 24px; font-weight:800; color:#0f172a;">${escapeHtml(r.biologico || "—")}</td>
+                  <td style="padding:14px 24px; font-weight:600; color:#475569;">${escapeHtml(r.lote || "—")}</td>
+                  <td style="padding:14px 24px; text-align:center;">
+                    <span class="live-view-count-badge">${escapeHtml(r.cantidad || 0)}</span>
+                  </td>
+                  <td style="padding:14px 24px; font-weight:700; text-align:center; color:#1e293b;">${escapeHtml(isoToMmmaa(r.caducidad))}</td>
+                  <td style="padding:14px 24px; text-align:center;">
+                    <span class="status-pill-pro ${status.key}">${status.label}</span>
+                  </td>
+                  <td style="padding:14px 24px; text-align:center; min-width: 190px;">
+                    ${perm.html}
+                  </td>
+                </tr>
+              `;
+        }).join("");
+
+        highlightZeroRows(items);
+        renderLiveCharts("SR", semStats, cadStats);
+      }
+    } else {
+      // 📊 PESTAÑA MOVIMIENTOS (Avanzado con comparativa semanal)
+      if (headRow) {
+        headRow.innerHTML = `
+             <th style="padding: 16px 24px; text-align: left;">Biológico</th>
+             <th style="padding: 16px 24px; text-align: left;">Lote</th>
+             <th style="padding: 16px 24px; text-align: center;">Exist. Anterior</th>
+             <th style="padding: 16px 24px; text-align: center;">Exist. Actual</th>
+             <th style="padding: 16px 24px; text-align: center;">Dosis Aplicadas</th>
+             <th style="padding: 16px 24px; text-align: center;">Movimiento</th>
+           `;
+      }
+
+      const currentItems = res.data || [];
+      const prevItems = res.prevData || [];
+
+      if (!currentItems.length && !prevItems.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay registros para calcular movimiento.</td></tr>';
+      } else {
+        const prevMap = {};
+        prevItems.forEach(r => {
+          const key = `${(r.biologico || '').trim().toUpperCase()}:${(r.lote || '').trim().toUpperCase()}`;
+          prevMap[key] = r.cantidad || 0;
+        });
+
+        const allKeys = new Set();
+        currentItems.forEach(r => allKeys.add(`${(r.biologico || '').trim().toUpperCase()}:${(r.lote || '').trim().toUpperCase()}`));
+        prevItems.forEach(r => allKeys.add(`${(r.biologico || '').trim().toUpperCase()}:${(r.lote || '').trim().toUpperCase()}`));
+
+        const moveRows = [];
+        allKeys.forEach(key => {
+          const [bioName, loteName] = key.split(':');
+          const currentItem = currentItems.find(r => (r.biologico || '').trim().toUpperCase() === bioName && (r.lote || '').trim().toUpperCase() === loteName);
+          const prevQty = prevMap[key] !== undefined ? prevMap[key] : 0;
+          const currQty = currentItem ? (currentItem.cantidad || 0) : 0;
+
+          let apps = 0;
+          let statusText = "";
+          let statusColor = "";
+          let statusBg = "";
+
+          const dosesPerVial = getDosesPerVial(bioName);
+
+          if (prevQty > currQty) {
+            apps = Math.round((prevQty - currQty) * dosesPerVial);
+            statusText = "Aplicación";
+            statusColor = "#0ea5e9";
+            statusBg = "#e0f2fe";
+          } else if (currQty > prevQty) {
+            apps = 0;
+            statusText = "Ingreso / Recarga";
+            statusColor = "#10b981";
+            statusBg = "#d1fae5";
+          } else {
+            apps = 0;
+            statusText = "Sin cambio";
+            statusColor = "#64748b";
+            statusBg = "#f1f5f9";
+          }
+
+          if (prevQty === 0 && currQty === 0) return; // Omitir dummy rows si ambas son 0
+
+          moveRows.push({
+            biologico: currentItem ? currentItem.biologico : (prevItems.find(r => (r.biologico || '').trim().toUpperCase() === bioName)?.biologico || bioName),
+            lote: loteName,
+            prevQty,
+            currQty,
+            apps,
+            statusText,
+            statusColor,
+            statusBg
+          });
+        });
+
+        moveRows.sort((a, b) => (a.biologico || '').localeCompare(b.biologico || ''));
+
+        tbody.innerHTML = moveRows.map(r => `
+          <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
+            <td style="padding:14px 24px; font-weight:800; color:#0f172a;">${escapeHtml(r.biologico)}</td>
+            <td style="padding:14px 24px; font-weight:600; color:#475569;">${escapeHtml(r.lote)}</td>
+            <td style="padding:14px 24px; text-align:center; font-weight:700; color:#64748b;">${r.prevQty}</td>
+            <td style="padding:14px 24px; text-align:center; font-weight:700; color:#0f172a;">${r.currQty}</td>
+            <td style="padding:14px 24px; text-align:center;">
+              <span class="live-view-count-badge" style="background:${r.apps > 0 ? '#e0f2fe' : '#f1f5f9'}; color:${r.apps > 0 ? '#0369a1' : '#64748b'}; border:1px solid ${r.apps > 0 ? '#bae6fd' : '#cbd5e1'}; font-weight:900;">
+                ${r.apps} dosis
+              </span>
+            </td>
+            <td style="padding:14px 24px; text-align:center;">
+              <span style="display:inline-block; padding:3px 10px; border-radius:12px; font-size:10px; font-weight:800; background:${r.statusBg}; color:${r.statusColor}; text-transform:uppercase; border:1px solid ${r.statusColor}30; white-space:nowrap;">
+                ${r.statusText}
+              </span>
+            </td>
+          </tr>
+        `).join("");
+      }
+    }
+  } else if (tipo === "BIO") {
+    if (headRow) {
+      headRow.innerHTML = `
+           <th style="padding: 16px 24px; text-align: left;">Biológico</th>
+           <th style="padding: 16px 24px; text-align: center;">Existencia (Frascos)</th>
+           <th style="padding: 16px 24px; text-align: center;">Pedido (Frascos)</th>
+           <th style="padding: 16px 24px; text-align: center;">Promedio</th>
+           <th style="padding: 16px 24px; text-align: center;">Dosis Mín/Máx</th>
+         `;
+    }
+
+    if (!res.data || !res.data.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay pedido de biológicos para esta fecha.</td></tr>';
+      renderLiveCharts("BIO", null, null);
+    } else {
+      const items = res.data;
+      tbody.innerHTML = items.map(r => `
+           <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
+             <td style="padding:14px 24px; font-weight:800; color:#0f172a;">${escapeHtml(r.biologico || "—")}</td>
+             <td style="padding:14px 24px; text-align:center;">
+               <span class="live-view-count-badge bg-slate-100 text-slate-800">${r.existencia_actual_frascos ?? r.existencia ?? 0}</span>
+             </td>
+             <td style="padding:14px 24px; text-align:center;">
+               <span class="live-view-count-badge">${r.pedido_frascos ?? r.solicitud ?? 0}</span>
+             </td>
+             <td style="padding:14px 24px; text-align:center; font-weight:700; color:#475569;">${r.promedio_frascos ?? 0}</td>
+             <td style="padding:14px 24px; text-align:center; font-weight:600; color:#64748b;">${r.min_dosis ?? 0} / ${r.max_dosis ?? 0}</td>
+           </tr>
+         `).join("");
+    }
+  } else {
+    // Tipo CONSUMIBLES
+    if (headRow) {
+      headRow.innerHTML = `
+           <th style="padding: 16px 24px; text-align: left;">Insumo / Concepto</th>
+           <th style="padding: 16px 24px; text-align: center;">Cantidad / Dosis</th>
+         `;
+    }
+
+    if (!res.data || !res.data.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay reporte de consumibles hoy.</td></tr>';
+      renderLiveCharts("CONS", null, null);
+    } else {
+      const c = res.data[0];
+      const rows = [
+        { label: "Existencia SRP (Dosis)", val: c.srp_dosis || 0 },
+        { label: "Existencia SR (Dosis)", val: c.sr_dosis || 0 },
+        { label: "Jeringa de 5 ml", val: c.jeringa_reconst_5ml_0605500438 || 0 },
+        { label: "Jeringa de 0.5 ml", val: c.jeringa_aplic_05ml_0605502657 || 0 },
+        { label: "Aguja", val: c.aguja_0600403711 || 0 }
+      ];
+      tbody.innerHTML = rows.map(r => `
+           <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
+             <td style="padding:16px 24px; font-weight:800; color:#0f172a;">${r.label}</td>
+             <td style="padding:16px 24px; text-align:center;">
+               <span class="live-view-count-badge">${r.val || 0}</span>
+             </td>
+           </tr>
+         `).join("");
+    }
+  }
+};
 
 // ✅ AUTO-UPPERCASE FOR LOTES
 document.addEventListener("input", e => {
@@ -17612,6 +17780,16 @@ function applyRolePermissions(role) {
   // Especial: Ajustes de UI que no son solo ocultar (placeholders, etc)
   const isUnidad = normalizedRole === "UNIDAD";
   const isMunicipal = normalizedRole === "MUNICIPAL" || normalizedRole === "CARAVANAS";
+  
+  const cluesUpper = String(window.USER?.clues || "").toUpperCase();
+  const nameUpper = String(window.USER?.nombre || window.USER?.usuario || "").toUpperCase();
+  const isUmmeOrFam = cluesUpper.includes("UMME") || cluesUpper.includes("FAM") || nameUpper.includes("UMME") || nameUpper.includes("FAM") || normalizedRole === "CARAVANAS";
+
+  const btnSetBCG = document.getElementById("btnSetBCG");
+  if (btnSetBCG) {
+    btnSetBCG.style.display = (isUnidad && !isUmmeOrFam) ? "flex" : "none";
+  }
+
   if ($("archivosSearch")) {
     $("archivosSearch").placeholder = isUnidad ? "Buscar por fecha..." : "Buscar por Clues o Unidad...";
   }
@@ -19219,10 +19397,391 @@ document.addEventListener("DOMContentLoaded", () => {
       } catch (error) {
         console.error("Error sending feedback:", error);
         showToast('Hubo un problema al enviar tu mensaje. Intenta de nuevo más tarde.', false, 'bad');
-      } finally {
         submitBtn.innerHTML = originalBtnText;
         submitBtn.disabled = false;
       }
     });
   }
 });
+
+// ==========================================
+// 🛡️ DICCIONARIO DE APERTURA BCG & DIRECTORIO
+// ==========================================
+
+// Inicializar listeners de BCG
+document.addEventListener("DOMContentLoaded", () => {
+  // Botones de perfil
+  document.getElementById("btnSetBCG")?.addEventListener("click", openBCGApertura);
+  document.getElementById("btnDirBCG")?.addEventListener("click", openBCGDirectorio);
+
+  // Modales BCG - Cerrar / Cancelar
+  document.getElementById("btnCancelBCGApertura")?.addEventListener("click", () => {
+    document.getElementById("bcgAperturaOverlay").style.display = "none";
+  });
+  document.getElementById("btnCancelBCGDir")?.addEventListener("click", () => {
+    document.getElementById("bcgDirectorioOverlay").style.display = "none";
+  });
+
+  // Guardar apertura BCG
+  document.getElementById("btnSaveBCGApertura")?.addEventListener("click", saveBCGApertura);
+
+  // Filtros del directorio
+  document.getElementById("bcgDirSearchInput")?.addEventListener("input", renderBCGDirectorioList);
+  document.getElementById("bcgDirMuniSelect")?.addEventListener("change", renderBCGDirectorioList);
+  document.getElementById("bcgDirDaySelect")?.addEventListener("change", renderBCGDirectorioList);
+});
+
+async function openBCGApertura() {
+  if (!USER || !USER.clues) {
+    showToast("No se detectó CLUES del usuario", false, "bad");
+    return;
+  }
+  showOverlay("Cargando...", "Consultando configuración de BCG");
+  try {
+    const [resConfig, resApertura] = await Promise.all([
+      window.supabase.from('unidades_bcg_config').select('*').eq('clues', USER.clues).maybeSingle(),
+      window.supabase.from('unidades_bcg_apertura').select('*').eq('clues', USER.clues).maybeSingle()
+    ]);
+
+    const config = resConfig.data;
+    const apertura = resApertura.data;
+
+    const turnosPermitidos = (config && config.turnos_permitidos) ? config.turnos_permitidos : ['MATUTINO'];
+    const turnosSeleccionados = (apertura && apertura.turnos) ? apertura.turnos : [];
+    const diaSeleccionado = (apertura && apertura.dia_semana) ? apertura.dia_semana : 'Lunes';
+
+    document.getElementById("bcgAperturaDia").value = diaSeleccionado;
+
+    let boxHtml = "";
+    turnosPermitidos.forEach(t => {
+      const checked = turnosSeleccionados.includes(t) ? "checked" : "";
+      boxHtml += `
+        <label style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; color: var(--md-sys-color-on-surface); cursor: pointer;">
+          <input type="checkbox" name="bcgTurnoCheckbox" value="${t}" ${checked} style="width: 16px; height: 16px; accent-color: #0ea5e9;">
+          <span>${t}</span>
+        </label>
+      `;
+    });
+    document.getElementById("bcgAperturaTurnosBox").innerHTML = boxHtml;
+
+    document.getElementById("bcgAperturaOverlay").style.display = "flex";
+  } catch (error) {
+    console.error("Error al cargar apertura BCG:", error);
+    showToast("Error al obtener la configuración: " + error.message, false, "bad");
+  } finally {
+    hideOverlay();
+  }
+}
+
+async function saveBCGApertura() {
+  const dia = document.getElementById("bcgAperturaDia").value;
+  const checkboxes = Array.from(document.querySelectorAll('input[name="bcgTurnoCheckbox"]:checked'));
+  const selectedTurnos = checkboxes.map(cb => cb.value);
+
+  if (!selectedTurnos.length) {
+    showToast("Por favor selecciona al menos un turno", false, "bad");
+    return;
+  }
+
+  showOverlay("Guardando...", "Actualizando apertura de BCG");
+  try {
+    const { error } = await window.supabase
+      .from('unidades_bcg_apertura')
+      .upsert({
+        clues: USER.clues,
+        dia_semana: dia,
+        turnos: selectedTurnos,
+        updated_at: new Date().toISOString(),
+        updated_by: String(USER.nombre || USER.usuario || '').toUpperCase()
+      });
+
+    if (error) throw error;
+    showToast("Configuración de apertura BCG guardada con éxito", true, "good");
+    document.getElementById("bcgAperturaOverlay").style.display = "none";
+  } catch (error) {
+    console.error("Error al guardar apertura BCG:", error);
+    showToast("Error al guardar cambios: " + error.message, false, "bad");
+  } finally {
+    hideOverlay();
+  }
+}
+
+async function openBCGDirectorio() {
+  showOverlay("Cargando...", "Obteniendo directorio de BCG");
+  try {
+    const [resUnits, resApertura] = await Promise.all([
+      window.supabase.from('unidades').select('clues, unidad, municipio').eq('activo', 'SI').order('municipio').order('unidad'),
+      window.supabase.from('unidades_bcg_apertura').select('*')
+    ]);
+
+    window.bcgDirUnits = resUnits.data || [];
+    window.bcgDirAperturas = resApertura.data || [];
+
+    // Llenar select de municipios
+    const munis = Array.from(new Set(window.bcgDirUnits.map(u => u.municipio))).filter(Boolean).sort();
+    let muniOptions = '<option value="">Todos los Municipios</option>';
+    munis.forEach(m => {
+      muniOptions += `<option value="${m}">${m}</option>`;
+    });
+    document.getElementById("bcgDirMuniSelect").innerHTML = muniOptions;
+
+    // Reset de búsqueda y filtros
+    document.getElementById("bcgDirSearchInput").value = "";
+    document.getElementById("bcgDirMuniSelect").value = "";
+    document.getElementById("bcgDirDaySelect").value = "";
+
+    renderBCGDirectorioList();
+
+    document.getElementById("bcgDirectorioOverlay").style.display = "flex";
+  } catch (error) {
+    console.error("Error al cargar directorio BCG:", error);
+    showToast("Error al consultar el directorio: " + error.message, false, "bad");
+  } finally {
+    hideOverlay();
+  }
+}
+
+window.renderBCGDirectorioList = function() {
+  const query = document.getElementById("bcgDirSearchInput").value.trim().toUpperCase();
+  const selectedMuni = document.getElementById("bcgDirMuniSelect").value;
+  const selectedDay = document.getElementById("bcgDirDaySelect").value;
+  const container = document.getElementById("bcgDirList");
+  if (!container) return;
+
+  const units = window.bcgDirUnits || [];
+  const aperturas = window.bcgDirAperturas || [];
+
+  // Mapeo rápido de aperturas
+  const apMap = {};
+  aperturas.forEach(ap => {
+    apMap[ap.clues] = ap;
+  });
+
+  const filtered = units.filter(u => {
+    // Filtro búsqueda
+    if (query) {
+      const matchClues = (u.clues || '').toUpperCase().includes(query);
+      const matchName = (u.unidad || '').toUpperCase().includes(query);
+      if (!matchClues && !matchName) return false;
+    }
+    // Filtro municipio
+    if (selectedMuni && u.municipio !== selectedMuni) return false;
+
+    // Filtro día
+    const ap = apMap[u.clues];
+    if (selectedDay) {
+      if (!ap || ap.dia_semana !== selectedDay) return false;
+    }
+
+    return true;
+  });
+
+  if (!filtered.length) {
+    container.innerHTML = '<div style="text-align:center; padding:32px; color:var(--md-sys-color-on-surface-variant); font-size:13px; font-weight:700;">No se encontraron unidades con los filtros seleccionados.</div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(u => {
+    const ap = apMap[u.clues];
+    let badgeHtml = "";
+    if (ap) {
+      const turnosBadges = ap.turnos.map(t => {
+        let color = "#0ea5e9";
+        let bg = "#e0f2fe";
+        if (t === "VESPERTINO") { color = "#d97706"; bg = "#fffbeb"; }
+        else if (t === "ESPECIAL") { color = "#9333ea"; bg = "#faf5ff"; }
+        return `<span style="padding:2px 8px; border-radius:12px; font-size:10px; font-weight:800; background:${bg}; color:${color}; margin-left:4px; text-transform:uppercase;">${t}</span>`;
+      }).join('');
+
+      badgeHtml = `
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px; text-align:right;">
+          <span style="font-size:13px; font-weight:900; color:#0ea5e9; background:#e0f2fe; padding:4px 10px; border-radius:20px;">📅 ${ap.dia_semana}</span>
+          <div style="display:flex; gap:2px; margin-top:2px;">${turnosBadges}</div>
+        </div>
+      `;
+    } else {
+      badgeHtml = `
+        <span style="font-size:11px; font-weight:800; color:#64748b; background:#f1f5f9; padding:4px 10px; border-radius:20px; text-transform:uppercase;">Sin registrar</span>
+      `;
+    }
+
+    return `
+      <div style="padding:14px 18px; border-radius:18px; border:1px solid var(--md-sys-color-outline-variant); background:var(--md-sys-color-surface); display:flex; justify-content:space-between; align-items:center; gap:16px; box-shadow: 0 2px 8px rgba(0,0,0,0.01); transition: transform 0.2s;" class="hover:translate-y-[-1px]">
+        <div style="flex:1; min-width:0;">
+          <div style="font-weight:900; font-size:13px; color:var(--md-sys-color-on-surface); text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${escapeHtml(u.unidad)}</div>
+          <div style="font-size:10px; font-weight:700; color:var(--md-sys-color-on-surface-variant); margin-top:3px; display:flex; align-items:center; gap:6px;">
+            <span>🏢 ${escapeHtml(u.clues)}</span>
+            <span style="color:var(--md-sys-color-outline-variant);">|</span>
+            <span>📍 ${escapeHtml(u.municipio)}</span>
+          </div>
+        </div>
+        ${badgeHtml}
+      </div>
+    `;
+  }).join("");
+};
+
+// ==========================================
+// 🛡️ ADMINISTRACIÓN DE CONFIGURACIÓN BCG (ADMIN)
+// ==========================================
+async function initBCGAdminPanel() {
+  const checklist = document.getElementById("paramBCGUnitsChecklist");
+  const muniSelect = document.getElementById("paramBCGAdminMuniSelect");
+  if (!checklist) return;
+
+  try {
+    const { data: units, error } = await window.supabase
+      .from('unidades')
+      .select('clues, unidad, municipio')
+      .eq('activo', 'SI')
+      .order('municipio')
+      .order('unidad');
+
+    if (error) throw error;
+
+    window.bcgAdminAllUnits = (units || []).filter(u => {
+      const uName = String(u.unidad || "").toUpperCase();
+      const uClues = String(u.clues || "").toUpperCase();
+      return !uName.includes("UMME") && !uName.includes("FAM") && !uClues.includes("UMME") && !uClues.includes("FAM");
+    });
+
+    // Llenar select de municipios
+    const munis = Array.from(new Set(window.bcgAdminAllUnits.map(u => u.municipio))).filter(Boolean).sort();
+    let muniOptions = '<option value="">Todos los Municipios</option>';
+    munis.forEach(m => {
+      muniOptions += `<option value="${m}">${escapeHtml(m)}</option>`;
+    });
+    if (muniSelect) muniSelect.innerHTML = muniOptions;
+
+    // Reset filtros
+    const searchInp = document.getElementById("paramBCGAdminSearch");
+    if (searchInp) searchInp.value = "";
+    if (muniSelect) muniSelect.value = "";
+
+    filterBCGAdminUnits();
+  } catch (error) {
+    console.error("Error al iniciar panel admin BCG:", error);
+  }
+}
+
+window.filterBCGAdminUnits = function() {
+  const checklist = document.getElementById("paramBCGUnitsChecklist");
+  if (!checklist) return;
+
+  const query = (document.getElementById("paramBCGAdminSearch")?.value || "").trim().toUpperCase();
+  const selectedMuni = document.getElementById("paramBCGAdminMuniSelect")?.value || "";
+  const units = window.bcgAdminAllUnits || [];
+
+  const filtered = units.filter(u => {
+    if (selectedMuni && u.municipio !== selectedMuni) return false;
+    if (query) {
+      const matchClues = (u.clues || '').toUpperCase().includes(query);
+      const matchName = (u.unidad || '').toUpperCase().includes(query);
+      if (!matchClues && !matchName) return false;
+    }
+    return true;
+  });
+
+  if (!filtered.length) {
+    checklist.innerHTML = '<span style="font-size:11px; color:var(--md-sys-color-on-surface-variant); font-weight:600; padding:8px 0;">No se encontraron unidades.</span>';
+    return;
+  }
+
+  checklist.innerHTML = filtered.map(u => `
+    <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:var(--md-sys-color-on-surface); cursor:pointer; padding:2px 0;">
+      <input type="checkbox" name="paramBCGUnitCheckbox" value="${u.clues}" style="width:15px; height:15px; accent-color: #0ea5e9;">
+      <span style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${escapeHtml(u.unidad)} <span style="font-size:10px; color:var(--md-sys-color-on-surface-variant); font-weight:500;">(${u.clues})</span></span>
+    </label>
+  `).join("");
+
+  const selectAll = document.getElementById("paramBCGSelectAllUnits");
+  if (selectAll) selectAll.checked = false;
+};
+
+window.toggleAllBCGAdminUnits = function(checked) {
+  const checkboxes = document.querySelectorAll('input[name="paramBCGUnitCheckbox"]');
+  checkboxes.forEach(cb => {
+    cb.checked = checked;
+  });
+};
+
+window.saveBCGUnitConfig = async function() {
+  const checkboxes = Array.from(document.querySelectorAll('input[name="paramBCGUnitCheckbox"]:checked'));
+  const selectedClues = checkboxes.map(cb => cb.value);
+
+  if (!selectedClues.length) {
+    showToast("Por favor marca al menos una unidad de salud", false, "bad");
+    return;
+  }
+
+  const allowed = [];
+  if (document.getElementById("paramBCGShiftMatutino").checked) allowed.push("MATUTINO");
+  if (document.getElementById("paramBCGShiftVespertino").checked) allowed.push("VESPERTINO");
+  if (document.getElementById("paramBCGShiftEspecial").checked) allowed.push("ESPECIAL");
+
+  if (!allowed.length) {
+    showToast("Selecciona al menos un turno permitido para el lote", false, "bad");
+    return;
+  }
+
+  showOverlay("Guardando...", "Actualizando configuración de turnos BCG para " + selectedClues.length + " unidades");
+  try {
+    const rows = selectedClues.map(clues => ({
+      clues: clues,
+      turnos_permitidos: allowed,
+      updated_at: new Date().toISOString(),
+      updated_by: String(USER.nombre || USER.usuario || '').toUpperCase()
+    }));
+
+    const { error } = await window.supabase
+      .from('unidades_bcg_config')
+      .upsert(rows);
+
+    if (error) throw error;
+    showToast(`Configuración autorizada con éxito para ${selectedClues.length} unidades`, true, "good");
+
+    // Limpiar campos y checkboxes
+    document.getElementById("paramBCGShiftMatutino").checked = false;
+    document.getElementById("paramBCGShiftVespertino").checked = false;
+    document.getElementById("paramBCGShiftEspecial").checked = false;
+    document.getElementById("paramBCGSelectAllUnits").checked = false;
+    checkboxes.forEach(cb => cb.checked = false);
+  } catch (error) {
+    console.error("Error al guardar config BCG en lote:", error);
+    showToast("Error al guardar cambios: " + error.message, false, "bad");
+  } finally {
+    hideOverlay();
+  }
+};
+
+// Inicializar el select de admin cuando el admin entra a la pestaña de parámetros
+document.addEventListener("click", (e) => {
+  if (e.target && (e.target.id === "tabAdminParametros" || e.target.closest("#tabAdminParametros"))) {
+    initBCGAdminPanel();
+  }
+});
+
+window.switchProfileCardTab = function(tab) {
+  const contents = ['datos', 'bcg', 'cuenta'];
+  contents.forEach(c => {
+    const el = document.getElementById(`profileTabContent_${c}`);
+    const btn = document.getElementById(`profileTabBtn_${c}`);
+    if (el) {
+      if (c === tab) {
+        el.style.display = 'block';
+        if (btn) {
+          btn.style.background = '#ffffff';
+          btn.style.color = 'var(--md-sys-color-primary, #0f172a)';
+          btn.style.boxShadow = '0 3px 8px rgba(0, 0, 0, 0.08)';
+        }
+      } else {
+        el.style.display = 'none';
+        if (btn) {
+          btn.style.background = 'transparent';
+          btn.style.color = 'var(--md-sys-color-on-surface-variant, #64748b)';
+          btn.style.boxShadow = 'none';
+        }
+      }
+    }
+  });
+};
