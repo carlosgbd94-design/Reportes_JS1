@@ -19436,15 +19436,24 @@ async function openBCGApertura() {
     showToast("No se detectó CLUES del usuario", false, "bad");
     return;
   }
+  console.log("BCG: Iniciando openBCGApertura para CLUES:", USER.clues);
   showOverlay("Cargando...", "Consultando configuración de BCG");
   try {
     const [resConfig, resApertura] = await Promise.all([
-      window.supabase.from('unidades_bcg_config').select('*').eq('clues', USER.clues).maybeSingle(),
-      window.supabase.from('unidades_bcg_apertura').select('*').eq('clues', USER.clues).maybeSingle()
+      window.supabase.from('unidades_bcg_config').select('*').eq('clues', USER.clues),
+      window.supabase.from('unidades_bcg_apertura').select('*').eq('clues', USER.clues)
     ]);
 
-    const config = resConfig.data;
-    const apertura = resApertura.data;
+    console.log("BCG resConfig:", resConfig);
+    console.log("BCG resApertura:", resApertura);
+
+    if (resConfig.error) throw resConfig.error;
+    if (resApertura.error) throw resApertura.error;
+
+    const config = (resConfig.data && resConfig.data.length > 0) ? resConfig.data[0] : null;
+    const apertura = (resApertura.data && resApertura.data.length > 0) ? resApertura.data[0] : null;
+
+    console.log("BCG Mapeado - Config:", config, "Apertura:", apertura);
 
     const turnosPermitidos = (config && config.turnos_permitidos) ? config.turnos_permitidos : ['MATUTINO'];
     const turnosSeleccionados = (apertura && apertura.turnos) ? apertura.turnos : [];
@@ -19464,10 +19473,11 @@ async function openBCGApertura() {
     });
     document.getElementById("bcgAperturaTurnosBox").innerHTML = boxHtml;
 
+    console.log("BCG: Mostrando modal bcgAperturaOverlay");
     document.getElementById("bcgAperturaOverlay").style.display = "flex";
   } catch (error) {
     console.error("Error al cargar apertura BCG:", error);
-    showToast("Error al obtener la configuración: " + error.message, false, "bad");
+    showToast("Error al obtener la configuración: " + (error.message || error), false, "bad");
   } finally {
     hideOverlay();
   }
@@ -19507,12 +19517,19 @@ async function saveBCGApertura() {
 }
 
 async function openBCGDirectorio() {
+  console.log("BCG: Iniciando openBCGDirectorio");
   showOverlay("Cargando...", "Obteniendo directorio de BCG");
   try {
     const [resUnits, resApertura] = await Promise.all([
       window.supabase.from('unidades').select('clues, unidad, municipio').eq('activo', 'SI').order('municipio').order('unidad'),
       window.supabase.from('unidades_bcg_apertura').select('*')
     ]);
+
+    console.log("BCG Directorio resUnits:", resUnits);
+    console.log("BCG Directorio resApertura:", resApertura);
+
+    if (resUnits.error) throw resUnits.error;
+    if (resApertura.error) throw resApertura.error;
 
     window.bcgDirUnits = resUnits.data || [];
     window.bcgDirAperturas = resApertura.data || [];
@@ -19532,10 +19549,11 @@ async function openBCGDirectorio() {
 
     renderBCGDirectorioList();
 
+    console.log("BCG: Mostrando modal bcgDirectorioOverlay");
     document.getElementById("bcgDirectorioOverlay").style.display = "flex";
   } catch (error) {
     console.error("Error al cargar directorio BCG:", error);
-    showToast("Error al consultar el directorio: " + error.message, false, "bad");
+    showToast("Error al consultar el directorio: " + (error.message || error), false, "bad");
   } finally {
     hideOverlay();
   }
