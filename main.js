@@ -19624,6 +19624,19 @@ window.renderBCGDirectorioList = function() {
 // ==========================================
 // 🛡️ ADMINISTRACIÓN DE CONFIGURACIÓN BCG (ADMIN)
 // ==========================================
+window.bcgAdminSelectedClues = new Set();
+
+window.handleBCGUnitCheckboxChange = function(cb) {
+  if (!window.bcgAdminSelectedClues) {
+    window.bcgAdminSelectedClues = new Set();
+  }
+  if (cb.checked) {
+    window.bcgAdminSelectedClues.add(cb.value);
+  } else {
+    window.bcgAdminSelectedClues.delete(cb.value);
+  }
+};
+
 async function initBCGAdminPanel() {
   const checklist = document.getElementById("paramBCGUnitsChecklist");
   const muniSelect = document.getElementById("paramBCGAdminMuniSelect");
@@ -19635,7 +19648,7 @@ async function initBCGAdminPanel() {
       .select('clues, unidad, municipio')
       .eq('activo', 'SI')
       .order('municipio')
-      .order('unidad');
+      .order('clues');
 
     if (error) throw error;
 
@@ -19644,6 +19657,18 @@ async function initBCGAdminPanel() {
       const uClues = String(u.clues || "").toUpperCase();
       return !uName.includes("UMME") && !uName.includes("FAM") && !uClues.includes("UMME") && !uClues.includes("FAM");
     });
+
+    // Ordenar adicionalmente por municipio y por claves CLUES de forma alfabética/numérica en JS
+    window.bcgAdminAllUnits.sort((a, b) => {
+      const muniComp = String(a.municipio || "").localeCompare(String(b.municipio || ""));
+      if (muniComp !== 0) return muniComp;
+      return String(a.clues || "").localeCompare(String(b.clues || ""));
+    });
+
+    // Limpiar selección previa al entrar/inicializar
+    if (window.bcgAdminSelectedClues) {
+      window.bcgAdminSelectedClues.clear();
+    }
 
     // Llenar select de municipios
     const munis = Array.from(new Set(window.bcgAdminAllUnits.map(u => u.municipio))).filter(Boolean).sort();
@@ -19687,27 +19712,42 @@ window.filterBCGAdminUnits = function() {
     return;
   }
 
-  checklist.innerHTML = filtered.map(u => `
-    <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:var(--md-sys-color-on-surface); cursor:pointer; padding:2px 0;">
-      <input type="checkbox" name="paramBCGUnitCheckbox" value="${u.clues}" style="width:15px; height:15px; accent-color: #0ea5e9;">
-      <span style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${escapeHtml(u.unidad)} <span style="font-size:10px; color:var(--md-sys-color-on-surface-variant); font-weight:500;">(${u.clues})</span></span>
-    </label>
-  `).join("");
+  const selectedSet = window.bcgAdminSelectedClues || new Set();
+
+  checklist.innerHTML = filtered.map(u => {
+    const isChecked = selectedSet.has(u.clues) ? "checked" : "";
+    return `
+      <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:var(--md-sys-color-on-surface); cursor:pointer; padding:2px 0;">
+        <input type="checkbox" name="paramBCGUnitCheckbox" value="${u.clues}" ${isChecked} onchange="window.handleBCGUnitCheckboxChange(this)" style="width:15px; height:15px; accent-color: #0ea5e9;">
+        <span style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${escapeHtml(u.unidad)} <span style="font-size:10px; color:var(--md-sys-color-on-surface-variant); font-weight:500;">(${u.clues})</span></span>
+      </label>
+    `;
+  }).join("");
 
   const selectAll = document.getElementById("paramBCGSelectAllUnits");
-  if (selectAll) selectAll.checked = false;
+  if (selectAll) {
+    const allFilteredSelected = filtered.length > 0 && filtered.every(u => selectedSet.has(u.clues));
+    selectAll.checked = allFilteredSelected;
+  }
 };
 
 window.toggleAllBCGAdminUnits = function(checked) {
   const checkboxes = document.querySelectorAll('input[name="paramBCGUnitCheckbox"]');
+  if (!window.bcgAdminSelectedClues) {
+    window.bcgAdminSelectedClues = new Set();
+  }
   checkboxes.forEach(cb => {
     cb.checked = checked;
+    if (checked) {
+      window.bcgAdminSelectedClues.add(cb.value);
+    } else {
+      window.bcgAdminSelectedClues.delete(cb.value);
+    }
   });
 };
 
 window.saveBCGUnitConfig = async function() {
-  const checkboxes = Array.from(document.querySelectorAll('input[name="paramBCGUnitCheckbox"]:checked'));
-  const selectedClues = checkboxes.map(cb => cb.value);
+  const selectedClues = Array.from(window.bcgAdminSelectedClues || []);
 
   if (!selectedClues.length) {
     showToast("Por favor marca al menos una unidad de salud", false, "bad");
@@ -19720,7 +19760,7 @@ window.saveBCGUnitConfig = async function() {
   if (document.getElementById("paramBCGShiftEspecial").checked) allowed.push("ESPECIAL");
 
   if (!allowed.length) {
-    showToast("Selecciona al menos un turno permitido para el lote", false, "bad");
+    showToast("Selecciona al menos un turno permitido para guardar la configuración", false, "bad");
     return;
   }
 
@@ -19745,9 +19785,12 @@ window.saveBCGUnitConfig = async function() {
     document.getElementById("paramBCGShiftVespertino").checked = false;
     document.getElementById("paramBCGShiftEspecial").checked = false;
     document.getElementById("paramBCGSelectAllUnits").checked = false;
-    checkboxes.forEach(cb => cb.checked = false);
+    if (window.bcgAdminSelectedClues) {
+      window.bcgAdminSelectedClues.clear();
+    }
+    filterBCGAdminUnits();
   } catch (error) {
-    console.error("Error al guardar config BCG en lote:", error);
+    console.error("Error al guardar config BCG:", error);
     showToast("Error al guardar cambios: " + error.message, false, "bad");
   } finally {
     hideOverlay();
