@@ -6028,12 +6028,12 @@
 
   <!-- Estilos premium para la barra de búsqueda animada del Directorio BCG -->
   <style>
-    .bcg-search-input {
+    #bcgDirSearchInput {
       padding-left: 48px !important;
       padding-right: 16px !important;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
-    .bcg-search-input:focus {
+    #bcgDirSearchInput:focus {
       border-color: #0ea5e9 !important;
       padding-left: 18px !important;
       box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15) !important;
@@ -6041,7 +6041,7 @@
     .bcg-search-icon {
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
-    .bcg-search-input:focus + .bcg-search-icon {
+    #bcgDirSearchInput:focus + .bcg-search-icon {
       opacity: 0 !important;
       transform: translateY(-50%) translateX(-20px) scale(0.6) !important;
     }
