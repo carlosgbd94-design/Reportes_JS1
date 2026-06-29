@@ -19644,37 +19644,45 @@ window.renderBCGDirectorioList = function() {
     let badgeHtml = "";
     if (aps.length > 0) {
       const turnosBadges = aps.map(ap => {
-        let color = "#0ea5e9";
+        let color = "#0284c7";
         let bg = "#e0f2fe";
-        if (ap.turno === "VESPERTINO") { color = "#d97706"; bg = "#fffbeb"; }
-        else if (ap.turno === "ESPECIAL") { color = "#9333ea"; bg = "#faf5ff"; }
+        let icon = "☀️";
+        if (ap.turno === "VESPERTINO") { color = "#d97706"; bg = "#fffbeb"; icon = "⛅"; }
+        else if (ap.turno === "ESPECIAL") { color = "#7c3aed"; bg = "#f5f3ff"; icon = "✨"; }
         return `
-          <div style="display:flex; flex-direction:column; align-items:center; background:${bg}; color:${color}; padding:4px 8px; border-radius:10px; min-width:85px; font-weight:800; font-size:10px; text-align:center; border:1px solid ${color}20;">
-            <span style="font-size:10px;">📅 ${ap.dia_semana}</span>
-            <span style="font-size:8px; opacity:0.75; font-weight:900; margin-top:1px;">${ap.turno}</span>
+          <div style="display:flex; align-items:center; gap:6px; background:${bg}; color:${color}; padding:6px 12px; border-radius:12px; font-weight:800; font-size:11px; border:1px solid ${color}15;">
+            <span>${icon}</span>
+            <span style="text-transform:capitalize; font-weight:900;">${ap.turno.toLowerCase()}</span>
+            <span style="opacity:0.5;">•</span>
+            <span style="font-weight:900;">${ap.dia_semana}</span>
           </div>
         `;
       }).join('');
 
       badgeHtml = `
-        <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap; border-top:1px dashed var(--md-sys-color-outline-variant); padding-top:10px; margin-top:4px;">
           ${turnosBadges}
         </div>
       `;
     } else {
       badgeHtml = `
-        <span style="font-size:11px; font-weight:800; color:#64748b; background:#f1f5f9; padding:4px 10px; border-radius:20px; text-transform:uppercase;">Sin registrar</span>
+        <div style="display:flex; align-items:center; gap:6px; background:var(--md-sys-color-surface-container); color:var(--md-sys-color-on-surface-variant); padding:6px 12px; border-radius:12px; font-weight:800; font-size:11px; border-top:1px dashed var(--md-sys-color-outline-variant); padding-top:10px; margin-top:4px; width:100%;">
+          <span>💤</span>
+          <span style="font-weight:800;">Sin aperturas registradas</span>
+        </div>
       `;
     }
 
     return `
-      <div style="padding:14px 18px; border-radius:18px; border:1px solid var(--md-sys-color-outline-variant); background:var(--md-sys-color-surface); display:flex; justify-content:space-between; align-items:center; gap:16px; box-shadow: 0 2px 8px rgba(0,0,0,0.01); transition: transform 0.2s;" class="hover:translate-y-[-1px]">
-        <div style="flex:1; min-width:0;">
-          <div style="font-weight:900; font-size:13px; color:var(--md-sys-color-on-surface); text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${escapeHtml(u.unidad)}</div>
-          <div style="font-size:10px; font-weight:700; color:var(--md-sys-color-on-surface-variant); margin-top:3px; display:flex; align-items:center; gap:6px;">
-            <span>🏢 ${escapeHtml(u.clues)}</span>
-            <span style="color:var(--md-sys-color-outline-variant);">|</span>
-            <span>📍 ${escapeHtml(u.municipio)}</span>
+      <div style="padding:16px 20px; border-radius:24px; border:1px solid var(--md-sys-color-outline-variant); background:var(--md-sys-color-surface); display:flex; flex-direction:column; gap:8px; box-shadow: 0 4px 16px rgba(0,0,0,0.015); transition: transform 0.2s;" class="hover:translate-y-[-2px]">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:900; font-size:14px; color:var(--md-sys-color-on-surface); text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${escapeHtml(u.unidad)}</div>
+            <div style="font-size:11px; font-weight:700; color:var(--md-sys-color-on-surface-variant); margin-top:4px; display:flex; align-items:center; gap:6px;">
+              <span>🏢 ${escapeHtml(u.clues)}</span>
+              <span style="color:var(--md-sys-color-outline-variant);">|</span>
+              <span>📍 ${escapeHtml(u.municipio)}</span>
+            </div>
           </div>
         </div>
         ${badgeHtml}

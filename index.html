@@ -6008,22 +6008,9 @@
           Configuración BCG
         </div>
         <div class="modalTitle" style="font-weight:900; font-size: 20px; color: white;">Apertura de BCG</div>
-        <div class="modalSub" style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 4px;">Selecciona el día de la semana y los turnos para abrir el biológico.</div>
+        <div class="modalSub" style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 4px;">Selecciona el día de la semana independiente para cada uno de los turnos autorizados.</div>
       </div>
       <div class="modalBody" style="padding: 24px; display: flex; flex-direction: column; gap: 16px; background: var(--md-sys-color-surface);">
-        <!-- Día de la semana -->
-        <div style="display: flex; flex-direction: column; gap: 6px;">
-          <label style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.05em;">Día de Apertura</label>
-          <select id="bcgAperturaDia" style="width: 100%; height: 44px; background: var(--md-sys-color-surface); border: 1.5px solid var(--md-sys-color-outline-variant); border-radius: 12px; padding: 0 12px; font-size: 14px; font-weight: 700; color: var(--md-sys-color-on-surface); outline: none;">
-            <option value="Lunes">Lunes</option>
-            <option value="Martes">Martes</option>
-            <option value="Miércoles">Miércoles</option>
-            <option value="Jueves">Jueves</option>
-            <option value="Viernes">Viernes</option>
-            <option value="Sábado">Sábado</option>
-            <option value="Domingo">Domingo</option>
-          </select>
-        </div>
         <!-- Turnos (Autorizados) -->
         <div style="display: flex; flex-direction: column; gap: 6px;">
           <label style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.05em;">Turnos Autorizados</label>
@@ -6039,6 +6026,26 @@
     </div>
   </div>
 
+  <!-- Estilos premium para la barra de búsqueda animada del Directorio BCG -->
+  <style>
+    .bcg-search-input {
+      padding-left: 44px !important;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    .bcg-search-input:focus {
+      border-color: #0ea5e9 !important;
+      padding-left: 18px !important;
+      box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15) !important;
+    }
+    .bcg-search-icon {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    .bcg-search-input:focus + .bcg-search-icon {
+      opacity: 0 !important;
+      transform: translateY(-50%) translateX(-20px) scale(0.6) !important;
+    }
+  </style>
+
   <!-- 🛡️ MODAL DIRECTORIO BCG -->
   <div class="overlay" id="bcgDirectorioOverlay" style="background: rgba(3,8,18,0.55) !important; z-index:9999; align-items: center; justify-content: center; position: fixed; inset: 0;">
     <div class="modal" style="width: 100%; max-width:640px; height: 85vh; background: var(--md-sys-color-surface); border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden; display: flex; flex-direction: column; padding: 0;">
@@ -6053,8 +6060,8 @@
       <!-- Barra de Filtros y Búsqueda -->
       <div style="padding: 16px 24px; background: var(--md-sys-color-surface-container); border-bottom: 1px solid var(--md-sys-color-outline-variant); display: flex; flex-direction: column; gap: 12px; flex-shrink: 0;">
         <div style="position: relative; width: 100%;">
-          <span class="material-symbols-rounded" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--md-sys-color-on-surface-variant); font-size: 20px;">search</span>
-          <input type="text" id="bcgDirSearchInput" placeholder="Buscar unidad o CLUES..." style="width: 100%; height: 40px; border-radius: 10px; border: 1.5px solid var(--md-sys-color-outline-variant); padding: 0 16px 0 40px; font-size: 13px; outline: none; background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface); font-weight: 700;">
+          <input type="text" id="bcgDirSearchInput" placeholder="Buscar unidad o CLUES..." style="width: 100%; height: 44px; border-radius: 14px; border: 1.5px solid var(--md-sys-color-outline-variant); padding-right: 16px; font-size: 13px; outline: none; background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface); font-weight: 700;" class="bcg-search-input">
+          <span class="material-symbols-rounded bcg-search-icon" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--md-sys-color-on-surface-variant); font-size: 20px; pointer-events: none;">search</span>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <select id="bcgDirMuniSelect" style="height: 38px; border-radius: 8px; border: 1.5px solid var(--md-sys-color-outline-variant); background: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface); padding: 0 8px; font-size: 12px; font-weight: 700; outline: none;">
