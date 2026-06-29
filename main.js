@@ -19451,24 +19451,42 @@ async function openBCGApertura() {
     if (resApertura.error) throw resApertura.error;
 
     const config = (resConfig.data && resConfig.data.length > 0) ? resConfig.data[0] : null;
-    const apertura = (resApertura.data && resApertura.data.length > 0) ? resApertura.data[0] : null;
+    const activeAperturas = resApertura.data || [];
 
-    console.log("BCG Mapeado - Config:", config, "Apertura:", apertura);
+    const aperturaMap = {};
+    activeAperturas.forEach(row => {
+      aperturaMap[row.turno] = row.dia_semana;
+    });
+
+    console.log("BCG Mapeado - Config:", config, "Aperturas registradas:", aperturaMap);
 
     const turnosPermitidos = (config && config.turnos_permitidos) ? config.turnos_permitidos : ['MATUTINO'];
-    const turnosSeleccionados = (apertura && apertura.turnos) ? apertura.turnos : [];
-    const diaSeleccionado = (apertura && apertura.dia_semana) ? apertura.dia_semana : 'Lunes';
-
-    document.getElementById("bcgAperturaDia").value = diaSeleccionado;
 
     let boxHtml = "";
     turnosPermitidos.forEach(t => {
-      const checked = turnosSeleccionados.includes(t) ? "checked" : "";
+      const currentDay = aperturaMap[t] || "NO_ABRE";
       boxHtml += `
-        <label style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; color: var(--md-sys-color-on-surface); cursor: pointer;">
-          <input type="checkbox" name="bcgTurnoCheckbox" value="${t}" ${checked} style="width: 16px; height: 16px; accent-color: #0ea5e9;">
-          <span>${t}</span>
-        </label>
+        <div class="flex items-center justify-between p-3.5 bg-surface-container-low rounded-2xl border border-outline-variant/30 transition-all hover:border-primary/20" style="display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:var(--md-sys-color-surface-container-low); border:1px solid var(--md-sys-color-outline-variant); border-radius:16px; margin-bottom:8px;">
+          <div class="flex items-center gap-3" style="display:flex; align-items:center; gap:12px;">
+            <div style="width:36px; height:36px; border-radius:10px; background:var(--md-sys-color-primary-container); color:var(--md-sys-color-primary); display:flex; align-items:center; justify-content:center;">
+              <span class="material-symbols-rounded" style="font-size: 20px;">schedule</span>
+            </div>
+            <div class="flex flex-col" style="display:flex; flex-direction:column;">
+              <span style="font-size:12px; font-weight:900; color:var(--md-sys-color-on-surface); text-transform:uppercase; tracking:0.05em;">Turno ${t}</span>
+              <span style="font-size:10px; font-weight:700; color:var(--md-sys-color-on-surface-variant); margin-top:2px;">Definir día de apertura</span>
+            </div>
+          </div>
+          <select name="bcgAperturaDaySelect" data-turno="${t}" style="width: 140px; height: 36px; background: var(--md-sys-color-surface); border: 1.5px solid var(--md-sys-color-outline-variant); border-radius: 10px; padding: 0 8px; font-size: 13px; font-weight: 800; color: var(--md-sys-color-on-surface); outline: none; cursor:pointer;">
+            <option value="NO_ABRE" ${currentDay === 'NO_ABRE' ? 'selected' : ''}>❌ No abre</option>
+            <option value="Lunes" ${currentDay === 'Lunes' ? 'selected' : ''}>Lunes</option>
+            <option value="Martes" ${currentDay === 'Martes' ? 'selected' : ''}>Martes</option>
+            <option value="Miércoles" ${currentDay === 'Miércoles' ? 'selected' : ''}>Miércoles</option>
+            <option value="Jueves" ${currentDay === 'Jueves' ? 'selected' : ''}>Jueves</option>
+            <option value="Viernes" ${currentDay === 'Viernes' ? 'selected' : ''}>Viernes</option>
+            <option value="Sábado" ${currentDay === 'Sábado' ? 'selected' : ''}>Sábado</option>
+            <option value="Domingo" ${currentDay === 'Domingo' ? 'selected' : ''}>Domingo</option>
+          </select>
+        </div>
       `;
     });
     document.getElementById("bcgAperturaTurnosBox").innerHTML = boxHtml;
@@ -19484,28 +19502,46 @@ async function openBCGApertura() {
 }
 
 async function saveBCGApertura() {
-  const dia = document.getElementById("bcgAperturaDia").value;
-  const checkboxes = Array.from(document.querySelectorAll('input[name="bcgTurnoCheckbox"]:checked'));
-  const selectedTurnos = checkboxes.map(cb => cb.value);
+  const selects = Array.from(document.querySelectorAll('select[name="bcgAperturaDaySelect"]'));
+  const rows = [];
+  const turnosToDelete = [];
 
-  if (!selectedTurnos.length) {
-    showToast("Por favor selecciona al menos un turno", false, "bad");
-    return;
-  }
-
-  showOverlay("Guardando...", "Actualizando apertura de BCG");
-  try {
-    const { error } = await window.supabase
-      .from('unidades_bcg_apertura')
-      .upsert({
+  selects.forEach(sel => {
+    const t = sel.getAttribute("data-turno");
+    const val = sel.value;
+    if (val && val !== "NO_ABRE") {
+      rows.push({
         clues: USER.clues,
-        dia_semana: dia,
-        turnos: selectedTurnos,
+        turno: t,
+        dia_semana: val,
         updated_at: new Date().toISOString(),
         updated_by: String(USER.nombre || USER.usuario || '').toUpperCase()
       });
+    } else {
+      turnosToDelete.push(t);
+    }
+  });
 
-    if (error) throw error;
+  showOverlay("Guardando...", "Actualizando apertura de BCG");
+  try {
+    // 1. Eliminar turnos desactivados
+    if (turnosToDelete.length > 0) {
+      const { error: delErr } = await window.supabase
+        .from('unidades_bcg_apertura')
+        .delete()
+        .eq('clues', USER.clues)
+        .in('turno', turnosToDelete);
+      if (delErr) throw delErr;
+    }
+
+    // 2. Insertar/Actualizar turnos activos
+    if (rows.length > 0) {
+      const { error: upsErr } = await window.supabase
+        .from('unidades_bcg_apertura')
+        .upsert(rows);
+      if (upsErr) throw upsErr;
+    }
+
     showToast("Configuración de apertura BCG guardada con éxito", true, "good");
     document.getElementById("bcgAperturaOverlay").classList.remove("show");
   } catch (error) {
@@ -19569,10 +19605,13 @@ window.renderBCGDirectorioList = function() {
   const units = window.bcgDirUnits || [];
   const aperturas = window.bcgDirAperturas || [];
 
-  // Mapeo rápido de aperturas
+  // Mapear aperturas agrupadas por CLUES
   const apMap = {};
   aperturas.forEach(ap => {
-    apMap[ap.clues] = ap;
+    if (!apMap[ap.clues]) {
+      apMap[ap.clues] = [];
+    }
+    apMap[ap.clues].push(ap);
   });
 
   const filtered = units.filter(u => {
@@ -19585,10 +19624,11 @@ window.renderBCGDirectorioList = function() {
     // Filtro municipio
     if (selectedMuni && u.municipio !== selectedMuni) return false;
 
-    // Filtro día
-    const ap = apMap[u.clues];
+    // Filtro día (buscar si algún turno abre ese día)
+    const aps = apMap[u.clues] || [];
     if (selectedDay) {
-      if (!ap || ap.dia_semana !== selectedDay) return false;
+      const matchesDay = aps.some(ap => ap.dia_semana === selectedDay);
+      if (!matchesDay) return false;
     }
 
     return true;
@@ -19600,21 +19640,25 @@ window.renderBCGDirectorioList = function() {
   }
 
   container.innerHTML = filtered.map(u => {
-    const ap = apMap[u.clues];
+    const aps = apMap[u.clues] || [];
     let badgeHtml = "";
-    if (ap) {
-      const turnosBadges = ap.turnos.map(t => {
+    if (aps.length > 0) {
+      const turnosBadges = aps.map(ap => {
         let color = "#0ea5e9";
         let bg = "#e0f2fe";
-        if (t === "VESPERTINO") { color = "#d97706"; bg = "#fffbeb"; }
-        else if (t === "ESPECIAL") { color = "#9333ea"; bg = "#faf5ff"; }
-        return `<span style="padding:2px 8px; border-radius:12px; font-size:10px; font-weight:800; background:${bg}; color:${color}; margin-left:4px; text-transform:uppercase;">${t}</span>`;
+        if (ap.turno === "VESPERTINO") { color = "#d97706"; bg = "#fffbeb"; }
+        else if (ap.turno === "ESPECIAL") { color = "#9333ea"; bg = "#faf5ff"; }
+        return `
+          <div style="display:flex; flex-direction:column; align-items:center; background:${bg}; color:${color}; padding:4px 8px; border-radius:10px; min-width:85px; font-weight:800; font-size:10px; text-align:center; border:1px solid ${color}20;">
+            <span style="font-size:10px;">📅 ${ap.dia_semana}</span>
+            <span style="font-size:8px; opacity:0.75; font-weight:900; margin-top:1px;">${ap.turno}</span>
+          </div>
+        `;
       }).join('');
 
       badgeHtml = `
-        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px; text-align:right;">
-          <span style="font-size:13px; font-weight:900; color:#0ea5e9; background:#e0f2fe; padding:4px 10px; border-radius:20px;">📅 ${ap.dia_semana}</span>
-          <div style="display:flex; gap:2px; margin-top:2px;">${turnosBadges}</div>
+        <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+          ${turnosBadges}
         </div>
       `;
     } else {
@@ -19823,7 +19867,13 @@ document.addEventListener("click", (e) => {
 });
 
 window.switchProfileCardTab = function(tab) {
-  const contents = ['datos', 'bcg', 'cuenta'];
+  const contents = ['datos', 'cuenta', 'mas'];
+  const tabsConfig = {
+    datos: { activeBg: '#f0f9ff', activeColor: '#0ea5e9' },
+    cuenta: { activeBg: '#f5f3ff', activeColor: '#8b5cf6' },
+    mas: { activeBg: '#fffbeb', activeColor: '#f59e0b' }
+  };
+
   contents.forEach(c => {
     const el = document.getElementById(`profileTabContent_${c}`);
     const btn = document.getElementById(`profileTabBtn_${c}`);
@@ -19831,9 +19881,9 @@ window.switchProfileCardTab = function(tab) {
       if (c === tab) {
         el.style.display = 'block';
         if (btn) {
-          btn.style.background = '#ffffff';
-          btn.style.color = 'var(--md-sys-color-primary, #0f172a)';
-          btn.style.boxShadow = '0 3px 8px rgba(0, 0, 0, 0.08)';
+          btn.style.background = tabsConfig[c].activeBg;
+          btn.style.color = tabsConfig[c].activeColor;
+          btn.style.boxShadow = '0 3px 8px rgba(0, 0, 0, 0.04)';
         }
       } else {
         el.style.display = 'none';
