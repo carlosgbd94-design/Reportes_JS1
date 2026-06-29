@@ -19416,10 +19416,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Modales BCG - Cerrar / Cancelar
   document.getElementById("btnCancelBCGApertura")?.addEventListener("click", () => {
-    document.getElementById("bcgAperturaOverlay").style.display = "none";
+    document.getElementById("bcgAperturaOverlay").classList.remove("show");
   });
   document.getElementById("btnCancelBCGDir")?.addEventListener("click", () => {
-    document.getElementById("bcgDirectorioOverlay").style.display = "none";
+    document.getElementById("bcgDirectorioOverlay").classList.remove("show");
   });
 
   // Guardar apertura BCG
@@ -19473,8 +19473,8 @@ async function openBCGApertura() {
     });
     document.getElementById("bcgAperturaTurnosBox").innerHTML = boxHtml;
 
-    console.log("BCG: Mostrando modal bcgAperturaOverlay");
-    document.getElementById("bcgAperturaOverlay").style.display = "flex";
+    console.log("BCG: Mostrando modal bcgAperturaOverlay (agregando clase show)");
+    document.getElementById("bcgAperturaOverlay").classList.add("show");
   } catch (error) {
     console.error("Error al cargar apertura BCG:", error);
     showToast("Error al obtener la configuración: " + (error.message || error), false, "bad");
@@ -19507,7 +19507,7 @@ async function saveBCGApertura() {
 
     if (error) throw error;
     showToast("Configuración de apertura BCG guardada con éxito", true, "good");
-    document.getElementById("bcgAperturaOverlay").style.display = "none";
+    document.getElementById("bcgAperturaOverlay").classList.remove("show");
   } catch (error) {
     console.error("Error al guardar apertura BCG:", error);
     showToast("Error al guardar cambios: " + error.message, false, "bad");
@@ -19549,8 +19549,8 @@ async function openBCGDirectorio() {
 
     renderBCGDirectorioList();
 
-    console.log("BCG: Mostrando modal bcgDirectorioOverlay");
-    document.getElementById("bcgDirectorioOverlay").style.display = "flex";
+    console.log("BCG: Mostrando modal bcgDirectorioOverlay (agregando clase show)");
+    document.getElementById("bcgDirectorioOverlay").classList.add("show");
   } catch (error) {
     console.error("Error al cargar directorio BCG:", error);
     showToast("Error al consultar el directorio: " + (error.message || error), false, "bad");
