@@ -19567,7 +19567,12 @@ async function openBCGDirectorio() {
     if (resUnits.error) throw resUnits.error;
     if (resApertura.error) throw resApertura.error;
 
-    window.bcgDirUnits = resUnits.data || [];
+    const allUnits = resUnits.data || [];
+    window.bcgDirUnits = allUnits.filter(u => {
+      const uName = String(u.unidad || "").toUpperCase();
+      const uClues = String(u.clues || "").toUpperCase();
+      return !uName.includes("UMME") && !uName.includes("FAM") && !uClues.includes("UMME") && !uClues.includes("FAM");
+    });
     window.bcgDirAperturas = resApertura.data || [];
 
     // Llenar select de municipios
@@ -19639,7 +19644,29 @@ window.renderBCGDirectorioList = function() {
     return;
   }
 
-  container.innerHTML = filtered.map(u => {
+  // Sort by municipio, then by clues
+  filtered.sort((a, b) => {
+    const muniComp = String(a.municipio || "").localeCompare(String(b.municipio || ""));
+    if (muniComp !== 0) return muniComp;
+    return String(a.clues || "").localeCompare(String(b.clues || ""));
+  });
+
+  let html = "";
+  let lastMuni = null;
+
+  filtered.forEach(u => {
+    const muni = u.municipio || "Sin Municipio";
+    if (muni !== lastMuni) {
+      lastMuni = muni;
+      html += `
+        <div style="font-size: 11px; font-weight: 900; color: #0284c7; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 8px; margin-top: 20px; margin-bottom: 8px; width: 100%;">
+          <span class="material-symbols-rounded" style="font-size: 16px;">location_on</span>
+          <span>${escapeHtml(muni)}</span>
+          <div style="flex: 1; height: 1px; background: var(--md-sys-color-outline-variant); opacity: 0.4;"></div>
+        </div>
+      `;
+    }
+
     const aps = apMap[u.clues] || [];
     let badgeHtml = "";
     if (aps.length > 0) {
@@ -19673,7 +19700,7 @@ window.renderBCGDirectorioList = function() {
       `;
     }
 
-    return `
+    html += `
       <div style="padding:16px 20px; border-radius:24px; border:1px solid var(--md-sys-color-outline-variant); background:var(--md-sys-color-surface); display:flex; flex-direction:column; gap:8px; box-shadow: 0 4px 16px rgba(0,0,0,0.015); transition: transform 0.2s;" class="hover:translate-y-[-2px]">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
           <div style="flex:1; min-width:0;">
@@ -19688,7 +19715,9 @@ window.renderBCGDirectorioList = function() {
         ${badgeHtml}
       </div>
     `;
-  }).join("");
+  });
+
+  container.innerHTML = html;
 };
 
 // ==========================================
@@ -19713,15 +19742,27 @@ async function initBCGAdminPanel() {
   if (!checklist) return;
 
   try {
-    const { data: units, error } = await window.supabase
-      .from('unidades')
-      .select('clues, unidad, municipio')
-      .eq('activo', 'SI')
-      .order('municipio')
-      .order('clues');
+    const [resUnits, resConfig] = await Promise.all([
+      window.supabase
+        .from('unidades')
+        .select('clues, unidad, municipio')
+        .eq('activo', 'SI')
+        .order('municipio')
+        .order('clues'),
+      window.supabase
+        .from('unidades_bcg_config')
+        .select('clues, turnos_permitidos')
+    ]);
 
-    if (error) throw error;
+    if (resUnits.error) throw resUnits.error;
+    if (resConfig.error) throw resConfig.error;
 
+    window.bcgAdminConfigsMap = {};
+    (resConfig.data || []).forEach(cfg => {
+      window.bcgAdminConfigsMap[cfg.clues] = cfg;
+    });
+
+    const units = resUnits.data || [];
     window.bcgAdminAllUnits = (units || []).filter(u => {
       const uName = String(u.unidad || "").toUpperCase();
       const uClues = String(u.clues || "").toUpperCase();
@@ -19783,13 +19824,33 @@ window.filterBCGAdminUnits = function() {
   }
 
   const selectedSet = window.bcgAdminSelectedClues || new Set();
+  const configsMap = window.bcgAdminConfigsMap || {};
 
   checklist.innerHTML = filtered.map(u => {
     const isChecked = selectedSet.has(u.clues) ? "checked" : "";
+    const config = configsMap[u.clues];
+    let statusHtml = "";
+    if (config && config.turnos_permitidos && config.turnos_permitidos.length > 0) {
+      const turnosShort = config.turnos_permitidos.map(t => {
+        if (t === "MATUTINO") return "☀️";
+        if (t === "VESPERTINO") return "⛅";
+        if (t === "ESPECIAL") return "✨";
+        return t;
+      }).join(" ");
+      statusHtml = `<span style="font-size:10px; font-weight:800; background:#e0f2fe; color:#0369a1; padding:2px 6px; border-radius:6px; margin-left:auto; flex-shrink:0;">${turnosShort} Activo</span>`;
+    } else {
+      statusHtml = `<span style="font-size:10px; font-weight:800; background:#fef3c7; color:#b45309; padding:2px 6px; border-radius:6px; margin-left:auto; flex-shrink:0;">⏳ Pendiente</span>`;
+    }
+
     return `
-      <label style="display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; color:var(--md-sys-color-on-surface); cursor:pointer; padding:2px 0;">
-        <input type="checkbox" name="paramBCGUnitCheckbox" value="${u.clues}" ${isChecked} onchange="window.handleBCGUnitCheckboxChange(this)" style="width:15px; height:15px; accent-color: #0ea5e9;">
-        <span style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${escapeHtml(u.unidad)} <span style="font-size:10px; color:var(--md-sys-color-on-surface-variant); font-weight:500;">(${u.clues})</span></span>
+      <label style="display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:12px; font-weight:700; color:var(--md-sys-color-on-surface); cursor:pointer; padding:4px 0; border-bottom:1px solid var(--md-sys-color-surface-container-low);">
+        <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+          <input type="checkbox" name="paramBCGUnitCheckbox" value="${u.clues}" ${isChecked} onchange="window.handleBCGUnitCheckboxChange(this)" style="width:15px; height:15px; accent-color: #0ea5e9; flex-shrink:0;">
+          <span style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap; min-width:0; flex:1;">
+            ${escapeHtml(u.unidad)} <span style="font-size:10px; color:var(--md-sys-color-on-surface-variant); font-weight:500;">(${u.clues})</span>
+          </span>
+        </div>
+        ${statusHtml}
       </label>
     `;
   }).join("");
@@ -19849,6 +19910,14 @@ window.saveBCGUnitConfig = async function() {
 
     if (error) throw error;
     showToast(`Configuración autorizada con éxito para ${selectedClues.length} unidades`, true, "good");
+
+    // Actualizar localmente el mapa de configuraciones para que los badges se actualicen al instante sin re-consultar
+    if (!window.bcgAdminConfigsMap) {
+      window.bcgAdminConfigsMap = {};
+    }
+    selectedClues.forEach(clues => {
+      window.bcgAdminConfigsMap[clues] = { clues: clues, turnos_permitidos: allowed };
+    });
 
     // Limpiar campos y checkboxes
     document.getElementById("paramBCGShiftMatutino").checked = false;
