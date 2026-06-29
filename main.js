@@ -115,7 +115,7 @@ async function handleLoginFlow(email, password) {
       mustChangePassword: mustChange
     });
 
-    if (USER?.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL", "CARAVANAS"].includes(USER.rol)) {
+    if (USER?.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL", "VISUALIZADOR_JURISDICCIONAL", "CARAVANAS"].includes(USER.rol)) {
       apiCall("silentAdminReminders").catch(() => { });
     }
 
@@ -814,7 +814,7 @@ function fixUtf8Text_(v) {
 
 function canSeeMunicipio_(user, municipio) {
   if (!user) return false;
-  if (user.rol === "ADMIN" || user.rol === "JURISDICCIONAL") return true;
+  if (user.rol === "ADMIN" || user.rol === "JURISDICCIONAL" || user.rol === "VISUALIZADOR_JURISDICCIONAL") return true;
   let allowed = Array.isArray(user.municipiosAllowed)
     ? user.municipiosAllowed.map(x => normalizeTextKey_(x)).filter(Boolean)
     : [];
@@ -1050,7 +1050,7 @@ async function resolveNotificationRecipients(record) {
 
         allSupervisors.forEach(u => {
           const uRole = String(u.rol || "").toUpperCase();
-          if (uRole === "ADMIN" || uRole === "JURISDICCIONAL") {
+          if (uRole === "ADMIN" || uRole === "JURISDICCIONAL" || uRole === "VISUALIZADOR_JURISDICCIONAL") {
             recipients.add(u.usuario);
           } else if (uRole === "MUNICIPAL" || uRole === "CARAVANAS") {
             // Verificar si este supervisor tiene acceso al municipio de la unidad
@@ -1072,7 +1072,7 @@ async function resolveNotificationRecipients(record) {
         const allUsers = await fetchActiveUsers();
         allUsers.forEach(u => {
           const uRole = String(u.rol || "").toUpperCase();
-          if (uRole === "ADMIN" || uRole === "JURISDICCIONAL") {
+          if (uRole === "ADMIN" || uRole === "JURISDICCIONAL" || uRole === "VISUALIZADOR_JURISDICCIONAL") {
             recipients.add(u.usuario);
           } else if (uRole === "MUNICIPAL" || uRole === "CARAVANAS") {
             const allowed = (() => {
@@ -1100,7 +1100,7 @@ async function resolveNotificationRecipients(record) {
         const supervisors = await fetchActiveUsers();
         supervisors.forEach(u => {
           const uRole = String(u.rol || "").toUpperCase();
-          if (uRole === "ADMIN" || uRole === "JURISDICCIONAL") {
+          if (uRole === "ADMIN" || uRole === "JURISDICCIONAL" || uRole === "VISUALIZADOR_JURISDICCIONAL") {
             recipients.add(u.usuario);
           } else if (uRole === "MUNICIPAL") {
             const allowed = (() => {
@@ -1128,7 +1128,7 @@ async function resolveNotificationRecipients(record) {
         const adminsEtc = await fetchActiveUsers();
         adminsEtc.forEach(u => {
           const uRole = String(u.rol || "").toUpperCase();
-          if (uRole === "ADMIN" || uRole === "JURISDICCIONAL" || uRole === "CARAVANAS") {
+          if (uRole === "ADMIN" || uRole === "JURISDICCIONAL" || uRole === "VISUALIZADOR_JURISDICCIONAL" || uRole === "CARAVANAS") {
             recipients.add(u.usuario);
           }
         });
@@ -2323,7 +2323,7 @@ function renderNotifComposer() {
         <option value="CLUES">🏥 Unidad Específica (CLUES)</option>
         <option value="USUARIO">👤 Usuario Específico</option>
       `;
-  } else if (role === "JURISDICCIONAL") {
+  } else if (role === "JURISDICCIONAL" || role === "VISUALIZADOR_JURISDICCIONAL") {
     options += `
         <option value="MUNICIPAL_USERS_ALL">👥 Todos los Municipales (Staff)</option>
         <option value="MUNICIPIO">🏙️ Personal de un Municipio (Staff)</option>
@@ -3014,7 +3014,7 @@ function getVisibleNotifMunicipios() {
   const seen = new Set();
   const out = [];
   const allowed = USER?.municipiosAllowed || [];
-  const isFull = allowed.includes("*") || USER?.rol === "ADMIN" || USER?.rol === "JURISDICCIONAL";
+  const isFull = allowed.includes("*") || USER?.rol === "ADMIN" || USER?.rol === "JURISDICCIONAL" || USER?.rol === "VISUALIZADOR_JURISDICCIONAL";
 
   (NOTIF_UNIT_CATALOG || []).forEach(x => {
     const m = String(x.municipio || "").trim();
@@ -3066,7 +3066,7 @@ function refillNotifUsers() {
     users = getNotifUsersByFilters({ municipio, clues });
 
     // Priorizar usuarios MUNICIPAL si el remitente es JURISDICCIONAL
-    if (USER?.rol === "JURISDICCIONAL") {
+    if (USER?.rol === "JURISDICCIONAL" || USER?.rol === "VISUALIZADOR_JURISDICCIONAL") {
       users.sort((a, b) => {
         const isMunicipalA = (a.rol === "MUNICIPAL") ? 0 : 1;
         const isMunicipalB = (b.rol === "MUNICIPAL") ? 0 : 1;
@@ -3079,7 +3079,7 @@ function refillNotifUsers() {
     users = getNotifUsersByFilters({ municipio });
 
     // Si es Jurisdiccional y alcance Municipio, solo mostrar usuarios MUNICIPAL
-    if (USER?.rol === "JURISDICCIONAL") {
+    if (USER?.rol === "JURISDICCIONAL" || USER?.rol === "VISUALIZADOR_JURISDICCIONAL") {
       users = users.filter(x => x.rol === "MUNICIPAL");
     }
   } else if (scope === "ALL_MY_UNITS") {
@@ -3130,7 +3130,7 @@ function refreshNotifScopeUi() {
   const scopeSel = $("notifTargetScope");
 
   // Restricciones perfil JURISDICCIONAL
-  if (USER?.rol === "JURISDICCIONAL" && scopeSel) {
+  if ((USER?.rol === "JURISDICCIONAL" || USER?.rol === "VISUALIZADOR_JURISDICCIONAL") && scopeSel) {
     // 1. Ocultar CLUES (unidades individuales)
     const optClues = scopeSel.querySelector('option[value="CLUES"]');
     if (optClues) optClues.style.display = "none";
@@ -5490,7 +5490,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
           query = query.eq('clues', USER.clues);
         } else if (USER.rol === 'CARAVANAS') {
           return { ok: true, data: [] };
-        } else if (USER.rol === 'MUNICIPAL' || USER.rol === 'JURISDICCIONAL') {
+        } else if (USER.rol === 'MUNICIPAL' || USER.rol === 'JURISDICCIONAL' || USER.rol === 'VISUALIZADOR_JURISDICCIONAL') {
           const mList = Array.isArray(USER?.municipiosAllowed) ? USER.municipiosAllowed : [];
           if (mList.includes('*')) {
             // No filter, full access
@@ -5960,7 +5960,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
         if (filesErr) throw filesErr;
 
         // --- FILTRADO DE JERARQUÍA (Senior Logic) ---
-        if (role === "ADMIN" || role === "JURISDICCIONAL") {
+        if (role === "ADMIN" || role === "JURISDICCIONAL" || role === "VISUALIZADOR_JURISDICCIONAL") {
           // Acceso total
         } else if (role === "UNIDAD") {
           // Sólo ven lo de su CLUES
@@ -6745,7 +6745,7 @@ async function refreshAfterMutation(options = {}) {
     }
 
     const role = String((USER && USER.rol) || "").trim().toUpperCase();
-    const isOps = role === "ADMIN" || role === "MUNICIPAL" || role === "JURISDICCIONAL";
+    const isOps = role === "ADMIN" || role === "MUNICIPAL" || role === "JURISDICCIONAL" || role === "VISUALIZADOR_JURISDICCIONAL";
 
     if (isOps) {
       scheduleOpsPrewarm(260);
@@ -6780,7 +6780,7 @@ function scheduleOpsPrewarm(delay = 220) {
 
 async function prewarmOpsData() {
   const role = String((USER && USER.rol) || "").trim().toUpperCase();
-  const isOps = role === "ADMIN" || role === "MUNICIPAL" || role === "JURISDICCIONAL";
+  const isOps = role === "ADMIN" || role === "MUNICIPAL" || role === "JURISDICCIONAL" || role === "VISUALIZADOR_JURISDICCIONAL";
   if (!isOps || !TOKEN) return;
 
   const summaryFecha = $("summaryFecha")?.value || todayYmdLocal();
@@ -7186,8 +7186,8 @@ async function hydrateSessionUi(user, status, opts = {}) {
   // Al usar apiCall para múltiples cosas aquí, el API_BATCH_TIMER las agrupará en UN solo POST
   try {
     // ? Visibilidad de pestañas por Rol
-    const isOps = user?.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL", "CARAVANAS"].includes(user.rol);
-    const isLotesAdmin = user?.rol && ["ADMIN", "JURISDICCIONAL"].includes(user.rol);
+    const isOps = user?.rol && ["ADMIN", "MUNICIPAL", "JURISDICCIONAL", "VISUALIZADOR_JURISDICCIONAL", "CARAVANAS"].includes(user.rol);
+    const isLotesAdmin = user?.rol && ["ADMIN", "JURISDICCIONAL"].includes(user.rol); // VISUALIZADOR_JURISDICCIONAL does NOT see lotes
 
     toggleEl("tabLOTES", isLotesAdmin, "flex");
     if (!isLotesAdmin) toggleEl("panelLOTES", false);
@@ -7253,7 +7253,7 @@ async function hydrateSessionUi(user, status, opts = {}) {
     await loadNotifications({ silent: true });
     startNotificationsAutoRefresh();
 
-    if (user && (user.rol === "ADMIN" || user.rol === "MUNICIPAL" || user.rol === "JURISDICCIONAL")) {
+    if (user && (user.rol === "ADMIN" || user.rol === "MUNICIPAL" || user.rol === "JURISDICCIONAL" || user.rol === "VISUALIZADOR_JURISDICCIONAL")) {
       await loadNotifUnitCatalog();
       refreshNotifScopeUi();
       
@@ -7336,7 +7336,7 @@ async function loadBatchesForSession(user) {
     const seenLotes = new Set();
     UNIT_BATCHES = allLotes.filter(l => {
       let isMatch = false;
-      if (AppState.rol === "ADMIN" || AppState.rol === "JURISDICCIONAL" || !AppState.municipio) {
+      if (AppState.rol === "ADMIN" || AppState.rol === "JURISDICCIONAL" || AppState.rol === "VISUALIZADOR_JURISDICCIONAL" || !AppState.municipio) {
         isMatch = true;
       } else if (l.municipio) {
         const loteMuni = normalizeTextKey_(l.municipio);
@@ -8701,7 +8701,7 @@ function buildUserFromPerfil(uid, email, perfil) {
 
   // Derivar municipiosAllowed basándose en el rol
   let municipiosAllowed = [];
-  if (rol === "ADMIN" || rol === "JURISDICCIONAL") {
+  if (rol === "ADMIN" || rol === "JURISDICCIONAL" || rol === "VISUALIZADOR_JURISDICCIONAL") {
     municipiosAllowed = ["*"]; // Acceso total
   } else if (rol === "MUNICIPAL") {
     // Soporte para múltiples municipios
@@ -8766,7 +8766,7 @@ function buildUserFromPerfil(uid, email, perfil) {
 function canSeeMunicipio_(user, targetMuni) {
   if (!user || !targetMuni) return false;
   const role = String(user.rol || "").toUpperCase();
-  if (role === "ADMIN" || role === "JURISDICCIONAL") return true;
+  if (role === "ADMIN" || role === "JURISDICCIONAL" || role === "VISUALIZADOR_JURISDICCIONAL") return true;
 
   let allowed = Array.isArray(user.municipiosAllowed) ? user.municipiosAllowed : [];
   if (allowed.length === 0 && user.municipio) {
@@ -9223,7 +9223,7 @@ function paintStatusChips(status) {
 
     if (role === "MUNICIPAL") {
       tooltipText = "Promedio de Cumplimiento Municipal: Avance global ponderado de las unidades correspondientes a tu municipio durante el mes.";
-    } else if (role === "ADMIN" || role === "JURISDICCIONAL") {
+    } else if (role === "ADMIN" || role === "JURISDICCIONAL" || role === "VISUALIZADOR_JURISDICCIONAL") {
       tooltipText = "Promedio de Cumplimiento Global/Jurisdiccional: Avance acumulado de todas las unidades activas.";
     }
     container.title = tooltipText;
@@ -9466,7 +9466,7 @@ function refreshExportSplitUi() {
   if (!wrap || !chk) return;
 
   // Ahora visible para ADMIN, JURISDICCIONAL y MUNICIPAL para CONS, SR (Existencia) y BIO (Pedido)
-  const visible = (rol === "ADMIN" || rol === "JURISDICCIONAL" || rol === "MUNICIPAL") && (tipo === "CONS" || tipo === "SR" || tipo === "BIO");
+  const visible = (rol === "ADMIN" || rol === "JURISDICCIONAL" || rol === "VISUALIZADOR_JURISDICCIONAL" || rol === "MUNICIPAL") && (tipo === "CONS" || tipo === "SR" || tipo === "BIO");
 
   wrap.style.display = visible ? "block" : "none";
 
@@ -10197,7 +10197,7 @@ async function loadExportOptions() {
 
   if (!box || !wrap) return;
 
-  if (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL" && USER.rol !== "JURISDICCIONAL") {
+  if (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL" && USER.rol !== "JURISDICCIONAL" && USER.rol !== "VISUALIZADOR_JURISDICCIONAL") {
     box.style.display = "none";
     return;
   }
@@ -10242,7 +10242,7 @@ async function loadExportOptions() {
   wrap.appendChild(grid);
   box.style.display = "block";
 
-  if (USER.rol === "ADMIN" || USER.rol === "JURISDICCIONAL") {
+  if (USER.rol === "ADMIN" || USER.rol === "JURISDICCIONAL" || USER.rol === "VISUALIZADOR_JURISDICCIONAL") {
     document.querySelectorAll(".exportMunicipioChk").forEach(chk => chk.checked = true);
   }
 }
@@ -11174,7 +11174,7 @@ function populateHistoryMunicipioFilter(user) {
   const role = String(user.rol || "").toUpperCase();
   const allowed = Array.isArray(user.municipiosAllowed) ? user.municipiosAllowed : [];
 
-  if (role === "ADMIN" || role === "JURISDICCIONAL") {
+  if (role === "ADMIN" || role === "JURISDICCIONAL" || role === "VISUALIZADOR_JURISDICCIONAL") {
     // Admin/Jurisdiccional see all 4 municipalities, plus a "Todos" option
     select.innerHTML = `
       <option value="TODOS">Todos los municipios</option>
@@ -11265,7 +11265,7 @@ function setLoggedInUI(user, status) {
     if ($("munTxt")) $("munTxt").textContent = "Todos";
     refreshUsers().catch(console.error);
     refreshBulkBioSetup?.();
-  } else if (user.rol === "JURISDICCIONAL") {
+  } else if (user.rol === "JURISDICCIONAL" || user.rol === "VISUALIZADOR_JURISDICCIONAL") {
     if ($("munTxt")) $("munTxt").textContent = "Todos";
   } else if (user.rol === "MUNICIPAL") {
     if ($("munTxt")) $("munTxt").textContent = (user.municipio || "—").replace(/^Municipio\(s\):\s*/i, "").replace(/^Municipio:\s*/i, "");
@@ -11279,6 +11279,7 @@ function setLoggedInUI(user, status) {
 
   const isAdmin = role === "ADMIN";
   const isJurisdiccional = role === "JURISDICCIONAL";
+  const isVisualizadorJurisdiccional = role === "VISUALIZADOR_JURISDICCIONAL";
   const isMunicipal = role === "MUNICIPAL";
   const isUnidad = role === "UNIDAD";
   const isCaravanas = role === "CARAVANAS";
@@ -11306,13 +11307,13 @@ function setLoggedInUI(user, status) {
 
 
   if ($("panelCAP")) $("panelCAP").style.display = isUnidad ? "block" : "none";
-  const canSeeLotes = (isAdmin || isJurisdiccional);
+  const canSeeLotes = (isAdmin || isJurisdiccional); // VISUALIZADOR_JURISDICCIONAL does NOT see lotes
   const canSeeAdminCenter = isAdmin;
-  const canSeeNotifsCenter = (isAdmin || isJurisdiccional || isMunicipal || isCaravanas);
+  const canSeeNotifsCenter = (isAdmin || isJurisdiccional || isMunicipal || isCaravanas); // VISUALIZADOR_JURISDICCIONAL does NOT compose/see Avisos
   const canSeePinol = (isAdmin || isMunicipal);
-  const canExport = (isAdmin || isJurisdiccional || isMunicipal || isCaravanas);
+  const canExport = (isAdmin || isJurisdiccional || isVisualizadorJurisdiccional || isMunicipal || isCaravanas);
 
-  if ($("panelAdminOpsTabs")) $("panelAdminOpsTabs").style.display = (isAdmin || isJurisdiccional || isMunicipal || isCaravanas) ? "block" : "none";
+  if ($("panelAdminOpsTabs")) $("panelAdminOpsTabs").style.display = (isAdmin || isJurisdiccional || isVisualizadorJurisdiccional || isMunicipal || isCaravanas) ? "block" : "none";
   if ($("panelUnidadOpsTabs")) $("panelUnidadOpsTabs").style.display = isUnidad ? "block" : "none";
   if ($("tabLOTES")) $("tabLOTES").style.display = canSeeLotes ? "flex" : "none";
   if ($("tabOPS_PINOL")) $("tabOPS_PINOL").style.display = canSeePinol ? "flex" : "none";
@@ -11334,14 +11335,14 @@ function setLoggedInUI(user, status) {
     $("notifListWrap").style.display = "none";
   }
   if ($("notifComposerPane")) {
-    $("notifComposerPane").style.display = (isAdmin || isJurisdiccional || isMunicipal || isCaravanas) ? "block" : "none";
+    $("notifComposerPane").style.display = (isAdmin || isJurisdiccional || isMunicipal || isCaravanas) ? "block" : "none"; // VISUALIZADOR_JURISDICCIONAL does NOT compose notifications
   }
 
   if ($("notifRoleKpi")) {
     $("notifRoleKpi").textContent = user.rol || "—";
   }
 
-  if ($("panelNOTIFS")) $("panelNOTIFS").style.display = (isAdmin || isJurisdiccional || isMunicipal || isCaravanas) ? "" : "none";
+  if ($("panelNOTIFS")) $("panelNOTIFS").style.display = (isAdmin || isJurisdiccional || isMunicipal || isCaravanas) ? "" : "none"; // VISUALIZADOR_JURISDICCIONAL does NOT see Avisos
 
 
   syncTopNotifMirror();
@@ -13594,7 +13595,7 @@ if (createRol && createUnidad && createClues && createMunicipio) {
     createClues.value = "";
     createUnidad.innerHTML = '<option value="">Selecciona la Unidad</option>';
 
-    if (val === "JURISDICCIONAL" || val === "MUNICIPAL" || val === "CARAVANAS") {
+    if (val === "JURISDICCIONAL" || val === "VISUALIZADOR_JURISDICCIONAL" || val === "MUNICIPAL" || val === "CARAVANAS") {
       createUnidad.innerHTML = '<option value="OFICINAS DE LA JURISDICCIÓN SANITARIA 1">OFICINAS DE LA JURISDICCIÓN SANITARIA 1</option>';
       createUnidad.value = "OFICINAS DE LA JURISDICCIÓN SANITARIA 1";
       createClues.value = "QTSSA012154";
@@ -13604,6 +13605,10 @@ if (createRol && createUnidad && createClues && createMunicipio) {
         createMunicipio.value = "";
         createMunicipio.disabled = true;
         createUsuarioID.value = "QTSSA012154_JURISDICCIONAL";
+      } else if (val === "VISUALIZADOR_JURISDICCIONAL") {
+        createMunicipio.value = "";
+        createMunicipio.disabled = true;
+        createUsuarioID.value = "QTSSA012154_VIZ_JUR";
       } else if (val === "CARAVANAS") {
         createMunicipio.value = "";
         createMunicipio.disabled = true;
@@ -14971,7 +14976,7 @@ function renderHistoryMetrics(data) {
   const separarMuni = $("histSepararMunicipio")?.checked;
 
   // Render Podium Area
-  if ((role === "ADMIN" || role === "JURISDICCIONAL") && $("adminPodiumArea")) {
+  if ((role === "ADMIN" || role === "JURISDICCIONAL" || role === "VISUALIZADOR_JURISDICCIONAL") && $("adminPodiumArea")) {
     if (separarMuni) {
       // 3-step Municipality Average Podium using all rows (global comparison)
       const muniScores = {};
@@ -15311,7 +15316,7 @@ async function watchPinolRealtime() {
 }
 
 async function watchCaptureSummaryRealtime() {
-  if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL" && USER.rol !== "JURISDICCIONAL")) return;
+  if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL" && USER.rol !== "JURISDICCIONAL" && USER.rol !== "VISUALIZADOR_JURISDICCIONAL")) return;
 
   if (!$("panelCaptureSummary")) return;
   if (LIVE_STATE.summaryWatching) return;
@@ -15443,7 +15448,7 @@ async function watchUnidadTodayRealtime() {
 }
 
 async function watchHistoryRealtimeLight() {
-  if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL" && USER.rol !== "JURISDICCIONAL")) return;
+  if (!USER || (USER.rol !== "ADMIN" && USER.rol !== "MUNICIPAL" && USER.rol !== "JURISDICCIONAL" && USER.rol !== "VISUALIZADOR_JURISDICCIONAL")) return;
 
   if (LIVE_STATE.historyWatching) return;
 
@@ -17126,7 +17131,7 @@ function filterArchivosGrid() {
   const myMunicipio = (typeof USER !== "undefined" && USER && USER.municipio) ? USER.municipio : "";
   const isUnidad = role === "UNIDAD";
   const isMunicipal = role === "MUNICIPAL";
-  const isAdmin = role === "ADMIN" || role === "JURISDICCIONAL";
+  const isAdmin = role === "ADMIN" || role === "JURISDICCIONAL" || role === "VISUALIZADOR_JURISDICCIONAL";
 
   // 🛡️ Para MUNICIPAL: construir set de CLUES permitidas basándose en sus municipios autorizados
   let allowedCluesSet = null;
