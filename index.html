@@ -5760,40 +5760,36 @@
     <div
       class="w-full max-w-[500px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
       <div
-        class="p-8 pb-6 bg-gradient-to-br from-status-warning/10 to-transparent border-b border-outline-variant/20">
+        class="p-8 pb-6 bg-gradient-to-br from-status-error/10 to-transparent border-b border-outline-variant/20">
         <div
-          class="flex items-center gap-2 text-status-warning text-xs font-bold uppercase tracking-[0.1em] mb-3">
-          <span class="material-symbols-rounded text-base">inventory_2</span>
-          Aviso de Stock
+          class="flex items-center gap-2 text-status-error text-xs font-bold uppercase tracking-[0.1em] mb-3">
+          <span class="material-symbols-rounded text-base">block</span>
+          Pedido Bloqueado
         </div>
-        <div class="text-[22px] font-extrabold text-primary tracking-tight mb-2">Verificación de abasto</div>
+        <div class="text-[22px] font-extrabold text-primary tracking-tight mb-2">Verificación de promedio</div>
         <div class="text-[13px] font-medium text-surface-onVariant/80" id="bioConfirmIntro">
-          Algunos biológicos presentan stock estimado por debajo del promedio mensual de consumo.
+          Algunos biológicos presentan cantidades por debajo del promedio mensual de consumo.
         </div>
       </div>
 
       <div class="p-8 bg-surface-variant/20 max-h-[60vh] overflow-y-auto">
         <div id="bioConfirmList" class="flex flex-col gap-3"></div>
         <div
-          class="mt-6 p-4 bg-status-warning/10 border border-status-warning/20 rounded-xl text-[13px] text-surface-onVariant leading-relaxed">
-          <strong class="text-status-warning block mb-1">⚠️ Responsabilidad de la unidad</strong>
-          La unidad de salud asume la plena responsabilidad de garantizar el abasto continuo de los biológicos
-          enlistados. Si el stock resulta insuficiente antes del próximo pedido, recaerá en la unidad la
-          responsabilidad de gestionar el reabasto de forma oportuna. ¿Confirma que desea continuar con el
-          pedido tal como está?
+          class="mt-6 p-4 bg-status-error/10 border border-status-error/20 rounded-xl text-[13px] text-surface-onVariant leading-relaxed">
+          <strong class="text-status-error block mb-1">🚫 Ajuste de cantidades requerido</strong>
+          No se permite enviar o guardar pedidos con cantidades inferiores al promedio mensual. Por favor, corrija las cantidades en el formulario para poder guardar su pedido.
         </div>
       </div>
 
       <div class="flex items-center justify-end gap-3 p-6 bg-surface border-t border-outline-variant/30">
         <button
-          class="bg-transparent text-primary hover:bg-primary/5 px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer"
+          class="bg-[#d97706] text-primary-on hover:bg-[#b45309] hover:-translate-y-0.5 active:scale-[0.98] px-6 h-[46px] rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md3-1 border-none cursor-pointer w-full focus:outline-none focus:ring-2 focus:ring-[#d97706]/30"
           id="btnBioConfirmCancel" type="button">
-          <span class="material-symbols-rounded text-[20px]">edit</span> Revisar y corregir
+          <span class="material-symbols-rounded text-[20px]">edit</span> Regresar a modificar y corregir el pedido
         </button>
         <button
-          class="bg-[#d97706] text-primary-on hover:bg-[#b45309] hover:-translate-y-0.5 px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all shadow-md3-1 border-none cursor-pointer"
+          class="hidden"
           id="btnBioConfirmAccept" type="button">
-          <span class="material-symbols-rounded text-[20px]">done_all</span> Confirmo y Guardo
         </button>
       </div>
     </div>

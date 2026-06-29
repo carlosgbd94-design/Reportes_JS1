@@ -7377,6 +7377,10 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.bio-card-inputs-row {
+  display: contents;
+}
+
 .bio-card:hover { 
   border-color: var(--md-sys-color-primary, #0f172a); 
   transform: translateX(4px); 
