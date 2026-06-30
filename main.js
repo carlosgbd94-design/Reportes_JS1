@@ -1005,7 +1005,7 @@ async function resolveNotificationRecipients(record) {
   try {
     // Helper: obtener todos los usuarios activos
     const fetchActiveUsers = async (filter = {}) => {
-      let q = supabase.from('usuarios_legacy').select('usuario, rol, clues, municipio, municipios_allowed').eq('activo', 'SI');
+      let q = supabase.from('perfiles').select('usuario, rol, clues, municipio, municipios_allowed').eq('activo', 'SI');
       if (filter.rol) q = q.eq('rol', filter.rol);
       if (filter.clues) q = q.eq('clues', filter.clues);
       const { data } = await q;
@@ -1149,9 +1149,11 @@ async function resolveNotificationRecipients(record) {
       }
     }
 
-    // El remitente también recibe la notificación si es admin (para visibilidad)
-    // No es obligatorio, pero mantiene consistencia
-    if (fromUser) recipients.add(fromUser);
+    // El remitente no debe recibir su propia notificación (evitar auto-spam)
+    // a menos que sea el destinatario directo en scope USUARIO
+    if (fromUser && !(scope === "USUARIO" && targetUser === fromUser)) {
+      recipients.delete(fromUser);
+    }
 
     return Array.from(recipients).filter(Boolean);
   } catch (e) {
@@ -1739,7 +1741,11 @@ function buildNotificationsHtml(items = []) {
         ? `<button type="button" class="notifMiniBtn good" title="Confirmar" onclick="confirmPinolReceiptFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">task_alt</span></button>`
         : ``
       }
-              ${!showConfirmPinol && !pinolConfirmed && !isPinolAck && !isRead && !isDesabasto
+              ${(!showConfirmPinol && !pinolConfirmed && !isPinolAck && !isRead && !isDesabasto && meta && meta.event === 'PINOL_SOLICITADO')
+        ? `<button type="button" class="notifMiniBtn primary" title="Ir a surtir solicitud" onclick="goToPinolPanelFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">local_shipping</span></button>`
+        : ``
+      }
+              ${!showConfirmPinol && !pinolConfirmed && !isPinolAck && !isRead && !isDesabasto && !(meta && meta.event === 'PINOL_SOLICITADO')
         ? `<button type="button" class="notifMiniBtn primary" title="Leída" onclick="markNotificationReadFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">done</span></button>`
         : ``
       }
@@ -2239,6 +2245,15 @@ async function markNotificationReadFlow(id) {
     showToast(e.message || "No se pudo marcar como leída", false);
   } finally {
     hideOverlay();
+  }
+}
+
+async function goToPinolPanelFlow(notifId) {
+  if (typeof markNotificationReadFlow === "function") {
+    await markNotificationReadFlow(notifId);
+  }
+  if (typeof activateOpsTab === "function") {
+    activateOpsTab("PINOL");
   }
 }
 
@@ -5544,6 +5559,21 @@ async function supabaseRequest(action = "", payload, options = {}) {
         if (error) throw error;
 
         // La notificación se genera automáticamente en Supabase mediante Trigger (notify_admin_on_pinol)
+        // Hacemos el fan-out de la notificación en tiempo real
+        try {
+          const notifId = 'NOTIF:PINOL_REQ:' + record.id;
+          const { data: notif } = await supabase.from('notificaciones').select('*').eq('id', notifId).maybeSingle();
+          if (notif) {
+            const recipients = await resolveNotificationRecipients(notif);
+            await fanOutNotification(notif.id, recipients);
+            console.log(`[Notif] Solicitud Pinol fan-out exitoso → ${recipients.length} destinatarios`);
+          } else {
+            console.warn(`[Notif] No se encontró la notificación autogenerada ${notifId}`);
+          }
+        } catch (notifErr) {
+          console.error("[Notif] Error al realizar fan-out de la notificación de pinol:", notifErr);
+        }
+
         return { ok: true };
       }
 
@@ -6096,11 +6126,14 @@ async function supabaseRequest(action = "", payload, options = {}) {
 
         // Auto-marcar como leída la solicitud inicial para MI perfil
         const reqNotifId = 'NOTIF:PINOL_REQ:' + payload.id;
-        await supabase.from('notificaciones_perfil')
-          .update({ status: 'READ', read_ts: new Date().toISOString() })
-          .eq('notificacion_id', reqNotifId)
-          .eq('usuario', USER.usuario)
-          .catch(() => { });
+        try {
+          await supabase.from('notificaciones_perfil')
+            .update({ status: 'READ', read_ts: new Date().toISOString() })
+            .eq('notificacion_id', reqNotifId)
+            .eq('usuario', USER.usuario);
+        } catch (e) {
+          console.warn("[Notif] Error auto-marking request read:", e);
+        }
 
         // Crear notificación para la unidad + fan-out
         const { data: sol } = await supabase.from('pinol_solicitudes').select('*').eq('id', payload.id).single();
@@ -7279,8 +7312,8 @@ function setupRealtimeCommandCenter() {
 
   // Subscribe to changes on report tables
   realtimeChannel = window.supabase.channel('public:reportes_sr')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'reportes_sr' }, payload => handleRealtimeChange(payload))
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'reportes_cons' }, payload => handleRealtimeChange(payload))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'biologicos_existencia' }, payload => handleRealtimeChange(payload))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'consumibles' }, payload => handleRealtimeChange(payload))
     .subscribe((status) => {
       console.log("[Realtime] Status:", status);
     });
@@ -17956,8 +17989,10 @@ function syncCommandHub() {
       reasonInvalid = "La ventana de pedidos de biológico se encuentra cerrada.";
     }
     isSaveDisabled = !isValidDate || (HAS_SAVED_BIO && !EDIT_BIO);
+  } else if (captureTab === "PINOL") {
+    const flowStatus = getPinolFlowStatus();
+    isSaveDisabled = (flowStatus !== "NONE");
   }
-  // PINOL: always valid date (no window restriction for solicitudes)
 
   // Lógica del Status Chip (¿Está guardado hoy?)
   let isSaved = false;
@@ -18059,6 +18094,10 @@ function syncCommandHub() {
         if (captureTab === "SR") await performSaveSR();
         if (captureTab === "CONS") await performSaveCONS();
         if (captureTab === "BIO") await performSaveBIO();
+        if (captureTab === "PINOL") {
+          const btnSavePINOL = document.getElementById("btnSavePINOL");
+          if (btnSavePINOL) btnSavePINOL.click();
+        }
       };
     }
 
