@@ -14910,22 +14910,56 @@ function updateCumplimientoMedalTone(userRank, userTier = "") {
 
   container.classList.remove("podium-gold-chip", "podium-silver-chip", "podium-bronze-chip", "podium-steel-chip", "podium-emerald-chip", "podium-diamond-chip");
 
+  const badge = $("bCumplimientoRankBadge");
+  if (badge) {
+    badge.className = "text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider hidden";
+  }
+
   const normalizedTier = String(userTier || "").trim().toLowerCase();
+
+  if (badge && normalizedTier) {
+    badge.classList.remove("hidden");
+  }
 
   if (normalizedTier === "diamante") {
     container.classList.add("podium-diamond-chip");
+    if (badge) {
+      badge.textContent = "Rango Diamante";
+      badge.classList.add("badge-diamante");
+    }
   } else if (normalizedTier === "oro") {
     container.classList.add("podium-gold-chip");
+    if (badge) {
+      badge.textContent = "Rango Oro";
+      badge.classList.add("badge-oro");
+    }
   } else if (normalizedTier === "plata") {
     container.classList.add("podium-silver-chip");
+    if (badge) {
+      badge.textContent = "Rango Plata";
+      badge.classList.add("badge-plata");
+    }
   } else if (normalizedTier === "bronce") {
     container.classList.add("podium-bronze-chip");
+    if (badge) {
+      badge.textContent = "Rango Bronce";
+      badge.classList.add("badge-bronce");
+    }
   } else if (normalizedTier === "acero") {
     container.classList.add("podium-steel-chip");
+    if (badge) {
+      badge.textContent = "Rango Acero";
+      badge.classList.add("badge-acero");
+    }
   } else if (normalizedTier === "jade") {
     container.classList.add("podium-emerald-chip");
+    if (badge) {
+      badge.textContent = "Rango Jade";
+      badge.classList.add("badge-jade");
+    }
   }
 }
+window.updateCumplimientoMedalTone = updateCumplimientoMedalTone;
 
 function renderHistoryMetrics(data) {
   const getProgressBg = (pct) => {
@@ -15619,7 +15653,7 @@ function getWeatherDetails(code, isDay) {
     cloudyNight: "https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&q=80&w=600",
     rain: "https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&q=80&w=600",
     snow: "https://images.unsplash.com/photo-1478265409131-1f65c88f965c?auto=format&fit=crop&q=80&w=600",
-    thunder: "https://images.unsplash.com/photo-1605727216801-e27ce1d0ce49?auto=format&fit=crop&q=80&w=600",
+    thunder: "https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?auto=format&fit=crop&q=80&w=600",
     fog: "https://images.unsplash.com/photo-1487621167305-5d248087c724?auto=format&fit=crop&q=80&w=600"
   };
 

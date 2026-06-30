@@ -973,9 +973,8 @@
 
                   <div class="flex flex-col leading-tight min-w-0">
                     <span class="text-[9px] font-black uppercase tracking-widest opacity-40 mb-1">Cumplimiento</span>
-                    <div class="flex items-baseline gap-1">
-                      <span id="dayTxt" class="text-xl font-black tracking-tighter text-primary">0%</span>
-                    </div>
+                    <span id="dayTxt" class="text-xl font-black tracking-tighter text-primary">0%</span>
+                    <span id="bCumplimientoRankBadge" class="text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider mt-1 self-start hidden"></span>
                   </div>
                 </div>
                 <div class="flex flex-col items-end gap-1 min-w-0 ml-auto justify-center">
@@ -4998,7 +4997,7 @@
       const medalsEl = document.getElementById("bCumplimientoMedals");
       if (!container || !textEl) return console.error("Compliance card elements not found!");
 
-      // Reset classes
+      // Reset classes and tones
       container.classList.remove("good", "ok", "warn", "bad", "podium-gold-chip", "podium-silver-chip", "podium-bronze-chip", "podium-steel-chip", "podium-emerald-chip", "podium-diamond-chip");
       container.removeAttribute("data-tone");
 
@@ -5051,35 +5050,47 @@
         }
       }
 
-      switch (type.toLowerCase()) {
+      const normType = type.toLowerCase();
+      if (window.updateCumplimientoMedalTone) {
+        window.updateCumplimientoMedalTone(undefined, normType);
+      } else {
+        const classMap = {
+          diamante: "podium-diamond-chip",
+          oro: "podium-gold-chip",
+          plata: "podium-silver-chip",
+          bronce: "podium-bronze-chip",
+          acero: "podium-steel-chip",
+          jade: "podium-emerald-chip"
+        };
+        if (classMap[normType]) {
+          container.classList.add(classMap[normType]);
+        } else {
+          container.classList.add("good");
+          container.setAttribute("data-tone", "good");
+        }
+      }
+
+      switch (normType) {
         case "diamante":
-          container.classList.add("podium-diamond-chip");
           textEl.textContent = "100%";
           break;
         case "oro":
-          container.classList.add("podium-gold-chip");
           textEl.textContent = "95%";
           break;
         case "plata":
-          container.classList.add("podium-silver-chip");
           textEl.textContent = "88%";
           break;
         case "bronce":
-          container.classList.add("podium-bronze-chip");
           textEl.textContent = "78%";
           break;
         case "acero":
-          container.classList.add("podium-steel-chip");
           textEl.textContent = "72%";
           break;
         case "jade":
         case "esmeralda":
-          container.classList.add("podium-emerald-chip");
           textEl.textContent = "70%";
           break;
         default:
-          container.classList.add("good");
-          container.setAttribute("data-tone", "good");
           textEl.textContent = "85%";
           if (medalsEl) medalsEl.innerHTML = "";
           break;

@@ -4418,18 +4418,18 @@ input[disabled] {
 }
 
 /* Evitar que las reglas de data-tone pisen los estilos de los textos y medallas en las chips premium */
-.podium-gold-chip #dayTxt, .podium-gold-chip span:not(.material-symbols-rounded) { color: #b45309 !important; }
-.podium-silver-chip #dayTxt, .podium-silver-chip span:not(.material-symbols-rounded) { color: #475569 !important; }
-.podium-bronze-chip #dayTxt, .podium-bronze-chip span:not(.material-symbols-rounded) { color: #9a3412 !important; }
-.podium-steel-chip #dayTxt, .podium-steel-chip span:not(.material-symbols-rounded) { color: #0f766e !important; }
-.podium-emerald-chip #dayTxt, .podium-emerald-chip span:not(.material-symbols-rounded) { color: #047857 !important; }
+.podium-gold-chip #dayTxt, .podium-gold-chip span:not(.material-symbols-rounded):not(#bCumplimientoRankBadge) { color: #b45309 !important; }
+.podium-silver-chip #dayTxt, .podium-silver-chip span:not(.material-symbols-rounded):not(#bCumplimientoRankBadge) { color: #475569 !important; }
+.podium-bronze-chip #dayTxt, .podium-bronze-chip span:not(.material-symbols-rounded):not(#bCumplimientoRankBadge) { color: #9a3412 !important; }
+.podium-steel-chip #dayTxt, .podium-steel-chip span:not(.material-symbols-rounded):not(#bCumplimientoRankBadge) { color: #0f766e !important; }
+.podium-emerald-chip #dayTxt, .podium-emerald-chip span:not(.material-symbols-rounded):not(#bCumplimientoRankBadge) { color: #047857 !important; }
 .podium-diamond-chip #dayTxt {
   background: linear-gradient(135deg, #0891b2 0%, #db2777 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   font-weight: 900 !important;
 }
-.podium-diamond-chip span:not(.material-symbols-rounded):not(#dayTxt) {
+.podium-diamond-chip span:not(.material-symbols-rounded):not(#dayTxt):not(#bCumplimientoRankBadge) {
   color: #0891b2 !important;
 }
 .podium-gold-chip .opacity-40,
@@ -7571,36 +7571,60 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
 
 /* Custom dynamic chip states for bCumplimiento with high-end premium details */
 
-/* 1. tier="jade" (Cápsula Base): Píldora u óvalo horizontal plano, mate, sin animaciones. Entrada. */
+/* 1. tier="jade" (Cápsula Base): Curvatura orgánica tipo hoja. */
 .podium-emerald-chip {
-  border-radius: 20px !important;
-  border: 2px solid #064e3b !important;
+  border-radius: 40px 16px 40px 16px !important;
+  border: 2px solid #065f46 !important;
   background: linear-gradient(135deg, #064e3b 0%, #022c22 100%) !important;
-  box-shadow: inset 0 2px 5px rgba(0,0,0,0.5), 0 4px 10px rgba(0,0,0,0.3) !important;
-  transform: none !important;
-  animation: none !important;
+  box-shadow: 
+    0 10px 20px rgba(4, 120, 87, 0.15),
+    inset 0 2px 4px rgba(255, 255, 255, 0.05) !important;
+  animation: emerald-breathe-glow 4s ease-in-out infinite !important;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
 }
 .podium-emerald-chip #dayTxt, 
-.podium-emerald-chip span:not(.material-symbols-rounded) {
+.podium-emerald-chip span:not(.material-symbols-rounded):not(#bCumplimientoRankBadge) {
   color: #a7f3d0 !important;
 }
 .podium-emerald-chip #bCumplimientoIconBg {
-  background: rgba(255,255,255,0.1) !important;
+  background: rgba(16, 185, 129, 0.15) !important;
   color: #34d399 !important;
 }
 
-/* 2. tier="acero" (Asimetría Dinámica): border-radius angulado y vanguardista. Text pop. */
+@keyframes emerald-breathe-glow {
+  0%, 100% { box-shadow: 0 10px 20px rgba(4, 120, 87, 0.15), inset 0 2px 4px rgba(255, 255, 255, 0.05) !important; }
+  50% { box-shadow: 0 12px 28px rgba(4, 120, 87, 0.35), inset 0 2px 4px rgba(52, 211, 153, 0.2) !important; }
+}
+
+/* 2. tier="acero" (Hexágono Mecánico / Industrial): Cortes angulados asimétricos. */
 .podium-steel-chip {
-  border-radius: 24px 8px 24px 8px !important;
+  border-radius: 6px 36px 6px 36px !important;
   border: 2px solid #475569 !important;
   background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.4), inset 0 0 8px rgba(255,255,255,0.05) !important;
+  box-shadow: 
+    0 12px 24px rgba(0,0,0,0.3),
+    inset 0 0 12px rgba(255,255,255,0.05) !important;
+  position: relative;
+  overflow: hidden;
+}
+.podium-steel-chip::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+  transform: skewX(-25deg);
+  transition: 0.5s;
+}
+.podium-steel-chip:hover::before {
+  left: 150%;
+  transition: 0.7s ease-in-out;
 }
 .podium-steel-chip #dayTxt {
   color: #cbd5e1 !important;
   animation: steelTextPop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
-.podium-steel-chip span:not(.material-symbols-rounded):not(#dayTxt) {
+.podium-steel-chip span:not(.material-symbols-rounded):not(#dayTxt):not(#bCumplimientoRankBadge) {
   color: #94a3b8 !important;
 }
 .podium-steel-chip #bCumplimientoIconBg {
@@ -7613,116 +7637,105 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
   100% { transform: scale(1); opacity: 1; }
 }
 
-/* 3. tier="bronce" (Estandarte Técnico): Listón/emblema sutil con border-radius e inclinación. Breathe opacity. */
+/* 3. tier="bronce" (Estandarte Técnico / Arquitectura): listón base plano superior, curvatura inferior. */
 .podium-bronze-chip {
-  border-radius: 20px !important;
-  border: 2px solid #7c2d12 !important;
+  border-radius: 12px 12px 32px 32px !important;
+  border: 2px solid #9a3412 !important;
   background: linear-gradient(135deg, #431407 0%, #1c1917 100%) !important;
-  box-shadow: 0 15px 30px rgba(124, 45, 18, 0.2) !important;
-  animation: bronzeBreathe 5s ease-in-out infinite;
+  box-shadow: 
+    0 15px 30px rgba(124, 45, 18, 0.25),
+    inset 0 1px 3px rgba(251, 146, 60, 0.15) !important;
+  animation: bronze-slow-burn 6s ease-in-out infinite !important;
 }
 .podium-bronze-chip #dayTxt, 
-.podium-bronze-chip span:not(.material-symbols-rounded) {
+.podium-bronze-chip span:not(.material-symbols-rounded):not(#bCumplimientoRankBadge) {
   color: #ffedd5 !important;
 }
 .podium-bronze-chip #bCumplimientoIconBg {
-  background: rgba(251, 146, 60, 0.15) !important;
+  background: rgba(251, 146, 60, 0.12) !important;
   color: #fdba74 !important;
 }
 
-@keyframes bronzeBreathe {
-  0%, 100% { opacity: 0.95; transform: scale(0.99); }
-  50% { opacity: 1; transform: scale(1.01); }
+@keyframes bronze-slow-burn {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.18); }
 }
 
-/* 4. tier="plata" (Escudo Cromado): Escudo deportivo, shimmer diagonal cada 3s. */
+/* 4. tier="plata" (Asimetría Deportiva): Curvas opuestas hiper-redondeadas. */
 .podium-silver-chip {
-  border-radius: 20px !important;
-  border: 2px solid #94a3b8 !important;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 40%, #cbd5e1 75%, #94a3b8 100%) !important;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15), inset 0 0 15px rgba(255,255,255,0.6) !important;
+  border-radius: 48px 8px 48px 8px !important;
+  border: 2px solid #cbd5e1 !important;
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 50%, #94a3b8 100%) !important;
+  box-shadow: 
+    0 18px 36px rgba(148, 163, 184, 0.2),
+    inset 0 0 12px rgba(255, 255, 255, 0.8) !important;
+  position: relative;
+  overflow: hidden;
+}
+.podium-silver-chip::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -150%;
+  width: 80%; height: 100%;
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0) 100%);
+  transform: skewX(-20deg);
+  animation: silver-metallic-bar 5s infinite ease-in-out;
+  pointer-events: none;
+  z-index: 2;
 }
 .podium-silver-chip #dayTxt, 
-.podium-silver-chip span:not(.material-symbols-rounded) {
-  color: #1e293b !important;
+.podium-silver-chip span:not(.material-symbols-rounded):not(#dayTxt):not(#bCumplimientoRankBadge) {
+  color: #0f172a !important;
   font-weight: 900 !important;
 }
 .podium-silver-chip #bCumplimientoIconBg {
-  background: rgba(30, 41, 59, 0.1) !important;
-  color: #1e293b !important;
-}
-.podium-silver-chip::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -150%;
-  width: 60%;
-  height: 100%;
-  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0) 100%);
-  transform: skewX(-25deg);
-  animation: shine-effect-silver 3.5s infinite ease-in-out;
-  pointer-events: none;
-  z-index: 5;
+  background: rgba(15, 23, 42, 0.08) !important;
+  color: #0f172a !important;
 }
 
-@keyframes shine-effect-silver {
+@keyframes silver-metallic-bar {
   0% { left: -150%; }
-  35% { left: 150%; }
+  30% { left: 150%; }
   100% { left: 150%; }
 }
 
-/* 5. tier="oro" (Insignia Suprema 3D): Relieve, cortes diamante, flotación y holograma. */
+/* 5. tier="oro" (Escudo Soberano Clásico): Curvaturas amplias arriba. */
 .podium-gold-chip {
-  border-radius: 20px !important;
-  border: 2px solid #ffd700 !important;
-  background: linear-gradient(135deg, #ffd700, #ff8c00, #ff007a, #00f2fe, #ffd700) !important;
-  background-size: 400% 400% !important;
+  border-radius: 40px 40px 24px 24px !important;
+  border: 2px solid #f59e0b !important;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 30%, #f59e0b 70%, #d97706 100%) !important;
+  background-size: 200% 200% !important;
   box-shadow: 
-    0 20px 45px -10px rgba(255, 140, 0, 0.4),
-    0 8px 20px rgba(255, 0, 122, 0.2),
-    inset 0 0 20px rgba(255,255,255,0.7) !important;
-  animation: goldFloat 4s ease-in-out infinite, goldHolo 8s linear infinite !important;
+    0 20px 40px rgba(217, 119, 6, 0.25),
+    inset 0 0 15px rgba(255, 255, 255, 0.9) !important;
+  animation: gold-luxury-motion 8s ease-in-out infinite, goldFloat 5s ease-in-out infinite !important;
 }
 .podium-gold-chip #dayTxt {
-  background: linear-gradient(135deg, #ffffff 0%, #ffe259 100%) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  font-weight: 900 !important;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)) !important;
+  color: #78350f !important;
+  font-weight: 950 !important;
+  text-shadow: 0 1px 1px rgba(255,255,255,0.6) !important;
 }
-.podium-gold-chip span:not(.material-symbols-rounded):not(#dayTxt) {
-  color: #ffffff !important;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
+.podium-gold-chip span:not(.material-symbols-rounded):not(#dayTxt):not(#bCumplimientoRankBadge) {
+  color: #78350f !important;
+  font-weight: 800 !important;
 }
 .podium-gold-chip #bCumplimientoIconBg {
-  background: rgba(255,255,255,0.9) !important;
-  color: #d97706 !important;
-}
-.podium-gold-chip #bCumplimientoMedals {
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2)) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  color: #b45309 !important;
 }
 
-@keyframes goldFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
-}
-@keyframes goldHolo {
-  0% { background-position: 0% 50%; }
+@keyframes gold-luxury-motion {
+  0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
 }
 
-/* 6. tier="diamante" (Crystalline Diamond): Spectacular crystalline premium look. */
+/* 6. tier="diamante" (Corte Octogonal / Crystalline Aurora): Cortes prismáticos. */
 .podium-diamond-chip {
-  border-radius: 20px !important;
-  border: 2px solid #22d3ee !important;
-  background: linear-gradient(135deg, #ecfeff 0%, #cffafe 20%, #fae8ff 55%, #ffe4e6 80%, #ecfeff 100%) !important;
-  box-shadow: 
-    0 25px 50px -12px rgba(6, 182, 212, 0.4),
-    0 8px 18px -6px rgba(219, 39, 119, 0.2),
-    inset 0 0 15px rgba(255, 255, 255, 0.95),
-    inset 0 0 6px rgba(6, 182, 212, 0.15) !important;
-  animation: glow-diamond 3s infinite alternate;
+  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% calc(100% - 16px), calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px), 0 16px) !important;
+  background: linear-gradient(135deg, #ecfeff 0%, #cffafe 25%, #fae8ff 50%, #ffe4e6 75%, #ecfeff 100%) !important;
+  background-size: 300% 300% !important;
+  box-shadow: inset 0 0 0 2px #22d3ee !important; /* Simulate border inside clip-path */
+  animation: diamond-aurora 8s ease infinite, glow-diamond 3s infinite alternate;
 }
 .podium-diamond-chip #bCumplimientoIconBg {
   background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 119, 0.1) 100%) !important;
@@ -7732,11 +7745,52 @@ body[data-role="UNIDAD"] .panelCaptureSummary {
   background: linear-gradient(135deg, #0891b2 0%, #db2777 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
-  font-weight: 900 !important;
-  filter: drop-shadow(0 1px 2px rgba(6, 182, 212, 0.3)) !important;
+  font-weight: 950 !important;
 }
-.podium-diamond-chip span:not(.material-symbols-rounded):not(#dayTxt) {
+.podium-diamond-chip span:not(.material-symbols-rounded):not(#dayTxt):not(#bCumplimientoRankBadge) {
   color: #0891b2 !important;
+}
+
+@keyframes diamond-aurora {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* ==========================================================
+   BADGE STYLES FOR LEGEND / RANK LABELS
+   ========================================================== */
+#bCumplimientoRankBadge.badge-diamante {
+  background: linear-gradient(135deg, #06b6d4 0%, #db2777 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.4) !important;
+  border: 1px solid rgba(255,255,255,0.4) !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+#bCumplimientoRankBadge.badge-oro {
+  background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(255, 140, 0, 0.3) !important;
+  border: 1px solid rgba(255,255,255,0.3) !important;
+}
+#bCumplimientoRankBadge.badge-plata {
+  background: linear-gradient(135deg, #475569 0%, #94a3b8 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(71, 85, 105, 0.25) !important;
+}
+#bCumplimientoRankBadge.badge-bronce {
+  background: linear-gradient(135deg, #7c2d12 0%, #c2410c 100%) !important;
+  color: #ffedd5 !important;
+  box-shadow: 0 2px 6px rgba(124, 45, 18, 0.3) !important;
+}
+#bCumplimientoRankBadge.badge-acero {
+  background: #334155 !important;
+  color: #cbd5e1 !important;
+  border: 1px solid #475569 !important;
+}
+#bCumplimientoRankBadge.badge-jade {
+  background: linear-gradient(135deg, #047857 0%, #10b981 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(4, 120, 87, 0.25) !important;
 }
 
 /* Custom interactive animations for base card and header icons */
@@ -7930,7 +7984,7 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
   font-weight: 900 !important;
   filter: drop-shadow(0 1px 2px rgba(6, 182, 212, 0.3)) !important;
 }
-.podium-diamond-chip span:not(.material-symbols-rounded):not(#dayTxt) {
+.podium-diamond-chip span:not(.material-symbols-rounded):not(#dayTxt):not(#bCumplimientoRankBadge) {
   color: #0891b2 !important;
 }
 
