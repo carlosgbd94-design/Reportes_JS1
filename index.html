@@ -2735,7 +2735,7 @@
         <div id="adminSection_catalogo"
           class="admin-sub-panel hide animate-in fade-in slide-in-from-bottom-4 duration-500" style="display: none;">
           <div
-            class="bg-surface/50 backdrop-blur-md rounded-3xl p-6 border border-outline-variant/30 shadow-sm flex flex-col gap-6">
+            class="bg-surface rounded-3xl p-6 border border-outline-variant/30 shadow-sm flex flex-col gap-6">
 
             <div class="flex items-center gap-3 border-b border-outline-variant/20 pb-4">
               <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
@@ -2756,16 +2756,11 @@
                     class="text-[11px] font-black text-primary uppercase tracking-widest m-0 flex items-center gap-1.5">
                     <span class="material-symbols-rounded text-sm">location_on</span> 1. Unidades
                   </h5>
-                  <div class="flex items-center gap-1">
-                    <button
-                      class="text-primary hover:bg-primary/10 px-2 py-1 rounded border-none bg-transparent cursor-pointer font-bold text-[10px] uppercase transition-all"
-                      onclick="selectAllFilteredUnits()">Marcar</button>
-                    <button
-                      class="text-slate-500 hover:bg-slate-100 px-2 py-1 rounded border-none bg-transparent cursor-pointer font-bold text-[10px] uppercase transition-all"
-                      onclick="deselectAllUnits()">Limpiar</button>
-                    <button
-                      class="text-primary hover:bg-primary/10 px-2 py-1 rounded border-none bg-transparent cursor-pointer font-bold text-[10px] uppercase transition-all"
-                      onclick="loadAllUnitsBulk()">Todas</button>
+                  <div class="nav-container" id="unitBulkTabContainer" style="margin: 0; position: relative;">
+                    <div class="nav-indicator nav-indicator-premium"></div>
+                    <button class="nav-tab active" onclick="selectAllFilteredUnits(); window.switchBulkUnitTab(this)" type="button">Marcar</button>
+                    <button class="nav-tab" onclick="deselectAllUnits(); window.switchBulkUnitTab(this)" type="button">Limpiar</button>
+                    <button class="nav-tab" onclick="loadAllUnitsBulk(); window.switchBulkUnitTab(this)" type="button">Todas</button>
                   </div>
                 </div>
 
@@ -2795,13 +2790,10 @@
                     class="text-[11px] font-black text-primary uppercase tracking-widest m-0 flex items-center gap-1.5">
                     <span class="material-symbols-rounded text-sm">vaccines</span> 2. Biológicos
                   </h5>
-                  <div class="flex items-center gap-1">
-                    <button
-                      class="text-primary hover:bg-primary/10 px-2 py-1 rounded border-none bg-transparent cursor-pointer font-bold text-[10px] uppercase transition-all"
-                      onclick="selectAllVaccinesBulk()">Marcar Todas</button>
-                    <button
-                      class="text-slate-500 hover:bg-slate-100 px-2 py-1 rounded border-none bg-transparent cursor-pointer font-bold text-[10px] uppercase transition-all"
-                      onclick="deselectAllVaccinesBulk()">Limpiar</button>
+                  <div class="nav-container" id="bioBulkTabContainer" style="margin: 0; position: relative;">
+                    <div class="nav-indicator nav-indicator-premium"></div>
+                    <button class="nav-tab active" onclick="selectAllVaccinesBulk(); window.switchBulkBioTab(this)" type="button">Marcar Todas</button>
+                    <button class="nav-tab" onclick="deselectAllVaccinesBulk(); window.switchBulkBioTab(this)" type="button">Limpiar</button>
                   </div>
                 </div>
 
@@ -2952,101 +2944,201 @@
                   <h4 class="text-[14px] font-black text-primary m-0 uppercase tracking-widest">Calculadora de
                     Parámetros</h4>
                   <p class="text-[11px] font-medium text-primary/50 m-0 mt-0.5">Calcula Min / Max / Promedio de Frascos
-                    a partir de productividad SIS</p>
+                    a partir de productividad SIS y define esquemas de temporalidad</p>
                 </div>
               </div>
             </div>
 
-            <!-- Controles -->
-            <div class="p-6 flex flex-wrap items-end gap-4 border-b border-outline-variant/10">
-              <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-black text-primary/60 uppercase tracking-widest">Año Base</label>
-                <select id="paramCalcAnio"
-                  class="h-10 px-4 rounded-xl border border-outline-variant/40 bg-surface text-[13px] font-bold text-primary focus:ring-2 focus:ring-primary/30 outline-none min-w-[100px]">
-                  <option value="2026" selected>2026</option>
-                  <option value="2025">2025</option>
-                  <option value="2024">2024</option>
-                </select>
-              </div>
-
-              <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-black text-primary/60 uppercase tracking-widest">Buffer Demanda
-                  (%)</label>
-                <input id="paramCalcBuffer" type="number" value="10" min="0" max="50" step="1"
-                  class="h-10 px-4 rounded-xl border border-outline-variant/40 bg-surface text-[13px] font-bold text-primary focus:ring-2 focus:ring-primary/30 outline-none w-[100px]" />
-              </div>
-
-              <button id="btnCalcParams" onclick="window.runBioParamCalculation()"
-                class="h-10 px-6 rounded-full bg-primary text-primary-on text-[12px] font-bold border-none cursor-pointer shadow-sm hover:translate-y-[-1px] hover:shadow-md transition-all flex items-center gap-2">
-                <span class="material-symbols-rounded text-[18px]">calculate</span>
-                Calcular
-              </button>
-            </div>
-
-            <!-- Resumen de resultados -->
-            <div id="paramCalcSummary" class="p-4 mx-6 mt-4 rounded-2xl bg-primary/5 border border-primary/10"
-              style="display:none;">
-              <div class="flex flex-wrap items-center gap-4 text-[12px] font-bold text-primary">
-                <span>📊 <span id="paramCalcUnitsCount">0</span> unidades</span>
-                <span class="text-primary/30">|</span>
-                <span>🧬 <span id="paramCalcBiosCount">0</span> biológicos</span>
-                <span class="text-primary/30">|</span>
-                <span>📅 Meses: <span id="paramCalcMonths">—</span></span>
-                <span class="text-primary/30">|</span>
-                <span>🛡️ Buffer: <span id="paramCalcBufferVal">10</span>%</span>
+            <!-- Tab bar (Botonera Estándar SIREVAQ) -->
+            <div class="p-6 border-b border-outline-variant/20 bg-surface flex justify-start">
+              <div class="nav-container" id="paramCalcTabContainer" style="margin: 0; position: relative;">
+                <div class="nav-indicator nav-indicator-premium"></div>
+                <button class="nav-tab active" id="tabParamCalc" onclick="window.switchParamTab('calc')" type="button">
+                  <span class="material-symbols-rounded">calculate</span>
+                  <span>Calculadora de Parámetros</span>
+                </button>
+                <button class="nav-tab" id="tabParamSchemes" onclick="window.switchParamTab('schemes')" type="button">
+                  <span class="material-symbols-rounded">campaign</span>
+                  <span>Esquemas y Temporadas</span>
+                </button>
               </div>
             </div>
 
-            <!-- Filtro -->
-            <div id="paramCalcFilterRow" class="px-6 pt-4 flex flex-wrap gap-3" style="display:none;">
-              <input id="paramCalcFilter" type="text" placeholder="Filtrar por CLUES, unidad o biológico..."
-                oninput="window.filterParamCalcTable()"
-                class="flex-grow h-9 px-4 rounded-xl border border-outline-variant/30 bg-surface text-[12px] font-medium text-primary placeholder:text-primary/40 focus:ring-2 focus:ring-primary/30 outline-none" />
-            </div>
+            <!-- Contenido de Calculadora -->
+            <div id="paramCalcTabContent">
+              <!-- Controles -->
+              <div class="p-6 flex flex-wrap items-end gap-4 border-b border-outline-variant/10">
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] font-black text-primary/60 uppercase tracking-widest">Año Base</label>
+                  <select id="paramCalcAnio"
+                    class="h-10 px-4 rounded-xl border border-outline-variant/40 bg-surface text-[13px] font-bold text-primary focus:ring-2 focus:ring-primary/30 outline-none min-w-[100px]">
+                    <option value="2026" selected>2026</option>
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                  </select>
+                </div>
 
-            <!-- Tabla de resultados -->
-            <div class="overflow-x-auto p-6">
-              <table class="w-full text-left border-collapse bg-surface/50 rounded-2xl overflow-hidden shadow-sm"
-                id="paramCalcTable" style="display:none;">
-                <thead>
-                  <tr class="bg-primary/5">
-                    <th
-                      class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 sticky left-0 bg-primary/5 z-10">
-                      Unidad</th>
-                    <th
-                      class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">
-                      Biológico</th>
-                    <th
-                      class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center">
-                      Min</th>
-                    <th
-                      class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center">
-                      Max</th>
-                    <th
-                      class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center">
-                      Prom. Frascos</th>
-                    <th
-                      class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center">
-                      Tipo</th>
-                  </tr>
-                </thead>
-                <tbody id="paramCalcTbody" class="divide-y divide-outline-variant/20"></tbody>
-              </table>
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] font-black text-primary/60 uppercase tracking-widest">Margen de demanda
+                    (%)</label>
+                  <input id="paramCalcBuffer" type="number" value="10" min="0" max="50" step="1"
+                    class="h-10 px-4 rounded-xl border border-outline-variant/40 bg-surface text-[13px] font-bold text-primary focus:ring-2 focus:ring-primary/30 outline-none w-[100px]" />
+                </div>
 
-              <div id="paramCalcEmpty" class="text-center py-12 text-xs font-medium text-primary/50">
-                Selecciona un año y presiona "Calcular" para generar los parámetros.
+                <button id="btnCalcParams" onclick="window.runBioParamCalculation()"
+                  class="h-10 px-6 rounded-full bg-primary text-primary-on text-[12px] font-bold border-none cursor-pointer shadow-sm hover:translate-y-[-1px] hover:shadow-md transition-all flex items-center gap-2">
+                  <span class="material-symbols-rounded text-[18px]">calculate</span>
+                  Calcular
+                </button>
+              </div>
+
+              <!-- Resumen de resultados -->
+              <div id="paramCalcSummary" class="p-4 mx-6 mt-4 rounded-2xl bg-primary/5 border border-primary/10"
+                style="display:none;">
+                <div class="flex flex-wrap items-center gap-4 text-[12px] font-bold text-primary">
+                  <span>📊 <span id="paramCalcUnitsCount">0</span> unidades</span>
+                  <span class="text-primary/30">|</span>
+                  <span>🧬 <span id="paramCalcBiosCount">0</span> biológicos</span>
+                  <span class="text-primary/30">|</span>
+                  <span>📅 Meses: <span id="paramCalcMonths">—</span></span>
+                  <span class="text-primary/30">|</span>
+                  <span>🛡️ Margen: <span id="paramCalcBufferVal">10</span>%</span>
+                </div>
+              </div>
+
+              <!-- Filtros Premium -->
+              <div id="paramCalcFilterRow" class="px-6 pt-4 flex flex-wrap gap-3 items-center" style="display:none;">
+                <div class="flex-grow min-w-[200px]">
+                  <input id="paramCalcFilter" type="text" placeholder="Buscar por CLUES, unidad o municipio..."
+                    oninput="window.filterParamCalcTable(true)"
+                    class="w-full h-9 px-4 rounded-xl border border-outline-variant/30 bg-surface text-[12px] font-medium text-primary placeholder:text-primary/40 focus:ring-2 focus:ring-primary/30 outline-none" />
+                </div>
+                <div class="w-[180px]">
+                  <select id="paramCalcFilterBio" onchange="window.filterParamCalcTable(true)"
+                    class="w-full h-9 px-3 rounded-xl border border-outline-variant/30 bg-surface text-[12px] font-bold text-primary focus:ring-2 focus:ring-primary/30 outline-none">
+                    <option value="">Todos los Biológicos</option>
+                  </select>
+                </div>
+                <div class="w-[180px]">
+                  <select id="paramCalcFilterMuni" onchange="window.filterParamCalcTable(true)"
+                    class="w-full h-9 px-3 rounded-xl border border-outline-variant/30 bg-surface text-[12px] font-bold text-primary focus:ring-2 focus:ring-primary/30 outline-none">
+                    <option value="">Todos los Municipios</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Tabla de resultados -->
+              <div class="overflow-x-auto p-6">
+                <table class="w-full text-left border-collapse bg-surface/50 rounded-2xl overflow-hidden shadow-sm"
+                  id="paramCalcTable" style="display:none;">
+                  <thead>
+                    <tr class="bg-primary/5">
+                      <th
+                        class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 sticky left-0 bg-primary/5 z-10">
+                        Unidad</th>
+                      <th
+                        class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">
+                        Biológico</th>
+                      <th
+                        class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center">
+                        Min</th>
+                      <th
+                        class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center">
+                        Max</th>
+                      <th
+                        class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center">
+                        Prom. Frascos</th>
+                      <th
+                        class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center">
+                        Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody id="paramCalcTbody" class="divide-y divide-outline-variant/20"></tbody>
+                </table>
+
+                <div id="paramCalcEmpty" class="text-center py-12 text-xs font-medium text-primary/50">
+                  Selecciona un año y presiona "Calcular" para generar los parámetros.
+                </div>
+              </div>
+
+              <!-- Controles de Paginación -->
+              <div id="paramCalcPagination" class="px-6 pb-4 flex flex-wrap justify-between items-center gap-3" style="display:none;">
+                <div class="flex items-center gap-2 text-xs font-bold text-primary/70">
+                  <span>Registros por página:</span>
+                  <select id="paramCalcPageSize" onchange="window.updateParamCalcPageSize(this.value)"
+                    class="h-8 px-2 rounded-lg border border-outline-variant/30 bg-surface text-[12px] font-bold text-primary focus:ring-2 focus:ring-primary/20 outline-none">
+                    <option value="10">10</option>
+                    <option value="25" selected>25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                  <span class="ml-2">Mostrando <span id="paramCalcPageStart">0</span>-<span id="paramCalcPageEnd">0</span> de <span id="paramCalcTotalCount">0</span></span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button type="button" onclick="window.changeParamCalcPage(-1)" id="btnParamCalcPrev"
+                    class="h-8 w-8 rounded-lg border border-outline-variant/30 bg-surface flex items-center justify-center text-primary hover:bg-primary/5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                    <span class="material-symbols-rounded text-[18px]">chevron_left</span>
+                  </button>
+                  <span class="text-xs font-bold text-primary px-3">Página <span id="paramCalcCurrentPage">1</span> de <span id="paramCalcTotalPages">1</span></span>
+                  <button type="button" onclick="window.changeParamCalcPage(1)" id="btnParamCalcNext"
+                    class="h-8 w-8 rounded-lg border border-outline-variant/30 bg-surface flex items-center justify-center text-primary hover:bg-primary/5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+                    <span class="material-symbols-rounded text-[18px]">chevron_right</span>
+                  </button>
+                </div>
+              </div>
+
+              <div id="paramCalcFooter"
+                class="p-6 bg-surface-variant/20 border-t border-outline-variant/20 flex justify-between items-center"
+                style="display:none;">
+                <span class="text-[11px] font-bold text-primary/50">Los valores se guardarán en biologicos_params</span>
+                <button id="btnSaveCalcParams" onclick="window.saveCalculatedBioParams()"
+                  class="h-10 px-6 rounded-full bg-green-600 text-primary-on text-[12px] font-bold border-none cursor-pointer shadow-sm hover:translate-y-[-1px] hover:shadow-md transition-all flex items-center gap-2">
+                  <span class="material-symbols-rounded text-[18px]">save</span>
+                  Guardar Todo en Base de Datos
+                </button>
               </div>
             </div>
 
-            <div id="paramCalcFooter"
-              class="p-6 bg-surface-variant/20 border-t border-outline-variant/20 flex justify-between items-center"
-              style="display:none;">
-              <span class="text-[11px] font-bold text-primary/50">Los valores se guardarán en biologicos_params</span>
-              <button id="btnSaveCalcParams" onclick="window.saveCalculatedBioParams()"
-                class="h-10 px-6 rounded-full bg-green-600 text-primary-on text-[12px] font-bold border-none cursor-pointer shadow-sm hover:translate-y-[-1px] hover:shadow-md transition-all flex items-center gap-2">
-                <span class="material-symbols-rounded text-[18px]">save</span>
-                Guardar Todo en Base de Datos
-              </button>
+            <!-- Contenido de Esquemas y Temporadas -->
+            <div id="paramSchemesTabContent" style="display:none;" class="p-6">
+              <div class="mb-6 bg-primary/5 border border-primary/10 rounded-2xl p-4 flex gap-3 items-start">
+                <span class="material-symbols-rounded text-primary text-[20px] mt-0.5">info</span>
+                <div>
+                  <h5 class="text-[12px] font-black text-primary uppercase m-0">Esquemas de Biológicos</h5>
+                  <p class="text-[11px] font-medium text-primary/70 m-0 mt-1 leading-relaxed">
+                    Define la temporalidad y tipo de captura de cada vacuna. 
+                    Las vacunas marcadas como <b>Campaña</b> o <b>Temporada</b> tendrán ventanas de captura dinámicas. 
+                    Desactiva <b>Captura Activa</b> para suspender el ingreso de datos de esa vacuna a nivel global.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Tabla de Esquemas -->
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse bg-surface/50 rounded-2xl overflow-hidden shadow-sm">
+                  <thead>
+                    <tr class="bg-primary/5">
+                      <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center w-16">Orden</th>
+                      <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">Biológico</th>
+                      <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">Referencia Total</th>
+                      <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center w-[140px]">Múltiplo Pedido</th>
+                      <th class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center w-[240px]">Tipo de Esquema</th>
+                    </tr>
+                  </thead>
+                  <tbody id="paramSchemesTbody" class="divide-y divide-outline-variant/20">
+                    <!-- Se carga dinámicamente con JS -->
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="mt-6 flex justify-between items-center bg-surface-variant/20 p-4 rounded-2xl border border-outline-variant/20">
+                <span class="text-[11px] font-bold text-primary/50">Los cambios afectarán el flujo de captura mensual al instante</span>
+                <button onclick="window.saveBioCatalogSchemes()"
+                  class="h-10 px-6 rounded-full bg-green-600 text-primary-on text-[12px] font-bold border-none cursor-pointer shadow-sm hover:translate-y-[-1px] hover:shadow-md transition-all flex items-center gap-2">
+                  <span class="material-symbols-rounded text-[18px]">save</span>
+                  Guardar Catálogo
+                </button>
+              </div>
             </div>
           </div>
 
@@ -5163,11 +5255,28 @@
     </div>
   </div>
 
+  <!-- ✅ MODAL DE CONFIRMACIÓN CUSTOM PREMIUM -->
+  <div class="overlay" id="genericConfirmOverlay" style="display:none; background: rgba(3,8,18,0.55) !important; z-index:99999; justify-content: center; align-items: center;">
+    <div class="modal" style="max-width:400px; background: var(--md-sys-color-surface); border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden; display: flex; flex-direction: column; padding: 0; border: 1px solid var(--md-sys-color-outline-variant);">
+      <div class="modalHead" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 24px 24px 18px;">
+        <div class="modalTitle" id="genericConfirmTitle" style="color: #fff; font-size: 16px; font-weight: 850; letter-spacing: -0.01em;">Confirmación</div>
+      </div>
+      <div class="modalBody" style="padding: 24px;">
+        <p id="genericConfirmMessage" style="margin: 0; font-size: 13px; color: var(--md-sys-color-on-surface-variant); line-height: 1.6; font-weight: 600;"></p>
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--md-sys-color-outline-variant);">
+          <button class="ghostBtn" id="btnGenericConfirmCancel" type="button" style="height: 38px; padding: 0 16px; border-radius: 10px; font-weight: 800; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 12px;">Cancelar</button>
+          <button class="btn-premium-action" id="btnGenericConfirmAccept" type="button" style="height: 38px; padding: 0 20px; border-radius: 10px; font-weight: 800; cursor: pointer; border: none; background: var(--md-sys-color-primary); color: #fff; margin-top:0; font-size: 12px;">Aceptar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- FOCUS OVERLAY -->
   <div id="focusOverlay" onclick="closeFocusMode()"></div>
 
   <script defer src="rda_calculator.js?v=2026.14"></script>
   <script defer src="rda_parser.js?v=2026.14"></script>
+  <script defer src="param_calculator.js?v=2026.19"></script>
   <script defer src="rda_ui.js?v=2026.15"></script>
 
   <!-- FEEDBACK FAB & MODAL -->

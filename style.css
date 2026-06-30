@@ -6622,6 +6622,20 @@ input, textarea, select, [contenteditable] {
 .nav-tab.active[onclick*="'NOTIFICATIONS'"] .material-symbols-rounded { color: #8b5cf6; } /* Violet */
 .nav-tab.active[onclick*="'SECURITY'"] .material-symbols-rounded { color: #6366f1; }      /* Indigo */
 
+/* Colores para Subpaneles de Administración */
+.nav-tab.active[onclick*="'aperturas'"] .material-symbols-rounded { color: #10b981; }      /* Emerald */
+.nav-tab.active[onclick*="'catalogo'"] .material-symbols-rounded { color: #ef4444; }       /* Red */
+.nav-tab.active[onclick*="'seguridad'"] .material-symbols-rounded { color: #6366f1; }      /* Indigo */
+.nav-tab.active[onclick*="'usuarios_activos'"] .material-symbols-rounded { color: #06b6d4; }/* Cyan */
+.nav-tab.active[onclick*="'parametros'"] .material-symbols-rounded { color: #8b5cf6; }     /* Violet */
+.nav-tab.active[onclick*="'mapeador'"] .material-symbols-rounded { color: #f59e0b; }       /* Amber */
+.nav-tab.active[onclick*="'capacitaciones'"] .material-symbols-rounded { color: #14b8a6; } /* Teal */
+.nav-tab.active[onclick*="'campanas'"] .material-symbols-rounded { color: #ec4899; }       /* Pink */
+
+/* Colores para Calculadora Interna de Parámetros */
+.nav-tab.active[onclick*="'calc'"] .material-symbols-rounded { color: #3b82f6; }           /* Blue */
+.nav-tab.active[onclick*="'schemes'"] .material-symbols-rounded { color: #f59e0b; }        /* Amber */
+
 /* Colores para Perfil Unidad (Captura) */
 .nav-tab.active[onclick*="'SR'"] .material-symbols-rounded { color: #0284c7; }   /* Blue (Biológicos) */
 .nav-tab.active[onclick*="'CONS'"] .material-symbols-rounded { color: #059669; } /* Green (Consumibles) */

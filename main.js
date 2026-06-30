@@ -9379,14 +9379,16 @@ function renderBioRows(rows) {
   }
 
   tbody.innerHTML = rows.map((r, i) => {
-    const isCamp = [
+    const bioNameNorm = String(r.biologico || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+    const scheme = window.BIO_SCHEMES ? window.BIO_SCHEMES[bioNameNorm] : null;
+    const isCamp = scheme ? (scheme === "CAMPAÑA" || scheme === "TEMPORADA") : [
       "INFLUENZA",
       "COVID-19",
       "COVID 19",
       "VPH",
       "HEPATITIS A",
       "VARICELA"
-    ].includes(String(r.biologico || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase());
+    ].includes(bioNameNorm);
     return `
     <div class="bio-card" id="bioCard_${i}">
       <div class="bio-name">
@@ -10252,6 +10254,21 @@ async function loadBioForm() {
 
   if ($("bioTbody")) {
     $("bioTbody").innerHTML = getBioSkeletonHtml(6);
+  }
+
+  // Cargar de manera asíncrona la configuración de esquemas (permanente/campaña/temporada)
+  if (window.supabase) {
+    window.supabase.from('biologicos_catalogo').select('biologico, tipo_esquema')
+      .then(({ data, error }) => {
+        if (!error && data) {
+          window.BIO_SCHEMES = {};
+          data.forEach(item => {
+            const normalized = String(item.biologico || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+            window.BIO_SCHEMES[normalized] = item.tipo_esquema;
+          });
+        }
+      })
+      .catch(err => console.warn("Error loading schemes:", err));
   }
 
   const r = await apiCall({ action: "bioGetForm", token: TOKEN });
@@ -13177,7 +13194,15 @@ window.activateAdminSubPanel = function (panelId) {
   // 3. Carga Automática según el Panel
   if (panelId === 'seguridad') refreshUsers();
   if (panelId === 'aperturas') loadConsumiblesOverrideAdmin();
-  if (panelId === 'catalogo') refreshBulkBioSetup();
+  if (panelId === 'catalogo') {
+    refreshBulkBioSetup();
+    setTimeout(() => {
+      if (typeof syncTabGroupIndicator === 'function') {
+        syncTabGroupIndicator('#unitBulkTabContainer');
+        syncTabGroupIndicator('#bioBulkTabContainer');
+      }
+    }, 150);
+  }
   if (panelId === 'mapeador') {
     if (typeof window.renderSisMappingTable === 'function') {
       window.renderSisMappingTable();
@@ -13188,6 +13213,13 @@ window.activateAdminSubPanel = function (panelId) {
   }
   if (panelId === 'campanas') {
     loadCampanasAdmin();
+  }
+  if (panelId === 'parametros') {
+    setTimeout(() => {
+      if (typeof syncTabGroupIndicator === 'function') {
+        syncTabGroupIndicator('#paramCalcTabContainer');
+      }
+    }, 150);
   }
 };
 
