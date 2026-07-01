@@ -1569,6 +1569,17 @@ html.dark.touch-ui .liquidGL {
     -webkit-backdrop-filter: blur(12px) saturate(130%) !important;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   GPU MEMORY & LAYER OPTIMIZATION
+   Disabling 'will-change' on mobile prevents Chrome from promoting 
+   too many elements to separate compositor layers, which exhausts GPU 
+   memory and causes constant flickering and disappearing elements.
+   ═══════════════════════════════════════════════════════════════════════ */
+.touch-ui * {
+    will-change: auto !important;
+}
+
+
 
 
 
