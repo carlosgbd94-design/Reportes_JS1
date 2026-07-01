@@ -1538,6 +1538,38 @@ html.dark.touch-ui .toast-new {
     -webkit-backdrop-filter: none !important;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   LIQUID GLASS MOBILE PERFORMANCE OPTIMIZATION
+   Disables custom SVG displacement filters on mobile to prevent GPU 
+   repaint storms, layout flickering, and disappearing layers on scroll.
+   ═══════════════════════════════════════════════════════════════════════ */
+.touch-ui .GlassContent {
+    backdrop-filter: blur(16px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
+    background: rgba(255, 255, 255, 0.45) !important;
+}
+
+html.dark.touch-ui .GlassContent {
+    background: rgba(30, 41, 59, 0.55) !important;
+}
+
+.touch-ui .liquidGL {
+    backdrop-filter: blur(20px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+    background: rgba(255, 255, 255, 0.6) !important;
+}
+
+html.dark.touch-ui .liquidGL {
+    background: rgba(30, 41, 59, 0.7) !important;
+}
+
+/* Simplify dock indicator filter to native CSS blur for scroll performance */
+.touch-ui .dock-indicator-inner {
+    backdrop-filter: blur(12px) saturate(130%) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(130%) !important;
+}
+
+
 
 
 
