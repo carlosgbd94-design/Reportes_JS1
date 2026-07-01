@@ -315,10 +315,17 @@
         if (_observerRafId) return; // debounce: skip if already queued
         _observerRafId = requestAnimationFrame(() => {
             _observerRafId = null;
+            
+            // Disconnect to avoid triggering the observer recursively via style changes
+            observer.disconnect();
+            
             syncDockLifecycle();
             if (document.getElementById('mobileCaptureDock')) syncDockState();
             positionAnchoredCard('btnProfileToggle', 'profileDropdown');
             positionAnchoredCard('glassBtnNotifs', 'topNotifDropdown');
+            
+            // Reconnect after updates
+            observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['style', 'class'] });
         });
     });
 
