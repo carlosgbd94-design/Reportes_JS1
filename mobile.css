@@ -21,9 +21,9 @@
     transform: translate(-50%, -50%) !important;
 }
 
-/* 2. Contain the background div so its repaints don't escape to the whole viewport */
+/* 2. Hide the heavy background pattern and SVG lines on mobile to eliminate GPU texture thrashing and flickering */
 .touch-ui #mainAppBackground {
-    contain: strict !important;
+    display: none !important;
 }
 
 /* 3. Remove will-change from elements that are not actively transitioning on mobile
