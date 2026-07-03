@@ -14,11 +14,21 @@
     let hasTodaySR = false;
     let hasTodayCONS = false;
     let hasTodayBIO = false;
+    let hasActivePinol = false;
 
     let isEditingSR = false;
     let isEditingCONS = false;
     let isEditingBIO = false;
     let targetPedidoDate = "";
+    let canCaptureBioGlobal = true;
+    let canCaptureConsGlobal = true;
+    let recentErrors = [];
+    const originalConsoleError = console.error;
+    console.error = function(...args) {
+        recentErrors.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+        if (recentErrors.length > 5) recentErrors.shift();
+        originalConsoleError.apply(console, args);
+    };
     const INDICATOR_W = 50; // Circular pointer width/height
 
     // Drag state for Selection Dock
@@ -106,6 +116,7 @@
         await fetchProfile();
         await fetchCatalogs();
         await fetchTargetDate();
+        canCaptureConsGlobal = checkConsumiblesCaptureWindow();
         await fetchLotes();
         await loadCompliance();
         await checkCapturesState();
@@ -149,6 +160,20 @@
         document.getElementById('profileUnidad').textContent = dataProfile.unidad || (isAdmin ? 'Jurisdicción JS1' : 'No asignada');
         document.getElementById('profileMunicipio').textContent = dataProfile.municipio || (isAdmin ? 'Querétaro' : 'Ninguno');
         document.getElementById('profileAllowed').textContent = dataProfile.municipios_allowed || (isAdmin ? 'Todos' : 'Ninguno');
+
+        // BCG button mobile dynamic visibility (Unidad non-UMME/FAM only)
+        const btnSetBCGMobile = document.getElementById('btnSetBCGMobile');
+        if (btnSetBCGMobile) {
+            const isUnidad = dataProfile.rol === 'UNIDAD';
+            const cluesUpper = String(dataProfile.clues || "").toUpperCase();
+            const nameUpper = String(dataProfile.usuario || currentUser.email || "").toUpperCase();
+            const isUmmeOrFam = cluesUpper.includes("UMME") || cluesUpper.includes("FAM") || nameUpper.includes("UMME") || nameUpper.includes("FAM") || dataProfile.rol === "CARAVANAS";
+            if (isUnidad && !isUmmeOrFam) {
+                btnSetBCGMobile.classList.remove('hidden');
+            } else {
+                btnSetBCGMobile.classList.add('hidden');
+            }
+        }
     };
 
     const normalizeString = (str) => {
@@ -278,25 +303,71 @@
         const today = new Date().toISOString().split('T')[0];
         const { data, error } = await supabaseClient
             .from('calendario_pedidos')
-            .select('fecha_programada')
+            .select('*')
             .eq('anio_mes', today.substring(0, 7))
             .eq('activo', 'SI')
             .maybeSingle();
 
         if (error) {
             console.error("fetchTargetDate error:", error);
-            showToast("Error fecha pedido: " + error.message, "error");
         }
 
-        const targetLabel = document.getElementById('lblFechaPedido');
+        const now = new Date();
+        let start, target, end;
         if (data && data.fecha_programada) {
-            targetPedidoDate = data.fecha_programada;
-            targetLabel.textContent = window.dayjs ? window.dayjs(data.fecha_programada).format('DD/MM/YYYY') : data.fecha_programada;
+            start = new Date(data.habilitar_desde);
+            target = new Date(data.fecha_programada);
+            end = new Date(data.habilitar_hasta);
         } else {
-            const fallbackDate = new Date();
-            fallbackDate.setDate(22);
-            targetPedidoDate = fallbackDate.toISOString().split('T')[0];
-            targetLabel.textContent = window.dayjs ? window.dayjs(fallbackDate).format('DD/MM/YYYY') : targetPedidoDate;
+            const intelligentWindow = calculateBioIntelligentWindow(now.getFullYear(), now.getMonth());
+            start = intelligentWindow.start;
+            target = intelligentWindow.target;
+            end = intelligentWindow.end;
+        }
+
+        const windowStartYmd = dateToLocalYmd(start);
+        const windowTargetYmd = dateToLocalYmd(target);
+        const windowEndYmd = dateToLocalYmd(end);
+        const hoyYmd = dateToLocalYmd(now);
+
+        canCaptureBioGlobal = hoyYmd >= windowStartYmd && hoyYmd <= windowEndYmd;
+        targetPedidoDate = windowTargetYmd;
+
+        const bioBox = document.getElementById('fechaPedidoBIOBox');
+        if (bioBox) {
+            bioBox.className = "p-5 rounded-2xl mb-6 text-center border-none transition-all";
+            
+            const startLabel = window.dayjs ? window.dayjs(start).format('DD/MM') : windowStartYmd.substring(5);
+            const endLabel = window.dayjs ? window.dayjs(end).format('DD/MM') : windowEndYmd.substring(5);
+            const targetLabelStr = window.dayjs ? window.dayjs(target).format('DD/MM/YYYY') : windowTargetYmd;
+
+            if (canCaptureBioGlobal) {
+                bioBox.style.background = "linear-gradient(135deg, #10b981 0%, #059669 100%)";
+                bioBox.style.color = "#ffffff";
+                bioBox.innerHTML = `
+                    <span class="text-[10px] font-black uppercase tracking-widest block opacity-90 mb-1">🟢 Ventana de Captura Activa</span>
+                    <span class="text-lg font-black block mb-1">${targetLabelStr}</span>
+                    <span class="text-[9px] font-bold opacity-85 block">Disponible del ${startLabel} al ${endLabel}</span>
+                `;
+            } else if (hoyYmd < windowStartYmd) {
+                // Future capture window
+                bioBox.style.background = "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)";
+                bioBox.style.color = "#ffffff";
+                bioBox.innerHTML = `
+                    <span class="text-[10px] font-black uppercase tracking-widest block opacity-90 mb-1">🔵 Ventana de Captura Próxima</span>
+                    <span class="text-lg font-black block mb-1">${targetLabelStr}</span>
+                    <span class="text-[9px] font-bold opacity-85 block">Estará disponible del ${startLabel} al ${endLabel}</span>
+                `;
+            } else {
+                // Past capture window
+                bioBox.style.background = "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)";
+                bioBox.style.color = "#ffffff";
+                bioBox.innerHTML = `
+                    <span class="text-[10px] font-black uppercase tracking-widest block opacity-90 mb-1">🔴 Ventana de Captura Cerrada</span>
+                    <span class="text-lg font-black block mb-1">${targetLabelStr}</span>
+                    <span class="text-[9px] font-bold opacity-85 block">Estuvo disponible del ${startLabel} al ${endLabel}</span>
+                `;
+            }
         }
     };
 
@@ -500,8 +571,9 @@
     // --- Command Hub Lock/Edit State Sync ---
     const applyFormLocks = () => {
         const isSRLocked = hasTodaySR && !isEditingSR;
-        const isCONSLocked = hasTodayCONS && !isEditingCONS;
-        const isBIOLocked = hasTodayBIO && !isEditingBIO;
+        const isCONSLocked = (hasTodayCONS && !isEditingCONS) || !canCaptureConsGlobal;
+        const isBIOLocked = (hasTodayBIO && !isEditingBIO) || !canCaptureBioGlobal;
+        const isPinolLocked = hasActivePinol;
 
         // Lock/Unlock SR inputs
         document.querySelectorAll('#srCardsContainer select, #srCardsContainer input, #srCardsContainer button').forEach(el => {
@@ -521,7 +593,7 @@
             }
         });
         const chkSinMovCONS = document.getElementById('chkSinMovimientoCONS');
-        if (chkSinMovCONS) chkSinMovCONS.disabled = isCONSLocked;
+        if (chkSinMovCONS) chkSinMovCONS.disabled = isCONSLocked || !canCaptureConsGlobal;
 
         // Lock/Unlock BIO inputs
         document.querySelectorAll('#panelBIO input, #panelBIO select, #panelBIO textarea').forEach(el => {
@@ -530,7 +602,14 @@
             }
         });
         const chkNoPedido = document.getElementById('chkNoPedido');
-        if (chkNoPedido) chkNoPedido.disabled = isBIOLocked;
+        if (chkNoPedido) chkNoPedido.disabled = isBIOLocked || !canCaptureBioGlobal;
+
+        // Lock/Unlock PINOL inputs
+        document.querySelectorAll('#panelPINOL input, #panelPINOL textarea').forEach(el => {
+            el.disabled = isPinolLocked;
+            el.style.opacity = isPinolLocked ? "0.55" : "";
+            el.style.pointerEvents = isPinolLocked ? "none" : "";
+        });
     };
 
     const syncCommandHub = () => {
@@ -550,17 +629,23 @@
             isAlreadySaved = hasTodaySR;
             isEditing = isEditingSR;
         } else if (activePanel === 'CONS') {
-            isAlreadySaved = hasTodayCONS;
+            isAlreadySaved = hasTodayCONS || !canCaptureConsGlobal;
             isEditing = isEditingCONS;
         } else if (activePanel === 'BIO') {
-            isAlreadySaved = hasTodayBIO;
+            isAlreadySaved = hasTodayBIO || !canCaptureBioGlobal;
             isEditing = isEditingBIO;
+        } else if (activePanel === 'PINOL') {
+            isAlreadySaved = hasActivePinol;
+            isEditing = false;
         }
 
         // Update status text and chip classes
         if (statusText && statusChip) {
             statusChip.style.display = "flex";
-            if (isAlreadySaved) {
+            if ((activePanel === 'BIO' && !canCaptureBioGlobal) || (activePanel === 'CONS' && !canCaptureConsGlobal)) {
+                statusText.textContent = 'Fuera de Ventana';
+                statusChip.className = 'status-chip-v5 flex items-center gap-1.5 px-3 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-600 rounded-full text-[10px] font-black uppercase tracking-wider';
+            } else if (isAlreadySaved) {
                 statusText.textContent = isEditing ? 'Editando' : 'Reporte Guardado';
                 statusChip.className = 'status-chip-v5 flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-wider';
             } else {
@@ -571,11 +656,33 @@
 
         // Show/Hide buttons
         if (saveBtn) {
-            const show = (!isAlreadySaved || isEditing);
-            saveBtn.style.setProperty('display', show ? 'flex' : 'none', 'important');
+            let show = (!isAlreadySaved || isEditing);
+            const iconSpan = saveBtn.querySelector('.material-symbols-rounded');
+            const isOutsideWindow = (activePanel === 'BIO' && !canCaptureBioGlobal) || (activePanel === 'CONS' && !canCaptureConsGlobal);
+
+            if (isOutsideWindow) {
+                saveBtn.disabled = true;
+                saveBtn.style.background = '#e2e8f0';
+                saveBtn.style.color = '#94a3b8';
+                saveBtn.style.pointerEvents = 'none';
+                saveBtn.style.opacity = '0.7';
+                saveBtn.style.boxShadow = 'none';
+                if (iconSpan) iconSpan.textContent = 'save';
+                saveBtn.style.setProperty('display', 'flex', 'important');
+            } else {
+                saveBtn.disabled = false;
+                saveBtn.style.background = '';
+                saveBtn.style.color = '';
+                saveBtn.style.pointerEvents = '';
+                saveBtn.style.opacity = '';
+                saveBtn.style.boxShadow = '';
+                if (iconSpan) iconSpan.textContent = 'save';
+                saveBtn.style.setProperty('display', show ? 'flex' : 'none', 'important');
+            }
         }
         if (editBtn) {
-            const show = (isAlreadySaved && !isEditing);
+            const hasActualCapture = (activePanel === 'SR' && hasTodaySR) || (activePanel === 'CONS' && hasTodayCONS) || (activePanel === 'BIO' && hasTodayBIO);
+            const show = (hasActualCapture && !isEditing && activePanel !== 'PINOL');
             editBtn.style.setProperty('display', show ? 'flex' : 'none', 'important');
         }
         if (cancelBtn) {
@@ -592,16 +699,31 @@
         const cluesFilter = isAdmin ? 'QTSSA012154' : (currentProfile.clues || '');
         const today = new Date().toISOString().split('T')[0];
 
+        // Weekly capture check: if Thursday or Friday, check both dates
+        let srDateFilter = [today];
+        const dow = new Date().getDay();
+        if (dow === 5) {
+            const yesterdayObj = new Date();
+            yesterdayObj.setDate(yesterdayObj.getDate() - 1);
+            srDateFilter.push(yesterdayObj.toISOString().split('T')[0]);
+        } else if (dow === 4) {
+            const tomorrowObj = new Date();
+            tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+            srDateFilter.push(tomorrowObj.toISOString().split('T')[0]);
+        }
+
         try {
-            const [resSR, resCONS, resBIO] = await Promise.all([
-                supabaseClient.from('biologicos_existencia').select('id').eq('clues', cluesFilter).eq('fecha', today).maybeSingle(),
+            const [resSR, resCONS, resBIO, resPinol] = await Promise.all([
+                supabaseClient.from('biologicos_existencia').select('id').eq('clues', cluesFilter).in('fecha', srDateFilter).limit(1),
                 supabaseClient.from('consumibles').select('id').eq('clues', cluesFilter).eq('fecha', today).maybeSingle(),
-                supabaseClient.from('biologicos_pedido').select('id').eq('clues', cluesFilter).eq('fecha_pedido_programada', targetPedidoDate).limit(1)
+                supabaseClient.from('biologicos_pedido').select('id').eq('clues', cluesFilter).eq('fecha_pedido_programada', targetPedidoDate).limit(1),
+                supabaseClient.from('pinol_solicitudes').select('id').eq('clues', cluesFilter).in('estatus', ['PENDIENTE', 'ENTREGADO']).limit(1)
             ]);
 
-            hasTodaySR = !!resSR.data;
+            hasTodaySR = resSR.data && resSR.data.length > 0;
             hasTodayCONS = !!resCONS.data;
             hasTodayBIO = resBIO.data && resBIO.data.length > 0;
+            hasActivePinol = resPinol.data && resPinol.data.length > 0;
             
             syncCommandHub();
         } catch (e) {
@@ -648,36 +770,82 @@
             return;
         }
 
-        const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+        const todayObj = new Date();
+        const year = todayObj.getFullYear();
+        const month = todayObj.getMonth();
+        const todayYmd = todayObj.toISOString().split('T')[0];
+        const startOfMonthStr = new Date(year, month, 1).toISOString().split('T')[0];
 
-        const [resBio, resCons] = await Promise.all([
-            supabaseClient.from('biologicos_existencia').select('fecha').eq('clues', cluesFilter).gte('fecha', startOfMonth),
-            supabaseClient.from('consumibles').select('fecha').eq('clues', cluesFilter).gte('fecha', startOfMonth)
+        const [resBio, resCons, resPedido] = await Promise.all([
+            supabaseClient.from('biologicos_existencia').select('fecha').eq('clues', cluesFilter).gte('fecha', startOfMonthStr),
+            supabaseClient.from('consumibles').select('fecha').eq('clues', cluesFilter).gte('fecha', startOfMonthStr),
+            supabaseClient.from('biologicos_pedido').select('id').eq('clues', cluesFilter).gte('fecha_captura', startOfMonthStr).eq('tipo_pedido', 'MENSUAL').limit(1)
         ]);
 
-        const bioCount = resBio.data ? resBio.data.length : 0;
-        const consCount = resCons.data ? resCons.data.length : 0;
+        const startOfMonth = new Date(year, month, 1);
+        const endOfMonth = new Date(year, month + 1, 0);
 
-        const today = new Date();
-        const start = new Date(today.getFullYear(), today.getMonth(), 1);
-        let expectedBio = 0;
-        let expectedCons = 0;
-
-        let iter = new Date(start);
-        while (iter <= today) {
-            if (iter.getDay() === 4) expectedCons++; 
-            if (iter.getDay() === 5) expectedBio++;  
+        const expectedDatesCons = [];
+        const expectedDatesBio = [];
+        let iter = new Date(startOfMonth);
+        while (iter <= endOfMonth) {
+            const dow = iter.getDay();
+            const ymd = iter.toISOString().split('T')[0];
+            if (dow === 4) expectedDatesCons.push(ymd);
+            if (dow === 5) expectedDatesBio.push(ymd);
             iter.setDate(iter.getDate() + 1);
         }
 
-        if (expectedBio === 0) expectedBio = 1;
-        if (expectedCons === 0) expectedCons = 1;
+        const denominatorCons = expectedDatesCons.length || 4;
+        const denominatorBio = expectedDatesBio.length || 4;
 
-        const bioPct = Math.min(100, (bioCount / expectedBio) * 100);
-        const consPct = Math.min(100, (consCount / expectedCons) * 100);
-        const totalCompliance = Math.round((bioPct + consPct) / 2);
+        let cons_semanas_ok = 0;
+        expectedDatesCons.forEach(targetJueves => {
+            const dJue = new Date(`${targetJueves}T12:00:00`);
+            const targetWindow = [targetJueves];
+            if (isMexicanHoliday(dJue)) {
+                const dMie = new Date(dJue);
+                dMie.setDate(dJue.getDate() - 1);
+                targetWindow.push(dMie.toISOString().split('T')[0]);
+            }
+            if (resCons.data && resCons.data.some(r => targetWindow.includes(r.fecha))) {
+                cons_semanas_ok++;
+            }
+        });
 
-        document.getElementById('lblCumplimientoVal').textContent = `${totalCompliance}%`;
+        let bio_semanas_ok = 0;
+        expectedDatesBio.forEach(targetViernes => {
+            const dVie = new Date(`${targetViernes}T12:00:00`);
+            const dJue = new Date(dVie);
+            dJue.setDate(dVie.getDate() - 1);
+            const targetWindow = [targetViernes, dJue.toISOString().split('T')[0]];
+            if (isMexicanHoliday(dVie) && isMexicanHoliday(dJue)) {
+                const dMie = new Date(dJue);
+                dMie.setDate(dJue.getDate() - 1);
+                targetWindow.push(dMie.toISOString().split('T')[0]);
+            }
+            if (resBio.data && resBio.data.some(r => targetWindow.includes(r.fecha))) {
+                bio_semanas_ok++;
+            }
+        });
+
+        const bPct = (bio_semanas_ok / denominatorBio) * 100;
+        const cPct = (cons_semanas_ok / denominatorCons) * 100;
+        const pPct = (resPedido.data && resPedido.data.length > 0) ? 100 : 0;
+
+        const intelligentWindow = calculateBioIntelligentWindow(year, month);
+        const windowStartYmd = intelligentWindow.start.toISOString().split('T')[0];
+        const isPedidoRequired = todayYmd >= windowStartYmd;
+
+        let score = 0;
+        if (isPedidoRequired) {
+            score = Math.round((bPct * 0.4) + (cPct * 0.4) + (pPct * 0.2));
+        } else {
+            score = Math.round((bPct * 0.5) + (cPct * 0.5));
+        }
+        if (score > 100) score = 100;
+
+        document.getElementById('lblCumplimientoVal').textContent = `${score}%`;
     };
 
     // --- Biometric Passkey Functions ---
@@ -1469,7 +1637,9 @@
                             hasError = true;
                             return;
                         }
-                        if (field === 'pedido' && val % 5 !== 0) {
+                        const bioKey = String(bioName).trim().toUpperCase();
+                        const requires5 = ["BCG", "HEXAVALENTE", "ROTAVIRUS", "NEUMOCOCICA 13", "NEUMOCOCICA 20", "SRP"].includes(bioKey);
+                        if (field === 'pedido' && requires5 && val % 5 !== 0) {
                             showToast(`El pedido para ${bioName} debe ser múltiplo de 5 (se ingresó ${val})`, "error");
                             hasError = true;
                             return;
@@ -1502,6 +1672,28 @@
                 });
 
                 if (hasError) throw new Error("Validación de pedido fallida");
+
+                // Enforce stock vs average monthly rules (BIO lock)
+                let warningMsgs = [];
+                const sinPedido = document.getElementById('chkNoPedido').checked;
+                records.forEach(rec => {
+                    const matchedBio = biologicosCatalogo.find(b => 
+                        String(b.biologico).trim().toUpperCase() === String(rec.biologico).trim().toUpperCase()
+                    );
+                    const promedioVal = matchedBio ? (matchedBio.promedio_frascos || 0) : 0;
+                    const totalVal = rec.existencia_actual_frascos + rec.pedido_frascos;
+                    const normKey = String(rec.biologico).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                    const isExento = ["VPH", "INFLUENZA", "COVID-19", "COVID 19", "VARICELA", "HEPATITIS A"].includes(normKey);
+                    
+                    if (promedioVal > 0 && totalVal < promedioVal && !isExento) {
+                        warningMsgs.push(`${rec.biologico} (Promedio: ${promedioVal}, Ingresado: ${totalVal})`);
+                    }
+                });
+
+                if (warningMsgs.length > 0) {
+                    showToast("🚫 Ajuste de cantidades requerido: " + warningMsgs.join(", "), "error");
+                    throw new Error("Existencia + Pedido es menor al promedio mensual");
+                }
                 
                 const { error } = await supabaseClient.from('biologicos_pedido').insert(records);
                 if (error) throw error;
@@ -1514,11 +1706,26 @@
                 return;
 
             } else if (activePanel === 'PINOL') {
+                if (hasActivePinol) {
+                    showToast("Ya tienes una solicitud de Pinol activa.", "error");
+                    throw new Error("Múltiples pedidos de Pinol no permitidos");
+                }
                 tableName = "pinol_solicitudes";
-                dataObject.nombre_solicita = document.getElementById('nombrePINOL').value;
+                const nombrePINOL = document.getElementById('nombrePINOL')?.value.trim() || "";
+                if (!nombrePINOL) {
+                    showToast("Ingresa el nombre de quien solicita", "error");
+                    throw new Error("Nombre requerido");
+                }
+                const solicitud = parseInt(document.getElementById('pinol_solicitud').value) || 0;
+                if (isNaN(solicitud) || solicitud < 1) {
+                    showToast("La solicitud debe ser de al menos 1 botella", "error");
+                    throw new Error("Cantidad de solicitud inválida");
+                }
+                dataObject.nombre_solicita = nombrePINOL.toUpperCase();
                 dataObject.existencia = parseInt(document.getElementById('pinol_existencia').value) || 0;
-                dataObject.solicitud = parseInt(document.getElementById('pinol_solicitud').value) || 0;
-                dataObject.observaciones = document.getElementById('pinol_observaciones').value;
+                dataObject.solicitud = solicitud;
+                dataObject.observaciones = document.getElementById('pinol_observaciones').value.trim();
+                dataObject.estatus = "PENDIENTE";
             }
 
             // Save or update using upsert/insert
@@ -1540,6 +1747,8 @@
             } else if (activePanel === 'BIO') {
                 hasTodayBIO = true;
                 isEditingBIO = false;
+            } else if (activePanel === 'PINOL') {
+                hasActivePinol = true;
             }
 
             syncCommandHub();
@@ -1634,8 +1843,11 @@
 
         document.getElementById('chkSinMovimientoSR')?.addEventListener('change', (e) => {
             const disabled = e.target.checked;
-            document.querySelectorAll('#srCardsContainer select, #srCardsContainer input, #btnAddSRCard').forEach(el => {
+            document.querySelectorAll('#srCardsContainer select, #srCardsContainer input, #srCardsContainer button, #btnAddSRCard').forEach(el => {
+                if (el.id === 'chkSinMovimientoSR') return;
                 el.disabled = disabled;
+                el.style.opacity = disabled ? "0.55" : "";
+                el.style.pointerEvents = disabled ? "none" : "";
                 if (disabled && el.type === 'number') el.value = 0;
             });
             if (disabled) showToast("Biológicos marcados Sin Movimiento.");
@@ -1643,10 +1855,12 @@
 
         document.getElementById('chkSinMovimientoCONS')?.addEventListener('change', (e) => {
             const disabled = e.target.checked;
-            document.querySelectorAll('#panelCONS input').forEach(el => {
+            document.querySelectorAll('#panelCONS input, #panelCONS textarea, #panelCONS select').forEach(el => {
                 if (el.id !== 'chkSinMovimientoCONS' && el.id !== 'nombreCONS') {
                     el.disabled = disabled;
-                    if (disabled) el.value = 0;
+                    el.style.opacity = disabled ? "0.55" : "";
+                    el.style.pointerEvents = disabled ? "none" : "";
+                    if (disabled && el.type === 'number') el.value = 0;
                 }
             });
             if (disabled) showToast("Consumibles marcados Sin Movimiento.");
@@ -1656,6 +1870,8 @@
             const disabled = e.target.checked;
             document.querySelectorAll('.bio-ped-input').forEach(el => {
                 el.disabled = disabled;
+                el.style.opacity = disabled ? "0.55" : "";
+                el.style.pointerEvents = disabled ? "none" : "";
                 if (disabled) {
                     el.value = 0;
                     el.dispatchEvent(new Event('input'));
@@ -1729,6 +1945,186 @@
         });
 
         document.getElementById('hubSaveBtn')?.addEventListener('click', saveReport);
+
+        // --- Mobile Feedback Event Listeners ---
+        const fbBtn = document.getElementById('btnFeedbackMobile');
+        const fbOverlay = document.getElementById('feedbackMobileOverlay');
+        const fbForm = document.getElementById('feedbackMobileForm');
+        const fbUploadArea = document.getElementById('fbMobileUploadArea');
+        const fbImagesInput = document.getElementById('fbMobileImagesInput');
+        const fbPreviewGrid = document.getElementById('fbMobilePreviewGrid');
+
+        let fbUploadedFiles = [];
+
+        if (fbBtn && fbOverlay) {
+            fbBtn.addEventListener('click', () => {
+                fbOverlay.classList.remove('hidden');
+                fbUploadedFiles = [];
+                if (fbPreviewGrid) fbPreviewGrid.innerHTML = '';
+                if (fbForm) fbForm.reset();
+            });
+        }
+
+        if (fbUploadArea && fbImagesInput) {
+            fbUploadArea.addEventListener('click', () => {
+                fbImagesInput.click();
+            });
+        }
+
+        const handleFbFiles = (files) => {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (!file.type.startsWith('image/')) continue;
+                fbUploadedFiles.push(file);
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const idx = fbUploadedFiles.length - 1;
+                    const item = document.createElement('div');
+                    item.className = 'fb-mobile-preview-item';
+                    item.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview">
+                        <button type="button" class="fb-mobile-preview-remove" data-index="${idx}">✕</button>
+                    `;
+                    fbPreviewGrid.appendChild(item);
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        if (fbImagesInput) {
+            fbImagesInput.addEventListener('change', (e) => {
+                if (e.target.files) {
+                    handleFbFiles(e.target.files);
+                    fbImagesInput.value = '';
+                }
+            });
+        }
+
+        if (fbPreviewGrid) {
+            fbPreviewGrid.addEventListener('click', (e) => {
+                const removeBtn = e.target.closest('.fb-mobile-preview-remove');
+                if (removeBtn) {
+                    const idx = parseInt(removeBtn.dataset.index);
+                    fbUploadedFiles.splice(idx, 1);
+                    removeBtn.closest('.fb-mobile-preview-item').remove();
+                    // Update indices
+                    fbPreviewGrid.querySelectorAll('.fb-mobile-preview-remove').forEach((btn, newIdx) => {
+                        btn.dataset.index = newIdx;
+                    });
+                }
+            });
+        }
+
+        if (fbOverlay) {
+            // Paste screenshot handler
+            fbOverlay.addEventListener('paste', (e) => {
+                if (fbOverlay.classList.contains('hidden')) return;
+                const items = e.clipboardData?.items;
+                if (items) {
+                    const files = [];
+                    for (let i = 0; i < items.length; i++) {
+                        if (items[i].type.indexOf('image') !== -1) {
+                            const file = items[i].getAsFile();
+                            if (file) files.push(file);
+                        }
+                    }
+                    if (files.length > 0) {
+                        handleFbFiles(files);
+                        showToast("Imagen pegada desde el portapapeles");
+                    }
+                }
+            });
+        }
+
+        if (fbForm) {
+            fbForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const type = document.getElementById('fbMobileType').value;
+                const moduleVal = document.getElementById('fbMobileModule').value;
+                const message = document.getElementById('fbMobileMessage').value;
+                const submitBtn = document.getElementById('btnSubmitFeedbackMobile');
+
+                const originalBtnText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<span class="material-symbols-rounded animate-spin text-sm">refresh</span> Enviando...';
+                submitBtn.disabled = true;
+
+                const userName = currentProfile?.nombre || currentProfile?.usuario || "Usuario Anónimo Móvil";
+                const userRole = currentProfile?.rol || "Desconocido";
+                const userUnit = currentProfile?.unidad || "N/A";
+                const userClues = currentProfile?.clues || "N/A";
+
+                let embedColor = 3447003;
+                let typeEmoji = "❓ Pregunta/Duda";
+                if (type === "Sugerencia") {
+                    embedColor = 16766720;
+                    typeEmoji = "💡 Sugerencia (Mobile)";
+                } else if (type === "Error") {
+                    embedColor = 15158332;
+                    typeEmoji = "🚨 Reporte de Error (Mobile)";
+                }
+
+                const fields = [
+                    { name: "👤 Usuario", value: userName, inline: true },
+                    { name: "🔑 Rol", value: userRole, inline: true },
+                    { name: "🏥 Unidad", value: userUnit, inline: true },
+                    { name: "🏢 CLUES", value: userClues, inline: true },
+                    { name: "🛠️ Módulo", value: moduleVal, inline: true }
+                ];
+
+                if (type === "Error" && recentErrors.length > 0) {
+                    fields.push({
+                        name: "💻 Errores Recientes (Consola)",
+                        value: "```js\n" + recentErrors.join("\n") + "\n```",
+                        inline: false
+                    });
+                }
+
+                const embed = {
+                    title: `${typeEmoji}`,
+                    description: `**Mensaje:**\n${message}`,
+                    color: embedColor,
+                    fields: fields,
+                    footer: { text: "SIREVAQ Mobile" },
+                    timestamp: new Date().toISOString()
+                };
+
+                if (fbUploadedFiles.length > 0) {
+                    embed.image = { url: "attachment://image_0.png" };
+                }
+
+                const DISCORD_WEBHOOK_URL = atob("aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTUxNjE5OTgzNTQzNzM3MTU1My8yU19XYW1qck9PcE5ybUdYbHV3QTdTcmRTa3FhZXNiTXY1aXpzWVByQlN4dnJPaDg0LWZIYThHQlFEanNVYWVLc0VIUw==");
+
+                const formData = new FormData();
+                formData.append("payload_json", JSON.stringify({ embeds: [embed] }));
+
+                fbUploadedFiles.forEach((file, index) => {
+                    const ext = file.name.split('.').pop() || "png";
+                    formData.append(`files[${index}]`, file, `image_${index}.${ext}`);
+                });
+
+                try {
+                    const response = await fetch(DISCORD_WEBHOOK_URL, {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        showToast("¡Feedback recibido con éxito!");
+                        fbOverlay.classList.add('hidden');
+                        fbForm.reset();
+                    } else {
+                        throw new Error("Discord response not ok");
+                    }
+                } catch (error) {
+                    console.error("Error sending mobile feedback:", error);
+                    showToast("No se pudo enviar el reporte. Intenta más tarde.", "error");
+                } finally {
+                    submitBtn.innerHTML = originalBtnText;
+                    submitBtn.disabled = false;
+                }
+            });
+        }
     };
 
     // --- Animated Particles Background ---
@@ -1804,6 +2200,120 @@
 
         animate();
     };
+
+    // --- Date & Capture Window Calculations ---
+    function calculateBioIntelligentWindow(year, month) {
+        return getBioCaptureWindow(year, month + 1);
+    }
+
+    function checkConsumiblesCaptureWindow() {
+        const d = new Date();
+        const dow = d.getDay();
+
+        // 4 = Thursday
+        if (dow === 4) {
+            return true;
+        }
+
+        // 3 = Wednesday
+        if (dow === 3) {
+            const tomorrow = new Date(d);
+            tomorrow.setDate(d.getDate() + 1);
+            if (isMexicanHoliday(tomorrow)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    function getBioCaptureWindow(year, month) {
+        let target = new Date(year, month - 1, 22);
+        while (!isBusinessDay(target)) {
+            target.setDate(target.getDate() - 1);
+        }
+        let start = new Date(target);
+        start.setDate(start.getDate() - 1);
+        while (!isBusinessDay(start)) {
+            start.setDate(start.getDate() - 1);
+        }
+        let end = new Date(target);
+        end.setDate(end.getDate() + 1);
+        while (!isBusinessDay(end)) {
+            end.setDate(end.getDate() + 1);
+        }
+        return { start, target, end };
+    }
+
+    function isBusinessDay(date) {
+        const day = date.getDay();
+        if (day === 0 || day === 6) return false;
+        if (isMexicanHoliday(date)) return false;
+        return true;
+    }
+
+    function isMexicanHoliday(date) {
+        if (typeof dayjs === 'undefined') {
+            return false;
+        }
+        const d = dayjs(date);
+        const y = d.year();
+        const m = d.month() + 1;
+        const dayOfMonth = d.date();
+        const dayOfWeek = d.day();
+
+        const fixed = [
+            "01-01", // Año nuevo
+            "05-01", // Trabajo
+            "09-16", // Independencia
+            "12-25"  // Navidad
+        ];
+
+        const mmdd = `${String(m).padStart(2, "0")}-${String(dayOfMonth).padStart(2, "0")}`;
+        if (fixed.includes(mmdd)) return true;
+
+        if (m === 2 && dayOfWeek === 1 && dayOfMonth <= 7) return true;
+        if (m === 3 && dayOfWeek === 1 && dayOfMonth >= 15 && dayOfMonth <= 21) return true;
+        if (m === 11 && dayOfWeek === 1 && dayOfMonth >= 15 && dayOfMonth <= 21) return true;
+
+        const easter = dayjs(getEasterDate(y));
+        const juevesSanto = easter.subtract(3, 'day');
+        const viernesSanto = easter.subtract(2, 'day');
+
+        if (d.isSame(juevesSanto, 'day') || d.isSame(viernesSanto, 'day')) {
+            return true;
+        }
+        return false;
+    }
+
+    function getEasterDate(year) {
+        const a = year % 19;
+        const b = Math.floor(year / 100);
+        const c = year % 100;
+        const d = Math.floor(b / 4);
+        const e = b % 4;
+        const f = Math.floor((b + 8) / 25);
+        const g = Math.floor((b - f + 1) / 3);
+        const h = (19 * a + b - d - g + 15) % 30;
+        const i = Math.floor(c / 4);
+        const k = c % 4;
+        const l = (32 + 2 * e + 2 * i - h - k) % 7;
+        const m = Math.floor((a + 11 * h + 22 * l) / 451);
+        const month = Math.floor((h + l - 7 * m + 114) / 31);
+        const day = ((h + l - 7 * m + 114) % 31) + 1;
+        return new Date(year, month - 1, day);
+    }
+
+    function dateToLocalYmd(d) {
+        if (!d) return "";
+        if (typeof d === "string") return d;
+        if (!(d instanceof Date)) return "";
+        if (isNaN(d.getTime())) return "";
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+    }
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {

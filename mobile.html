@@ -3,17 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>SIREVAQ - Mobile Edition</title>
+  <title>SIREVAQ</title>
   <meta name="theme-color" content="#f1f4f8">
   
   <!-- Content Security Policy (CSP) -->
   <meta http-equiv="Content-Security-Policy"
     content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com https://fastly.jsdelivr.net https://cdnjs.cloudflare.com https://js.sentry-cdn.com https://browser.sentry-cdn.com https://us-assets.i.posthog.com https://us.i.posthog.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://raw.githubusercontent.com https://images.unsplash.com; connect-src 'self' https: wss:; frame-src 'self';">
 
-  <!-- iOS Support -->
+  <!-- Smart Redirect: Redirigir a versión desktop si no es táctil o si la pantalla es grande -->
+  <script>
+    if (!('ontouchstart' in window || navigator.maxTouchPoints > 0) || window.innerWidth > 1024) {
+      window.location.replace('index.html');
+    }
+  </script>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="site.webmanifest">
+
+  <!-- iOS PWA Support -->
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="SIREVAQ">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+  <!-- Favicons -->
+  <link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="shortcut icon" href="favicon.ico" />
 
   <!-- Fuentes e iconos -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -153,7 +170,7 @@
     </div>
 
     <!-- 📲 Área de Contenido de Formularios -->
-    <main id="captureContentArea" class="flex-1 p-6 space-y-8 max-w-md mx-auto w-full">
+    <main id="captureContentArea" class="flex-1 p-6 pb-32 space-y-8 max-w-md mx-auto w-full">
 
       <!-- ==================== BIOLÓGICOS (SR) ==================== -->
       <section id="panelSR" class="panel-section hidden">
@@ -373,7 +390,7 @@
         <div class="flex items-center gap-3 border-b border-slate-100 pb-3 mb-3">
           <div class="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-lg text-slate-700">👤</div>
           <div class="min-w-0">
-            <h3 id="profileName" class="text-xs font-black text-slate-900 leading-none mb-1 truncate">Cargando...</h3>
+            <h3 id="profileName" style="word-break: break-all; white-space: normal; line-height: 1.3;" class="text-xs font-black text-slate-900 mb-1">Cargando...</h3>
             <p id="profileRole" class="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Rol</p>
           </div>
         </div>
@@ -420,12 +437,16 @@
         </div>
 
         <div id="profileTab_mas" class="profile-tab-content hidden">
-          <div class="space-y-4">
-            <button id="btnSetBCGMobile" class="w-full h-11 bg-slate-900 text-white font-black rounded-xl text-xs uppercase tracking-widest active:scale-95 transition-all">
+          <div class="flex flex-col gap-3">
+            <button id="btnSetBCGMobile" class="hidden w-full h-11 bg-slate-900 text-white font-black rounded-xl text-xs uppercase tracking-widest active:scale-95 transition-all">
               Establecer fecha apertura BCG
             </button>
             <button id="btnDirectorioBCGMobile" class="w-full h-11 bg-slate-100 border border-slate-200 text-slate-800 font-black rounded-xl text-xs uppercase tracking-widest active:scale-95 transition-all">
               Directorio BCG
+            </button>
+            <button id="btnFeedbackMobile" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);" class="w-full h-11 text-white font-black rounded-xl text-xs uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-1.5">
+              <span class="material-symbols-rounded text-sm">chat</span>
+              <span>Enviar Feedback / Soporte</span>
             </button>
           </div>
         </div>
@@ -518,6 +539,80 @@
         <!-- Lista de directorio -->
       </div>
       <button id="btnCancelBCGDir" class="w-full h-11 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs uppercase mt-4 flex-shrink-0">Cerrar</button>
+    </div>
+  </div>
+
+  <div class="dropdown-overlay hidden" id="feedbackMobileOverlay">
+    <div class="dropdown-card max-w-md flex flex-col max-h-[85vh] relative w-[calc(100%-32px)] p-6 bg-white rounded-3xl shadow-2xl border border-slate-100">
+      <button type="button" style="position: absolute; top: 20px; right: 20px; z-index: 10;" class="text-slate-400 hover:text-slate-900" onclick="document.getElementById('feedbackMobileOverlay').classList.add('hidden')">
+        <span class="material-symbols-rounded">close</span>
+      </button>
+      <div class="border-b border-slate-100 pb-3 mb-4 flex-shrink-0">
+        <h3 class="text-base font-black text-slate-900">Soporte Técnico</h3>
+        <p class="text-[11px] text-slate-400 font-semibold leading-relaxed">Reporta un error o sugiere mejoras para la versión móvil.</p>
+      </div>
+
+      <div class="flex-1 overflow-y-auto pr-1 space-y-4">
+        <!-- WhatsApp Direct Support -->
+        <a href="https://wa.me/524425507146?text=Hola%20Carlos,%20necesito%20soporte%20con%20la%20versión%20móvil%20de%20SIREVAQ..."
+           target="_blank" style="text-decoration: none; display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-radius: 16px; background: linear-gradient(135deg, rgba(37, 211, 102, 0.1) 0%, rgba(18, 140, 126, 0.05) 100%); border: 1px solid rgba(37, 211, 102, 0.2); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='none'">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: #25d366; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(37, 211, 102, 0.3); flex-shrink: 0;">
+            <svg viewBox="0 0 24 24" style="width: 20px; height: 20px; fill: #ffffff;">
+              <path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.761.46 3.475 1.332 4.988L2 22l5.176-1.357c1.468.8 3.123 1.22 4.825 1.22 5.506 0 9.988-4.482 9.988-9.988C22 6.482 17.518 2 12.012 2zm3.844 14.241c-.244.688-1.222 1.259-1.688 1.312-.456.052-.907.245-2.909-.589-2.56-1.066-4.212-3.67-4.339-3.839-.127-.17-1.026-1.365-1.026-2.605 0-1.24.646-1.848.874-2.095.228-.248.498-.31.664-.31.166 0 .332.002.477.009.15.007.352-.057.552.428.2.485.684 1.663.743 1.782.059.12.098.258.019.414-.079.156-.119.255-.239.395-.12.14-.252.312-.359.419-.119.119-.244.25-.104.49.14.24.622 1.025 1.332 1.657.917.817 1.693 1.07 1.932 1.189.239.119.38.101.522-.059.143-.16.622-.724.789-.968.167-.244.332-.206.56-.12.228.086 1.448.683 1.7.808.252.125.42.188.481.294.062.106.062.615-.182 1.303z" />
+            </svg>
+          </div>
+          <div style="flex: 1; min-w: 0;">
+            <span style="font-size: 13px; font-weight: 800; color: #0f172a; display: block; margin-bottom: 2px;">Soporte por WhatsApp</span>
+            <span style="font-size: 10px; font-weight: 600; color: #64748b; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Respuesta directa del administrador</span>
+          </div>
+          <span class="material-symbols-rounded text-slate-400 text-base flex-shrink-0">open_in_new</span>
+        </a>
+
+        <!-- Formulario de Feedback -->
+        <form id="feedbackMobileForm" class="space-y-4">
+          <div>
+            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Tipo de mensaje</label>
+            <select id="fbMobileType" class="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 outline-none focus:border-slate-400">
+              <option value="Sugerencia">💡 Sugerencia / Idea</option>
+              <option value="Error">🚨 Reporte de Error</option>
+              <option value="Duda">❓ Pregunta / Otro</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Módulo afectado</label>
+            <select id="fbMobileModule" class="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 outline-none focus:border-slate-400">
+              <option value="General">General / Inicio</option>
+              <option value="Biológicos (SR)">Biológicos (SR)</option>
+              <option value="Consumibles (CONS)">Consumibles (CONS)</option>
+              <option value="Pedido Mensual (BIO)">Pedido Mensual (BIO)</option>
+              <option value="Pinol">Solicitud de Pinol</option>
+              <option value="Perfil">Mi Perfil / Ajustes</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Descripción</label>
+            <textarea id="fbMobileMessage" required placeholder="Escribe aquí los detalles..." class="w-full h-24 bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-800 outline-none focus:border-slate-400 resize-none"></textarea>
+          </div>
+
+          <!-- Capturas de pantalla o imágenes -->
+          <div>
+            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Adjuntar imágenes</label>
+            <button type="button" id="fbMobileUploadArea" style="width: 100%; height: 50px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
+              <span class="material-symbols-rounded text-slate-500 text-lg">add_a_photo</span>
+              <span style="font-size: 12px; font-weight: 700; color: #475569;">Seleccionar Fotos / Capturas</span>
+              <input type="file" id="fbMobileImagesInput" accept="image/*" multiple class="hidden">
+            </button>
+            <div id="fbMobilePreviewGrid" class="grid grid-cols-3 gap-2 mt-3"></div>
+          </div>
+
+          <button type="submit" id="btnSubmitFeedbackMobile" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);" class="w-full h-12 text-white font-black rounded-xl text-xs uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2">
+            <span class="material-symbols-rounded text-sm">send</span>
+            <span>Enviar Reporte</span>
+          </button>
+        </form>
+      </div>
     </div>
   </div>
 
