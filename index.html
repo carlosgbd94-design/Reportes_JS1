@@ -5,6 +5,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SIREVAQ</title>
+  <script>
+    if (('ontouchstart' in window || navigator.maxTouchPoints > 0) && 
+        (window.innerWidth <= 1024 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))) {
+      window.location.replace('mobile.html');
+    }
+  </script>
   <meta name="description"
     content="Sistema de Reportes y Evaluación en Vacunación de Querétaro de la Jurisdicción Sanitaria 1">
   <meta name="theme-color" content="var(--md-sys-color-on-surface)">
@@ -52,7 +58,6 @@
   <!-- Estilos -->
   <link rel="stylesheet" href="tailwind_compiled.css">
   <link rel="stylesheet" href="style.css?v=2026.56" type="text/css">
-  <link rel="stylesheet" href="mobile.css?v=2026.26">
 
   <style>
     /* Premium Switch Styling inline to bypass SW cache issues */
@@ -209,8 +214,6 @@
   <script defer src="https://unpkg.com/just-validate@4.3.0/dist/just-validate.production.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
-  <!-- Mobile Adaptation Layer (MAL) -->
-  <script src="mobile.js?v=2026.26" defer></script>
   <!-- Archivo Principal -->
   <script src="main.js?v=2026.49" defer></script>
 
@@ -247,19 +250,7 @@
         <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" result="raw-noise" />
         <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.18 0" in="raw-noise"
           result="noise-map" />
-        <feDisplacementMap in="SourceGraphic" in2="noise-map" scale="18" xChannelSelector="R" yChannelSelector="G"
-          result="refracted-source" />
-        <feOffset in="refracted-source" dx="-2.5" dy="0" result="red-layer" />
-        <feColorMatrix in="red-layer" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
-          result="red-only" />
-        <feOffset in="refracted-source" dx="2.5" dy="0" result="blue-layer" />
-        <feColorMatrix in="blue-layer" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
-          result="blue-only" />
-        <feColorMatrix in="refracted-source" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"
-          result="green-only" />
-        <feBlend mode="screen" in="red-only" in2="green-only" result="rg-blend" />
-        <feBlend mode="screen" in="rg-blend" in2="blue-only" result="chromatic-aberration" />
-        <feComposite operator="over" in="chromatic-aberration" in2="SourceGraphic" />
+        <feDisplacementMap in="SourceGraphic" in2="noise-map" scale="18" xChannelSelector="R" yChannelSelector="G" />
       </filter>
     </defs>
   </svg>
@@ -366,7 +357,7 @@
 
 
           <!-- Logo Q -->
-          <img id="logoB" class="hidden sm:block object-contain flex-none transition-all duration-300"
+          <img id="logoB" class="object-contain flex-none transition-all duration-300"
             style="height: 40px !important; width: auto !important;"
             src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png"
             alt="Gobierno de Querétaro">
@@ -374,7 +365,7 @@
           <div class="hidden sm:block w-[1px] h-8 bg-primary/20 flex-none mx-2"></div>
 
           <!-- JS1 Branding Text -->
-          <div class="flex flex-col flex-none justify-center transition-all duration-300">
+          <div class="hidden sm:flex flex-col flex-none justify-center transition-all duration-300">
             <h1 class="text-lg sm:text-2xl font-black text-primary m-0 leading-none flex items-center gap-1 sm:gap-2">
               JS1 <span class="font-medium hidden sm:inline"
                 style="color: var(--md-sys-color-on-surface-variant) !important;">SIREVAQ</span>
@@ -1280,12 +1271,8 @@
                   <label class="text-[11px] font-black text-primary uppercase tracking-widest text-center truncate">SRP
                     (Dosis)</label>
                   <div class="touch-stepper-wrap flex items-center gap-2">
-                    <button type="button" class="stepper-btn stepper-btn-minus"
-                      onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
                     <input id="srp_dosis" type="number" min="0" placeholder="0"
                       class="w-full h-[64px] bg-surface-container border-2 border-slate-300 rounded-2xl text-[26px] font-black text-primary focus:border-primary transition-all outline-none text-center">
-                    <button type="button" class="stepper-btn stepper-btn-plus"
-                      onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
                   </div>
                 </div>
 
@@ -1294,12 +1281,8 @@
                   <label class="text-[11px] font-black text-primary uppercase tracking-widest text-center truncate">SR
                     (Dosis)</label>
                   <div class="touch-stepper-wrap flex items-center gap-2">
-                    <button type="button" class="stepper-btn stepper-btn-minus"
-                      onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
                     <input id="sr_dosis" type="number" min="0" placeholder="0"
                       class="w-full h-[64px] bg-surface-container border-2 border-slate-300 rounded-2xl text-[26px] font-black text-primary focus:border-primary transition-all outline-none text-center">
-                    <button type="button" class="stepper-btn stepper-btn-plus"
-                      onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
                   </div>
                 </div>
 
@@ -1309,12 +1292,8 @@
                     class="text-[11px] font-black text-primary uppercase tracking-widest text-center truncate">Jeringa
                     0.5</label>
                   <div class="touch-stepper-wrap flex items-center gap-2">
-                    <button type="button" class="stepper-btn stepper-btn-minus"
-                      onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
                     <input id="jeringa_aplic_05ml_0605502657" type="number" min="0" placeholder="0"
                       class="w-full h-[64px] bg-primary/5 border-2 border-primary/30 rounded-2xl text-[26px] font-black text-primary focus:border-primary focus:bg-surface transition-all outline-none text-center">
-                    <button type="button" class="stepper-btn stepper-btn-plus"
-                      onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
                   </div>
                 </div>
 
@@ -1324,12 +1303,8 @@
                     class="text-[11px] font-black text-primary uppercase tracking-widest text-center truncate">Jeringa
                     5.0</label>
                   <div class="touch-stepper-wrap flex items-center gap-2">
-                    <button type="button" class="stepper-btn stepper-btn-minus"
-                      onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
                     <input id="jeringa_reconst_5ml_0605500438" type="number" min="0" placeholder="0"
                       class="w-full h-[64px] bg-primary/5 border-2 border-primary/30 rounded-2xl text-[26px] font-black text-primary focus:border-primary focus:bg-surface transition-all outline-none text-center">
-                    <button type="button" class="stepper-btn stepper-btn-plus"
-                      onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
                   </div>
                 </div>
 
