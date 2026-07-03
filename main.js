@@ -8014,12 +8014,10 @@ window.addSRRow = function (data = null) {
       </td>
       <td class="p-4 py-3" data-label="Frascos">
         <div class="relative group w-full flex items-center gap-1.5 touch-stepper-wrap">
-          <button type="button" class="stepper-btn stepper-btn-minus" onclick="const inp=this.nextElementSibling.querySelector('input'); inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
           <div class="relative w-full">
             <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-rounded text-slate-400 text-[18px] pointer-events-none transition-colors group-focus-within:text-primary">inventory_2</span>
             <input type="number" class="sr-cantidad-input w-full bg-slate-50 border-2 border-slate-400 rounded-xl pr-3 py-2.5 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" min="0" step="1" value="${data?.cantidad || ""}" placeholder="0">
           </div>
-          <button type="button" class="stepper-btn stepper-btn-plus" onclick="const inp=this.previousElementSibling.querySelector('input'); inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
         </div>
       </td>
       <td class="p-4 py-3 text-center" data-label="Acción">
@@ -9429,25 +9427,21 @@ function renderBioRows(rows) {
       </div>
       <!-- 🛡️ WRAPPER GRID HORIZONTAL DE INPUTS (Optimizado para Mobile y Desktop) -->
       <div class="bio-card-inputs-row">
-        <div class="text-center flex items-center justify-center gap-1 touch-stepper-wrap">
-          <button type="button" class="stepper-btn stepper-btn-minus" onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
+        <div class="text-center flex items-center justify-center">
           <input
             class="bioInput"
             style="width: 80px; height: 48px; text-align: center; font-size: 18px; font-weight: 900; border: 2px solid #cbd5e1; border-radius: 12px; background: #ffffff; outline: none; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"
             type="number" min="0" step="any" inputmode="decimal"
             data-i="${i}" data-kind="existencia"
             value="${r.existencia_actual_frascos ?? ""}" placeholder="0">
-          <button type="button" class="stepper-btn stepper-btn-plus" onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
         </div>
-        <div class="text-center flex items-center justify-center gap-1 touch-stepper-wrap">
-          <button type="button" class="stepper-btn stepper-btn-minus" onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">-</button>
+        <div class="text-center flex items-center justify-center">
           <input
             class="bioInput"
             style="width: 80px; height: 48px; text-align: center; font-size: 18px; font-weight: 900; border: 2px solid #cbd5e1; border-radius: 12px; background: #ffffff; outline: none; color: #0f172a; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"
             type="number" min="0" step="1" inputmode="numeric"
             data-i="${i}" data-kind="pedido"
             value="${r.pedido_frascos ?? ""}" placeholder="0">
-          <button type="button" class="stepper-btn stepper-btn-plus" onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input', {bubbles:true})); inp.dispatchEvent(new Event('change', {bubbles:true}));">+</button>
         </div>
       </div>
       <div class="text-center">
@@ -17935,7 +17929,7 @@ function syncCommandHub() {
   const hub = document.getElementById("globalCommandHub");
   if (!hub) return;
 
-  const mainPanel = AppState.mainPanel; // CAP, ARCHIVOS, NOTIFS, ADMIN
+  const mainPanel = AppState.mainTab || AppState.mainPanel; // CAP, ARCHIVOS, NOTIFS, ADMIN
   const captureTab = AppState.captureTab || "SR";
 
   const isEditing = (captureTab === "SR" && typeof EDIT_SR !== "undefined" && EDIT_SR) ||
