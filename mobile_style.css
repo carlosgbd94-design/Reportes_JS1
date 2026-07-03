@@ -1,0 +1,747 @@
+/* 📱 SIREVAQ - Mobile Premium Stylesheet (iOS 27 Liquid Glass & OLED Edition) */
+
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+  
+  /* Light Theme variables (Carbon Graphite Edition) */
+  --bg-app: #f1f4f8;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --card-bg: #ffffff;
+  --card-border: rgba(0, 0, 0, 0.08);
+  --input-bg: #f8fafc;
+  --input-border: rgba(0, 0, 0, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.45);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-shadow: 0 16px 48px rgba(0, 0, 0, 0.04), inset 0 1px 1px rgba(255, 255, 255, 0.8);
+  
+  --emerald-400: #10b981;
+  --rose-400: #ef4444;
+}
+
+/* Dark Theme Variables (Pure OLED Black) */
+html.dark {
+  --bg-app: #000000;
+  --text-primary: #f8fafc;
+  --text-secondary: #a1a1aa;
+  --card-bg: rgba(9, 9, 11, 0.8);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --input-bg: #000000;
+  --input-border: rgba(255, 255, 255, 0.1);
+  --glass-bg: rgba(9, 9, 11, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  min-height: 100dvh !important;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: contain;
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+/* Original Connected Nodes Background SVG */
+.bg-pattern-svg {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.12;
+}
+
+body, html, input, select, textarea, button, p, label, div, span:not(.material-symbols-rounded) {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+.material-symbols-rounded {
+  font-family: 'Material Symbols Rounded' !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+/* iOS 27 Premium Liquid Glass Spec */
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.45) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.04), inset 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: url(#liquid-refraction) blur(20px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(190%) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 🛸 Floating Command Hub (iOS FAB Edition) */
+.command-hub {
+  position: fixed !important;
+  bottom: 110px !important;
+  right: 20px !important;
+  left: auto !important;
+  transform: translateY(20px) !important;
+  width: 56px !important;
+  height: auto !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 8px !important;
+  z-index: 9999 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  will-change: transform, opacity !important;
+}
+
+.command-hub.visible {
+  transform: translateY(0) !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  visibility: visible !important;
+}
+
+.status-chip-v5 {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  background: rgba(15, 23, 42, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  padding: 4px 10px !important;
+  border-radius: 12px !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  white-space: nowrap !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  margin: 0 !important;
+  width: auto !important;
+}
+
+.command-hub button {
+  width: 56px !important;
+  height: 56px !important;
+  border-radius: 50% !important;
+  color: #ffffff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.2) !important;
+  cursor: pointer !important;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s ease !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+#hubSaveBtn {
+  background: #0f172a !important;
+}
+
+#hubEditBtn {
+  background: #0284c7 !important;
+}
+
+#hubCancelBtn {
+  background: #ef4444 !important;
+}
+
+html.dark .command-hub button {
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.command-hub button:active {
+  transform: scale(0.85) !important;
+}
+
+/* Premium Panel Fade-In Transitions */
+.panel-section {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.panel-section.hidden {
+  opacity: 0 !important;
+  transform: translateY(12px) !important;
+  display: none !important;
+}
+
+/* 📱 Selection Dock (iOS Liquid Glass Spec) */
+.dock-container {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 380px;
+  height: 76px;
+  background: var(--glass-bg);
+  border: 1.5px solid var(--glass-border);
+  backdrop-filter: url(#liquid-refraction) blur(20px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(200%) !important;
+  border-radius: 36px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 8px;
+  z-index: 100;
+  box-shadow: var(--glass-shadow);
+  touch-action: none;
+}
+
+.dock-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
+  z-index: 2;
+}
+
+.dock-item span {
+  font-size: 22px !important;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dock-item label {
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+.dock-item.active {
+  color: var(--text-primary);
+}
+
+.dock-item.active span {
+  transform: translateY(-2px) scale(1.1);
+}
+
+.dock-item.active label {
+  opacity: 1;
+}
+
+/* Slide Indicator */
+.dock-indicator {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 76px;
+  height: 50px;
+  border-radius: 25px !important;
+  z-index: 1;
+  pointer-events: none;
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.2, 1);
+  will-change: transform;
+  transform: translateY(-50%) scale(1.1); /* Circular water droplet magnifying effect */
+}
+
+.dock-indicator-inner {
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.22) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.65) !important;
+  border-radius: 25px !important;
+  /* Magnifying Glass Bezel */
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.12), 
+    inset 0 4px 8px rgba(255, 255, 255, 0.85),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.03) !important;
+  backdrop-filter: url(#liquid-refraction) blur(3px) saturate(180%) contrast(110%) !important;
+  -webkit-backdrop-filter: blur(3px) saturate(180%) contrast(110%) !important;
+}
+
+html.dark .dock-indicator-inner {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 25px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Active panel icon fill style */
+.dock-item.active .material-symbols-rounded {
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24 !important;
+}
+
+/* 🗂️ Cascade Card Layout */
+.biologic-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+  transition: all 0.3s ease;
+}
+
+.biologic-card .card-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 12px !important;
+  padding-bottom: 8px !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  min-height: 38px !important;
+}
+
+html.dark .biologic-card .card-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.biologic-card .card-header span.text-xs {
+  line-height: 1 !important;
+  margin: 0 !important;
+}
+
+.biologic-card .card-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+/* Cascade Inputs */
+.cascade-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cascade-field {
+  display: grid;
+  grid-template-columns: 85px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.cascade-field label {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.cascade-field input, .cascade-field select {
+  height: 44px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 12px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.3s ease;
+}
+
+.cascade-field input:focus, .cascade-field select:focus {
+  border-color: var(--text-primary);
+}
+
+.cascade-field input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Touch Stepper Custom Button */
+.touch-stepper-wrap .stepper-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: active 0.1s ease;
+}
+
+html.dark .touch-stepper-wrap .stepper-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.touch-stepper-wrap .stepper-btn:active {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* 👥 Overlays and Modals */
+.dropdown-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 0.3s ease;
+}
+
+html.dark .dropdown-overlay {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.dropdown-overlay.hidden {
+  display: none !important;
+}
+
+.dropdown-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 32px;
+  padding: 24px;
+  box-shadow: var(--glass-shadow);
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: 85vh !important;
+  overflow: hidden !important;
+}
+
+/* Tab buttons for Profile dropdown */
+.profile-tab-btn {
+  padding: 8px 12px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+.profile-tab-btn.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--text-primary);
+}
+
+/* Keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Toast styling */
+.toast-msg {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 14px 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+}
+
+.toast-msg.success {
+  border-left: 4px solid var(--emerald-400);
+}
+
+.toast-msg.error {
+  border-left: 4px solid var(--rose-400);
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%) scale(0.9); opacity: 0; }
+  to { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+/* Premium Switch Styling (iOS Design System) */
+.premium-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  width: 50px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.premium-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.premium-switch-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.06);
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  border-radius: 100px;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+html.dark .premium-switch-track {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.premium-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.premium-switch-icon {
+  font-size: 13px !important;
+  color: #000000;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+  font-weight: 900;
+}
+
+.premium-switch input:checked + .premium-switch-track {
+  background-color: var(--text-primary);
+  border-color: var(--text-primary);
+}
+
+.premium-switch input:checked + .premium-switch-track .premium-switch-thumb {
+  left: 24px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+.premium-switch input:checked + .premium-switch-track .premium-switch-icon {
+  opacity: 1;
+  transform: scale(1);
+  color: var(--bg-app);
+}
+
+/* Shelf life colors */
+.shelf-life-danger {
+  color: #ef4444 !important;
+  font-weight: 800;
+  background: rgba(239, 68, 68, 0.1);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.shelf-life-warn {
+  color: #f59e0b !important;
+  font-weight: 800;
+  background: rgba(245, 158, 11, 0.1);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.shelf-life-ok {
+  color: #10b981 !important;
+  font-weight: 800;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+/* KPI Chips */
+.kpi-chip {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+}
+
+/* 🔒 Custom Login Form Elements */
+.login-input-wrap {
+  position: relative;
+  width: 100%;
+  text-align: left;
+}
+
+.login-input {
+  width: 100% !important;
+  height: 56px !important;
+  background: rgba(0, 0, 0, 0.03) !important;
+  border: 1.5px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: 20px !important;
+  padding: 0 24px 0 52px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  outline: none !important;
+  transition: all 0.3s ease !important;
+}
+
+html.dark .login-input {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.login-input:focus {
+  border-color: #0f172a !important;
+  background: #ffffff !important;
+}
+
+html.dark .login-input:focus {
+  border-color: #ffffff !important;
+  background: #000000 !important;
+}
+
+.login-icon {
+  position: absolute !important;
+  left: 18px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  color: #94a3b8 !important;
+  font-size: 20px !important;
+  pointer-events: none !important;
+  z-index: 10 !important;
+}
+
+.login-btn {
+  width: 100% !important;
+  height: 56px !important;
+  background: #0f172a !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  font-size: 15px !important;
+  letter-spacing: 0.05em;
+  border-radius: 20px !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12) !important;
+}
+
+html.dark .login-btn {
+  background: #ffffff !important;
+  color: #000000 !important;
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.12) !important;
+}
+
+.login-btn:active {
+  transform: scale(0.96) !important;
+  opacity: 0.9 !important;
+}
+
+/* ➕ Add SR Card Button */
+#btnAddSRCard {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+  padding: 8px 16px !important;
+  border-radius: 12px !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.05em !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15) !important;
+  transition: all 0.2s ease !important;
+}
+
+html.dark #btnAddSRCard {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15) !important;
+}
+
+#btnAddSRCard:active {
+  transform: scale(0.95) !important;
+}
+
+/* 📑 Dynamic Card Clone and Delete Buttons */
+.btn-clone-card, .btn-delete-card {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+html.dark .btn-clone-card, html.dark .btn-delete-card {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.btn-clone-card {
+  color: #475569 !important;
+}
+
+html.dark .btn-clone-card {
+  color: #cbd5e1 !important;
+}
+
+.btn-clone-card:active {
+  background: rgba(71, 85, 105, 0.12) !important;
+}
+
+.btn-delete-card {
+  color: #ef4444 !important;
+}
+
+.btn-delete-card:active {
+  background: rgba(239, 68, 68, 0.15) !important;
+}
+
+.btn-clone-card span, .btn-delete-card span {
+  font-size: 22px !important;
+}
