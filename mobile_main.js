@@ -435,13 +435,13 @@
         card.dataset.cardId = cardId;
 
         const bioOptions = biologicosCatalogo.map(bio => {
-            const isSelected = data?.biologico && (String(data.biologico).trim().toUpperCase() === String(bio.biologico).trim().toUpperCase());
+            const isSelected = data?.biologico && (normalizeString(data.biologico) === normalizeString(bio.biologico));
             return `<option value="${bio.biologico}" ${isSelected ? 'selected' : ''}>${bio.biologico}</option>`;
         }).join('');
 
         card.innerHTML = `
             <div class="card-header flex justify-between items-center pb-2 border-b border-slate-100">
-                <span class="text-xs font-black text-slate-800 uppercase tracking-widest">Entrada de Biológico</span>
+                <span class="text-xs font-black text-slate-800 uppercase tracking-widest">Existencia de Biológico</span>
                 <div class="flex items-center gap-2 ml-auto">
                     <button type="button" class="btn-clone-card" title="Duplicar">
                         <span class="material-symbols-rounded">post_add</span>
