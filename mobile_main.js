@@ -1117,9 +1117,31 @@
             list.innerHTML = sortedData.map(item => {
                 const notif = item.notificacion || {};
                 const isUnread = item.status === 'UNREAD';
-                const formattedDate = window.dayjs ? window.dayjs(notif.created_at).format('DD/MM HH:mm') : '';
+                const formattedDate = window.dayjs ? window.dayjs(notif.created_at).format('DD/MM/YYYY HH:mm') : '';
+                
+                // Color mapping and category labels for notifications
+                let typeBadge = '';
+                const titleStr = (notif.title || 'Alerta').toUpperCase();
+                
+                if (titleStr.includes('PINOL')) {
+                    typeBadge = `<span class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-600 border border-amber-500/20">PINOL</span>`;
+                } else if (titleStr.includes('APERTURA') || titleStr.includes('HABILITAR')) {
+                    typeBadge = `<span class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-600 border border-indigo-500/20">APERTURA</span>`;
+                } else if (titleStr.includes('ERROR') || titleStr.includes('FALLA') || titleStr.includes('ADVERTENCIA')) {
+                    typeBadge = `<span class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-rose-500/10 text-rose-600 border border-rose-500/20">SISTEMA</span>`;
+                } else {
+                    typeBadge = `<span class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider bg-slate-500/10 text-slate-600 border border-slate-500/20">AVISO</span>`;
+                }
+
+                // Status indicator dot
+                const unreadDot = isUnread ? `<span class="w-1.5 h-1.5 rounded-full bg-blue-600 block shrink-0" title="Nueva"></span>` : '';
+
+                // Clean the message, showing placeholders if empty
+                const rawMsg = (notif.message || '').trim();
+                const displayMsg = rawMsg ? rawMsg : '<span class="text-slate-400 italic">Sin descripción de la alerta.</span>';
+
                 return `
-                    <div class="swipe-container rounded-xl mb-3 border ${isUnread ? 'border-slate-200' : 'border-transparent'}" data-id="${item.id}">
+                    <div class="swipe-container rounded-2xl mb-3.5 border ${isUnread ? 'border-slate-200/80 shadow-sm' : 'border-transparent'}" data-id="${item.id}">
                         <div class="swipe-action-left swipe-hint-left-anim" style="opacity: 0;">
                             <div class="flex items-center gap-1.5 text-white font-black text-[10px] uppercase tracking-wider">
                                 <span class="material-symbols-rounded text-sm">check</span>
@@ -1132,12 +1154,18 @@
                                 <span>Eliminar</span>
                             </div>
                         </div>
-                        <div class="swipe-content p-3 flex flex-col gap-1 swipe-hint-anim ${isUnread ? 'bg-slate-50' : 'bg-transparent'}">
-                            <div class="flex justify-between items-center">
-                                <span class="text-[11px] font-black ${isUnread ? 'text-slate-900' : 'text-slate-500'}">${notif.title || 'Alerta'}</span>
-                                <span class="text-[9px] font-bold text-slate-400">${formattedDate}</span>
+                        <div class="swipe-content p-4 flex flex-col gap-2.5 swipe-hint-anim ${isUnread ? 'bg-white' : 'bg-transparent'}">
+                            <div class="flex items-center justify-between gap-2 border-b border-slate-100/50 pb-2">
+                                <div class="flex items-center gap-2 overflow-hidden">
+                                    ${unreadDot}
+                                    <span class="text-xs font-black tracking-tight truncate ${isUnread ? 'text-slate-900' : 'text-slate-600'}">${notif.title || 'Alerta'}</span>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    ${typeBadge}
+                                    <span class="text-[9px] font-bold text-slate-400">${formattedDate}</span>
+                                </div>
                             </div>
-                            <p class="text-xs text-slate-600 font-medium leading-relaxed">${notif.message || ''}</p>
+                            <p class="text-[11px] text-slate-600 font-medium leading-relaxed">${displayMsg}</p>
                         </div>
                     </div>
                 `;
@@ -2092,6 +2120,15 @@
                 dataObject.solicitud = solicitud;
                 dataObject.observaciones = document.getElementById('pinol_observaciones').value.trim();
                 dataObject.estatus = "PENDIENTE";
+                
+                // Add crucial unit identifiers so admin alerts can trace who sent the request
+                dataObject.unidad = currentProfile.unidad || "UNIDAD SIN NOMBRE";
+                dataObject.municipio = currentProfile.municipio || "MUNICIPIO";
+                dataObject.capturado_por = nombrePINOL.toUpperCase();
+                
+                // Match exact database column names
+                dataObject.existencia_actual_botellas = dataObject.existencia;
+                dataObject.solicitud_botellas = dataObject.solicitud;
             }
 
             // Save or update using upsert/insert
