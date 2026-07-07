@@ -1630,10 +1630,19 @@ function formatNotifBody(title, message) {
     clean = title ? `${title}:` : "Notificación:";
   }
 
-  const unidadMatch = message.match(/Unidad:\s*([^.\n]+)/i) || message.match(/Unidad de salud:\s*([^.\n]+)/i);
+  // Robust parsing to capture Unidad, CLUES or User names in both deliveries and requests
+  const unidadMatch = message.match(/Unidad:\s*([^.\n\r]+)/i) || 
+                      message.match(/Unidad de salud:\s*([^.\n\r]+)/i) ||
+                      message.match(/en\s+([A-Z0-9\s]+)\s+por/); // matches: "en UNIDAD por USUARIO"
+                      
   const unidad = unidadMatch ? unidadMatch[1].trim().split(" CLUES:")[0].split(" Solicitó:")[0] : "";
 
-  const fechaMatch = message.match(/Fecha de solicitud:\s*([\d-]+)/i);
+  const solicitanteMatch = message.match(/Solicita(?:nte)?:\s*([^.\n\r]+)/i) ||
+                           message.match(/por\s+([^.\n\r]+)/i); // matches: "por USUARIO"
+  const solicitante = solicitanteMatch ? solicitanteMatch[1].trim().replace(/\(.*?\)/g, "").split(" para ")[0] : "";
+
+  const fechaMatch = message.match(/Fecha de solicitud:\s*([\d-]+)/i) ||
+                     message.match(/Fecha:\s*([\d-]+)/i);
   let fechaReq = fechaMatch ? fechaMatch[1] : "";
   if (fechaReq) {
     const d = new Date(fechaReq);
@@ -1646,17 +1655,22 @@ function formatNotifBody(title, message) {
   }
 
   let html = `<strong style="color:var(--md-sys-color-primary);">${clean}</strong>`;
-  if (fechaReq) html += `<div style="margin-top:2px;">Fecha de solicitud: ${fechaReq}</div>`;
-  if (unidad) html += `<div>Unidad de salud: ${unidad}</div>`;
+  if (fechaReq) html += `<div style="margin-top:2px; font-size: 11px;">Fecha de solicitud: ${fechaReq}</div>`;
+  if (unidad) html += `<div style="font-size: 11px;">Unidad de salud: ${unidad}</div>`;
+  if (solicitante) html += `<div style="font-size: 11px;">Solicita: ${solicitante}</div>`;
 
-  // Mostrar comentario personalizado de entrega si existe y no es el genérico/virtual
+  // Mostrar comentario personalizado de entrega si existe y no es el genérico/virtual o repetido
   if (isDelivery) {
     const isGeneric = message.includes("Tu solicitud de pinol ha sido marcada como entregada.");
     const isVirtual = message.includes("Pinol entregado:\n");
     if (!isGeneric && !isVirtual && message.trim()) {
-      html += `<div style="margin-top:6px; padding:6px 10px; background:rgba(0,0,0,0.03); border-left:3px solid var(--md-sys-color-primary); border-radius:4px; font-size:12px; color:var(--md-sys-color-on-surface-variant); font-style:italic;">
-        <strong>Comentario:</strong> "${escapeHtml(message)}"
-      </div>`;
+      // Clean up string so it does not repeat the title prefix
+      const cleanComment = message.replace("Pinol entregado:", "").replace("Pinol entregado:\n", "").trim();
+      if (cleanComment && !cleanComment.includes("Tu solicitud")) {
+        html += `<div style="margin-top:6px; padding:6px 10px; background:rgba(0,0,0,0.03); border-left:3px solid var(--md-sys-color-primary); border-radius:4px; font-size:11px; color:var(--md-sys-color-on-surface-variant); font-style:italic;">
+          <strong>Comentario:</strong> "${escapeHtml(cleanComment)}"
+        </div>`;
+      }
     }
   }
 
