@@ -114,24 +114,28 @@ h1, h2, h3, h4, h5, h6 {
 
 .status-chip-v5 {
   display: flex !important;
+  flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 6px !important;
-  background: rgba(15, 23, 42, 0.8) !important;
+  gap: 4px !important;
+  background: rgba(15, 23, 42, 0.85) !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
   color: #ffffff !important;
-  padding: 4px 10px !important;
+  padding: 6px 8px !important;
   border-radius: 12px !important;
-  font-size: 9px !important;
+  font-size: 8.5px !important;
   font-weight: 900 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.05em !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-  white-space: nowrap !important;
+  white-space: normal !important;
+  text-align: center !important;
   backdrop-filter: blur(10px) !important;
   -webkit-backdrop-filter: blur(10px) !important;
   margin: 0 !important;
-  width: auto !important;
+  width: 80px !important;
+  max-width: 85px !important;
+  line-height: 1.2 !important;
 }
 
 .command-hub button {
@@ -182,8 +186,8 @@ html.dark .command-hub button {
   display: none !important;
 }
 
-/* 📱 Selection Dock (iOS Liquid Glass Spec) */
-.dock-container {
+/* 📱 Selection Dock (iOS Liquid Glass - Matches referenceIOS26Oficial.html) */
+.dock-wrapper-v5 {
   position: fixed;
   bottom: 20px;
   left: 50%;
@@ -191,17 +195,33 @@ html.dark .command-hub button {
   width: calc(100% - 32px);
   max-width: 380px;
   height: 76px;
-  background: var(--glass-bg);
-  border: 1.5px solid var(--glass-border);
-  backdrop-filter: url(#liquid-refraction) blur(20px) saturate(200%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(200%) !important;
+  z-index: 100;
+}
+
+.dock-container {
+  position: absolute;
+  inset: 0;
   border-radius: 36px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   padding: 8px;
-  z-index: 100;
   box-shadow: var(--glass-shadow);
   touch-action: none;
+  overflow: visible;
+}
+
+/* Glass blur applied via pseudo-element so dock-indicator's backdrop-filter
+   captures the ACTUAL PAGE CONTENT (sharp panel text/icons), not a pre-blurred composite.
+   Without this, CA is invisible because there are no sharp edges to refract. */
+.dock-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 36px;
+  background: var(--glass-bg);
+  border: 1.5px solid var(--glass-border);
+  z-index: -1;
+  pointer-events: none;
 }
 
 .dock-item {
@@ -216,7 +236,7 @@ html.dark .command-hub button {
   cursor: pointer;
   color: var(--text-secondary);
   transition: color 0.3s ease;
-  z-index: 2;
+  z-index: 0; /* below indicator (z-index: 1) so they get refracted */
 }
 
 .dock-item span {
@@ -236,17 +256,19 @@ html.dark .command-hub button {
 
 .dock-item.active {
   color: var(--text-primary);
+  z-index: 2; /* above indicator (z-index: 1) so it is sharp and not distorted */
 }
 
 .dock-item.active span {
   transform: translateY(-2px) scale(1.1);
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
 }
 
 .dock-item.active label {
   opacity: 1;
 }
 
-/* Slide Indicator */
+/* Liquid Glass Indicator - z-index 1, below dock items */
 .dock-indicator {
   position: absolute;
   top: 50%;
@@ -258,41 +280,61 @@ html.dark .command-hub button {
   pointer-events: none;
   transition: transform 0.4s cubic-bezier(0.25, 1, 0.2, 1);
   will-change: transform;
-  transform: translateY(-50%) scale(1.1); /* Circular water droplet magnifying effect */
+  transform: translateY(-50%) scale(1.15);
+}
+
+.dock-bubble-clone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+  z-index: 1;
+  will-change: filter, transform;
+  contain: strict;
+}
+
+.use-backdrop-filter .dock-bubble-clone {
+  display: none;
+}
+
+.dock-clone-world {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 380px;
+  height: 76px;
+  pointer-events: none;
+  will-change: transform;
+  transform-origin: top left;
+  background: transparent;
 }
 
 .dock-indicator-inner {
   width: 100%;
   height: 100%;
-  background: radial-gradient(
-    circle at 35% 30%, 
-    rgba(255, 255, 255, 0.25) 0%, 
-    rgba(255, 255, 255, 0.02) 60%, 
-    transparent 100%
-  ) !important;
-  border: 1.2px solid rgba(255, 255, 255, 0.55) !important;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 25px !important;
-  /* Magnifying Glass Bezel & Specularity */
   box-shadow: 
-    0 12px 36px rgba(0, 0, 0, 0.16), 
-    inset 0 4px 8px rgba(255, 255, 255, 0.55),
-    inset 0 -3px 6px rgba(0, 0, 0, 0.05) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 10px 30px rgba(0, 0, 0, 0.2);
   will-change: backdrop-filter;
+  z-index: 3;
+  position: absolute;
+  top: 0;
+  left: 0;
 }
 
 html.dark .dock-indicator-inner {
-  background: radial-gradient(
-    circle at 35% 30%, 
-    rgba(255, 255, 255, 0.12) 0%, 
-    rgba(255, 255, 255, 0.01) 60%, 
-    transparent 100%
-  ) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 25px !important;
   box-shadow: 
-    0 10px 32px rgba(0, 0, 0, 0.45), 
-    inset 0 2px 4px rgba(255, 255, 255, 0.18),
-    inset 0 -2px 4px rgba(0, 0, 0, 0.1) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 /* Active panel icon fill style */
@@ -794,3 +836,84 @@ html.dark .btn-clone-card {
   cursor: pointer;
   backdrop-filter: blur(4px);
 }
+
+/* 🔔 SWIPE TO ACTION GESTURES FOR NOTIFICATIONS */
+.swipe-container {
+  position: relative !important;
+  overflow: hidden !important;
+  background-color: transparent !important;
+  user-select: none;
+}
+
+.swipe-action-left, .swipe-action-right {
+  position: absolute !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  z-index: 1 !important;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.swipe-action-left {
+  left: 0 !important;
+  width: 50% !important;
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%) !important;
+  justify-content: flex-start !important;
+  padding-left: 16px !important;
+}
+
+.swipe-action-right {
+  right: 0 !important;
+  width: 50% !important;
+  background: linear-gradient(270deg, #ef4444 0%, #dc2626 100%) !important;
+  justify-content: flex-end !important;
+  padding-right: 16px !important;
+}
+
+.swipe-content {
+  position: relative !important;
+  z-index: 2 !important;
+  background: var(--card-bg) !important;
+  border-radius: inherit !important;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  will-change: transform;
+}
+
+/* 🌟 PREMIUM HINT ANIMATION (PEEK LEFT & RIGHT) */
+@keyframes swipeHintTextContent {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(45px); }
+  45% { transform: translateX(-45px); }
+  65% { transform: translateX(0); }
+  100% { transform: translateX(0); }
+}
+
+@keyframes swipeHintLeftBg {
+  0% { opacity: 0; }
+  10%, 35% { opacity: 1; }
+  40% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes swipeHintRightBg {
+  0% { opacity: 0; }
+  40% { opacity: 0; }
+  45% { opacity: 1; }
+  60% { opacity: 1; }
+  70% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+.swipe-hint-anim {
+  animation: swipeHintTextContent 1.6s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+.swipe-hint-left-anim {
+  animation: swipeHintLeftBg 1.6s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+
+.swipe-hint-right-anim {
+  animation: swipeHintRightBg 1.6s cubic-bezier(0.25, 1, 0.5, 1) !important;
+}
+

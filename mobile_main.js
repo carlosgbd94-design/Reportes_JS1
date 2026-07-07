@@ -124,6 +124,26 @@
         await loadFiles();
         loadWeather();
         initNotificationsRealtime();
+        
+        // Initialize the physics-based glass shaders and copy the clone-world content
+        initDockGlass();
+        const cloneWorld = document.getElementById('dockCloneWorld');
+        if (cloneWorld) {
+            // Render the clone background using a realistic representation of the app gradient and glowing nodes
+            cloneWorld.innerHTML = `
+                <div style="position: absolute; inset: 0; background: linear-gradient(135deg, #f1f4f8, #e2e8f0); opacity: 0.95;"></div>
+                <div style="position: absolute; border-radius: 50%; filter: blur(40px); opacity: 0.35; background: #3b82f6; width: 140px; height: 140px; top: -70px; left: 20px;"></div>
+                <div style="position: absolute; border-radius: 50%; filter: blur(40px); opacity: 0.35; background: #10b981; width: 140px; height: 140px; bottom: -70px; right: 20px;"></div>
+            `;
+            if (document.documentElement.classList.contains('dark')) {
+                cloneWorld.innerHTML = `
+                    <div style="position: absolute; inset: 0; background: #000000; opacity: 0.95;"></div>
+                    <div style="position: absolute; border-radius: 50%; filter: blur(40px); opacity: 0.25; background: #1e3a8a; width: 140px; height: 140px; top: -70px; left: 20px;"></div>
+                    <div style="position: absolute; border-radius: 50%; filter: blur(40px); opacity: 0.25; background: #064e3b; width: 140px; height: 140px; bottom: -70px; right: 20px;"></div>
+                `;
+            }
+        }
+        
         switchPanel('SR');
         initDockDrag();
     };
@@ -260,8 +280,7 @@
 
         if (savedItems && savedItems.length > 0) {
             savedItems.forEach(item => {
-                const bioName = String(item.biologico).trim().toUpperCase();
-                const matchedBio = biologicosCatalogo.find(b => String(b.biologico).trim().toUpperCase() === bioName);
+                const matchedBio = biologicosCatalogo.find(b => normalizeString(b.biologico) === normalizeString(item.biologico));
                 if (matchedBio) {
                     const existInput = document.querySelector(`input[data-bio-id="${matchedBio.id}"][data-field="existencia"]`);
                     const pedInput = document.querySelector(`input[data-bio-id="${matchedBio.id}"][data-field="pedido"]`);
@@ -455,7 +474,7 @@
             }
 
             const filteredLotes = lotesCatalogo.filter(l => 
-                String(l.biologico).trim().toUpperCase() === selectedBio.trim().toUpperCase()
+                normalizeString(l.biologico) === normalizeString(selectedBio)
             );
 
             if (filteredLotes.length === 0) {
@@ -1057,16 +1076,122 @@
                 const isUnread = item.status === 'UNREAD';
                 const formattedDate = window.dayjs ? window.dayjs(notif.created_at).format('DD/MM HH:mm') : '';
                 return `
-                    <div class="p-3 rounded-xl border ${isUnread ? 'bg-slate-50 border-slate-200' : 'bg-transparent border-transparent'} flex flex-col gap-1 transition-all">
-                        <div class="flex justify-between items-center">
-                            <span class="text-[11px] font-black ${isUnread ? 'text-slate-900' : 'text-slate-500'}">${notif.title || 'Alerta'}</span>
-                            <span class="text-[9px] font-bold text-slate-400">${formattedDate}</span>
+                    <div class="swipe-container rounded-xl mb-3 border ${isUnread ? 'border-slate-200' : 'border-transparent'}" data-id="${item.id}">
+                        <div class="swipe-action-left swipe-hint-left-anim" style="opacity: 0;">
+                            <div class="flex items-center gap-1.5 text-white font-black text-[10px] uppercase tracking-wider">
+                                <span class="material-symbols-rounded text-sm">check</span>
+                                <span>Leída</span>
+                            </div>
                         </div>
-                        <p class="text-xs text-slate-600 font-medium leading-relaxed">${notif.message || ''}</p>
+                        <div class="swipe-action-right swipe-hint-right-anim" style="opacity: 0;">
+                            <div class="flex items-center gap-1.5 text-white font-black text-[10px] uppercase tracking-wider">
+                                <span class="material-symbols-rounded text-sm">delete</span>
+                                <span>Eliminar</span>
+                            </div>
+                        </div>
+                        <div class="swipe-content p-3 flex flex-col gap-1 swipe-hint-anim ${isUnread ? 'bg-slate-50' : 'bg-transparent'}">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[11px] font-black ${isUnread ? 'text-slate-900' : 'text-slate-500'}">${notif.title || 'Alerta'}</span>
+                                <span class="text-[9px] font-bold text-slate-400">${formattedDate}</span>
+                            </div>
+                            <p class="text-xs text-slate-600 font-medium leading-relaxed">${notif.message || ''}</p>
+                        </div>
                     </div>
                 `;
             }).join('');
+
+            bindSwipeEvents();
         }
+    };
+
+    const bindSwipeEvents = () => {
+        const containers = document.querySelectorAll('#notifList .swipe-container');
+        containers.forEach(container => {
+            const content = container.querySelector('.swipe-content');
+            const actionLeft = container.querySelector('.swipe-action-left');
+            const actionRight = container.querySelector('.swipe-action-right');
+            const itemId = container.dataset.id;
+            
+            let startX = 0;
+            let currentX = 0;
+            let isSwiping = false;
+            
+            content.addEventListener('touchstart', (e) => {
+                content.classList.remove('swipe-hint-anim');
+                actionLeft.classList.remove('swipe-hint-left-anim');
+                actionRight.classList.remove('swipe-hint-right-anim');
+                
+                startX = e.touches[0].clientX;
+                content.style.transition = 'none';
+                isSwiping = true;
+            }, { passive: true });
+            
+            content.addEventListener('touchmove', (e) => {
+                if (!isSwiping) return;
+                currentX = e.touches[0].clientX - startX;
+                
+                if (currentX > 120) {
+                    currentX = 120 + (currentX - 120) * 0.2;
+                } else if (currentX < -120) {
+                    currentX = -120 + (currentX + 120) * 0.2;
+                }
+                
+                if (currentX > 0) {
+                    actionLeft.style.opacity = Math.min(1, currentX / 60);
+                    actionRight.style.opacity = 0;
+                } else if (currentX < 0) {
+                    actionRight.style.opacity = Math.min(1, Math.abs(currentX) / 60);
+                    actionLeft.style.opacity = 0;
+                }
+                
+                content.style.transform = `translateX(${currentX}px)`;
+            }, { passive: true });
+            
+            content.addEventListener('touchend', async () => {
+                if (!isSwiping) return;
+                isSwiping = false;
+                
+                content.style.transition = 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
+                
+                if (currentX > 75) {
+                    content.style.transform = 'translateX(100%)';
+                    actionLeft.style.opacity = 1;
+                    
+                    const { error } = await supabaseClient
+                        .from('notificaciones_perfil')
+                        .update({ status: 'READ', read_ts: new Date().toISOString() })
+                        .eq('id', itemId);
+                        
+                    if (error) {
+                        showToast("Error al marcar como leída: " + error.message, "error");
+                        content.style.transform = 'translateX(0)';
+                    } else {
+                        showToast("Marcada como leída");
+                        loadNotifications();
+                    }
+                } else if (currentX < -75) {
+                    content.style.transform = 'translateX(-100%)';
+                    actionRight.style.opacity = 1;
+                    
+                    const { error } = await supabaseClient
+                        .from('notificaciones_perfil')
+                        .update({ deleted: true, deleted_ts: new Date().toISOString() })
+                        .eq('id', itemId);
+                        
+                    if (error) {
+                        showToast("Error al eliminar: " + error.message, "error");
+                        content.style.transform = 'translateX(0)';
+                    } else {
+                        showToast("Notificación eliminada");
+                        loadNotifications();
+                    }
+                } else {
+                    content.style.transform = 'translateX(0)';
+                    actionLeft.style.opacity = 0;
+                    actionRight.style.opacity = 0;
+                }
+            });
+        });
     };
 
     const initNotificationsRealtime = () => {
@@ -1350,16 +1475,21 @@
         container.innerHTML = html;
     };
 
-    // --- Dock View Switching & Liquid Glass Refraction Engine ---
-    const SurfaceEquations = {
-        convex_squircle: (x) => Math.pow(1 - Math.pow(1 - x, 4), 1 / 4)
-    };
+    // =========================================================================
+    // DOCK LIQUID GLASS ENGINE — Exact port from reference.html (Pebble & Void)
+    // Uses Canvas 2D physics-based Snell's Law displacement map + clone-world
+    // technique so refraction works on ALL browsers (not just backdrop-filter).
+    // =========================================================================
 
-    function calculateDisplacementMap1D(gt, bw, sf, ri, steps = 128) {
+    // SurfaceEquations: convex squircle lens profile
+    const dockSurfaceEq = (x) => Math.pow(1 - Math.pow(1 - x, 4), 1 / 4);
+
+    // Calculate 1D surface normal displacement profile
+    const calcDispMap1D = (gt, bw, sf, ri, s = 128) => {
         const e = 1 / ri;
-        const result = [];
-        for (let i = 0; i < steps; i++) {
-            const x = i / steps;
+        const r = [];
+        for (let i = 0; i < s; i++) {
+            const x = i / s;
             const y = sf(x);
             const dx = x < 1 ? 0.0001 : -0.0001;
             const d = (sf(Math.max(0, Math.min(1, x + dx))) - y) / dx;
@@ -1368,24 +1498,21 @@
             const dt = n[1];
             const k = 1 - e * e * (1 - dt * dt);
             if (k < 0) {
-                result.push(0);
+                r.push(0);
             } else {
-                const rf = [
-                    -(e * dt + Math.sqrt(k)) * n[0],
-                    e - (e * dt + Math.sqrt(k)) * n[1]
-                ];
-                result.push(rf[0] * ((y * bw + gt) / rf[1]));
+                const rf = [-(e * dt + Math.sqrt(k)) * n[0], e - (e * dt + Math.sqrt(k)) * n[1]];
+                r.push(rf[0] * ((y * bw + gt) / rf[1]));
             }
         }
-        return result;
-    }
+        return r;
+    };
 
-    function calculateDisplacementMap2D(cw, ch, ow, oh, rad, bw, md, pMap) {
+    // Calculate 2D displacement map ImageData using squircle surface normals
+    const calcDispMap2D = (cw, ch, ow, oh, rad, bw, md, pMap) => {
         const img = new ImageData(cw, ch);
         for (let i = 0; i < img.data.length; i += 4) {
             img.data[i] = 128;
             img.data[i + 1] = 128;
-            img.data[i + 2] = 128;
             img.data[i + 3] = 255;
         }
         const rSq = rad * rad;
@@ -1395,14 +1522,12 @@
         const hB = oh - rad * 2;
         const oX = (cw - ow) / 2;
         const oY = (ch - oh) / 2;
-
         for (let y1 = 0; y1 < oh; y1++) {
             for (let x1 = 0; x1 < ow; x1++) {
                 const idx = ((oY + y1) * cw + oX + x1) * 4;
                 const x = x1 < rad ? x1 - rad : x1 >= ow - rad ? x1 - rad - wB : 0;
                 const y = y1 < rad ? y1 - rad : y1 >= oh - rad ? y1 - rad - hB : 0;
                 const dSq = x * x + y * y;
-
                 if (dSq <= rp1Sq && dSq >= rmBwSq) {
                     const dist = Math.sqrt(dSq);
                     const op = dSq < rSq ? 1 : 1 - (dist - rad) / (Math.sqrt(rp1Sq) - rad);
@@ -1410,28 +1535,26 @@
                     const dVal = pMap[Math.max(0, Math.min(bIdx, pMap.length - 1))] || 0;
                     const dX = md > 0 ? (-(dist > 0 ? x / dist : 0) * dVal) / md : 0;
                     const dY = md > 0 ? (-(dist > 0 ? y / dist : 0) * dVal) / md : 0;
-
                     img.data[idx] = Math.max(0, Math.min(255, 128 + dX * 127 * op));
                     img.data[idx + 1] = Math.max(0, Math.min(255, 128 + dY * 127 * op));
                 }
             }
         }
         return img;
-    }
+    };
 
-    function calculateSpecularHighlight(ow, oh, rad, bw) {
+    // Calculate specular highlight ImageData
+    const calcSpecular = (ow, oh, rad, bw) => {
         const img = new ImageData(ow, oh);
         const sVec = [Math.cos(Math.PI / 3), Math.sin(Math.PI / 3)];
         const rSq = rad * rad;
         const rp1Sq = (rad + 1) ** 2;
         const rmSSq = Math.max(0, (rad - 1.5) ** 2);
-
         for (let y1 = 0; y1 < oh; y1++) {
             for (let x1 = 0; x1 < ow; x1++) {
                 const x = x1 < rad ? x1 - rad : x1 >= ow - rad ? x1 - rad - (ow - rad * 2) : 0;
                 const y = y1 < rad ? y1 - rad : y1 >= oh - rad ? y1 - rad - (oh - rad * 2) : 0;
                 const dSq = x * x + y * y;
-
                 if (dSq <= rp1Sq && dSq >= rmSSq) {
                     const dist = Math.sqrt(dSq);
                     const op = dSq < rSq ? 1 : 1 - (dist - rad) / (Math.sqrt(rp1Sq) - rad);
@@ -1439,82 +1562,108 @@
                     const cf = dp * Math.sqrt(1 - (1 - Math.max(0, Math.min(1, (rad - dist) / 1.5))) ** 2);
                     const c = Math.min(255, 255 * cf);
                     const idx = (y1 * ow + x1) * 4;
-
                     img.data[idx] = img.data[idx + 1] = img.data[idx + 2] = c;
                     img.data[idx + 3] = Math.min(255, c * cf * op);
                 }
             }
         }
         return img;
-    }
+    };
 
-    function imageDataToDataURL(img) {
-        const c = document.createElement("canvas");
-        c.width = img.width;
-        c.height = img.height;
-        c.getContext("2d").putImageData(img, 0, 0);
+    const imageDataToURL = (img) => {
+        const c = document.createElement('canvas');
+        c.width = img.width; c.height = img.height;
+        c.getContext('2d').putImageData(img, 0, 0);
         return c.toDataURL();
-    }
+    };
 
-    const updateDockGlassFilter = () => {
+    // Dock glass config (matching reference.html dock settings)
+    const DOCK_GLASS = { w: 76, h: 50, r: 25, bw: 18, gt: 100, ri: 2.0, md: 0 };
+
+    // Initialize once: build high-res canvas displacement map + specular, inject SVG filter
+    const initDockGlass = () => {
+        const pc = calcDispMap1D(DOCK_GLASS.gt, DOCK_GLASS.bw, dockSurfaceEq, DOCK_GLASS.ri);
+        DOCK_GLASS.md = Math.max(...pc.map(Math.abs));
+
+        // Use 3x super-sampling resolution (High DPI Retina) to eliminate pixelation and jagged lines
+        const retinaScale = 3;
+        const widthRes = DOCK_GLASS.w * retinaScale;
+        const heightRes = DOCK_GLASS.h * retinaScale;
+        const radiusRes = DOCK_GLASS.r * retinaScale;
+        const bezelRes = DOCK_GLASS.bw * retinaScale;
+
+        const dispURL = imageDataToURL(calcDispMap2D(
+            widthRes, heightRes, widthRes, heightRes,
+            radiusRes, bezelRes, DOCK_GLASS.md || 1, pc
+        ));
+        const specURL = imageDataToURL(calcSpecular(widthRes, heightRes, radiusRes, bezelRes));
+
+        // Inject SVG filter with Retina maps and explicit pixel dimensions
+        const filterHTML = `<svg id="dockGlassSVG" width="0" height="0" style="position:absolute;pointer-events:none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <filter id="dockGlassFilter" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+                    <!-- Set stdDeviation to 0 to keep the background and icons razor sharp (no dirty blur) -->
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="0" result="blurred" />
+                    <!-- Render the high resolution images fit into layout dimensions with image-rendering: crisp-edges quality -->
+                    <feImage id="dockDispImg" href="${dispURL}" x="0" y="0" width="${DOCK_GLASS.w}" height="${DOCK_GLASS.h}" result="displacement_map" preserveAspectRatio="none" style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;" />
+                    <!-- Scale reduced slightly (DOCK_GLASS.md * 0.9) to prevent extreme stretches that yield grey pixel borders -->
+                    <feDisplacementMap id="dockDispMap" in="blurred" in2="displacement_map" scale="${DOCK_GLASS.md * 0.9}" xChannelSelector="R" yChannelSelector="G" result="displaced" />
+                    <feColorMatrix in="displaced" type="saturate" values="1.2" result="displaced_saturated" />
+                    <feImage id="dockSpecImg" href="${specURL}" x="0" y="0" width="${DOCK_GLASS.w}" height="${DOCK_GLASS.h}" result="specular_layer" preserveAspectRatio="none" style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;" />
+                    <feComponentTransfer in="specular_layer" result="specular_faded">
+                        <feFuncA type="linear" slope="0.8" />
+                    </feComponentTransfer>
+                    <feBlend in="specular_faded" in2="displaced_saturated" mode="screen" />
+                </filter>
+            </defs>
+        </svg>`;
+        document.body.insertAdjacentHTML('beforeend', filterHTML);
+
+        DOCK_GLASS.dispURL = dispURL;
+        DOCK_GLASS.specURL = specURL;
+
+        // Detect backdrop-filter:url() support (Chrome desktop)
+        const testEl = document.createElement('div');
+        testEl.style.backdropFilter = 'url(#test)';
+        DOCK_GLASS.useBackdropFilter = testEl.style.backdropFilter.includes('url');
+        
+        if (DOCK_GLASS.useBackdropFilter) {
+            document.body.classList.add('use-backdrop-filter');
+        } else {
+            document.body.classList.remove('use-backdrop-filter');
+        }
+
+        // Apply to inner element
         const inner = document.getElementById('dockIndicatorInner');
         if (!inner) return;
 
-        const rect = inner.getBoundingClientRect();
-        const width = Math.max(10, Math.round(rect.width));
-        const height = Math.max(10, Math.round(rect.height));
+        if (DOCK_GLASS.useBackdropFilter) {
+            inner.style.backdropFilter = 'url(#dockGlassFilter)';
+            inner.style.webkitBackdropFilter = 'url(#dockGlassFilter)';
+        } else {
+            // Clone-world fallback: apply filter to the clone div inside the indicator
+            const clone = document.getElementById('dockBubbleClone');
+            if (clone) clone.style.filter = 'url(#dockGlassFilter)';
+        }
+    };
 
-        const svgContainer = document.getElementById('dock-glass-svg-container');
-        if (!svgContainer) return;
+    // Update clone-world transform when indicator moves (reference.html line 1650-1654)
+    const updateDockGlassFilter = () => {
+        if (DOCK_GLASS.useBackdropFilter) return; // backdrop-filter handles it natively
 
-        svgContainer.innerHTML = '';
+        const bubble = document.getElementById('dockIndicator');
+        const cloneWorld = document.getElementById('dockCloneWorld');
+        const dock = document.getElementById('mobileCaptureDock');
+        if (!bubble || !cloneWorld || !dock) return;
 
-        const radius = 25;
-        const bezelWidth = 20;
+        const dockRect = dock.getBoundingClientRect();
+        const bubbleRect = bubble.getBoundingClientRect();
 
-        // Pre-cálculo de mapas ópticos de refracción
-        const precomputed1D = calculateDisplacementMap1D(100, bezelWidth, SurfaceEquations.convex_squircle, 1.6);
-        const maxDisp = Math.max(...precomputed1D.map(Math.abs));
-        const displacementDataURL = imageDataToDataURL(
-            calculateDisplacementMap2D(width, height, width, height, radius, bezelWidth, maxDisp || 1, precomputed1D)
-        );
-        const specularDataURL = imageDataToDataURL(
-            calculateSpecularHighlight(width, height, radius, bezelWidth)
-        );
-
-        // SVG filter matching the exact Pebble & Void architecture
-        const filterHTML = `
-        <svg width="0" height="0" xmlns="http://www.w3.org/2000/svg">
-            <filter id="dockGlassFilter" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="0.8" result="blurred" />
-                <feImage href="${displacementDataURL}" x="0" y="0" width="${width}" height="${height}" result="displacement_map" preserveAspectRatio="none" />
-                
-                <!-- Desplazamiento aditivo para Aberración Cromática (Rojo/Verde/Azul desfasados) -->
-                <feDisplacementMap in="blurred" in2="displacement_map" scale="${maxDisp * 1.6}" xChannelSelector="R" yChannelSelector="G" result="dispR" />
-                <feColorMatrix type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" in="dispR" result="red" />
-                
-                <feDisplacementMap in="blurred" in2="displacement_map" scale="${maxDisp * 1.2}" xChannelSelector="R" yChannelSelector="G" result="dispG" />
-                <feColorMatrix type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" in="dispG" result="green" />
-                
-                <feDisplacementMap in="blurred" in2="displacement_map" scale="${maxDisp * 0.8}" xChannelSelector="R" yChannelSelector="G" result="dispB" />
-                <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" in="dispB" result="blue" />
-                
-                <feBlend in="red" in2="green" mode="screen" result="rgBlend"/>
-                <feBlend in="rgBlend" in2="blue" mode="screen" result="displaced_saturated"/>
-                
-                <feImage href="${specularDataURL}" x="0" y="0" width="${width}" height="${height}" result="specular_layer" preserveAspectRatio="none" />
-                <feComponentTransfer in="specular_layer" result="specular_faded">
-                    <feFuncA type="linear" slope="0.85" />
-                </feComponentTransfer>
-                <feBlend in="specular_faded" in2="displaced_saturated" mode="screen" />
-            </filter>
-        </svg>`;
-
-        svgContainer.insertAdjacentHTML('beforeend', filterHTML);
-
-        const filterString = `url(#dockGlassFilter) brightness(1.05) saturate(110%)`;
-        inner.style.backdropFilter = filterString;
-        inner.style.webkitBackdropFilter = filterString;
+        // Translate the clone world opposite to the indicator's position
+        // so the clone appears to show the real scene "behind" the indicator
+        const gx = bubbleRect.left - dockRect.left;
+        const gy = bubbleRect.top - dockRect.top;
+        cloneWorld.style.transform = `translate(${-gx}px, ${-gy}px)`;
     };
 
     const switchPanel = (panelId) => {
@@ -1542,7 +1691,6 @@
             requestAnimationFrame(() => {
                 indicator.style.transform = `translate(${transformX}px, -50%) scale(1.15)`;
                 indicator.style.opacity = '1';
-                // Actualizar el filtro dinámicamente según la posición del botón
                 updateDockGlassFilter();
             });
         }
@@ -1553,6 +1701,7 @@
             syncCommandHub();
         }
     };
+
 
     // --- Dock Touch/Drag Logic (Fully non-blocking) ---
     const initDockDrag = () => {
@@ -1711,7 +1860,7 @@
                         errors.push(`Tarjeta ${index + 1}: ${rowErrors.join(", ")}`);
                     } else {
                         const matchedBio = biologicosCatalogo.find(b => 
-                            String(b.biologico).trim().toUpperCase() === String(bio).trim().toUpperCase()
+                            normalizeString(b.biologico) === normalizeString(bio)
                         );
                         if (matchedBio) {
                             items.push({
@@ -1851,7 +2000,7 @@
                 const sinPedido = document.getElementById('chkNoPedido').checked;
                 records.forEach(rec => {
                     const matchedBio = biologicosCatalogo.find(b => 
-                        String(b.biologico).trim().toUpperCase() === String(rec.biologico).trim().toUpperCase()
+                        normalizeString(b.biologico) === normalizeString(rec.biologico)
                     );
                     const promedioVal = matchedBio ? (matchedBio.promedio_frascos || 0) : 0;
                     const totalVal = rec.existencia_actual_frascos + rec.pedido_frascos;
@@ -1981,6 +2130,22 @@
         setupModalToggle('btnProfileToggle', 'profileDropdown');
         setupModalToggle('btnNotifToggle', 'topNotifDropdown');
         setupModalToggle('btnFilesToggle', 'archivosDropdown');
+
+        document.getElementById('btnClearNotifs')?.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (!currentUser || !currentProfile) return;
+            const { error } = await supabaseClient
+                .from('notificaciones_perfil')
+                .update({ deleted: true, deleted_ts: new Date().toISOString() })
+                .eq('usuario', currentProfile.usuario)
+                .eq('deleted', false);
+            if (error) {
+                showToast("Error al limpiar notificaciones: " + error.message, "error");
+            } else {
+                showToast("Notificaciones limpiadas");
+                loadNotifications();
+            }
+        });
 
         // BCG Modals Setup
         document.getElementById('btnSetBCGMobile')?.addEventListener('click', openBCGApertura);
