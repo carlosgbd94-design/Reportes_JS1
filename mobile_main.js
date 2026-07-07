@@ -22,6 +22,7 @@
     let targetPedidoDate = "";
     let canCaptureBioGlobal = true;
     let canCaptureConsGlobal = true;
+    let canCaptureSRGlobal = true;
     let recentErrors = [];
     const originalConsoleError = console.error;
     console.error = function(...args) {
@@ -100,9 +101,16 @@
 
     // --- Autenticación ---
     const checkSession = async () => {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session) {
-            handleAuthSuccess(session.user);
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                await handleAuthSuccess(session.user);
+            }
+        } catch (e) {
+            console.error("Session check error:", e);
+        } finally {
+            const loader = document.getElementById('premiumLoadingScreen');
+            if (loader) loader.classList.add('hidden');
         }
     };
 
@@ -117,6 +125,21 @@
         await fetchCatalogs();
         await fetchTargetDate();
         canCaptureConsGlobal = checkConsumiblesCaptureWindow();
+        
+        // SR capture follows the same window as BIO (Thursday/Friday) or Wednesday holiday overrides
+        const d_dow = new Date().getDay();
+        let isSRDay = (d_dow === 4 || d_dow === 5);
+        if (d_dow === 3) {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const Friday = new Date();
+            Friday.setDate(Friday.getDate() + 2);
+            if (isMexicanHoliday(tomorrow) && isMexicanHoliday(Friday)) {
+                isSRDay = true;
+            }
+        }
+        canCaptureSRGlobal = isSRDay;
+
         await fetchLotes();
         await loadCompliance();
         await checkCapturesState();
@@ -545,6 +568,16 @@
 
         if (data) {
             updateLoteDropdown(data.biologico, data.lote);
+        } else {
+            // Added manually (not during prefill load) - scroll and highlight
+            setTimeout(() => {
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                card.classList.add('new-card-highlight');
+                // Remove highlight class after animation finishes
+                setTimeout(() => {
+                    card.classList.remove('new-card-highlight');
+                }, 800);
+            }, 50);
         }
 
         if (hasTodaySR && !isEditingSR) {
@@ -598,7 +631,7 @@
 
     // --- Command Hub Lock/Edit State Sync ---
     const applyFormLocks = () => {
-        const isSRLocked = hasTodaySR && !isEditingSR;
+        const isSRLocked = (hasTodaySR && !isEditingSR) || !canCaptureSRGlobal;
         const isCONSLocked = (hasTodayCONS && !isEditingCONS) || !canCaptureConsGlobal;
         const isBIOLocked = (hasTodayBIO && !isEditingBIO) || !canCaptureBioGlobal;
         const isPinolLocked = hasActivePinol;
@@ -654,7 +687,7 @@
         let isEditing = false;
 
         if (activePanel === 'SR') {
-            isAlreadySaved = hasTodaySR;
+            isAlreadySaved = hasTodaySR || !canCaptureSRGlobal;
             isEditing = isEditingSR;
         } else if (activePanel === 'CONS') {
             isAlreadySaved = hasTodayCONS || !canCaptureConsGlobal;
@@ -670,10 +703,11 @@
         // Update status text and chip classes
         if (statusText && statusChip) {
             statusChip.style.display = "flex";
-            if ((activePanel === 'BIO' && !canCaptureBioGlobal) || (activePanel === 'CONS' && !canCaptureConsGlobal)) {
+            const isOutsideWindow = (activePanel === 'SR' && !canCaptureSRGlobal) || (activePanel === 'BIO' && !canCaptureBioGlobal) || (activePanel === 'CONS' && !canCaptureConsGlobal);
+            if (isOutsideWindow) {
                 statusText.textContent = 'Fuera de Ventana';
                 statusChip.className = 'status-chip-v5 flex items-center gap-1.5 px-3 py-1 bg-rose-500/10 border border-rose-500/20 text-rose-600 rounded-full text-[10px] font-black uppercase tracking-wider';
-            } else if (isAlreadySaved) {
+            } else if (isAlreadySaved && !(activePanel === 'SR' && !canCaptureSRGlobal)) {
                 statusText.textContent = isEditing ? 'Editando' : 'Reporte Guardado';
                 statusChip.className = 'status-chip-v5 flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-wider';
             } else {
@@ -686,7 +720,7 @@
         if (saveBtn) {
             let show = (!isAlreadySaved || isEditing);
             const iconSpan = saveBtn.querySelector('.material-symbols-rounded');
-            const isOutsideWindow = (activePanel === 'BIO' && !canCaptureBioGlobal) || (activePanel === 'CONS' && !canCaptureConsGlobal);
+            const isOutsideWindow = (activePanel === 'SR' && !canCaptureSRGlobal) || (activePanel === 'BIO' && !canCaptureBioGlobal) || (activePanel === 'CONS' && !canCaptureConsGlobal);
 
             if (isOutsideWindow) {
                 saveBtn.disabled = true;
@@ -710,7 +744,7 @@
         }
         if (editBtn) {
             const hasActualCapture = (activePanel === 'SR' && hasTodaySR) || (activePanel === 'CONS' && hasTodayCONS) || (activePanel === 'BIO' && hasTodayBIO);
-            const show = (hasActualCapture && !isEditing && activePanel !== 'PINOL');
+            const show = (hasActualCapture && !isEditing && activePanel !== 'PINOL' && ((activePanel === 'SR' && canCaptureSRGlobal) || (activePanel === 'BIO' && canCaptureBioGlobal) || (activePanel === 'CONS' && canCaptureConsGlobal)));
             editBtn.style.setProperty('display', show ? 'flex' : 'none', 'important');
         }
         if (cancelBtn) {
@@ -2087,7 +2121,12 @@
 
         } catch (err) {
             console.error(err);
-            if (err.message !== "Nombre requerido" && err.message !== "Validaciones fallidas" && err.message !== "Sin items" && err.message !== "Campos incompletos" && err.message !== "Valores negativos" && err.message !== "Validación de pedido fallida") {
+            if (err.message && err.message !== "Nombre requerido" && err.message !== "Validaciones fallidas" && err.message !== "Sin items" && err.message !== "Campos incompletos" && err.message !== "Valores negativos" && err.message !== "Validación de pedido fallida") {
+                showToast("Error: " + err.message, "error");
+            } else if (err.message) {
+                // If it is a validation error but has a message, let's toast it to alert the user
+                showToast(err.message, "error");
+            } else {
                 showToast("Error al guardar reporte.", "error");
             }
             syncCommandHub();

@@ -917,3 +917,57 @@ html.dark .btn-clone-card {
   animation: swipeHintRightBg 1.6s cubic-bezier(0.25, 1, 0.5, 1) !important;
 }
 
+/* 🌀 Premium Loading Screen Overlay */
+#premiumLoadingScreen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-app);
+  z-index: 10000; /* above everything */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.5s;
+}
+
+#premiumLoadingScreen.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.premium-spinner {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: conic-gradient(from 180deg at 50% 50%, rgba(99, 102, 241, 0.15) 0deg, #6366f1 360deg);
+  animation: premiumRotate 0.8s linear infinite;
+  mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 0);
+}
+
+@keyframes premiumRotate {
+  100% { transform: rotate(360deg); }
+}
+
+/* 🎯 Highlight focus dynamic card entry */
+@keyframes highlightNewCard {
+  0% {
+    transform: scale(0.96);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.4);
+    background: rgba(99, 102, 241, 0.05);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0px transparent;
+  }
+}
+
+.new-card-highlight {
+  animation: highlightNewCard 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
