@@ -1136,9 +1136,66 @@
                 // Status indicator dot
                 const unreadDot = isUnread ? `<span class="w-1.5 h-1.5 rounded-full bg-blue-600 block shrink-0" title="Nueva"></span>` : '';
 
-                // Clean the message, showing placeholders if empty
-                const rawMsg = (notif.message || '').trim();
-                const displayMsg = rawMsg ? rawMsg : '<span class="text-slate-400 italic">Sin descripción de la alerta.</span>';
+                // Format message body using a helper that decodes details like Unit, Date, and custom comments
+                const formatNotifBodyMobile = (title, message) => {
+                    if (!message) return '<span class="text-slate-400 italic">Sin descripción de la alerta.</span>';
+                    
+                    let clean = message;
+                    const isDelivery = (title && title.toLowerCase().includes("entrega")) || message.toLowerCase().includes("entregada") || message.toLowerCase().includes("recibido");
+                    
+                    if (isDelivery) {
+                        clean = "Pinol entregado:";
+                    } else {
+                        clean = title ? `${title}:` : "Notificación:";
+                    }
+
+                    const unidadMatch = message.match(/Unidad:\s*([^.\n]+)/i) || message.match(/Unidad de salud:\s*([^.\n]+)/i);
+                    const unidad = unidadMatch ? unidadMatch[1].trim().split(" CLUES:")[0].split(" Solicitó:")[0] : "";
+
+                    const fechaMatch = message.match(/Fecha de solicitud:\s*([\d-]+)/i);
+                    let fechaReq = fechaMatch ? fechaMatch[1] : "";
+                    if (fechaReq) {
+                        const d = new Date(fechaReq);
+                        if (!isNaN(d.getTime())) {
+                            const dd = String(d.getDate()).padStart(2, '0');
+                            const mm = String(d.getMonth() + 1).padStart(2, '0');
+                            const yy = String(d.getFullYear()).slice(-2);
+                            fechaReq = `${dd}-${mm}-${yy}`;
+                        }
+                    }
+
+                    let html = `<strong class="text-slate-800 font-extrabold block mb-1">${clean}</strong>`;
+                    if (fechaReq) html += `<div class="text-[10px] text-slate-500 font-medium">Fecha de solicitud: ${fechaReq}</div>`;
+                    if (unidad) html += `<div class="text-[10px] text-slate-500 font-medium">Unidad de salud: ${unidad}</div>`;
+
+                    if (isDelivery) {
+                        const isGeneric = message.includes("Tu solicitud de pinol ha sido marcada como entregada.");
+                        const isVirtual = message.includes("Pinol entregado:\n");
+                        
+                        // Extract any extra commentary that was added during delivery confirmations
+                        let comment = "";
+                        if (!isGeneric && !isVirtual) {
+                            const cleanLines = message.replace("Pinol entregado:", "").replace("Pinol entregado:\n", "").trim();
+                            if (cleanLines && !cleanLines.includes("Tu solicitud")) {
+                                comment = cleanLines;
+                            }
+                        }
+                        
+                        if (comment) {
+                            html += `<div class="mt-2 p-2 bg-slate-50 border-l-2 border-amber-500 rounded text-[10px] text-slate-600 font-medium italic">
+                                <strong>Comentario:</strong> "${comment}"
+                            </div>`;
+                        }
+                    } else {
+                        // For other notification types, if there's no structured Unit data, show the raw text
+                        if (!unidad && message.trim() && message !== title) {
+                            html += `<div class="text-[11px] text-slate-500 font-medium mt-1">${message}</div>`;
+                        }
+                    }
+                    return html;
+                };
+
+                const displayMsg = formatNotifBodyMobile(notif.title, notif.message);
 
                 return `
                     <div class="swipe-container rounded-2xl mb-3.5 border ${isUnread ? 'border-slate-200/80 shadow-sm' : 'border-transparent'}" data-id="${item.id}">
@@ -1165,7 +1222,7 @@
                                     <span class="text-[9px] font-bold text-slate-400">${formattedDate}</span>
                                 </div>
                             </div>
-                            <p class="text-[11px] text-slate-600 font-medium leading-relaxed">${displayMsg}</p>
+                            <div class="leading-normal">${displayMsg}</div>
                         </div>
                     </div>
                 `;
