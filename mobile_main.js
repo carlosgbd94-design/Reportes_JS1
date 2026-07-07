@@ -198,11 +198,20 @@
 
     const normalizeString = (str) => {
         if (!str) return "";
-        return String(str)
+        let normalized = String(str)
             .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "")
             .trim()
             .toUpperCase();
+        
+        // Alias mapping to resolve catalog mismatches on different versions/platforms
+        if (normalized === "NEUMO 13" || normalized === "NEUMOCOCCICA 13" || normalized === "NEUMOCOCICA 13") {
+            return "NEUMOCÓCICA 13";
+        }
+        if (normalized === "NEUMO 20" || normalized === "NEUMOCOCCICA 20" || normalized === "NEUMOCOCICA 20") {
+            return "NEUMOCÓCICA 20";
+        }
+        return normalized;
     };
 
     const fetchCatalogs = async () => {
@@ -1599,9 +1608,10 @@
         const specURL = imageDataToURL(calcSpecular(widthRes, heightRes, radiusRes, bezelRes));
 
         // Inject SVG filter with Retina maps and explicit pixel dimensions
+        // Expanded filter region (x="-100%", y="-100%", width="300%", height="300%") prevents boundary clipping lines (the blue/cyan border artifacts)
         const filterHTML = `<svg id="dockGlassSVG" width="0" height="0" style="position:absolute;pointer-events:none" xmlns="http://www.w3.org/2000/svg">
             <defs>
-                <filter id="dockGlassFilter" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB">
+                <filter id="dockGlassFilter" x="-100%" y="-100%" width="300%" height="300%" color-interpolation-filters="sRGB">
                     <!-- Set stdDeviation to 0 to keep the background and icons razor sharp (no dirty blur) -->
                     <feGaussianBlur in="SourceGraphic" stdDeviation="0" result="blurred" />
                     <!-- Render the high resolution images fit into layout dimensions with image-rendering: crisp-edges quality -->
