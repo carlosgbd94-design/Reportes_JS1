@@ -1094,9 +1094,9 @@ html {
   scroll-behavior: smooth;
 }
 
-/* 🌌 Login Ambient Background (Premium Blue Mesh & Particles) */
+/* 🌌 Login Ambient Background (Light Blue/White Mesh & Particles) */
 .login-bg-ambient {
-    background: linear-gradient(135deg, #0b1528 0%, #060c18 100%);
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     overflow: hidden;
 }
 
@@ -1104,8 +1104,8 @@ html {
     position: absolute;
     border-radius: 50%;
     filter: blur(80px);
-    opacity: 0.45;
-    mix-blend-mode: screen;
+    opacity: 0.35;
+    mix-blend-mode: multiply;
     pointer-events: none;
     will-change: transform;
 }
@@ -1113,7 +1113,7 @@ html {
 .login-glow-1 {
     width: 250px;
     height: 250px;
-    background: radial-gradient(circle, rgba(59, 130, 246, 0.45) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, transparent 70%);
     top: -50px;
     left: -50px;
     animation: orbMove1 12s ease-in-out infinite alternate;
@@ -1122,7 +1122,7 @@ html {
 .login-glow-2 {
     width: 300px;
     height: 300px;
-    background: radial-gradient(circle, rgba(16, 185, 129, 0.35) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
     bottom: -80px;
     right: -80px;
     animation: orbMove2 16s ease-in-out infinite alternate;
@@ -1138,7 +1138,7 @@ html {
     100% { transform: translate(-80px, -50px) scale(1.2); }
 }
 
-/* Floating Particles for Mobile Login */
+/* Floating Particles for Mobile Login (Blue-Grey tint) */
 .particle-logo-mobile {
     position: absolute;
     bottom: -100px;
@@ -1149,7 +1149,7 @@ html {
     opacity: 0;
     pointer-events: none;
     animation: floatUpMobile linear infinite;
-    filter: grayscale(100%) brightness(12) opacity(0.5); /* Glowing white silhouette */
+    filter: grayscale(0.3) opacity(0.06); /* Preserves logo's original blue and slate colors, matching title */
 }
 
 @keyframes floatUpMobile {
@@ -1158,10 +1158,10 @@ html {
         opacity: 0;
     }
     10% {
-        opacity: 0.12;
+        opacity: 0.08;
     }
     90% {
-        opacity: 0.12;
+        opacity: 0.08;
     }
     100% {
         transform: translateY(-115vh) rotate(360deg);
@@ -1171,38 +1171,38 @@ html {
 
 /* Custom mobile login card glassmorphic styling over dark background (Refractive Liquid Glass) */
 #loginScreen .bg-white\/70 {
-    background: rgba(255, 255, 255, 0.22) !important;
-    border: 1px solid rgba(255, 255, 255, 0.45) !important;
+    background: rgba(255, 255, 255, 0.35) !important;
+    border: 1px solid rgba(255, 255, 255, 0.6) !important;
     backdrop-filter: url(#liquid-refraction) blur(24px) saturate(160%) !important;
     -webkit-backdrop-filter: url(#liquid-refraction) blur(24px) saturate(160%) !important;
     box-shadow: 
-        0 24px 60px rgba(0, 0, 0, 0.5),
-        inset 0 1px 1px rgba(255, 255, 255, 0.6),
-        inset 0 -1px 1px rgba(0, 0, 0, 0.05) !important;
+        0 20px 40px rgba(15, 23, 42, 0.06),
+        inset 0 1px 1px rgba(255, 255, 255, 0.7),
+        inset 0 -1px 1px rgba(0, 0, 0, 0.02) !important;
 }
 
 #loginScreen h1.text-slate-900 {
-    color: #ffffff !important;
+    color: #0f172a !important;
 }
 
 #loginScreen p.text-slate-500 {
-    color: rgba(255, 255, 255, 0.6) !important;
+    color: #475569 !important;
 }
 
 #loginScreen p.text-slate-400 {
-    color: rgba(255, 255, 255, 0.5) !important;
+    color: #64748b !important;
 }
 
 #loginScreen label.text-slate-600 {
-    color: rgba(255, 255, 255, 0.8) !important;
+    color: #334155 !important;
 }
 
 #loginScreen .text-slate-500 {
-    color: rgba(255, 255, 255, 0.7) !important;
+    color: #475569 !important;
 }
 
 html.dark #loginScreen .bg-white\/70 {
-    background: rgba(15, 23, 42, 0.45) !important;
+    background: rgba(15, 23, 42, 0.5) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
