@@ -1094,3 +1094,112 @@ html {
   scroll-behavior: smooth;
 }
 
+/* 🌌 Login Ambient Background (Premium Blue Mesh & Particles) */
+.login-bg-ambient {
+    background: linear-gradient(135deg, #0b1528 0%, #060c18 100%);
+    overflow: hidden;
+}
+
+.login-glow-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.45;
+    mix-blend-mode: screen;
+    pointer-events: none;
+    will-change: transform;
+}
+
+.login-glow-1 {
+    width: 250px;
+    height: 250px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.45) 0%, transparent 70%);
+    top: -50px;
+    left: -50px;
+    animation: orbMove1 12s ease-in-out infinite alternate;
+}
+
+.login-glow-2 {
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.35) 0%, transparent 70%);
+    bottom: -80px;
+    right: -80px;
+    animation: orbMove2 16s ease-in-out infinite alternate;
+}
+
+@keyframes orbMove1 {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(60px, 40px) scale(1.15); }
+}
+
+@keyframes orbMove2 {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(-80px, -50px) scale(1.2); }
+}
+
+/* Floating Particles for Mobile Login */
+.particle-logo-mobile {
+    position: absolute;
+    bottom: -100px;
+    background-image: url('https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0;
+    pointer-events: none;
+    animation: floatUpMobile linear infinite;
+    filter: grayscale(100%) brightness(12) opacity(0.5); /* Glowing white silhouette */
+}
+
+@keyframes floatUpMobile {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.12;
+    }
+    90% {
+        opacity: 0.12;
+    }
+    100% {
+        transform: translateY(-115vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Custom mobile login card glassmorphic styling over dark background */
+#loginScreen .bg-white\/70 {
+    background: rgba(255, 255, 255, 0.35) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45) !important;
+}
+
+#loginScreen h1.text-slate-900 {
+    color: #ffffff !important;
+}
+
+#loginScreen p.text-slate-500 {
+    color: rgba(255, 255, 255, 0.6) !important;
+}
+
+#loginScreen p.text-slate-400 {
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+#loginScreen label.text-slate-600 {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+#loginScreen .text-slate-500 {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+html.dark #loginScreen .bg-white\/70 {
+    background: rgba(15, 23, 42, 0.45) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+

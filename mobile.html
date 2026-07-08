@@ -103,8 +103,21 @@
   </svg>
 
   <!-- 🌅 Vista de Autenticación (Login) -->
-  <div id="loginScreen" class="flex-1 flex flex-col items-center justify-center p-6 relative z-10">
-    <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(15,23,42,0.04)_0,transparent_60%)] pointer-events-none"></div>
+  <div id="loginScreen" class="flex-1 flex flex-col items-center justify-center p-6 relative z-10 overflow-hidden">
+    <!-- Fondo azul premium animado de partículas / mesh -->
+    <div class="login-bg-ambient absolute inset-0 z-[-1] pointer-events-none">
+      <!-- Glow orbs -->
+      <div class="login-glow-orb login-glow-1"></div>
+      <div class="login-glow-orb login-glow-2"></div>
+      <!-- Falling / Floating particles -->
+      <div class="particle-logo-mobile" style="width: 25px; height: 25px; left: 10%; animation-duration: 14s; animation-delay: -2s;"></div>
+      <div class="particle-logo-mobile" style="width: 35px; height: 35px; left: 25%; animation-duration: 18s; animation-delay: -6s;"></div>
+      <div class="particle-logo-mobile" style="width: 20px; height: 20px; left: 45%; animation-duration: 12s; animation-delay: -1s;"></div>
+      <div class="particle-logo-mobile" style="width: 40px; height: 40px; left: 65%; animation-duration: 20s; animation-delay: -8s;"></div>
+      <div class="particle-logo-mobile" style="width: 30px; height: 30px; left: 85%; animation-duration: 16s; animation-delay: -4s;"></div>
+      <div class="particle-logo-mobile" style="width: 28px; height: 28px; left: 55%; animation-duration: 15s; animation-delay: -3s;"></div>
+      <div class="particle-logo-mobile" style="width: 32px; height: 32px; left: 75%; animation-duration: 17s; animation-delay: -5s;"></div>
+    </div>
     
     <div class="w-full max-w-sm rounded-[32px] border border-slate-200 bg-white/70 backdrop-blur-2xl p-8 shadow-xl relative text-center">
       <!-- Logo Oficial JS1 -->
