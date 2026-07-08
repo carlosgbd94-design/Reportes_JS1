@@ -9542,6 +9542,7 @@ async function updateExportFechaHint() {
     $("exportFechaSingleBox").style.display = "none";
     $("exportFechaMonthBox").style.display = "block";
     $("exportFechaHint").textContent = "Reporte mensual en formato matriz.";
+    if ($("exportFormatBox")) $("exportFormatBox").style.display = "none";
 
     const sugg = (USER && USER.fechaPedidoProgramada) || hoy;
     if (sugg && sugg.includes("-")) {
@@ -9593,6 +9594,7 @@ async function updateExportFechaHint() {
     $("exportFechaSingleBox").style.display = "none";
     $("exportFechaMonthBox").style.display = "none";
     $("exportFechaHint").textContent = "Reporte de consumibles por rango operativo.";
+    if ($("exportFormatBox")) $("exportFormatBox").style.display = "none";
 
     if (typeof getConsumiblesOperationalRangeClient === "function") {
       const range = getConsumiblesOperationalRangeClient(hoy);
@@ -9605,6 +9607,7 @@ async function updateExportFechaHint() {
     $("exportFechaSingleBox").style.display = "none";
     $("exportFechaMonthBox").style.display = "none";
     $("exportFechaHint").textContent = "Reporte de existencia por rango de fechas.";
+    if ($("exportFormatBox")) $("exportFormatBox").style.display = "flex";
 
     if (!$("exportFechaInicio").value) $("exportFechaInicio").value = hoy;
     if (!$("exportFechaFin").value) $("exportFechaFin").value = hoy;
@@ -11219,16 +11222,29 @@ window.generateWhatsAppTemplate = function () {
     return;
   }
 
-  let titulo = "Pendientes";
-  if (window.currentTipoWhatsApp === "BIO") titulo = "Pedido de biológico";
-  else if (window.currentTipoWhatsApp === "CONS") titulo = "Consumibles";
-  else if (window.currentTipoWhatsApp === "SR") titulo = "Existencia de biológico";
+  const hours = new Date().getHours();
+  let saludo = "Buenas noches";
+  let emoji = "🌙";
+  if (hours >= 6 && hours < 12) {
+    saludo = "Buenos días";
+    emoji = "☀️";
+  } else if (hours >= 12 && hours < 19) {
+    saludo = "Buenas tardes";
+    emoji = "⛅";
+  }
 
-  let texto = `${titulo}\n\n`;
+  let tipoTexto = "PENDIENTES";
+  if (window.currentTipoWhatsApp === "BIO") tipoTexto = "PEDIDO DE BIOLÓGICO";
+  else if (window.currentTipoWhatsApp === "CONS") tipoTexto = "CONSUMIBLES";
+  else if (window.currentTipoWhatsApp === "SR") tipoTexto = "EXISTENCIA DE BIOLÓGICO";
+
+  let listado = "";
   window.currentFaltantesWhatsApp.forEach(r => {
     const unitName = (r.unidad || '').toUpperCase().trim();
-    texto += `*${unitName} - PENDIENTE*\n`;
+    listado += `• *${unitName}*\n`;
   });
+
+  const texto = `¡${saludo}! ${emoji}\n\nLas siguientes unidades no han realizado su captura de *${tipoTexto}*, por favor hay que ingresar a la plataforma *SIREVAQ* a realizar la captura correspondiente:\n\n${listado}`;
 
   navigator.clipboard.writeText(texto).then(() => {
     showToast('¡Copiado! La plantilla se ha copiado al portapapeles para WhatsApp.', true, 'good');
@@ -12879,6 +12895,12 @@ if ($("btnDoExport")) $("btnDoExport").onclick = async () => {
       return;
     }
 
+    const format = $("exportFormat") ? $("exportFormat").value : "xlsx";
+    if (tipo === "SR" && format === "pdf") {
+      await generarPDFResguardoSR(municipios, fIni, fFin);
+      return;
+    }
+
     const splitCheckbox = $("exportSplitByMunicipio");
     console.log("[btnDoExport DEBUG] splitCheckbox checked:", splitCheckbox?.checked, "res data count:", res.data?.length);
 
@@ -12947,6 +12969,384 @@ if ($("btnDoExport")) $("btnDoExport").onclick = async () => {
     hideOverlay();
   }
 };
+
+/**
+ * Generador de PDF de Resguardo Profesional Oficial (Cliente)
+ */
+async function generarPDFResguardoSR(municipios, fIni, fFin, isUnitExport = false) {
+  showOverlay("Preparando PDF...", "PDF");
+  try {
+    const groups = {};
+
+    if (isUnitExport) {
+      let items = [];
+      let nombreResp = $("nombreSR")?.value.trim() || "";
+
+      // 1. Intentar leer existencias activas directamente de la pantalla (DOM)
+      document.querySelectorAll("#srCaptureTbody tr").forEach(tr => {
+        const row = tr._cache || {};
+        const bio = (row.bioSelect || tr.querySelector(".sr-bio-select"))?.value;
+        const lote = (row.loteSelect || tr.querySelector(".sr-lote-select"))?.value;
+        const cant = (row.cantidadInput || tr.querySelector(".sr-cantidad-input"))?.value;
+        if (bio && lote && cant && Number(cant) > 0) {
+          items.push({
+            biologico: bio,
+            lote: lote,
+            cantidad: Number(cant)
+          });
+        }
+      });
+
+      // 2. Si no hay elementos en el DOM, consultar la última captura en la base de datos
+      if (items.length === 0) {
+        const { data: latestDateRow, error: dateErr } = await window.supabase
+          .from('existencia_detalle')
+          .select('fecha')
+          .eq('clues', USER.clues)
+          .order('fecha', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!dateErr && latestDateRow) {
+          const targetFecha = latestDateRow.fecha;
+          const { data: dbItems, error: dbErr } = await window.supabase
+            .from('existencia_detalle')
+            .select('*')
+            .eq('clues', USER.clues)
+            .eq('fecha', targetFecha);
+
+          if (!dbErr && dbItems && dbItems.length > 0) {
+            items = dbItems.map(it => ({
+              biologico: it.biologico,
+              lote: it.lote,
+              cantidad: Number(it.cantidad || 0)
+            }));
+            if (!nombreResp) {
+              nombreResp = dbItems[0].capturado_por || "";
+            }
+          }
+        }
+      }
+
+      if (items.length === 0) {
+        showToast("No se encontraron registros de existencias (capturadas en pantalla o guardadas previamente) para generar el PDF.", false, "info");
+        return;
+      }
+
+      const unitName = (USER.unidad || USER.nombre || USER.usuario || "MI UNIDAD").toUpperCase();
+      groups["UNIT_ACTIVE"] = {
+        clues: USER.clues,
+        unidad: unitName,
+        fecha: todayYmdLocal(),
+        capturado_por: nombreResp || USER.nombre || USER.usuario || "",
+        items: items
+      };
+
+    } else {
+      // Exportación administrativa (Rango de fechas y Municipios)
+      let query = window.supabase
+        .from('existencia_detalle')
+        .select('*')
+        .gte('fecha', fIni)
+        .lte('fecha', fFin);
+
+      if (municipios && municipios.length > 0) {
+        query = query.in('municipio', municipios);
+      }
+
+      if (USER && USER.rol === "UNIDAD") {
+        query = query.eq('clues', USER.clues);
+      } else if (USER && USER.rol === "MUNICIPAL" && USER.municipio) {
+        const userMuns = String(USER.municipio).split(",").map(m => m.trim());
+        query = query.in('municipio', userMuns);
+      }
+
+      const { data: records, error } = await query.order('fecha').order('unidad').order('biologico');
+      if (error) throw error;
+
+      if (!records || records.length === 0) {
+        showToast("No se encontraron registros de existencias detalladas para generar el PDF.", false, "info");
+        return;
+      }
+
+      records.forEach(r => {
+        const key = `${r.clues}_${r.fecha}`;
+        if (!groups[key]) {
+          groups[key] = {
+            clues: r.clues,
+            unidad: r.unidad,
+            municipio: r.municipio,
+            fecha: r.fecha,
+            capturado_por: r.capturado_por || "",
+            items: []
+          };
+        }
+        groups[key].items.push(r);
+      });
+    }
+
+    // Obtener catálogo de biológicos para ordenar correctamente
+    const { data: catBio } = await window.supabase
+      .from('biologicos_catalogo')
+      .select('*')
+      .order('orden_biologico');
+    const bioOrder = {};
+    if (catBio) {
+      catBio.forEach((b, idx) => {
+        bioOrder[String(b.biologico).toLowerCase().trim()] = idx;
+      });
+    }
+
+    const jsPDF = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
+    if (!jsPDF) {
+      throw new Error("La librería jsPDF no está cargada en el DOM.");
+    }
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
+
+    let isFirstPage = true;
+
+    for (const key of Object.keys(groups)) {
+      const g = groups[key];
+
+      // Ordenar los biológicos según el catálogo y luego por lote
+      g.items.sort((a, b) => {
+        const orderA = bioOrder[String(a.biologico).toLowerCase().trim()] ?? 999;
+        const orderB = bioOrder[String(b.biologico).toLowerCase().trim()] ?? 999;
+        if (orderA !== orderB) return orderA - orderB;
+        return String(a.lote || "").localeCompare(String(b.lote || ""));
+      });
+
+      for (const cop of ["ORIGINAL", "COPIA"]) {
+        if (!isFirstPage) {
+          doc.addPage();
+        }
+        isFirstPage = false;
+
+        // 1. Logotipo de Cabecera (image3.png)
+        if (window.RESGUARDO_IMG_HEADER_BANNER) {
+          doc.addImage(window.RESGUARDO_IMG_HEADER_BANNER, 'PNG', 58.4, 8, 99.08, 15);
+        }
+
+        // 2. Tabla 1: Unidad de Salud y Responsable
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(8);
+
+        doc.autoTable({
+          startY: 25,
+          margin: { left: 30, right: 30 },
+          styles: {
+            font: 'Helvetica',
+            fontSize: 7.5,
+            cellPadding: 2,
+            lineColor: [200, 200, 200],
+            lineWidth: 0.2
+          },
+          headStyles: {
+            fillColor: [240, 240, 240],
+            textColor: [0, 0, 0],
+            fontStyle: 'bold',
+            halign: 'center'
+          },
+          bodyStyles: {
+            fillColor: [255, 255, 255],
+            textColor: [0, 0, 0],
+            halign: 'center'
+          },
+          head: [['UNIDAD DE SALUD', 'NOMBRE DE RESPONSABLE']],
+          body: [[
+            g.unidad.toUpperCase(),
+            g.capturado_por.toUpperCase()
+          ]],
+          theme: 'grid'
+        });
+
+        // 3. Tabla 2: Existencias de Biológicos (Aumentado a 18 filas mínimo)
+        const tableStartY = doc.lastAutoTable.finalY + 3;
+
+        const tableRows = [];
+        for (let i = 0; i < 18; i++) {
+          if (i < g.items.length) {
+            const it = g.items[i];
+            const frascos = Number(it.cantidad || 0);
+            const dosis = Math.round(frascos * getDosesPerVial(it.biologico));
+            tableRows.push([
+              it.biologico.toUpperCase(),
+              frascos.toString(),
+              dosis.toString(),
+              (it.lote || "").toUpperCase()
+            ]);
+          } else {
+            tableRows.push(["", "", "", ""]);
+          }
+        }
+
+        doc.autoTable({
+          startY: tableStartY,
+          margin: { left: 30, right: 30 },
+          styles: {
+            font: 'Helvetica',
+            fontSize: 7,
+            cellPadding: 1.5,
+            lineColor: [200, 200, 200],
+            lineWidth: 0.2
+          },
+          columnStyles: {
+            0: { cellWidth: 65, halign: 'left' },
+            1: { cellWidth: 25, halign: 'center', fontStyle: 'bold' },
+            2: { cellWidth: 25, halign: 'center', fontStyle: 'bold' },
+            3: { cellWidth: 40.9, halign: 'center' }
+          },
+          headStyles: {
+            fillColor: [240, 240, 240],
+            textColor: [0, 0, 0],
+            fontStyle: 'bold',
+            halign: 'center'
+          },
+          bodyStyles: {
+            fillColor: [255, 255, 255],
+            textColor: [0, 0, 0]
+          },
+          head: [
+            [{ content: 'CONTROL DE BIOLÓGICOS EN RESGUARDO', colSpan: 4, styles: { halign: 'center', fontSize: 8.5 } }],
+            [
+              { content: 'BIOLÓGICO', styles: { halign: 'left', width: 65 } },
+              { content: 'No. DE FRASCOS', styles: { halign: 'center', width: 25 } },
+              { content: 'No. DE DOSIS', styles: { halign: 'center', width: 25 } },
+              { content: 'LOTE', styles: { halign: 'center', width: 40.9 } }
+            ]
+          ],
+          body: tableRows,
+          theme: 'grid'
+        });
+
+        // 4. Tabla de firmas de Control de Temperaturas (Anchos optimizados y textos en multilínea)
+        const tempTableStartY = doc.lastAutoTable.finalY;
+
+        doc.autoTable({
+          startY: tempTableStartY,
+          margin: { left: 30, right: 30 },
+          styles: {
+            font: 'Helvetica',
+            fontSize: 6.5,
+            cellPadding: 1.5,
+            lineColor: [200, 200, 200],
+            lineWidth: 0.2
+          },
+          columnStyles: {
+            0: { cellWidth: 28 },    // FECHA
+            1: { cellWidth: 18 },    // TEMPERATURA DE ENTREGA (Más angosta)
+            2: { cellWidth: 31.95 }, // FIRMA (Más ancha)
+            3: { cellWidth: 28 },    // FECHA
+            4: { cellWidth: 18 },    // TEMPERATURA DE RECEPCIÓN (Más angosta)
+            5: { cellWidth: 31.95 }  // FIRMA (Más ancha)
+          },
+          headStyles: {
+            fillColor: [240, 240, 240],
+            textColor: [0, 0, 0],
+            fontStyle: 'bold',
+            halign: 'center'
+          },
+          bodyStyles: {
+            fillColor: [255, 255, 255],
+            textColor: [0, 0, 0],
+            halign: 'center'
+          },
+          head: [[
+            { content: 'ENTREGA', colSpan: 3, styles: { halign: 'center' } },
+            { content: 'RECEPCIÓN', colSpan: 3, styles: { halign: 'center' } }
+          ]],
+          body: [
+            [
+              'FECHA', 'TEMP. DE\nENTREGA', 'FIRMA',
+              'FECHA', 'TEMP. DE\nRECEPCIÓN', 'FIRMA'
+            ],
+            [
+              { content: '', styles: { height: 7 } }, '', '',
+              { content: '', styles: { height: 7 } }, '', ''
+            ]
+          ],
+          theme: 'grid'
+        });
+
+        // 5. Bloque de firmas (Centrado con líneas horizontales)
+        const sigsY = doc.lastAutoTable.finalY + 12;
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.2);
+
+        // Línea izquierda para Recibió
+        doc.line(30, sigsY - 2, 90, sigsY - 2);
+        // Línea derecha para Entregó
+        doc.line(125.9, sigsY - 2, 185.9, sigsY - 2);
+
+        doc.setFontSize(7.5);
+        doc.setFont("Helvetica", "bold");
+        doc.text("RECIBIÓ NOMBRE Y FIRMA", 60, sigsY + 2, { align: "center" });
+        doc.text("ENTREGÓ NOMBRE Y FIRMA", 155.9, sigsY + 2, { align: "center" });
+
+        // 6. Sellos
+        const stampTableStartY = sigsY + 10;
+        doc.autoTable({
+          startY: stampTableStartY,
+          margin: { left: 30, right: 30 },
+          styles: {
+            font: 'Helvetica',
+            fontSize: 7,
+            cellPadding: 10,
+            lineColor: [200, 200, 200],
+            lineWidth: 0.2
+          },
+          columnStyles: {
+            0: { cellWidth: 77.95 },
+            1: { cellWidth: 77.95 }
+          },
+          headStyles: {
+            fillColor: [255, 255, 255],
+            textColor: [0, 0, 0],
+            fontStyle: 'bold',
+            halign: 'center'
+          },
+          bodyStyles: {
+            fillColor: [255, 255, 255],
+            textColor: [0, 0, 0],
+            halign: 'center'
+          },
+          body: [
+            ['', ''],
+            [
+              { content: 'SELLO DE LA UNIDAD DE SALUD', styles: { cellPadding: 2, fontStyle: 'bold' } },
+              { content: 'SELLO DEL DEPARTAMENTO DE VACUNAS', styles: { cellPadding: 2, fontStyle: 'bold' } }
+            ]
+          ],
+          theme: 'grid'
+        });
+
+        // 7. Pie de Página
+        const footerY = 258;
+        if (window.RESGUARDO_IMG_FOOTER) {
+          doc.addImage(window.RESGUARDO_IMG_FOOTER, 'PNG', 30, footerY, 155.9, 14.5);
+        }
+
+        doc.setFont("Helvetica", "bold");
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text(`— ${cop} —`, 107.95, footerY - 2, { align: "center" });
+        doc.setTextColor(0, 0, 0);
+      }
+    }
+
+    const firstGroupKey = Object.keys(groups)[0];
+    const unitNameForFile = firstGroupKey ? groups[firstGroupKey].unidad : (isUnitExport ? (USER.unidad || USER.usuario) : "Reporte");
+    const filename = `Resguardo_Biologicos_${isUnitExport ? unitNameForFile.replace(/[^a-zA-Z0-9]/g, "_") : fIni}_al_${isUnitExport ? unitNameForFile.replace(/[^a-zA-Z0-9]/g, "_") : fFin}.pdf`;
+    doc.save(filename);
+    showToast(`PDF de resguardo generado con éxito: ${filename}`, true, 'good');
+
+  } catch (error) {
+    console.error("Error al generar PDF de resguardo:", error);
+    showToast("Error al generar el PDF del Resguardo.", false, "bad");
+  } finally {
+    hideOverlay();
+  }
+}
 
 /**
  * Generador de Excel Profesional (Cliente)
@@ -15972,6 +16372,17 @@ function resetUploadForm() {
 $("btnOpenUpload")?.addEventListener("click", openUploadFilesModal);
 $("btnCloseUpload")?.addEventListener("click", closeUploadFilesModal);
 
+async function exportarExistenciaUnidad() {
+  if (!USER || !USER.clues) {
+    showToast("Error: No se encontró la información de la unidad de salud.", false, "bad");
+    return;
+  }
+  const fActive = todayYmdLocal();
+  await generarPDFResguardoSR(USER.municipio ? [USER.municipio] : [], fActive, fActive, true);
+}
+
+$("btnExportSRUnidad")?.addEventListener("click", exportarExistenciaUnidad);
+
 $("btnBrowseFile")?.addEventListener("click", () => {
   $("uploadFileInput")?.click();
 });
@@ -16851,7 +17262,8 @@ function getDosesPerVial(biologico) {
       name.includes("TDPA") || 
       name.includes("HEPATITIS A") || 
       name.includes("VARICELA") || 
-      name.includes("DENGUE")) {
+      name.includes("DENGUE") ||
+      name.includes("SRP")) {
     return 1;
   }
   // Multidosis (10 dosis)

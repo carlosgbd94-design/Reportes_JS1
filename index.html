@@ -214,6 +214,8 @@
   <script defer src="https://unpkg.com/just-validate@4.3.0/dist/just-validate.production.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
+  <!-- Assets para PDF -->
+  <script src="pdf_assets.js" defer></script>
   <!-- Archivo Principal -->
   <script src="main.js?v=2026.49" defer></script>
 
@@ -396,6 +398,15 @@
             <div class="GlassContent liquidGL header-liquid-glass">
               <button class="header-action-btn" id="btnOpenUpload" data-tooltip="Subir archivos" title="Subir archivos">
                 <span class="material-symbols-rounded">cloud_upload</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="GlassContainer" id="glassBtnExportSRUnidad" data-role-gate="UNIDAD"
+            style="--glass-icon-color: #22c55e; --corner-radius: 100px;">
+            <div class="GlassContent liquidGL header-liquid-glass">
+              <button class="header-action-btn" id="btnExportSRUnidad" data-tooltip="Exportar existencia" title="Exportar existencia">
+                <span class="material-symbols-rounded" style="font-variation-settings: 'FILL' 0 !important;">picture_as_pdf</span>
               </button>
             </div>
           </div>
@@ -3334,7 +3345,7 @@
         }
 
         .rda-kpi-card:hover {
-          transform: translateY(-2px);
+          transform: scale(1.02);
           box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
@@ -4565,6 +4576,21 @@
               <option value="SR">Existencia de biológicos</option>
               <option value="CONS">Consumibles</option>
               <option value="BIO">Pedido de biológico</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Formato de salida -->
+        <div id="exportFormatBox" style="display: flex; flex-direction: column; gap: 6px;">
+          <label
+            style="font-size: 11px; font-weight: 800; color: var(--md-sys-color-on-surface-variant); text-transform: uppercase; letter-spacing: 0.05em;">
+            Formato de salida
+          </label>
+          <div style="position: relative;">
+            <select id="exportFormat"
+              style="width: 100%; height: 44px; appearance: none; background: var(--md-sys-color-surface); border: 1px solid var(--md-sys-color-outline-variant); border-radius: 10px; padding: 0 36px 0 14px; font-size: 14px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer; outline: none; transition: border-color 0.2s; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);">
+              <option value="xlsx">Excel (.xlsx) - Matriz Consolidada</option>
+              <option value="pdf">PDF de Resguardo (.pdf) - Formato Oficial</option>
             </select>
           </div>
         </div>

@@ -2783,7 +2783,7 @@ tr.lote-row-bad.imminent {
 }
 
 .kpiCard:hover {
-  transform: translateY(-4px) !important;
+  transform: scale(1.02) !important;
   box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.1) !important;
   border-color: var(--kpi-color, #e2e8f0) !important;
 }
@@ -8209,8 +8209,6 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
 
 
 
-.rda-kpi-card:hover 
-
 .rda-kpi-card {
   transition: all 0.3s ease;
   position: relative;
@@ -8232,7 +8230,7 @@ background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(219, 39, 11
 }
 
 .rda-kpi-card:hover {
-  transform: translateY(-5px);
+  transform: scale(1.02);
   box-shadow: 0 16px 32px rgba(0,0,0,0.06) !important;
 }
 
@@ -9596,7 +9594,7 @@ html body .modern-input-group input[type="date"]:focus,
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
 }
 .kpiCard:hover {
-  transform: translateY(-5px);
+  transform: scale(1.02);
 }
 .kpiCard.ok:hover {
   box-shadow: 0 12px 20px -5px rgba(16, 185, 129, 0.2), 0 8px 16px -8px rgba(16, 185, 129, 0.2) !important;
@@ -11092,7 +11090,7 @@ html.dark .text-surface-onVariant {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 .kpiCard:hover {
-  transform: translateY(-4px);
+  transform: scale(1.02);
   box-shadow: 0 20px 25px -5px rgba(0, 51, 102, 0.1), 0 8px 10px -6px rgba(0, 51, 102, 0.1) !important;
 }
 html.dark .kpiCard:hover {
