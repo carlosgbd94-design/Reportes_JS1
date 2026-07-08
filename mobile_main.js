@@ -23,6 +23,7 @@
     let canCaptureBioGlobal = true;
     let canCaptureConsGlobal = true;
     let canCaptureSRGlobal = true;
+    let mobileConfettiInstance = null;
     let recentErrors = [];
     const originalConsoleError = console.error;
     console.error = function(...args) {
@@ -37,6 +38,99 @@
     let dragStartX = 0;
     let dockLeftOffset = 0;
 
+    // --- Audio & Confetti Haptic Helpers ---
+    const playNotificationSound = (type = "success") => {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            const ctx = new AudioCtx();
+            const now = ctx.currentTime;
+
+            if (type === "success" || type === "sent") {
+                const notes = [
+                    { f: 523.25, d: 0.3, t: 0.0 },  // C5
+                    { f: 659.25, d: 0.3, t: 0.08 }, // E5
+                    { f: 783.99, d: 0.3, t: 0.16 }, // G5
+                    { f: 1046.50, d: 0.5, t: 0.24 } // C6
+                ];
+                notes.forEach(note => {
+                    const o = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    o.type = "sine";
+                    o.connect(g);
+                    g.connect(ctx.destination);
+                    o.frequency.setValueAtTime(note.f, now + note.t);
+                    g.gain.setValueAtTime(0.1, now + note.t);
+                    g.gain.exponentialRampToValueAtTime(0.001, now + note.t + note.d);
+                    o.start(now + note.t);
+                    o.stop(now + note.t + note.d);
+                });
+            } else if (type === "error" || type === "bad") {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = "sawtooth";
+                osc.frequency.setValueAtTime(180, now);
+                osc.frequency.linearRampToValueAtTime(120, now + 0.25);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            }
+        } catch (e) {
+            console.warn("AudioContext failed:", e);
+        }
+    };
+
+    const triggerConfettiCelebration = () => {
+        try {
+            if (typeof window.confetti === "function") {
+                let canvas = document.getElementById("mobile-confetti-canvas");
+                if (!canvas) {
+                    canvas = document.createElement("canvas");
+                    canvas.id = "mobile-confetti-canvas";
+                    canvas.style.position = "fixed";
+                    canvas.style.inset = "0";
+                    canvas.style.width = "100vw";
+                    canvas.style.height = "100vh";
+                    canvas.style.pointerEvents = "none";
+                    canvas.style.zIndex = "999999";
+                    document.body.appendChild(canvas);
+                }
+
+                if (!mobileConfettiInstance) {
+                    mobileConfettiInstance = window.confetti.create(canvas, {
+                        resize: true,
+                        useWorker: false
+                    });
+                }
+
+                const palette = ['#003366', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+                mobileConfettiInstance({
+                    particleCount: 50,
+                    spread: 60,
+                    origin: { x: 0.2, y: 0.8 },
+                    colors: palette
+                });
+                mobileConfettiInstance({
+                    particleCount: 50,
+                    spread: 60,
+                    origin: { x: 0.8, y: 0.8 },
+                    colors: palette
+                });
+
+                setTimeout(() => {
+                    if (mobileConfettiInstance) {
+                        mobileConfettiInstance.reset();
+                    }
+                }, 4000);
+            }
+        } catch (e) {
+            console.warn("Mobile Confetti failed:", e);
+        }
+    };
+
     // --- Toast Alerts ---
     const showToast = (message, type = 'success') => {
         const container = document.getElementById('toastContainer');
@@ -49,6 +143,26 @@
             <span>${message}</span>
         `;
         container.appendChild(toast);
+        
+        // Triggers for Haptics, vibration & sound
+        if (type === 'success') {
+            playNotificationSound('success');
+            if (navigator.vibrate) navigator.vibrate(120);
+            triggerConfettiCelebration();
+        } else if (type === 'error') {
+            playNotificationSound('error');
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 150]);
+            
+            // Screen shake
+            const mainApp = document.getElementById('mainApp') || document.body;
+            mainApp.classList.remove('shake-organic');
+            void mainApp.offsetWidth; // Force layout recalculation
+            mainApp.classList.add('shake-organic');
+            setTimeout(() => {
+                mainApp.classList.remove('shake-organic');
+            }, 600);
+        }
+
         setTimeout(() => {
             toast.style.opacity = '0';
             toast.style.transform = 'translateY(-10px)';
@@ -138,6 +252,23 @@
                 isSRDay = true;
             }
         }
+        
+        // Manual override check in aperturas_existencia
+        try {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const { data: extOverride } = await supabaseClient
+                .from('aperturas_existencia')
+                .select('*')
+                .eq('fecha', todayStr)
+                .eq('activo', 'SI')
+                .maybeSingle();
+            if (extOverride) {
+                isSRDay = true;
+            }
+        } catch (errOverride) {
+            console.warn("Error fetching aperturas_existencia override:", errOverride);
+        }
+
         canCaptureSRGlobal = isSRDay;
 
         await fetchLotes();
@@ -1165,29 +1296,30 @@
                     }
 
                     let html = `<strong class="text-slate-800 font-extrabold block mb-1">${clean}</strong>`;
-                    if (fechaReq) html += `<div class="text-[10px] text-slate-500 font-medium">Fecha de solicitud: ${fechaReq}</div>`;
-                    if (unidad) html += `<div class="text-[10px] text-slate-500 font-medium">Unidad de salud: ${unidad}</div>`;
-
+                    
                     if (isDelivery) {
-                        const isGeneric = message.includes("Tu solicitud de pinol ha sido marcada como entregada.");
-                        const isVirtual = message.includes("Pinol entregado:\n");
-                        
-                        // Extract any extra commentary that was added during delivery confirmations
-                        let comment = "";
-                        if (!isGeneric && !isVirtual) {
-                            const cleanLines = message.replace("Pinol entregado:", "").replace("Pinol entregado:\n", "").trim();
-                            if (cleanLines && !cleanLines.includes("Tu solicitud")) {
-                                comment = cleanLines;
-                            }
+                        if (unidad || fechaReq) {
+                            const details = [unidad, fechaReq ? `Sol: ${fechaReq}` : ""].filter(Boolean).join(" • ");
+                            html += `<div class="text-[10px] text-slate-500 font-semibold mt-0.5">${details}</div>`;
                         }
                         
+                        const lines = message.split("\n");
+                        const commentLines = lines.filter(line => {
+                            const l = line.toLowerCase();
+                            if (l.includes("unidad de salud:") || l.includes("unidad:") || l.includes("fecha de solicitud:") || l.includes("fecha:") || l.includes("tu solicitud de pinol") || l.includes("pinol entregado:")) {
+                                return false;
+                            }
+                            return true;
+                        });
+                        const comment = commentLines.join(" ").trim();
                         if (comment) {
                             html += `<div class="mt-2 p-2 bg-slate-50 border-l-2 border-amber-500 rounded text-[10px] text-slate-600 font-medium italic">
                                 <strong>Comentario:</strong> "${comment}"
                             </div>`;
                         }
                     } else {
-                        // For other notification types, if there's no structured Unit data, show the raw text
+                        if (fechaReq) html += `<div class="text-[10px] text-slate-500 font-medium">Fecha de solicitud: ${fechaReq}</div>`;
+                        if (unidad) html += `<div class="text-[10px] text-slate-500 font-medium">Unidad de salud: ${unidad}</div>`;
                         if (!unidad && message.trim() && message !== title) {
                             html += `<div class="text-[11px] text-slate-500 font-medium mt-1">${message}</div>`;
                         }
@@ -1924,7 +2056,6 @@
             let isAlreadySaved = false;
 
             if (activePanel === 'SR') {
-                tableName = "reportes_diarios_legacy";
                 isAlreadySaved = hasTodaySR;
                 const nombreSR = document.getElementById('nombreSR')?.value.trim() || "";
                 if (!nombreSR) {
@@ -1973,9 +2104,10 @@
                         }
                     }
 
+                    let cad = "";
                     if (lote && loteSelect) {
                         const selectedOpt = loteSelect.selectedOptions[0];
-                        const cad = selectedOpt?.dataset?.cad;
+                        cad = selectedOpt?.dataset?.cad || "";
                         if (cad) {
                             let cadDate = new Date(cad + "T23:59:59");
                             if (cadDate < new Date()) {
@@ -1994,9 +2126,11 @@
                         if (matchedBio) {
                             items.push({
                                 id: matchedBio.id,
+                                biologico: bio,
                                 cantidad: Number(cant),
                                 lote,
-                                recepcion: recep
+                                recepcion: recep,
+                                caducidad: cad
                             });
                         }
                     }
@@ -2012,16 +2146,61 @@
                     throw new Error("Sin items");
                 }
 
-                let biologicos = {};
-                items.forEach(item => {
-                    biologicos[item.id] = {
-                        lote: item.lote,
-                        cantidad: item.cantidad,
-                        recepcion: item.recepcion
+                // Delete existing first to avoid duplicate keys (desktop parity)
+                await Promise.all([
+                    supabaseClient.from('biologicos_existencia').delete().eq('clues', cluesFilter).eq('fecha', dataObject.fecha_captura),
+                    supabaseClient.from('existencia_detalle').delete().eq('clues', cluesFilter).eq('fecha', dataObject.fecha_captura)
+                ]);
+
+                // Create summaryRecord for biologicos_existencia
+                const summaryRecord = {
+                    id: btoa(cluesFilter + ":" + dataObject.fecha_captura + ":" + Date.now()),
+                    timestamp: new Date().toISOString(),
+                    fecha: dataObject.fecha_captura,
+                    municipio: muniFilter,
+                    clues: cluesFilter,
+                    unidad: currentProfile.unidad || "UNIDAD",
+                    capturado_por: nombreSR.toUpperCase(),
+                    sin_movimiento: sinMovimiento ? "SI" : "NO"
+                };
+
+                const BIOS = ["bcg", "hepatitis_b", "hexavalente", "dpt", "rotavirus", "neumococica_13", "neumococica_20", "srp", "sr", "vph", "varicela", "hepatitis_a", "td", "tdpa", "covid_19", "influenza", "vsr"];
+                BIOS.forEach(b => summaryRecord[b] = 0);
+
+                const detailRecords = items.map(it => {
+                    const bioKey = it.biologico.toLowerCase().replace(/ /g, "_");
+                    const finalKey = bioKey.includes("neumo") && bioKey.includes("20") ? "neumococica_20" : bioKey;
+                    if (BIOS.includes(finalKey)) {
+                        summaryRecord[finalKey] += Number(it.cantidad || 0);
+                    }
+                    return {
+                        fecha: dataObject.fecha_captura,
+                        clues: cluesFilter,
+                        unidad: currentProfile.unidad || "UNIDAD",
+                        municipio: muniFilter,
+                        biologico: it.biologico,
+                        lote: it.lote,
+                        caducidad: it.caducidad,
+                        fecha_recepcion: it.recepcion,
+                        cantidad: Number(it.cantidad || 0),
+                        capturado_por: nombreSR.toUpperCase()
                     };
                 });
-                dataObject.biologicos = biologicos;
 
+                // Insert into both tables
+                const [resSummary, resDetail] = await Promise.all([
+                    supabaseClient.from('biologicos_existencia').insert(summaryRecord),
+                    items.length > 0 ? supabaseClient.from('existencia_detalle').insert(detailRecords) : Promise.resolve({ error: null })
+                ]);
+
+                if (resSummary.error) throw resSummary.error;
+                if (resDetail.error) throw resDetail.error;
+
+                showToast("Reporte guardado con éxito");
+                hasTodaySR = true;
+                isEditingSR = false;
+                syncCommandHub();
+                return;
             } else if (activePanel === 'CONS') {
                 tableName = "consumibles";
                 isAlreadySaved = hasTodayCONS;

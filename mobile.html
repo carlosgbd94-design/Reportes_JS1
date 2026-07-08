@@ -79,9 +79,19 @@
   <div id="dock-glass-svg-container" style="position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; z-index: -9999;"></div>
 
   <!-- 🌀 Premium Loading Screen Overlay -->
-  <div id="premiumLoadingScreen">
-    <div class="premium-spinner mb-4"></div>
-    <div class="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Cargando SIREVAQ...</div>
+  <div id="premiumLoadingScreen" class="premium-loading-overlay">
+    <div class="premium-loading-glass">
+      <div class="elastic-bounce-container mb-4">
+        <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" alt="Cargando..." class="bounce-logo-mobile">
+      </div>
+      <div class="loading-text-container">
+        <h3 class="loading-title">SIREVAQ</h3>
+        <p class="loading-subtitle">Iniciando sistema...</p>
+      </div>
+      <div class="loading-indicator-bar-container">
+        <div class="loading-indicator-bar-progress"></div>
+      </div>
+    </div>
   </div>
 
   <!-- 🎨 SVG Background Pattern (Original Connected Nodes) -->
@@ -658,6 +668,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- DayJS para fechas -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dayjs/1.11.10/dayjs.min.js"></script>
+  <!-- Confetti script -->
+  <script defer src="https://unpkg.com/canvas-confetti@1.6.0/dist/confetti.browser.js"></script>
   <!-- Lógica Principal Móvil -->
   <script src="mobile_main.js" defer></script>
 </body>

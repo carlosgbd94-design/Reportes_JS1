@@ -1655,25 +1655,32 @@ function formatNotifBody(title, message) {
   }
 
   let html = `<strong style="color:var(--md-sys-color-primary);">${clean}</strong>`;
-  if (fechaReq) html += `<div style="margin-top:2px; font-size: 11px;">Fecha de solicitud: ${fechaReq}</div>`;
-  if (unidad) html += `<div style="font-size: 11px;">Unidad de salud: ${unidad}</div>`;
-  if (solicitante) html += `<div style="font-size: 11px;">Solicita: ${solicitante}</div>`;
-
-  // Mostrar comentario personalizado de entrega si existe y no es el genérico/virtual o repetido
+  
   if (isDelivery) {
-    const isGeneric = message.includes("Tu solicitud de pinol ha sido marcada como entregada.");
-    const isVirtual = message.includes("Pinol entregado:\n");
-    if (!isGeneric && !isVirtual && message.trim()) {
-      // Clean up string so it does not repeat the title prefix
-      const cleanComment = message.replace("Pinol entregado:", "").replace("Pinol entregado:\n", "").trim();
-      if (cleanComment && !cleanComment.includes("Tu solicitud")) {
-        html += `<div style="margin-top:6px; padding:6px 10px; background:rgba(0,0,0,0.03); border-left:3px solid var(--md-sys-color-primary); border-radius:4px; font-size:11px; color:var(--md-sys-color-on-surface-variant); font-style:italic;">
-          <strong>Comentario:</strong> "${escapeHtml(cleanComment)}"
-        </div>`;
-      }
+    if (unidad || fechaReq) {
+      const details = [unidad, fechaReq ? `Sol: ${fechaReq}` : ""].filter(Boolean).join(" • ");
+      html += `<div style="margin-top:2px; font-size: 11px; color:var(--md-sys-color-on-surface-variant); font-weight:600;">${details}</div>`;
     }
+    
+    const lines = message.split("\n");
+    const commentLines = lines.filter(line => {
+      const l = line.toLowerCase();
+      if (l.includes("unidad de salud:") || l.includes("unidad:") || l.includes("fecha de solicitud:") || l.includes("fecha:") || l.includes("tu solicitud de pinol") || l.includes("pinol entregado:")) {
+        return false;
+      }
+      return true;
+    });
+    const cleanComment = commentLines.join(" ").trim();
+    if (cleanComment) {
+      html += `<div style="margin-top:6px; padding:6px 10px; background:rgba(0,0,0,0.03); border-left:3px solid var(--md-sys-color-primary); border-radius:4px; font-size:11px; color:var(--md-sys-color-on-surface-variant); font-style:italic;">
+        <strong>Comentario:</strong> "${escapeHtml(cleanComment)}"
+      </div>`;
+    }
+  } else {
+    if (fechaReq) html += `<div style="margin-top:2px; font-size: 11px;">Fecha de solicitud: ${fechaReq}</div>`;
+    if (unidad) html += `<div style="font-size: 11px;">Unidad de salud: ${unidad}</div>`;
+    if (solicitante) html += `<div style="font-size: 11px;">Solicita: ${solicitante}</div>`;
   }
-
   return html;
 }
 
@@ -6152,9 +6159,11 @@ async function supabaseRequest(action = "", payload, options = {}) {
         // Crear notificación para la unidad + fan-out
         const { data: sol } = await supabase.from('pinol_solicitudes').select('*').eq('id', payload.id).single();
         if (sol) {
-          const deliveryMessage = payload.comentario_notificacion 
-            ? `${payload.comentario_notificacion} (Unidad: ${sol.unidad || 'Unidad'}, Solicitó: ${sol.nombre_solicita || 'Usuario'})`
-            : `Tu solicitud de pinol ha sido marcada como entregada. Unidad: ${sol.unidad || 'Unidad'}, Solicitó: ${sol.nombre_solicita || 'Usuario'}.`;
+          const formattedMessage = [
+            payload.comentario_notificacion ? payload.comentario_notificacion.trim() : 'Tu solicitud de pinol ha sido marcada como entregada.',
+            `Unidad de salud: ${sol.unidad} (CLUES: ${sol.clues})`,
+            `Fecha de solicitud: ${sol.fecha_solicitud || ''}`
+          ].filter(Boolean).join('\n');
 
           const pinolNotifRecord = {
             id: 'NOTIF:' + btoa(sol.clues + ":" + Date.now()),
@@ -6167,7 +6176,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
             target_municipio: sol.municipio || null,
             type: 'SUCCESS',
             title: 'Pinol entregado',
-            message: deliveryMessage,
+            message: formattedMessage,
             status: 'UNREAD',
             meta_json: JSON.stringify({ source: 'PINOL', event: 'PINOL_ENTREGADO', pinol_id: sol.id })
           };
