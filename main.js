@@ -12840,6 +12840,26 @@ async function performCancelEditBIO() {
   showToast("Edición cancelada");
 }
 
+function setupExportFormatOptions() {
+  const select = $("exportFormat");
+  if (!select) return;
+
+  const rol = String((USER && USER.rol) || "").toUpperCase();
+
+  if (rol === "UNIDAD") {
+    select.innerHTML = `
+      <option value="xlsx">Excel (.xlsx) - Matriz Consolidada</option>
+      <option value="pdf">PDF de Resguardo (.pdf) - Formato Oficial</option>
+    `;
+    select.value = "pdf";
+  } else {
+    select.innerHTML = `
+      <option value="xlsx" selected>Excel (.xlsx) - Matriz Consolidada</option>
+    `;
+    select.value = "xlsx";
+  }
+}
+
 // EVENTOS DEL MODAL DE EXPORTACIÓN
 if ($("exportTipo")) $("exportTipo").addEventListener("change", updateExportFechaHint);
 if ($("exportMonth")) $("exportMonth").addEventListener("change", updateExportFechaHint);
@@ -12847,6 +12867,7 @@ if ($("exportYear")) $("exportYear").addEventListener("change", updateExportFech
 
 if ($("btnExport")) $("btnExport").onclick = () => {
   $("exportOverlay")?.classList.add("show");
+  setupExportFormatOptions();
   updateExportFechaHint();
   loadExportOptions().catch(console.error);
 };
