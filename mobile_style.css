@@ -1169,13 +1169,16 @@ html {
     }
 }
 
-/* Custom mobile login card glassmorphic styling over dark background */
+/* Custom mobile login card glassmorphic styling over dark background (Refractive Liquid Glass) */
 #loginScreen .bg-white\/70 {
-    background: rgba(255, 255, 255, 0.35) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45) !important;
+    background: rgba(255, 255, 255, 0.22) !important;
+    border: 1px solid rgba(255, 255, 255, 0.45) !important;
+    backdrop-filter: url(#liquid-refraction) blur(24px) saturate(160%) !important;
+    -webkit-backdrop-filter: url(#liquid-refraction) blur(24px) saturate(160%) !important;
+    box-shadow: 
+        0 24px 60px rgba(0, 0, 0, 0.5),
+        inset 0 1px 1px rgba(255, 255, 255, 0.6),
+        inset 0 -1px 1px rgba(0, 0, 0, 0.05) !important;
 }
 
 #loginScreen h1.text-slate-900 {
