@@ -1149,7 +1149,7 @@ html {
     opacity: 0;
     pointer-events: none;
     animation: floatUpMobile linear infinite;
-    filter: grayscale(0.3) opacity(0.06); /* Preserves logo's original blue and slate colors, matching title */
+    filter: grayscale(0.25); /* Preserves logo's original blue and slate colors, matching title */
 }
 
 @keyframes floatUpMobile {
@@ -1158,10 +1158,10 @@ html {
         opacity: 0;
     }
     10% {
-        opacity: 0.08;
+        opacity: 0.14;
     }
     90% {
-        opacity: 0.08;
+        opacity: 0.14;
     }
     100% {
         transform: translateY(-115vh) rotate(360deg);
