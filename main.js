@@ -10785,8 +10785,9 @@ async function reloadTodayState(force = false) {
       const ackKey = `prefill_ack_${userClues}_${todayStr}`;
 
       if (!localStorage.getItem(ackKey)) {
-        await openPrefillNotice(prefillDate);
-        localStorage.setItem(ackKey, 'true');
+        openPrefillNotice(prefillDate).then(() => {
+          localStorage.setItem(ackKey, 'true');
+        });
       }
 
       EDIT_SR = false; // Es un insert nuevo para "hoy"
