@@ -6152,6 +6152,10 @@ async function supabaseRequest(action = "", payload, options = {}) {
         // Crear notificación para la unidad + fan-out
         const { data: sol } = await supabase.from('pinol_solicitudes').select('*').eq('id', payload.id).single();
         if (sol) {
+          const deliveryMessage = payload.comentario_notificacion 
+            ? `${payload.comentario_notificacion} (Unidad: ${sol.unidad || 'Unidad'}, Solicitó: ${sol.nombre_solicita || 'Usuario'})`
+            : `Tu solicitud de pinol ha sido marcada como entregada. Unidad: ${sol.unidad || 'Unidad'}, Solicitó: ${sol.nombre_solicita || 'Usuario'}.`;
+
           const pinolNotifRecord = {
             id: 'NOTIF:' + btoa(sol.clues + ":" + Date.now()),
             created_ts: new Date().toISOString(),
@@ -6163,7 +6167,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
             target_municipio: sol.municipio || null,
             type: 'SUCCESS',
             title: 'Pinol entregado',
-            message: payload.comentario_notificacion || 'Tu solicitud de pinol ha sido marcada como entregada.',
+            message: deliveryMessage,
             status: 'UNREAD',
             meta_json: JSON.stringify({ source: 'PINOL', event: 'PINOL_ENTREGADO', pinol_id: sol.id })
           };
