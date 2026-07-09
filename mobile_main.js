@@ -541,7 +541,7 @@
             const agujaInput = document.getElementById('aguja_0600403711');
             const chkSinMov = document.getElementById('chkSinMovimientoCONS');
 
-            if (nombreInput) nombreInput.value = savedItem.nombre_captura || '';
+            if (nombreInput) nombreInput.value = savedItem.capturado_por || '';
             if (srpInput) {
                 srpInput.value = savedItem.srp_dosis ?? 0;
                 srpInput.dispatchEvent(new Event('input'));
@@ -2346,7 +2346,9 @@
                     showToast("Ingresa el nombre del responsable", "error");
                     throw new Error("Nombre requerido");
                 }
-                dataObject.nombre_captura = nombreCONS;
+                const today = new Date().toISOString().split('T')[0];
+                dataObject.capturado_por = nombreCONS;
+                dataObject.id = btoa(cluesFilter + ":" + today);
 
                 const chkSinMov = document.getElementById('chkSinMovimientoCONS');
                 dataObject.sin_movimiento = (chkSinMov && chkSinMov.checked) ? "SI" : "NO";
