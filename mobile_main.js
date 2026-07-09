@@ -2482,7 +2482,6 @@
                     throw new Error("Múltiples pedidos de Pinol no permitidos");
                 }
                 tableName = "pinol_solicitudes";
-                delete dataObject.fecha_captura;
                 const nombrePINOL = document.getElementById('nombrePINOL')?.value.trim() || "";
                 if (!nombrePINOL) {
                     showToast("Ingresa el nombre de quien solicita", "error");
@@ -2493,20 +2492,31 @@
                     showToast("La solicitud debe ser de al menos 1 botella", "error");
                     throw new Error("Cantidad de solicitud inválida");
                 }
-                dataObject.nombre_solicita = nombrePINOL.toUpperCase();
-                dataObject.existencia = parseInt(document.getElementById('pinol_existencia').value) || 0;
-                dataObject.solicitud = solicitud;
-                dataObject.observaciones = document.getElementById('pinol_observaciones').value.trim();
-                dataObject.estatus = "PENDIENTE";
-                
-                // Add crucial unit identifiers so admin alerts can trace who sent the request
-                dataObject.unidad = currentProfile.unidad || "UNIDAD SIN NOMBRE";
-                dataObject.municipio = currentProfile.municipio || "MUNICIPIO";
-                dataObject.capturado_por = nombrePINOL.toUpperCase();
-                
-                // Match exact database column names
-                dataObject.existencia_actual_botellas = dataObject.existencia;
-                dataObject.solicitud_botellas = dataObject.solicitud;
+
+                const pinolRecord = {
+                    id: btoa(cluesFilter + ":" + Date.now()),
+                    timestamp_solicitud: new Date().toISOString(),
+                    fecha_solicitud: new Date().toISOString().split('T')[0],
+                    clues: cluesFilter,
+                    unidad: currentProfile.unidad || "UNIDAD SIN NOMBRE",
+                    municipio: muniFilter,
+                    existencia_actual_botellas: parseInt(document.getElementById('pinol_existencia').value) || 0,
+                    solicitud_botellas: solicitud,
+                    observaciones: document.getElementById('pinol_observaciones').value.trim(),
+                    estatus: "PENDIENTE",
+                    capturado_por: nombrePINOL.toUpperCase()
+                };
+
+                const { error } = await supabaseClient
+                    .from(tableName)
+                    .insert([pinolRecord]);
+
+                if (error) throw error;
+
+                showToast("Reporte guardado con éxito");
+                hasActivePinol = true;
+                syncCommandHub();
+                return;
             }
 
             // Save or update using upsert/insert
