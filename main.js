@@ -341,6 +341,26 @@ const $ = (id) => DOM.get(id);
 window.$ = $; // Alias global experto
 
 /**
+ * 🔄 retryWithBackoff: Reintenta una operación asíncrona solo si ocurre un fallo de red o error de servidor.
+ */
+async function retryWithBackoff(fn, retries = 3, delay = 1000, factor = 2) {
+  let currentDelay = delay;
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      const isNetworkError = !error.status || (error.status >= 500 && error.status <= 599) || error.message?.toLowerCase().includes("failed to fetch") || error.message?.toLowerCase().includes("network");
+      if (!isNetworkError || i === retries - 1) {
+        throw error;
+      }
+      console.warn(`[Retry] Intento ${i + 1} fallido por error de red/servidor. Reintentando en ${currentDelay}ms...`, error);
+      await new Promise(res => setTimeout(res, currentDelay));
+      currentDelay *= factor;
+    }
+  }
+}
+
+/**
  * 🚀 APP_SERVICE: Centralized API & Logic Layer
  */
 const AppService = {
@@ -349,7 +369,7 @@ const AppService = {
     const finalPayload = typeof actionOrPayload === "object" ? actionOrPayload : payload;
     const body = { ...finalPayload, action: action.toLowerCase(), token: AppState.token };
     try {
-      return await supabaseRequest(body.action, body, options);
+      return await retryWithBackoff(() => supabaseRequest(body.action, body, options));
     } catch (error) {
       console.error(`[AppService Error] ${action}:`, error);
       showToast(error.message || "Error de comunicación", false, "bad");
@@ -11021,6 +11041,7 @@ function renderCaptureSummary(data) {
   }
 
   if (data.available_windows && data.available_windows.length > 1) {
+    windowSelectorContainer.style.display = "block";
     let optionsHtml = data.available_windows.map(w => {
       const isSelected = data.active_window && data.active_window.fecha === w.fecha && data.active_window.tipo_pedido === w.tipo_pedido;
       return `<option value="${w.fecha}|${w.tipo_pedido}" ${isSelected ? 'selected' : ''}>${w.tipo_pedido} (Ventana: ${formatAppDate(w.fecha)})</option>`;
@@ -11039,10 +11060,12 @@ function renderCaptureSummary(data) {
     const selectEl = document.getElementById("captureSummaryWindowSelect");
     selectEl.onchange = (e) => {
       const [selFecha, selTipo] = e.target.value.split("|");
+      const selectedMuni = $("histMunicipioFilter")?.value || "TODOS";
       const payload = {
         action: "adminCaptureOverview",
         fecha: data.fecha,
         tipo: data.tipo,
+        selectedMunicipio: selectedMuni,
         targetWindow: { fecha: selFecha, tipo_pedido: selTipo }
       };
       showOverlay("Cargando ventana...", "Resumen");
@@ -11056,6 +11079,7 @@ function renderCaptureSummary(data) {
     };
   } else {
     windowSelectorContainer.innerHTML = "";
+    windowSelectorContainer.style.display = "none";
   }
 
   // Lógica de Ventana Inteligente para Pedido

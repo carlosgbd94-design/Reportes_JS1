@@ -31,6 +31,25 @@
         if (recentErrors.length > 5) recentErrors.shift();
         originalConsoleError.apply(console, args);
     };
+
+    // 🔄 retryWithBackoff: Reintenta una operación asíncrona ante fallos de red móviles
+    const retryWithBackoff = async (fn, retries = 3, delay = 1000, factor = 2) => {
+        let currentDelay = delay;
+        for (let i = 0; i < retries; i++) {
+            try {
+                return await fn();
+            } catch (error) {
+                const isNetworkError = !error.status || (error.status >= 500 && error.status <= 599) || error.message?.toLowerCase().includes("failed to fetch") || error.message?.toLowerCase().includes("network");
+                if (!isNetworkError || i === retries - 1) {
+                    throw error;
+                }
+                console.warn(`[Mobile Retry] Intento ${i + 1} fallido. Reintentando en ${currentDelay}ms...`, error);
+                await new Promise(res => setTimeout(res, currentDelay));
+                currentDelay *= factor;
+            }
+        }
+    };
+
     const INDICATOR_W = 50; // Circular pointer width/height
 
     // Drag state for Selection Dock
@@ -305,11 +324,18 @@
     const fetchProfile = async () => {
         if (!currentUser) return;
         
-        const { data, error } = await supabaseClient
-            .from('perfiles')
-            .select('*')
-            .eq('id', currentUser.id)
-            .single();
+        let res;
+        try {
+            res = await retryWithBackoff(() => supabaseClient
+                .from('perfiles')
+                .select('*')
+                .eq('id', currentUser.id)
+                .single()
+            );
+        } catch (e) {
+            res = { data: null, error: e };
+        }
+        const { data, error } = res;
 
         if (error || !data) {
             console.warn("Profile error, using metadata fallback:", error);
@@ -369,10 +395,18 @@
     };
 
     const fetchCatalogs = async () => {
-        const { data: catData, error: catError } = await supabaseClient
-            .from('biologicos_catalogo')
-            .select('*')
-            .order('orden_biologico');
+        let catData, catError;
+        try {
+            const res = await retryWithBackoff(() => supabaseClient
+                .from('biologicos_catalogo')
+                .select('*')
+                .order('orden_biologico')
+            );
+            catData = res.data;
+            catError = res.error;
+        } catch (e) {
+            catError = e;
+        }
 
         if (catError) {
             console.error("fetchCatalogs master catalog error:", catError);
@@ -388,10 +422,18 @@
             const isAdmin = currentProfile.rol === 'ADMIN' || currentProfile.rol === 'JURISDICCIONAL';
             const cluesFilter = (isAdmin ? 'QTSSA012154' : (currentProfile.clues || '*')).trim().toUpperCase();
 
-            const { data: paramsData, error: paramsError } = await supabaseClient
-                .from('biologicos_params')
-                .select('*')
-                .in('clues', [cluesFilter, '*']);
+            let paramsData, paramsError;
+            try {
+                const res = await retryWithBackoff(() => supabaseClient
+                    .from('biologicos_params')
+                    .select('*')
+                    .in('clues', [cluesFilter, '*'])
+                );
+                paramsData = res.data;
+                paramsError = res.error;
+            } catch (e) {
+                paramsError = e;
+            }
 
             if (paramsError) {
                 console.error("fetchCatalogs params error:", paramsError);
@@ -442,6 +484,16 @@
         }
 
         if (savedItems && savedItems.length > 0) {
+            const nombreBIOInput = document.getElementById('nombreBIO');
+            if (nombreBIOInput && savedItems[0].capturado_por) {
+                nombreBIOInput.value = savedItems[0].capturado_por;
+            }
+            const chkNoPedido = document.getElementById('chkNoPedido');
+            if (chkNoPedido) {
+                chkNoPedido.checked = !!savedItems[0].sin_pedido;
+                chkNoPedido.dispatchEvent(new Event('change'));
+            }
+
             savedItems.forEach(item => {
                 const matchedBio = biologicosCatalogo.find(b => normalizeString(b.biologico) === normalizeString(item.biologico));
                 if (matchedBio) {
@@ -462,6 +514,65 @@
         }
     };
 
+    const prefillCONSReport = async () => {
+        if (!currentProfile) return;
+        const isAdmin = currentProfile.rol === 'ADMIN' || currentProfile.rol === 'JURISDICCIONAL';
+        const cluesFilter = isAdmin ? 'QTSSA012154' : (currentProfile.clues || '');
+        const today = new Date().toISOString().split('T')[0];
+
+        const { data: savedItem, error } = await supabaseClient
+            .from('consumibles')
+            .select('*')
+            .eq('clues', cluesFilter)
+            .eq('fecha', today)
+            .maybeSingle();
+
+        if (error) {
+            console.error("prefillCONSReport error:", error);
+            return;
+        }
+
+        if (savedItem) {
+            const nombreInput = document.getElementById('nombreCONS');
+            const srpInput = document.getElementById('srp_dosis');
+            const srInput = document.getElementById('sr_dosis');
+            const j05Input = document.getElementById('jeringa_aplic_05ml_0605502657');
+            const j50Input = document.getElementById('jeringa_reconst_5ml_0605500438');
+            const agujaInput = document.getElementById('aguja_0600403711');
+            const chkSinMov = document.getElementById('chkSinMovimientoCONS');
+
+            if (nombreInput) nombreInput.value = savedItem.nombre_captura || '';
+            if (srpInput) {
+                srpInput.value = savedItem.srp_dosis ?? 0;
+                srpInput.dispatchEvent(new Event('input'));
+            }
+            if (srInput) {
+                srInput.value = savedItem.sr_dosis ?? 0;
+                srInput.dispatchEvent(new Event('input'));
+            }
+            if (j05Input) {
+                j05Input.value = savedItem.jeringa_aplic_05ml_0605502657 ?? 0;
+                j05Input.dispatchEvent(new Event('input'));
+            }
+            if (j50Input) {
+                j50Input.value = savedItem.jeringa_reconst_5ml_0605500438 ?? 0;
+                j50Input.dispatchEvent(new Event('input'));
+            }
+            if (agujaInput) {
+                agujaInput.value = savedItem.aguja_0600403711 ?? 0;
+                agujaInput.dispatchEvent(new Event('input'));
+            }
+            
+            if (chkSinMov) {
+                chkSinMov.checked = (savedItem.sin_movimiento === "SI");
+                chkSinMov.dispatchEvent(new Event('change'));
+            }
+            
+            hasTodayCONS = true;
+            syncCommandHub();
+        }
+    };
+
     const fetchLotes = async () => {
         const { data, error } = await supabaseClient.from('lotes').select('*');
         if (error) {
@@ -477,6 +588,7 @@
             
             renderPedidosCards();
             await prefillPreviousReport();
+            await prefillCONSReport();
             await prefillBIOReport();
         }
     };
@@ -653,6 +765,7 @@
             loteSelect.disabled = false;
 
             if (preselectedLote) {
+                loteSelect.value = preselectedLote;
                 const matched = filteredLotes.find(l => l.lote === preselectedLote);
                 if (matched) {
                     const lifeClass = getShelfLifeClass(matched.caducidad);
@@ -727,33 +840,52 @@
 
         const { data: lastRecord } = await supabaseClient
             .from('biologicos_existencia')
-            .select('fecha')
+            .select('fecha, capturado_por, sin_movimiento')
             .eq('clues', cluesFilter)
             .order('fecha', { ascending: false })
             .limit(1);
 
         if (lastRecord && lastRecord.length > 0) {
             const lastDate = lastRecord[0].fecha;
-            
-            const { data: details } = await supabaseClient
-                .from('existencia_detalle')
-                .select('*')
-                .eq('clues', cluesFilter)
-                .eq('fecha', lastDate);
+            const respName = lastRecord[0].capturado_por;
+            const sinMov = lastRecord[0].sin_movimiento === 'SI';
 
-            if (details && details.length > 0) {
+            const nombreSRInput = document.getElementById('nombreSR');
+            if (nombreSRInput && respName) nombreSRInput.value = respName;
+
+            const chkSinMov = document.getElementById('chkSinMovimientoSR');
+            if (chkSinMov) {
+                chkSinMov.checked = sinMov;
+                chkSinMov.dispatchEvent(new Event('change'));
+            }
+
+            if (sinMov) {
                 const container = document.getElementById('srCardsContainer');
                 if (container) container.innerHTML = '';
-
-                details.forEach(item => {
-                    addSRCard({
-                        biologico: item.biologico,
-                        lote: item.lote,
-                        fecha_recepcion: item.fecha_recepcion,
-                        cantidad: item.cantidad
-                    });
-                });
                 showToast("Se pre-llenó la información de la captura anterior.");
+            } else {
+                const { data: details } = await supabaseClient
+                    .from('existencia_detalle')
+                    .select('*')
+                    .eq('clues', cluesFilter)
+                    .eq('fecha', lastDate);
+
+                if (details && details.length > 0) {
+                    const container = document.getElementById('srCardsContainer');
+                    if (container) container.innerHTML = '';
+
+                    details.forEach(item => {
+                        addSRCard({
+                            biologico: item.biologico,
+                            lote: item.lote,
+                            fecha_recepcion: item.fecha_recepcion,
+                            cantidad: item.cantidad
+                        });
+                    });
+                    showToast("Se pre-llenó la información de la captura anterior.");
+                } else {
+                    addSRCard();
+                }
             }
         } else {
             addSRCard();
@@ -1100,6 +1232,8 @@
         const allowedBios = biologicosParams.filter(p => p.activo === 'SI').map(p => normalizeString(p.biologico));
         const filtered = biologicosCatalogo.filter(bio => allowedBios.includes(normalizeString(bio.biologico)));
 
+        const fragment = document.createDocumentFragment();
+
         filtered.forEach(bio => {
             const card = document.createElement('div');
             card.className = 'biologic-card';
@@ -1126,7 +1260,7 @@
                         <label>Existencia</label>
                         <div class="touch-stepper-wrap flex items-center gap-2">
                             <button type="button" class="stepper-btn" onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input'));">-</button>
-                            <input type="number" data-bio-id="${bio.id}" data-field="existencia" value="0" min="0" class="w-full text-center font-black bio-exist-input">
+                            <input type="number" data-bio-id="${bio.id}" data-bio-name="${bio.biologico}" data-field="existencia" value="0" min="0" class="w-full text-center font-black bio-exist-input">
                             <button type="button" class="stepper-btn" onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input'));">+</button>
                         </div>
                     </div>
@@ -1134,7 +1268,7 @@
                         <label>Pedido</label>
                         <div class="touch-stepper-wrap flex items-center gap-2">
                             <button type="button" class="stepper-btn" onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1); inp.dispatchEvent(new Event('input'));">-</button>
-                            <input type="number" data-bio-id="${bio.id}" data-field="pedido" value="0" min="0" class="w-full text-center font-black bio-ped-input">
+                            <input type="number" data-bio-id="${bio.id}" data-bio-name="${bio.biologico}" data-field="pedido" value="0" min="0" class="w-full text-center font-black bio-ped-input">
                             <button type="button" class="stepper-btn" onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1; inp.dispatchEvent(new Event('input'));">+</button>
                         </div>
                     </div>
@@ -1203,8 +1337,10 @@
             existInput.addEventListener('input', validateStock);
             pedInput.addEventListener('input', validateStock);
 
-            container.appendChild(card);
+            fragment.appendChild(card);
         });
+
+        container.appendChild(fragment);
     };
 
     // --- Notificaciones ---
@@ -2203,6 +2339,7 @@
                 return;
             } else if (activePanel === 'CONS') {
                 tableName = "consumibles";
+                delete dataObject.fecha_captura;
                 isAlreadySaved = hasTodayCONS;
                 const nombreCONS = document.getElementById('nombreCONS')?.value.trim() || "";
                 if (!nombreCONS) {
@@ -2238,6 +2375,7 @@
                 dataObject.sr_dosis = sr;
                 dataObject.jeringa_aplic_05ml_0605502657 = j05;
                 dataObject.jeringa_reconst_5ml_0605500438 = j50;
+                dataObject.aguja_0600403711 = srp + sr;
                 dataObject.fecha = new Date().toISOString().split('T')[0];
 
             } else if (activePanel === 'BIO') {
@@ -2341,6 +2479,7 @@
                     throw new Error("Múltiples pedidos de Pinol no permitidos");
                 }
                 tableName = "pinol_solicitudes";
+                delete dataObject.fecha_captura;
                 const nombrePINOL = document.getElementById('nombrePINOL')?.value.trim() || "";
                 if (!nombrePINOL) {
                     showToast("Ingresa el nombre de quien solicita", "error");
