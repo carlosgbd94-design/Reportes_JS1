@@ -2340,6 +2340,7 @@
             } else if (activePanel === 'CONS') {
                 tableName = "consumibles";
                 delete dataObject.fecha_captura;
+                delete dataObject.usuario;
                 isAlreadySaved = hasTodayCONS;
                 const nombreCONS = document.getElementById('nombreCONS')?.value.trim() || "";
                 if (!nombreCONS) {
