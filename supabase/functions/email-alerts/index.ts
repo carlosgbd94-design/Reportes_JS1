@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.0"
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts"
+import nodemailer from "npm:nodemailer@6.9.13"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -90,16 +90,14 @@ serve(async (req) => {
     const capturedConsToday = new Set((resConsToday.data || []).map(r => String(r.clues).trim().toUpperCase()))
     const capturedBioYesterday = new Set((resBioYesterday.data || []).map(r => String(r.clues).trim().toUpperCase()))
 
-    // Configurar cliente SMTP
-    const smtpClient = new SMTPClient({
-      connection: {
-        hostname: 'smtp.gmail.com',
-        port: 465,
-        tls: true,
-        auth: {
-          username: gmailUser,
-          password: gmailPassword,
-        },
+    // Configurar cliente SMTP con nodemailer
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: gmailUser,
+        pass: gmailPassword,
       },
     })
 
@@ -174,20 +172,19 @@ serve(async (req) => {
 </div>
 `
 
-          await smtpClient.send({
+          await transporter.sendMail({
             from: gmailUser,
             to: userForUnit.email,
             subject: `Aviso Pendiente: Captura en ${unit.unidad}`,
-            content: `Recordatorio de captura pendiente para ${unit.unidad}: ${missingItems.join(', ')}`,
-            html: cleanHtml(htmlBody),
-            replyTo: 'no-reply@js1reportes.com',
-            encodeLB: true
+            text: `Recordatorio de captura pendiente para ${unit.unidad}: ${missingItems.join(', ')}`,
+            html: htmlBody,
+            replyTo: 'no-reply@js1reportes.com'
           })
           sentCount++
         }
       }
 
-      await smtpClient.close()
+      transporter.close()
 
       return new Response(JSON.stringify({ ok: true, message: `Recordatorios individuales enviados: ${sentCount} correos.` }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -304,14 +301,13 @@ serve(async (req) => {
 </div>
 `
 
-        await smtpClient.send({
+        await transporter.sendMail({
           from: gmailUser,
           to: supervisor.email,
           subject: `Reporte ${reportType}: Región ${muniLabel} (${pct}% Capturado) - ${todayYmd}`,
-          content: `Resumen de captura para ${muniLabel}.`,
-          html: cleanHtml(htmlBody),
-          replyTo: 'no-reply@js1reportes.com',
-          encodeLB: true
+          text: `Resumen de captura para ${muniLabel}.`,
+          html: htmlBody,
+          replyTo: 'no-reply@js1reportes.com'
         })
         sentCount++
       }
@@ -394,14 +390,13 @@ serve(async (req) => {
 </div>
 `
 
-        await smtpClient.send({
+        await transporter.sendMail({
           from: gmailUser,
           to: supervisor.email,
           subject: `Reporte ${reportType}: CARAVANAS (${pct}% Capturado) - ${todayYmd}`,
-          content: `Resumen de captura para Caravanas Móviles.`,
-          html: cleanHtml(htmlBody),
-          replyTo: 'no-reply@js1reportes.com',
-          encodeLB: true
+          text: `Resumen de captura para Caravanas Móviles.`,
+          html: htmlBody,
+          replyTo: 'no-reply@js1reportes.com'
         })
         sentCount++
       }
@@ -501,20 +496,19 @@ serve(async (req) => {
 `
 
         for (const admin of adminProfiles) {
-          await smtpClient.send({
+          await transporter.sendMail({
             from: gmailUser,
             to: admin.email,
             subject: `[GENERAL] Reporte JS1 ${reportType} (${totalPct}% Global) - ${todayYmd}`,
-            content: `Estatus general de captura: ${totalCompleted}/${activeUnits.length} completadas.`,
-            html: cleanHtml(htmlBodyAdmin),
-            replyTo: 'no-reply@js1reportes.com',
-            encodeLB: true
+            text: `Estatus general de captura: ${totalCompleted}/${activeUnits.length} completadas.`,
+            html: htmlBodyAdmin,
+            replyTo: 'no-reply@js1reportes.com'
           })
           sentCount++
         }
       }
 
-      await smtpClient.close()
+      transporter.close()
 
       return new Response(JSON.stringify({ ok: true, message: `Reportes generales y municipales enviados: ${sentCount} correos.` }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
