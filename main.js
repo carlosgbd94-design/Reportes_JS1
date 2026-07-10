@@ -17299,6 +17299,11 @@ function highlightZeroRows(items) {
 
 function getDosesPerVial(biologico) {
   const name = String(biologico || '').toUpperCase().trim();
+  
+  if (name.includes("COVID-19") || name.includes("COVID")) {
+    return 6;
+  }
+  
   // Monodosis (1 dosis)
   if (name.includes("HEXAVALENTE") || 
       name.includes("ROTAVIRUS") || 
@@ -17308,7 +17313,10 @@ function getDosesPerVial(biologico) {
       name.includes("HEPATITIS A") || 
       name.includes("VARICELA") || 
       name.includes("DENGUE") ||
-      name.includes("SRP")) {
+      name.includes("SRP") ||
+      name.includes("HEPATITIS B") ||
+      name.includes("DPT") ||
+      name.includes("VSR")) {
     return 1;
   }
   // Multidosis (10 dosis)
