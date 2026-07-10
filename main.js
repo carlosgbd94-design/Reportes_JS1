@@ -17314,8 +17314,6 @@ function getDosesPerVial(biologico) {
       name.includes("VARICELA") || 
       name.includes("DENGUE") ||
       name.includes("SRP") ||
-      name.includes("HEPATITIS B") ||
-      name.includes("DPT") ||
       name.includes("VSR")) {
     return 1;
   }
