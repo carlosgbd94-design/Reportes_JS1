@@ -528,16 +528,16 @@ function renderDashboard() {
     const uniFilter = document.getElementById('rdaFilterUnidad')?.value || '';
     const esquema = _rdaState.esquema || 'basico';
 
+    const toggleContainer = document.getElementById('rdaViewToggleContainer');
+    if (toggleContainer) {
+        toggleContainer.style.display = (esquema === 'basico') ? 'inline-flex' : 'none';
+    }
+
     if (esquema === 'meta_logro_influenza') {
         if (typeof renderInfluenzaIndicatorsDashboard === 'function') {
             renderInfluenzaIndicatorsDashboard(muniFilter, uniFilter);
         }
         return;
-    }
-
-    const toggleContainer = document.getElementById('rdaViewToggleContainer');
-    if (toggleContainer) {
-        toggleContainer.style.display = (esquema === 'basico') ? 'inline-flex' : 'none';
     }
 
     let fUnits = unidades;

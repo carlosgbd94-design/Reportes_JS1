@@ -4224,9 +4224,31 @@ async function supabaseRequest(action = "", payload, options = {}) {
 
         // 3. Preparar Detalle (Long Table - EXISTENCIA_DETALLE)
         const detailRecords = items.map(it => {
-          const bioKey = it.biologico.toLowerCase().replace(/ /g, "_");
-          // Normalización especial para Neumocócica
-          const finalKey = bioKey.includes("neumo") && bioKey.includes("20") ? "neumococica_20" : bioKey;
+          const bioKey = (it.biologico || '').toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9\s_]/g, "")
+            .trim()
+            .replace(/[\s_]+/g, "_");
+
+          let finalKey = bioKey;
+          if (bioKey.includes("neumo")) {
+            finalKey = bioKey.includes("20") ? "neumococica_20" : "neumococica_13";
+          } else if (bioKey.includes("hepatitis") && bioKey.includes("b")) {
+            finalKey = "hepatitis_b";
+          } else if (bioKey.includes("hepatitis") && bioKey.includes("a")) {
+            finalKey = "hepatitis_a";
+          } else if (bioKey.includes("covid")) {
+            finalKey = "covid_19";
+          } else if (bioKey.includes("hexa")) {
+            finalKey = "hexavalente";
+          } else if (bioKey.includes("rotav")) {
+            finalKey = "rotavirus";
+          } else if (bioKey.includes("varic")) {
+            finalKey = "varicela";
+          } else if (bioKey.includes("influ")) {
+            finalKey = "influenza";
+          }
 
           if (BIOS.includes(finalKey)) {
             summaryRecord[finalKey] += Number(it.cantidad || 0);
@@ -4249,7 +4271,8 @@ async function supabaseRequest(action = "", payload, options = {}) {
             caducidad: mmmaaToIsoDate(finalCad), // CONVERSIÓN A ISO PARA DB
             fecha_recepcion: it.fecha_recepcion,
             cantidad: Number(it.cantidad || 0),
-            capturado_por: nombreResp
+            capturado_por: nombreResp,
+            tipo: it.tipo || "REQUISICION"
           };
         });
 
@@ -4297,19 +4320,42 @@ async function supabaseRequest(action = "", payload, options = {}) {
           }
         });
 
+        // Agrupación por clave estándar para la detección de ceros explícitos
         const bioTotalsCapture = {};
         detailRecords.forEach(r => {
-          const bioName = (r.biologico || '').trim().toUpperCase();
-          if (bioName) {
-            bioTotalsCapture[bioName] = (bioTotalsCapture[bioName] || 0) + Number(r.cantidad || 0);
+          const rawKey = (r.biologico || '').toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9\s_]/g, "")
+            .trim()
+            .replace(/[\s_]+/g, "_");
+
+          let stdKey = rawKey;
+          if (rawKey.includes("neumo")) {
+            stdKey = rawKey.includes("20") ? "neumococica_20" : "neumococica_13";
+          } else if (rawKey.includes("hepatitis") && rawKey.includes("b")) {
+            stdKey = "hepatitis_b";
+          } else if (rawKey.includes("hepatitis") && rawKey.includes("a")) {
+            stdKey = "hepatitis_a";
+          } else if (rawKey.includes("covid")) {
+            stdKey = "covid_19";
+          } else if (rawKey.includes("hexa")) {
+            stdKey = "hexavalente";
+          } else if (rawKey.includes("rotav")) {
+            stdKey = "rotavirus";
+          } else if (rawKey.includes("varic")) {
+            stdKey = "varicela";
+          } else if (rawKey.includes("influ")) {
+            stdKey = "influenza";
+          }
+
+          if (stdKey) {
+            bioTotalsCapture[stdKey] = (bioTotalsCapture[stdKey] || 0) + Number(r.cantidad || 0);
           }
         });
 
-        const explicitZeros = Object.keys(bioTotalsCapture).filter(b => bioTotalsCapture[b] === 0);
-        const explicitZerosOrig = explicitZeros.map(bUpper => {
-          const orig = detailRecords.find(r => (r.biologico || '').trim().toUpperCase() === bUpper);
-          return orig ? (orig.biologico || '').trim() : bUpper;
-        });
+        const explicitZerosKeys = Object.keys(bioTotalsCapture).filter(k => BIOS.includes(k) && bioTotalsCapture[k] === 0);
+        const explicitZerosOrig = explicitZerosKeys.map(k => BIOS_MAP[k] || k.toUpperCase().replace(/_/g, " "));
 
         // Unión de transiciones (de >0 a 0) y ceros explícitos capturados
         const finalMissing = Array.from(new Set([...desabastoTransicion, ...explicitZerosOrig]));
@@ -8257,22 +8303,34 @@ window.addSRRow = function (data = null) {
           <div class="sr-permanencia-hint" style="display: none;"></div>
         </div>
       </td>
+      <td class="p-4 py-3" data-label="Origen">
+        <select class="sr-tipo-select w-full bg-slate-50 border-2 border-slate-400 rounded-xl px-2.5 py-2 text-[13px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all">
+          <option value="REQUISICION" ${(!data || data.tipo === 'REQUISICION' || data.tipo === 'Recibido con requisición') ? 'selected' : ''}>Requisición</option>
+          <option value="PRESTAMO_DESABASTO" ${(data?.tipo === 'PRESTAMO_DESABASTO' || data?.tipo === 'Préstamo por desabasto') ? 'selected' : ''}>Préstamo (Desabasto)</option>
+          <option value="PRESTAMO_ARF" ${(data?.tipo === 'PRESTAMO_ARF' || data?.tipo === 'Préstamo por ARF') ? 'selected' : ''}>Préstamo (ARF)</option>
+        </select>
+      </td>
       <td class="p-4 py-3" data-label="Frascos">
-        <div class="relative group w-full flex items-center gap-1.5 touch-stepper-wrap">
-          <div class="relative w-full">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-rounded text-slate-400 text-[18px] pointer-events-none transition-colors group-focus-within:text-primary">inventory_2</span>
-            <input type="number" style="padding-left: 38px !important; text-align: center !important;" class="sr-cantidad-input w-full bg-slate-50 border-2 border-slate-400 rounded-xl pr-3 py-2.5 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" min="0" step="1" value="${data?.cantidad || ""}" placeholder="0">
-          </div>
+        <div class="flex items-center justify-center gap-2">
+          <span class="material-symbols-rounded text-slate-400 text-[18px] pointer-events-none" title="Frascos">inventory_2</span>
+          <input type="number" class="sr-cantidad-input w-[80px] text-center bg-slate-50 border-2 border-slate-400 rounded-xl py-2 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" min="0" step="any" value="${data?.cantidad || ""}" placeholder="0">
         </div>
       </td>
       <td class="p-4 py-3 text-center" data-label="Acción">
         <div class="flex justify-center items-center w-full gap-2">
-          <button type="button" class="md-clone-btn group text-slate-400 hover:text-primary transition-colors" title="Añadir fecha de recepción" onclick="cloneSRRow(this);">
-            <span class="material-symbols-rounded text-[22px]">post_add</span>
+          <button type="button" class="md-clone-btn" title="Añadir fecha de recepción" onclick="cloneSRRow(this);">
+            <svg viewBox="0 0 24 24" class="w-[22px] h-[22px]" style="fill: currentColor;">
+              <!-- Document border outline (top right cut out) -->
+              <path d="M17 19H5V5h7V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-7h-2v7z" />
+              <!-- Document horizontal lines -->
+              <path d="M7 9h6v2H7zm0 4h10v2H7zm0 4h10v2H7z" />
+              <!-- Plus sign at the top right -->
+              <path class="plus-sign" d="M19 7h3V5h-3V2h-2v3h-3v2h3v3h2z" />
+            </svg>
           </button>
-          <button type="button" class="md-delete-btn group" title="Eliminar este lote" onclick="this.closest('tr').remove();">
-            <svg viewBox="0 0 24 24" class="w-6 h-6">
-              <path class="trash-lid transition-transform duration-200 group-hover:-translate-y-1" fill="currentColor" d="M15 4V3H9v1H4v2h16V4h-5z" />
+          <button type="button" class="md-delete-btn" title="Eliminar este lote" onclick="this.closest('tr').remove();">
+            <svg viewBox="0 0 24 24" class="w-[18px] h-[18px]">
+              <path class="trash-lid" fill="currentColor" d="M15 4V3H9v1H4v2h16V4h-5z" />
               <path fill="currentColor" d="M5 21a2 2 0 002 2h10a2 2 0 002-2V7H5v14zM8 9h2v10H8V9zm4 0h2v10h-2V9zm4 0h2v10h-2V9z" />
             </svg>
           </button>
@@ -8286,6 +8344,7 @@ window.addSRRow = function (data = null) {
     loteSelect: tr.querySelector(".sr-lote-select"),
     cadCell: tr.querySelector(".sr-cad-cell"),
     recepcionInput: tr.querySelector(".sr-recepcion-input"),
+    tipoSelect: tr.querySelector(".sr-tipo-select"),
     cantidadInput: tr.querySelector(".sr-cantidad-input"),
     permanenciaHint: tr.querySelector(".sr-permanencia-hint")
   };
@@ -11996,7 +12055,7 @@ function activateMain(tab) {
   }
 
   // --- ARCHITECTURAL FIX: HIDE LOOSE SIBLING FORMS ---
-  const looseForms = ["formSR", "formCONS", "formBIO", "formPINOL", "panelDIST"];
+  const looseForms = ["formSR", "formCONS", "formBIO", "formPINOL", "formINFLUENZA", "panelDIST"];
 
   if (tab !== "CAP" && tab !== "ADMIN") {
     looseForms.forEach(id => {
@@ -12661,6 +12720,7 @@ async function performSaveSR() {
     const lote = (row.loteSelect || tr.querySelector(".sr-lote-select"))?.value;
     const cant = (row.cantidadInput || tr.querySelector(".sr-cantidad-input"))?.value;
     const recep = (row.recepcionInput || tr.querySelector(".sr-recepcion-input"))?.value;
+    const tipo = (row.tipoSelect || tr.querySelector(".sr-tipo-select"))?.value || "REQUISICION";
 
     if (!bio && !lote && !cant && !recep) {
       tr.style.background = "";
@@ -12708,7 +12768,7 @@ async function performSaveSR() {
       errors.push(`Fila ${index + 1}: ${rowErrors.join(", ")}`);
     } else {
       tr.style.background = "";
-      items.push({ biologico: bio, lote, cantidad: Number(cant), fecha_recepcion: recep });
+      items.push({ biologico: bio, lote, cantidad: Number(cant), fecha_recepcion: recep, tipo: tipo });
     }
   });
 
@@ -17578,9 +17638,18 @@ window.renderLiveViewTableContent = function() {
 
           const perm = getPermanenciaStatusHelper(r.fecha_recepcion);
 
+          let tipoBadge = "";
+          if (r.tipo === "PRESTAMO_DESABASTO" || r.tipo === "Préstamo por desabasto") {
+            tipoBadge = `<span style="background: #fffbeb; color: #d97706; border: 1px solid #fde68a; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 12px; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">🤝 P. DESABASTO</span>`;
+          } else if (r.tipo === "PRESTAMO_ARF" || r.tipo === "Préstamo por ARF") {
+            tipoBadge = `<span style="background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 12px; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">🤝 P. ARF</span>`;
+          }
+
           return `
                 <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
-                  <td style="padding:14px 24px; font-weight:800; color:#0f172a;">${escapeHtml(r.biologico || "—")}</td>
+                  <td style="padding:14px 24px; font-weight:800; color:#0f172a; white-space: nowrap;">
+                    <span style="vertical-align: middle;">${escapeHtml(r.biologico || "—")}</span>${tipoBadge}
+                  </td>
                   <td style="padding:14px 24px; font-weight:600; color:#475569;">${escapeHtml(r.lote || "—")}</td>
                   <td style="padding:14px 24px; text-align:center;">
                     <span class="live-view-count-badge">${escapeHtml(r.cantidad || 0)}</span>

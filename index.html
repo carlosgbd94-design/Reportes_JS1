@@ -1223,11 +1223,12 @@
                 <thead>
                   <tr
                     class="bg-surface-variant text-surface-onVariant uppercase tracking-[0.05em] font-extrabold border-b border-outline-variant/30">
-                    <th class="p-4 py-3">Biológico</th>
-                    <th class="p-4 py-3">Lote</th>
-                    <th class="p-4 py-3">Caducidad</th>
-                    <th class="p-4 py-3">Recepción</th>
-                    <th class="p-4 py-3 text-center">Cantidad (frascos)</th>
+                    <th class="p-4 py-3 text-center">Biológico</th>
+                    <th class="p-4 py-3 text-center">Lote</th>
+                    <th class="p-4 py-3 text-center">Caducidad</th>
+                    <th class="p-4 py-3 text-center">Recepción</th>
+                    <th class="p-4 py-3 text-center">Origen</th>
+                    <th class="p-4 py-3 text-center">Cantidad<br><span class="text-[10px] lowercase font-normal opacity-85">(frascos)</span></th>
                     <th class="p-4 py-3 text-center">Acción</th>
                   </tr>
                 </thead>
@@ -1493,14 +1494,14 @@
           <div id="formINFLUENZA" style="display:none" class="flex flex-col gap-6">
             <!-- Info Insumo Superior -->
             <div class="flex items-center gap-6 p-6 rounded-[32px] shadow-md mb-2 relative z-10"
-              style="background-color: #f5f3ff; border: 2px solid #ddd6fe;">
+              style="background-color: #fdf5f2; border: 2px solid #f8d7cc;">
               <div
-                class="w-16 h-16 rounded-2xl bg-surface border border-[#ddd6fe] flex items-center justify-center text-4xl shadow-sm shrink-0">
+                class="w-16 h-16 rounded-2xl bg-surface border border-[#f8d7cc] flex items-center justify-center text-4xl shadow-sm shrink-0">
                 💉
               </div>
               <div class="flex-1">
-                <div class="text-[17px] font-black text-violet-900 leading-tight">Meta-Logro de Vacuna Anti Influenza Estacional</div>
-                <div class="text-xs text-violet-500 font-semibold tracking-wide uppercase mt-1">Campaña de Vacunación Anual</div>
+                <div class="text-[17px] font-black text-slate-800 leading-tight">Meta-Logro de Vacuna Anti Influenza Estacional</div>
+                <div class="text-xs text-slate-500 font-semibold tracking-wide uppercase mt-1">Campaña de Vacunación Anual</div>
               </div>
             </div>
 
@@ -1563,6 +1564,14 @@
             <!-- SECCIÓN DE HISTORIAL -->
             <div id="secUnitHistorico" class="hidden bg-surface border border-slate-200 rounded-[28px] p-6 shadow-sm" style="background-color: #ffffff;">
               <h4 class="text-sm font-black text-violet-950 mb-4 uppercase tracking-wider">Historial de Reportes Capturados</h4>
+              
+              <!-- Buscador del Historial -->
+              <div class="relative w-full mb-4" style="height: 48px; display: flex; align-items: center;">
+                <span class="material-symbols-rounded absolute text-slate-400 text-[20px] pointer-events-none select-none" style="left: 16px !important; top: 50% !important; transform: translateY(-50%) !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; height: 20px !important; width: 20px !important;">search</span>
+                <input type="text" id="influenzaHistorialSearch" placeholder="Buscar por folio o fecha (YYYY-MM-DD)..."
+                  class="w-full bg-surface rounded-xl border border-slate-200 text-[13px] font-bold text-primary outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all shadow-sm" style="padding-left: 48px !important; height: 48px; width: 100%;" />
+              </div>
+
               <div id="influenzaHistorialList" class="flex flex-col gap-2">
                 <div class="text-sm text-slate-400 font-medium">Cargando historial...</div>
               </div>
@@ -2364,7 +2373,15 @@
 
             <button id="subtabInfluenzaAvances" class="nav-tab active">
               <span class="material-symbols-rounded">analytics</span>
-              <span>Avances y Concentrados</span>
+              <span>Concentrado de Avances</span>
+            </button>
+            <button id="subtabInfluenzaValidacion" class="nav-tab">
+              <span class="material-symbols-rounded">edit_square</span>
+              <span>Validación y Edición</span>
+            </button>
+            <button id="subtabInfluenzaConciliacion" class="nav-tab">
+              <span class="material-symbols-rounded">compare_arrows</span>
+              <span>Conciliación vs CSV</span>
             </button>
             <button id="subtabInfluenzaMetas" class="nav-tab">
               <span class="material-symbols-rounded">query_stats</span>
@@ -2381,7 +2398,7 @@
           </div>
         </div>
 
-        <!-- SECCIÓN 1: AVANCES Y CONCENTRADOS -->
+        <!-- SECCIÓN 1: CONCENTRADO DE AVANCES -->
         <div id="secInfluenzaAvances" class="flex flex-col gap-6">
           <!-- Filtros de Consulta -->
           <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-wrap gap-4 items-end">
@@ -2391,15 +2408,15 @@
                 <!-- Generado dinámicamente -->
               </select>
             </div>
-            <div class="flex-1 min-w-[200px]" id="adminInfluenzaCluesBox">
-              <label for="adminInfluenzaClues" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Unidad / CLUES</label>
-              <select id="adminInfluenzaClues" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
+            <div class="flex-1 min-w-[120px]">
+              <label for="adminInfluenzaSemanaInicio" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Semana Inicio</label>
+              <select id="adminInfluenzaSemanaInicio" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
                 <!-- Generado dinámicamente -->
               </select>
             </div>
             <div class="flex-1 min-w-[120px]">
-              <label for="adminInfluenzaSemana" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Semana</label>
-              <select id="adminInfluenzaSemana" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
+              <label for="adminInfluenzaSemanaFin" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Semana Fin</label>
+              <select id="adminInfluenzaSemanaFin" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
                 <!-- Generado dinámicamente -->
               </select>
             </div>
@@ -2415,7 +2432,10 @@
 
           <!-- Tabla de Concentrado Municipal por Unidad -->
           <div id="adminInfluenzaMunicipalTableContainer" class="hidden bg-surface border border-slate-200 rounded-[28px] p-6 shadow-sm flex flex-col gap-4" style="background-color: #ffffff;">
-            <h4 class="text-sm font-black text-primary m-0 uppercase tracking-wider">Desglose de Meta-Logro por Unidad</h4>
+            <div class="flex justify-between items-center">
+              <h4 class="text-sm font-black text-primary m-0 uppercase tracking-wider">Desglose de Meta-Logro por Unidad</h4>
+              <span class="text-xs text-slate-400 font-bold">💡 Haz clic en una unidad para ver su desglose por rubro abajo</span>
+            </div>
             <div class="tableWrap overflow-x-auto w-full rounded-xl border border-slate-200 shadow-sm">
               <table class="w-full border-collapse text-left text-xs font-semibold text-slate-700">
                 <thead>
@@ -2436,40 +2456,116 @@
             </div>
           </div>
 
-          <!-- Contenedor para visualización y edición del reporte seleccionado -->
-          <div id="adminInfluenzaReportContainer" class="hidden bg-surface border-2 border-slate-200 rounded-[28px] p-6 shadow-sm flex flex-col gap-6">
+          <!-- Desglose de Meta-Logro de la unidad seleccionada al hacer clic -->
+          <div id="adminInfluenzaUnitDetailContainer" class="hidden bg-surface border border-slate-200 rounded-[28px] p-6 shadow-sm flex flex-col gap-4" style="background-color: #ffffff;">
+            <h4 class="text-sm font-black text-slate-700 mb-2 uppercase tracking-wider" id="adminInfluenzaUnitDetailTitle">Detalle por Unidad</h4>
+            <div id="adminInfluenzaUnitDetailCards" class="flex flex-col gap-6">
+              <!-- JS renderizará las tarjetas de meta-logro por rubros agrupados -->
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 1.1: VALIDACIÓN Y EDICIÓN -->
+        <div id="secInfluenzaValidacion" class="hidden flex flex-col gap-6">
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-wrap gap-4 items-end">
+            <div class="flex-1 min-w-[200px]" id="validationInfluenzaCluesBox">
+              <label for="validationInfluenzaClues" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Unidad / CLUES</label>
+              <select id="validationInfluenzaClues" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
+                <!-- Generado dinámicamente -->
+              </select>
+            </div>
+            <div class="flex-1 min-w-[150px]">
+              <label for="validationInfluenzaSemana" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Semana a Validar</label>
+              <select id="validationInfluenzaSemana" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
+                <!-- Generado dinámicamente -->
+              </select>
+            </div>
+            <button class="btn h-[38px] flex items-center justify-center px-6" id="btnLoadValidationReport">
+              <span class="material-symbols-rounded mr-1 text-[18px]">find_in_page</span> Cargar Reporte
+            </button>
+          </div>
+
+          <div id="validationReportContent" class="hidden flex flex-col gap-6">
             <div class="flex items-center justify-between border-b border-slate-200 pb-4">
               <div>
-                <h4 class="text-sm font-black text-primary m-0 uppercase tracking-wider" id="adminInfluenzaReportTitle">Reporte de la Unidad</h4>
-                <div class="text-xs text-slate-500 mt-1" id="adminInfluenzaReportSubtitle">Cargando...</div>
+                <h4 class="text-sm font-black text-primary m-0 uppercase tracking-wider" id="validationReportTitle">Reporte de Validación</h4>
+                <div class="text-xs text-slate-500 mt-1" id="validationReportSubtitle">—</div>
               </div>
-              <div id="adminInfluenzaEditBadge" class="hidden px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                Editado por Municipal
+              <div id="validationReportEditBadge" class="hidden px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                <!-- Badge de historial -->
               </div>
-            </div>
-            
-            <div class="tableWrap overflow-x-auto w-full rounded-xl border border-slate-200 shadow-sm">
-              <table class="w-full border-collapse text-left text-xs font-medium text-slate-700">
-                <thead>
-                  <tr class="bg-slate-50 border-b border-slate-200">
-                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider">Grupo</th>
-                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider">Subgrupo / Edad</th>
-                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Meta</th>
-                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Acumulado</th>
-                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center" style="width:100px;">Esta Semana</th>
-                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Avance %</th>
-                  </tr>
-                </thead>
-                <tbody id="adminInfluenzaReportTbody">
-                  <!-- Renderizado dinámico -->
-                </tbody>
-              </table>
             </div>
 
-            <!-- Guardar Correcciones -->
-            <div class="flex gap-4">
-              <button class="ghostBtn flex-1 h-[44px]" id="btnCancelAdminInfluenzaEdit">Cancelar</button>
-              <button class="btn flex-1 h-[44px]" id="btnSaveAdminInfluenzaEdit">Guardar Correcciones</button>
+            <div class="bg-surface border border-slate-200 rounded-[24px] p-6" style="background-color: #ffffff;">
+              <div class="modern-input-group max-w-md mb-6">
+                <span class="input-icon material-symbols-rounded">person</span>
+                <input id="validationNombreResponsable" placeholder=" " class="w-full h-[58px] rounded-2xl pr-6 text-[15px] font-bold outline-none shadow-md">
+                <label for="validationNombreResponsable">Nombre de quien realiza/autoriza la corrección</label>
+              </div>
+
+              <!-- Contenedor dinámico de tarjetas de captura (mismo estilo elegante que captura de unidad) -->
+              <div id="validationCardsContainer" class="flex flex-col gap-6">
+                <!-- JS renderizará los rubros agrupados en tarjetas con inputs numéricos -->
+              </div>
+
+              <div class="flex gap-4 mt-6">
+                <button class="ghostBtn flex-1 h-[48px]" id="btnCancelValidation">Cancelar</button>
+                <button class="btn flex-1 h-[48px]" id="btnSaveValidation">Guardar Corrección del Supervisor</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 1.2: CONCILIACIÓN VS CSV -->
+        <div id="secInfluenzaConciliacion" class="hidden flex flex-col gap-6">
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-wrap gap-4 items-end">
+            <div class="w-48">
+              <label for="conciliacionMes" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Mes de Evaluación</label>
+              <select id="conciliacionMes" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
+                <option value="10|2026">Octubre 2026</option>
+                <option value="11|2026">Noviembre 2026</option>
+                <option value="12|2026">Diciembre 2026</option>
+                <option value="1|2027">Enero 2027</option>
+                <option value="2|2027">Febrero 2027</option>
+                <option value="3|2027">Marzo 2027</option>
+                <option value="4|2027">Abril 2027</option>
+              </select>
+            </div>
+            <div class="flex-1 min-w-[200px]" id="conciliacionCluesBox">
+              <label for="conciliacionClues" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Unidad / CLUES</label>
+              <select id="conciliacionClues" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
+                <!-- Generado dinámicamente -->
+              </select>
+            </div>
+            <button class="btn h-[38px] flex items-center justify-center px-6" id="btnRunConciliacion">
+              <span class="material-symbols-rounded mr-1 text-[18px]">rule</span> Conciliar Datos
+            </button>
+          </div>
+
+          <div id="conciliacionResultContainer" class="hidden bg-surface border border-slate-200 rounded-[28px] p-6 shadow-sm flex flex-col gap-4" style="background-color: #ffffff;">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h4 class="text-sm font-black text-primary m-0 uppercase tracking-wider" id="conciliacionTitle">Diferencias de Carga (Captura Local vs. CSV Oficial)</h4>
+              <div id="conciliacionGeneralStatus" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                Estatus
+              </div>
+            </div>
+
+            <div class="tableWrap overflow-x-auto w-full rounded-xl border border-slate-200 shadow-sm">
+              <table class="w-full border-collapse text-left text-xs font-semibold text-slate-700">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200">
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider">Rubro (Edad)</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Clave SIS</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Captura Local (Acumulado)</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Archivo CSV (SIS)</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Diferencia</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="conciliacionTbody">
+                  <!-- JS renderizará los datos de conciliación -->
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

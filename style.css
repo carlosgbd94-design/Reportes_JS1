@@ -398,9 +398,9 @@ select {
   -webkit-appearance: none !important;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2364748b'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E") !important;
   background-repeat: no-repeat !important;
-  background-position: right 12px center !important;
-  background-size: 24px !important;
-  padding-right: 40px !important;
+  background-position: right 8px center !important;
+  background-size: 18px !important;
+  padding-right: 28px !important;
   cursor: pointer !important;
 }
 
@@ -1850,7 +1850,7 @@ label,
 #srCaptureTable {
   table-layout: fixed;
   width: 100%;
-  min-width: 800px; /* Enable responsive horizontal scroll on narrow screens */
+  min-width: 1020px; /* Enable responsive horizontal scroll on narrow screens to prevent squishing */
 }
 
 #srCaptureTable th, 
@@ -1858,24 +1858,27 @@ label,
   padding: 8px 10px !important;
   font-size: 13px;
   vertical-align: middle;
+  text-align: center !important; /* Center all column contents and headers */
 }
 
-/* Distribución de Anchos (100% Total) */
-#srCaptureTable th:nth-child(1), #srCaptureTable td:nth-child(1) { width: 21%; text-align: left; }   /* Biol */
-#srCaptureTable th:nth-child(2), #srCaptureTable td:nth-child(2) { width: 16%; }                     /* Lote */
-#srCaptureTable th:nth-child(3), #srCaptureTable td:nth-child(3) { width: 13%; text-align: center; } /* Caducidad */
-#srCaptureTable th:nth-child(4), #srCaptureTable td:nth-child(4) { width: 18%; text-align: center; } /* Recepción */
-#srCaptureTable th:nth-child(5), #srCaptureTable td:nth-child(5) { width: 16%; text-align: center; } /* Cantidad */
-#srCaptureTable th:nth-child(6), #srCaptureTable td:nth-child(6) { 
+/* Distribución de Anchos Equitativa (100% Total) */
+#srCaptureTable th:nth-child(1), #srCaptureTable td:nth-child(1) { width: 16%; } /* Biol */
+#srCaptureTable th:nth-child(2), #srCaptureTable td:nth-child(2) { width: 13%; } /* Lote */
+#srCaptureTable th:nth-child(3), #srCaptureTable td:nth-child(3) { width: 10%; } /* Caducidad */
+#srCaptureTable th:nth-child(4), #srCaptureTable td:nth-child(4) { width: 16%; } /* Recepción */
+#srCaptureTable th:nth-child(5), #srCaptureTable td:nth-child(5) { width: 14%; } /* Origen */
+#srCaptureTable th:nth-child(6), #srCaptureTable td:nth-child(6) { width: 15%; } /* Cantidad */
+#srCaptureTable th:nth-child(7), #srCaptureTable td:nth-child(7) { 
   width: 16%; 
-  text-align: center; 
-  padding-right: 24px !important; /* Guarantee professional breathing room on the right edge */
+  padding-right: 16px !important; /* Guarantee professional breathing room on the right edge */
 } /* Acción */
 
 #srCaptureTable select, 
 #srCaptureTable input {
   width: 100%;
   min-width: 0;
+  margin: 0 auto !important; /* Center elements within their respective cells */
+  display: block !important;
 }
 
 .summaryTable tbody tr:hover td {
@@ -1910,43 +1913,64 @@ label,
 
 /* Modern Delete Button */
 /* Modern Delete Button - Enhanced for Animations */
-/* */.md-delete-btn, .md-edit-btn {
-  background: var(--md-sys-color-surface-container-highest, #f1f5f9);
-  border: none;
-  width: 44px;
-  height: 44px;
+/* */.md-delete-btn, .md-clone-btn, .md-edit-btn {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 6px !important;
   cursor: pointer;
-  border-radius: 14px; /* Cuadrado suavizado moderno */
-  display: flex !important;
+  display: inline-flex !important;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   color: var(--md-sys-color-on-surface-variant);
-  box-shadow: var(--md-shadow-1);
   position: relative;
   overflow: visible !important;
   flex-shrink: 0;
+  vertical-align: middle;
+  /* Premium 3D drop-shadow on the icon itself */
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.15));
 }
 
 .md-delete-btn:hover {
-  background-color: #dc2626 !important; /* Rojo */
-  color: #ffffff !important;
-  transform: scale(1.1) translateY(-2px);
-  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4);
+  color: #e11d48 !important; /* Premium Rose Red */
+  transform: scale(1.18);
+  filter: drop-shadow(0 4px 6px rgba(225, 29, 72, 0.35));
+}
+
+.md-clone-btn:hover {
+  color: var(--md-sys-color-primary, #003366) !important;
+  transform: scale(1.1); /* Zoom icon slightly */
+  filter: drop-shadow(0 4px 6px rgba(0, 51, 102, 0.35));
 }
 
 .md-edit-btn:hover {
-  background-color: var(--md-sys-color-primary, #4f8cff) !important;
-  color: #ffffff !important;
-  transform: scale(1.1) translateY(-2px);
-  box-shadow: 0 8px 20px rgba(79, 140, 255, 0.4);
+  color: var(--md-sys-color-primary, #4f8cff) !important;
+  transform: scale(1.18) translateY(-2px);
+  filter: drop-shadow(0 4px 6px rgba(79, 140, 255, 0.35));
 }
 
-.md-delete-btn svg {
-  width: 22px;
-  height: 22px;
-  fill: currentColor;
+.md-delete-btn svg, .md-clone-btn svg, .md-edit-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
   overflow: visible !important;
+}
+
+.md-delete-btn svg, .md-edit-btn svg {
+  fill: currentColor;
+}
+
+/* Specific zoom/magnify animation for the plus sign inside clone button SVG */
+.md-clone-btn .plus-sign {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1.2);
+  transform-origin: 18px 6px;
+}
+
+.md-clone-btn:hover .plus-sign {
+  transform: scale(1.45);
 }
 
 .md-delete-btn .trash-lid {
@@ -5817,6 +5841,21 @@ body.bioConfirmOpen {
   box-shadow: none !important;
 }
 
+#srCaptureTable select.sr-bio-select {
+  max-width: 170px !important;
+  width: 100%;
+}
+
+#srCaptureTable select.sr-lote-select {
+  max-width: 125px !important;
+  width: 100%;
+}
+
+#srCaptureTable select.sr-tipo-select {
+  max-width: 135px !important;
+  width: 100%;
+}
+
 #srCaptureTable input:focus, 
 #srCaptureTable select:focus,
 #formBIO .bioInput:focus {
@@ -6665,7 +6704,7 @@ input, textarea, select, [contenteditable] {
 .nav-tab.active[onclick*="'SR'"] .material-symbols-rounded { color: #0284c7; }   /* Blue (Biológicos) */
 .nav-tab.active[onclick*="'CONS'"] .material-symbols-rounded { color: #059669; } /* Green (Consumibles) */
 .nav-tab.active[onclick*="'BIO'"] .material-symbols-rounded { color: #e11d48; }  /* Red (Pedido) */
-.nav-tab.active[onclick*="'INFLUENZA'"] .material-symbols-rounded { color: #8b5cf6; } /* Violet (Influenza) */
+.nav-tab.active[onclick*="'INFLUENZA'"] .material-symbols-rounded { color: #f1bdad; } /* Light Salmon (Official Influenza Color) */
 .nav-tab.active[onclick*="'PINOL'"] .material-symbols-rounded { color: #d97706; } /* Orange (Pinol) */
 
 /* Colores para Subtabs de Influenza */
@@ -6851,7 +6890,7 @@ input, textarea, select, [contenteditable] {
 .nav-tab.active[onclick*="'SR'"] .material-symbols-rounded { color: #0284c7; }   /* Blue (Biológicos) */
 .nav-tab.active[onclick*="'CONS'"] .material-symbols-rounded { color: #059669; } /* Green (Consumibles) */
 .nav-tab.active[onclick*="'BIO'"] .material-symbols-rounded { color: #e11d48; }  /* Red (Pedido) */
-.nav-tab.active[onclick*="'INFLUENZA'"] .material-symbols-rounded { color: #8b5cf6; } /* Violet (Influenza) */
+.nav-tab.active[onclick*="'INFLUENZA'"] .material-symbols-rounded { color: #f1bdad; } /* Light Salmon (Official Influenza Color) */
 .nav-tab.active[onclick*="'PINOL'"] .material-symbols-rounded { color: #d97706; } /* Orange (Pinol) */
 
 /* ==========================================================================
@@ -11627,11 +11666,11 @@ html.dark .whatsapp-support-card:hover {
 
 /* ===== 💉 INFLUENZA META-LOGRO PREMIUM STYLING ===== */
 #tabINFLUENZA.active .material-symbols-rounded {
-  color: #7c3aed !important; /* Violet */
+  color: #f1bdad !important; /* Official Influenza color */
 }
 
 #tabOPS_INFLUENZA.active .material-symbols-rounded {
-  color: #7c3aed !important;
+  color: #f1bdad !important;
 }
 
 #formINFLUENZA div.bg-surface {
@@ -11672,6 +11711,23 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 input[type="number"] {
   -moz-appearance: textfield;
+}
+
+/* ===== 💉 INFLUENZA ADMIN CUSTOM STYLES ===== */
+#adminInfluenzaMunicipalTbody tr {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+#adminInfluenzaMunicipalTbody tr:hover {
+  background-color: #fdf5f2 !important; /* Official Influenza tint */
+}
+.conciliacion-discrepante {
+  background-color: rgba(239, 68, 68, 0.08) !important;
+  color: #b91c1c !important;
+}
+.conciliacion-match {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+  color: #047857 !important;
 }
 
 

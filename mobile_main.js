@@ -717,6 +717,14 @@
                     <input type="date" data-field="recepcion" class="w-full" value="${data?.fecha_recepcion || ''}">
                 </div>
                 <div class="cascade-field">
+                    <label>Tipo de Biológico</label>
+                    <select class="sr-tipo-select w-full" data-field="tipo">
+                        <option value="REQUISICION" ${(!data || data.tipo === 'REQUISICION' || data.tipo === 'Recibido con requisición') ? 'selected' : ''}>Recibido con requisición</option>
+                        <option value="PRESTAMO_DESABASTO" ${(data?.tipo === 'PRESTAMO_DESABASTO' || data?.tipo === 'Préstamo por desabasto') ? 'selected' : ''}>Préstamo por desabasto</option>
+                        <option value="PRESTAMO_ARF" ${(data?.tipo === 'PRESTAMO_ARF' || data?.tipo === 'Préstamo por ARF') ? 'selected' : ''}>Préstamo por ARF</option>
+                    </select>
+                </div>
+                <div class="cascade-field">
                     <label>Cantidad</label>
                     <div class="touch-stepper-wrap flex items-center gap-2">
                         <button type="button" class="stepper-btn" onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1);">-</button>
@@ -2214,11 +2222,13 @@
                     const loteSelect = card.querySelector('[data-field="lote"]');
                     const qtyInput = card.querySelector('[data-field="cantidad"]');
                     const recInput = card.querySelector('[data-field="recepcion"]');
+                    const tipoSelect = card.querySelector('[data-field="tipo"]');
 
                     const bio = bioSelect?.value;
                     const lote = loteSelect?.value;
                     const cant = qtyInput?.value;
                     const recep = recInput?.value;
+                    const tipo = tipoSelect?.value || "REQUISICION";
 
                     if (!bio && !lote && !cant && !recep) return;
 
@@ -2266,7 +2276,8 @@
                                 cantidad: Number(cant),
                                 lote,
                                 recepcion: recep,
-                                caducidad: cad
+                                caducidad: cad,
+                                tipo: tipo
                             });
                         }
                     }
@@ -2303,9 +2314,33 @@
                 const BIOS = ["bcg", "hepatitis_b", "hexavalente", "dpt", "rotavirus", "neumococica_13", "neumococica_20", "srp", "sr", "vph", "varicela", "hepatitis_a", "td", "tdpa", "covid_19", "influenza", "vsr"];
                 BIOS.forEach(b => summaryRecord[b] = 0);
 
-                const detailRecords = items.map(it => {
-                    const bioKey = it.biologico.toLowerCase().replace(/ /g, "_");
-                    const finalKey = bioKey.includes("neumo") && bioKey.includes("20") ? "neumococica_20" : bioKey;
+                 const detailRecords = items.map(it => {
+                    const bioKey = (it.biologico || '').toLowerCase()
+                        .normalize("NFD")
+                        .replace(/[\u0300-\u036f]/g, "")
+                        .replace(/[^a-z0-9\s_]/g, "")
+                        .trim()
+                        .replace(/[\s_]+/g, "_");
+
+                    let finalKey = bioKey;
+                    if (bioKey.includes("neumo")) {
+                        finalKey = bioKey.includes("20") ? "neumococica_20" : "neumococica_13";
+                    } else if (bioKey.includes("hepatitis") && bioKey.includes("b")) {
+                        finalKey = "hepatitis_b";
+                    } else if (bioKey.includes("hepatitis") && bioKey.includes("a")) {
+                        finalKey = "hepatitis_a";
+                    } else if (bioKey.includes("covid")) {
+                        finalKey = "covid_19";
+                    } else if (bioKey.includes("hexa")) {
+                        finalKey = "hexavalente";
+                    } else if (bioKey.includes("rotav")) {
+                        finalKey = "rotavirus";
+                    } else if (bioKey.includes("varic")) {
+                        finalKey = "varicela";
+                    } else if (bioKey.includes("influ")) {
+                        finalKey = "influenza";
+                    }
+
                     if (BIOS.includes(finalKey)) {
                         summaryRecord[finalKey] += Number(it.cantidad || 0);
                     }
@@ -2319,7 +2354,8 @@
                         caducidad: it.caducidad,
                         fecha_recepcion: it.recepcion,
                         cantidad: Number(it.cantidad || 0),
-                        capturado_por: nombreSR.toUpperCase()
+                        capturado_por: nombreSR.toUpperCase(),
+                        tipo: it.tipo || "REQUISICION"
                     };
                 });
 

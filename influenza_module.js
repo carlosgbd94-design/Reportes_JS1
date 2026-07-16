@@ -95,6 +95,41 @@ function populateCampaignSelectors() {
   // Actualizar badge/eyebrow si existe
   const badge = document.getElementById("influenzaCampaignBadge");
   if (badge) badge.textContent = label;
+
+  // Generar dinámicamente los meses de conciliación basados en la campaña activa y sus fechas variables
+  populateConciliacionMonths();
+}
+
+function populateConciliacionMonths() {
+  const conciliacionMesSelect = document.getElementById("conciliacionMes");
+  if (!conciliacionMesSelect) return;
+
+  const startStr = _campaignConfig.fecha_inicio || "2025-10-03";
+  const endStr   = _campaignConfig.fecha_fin    || "2026-04-25";
+
+  const startDate = new Date(startStr + "T12:00:00");
+  const endDate = new Date(endStr + "T12:00:00");
+
+  const monthNames = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+  ];
+
+  const options = [];
+  // Inicializar en el día 1 de ese mes/año
+  let current = new Date(startDate.getFullYear(), startDate.getMonth(), 1, 12, 0, 0);
+
+  while (current <= endDate || (current.getMonth() === endDate.getMonth() && current.getFullYear() === endDate.getFullYear())) {
+    const m = current.getMonth() + 1;
+    const y = current.getFullYear();
+    const label = `${monthNames[current.getMonth()]} ${y}`;
+    options.push({ value: `${m}|${y}`, label: label });
+    
+    // Avanzar mes
+    current.setMonth(current.getMonth() + 1);
+  }
+
+  conciliacionMesSelect.innerHTML = options.map(o => `<option value="${o.value}">${o.label}</option>`).join("");
 }
 
 async function loadCampaignConfig() {
@@ -431,12 +466,37 @@ async function loadInfluenzaHistoryList() {
   if (!container) return;
   container.innerHTML = "";
 
+  const searchInput = document.getElementById("influenzaHistorialSearch");
+  const filterVal = searchInput ? searchInput.value.toLowerCase().trim() : "";
+
+  // Bind input listener once
+  if (searchInput && !searchInput.dataset.listened) {
+    searchInput.dataset.listened = "true";
+    searchInput.addEventListener("input", () => {
+      loadInfluenzaHistoryList();
+    });
+  }
+
   if (!_influenzaCapturasCache.length) {
     container.innerHTML = `<div class="text-sm text-slate-400 font-medium p-4 text-center">No se han registrado reportes aún.</div>`;
     return;
   }
 
-  _influenzaCapturasCache.forEach(r => {
+  const filtered = _influenzaCapturasCache.filter(r => {
+    if (!filterVal) return true;
+    const shortId = r.id ? r.id.substring(0, 8).toUpperCase() : "TEMP";
+    const dateStr = r.fecha.replace(/-/g, "");
+    const folio = `INF-${dateStr}-${shortId}`.toLowerCase();
+    const fecha = r.fecha.toLowerCase();
+    return folio.includes(filterVal) || fecha.includes(filterVal);
+  });
+
+  if (!filtered.length) {
+    container.innerHTML = `<div class="text-sm text-slate-400 font-medium p-4 text-center">No se encontraron reportes que coincidan con la búsqueda.</div>`;
+    return;
+  }
+
+  filtered.forEach(r => {
     let totalDosis = 0;
     Object.values(r.valores).forEach(v => totalDosis += Number(v || 0));
 
@@ -557,6 +617,13 @@ async function saveInfluenzaReport() {
       await loadInfluenzaUnitData();
       renderCaptureGrid();
       loadInfluenzaHistoryList();
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 150,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+      }
       return res;
     }
   });
@@ -583,17 +650,20 @@ async function refreshInfluenzaAdminPanel() {
 }
 
 function initInfluenzaSubtabs() {
-  const tabs = ["subtabInfluenzaAvances", "subtabInfluenzaMetas", "subtabInfluenzaFrascos", "subtabInfluenzaConfig"];
+  const tabs = ["subtabInfluenzaAvances", "subtabInfluenzaValidacion", "subtabInfluenzaConciliacion", "subtabInfluenzaMetas", "subtabInfluenzaFrascos", "subtabInfluenzaConfig"];
   
   // Inicializar estado de visibilidad
   tabs.forEach(t => {
     const el = document.getElementById(t);
     const targetSec = t.replace("subtab", "sec");
     if (el && targetSec) {
-      if (el.classList.contains("active")) {
-        document.getElementById(targetSec).style.setProperty("display", "flex", "important");
-      } else {
-        document.getElementById(targetSec).style.setProperty("display", "none", "important");
+      const secEl = document.getElementById(targetSec);
+      if (secEl) {
+        if (el.classList.contains("active")) {
+          secEl.style.setProperty("display", "flex", "important");
+        } else {
+          secEl.style.setProperty("display", "none", "important");
+        }
       }
     }
   });
@@ -608,11 +678,11 @@ function initInfluenzaSubtabs() {
         el.classList.add("active");
 
         // Ocultar todas las secciones
-        document.getElementById("secInfluenzaAvances").style.setProperty("display", "none", "important");
-        document.getElementById("secInfluenzaMetas").style.setProperty("display", "none", "important");
-        document.getElementById("secInfluenzaFrascos").style.setProperty("display", "none", "important");
-        const configSec = document.getElementById("secInfluenzaConfig");
-        if (configSec) configSec.style.setProperty("display", "none", "important");
+        const sections = ["secInfluenzaAvances", "secInfluenzaValidacion", "secInfluenzaConciliacion", "secInfluenzaMetas", "secInfluenzaFrascos", "secInfluenzaConfig"];
+        sections.forEach(s => {
+          const sec = document.getElementById(s);
+          if (sec) sec.style.setProperty("display", "none", "important");
+        });
 
         const targetSec = t.replace("subtab", "sec");
         const secEl = document.getElementById(targetSec);
@@ -666,8 +736,8 @@ async function loadInfluenzaAdminData() {
 
 async function populateInfluenzaAdminFilters() {
   const muniSelect = document.getElementById("adminInfluenzaMuni");
-  const cluesSelect = document.getElementById("adminInfluenzaClues");
-  const semSelect = document.getElementById("adminInfluenzaSemana");
+  const semInicioSelect = document.getElementById("adminInfluenzaSemanaInicio");
+  const semFinSelect = document.getElementById("adminInfluenzaSemanaFin");
 
   if (!muniSelect) return;
 
@@ -686,38 +756,58 @@ async function populateInfluenzaAdminFilters() {
 
   // Semanas
   const weeks = generateCampaignWeeks();
-  semSelect.innerHTML = weeks.map(w => `<option value="${w.fecha}">${w.label}</option>`).join("");
-  semSelect.removeEventListener("change", renderAvancesAndConcentrados);
-  semSelect.addEventListener("change", renderAvancesAndConcentrados);
+  const optionsHtml = weeks.map(w => `<option value="${w.fecha}">${w.label}</option>`).join("");
+
+  if (semInicioSelect && semFinSelect) {
+    semInicioSelect.innerHTML = optionsHtml;
+    semFinSelect.innerHTML = optionsHtml;
+
+    if (weeks.length > 0) {
+      semInicioSelect.value = weeks[0].fecha;
+      semFinSelect.value = weeks[weeks.length - 1].fecha;
+    }
+
+    semInicioSelect.removeEventListener("change", renderAvancesAndConcentrados);
+    semInicioSelect.addEventListener("change", renderAvancesAndConcentrados);
+    semFinSelect.removeEventListener("change", renderAvancesAndConcentrados);
+    semFinSelect.addEventListener("change", renderAvancesAndConcentrados);
+  }
 
   await updateCluesFilterAndRender();
 }
 
 async function updateCluesFilterAndRender() {
-  const muniSelect = document.getElementById("adminInfluenzaMuni").value;
-  const cluesSelect = document.getElementById("adminInfluenzaClues");
-
-  if (!cluesSelect) return;
-
-  const units = _allUnidades.filter(u => u.municipio.toUpperCase() === muniSelect.toUpperCase());
+  const muniVal = document.getElementById("adminInfluenzaMuni").value;
+  const units = _allUnidades.filter(u => u.municipio.toUpperCase() === muniVal.toUpperCase());
   
-  cluesSelect.innerHTML = `<option value="CONCENTRADO_MUNICIPAL">-- CONCENTRADO MUNICIPAL --</option>` + 
-    units.map(u => `<option value="${u.clues}">${u.unidad} (${u.clues})</option>`).join("");
+  // Rellenar selectores de validación y conciliación
+  const valCluesSelect = document.getElementById("validationInfluenzaClues");
+  if (valCluesSelect) {
+    valCluesSelect.innerHTML = units.map(u => `<option value="${u.clues}">${u.unidad} (${u.clues})</option>`).join("");
+  }
 
-  cluesSelect.removeEventListener("change", renderAvancesAndConcentrados);
-  cluesSelect.addEventListener("change", renderAvancesAndConcentrados);
+  const concCluesSelect = document.getElementById("conciliacionClues");
+  if (concCluesSelect) {
+    concCluesSelect.innerHTML = units.map(u => `<option value="${u.clues}">${u.unidad} (${u.clues})</option>`).join("");
+  }
 
   renderAvancesAndConcentrados();
 }
 
 function renderActiveAdminSection() {
   const advancesTab = document.getElementById("subtabInfluenzaAvances");
+  const validationTab = document.getElementById("subtabInfluenzaValidacion");
+  const conciliacionTab = document.getElementById("subtabInfluenzaConciliacion");
   const metasTab = document.getElementById("subtabInfluenzaMetas");
   const frascosTab = document.getElementById("subtabInfluenzaFrascos");
   const configTab = document.getElementById("subtabInfluenzaConfig");
 
   if (advancesTab && advancesTab.classList.contains("active")) {
     renderAvancesAndConcentrados();
+  } else if (validationTab && validationTab.classList.contains("active")) {
+    initValidationTab();
+  } else if (conciliacionTab && conciliacionTab.classList.contains("active")) {
+    initConciliacionTab();
   } else if (metasTab && metasTab.classList.contains("active")) {
     renderMetasConfigurationGrid();
   } else if (frascosTab && frascosTab.classList.contains("active")) {
@@ -1013,247 +1103,424 @@ async function exportMunicipalConcentradoExcel(muni, fecha) {
 let _currentEditingReport = null;
 
 function renderAvancesAndConcentrados() {
-  const cluesSelect = document.getElementById("adminInfluenzaClues");
-  if (!cluesSelect) return;
+  const semInicioSelect = document.getElementById("adminInfluenzaSemanaInicio");
+  const semFinSelect = document.getElementById("adminInfluenzaSemanaFin");
+  if (!semInicioSelect || !semFinSelect) return;
 
-  const clues = cluesSelect.value;
-  const fecha = document.getElementById("adminInfluenzaSemana").value;
+  const semInicio = semInicioSelect.value;
+  const semFin = semFinSelect.value;
   const muni = document.getElementById("adminInfluenzaMuni").value;
 
-  const container = document.getElementById("adminInfluenzaReportContainer");
   const muniFrascosBox = document.getElementById("muniFrascosAnalisisBox");
   const muniTableContainer = document.getElementById("adminInfluenzaMunicipalTableContainer");
   const muniTbody = document.getElementById("adminInfluenzaMunicipalTbody");
+  const unitDetailContainer = document.getElementById("adminInfluenzaUnitDetailContainer");
 
-  // Limpiar listener de exportar concentrado para evitar duplicación
+  if (unitDetailContainer) unitDetailContainer.classList.add("hidden");
+
+  // Limpiar y reasignar listener de exportar
   const exportBtn = document.getElementById("btnExportInfluenzaConcentrado");
   if (exportBtn) {
-    exportBtn.onclick = null;
+    exportBtn.onclick = () => {
+      exportMunicipalConcentradoRangeExcel(muni, semInicio, semFin);
+    };
   }
 
-  if (clues === "CONCENTRADO_MUNICIPAL") {
-    if (container) container.style.setProperty("display", "none", "important");
-    if (muniFrascosBox) muniFrascosBox.style.setProperty("display", "block", "important");
-    if (muniTableContainer) muniTableContainer.style.setProperty("display", "flex", "important");
+  if (muniFrascosBox) muniFrascosBox.style.setProperty("display", "block", "important");
+  if (muniTableContainer) muniTableContainer.style.setProperty("display", "flex", "important");
 
-    // Obtener unidades del municipio
-    const units = _allUnidades.filter(u => u.municipio.toUpperCase() === muni.toUpperCase());
-    
-    // Sumar dosis aplicadas en el municipio de todos los reportes capturados para la semana seleccionada
-    const municipalReportsForWeek = _adminCapturasArray.filter(r => r.fecha === fecha && r.municipio.toUpperCase() === muni.toUpperCase());
-    let totalDosesWeek = 0;
-    municipalReportsForWeek.forEach(r => {
-      Object.values(r.valores).forEach(v => totalDosesWeek += Number(v || 0));
+  const minFecha = semInicio < semFin ? semInicio : semFin;
+  const maxFecha = semInicio < semFin ? semFin : semInicio;
+
+  // Obtener unidades del municipio
+  const units = _allUnidades.filter(u => u.municipio.toUpperCase() === muni.toUpperCase());
+
+  // Sumar dosis aplicadas en el municipio de todos los reportes capturados para el rango seleccionado
+  const municipalReportsInRange = _adminCapturasArray.filter(r => r.fecha >= minFecha && r.fecha <= maxFecha && r.municipio.toUpperCase() === muni.toUpperCase());
+  let totalDosesRange = 0;
+  municipalReportsInRange.forEach(r => {
+    Object.values(r.valores).forEach(v => totalDosesRange += Number(v || 0));
+  });
+
+  // Calcular frascos entregados acumulado en el municipio
+  let totalFrascosEntregados = 0;
+  _adminFrascosArray.forEach(d => {
+    if (d.municipio.toUpperCase() === muni.toUpperCase()) {
+      totalFrascosEntregados += Number(d.cantidad_frascos || 0);
+    }
+  });
+
+  const frascosAplicadosRange = totalDosesRange / 10;
+  const dif = totalFrascosEntregados - frascosAplicadosRange;
+
+  muniFrascosBox.innerHTML = `
+    <div class="text-sm font-extrabold text-violet-900 mb-2">Resumen Municipal: ${muni} (Semanas del ${minFecha} al ${maxFecha})</div>
+    <div>Dosis aplicadas en este rango en el municipio: <b>${totalDosesRange.toLocaleString('es-MX')} dosis</b> (${frascosAplicadosRange} frascos).</div>
+    <div>Total de frascos entregados acumulado: <b>${totalFrascosEntregados} frascos</b> (${totalFrascosEntregados * 10} dosis).</div>
+    <div class="mt-1">Diferencia (Frascos estimados en resguardo en el municipio): <b>${dif} frascos</b>.</div>
+  `;
+
+  // Renderizar desglose de unidades
+  muniTbody.innerHTML = "";
+  units.forEach(u => {
+    // Sumar metas de la unidad
+    const unitMetaRecord = _adminMetasArray.find(m => m.clues === u.clues);
+    let totalMeta = 0;
+    if (unitMetaRecord && unitMetaRecord.metas) {
+      Object.values(unitMetaRecord.metas).forEach(v => totalMeta += Number(v || 0));
+    }
+
+    // Sumar capturas acumuladas de la unidad en el rango seleccionado
+    let totalAcumulado = 0;
+    _adminCapturasArray.forEach(c => {
+      if (c.clues === u.clues && c.fecha >= minFecha && c.fecha <= maxFecha) {
+        Object.values(c.valores).forEach(v => totalAcumulado += Number(v || 0));
+      }
     });
 
-    // Calcular frascos entregados en el municipio
-    let totalFrascosEntregados = 0;
+    // Calcular %
+    const pct = totalMeta > 0 ? ((totalAcumulado / totalMeta) * 100).toFixed(1) : "0.0";
+
+    // Sumar frascos entregados
+    let unitFrascos = 0;
     _adminFrascosArray.forEach(d => {
-      if (d.municipio.toUpperCase() === muni.toUpperCase()) {
-        totalFrascosEntregados += Number(d.cantidad_frascos || 0);
+      if (d.clues === u.clues) {
+        unitFrascos += Number(d.cantidad_frascos || 0);
       }
     });
+    const unitDosisEquiv = unitFrascos * 10;
 
-    const frascosAplicadosWeek = totalDosesWeek / 10;
-    const dif = totalFrascosEntregados - frascosAplicadosWeek;
-
-    muniFrascosBox.innerHTML = `
-      <div class="text-sm font-extrabold text-violet-900 mb-2">Resumen Municipal: ${muni} (${fecha})</div>
-      <div>Dosis aplicadas en esta semana en el municipio: <b>${totalDosesWeek.toLocaleString('es-MX')} dosis</b> (${frascosAplicadosWeek} frascos).</div>
-      <div>Total de frascos entregados acumulado: <b>${totalFrascosEntregados} frascos</b> (${totalFrascosEntregados * 10} dosis).</div>
-      <div class="mt-1">Diferencia (Frascos estimados en resguardo en el municipio): <b>${dif} frascos</b>.</div>
+    const row = document.createElement("tr");
+    row.className = "border-b border-slate-100 hover:bg-slate-50";
+    row.innerHTML = `
+      <td class="p-3 text-xs font-semibold text-slate-700">${u.unidad}</td>
+      <td class="p-3 text-xs text-slate-500 font-mono">${u.clues}</td>
+      <td class="p-3 text-center text-xs font-bold text-slate-600">${totalMeta.toLocaleString('es-MX')}</td>
+      <td class="p-3 text-center text-xs font-bold text-violet-950">${totalAcumulado.toLocaleString('es-MX')}</td>
+      <td class="p-3 text-center text-xs font-bold ${Number(pct) >= 95 ? 'text-emerald-600' : 'text-slate-600'}">${pct}%</td>
+      <td class="p-3 text-center text-xs font-bold text-slate-700">${unitFrascos}</td>
+      <td class="p-3 text-center text-xs font-bold text-slate-500">${unitDosisEquiv.toLocaleString('es-MX')}</td>
     `;
-
-    // Renderizar desglose de unidades
-    muniTbody.innerHTML = "";
-    const csvData = [
-      ["Unidad", "CLUES", "Meta Anual (Dosis)", "Acumulado Aplicado", "Meta Logro %", "Frascos Entregados", "Equivalente Dosis"]
-    ];
-
-    units.forEach(u => {
-      // Sumar metas de la unidad
-      const unitMetaRecord = _adminMetasArray.find(m => m.clues === u.clues);
-      let totalMeta = 0;
-      if (unitMetaRecord && unitMetaRecord.metas) {
-        Object.values(unitMetaRecord.metas).forEach(v => totalMeta += Number(v || 0));
-      }
-
-      // Sumar capturas acumuladas de la unidad hasta la fecha seleccionada
-      let totalAcumulado = 0;
-      _adminCapturasArray.forEach(c => {
-        if (c.clues === u.clues && c.fecha <= fecha) {
-          Object.values(c.valores).forEach(v => totalAcumulado += Number(v || 0));
-        }
-      });
-
-      // Calcular %
-      const pct = totalMeta > 0 ? ((totalAcumulado / totalMeta) * 100).toFixed(1) : "0.0";
-
-      // Sumar frascos entregados
-      let unitFrascos = 0;
-      _adminFrascosArray.forEach(d => {
-        if (d.clues === u.clues) {
-          unitFrascos += Number(d.cantidad_frascos || 0);
-        }
-      });
-      const unitDosisEquiv = unitFrascos * 10;
-
-      const row = document.createElement("tr");
-      row.className = "border-b border-slate-100 hover:bg-slate-50";
-      row.innerHTML = `
-        <td class="p-3 text-xs font-semibold text-slate-700">${u.unidad}</td>
-        <td class="p-3 text-xs text-slate-500 font-mono">${u.clues}</td>
-        <td class="p-3 text-center text-xs font-bold text-slate-600">${totalMeta.toLocaleString('es-MX')}</td>
-        <td class="p-3 text-center text-xs font-bold text-violet-950">${totalAcumulado.toLocaleString('es-MX')}</td>
-        <td class="p-3 text-center text-xs font-bold ${Number(pct) >= 95 ? 'text-emerald-600' : 'text-slate-600'}">${pct}%</td>
-        <td class="p-3 text-center text-xs font-bold text-slate-700">${unitFrascos}</td>
-        <td class="p-3 text-center text-xs font-bold text-slate-500">${unitDosisEquiv.toLocaleString('es-MX')}</td>
-      `;
-      muniTbody.appendChild(row);
-
-      csvData.push([u.unidad, u.clues, totalMeta, totalAcumulado, `${pct}%`, unitFrascos, unitDosisEquiv]);
-    });
-
-    // Vincular botón de descarga Excel para concentrado municipal
-    if (exportBtn) {
-      exportBtn.onclick = () => {
-        exportMunicipalConcentradoExcel(muni, fecha);
-      };
-    }
-
-  } else {
-    if (muniFrascosBox) muniFrascosBox.style.setProperty("display", "none", "important");
-    if (muniTableContainer) muniTableContainer.style.setProperty("display", "none", "important");
-    if (container) container.style.setProperty("display", "flex", "important");
-
-    // Mostrar el reporte de la unidad para la semana seleccionada
-    const report = _adminCapturasArray.find(r => r.clues === clues && r.fecha === fecha);
-    _currentEditingReport = report;
-
-    const titleEl = document.getElementById("adminInfluenzaReportTitle");
-    const subtitleEl = document.getElementById("adminInfluenzaReportSubtitle");
-    const badgeEl = document.getElementById("adminInfluenzaEditBadge");
-
-    if (report) {
-      titleEl.textContent = `Reporte de ${report.unidad}`;
-      subtitleEl.textContent = `Semana: ${report.fecha} | Reportado por: ${report.capturado_por}`;
-      if (report.editado_por === "MUNICIPAL") {
-        badgeEl.classList.remove("hidden");
-      } else {
-        badgeEl.classList.add("hidden");
-      }
-
-      // Renderizar valores
-      renderReportTableValues(report);
-
-      // Vincular botón de descarga Excel para reporte de unidad
-      if (exportBtn) {
-        exportBtn.onclick = () => {
-          exportUnitReportExcel(report, fecha);
-        };
-      }
-    } else {
-      titleEl.textContent = `Sin reporte registrado`;
-      subtitleEl.textContent = `No se ha capturado reporte para la semana ${fecha}`;
-      badgeEl.classList.add("hidden");
-      
-      const tbody = document.getElementById("adminInfluenzaReportTbody");
-      tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 font-bold">La unidad no cuenta con reporte en esta semana.</td></tr>`;
-    }
-  }
+    row.onclick = () => {
+      renderUnitDetail(u.clues, u.unidad, minFecha, maxFecha);
+    };
+    muniTbody.appendChild(row);
+  });
 }
 
-function renderReportTableValues(report) {
-  const tbody = document.getElementById("adminInfluenzaReportTbody");
-  if (!tbody) return;
-  tbody.innerHTML = "";
+function renderUnitDetail(clues, unidadNombre, minFecha, maxFecha) {
+  const detailContainer = document.getElementById("adminInfluenzaUnitDetailContainer");
+  const detailTitle = document.getElementById("adminInfluenzaUnitDetailTitle");
+  const detailCards = document.getElementById("adminInfluenzaUnitDetailCards");
 
-  // Obtener metas de la unidad
-  const unitMeta = _adminMetasArray.find(r => r.clues === report.clues);
+  if (!detailContainer || !detailCards) return;
+
+  detailContainer.classList.remove("hidden");
+  detailTitle.textContent = `Detalle de Meta-Logro por Rubro: ${unidadNombre} (${clues}) [Rango: ${minFecha} al ${maxFecha}]`;
+  detailCards.innerHTML = "";
+
+  const unitMetaRecord = _adminMetasArray.find(m => m.clues === clues);
+  const metas = unitMetaRecord ? unitMetaRecord.metas : {};
+
+  // Sumar dosis aplicadas en el rango seleccionado
+  const acumuladoRango = {};
+  INFLUENZA_RUBROS.forEach(rb => {
+    acumuladoRango[rb.id] = 0;
+    _adminCapturasArray.forEach(c => {
+      if (c.clues === clues && c.fecha >= minFecha && c.fecha <= maxFecha) {
+        acumuladoRango[rb.id] += Number(c.valores[rb.id] || 0);
+      }
+    });
+  });
+
+  // Agrupar por rubro
+  const groups = {};
+  INFLUENZA_RUBROS.forEach(rb => {
+    const key = `${rb.categoria} - ${rb.grupo}`;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(rb);
+  });
+
+  Object.entries(groups).forEach(([groupTitle, rubros]) => {
+    const card = document.createElement("div");
+    card.className = "bg-white border border-slate-200 rounded-[24px] p-6 shadow-sm flex flex-col gap-4";
+    card.style.backgroundColor = "#ffffff";
+
+    let rowsHtml = "";
+    rubros.forEach(rb => {
+      const meta = Number(metas[rb.id] || 0);
+      const acum = acumuladoRango[rb.id];
+      const pct = meta > 0 ? Math.round((acum / meta) * 100) : 0;
+
+      let barColor;
+      if (!meta) {
+        barColor = '#cbd5e1';
+      } else if (pct >= 85) {
+        barColor = '#10b981';
+      } else if (pct >= 50) {
+        barColor = '#f59e0b';
+      } else {
+        barColor = '#ef4444';
+      }
+
+      rowsHtml += `
+        <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50/50">
+          <td class="p-3 font-semibold text-slate-700 text-xs">${rb.edad}</td>
+          <td class="p-3 text-center text-xs font-bold text-slate-500">${meta || '—'}</td>
+          <td class="p-3 text-center text-xs font-bold text-violet-950">${acum}</td>
+          <td class="p-3" style="min-width: 120px;">
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between w-full text-[10px] font-black text-slate-500">
+                <span>Avance</span>
+                <span>${meta > 0 ? `${pct}%` : 'N/A'}</span>
+              </div>
+              <div style="width:100%; height:6px; background:#e2e8f0; border-radius:6px; overflow:hidden;">
+                <div style="width:${Math.min(pct, 100)}%; height:100%; background:${barColor}; border-radius:6px; transition: width 0.3s ease;"></div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    card.innerHTML = `
+      <div class="pb-2 border-b border-slate-100 mb-2">
+        <h4 class="text-xs font-black text-violet-950 uppercase tracking-wider m-0">${groupTitle}</h4>
+      </div>
+      <div class="tableWrap overflow-x-auto w-full rounded-xl border border-slate-200">
+        <table class="w-full border-collapse text-left text-xs text-slate-700">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200 font-bold text-slate-500">
+              <th class="p-3">Edad</th>
+              <th class="p-3 text-center">Meta Anual</th>
+              <th class="p-3 text-center">Logrado</th>
+              <th class="p-3">Progreso</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+    `;
+    detailCards.appendChild(card);
+  });
+}
+
+// 1.1 VALIDACIÓN Y EDICIÓN SUPERVISADA
+let _currentValidationReport = null;
+
+function initValidationTab() {
+  const valCluesSelect = document.getElementById("validationInfluenzaClues");
+  const valSemanaSelect = document.getElementById("validationInfluenzaSemana");
+  const loadBtn = document.getElementById("btnLoadValidationReport");
+  const content = document.getElementById("validationReportContent");
+
+  if (!valCluesSelect || !valSemanaSelect || !loadBtn || !content) return;
+
+  const weeks = generateCampaignWeeks();
+  valSemanaSelect.innerHTML = weeks.map(w => `<option value="${w.fecha}">${w.label}</option>`).join("");
+
+  content.classList.add("hidden");
+
+  loadBtn.onclick = () => {
+    const clues = valCluesSelect.value;
+    const fecha = valSemanaSelect.value;
+    renderValidacionEdicionGrid(clues, fecha);
+  };
+}
+
+function renderValidacionEdicionGrid(clues, fecha) {
+  const content = document.getElementById("validationReportContent");
+  const title = document.getElementById("validationReportTitle");
+  const subtitle = document.getElementById("validationReportSubtitle");
+  const badge = document.getElementById("validationReportEditBadge");
+  const cardsContainer = document.getElementById("validationCardsContainer");
+  const nombreInput = document.getElementById("validationNombreResponsable");
+
+  if (!content || !cardsContainer) return;
+
+  const report = _adminCapturasArray.find(r => r.clues === clues && r.fecha === fecha);
+  _currentValidationReport = report;
+  nombreInput.value = "";
+
+  content.classList.remove("hidden");
+
+  const unitMeta = _adminMetasArray.find(r => r.clues === clues);
   const metas = unitMeta ? unitMeta.metas : {};
 
-  // Calcular acumulado
   const acumuladosPrevios = {};
   INFLUENZA_RUBROS.forEach(rb => {
     acumuladosPrevios[rb.id] = 0;
     _adminCapturasArray.forEach(r => {
-      if (r.clues === report.clues && r.fecha !== report.fecha) {
+      if (r.clues === clues && r.fecha !== fecha) {
         acumuladosPrevios[rb.id] += Number(r.valores[rb.id] || 0);
       }
     });
   });
 
-  const isMunicipal = USER.rol === "MUNICIPAL" || USER.rol === "ADMIN";
-
-  INFLUENZA_RUBROS.forEach(rb => {
-    const meta = Number(metas[rb.id] || 0);
-    const acum = acumuladosPrevios[rb.id];
-    const val = report.valores[rb.id] || 0;
-    const isLocked = meta === 0;
-
-    const total = acum + val;
-    const pct = meta > 0 ? Math.round((total / meta) * 100) : 0;
-    let badgeClass = "bg-slate-100 text-slate-700";
-    if (meta > 0) {
-      if (pct >= 85) badgeClass = "bg-emerald-100 text-emerald-800";
-      else if (pct >= 50) badgeClass = "bg-amber-100 text-amber-800";
-      else badgeClass = "bg-rose-100 text-rose-800";
+  if (report) {
+    title.textContent = `Reporte de ${report.unidad}`;
+    subtitle.textContent = `Semana: ${report.fecha} | Capturado por: ${report.capturado_por}`;
+    
+    if (report.editado_por !== "UNIDAD") {
+      badge.classList.remove("hidden");
+      badge.innerHTML = `<span class="material-symbols-rounded text-xs mr-1">history</span> Corregido por Supervisor (${report.editado_por})`;
+    } else {
+      badge.classList.add("hidden");
     }
+  } else {
+    title.textContent = `Sin captura registrada`;
+    subtitle.textContent = `No hay un reporte guardado para esta semana. Se creará un nuevo registro.`;
+    badge.classList.add("hidden");
+  }
 
-    const row = document.createElement("tr");
-    row.className = "border-b border-slate-100 hover:bg-slate-50 transition-colors";
-    row.innerHTML = `
-      <td class="p-3 text-xs font-semibold text-slate-700">${rb.categoria} - ${rb.grupo}</td>
-      <td class="p-3 text-xs text-slate-600">${rb.edad}</td>
-      <td class="p-3 text-center text-xs font-bold">${meta}</td>
-      <td class="p-3 text-center text-xs text-slate-500">${acum}</td>
-      <td class="p-3 text-center">
-        <input type="number" min="0" step="1" 
-          id="admin_input_inf_${rb.id}"
-          class="w-16 text-center font-bold text-xs bg-slate-50 border border-slate-300 rounded-lg p-1 outline-none"
-          value="${val}" 
-          ${isLocked || !isMunicipal ? 'disabled style="background-color:#f1f5f9; cursor:not-allowed;"' : ''}
-        >
-      </td>
-      <td class="p-3 text-center">
-        <span class="px-2 py-1 rounded-full text-[10px] font-bold ${badgeClass}">${meta > 0 ? `${pct}%` : 'N/A'}</span>
-      </td>
-    `;
-    tbody.appendChild(row);
+  cardsContainer.innerHTML = "";
+
+  const groups = {};
+  INFLUENZA_RUBROS.forEach(rb => {
+    const key = `${rb.categoria} - ${rb.grupo}`;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(rb);
   });
 
-  // Evento cancelar y guardar edición
-  document.getElementById("btnCancelAdminInfluenzaEdit").onclick = () => {
-    renderAvancesAndConcentrados();
+  Object.entries(groups).forEach(([groupTitle, rubros]) => {
+    const card = document.createElement("div");
+    card.className = "bg-white border border-slate-200 rounded-[24px] p-6 shadow-sm flex flex-col gap-4";
+    card.style.backgroundColor = "#ffffff";
+
+    let rowsHtml = "";
+    rubros.forEach(rb => {
+      const meta = Number(metas[rb.id] || 0);
+      const acum = acumuladosPrevios[rb.id];
+      const val = report && report.valores[rb.id] !== undefined ? report.valores[rb.id] : "";
+      const isLocked = meta === 0;
+
+      const currentVal = Number(val || 0);
+      const pct = meta > 0 ? Math.round(((acum + currentVal) / meta) * 100) : 0;
+      const cappedPct = Math.min(pct, 100);
+
+      let barColor;
+      if (!meta) barColor = '#cbd5e1';
+      else if (pct >= 85) barColor = '#10b981';
+      else if (pct >= 50) barColor = '#f59e0b';
+      else barColor = '#ef4444';
+
+      rowsHtml += `
+        <tr class="border-b border-slate-100 last:border-0" style="${isLocked ? 'opacity: 0.45; background-color:#f8fafc;' : ''}">
+          <td class="p-3 text-xs font-semibold text-slate-700">
+            ${rb.edad}
+            ${isLocked ? '<span class="ml-2 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-200 text-slate-400">Sin Meta</span>' : ''}
+          </td>
+          <td class="p-3 text-center text-xs font-bold text-slate-500">${meta || '—'}</td>
+          <td class="p-3 text-center text-xs font-bold text-violet-950">${acum}</td>
+          <td class="p-3 text-center">
+            <input type="number" min="0" step="1"
+              id="val_input_inf_${rb.id}"
+              class="w-16 h-8 text-center font-bold text-xs bg-slate-50 border border-slate-300 rounded-lg outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 transition-all"
+              value="${val}"
+              ${isLocked ? 'disabled placeholder="—"' : 'placeholder="0"'}
+            />
+          </td>
+          <td class="p-3" style="min-width: 120px;">
+            <div class="flex flex-col gap-1">
+              <div class="flex justify-between w-full text-[10px] font-black text-slate-500">
+                <span>Avance</span>
+                <span id="val_pct_inf_${rb.id}">${meta > 0 ? `${pct}%` : 'N/A'}</span>
+              </div>
+              <div style="width:100%; height:6px; background:#e2e8f0; border-radius:6px; overflow:hidden;">
+                <div id="val_bar_inf_${rb.id}" style="width:${cappedPct}%; height:100%; background:${barColor}; border-radius:6px; transition: width 0.3s ease;"></div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    card.innerHTML = `
+      <div class="pb-2 border-b border-slate-100 mb-2">
+        <h4 class="text-xs font-black text-violet-950 uppercase tracking-wider m-0">${groupTitle}</h4>
+      </div>
+      <div class="tableWrap overflow-x-auto w-full rounded-xl border border-slate-200">
+        <table class="w-full border-collapse text-left text-xs text-slate-700">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200 font-bold text-slate-500">
+              <th class="p-3">Edad</th>
+              <th class="p-3 text-center">Meta Anual</th>
+              <th class="p-3 text-center">Logro Previo</th>
+              <th class="p-3 text-center">Esta Semana</th>
+              <th class="p-3">Progreso</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    rubros.forEach(rb => {
+      const meta = Number(metas[rb.id] || 0);
+      if (meta === 0) return;
+      const input = card.querySelector(`#val_input_inf_${rb.id}`);
+      if (input) {
+        input.addEventListener("input", () => {
+          const val = parseInt(input.value) || 0;
+          const total = acumuladosPrevios[rb.id] + val;
+          const pct = Math.round((total / meta) * 100);
+          const pctEl = card.querySelector(`#val_pct_inf_${rb.id}`);
+          const barEl = card.querySelector(`#val_bar_inf_${rb.id}`);
+
+          if (pctEl) pctEl.textContent = `${pct}%`;
+          if (barEl) {
+            barEl.style.width = `${Math.min(pct, 100)}%`;
+            if (pct >= 85) barEl.style.background = '#10b981';
+            else if (pct >= 50) barEl.style.background = '#f59e0b';
+            else barEl.style.background = '#ef4444';
+          }
+        });
+      }
+    });
+
+    cardsContainer.appendChild(card);
+  });
+
+  document.getElementById("btnCancelValidation").onclick = () => {
+    content.classList.add("hidden");
   };
 
-  document.getElementById("btnSaveAdminInfluenzaEdit").onclick = async () => {
-    await saveAdminInfluenzaCorrections();
+  document.getElementById("btnSaveValidation").onclick = () => {
+    saveValidationReport(clues, fecha);
   };
 }
 
-async function saveAdminInfluenzaCorrections() {
-  if (!_currentEditingReport) return;
+async function saveValidationReport(clues, fecha) {
+  const nombreInput = document.getElementById("validationNombreResponsable");
+  const nombre = nombreInput ? nombreInput.value.trim() : "";
+
+  if (!nombre) {
+    showToast("Por favor, introduce el nombre del supervisor para firmar la corrección.", false, "bad");
+    return;
+  }
+
+  const unitMeta = _adminMetasArray.find(r => r.clues === clues);
+  const metas = unitMeta ? unitMeta.metas : {};
+
+  const acumuladosPrevios = {};
+  INFLUENZA_RUBROS.forEach(rb => {
+    acumuladosPrevios[rb.id] = 0;
+    _adminCapturasArray.forEach(r => {
+      if (r.clues === clues && r.fecha !== fecha) {
+        acumuladosPrevios[rb.id] += Number(r.valores[rb.id] || 0);
+      }
+    });
+  });
 
   const valores = {};
   let hasOverMetaError = false;
 
-  const unitMeta = _adminMetasArray.find(r => r.clues === _currentEditingReport.clues);
-  const metas = unitMeta ? unitMeta.metas : {};
-
-  // Calcular acumulado
-  const acumuladosPrevios = {};
-  INFLUENZA_RUBROS.forEach(rb => {
-    acumuladosPrevios[rb.id] = 0;
-    _adminCapturasArray.forEach(r => {
-      if (r.clues === _currentEditingReport.clues && r.fecha !== _currentEditingReport.fecha) {
-        acumuladosPrevios[rb.id] += Number(r.valores[rb.id] || 0);
-      }
-    });
-  });
-
   for (const rb of INFLUENZA_RUBROS) {
-    const input = document.getElementById(`admin_input_inf_${rb.id}`);
+    const input = document.getElementById(`val_input_inf_${rb.id}`);
     const val = input ? parseInt(input.value) || 0 : 0;
     valores[rb.id] = val;
 
@@ -1265,33 +1532,346 @@ async function saveAdminInfluenzaCorrections() {
   }
 
   if (hasOverMetaError) {
-    showToast("No se puede guardar. Uno o más rubros superan la meta de la unidad.", false, "bad");
+    showToast("No se puede guardar. Uno o más rubros superan la meta anual de la unidad.", false, "bad");
     return;
   }
 
+  const unitData = _allUnidades.find(u => u.clues === clues);
+  const unidadNombre = unitData ? unitData.unidad : "Unidad Médica";
+  const municipio = unitData ? unitData.municipio : USER.municipio;
+
+  let historial = [];
+  if (_currentValidationReport && _currentValidationReport.historial_ediciones) {
+    historial = Array.isArray(_currentValidationReport.historial_ediciones)
+      ? _currentValidationReport.historial_ediciones
+      : JSON.parse(_currentValidationReport.historial_ediciones || "[]");
+  }
+  historial.push({
+    fecha_edicion: new Date().toISOString(),
+    editado_por: nombre,
+    rol: USER.rol,
+    valores_previos: _currentValidationReport ? _currentValidationReport.valores : null
+  });
+
   const payload = {
-    clues: _currentEditingReport.clues,
-    unidad: _currentEditingReport.unidad,
-    municipio: _currentEditingReport.municipio,
-    fecha: _currentEditingReport.fecha,
+    clues,
+    unidad: unidadNombre,
+    municipio,
+    fecha,
     valores,
-    editado_por: "MUNICIPAL"
+    anio_campana: document.getElementById("metaCampaignSelect").value,
+    capturado_por: _currentValidationReport ? _currentValidationReport.capturado_por : nombre,
+    editado_por: USER.rol.toUpperCase(),
+    historial_ediciones: historial
   };
 
   await AppService.runCapture({
-    btnId: "btnSaveAdminInfluenzaEdit",
-    title: "Guardando correcciones",
-    msg: "Registrando modificaciones del supervisor municipal...",
-    successMsg: "Reporte corregido correctamente",
+    btnId: "btnSaveValidation",
+    title: "Guardando corrección",
+    msg: "Registrando la corrección firmada por el supervisor...",
+    successMsg: "Reporte de validación guardado correctamente.",
     eventTitle: "Influenza",
-    eventMsg: "Modificación de reporte semanal por nivel municipal",
+    eventMsg: `Edición de reporte de ${unidadNombre} por supervisor ${nombre}`,
     action: async () => {
       const res = await AppService.call("saveinfluenza_captura", payload);
       await loadInfluenzaAdminData();
-      renderAvancesAndConcentrados();
+      renderValidacionEdicionGrid(clues, fecha);
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 150,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+      }
       return res;
     }
   });
+}
+
+// 1.2 CONCILIACIÓN VS CSV
+function initConciliacionTab() {
+  const runBtn = document.getElementById("btnRunConciliacion");
+  const resultContainer = document.getElementById("conciliacionResultContainer");
+
+  if (!runBtn || !resultContainer) return;
+
+  resultContainer.classList.add("hidden");
+
+  runBtn.onclick = () => {
+    const mesAnio = document.getElementById("conciliacionMes").value;
+    const clues = document.getElementById("conciliacionClues").value;
+    runConciliacionProcess(clues, mesAnio);
+  };
+}
+
+async function runConciliacionProcess(clues, mesAnio) {
+  const resultContainer = document.getElementById("conciliacionResultContainer");
+  const tbody = document.getElementById("conciliacionTbody");
+  const title = document.getElementById("conciliacionTitle");
+  const statusEl = document.getElementById("conciliacionGeneralStatus");
+
+  if (!resultContainer || !tbody) return;
+
+  const [mes, anio] = mesAnio.split("|").map(Number);
+  const unitData = _allUnidades.find(u => u.clues === clues);
+  const unitName = unitData ? unitData.unidad : clues;
+
+  resultContainer.classList.remove("hidden");
+  title.textContent = `Conciliación de Carga: ${unitName} (${clues}) — Mes ${mes}/${anio}`;
+
+  const { data: sisRecords, error } = await window.supabase
+    .from("registros_sis")
+    .select("variable_sis, valor")
+    .eq("clues", clues)
+    .eq("mes", mes)
+    .eq("anio", anio);
+
+  if (error) {
+    console.error("Error al cargar registros del SIS:", error);
+    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-rose-500 font-bold">Error al cargar datos del SIS oficial.</td></tr>`;
+    return;
+  }
+
+  const localValues = {};
+  INFLUENZA_RUBROS.forEach(rb => {
+    localValues[rb.id] = 0;
+  });
+
+  _adminCapturasArray.forEach(c => {
+    if (c.clues === clues) {
+      const d = new Date(c.fecha + "T12:00:00");
+      if (d.getMonth() + 1 === mes && d.getFullYear() === anio) {
+        INFLUENZA_RUBROS.forEach(rb => {
+          localValues[rb.id] += Number(c.valores[rb.id] || 0);
+        });
+      }
+    }
+  });
+
+  const INFLUENZA_SIS_MAPPING = {
+    "r1": "BIE01", "r2": "BIE28", "r3": "BIE29", "r4": "BIE30", "r5": "BIE31",
+    "r6": "BIE04", "r7": "BIE32", "r8": "BIE33", "r9": "BIE34", "r10": "BIE35",
+    "r11": "BIE36", "r12": "BIE37", "r13": "BIE38", "r14": "BIE39", "r15": "BIE40",
+    "r16": "BIO96", "r17": "BIO97",
+    "r18": "BIE09", "r19": "BIE10", "r20": "BIE41",
+    "r21": "BIE12", "r22": "BIE13", "r23": "BIE42",
+    "r24": "BIE15", "r25": "BIE16", "r26": "BIE43",
+    "r27": "BIE18", "r28": "BIE19", "r29": "BIE44",
+    "r30": "BIE48", "r31": "BIE49", "r32": "BIE50",
+    "r33": "BIE24", "r34": "BIE25", "r35": "BIE46",
+    "r36": "BIE51", "r37": "BIE52", "r38": "BIE53",
+    "r39": "BIE54", "r40": "BIE55",
+    "r41": "BIE56", "r42": "BIE57", "r43": "BIE58",
+    "r44": "BIE59", "r45": "BIE60", "r46": "BIE61"
+  };
+
+  tbody.innerHTML = "";
+  let totalLocal = 0;
+  let totalSis = 0;
+  let totalDiff = 0;
+  let discrepanciasCount = 0;
+
+  INFLUENZA_RUBROS.forEach(rb => {
+    const sisVar = INFLUENZA_SIS_MAPPING[rb.id];
+    const sisRec = sisRecords.find(r => r.variable_sis === sisVar);
+    const sisVal = sisRec ? Number(sisRec.valor || 0) : 0;
+    const localVal = localValues[rb.id];
+    const diff = localVal - sisVal;
+
+    totalLocal += localVal;
+    totalSis += sisVal;
+    totalDiff += diff;
+
+    const row = document.createElement("tr");
+    const isDiscrepant = diff !== 0;
+
+    if (isDiscrepant) {
+      row.className = "border-b border-slate-100 conciliacion-discrepante font-bold";
+      discrepanciasCount++;
+    } else {
+      row.className = "border-b border-slate-100 hover:bg-slate-50";
+    }
+
+    row.innerHTML = `
+      <td class="p-3"><div style="max-width: 420px; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.35;" title="${rb.categoria} - ${rb.grupo} (${rb.edad})">${rb.categoria} - ${rb.grupo} (${rb.edad})</div></td>
+      <td class="p-3 text-center text-xs font-mono font-bold text-slate-500">${sisVar}</td>
+      <td class="p-3 text-center text-xs font-bold">${localVal.toLocaleString('es-MX')}</td>
+      <td class="p-3 text-center text-xs font-bold">${sisVal.toLocaleString('es-MX')}</td>
+      <td class="p-3 text-center text-xs font-black ${diff > 0 ? 'text-blue-600' : diff < 0 ? 'text-rose-600' : 'text-emerald-600'}">
+        ${diff > 0 ? `+${diff}` : diff}
+      </td>
+      <td class="p-3 text-center text-xs">
+        <span class="px-2 py-0.5 rounded-full font-bold ${isDiscrepant ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}">
+          ${isDiscrepant ? 'Desfase' : 'Conciliado'}
+        </span>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  // Fila de totales
+  const totalRow = document.createElement("tr");
+  totalRow.className = "bg-slate-50 border-t border-slate-300 font-extrabold text-slate-900";
+  totalRow.innerHTML = `
+    <td class="p-3 text-xs uppercase text-right" colspan="2">TOTAL GENERAL:</td>
+    <td class="p-3 text-center text-xs">${totalLocal.toLocaleString('es-MX')}</td>
+    <td class="p-3 text-center text-xs">${totalSis.toLocaleString('es-MX')}</td>
+    <td class="p-3 text-center text-xs ${totalDiff > 0 ? 'text-blue-700' : totalDiff < 0 ? 'text-rose-700' : 'text-emerald-700'}">
+      ${totalDiff > 0 ? `+${totalDiff}` : totalDiff}
+    </td>
+    <td class="p-3 text-center text-xs">
+      <span class="px-2 py-0.5 rounded-full font-black ${discrepanciasCount > 0 ? 'bg-rose-200 text-rose-900' : 'bg-emerald-200 text-emerald-900'}">
+        ${discrepanciasCount > 0 ? `${discrepanciasCount} Desfases` : 'Sincronizado'}
+      </span>
+    </td>
+  `;
+  tbody.appendChild(totalRow);
+
+  if (discrepanciasCount > 0) {
+    statusEl.className = "px-3 py-1 rounded-full text-xs font-black bg-rose-100 text-rose-800 border border-rose-200";
+    statusEl.textContent = `Desconciliado (${discrepanciasCount} discrepancias encontradas)`;
+  } else {
+    statusEl.className = "px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-200";
+    statusEl.textContent = "Datos 100% Conciliados";
+  }
+}
+
+async function exportMunicipalConcentradoRangeExcel(muni, semInicio, semFin) {
+  try {
+    showToast("Generando concentrado municipal en Excel...", true, "info");
+    
+    const response = await fetch("./Análisis_Meta_Logro_Influenza_2025-2026_UNIDAD_DE_SALUD.xlsx");
+    if (!response.ok) throw new Error("No se pudo cargar la plantilla de Excel.");
+    const arrayBuffer = await response.arrayBuffer();
+    
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(arrayBuffer);
+    
+    const minFecha = semInicio < semFin ? semInicio : semFin;
+    const maxFecha = semInicio < semFin ? semFin : semInicio;
+    const units = _allUnidades.filter(u => u.municipio.toUpperCase() === muni.toUpperCase());
+    
+    const sheetMeta = wb.getWorksheet('ANÁLIS DE META-LOGRO') || wb.worksheets[1];
+    if (sheetMeta) {
+      sheetMeta.getCell('A5').value = `Meta-Logro de Vacuna Anti Influenza Estacional Temporada Invernal 2025-2026 - Concentrado Municipal: ${muni} (${minFecha} al ${maxFecha})`;
+      
+      INFLUENZA_RUBROS.forEach((rb, idx) => {
+        let totalMeta = 0;
+        units.forEach(u => {
+          const unitMetaRecord = _adminMetasArray.find(m => m.clues === u.clues);
+          totalMeta += unitMetaRecord ? Number(unitMetaRecord.metas[rb.id] || 0) : 0;
+        });
+        sheetMeta.getCell(9 + idx, 8).value = totalMeta;
+        
+        let totalLogro = 0;
+        _adminCapturasArray.forEach(c => {
+          if (c.municipio.toUpperCase() === muni.toUpperCase() && c.fecha >= minFecha && c.fecha <= maxFecha) {
+            totalLogro += Number(c.valores[rb.id] || 0);
+          }
+        });
+        sheetMeta.getCell(9 + idx, 7).value = totalLogro;
+      });
+      
+      sheetMeta.getCell('G55').value = { formula: 'SUM(G9:G54)' };
+    }
+    
+    const ws = wb.addWorksheet('CONCENTRADO MUNICIPAL', { views: [{ showGridLines: true }] });
+    const sheets = wb.worksheets;
+    const addedSheet = sheets.pop();
+    sheets.unshift(addedSheet);
+    
+    ws.getColumn(1).width = 4;
+    ws.getColumn(2).width = 35;
+    ws.getColumn(3).width = 18;
+    ws.getColumn(4).width = 15;
+    ws.getColumn(5).width = 18;
+    ws.getColumn(6).width = 15;
+    
+    ws.getCell('B2').value = "ANÁLISIS DE META-LOGRO DE INFLUENZA";
+    ws.getCell('B2').font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FF2E1065' } };
+    
+    ws.getCell('B3').value = `CONCENTRADO MUNICIPAL: ${muni} (${minFecha} al ${maxFecha})`;
+    ws.getCell('B3').font = { name: 'Arial', size: 11, italic: true };
+    
+    const headers = ["#", "UNIDAD DE SALUD", "CLUES", "META ANUAL", "LOGRO ACUMULADO", "% AVANCE"];
+    const headerRow = ws.getRow(5);
+    headers.forEach((h, colIdx) => {
+      const cell = headerRow.getCell(colIdx + 1);
+      cell.value = h;
+      cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2E1065' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    });
+    headerRow.height = 28;
+    
+    let rowIdx = 6;
+    units.forEach((u, idx) => {
+      const unitMetaRecord = _adminMetasArray.find(m => m.clues === u.clues);
+      let totalMeta = 0;
+      if (unitMetaRecord && unitMetaRecord.metas) {
+        Object.values(unitMetaRecord.metas).forEach(v => totalMeta += Number(v || 0));
+      }
+      
+      let totalLogro = 0;
+      _adminCapturasArray.forEach(c => {
+        if (c.clues === u.clues && c.fecha >= minFecha && c.fecha <= maxFecha) {
+          Object.values(c.valores).forEach(v => totalLogro += Number(v || 0));
+        }
+      });
+      
+      const pct = totalMeta > 0 ? (totalLogro / totalMeta) : 0;
+      
+      ws.getCell(rowIdx, 1).value = idx + 1;
+      ws.getCell(rowIdx, 2).value = u.unidad;
+      ws.getCell(rowIdx, 3).value = u.clues;
+      ws.getCell(rowIdx, 4).value = totalMeta;
+      ws.getCell(rowIdx, 5).value = totalLogro;
+      ws.getCell(rowIdx, 6).value = pct;
+      
+      ws.getCell(rowIdx, 4).numFmt = '#,##0';
+      ws.getCell(rowIdx, 5).numFmt = '#,##0';
+      ws.getCell(rowIdx, 6).numFmt = '0.0%';
+      
+      const bgColor = idx % 2 === 0 ? 'FFF9F5F0' : 'FFFFFFFF';
+      for (let c = 1; c <= 6; c++) {
+        ws.getCell(rowIdx, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
+        ws.getCell(rowIdx, c).border = {
+          bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+        };
+      }
+      
+      rowIdx++;
+    });
+    
+    ws.getCell(rowIdx, 2).value = "TOTAL MUNICIPIO";
+    ws.getCell(rowIdx, 2).font = { name: 'Arial', size: 10, bold: true };
+    
+    ws.getCell(rowIdx, 4).value = { formula: `SUM(D6:D${rowIdx-1})` };
+    ws.getCell(rowIdx, 5).value = { formula: `SUM(E6:E${rowIdx-1})` };
+    ws.getCell(rowIdx, 6).value = { formula: `AVERAGE(F6:F${rowIdx-1})` };
+    
+    ws.getCell(rowIdx, 4).font = { name: 'Arial', size: 10, bold: true };
+    ws.getCell(rowIdx, 5).font = { name: 'Arial', size: 10, bold: true };
+    ws.getCell(rowIdx, 6).font = { name: 'Arial', size: 10, bold: true };
+    
+    ws.getCell(rowIdx, 4).numFmt = '#,##0';
+    ws.getCell(rowIdx, 5).numFmt = '#,##0';
+    ws.getCell(rowIdx, 6).numFmt = '0.0%';
+    
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Concentrado_Influenza_2025-2026_${muni.replace(/ /g, "_")}_rango.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Concentrado municipal Excel descargado exitosamente.", true, "good");
+  } catch (err) {
+    console.error("Error al exportar concentrado Excel:", err);
+    showToast("Error al generar el archivo Excel.", false, "bad");
+  }
 }
 
 
@@ -1515,6 +2095,13 @@ async function saveInfluenzaMetasConfig() {
       const res = await AppService.call("saveinfluenza_metas", { rows });
       await loadInfluenzaAdminData();
       renderMetasConfigurationGrid();
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 150,
+          spread: 80,
+          origin: { y: 0.6 }
+        });
+      }
       return res;
     }
   });
@@ -1920,50 +2507,69 @@ async function renderInfluenzaIndicatorsDashboard(muniFilter, uniFilter) {
         <table class="w-full border-collapse text-left text-xs font-semibold text-slate-700">
           <thead>
             <tr class="bg-slate-50 border-b border-slate-200">
-              <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider">Grupo</th>
               <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider">Subgrupo / Edad</th>
-              <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Meta Total</th>
-              <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Aplicadas</th>
-              <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Avance %</th>
+              <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center" style="width: 120px;">Meta Total</th>
+              <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center" style="width: 120px;">Aplicadas</th>
+              <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center" style="width: 120px;">Avance %</th>
             </tr>
           </thead>
           <tbody>
-            ${INFLUENZA_RUBROS.map(rb => {
-              // Calcular para cada rubro
-              let rMeta = 0;
-              let rAplicadas = 0;
-
-              evalCluesList.forEach(c => {
-                const metaRec = metasData.find(m => m.clues === c);
-                rMeta += metaRec ? Number(metaRec.metas[rb.id] || 0) : 0;
-
-                const unitCapturas = capturasData.filter(r => r.clues === c);
-                unitCapturas.forEach(r => {
-                  rAplicadas += Number(r.valores[rb.id] || 0);
-                });
+            ${(() => {
+              // Group rubros by category & group
+              const grouped = {};
+              INFLUENZA_RUBROS.forEach(rb => {
+                const key = `${rb.categoria} - ${rb.grupo}`;
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(rb);
               });
 
-              const rPct = rMeta > 0 ? Math.round((rAplicadas / rMeta) * 100) : 0;
-              let progressColor = "text-slate-700";
-              let progressBg = "bg-slate-100";
-              if (rMeta > 0) {
-                if (rPct >= 85) { progressColor = "text-emerald-800"; progressBg = "bg-emerald-100"; }
-                else if (rPct >= 50) { progressColor = "text-amber-800"; progressBg = "bg-amber-100"; }
-                else { progressColor = "text-rose-800"; progressBg = "bg-rose-100"; }
-              }
+              return Object.entries(grouped).map(([groupTitle, rubros]) => {
+                const headerRow = `
+                  <tr class="bg-slate-50 border-b border-slate-200">
+                    <td colspan="4" class="p-3 bg-violet-50/50">
+                      <div class="text-xs font-black text-violet-950 uppercase tracking-wider" style="max-width: 600px; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.35;" title="${groupTitle}">${groupTitle}</div>
+                    </td>
+                  </tr>
+                `;
+                
+                const rows = rubros.map(rb => {
+                  let rMeta = 0;
+                  let rAplicadas = 0;
 
-              return `
-                <tr class="border-b border-slate-100 hover:bg-slate-50">
-                  <td class="p-3 font-bold">${rb.categoria} - ${rb.grupo}</td>
-                  <td class="p-3 font-medium text-slate-600">${rb.edad}</td>
-                  <td class="p-3 text-center font-bold">${rMeta.toLocaleString('es-MX')}</td>
-                  <td class="p-3 text-center font-bold text-slate-500">${rAplicadas.toLocaleString('es-MX')}</td>
-                  <td class="p-3 text-center">
-                    <span class="px-2 py-1 rounded-full text-[10px] font-bold ${progressColor} ${progressBg}">${rMeta > 0 ? `${rPct}%` : 'N/A'}</span>
-                  </td>
-                </tr>
-              `;
-            }).join("")}
+                  evalCluesList.forEach(c => {
+                    const metaRec = metasData.find(m => m.clues === c);
+                    rMeta += metaRec ? Number(metaRec.metas[rb.id] || 0) : 0;
+
+                    const unitCapturas = capturasData.filter(r => r.clues === c);
+                    unitCapturas.forEach(r => {
+                      rAplicadas += Number(r.valores[rb.id] || 0);
+                    });
+                  });
+
+                  const rPct = rMeta > 0 ? Math.round((rAplicadas / rMeta) * 100) : 0;
+                  let progressColor = "text-slate-700";
+                  let progressBg = "bg-slate-100";
+                  if (rMeta > 0) {
+                    if (rPct >= 85) { progressColor = "text-emerald-800"; progressBg = "bg-emerald-100"; }
+                    else if (rPct >= 50) { progressColor = "text-amber-800"; progressBg = "bg-amber-100"; }
+                    else { progressColor = "text-rose-800"; progressBg = "bg-rose-100"; }
+                  }
+
+                  return `
+                    <tr class="border-b border-slate-100 hover:bg-violet-50/10 transition-colors duration-150">
+                      <td class="p-3 pl-6 font-semibold text-slate-700 max-w-[400px] whitespace-normal break-words">${rb.edad}</td>
+                      <td class="p-3 text-center font-bold text-slate-600">${rMeta.toLocaleString('es-MX')}</td>
+                      <td class="p-3 text-center font-bold text-violet-900">${rAplicadas.toLocaleString('es-MX')}</td>
+                      <td class="p-3 text-center">
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold ${progressColor} ${progressBg}">${rMeta > 0 ? `${rPct}%` : 'N/A'}</span>
+                      </td>
+                    </tr>
+                  `;
+                }).join("");
+
+                return headerRow + rows;
+              }).join("");
+            })()}
           </tbody>
         </table>
       </div>
