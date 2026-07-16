@@ -239,6 +239,7 @@ function initRDADashboard() {
             <option value="embarazadas">Esquema Embarazadas (Tdpa, VSR)</option>
             <option value="invernal">Temporada Invernal (Influenza, COVID)</option>
             <option value="adicionales">Biológicos Adicionales (Varicela, Hep A)</option>
+            <option value="meta_logro_influenza">Evaluación Meta-Logro Influenza</option>
         `;
         sel.addEventListener('change', () => {
             _rdaState.esquema = sel.value;
@@ -526,6 +527,13 @@ function renderDashboard() {
     const muniFilter = document.getElementById('rdaFilterMunicipio')?.value || '';
     const uniFilter = document.getElementById('rdaFilterUnidad')?.value || '';
     const esquema = _rdaState.esquema || 'basico';
+
+    if (esquema === 'meta_logro_influenza') {
+        if (typeof renderInfluenzaIndicatorsDashboard === 'function') {
+            renderInfluenzaIndicatorsDashboard(muniFilter, uniFilter);
+        }
+        return;
+    }
 
     const toggleContainer = document.getElementById('rdaViewToggleContainer');
     if (toggleContainer) {

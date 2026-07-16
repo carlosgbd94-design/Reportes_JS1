@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liquid Glass Simulator - Logo Mejor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f7f7f9;
+            --panel-bg: rgba(255, 255, 255, 0.9);
+            --panel-border: rgba(0, 0, 0, 0.08);
+            --text-color: #18181b;
+            --accent-color: #ff0055;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* UI overlay styles */
+        .ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 30px;
+        }
+
+        header {
+            pointer-events: auto;
+            max-width: 460px;
+            background: rgba(255, 255, 255, 0.85);
+            padding: 22px;
+            border-radius: 16px;
+            border: 1px solid var(--panel-border);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+            background: linear-gradient(45deg, #18181b, var(--accent-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            font-size: 13px;
+            color: #71717a;
+            line-height: 1.5;
+        }
+
+        .controls-panel {
+            pointer-events: auto;
+            align-self: flex-start;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
+            padding: 20px 24px;
+            width: 340px;
+            backdrop-filter: blur(25px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .controls-panel::-webkit-scrollbar {
+            width: 4px;
+        }
+        .controls-panel::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 2px;
+        }
+
+        .control-group {
+            margin-bottom: 14px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #18181b;
+            font-weight: 700;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        input[type="range"] {
+            flex-grow: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #e4e4e7;
+            height: 5px;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(255, 0, 85, 0.3);
+        }
+
+        .value-display {
+            font-family: monospace;
+            font-size: 11px;
+            width: 40px;
+            text-align: right;
+            color: #71717a;
+        }
+
+        /* Checkbox styling */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            display: none;
+        }
+
+        .checkbox-custom {
+            width: 16px;
+            height: 16px;
+            border: 1.5px solid #d4d4d8;
+            border-radius: 4px;
+            display: inline-block;
+            position: relative;
+            background: #f4f4f5;
+            transition: all 0.2s;
+        }
+
+        .checkbox-container input[type="checkbox"]:checked + .checkbox-custom {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        .checkbox-container input[type="checkbox"]:checked + .checkbox-custom::after {
+            content: "";
+            position: absolute;
+            left: 5px;
+            top: 2px;
+            width: 4px;
+            height: 8px;
+            border: solid #fff;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .checkbox-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #27272a;
+            font-weight: 600;
+        }
+
+        .select-container select {
+            width: 100%;
+            background: #f4f4f5;
+            border: 1px solid #d4d4d8;
+            color: #18181b;
+            padding: 8px 10px;
+            border-radius: 6px;
+            outline: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+        }
+
+        .helper-text {
+            font-size: 11px;
+            color: #71717a;
+            text-align: center;
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <!-- UI Overlay Controles -->
+    <div class="ui-container">
+        <header>
+            <h1>Liquid Glass Simulator GL</h1>
+            <p>Efecto de cristal líquido 3D. El logo se curva como una lente redondeada de ultra alta resolución sin bordes pixelados ni deformación exterior.</p>
+        </header>
+
+        <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: flex-end; width: 100%;">
+            <div class="controls-panel">
+                <div class="control-group">
+                    <div class="control-header">
+                        <label for="refraction">refraction</label>
+                        <span class="value-display" id="refraction-val">0.50</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="refraction" min="0" max="2" step="0.01" value="0.50">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <label for="aberration">chromatic aberration</label>
+                        <span class="value-display" id="aberration-val">0.060</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="aberration" min="0" max="0.25" step="0.005" value="0.060">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <label for="bevel-depth">3D Depth / Curvature</label>
+                        <span class="value-display" id="bevel-depth-val">1.20</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="bevel-depth" min="0" max="3" step="0.05" value="1.20">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <label for="bevel-width">Profile Roundness</label>
+                        <span class="value-display" id="bevel-width-val">18</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="bevel-width" min="1" max="45" step="1" value="18">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <label for="frost">frost</label>
+                        <span class="value-display" id="frost-val">0.00</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="frost" min="0" max="0.5" step="0.01" value="0.00">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-header">
+                        <label for="magnify">magnify</label>
+                        <span class="value-display" id="magnify-val">0.85</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="magnify" min="0.5" max="2.0" step="0.05" value="0.85">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="shadow" checked>
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-label">shadow</span>
+                    </label>
+                </div>
+
+                <div class="control-group">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="specular" checked>
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-label">specular</span>
+                    </label>
+                </div>
+
+                <div class="control-group">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="tilt" checked>
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-label">tilt perspective</span>
+                    </label>
+                </div>
+
+                <div class="control-group">
+                    <label for="background-select">Fondo Detrás</label>
+                    <div class="select-container">
+                        <select id="background-select">
+                            <option value="letters">Tipografía Editorial (Blanco/Negro)</option>
+                            <option value="nebula">Imagen Cósmica Fuzzy (Color)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="helper-text">
+                Arrastra para inclinar y rotar el logo en perspectiva 3D • Doble click para reiniciar
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Trazos exactos del Logo mejor.svg
+        const path1 = "M333.4861,322.1931l151.702,145.475c11.456,10.985,11.048,29.502-.998,39.84-22.692,19.473-48.175,35.519-75.645,47.583-27.482,12.068-56.551,19.97-86.248,23.498-15.751,1.872-29.652-10.371-29.985-26.227l-4.445-210.131c-.506-24.024,28.283-36.661,45.623-20.032l-.004-.006h0Z";
+        const path2 = "M69.5991,478.2181C14.9711,414.2561-11.5029,327.1591,4.7351,237.9571,33.4331,80.3031,184.6481-24.1789,342.3171,4.8391c157.179,28.923,261.624,180.739,232.485,337.879-7.93,42.767-24.885,81.602-48.537,114.885-2.717,3.822-8.156,4.419-11.612,1.25l-86.769-79.537c-2.692-2.467-3.336-6.489-1.492-9.639,8.93-15.278,15.429-32.318,18.869-50.695,16.173-86.368-40.468-168.797-126.896-184.641-85.98-15.762-168.417,41.228-184.067,127.201-15.65,85.973,41.329,168.229,127.237,183.867l.07.013c3.854.702,6.625,4.113,6.514,8.031l-3.269,116.725c-.128,4.588-4.173,8.057-8.732,7.522-6.041-.715-12.097-1.623-18.167-2.728-68.259-12.425-126.555-47.821-168.356-96.761l.004-.006v.001Z";
+
+        // Variables de la escena WebGL
+        let gl, canvas;
+        let program;
+        let textTexture, heightTexture, imageTexture;
+        let textCanvas, textCtx;
+        let heightCanvas, hCtx;
+        let hasLoadedImage = false;
+
+        // Elementos de UI
+        const refractionSlider = document.getElementById('refraction');
+        const refractionVal = document.getElementById('refraction-val');
+        const aberrationSlider = document.getElementById('aberration');
+        const aberrationVal = document.getElementById('aberration-val');
+        const bevelDepthSlider = document.getElementById('bevel-depth');
+        const bevelDepthVal = document.getElementById('bevel-depth-val');
+        const bevelWidthSlider = document.getElementById('bevel-width');
+        const bevelWidthVal = document.getElementById('bevel-width-val');
+        const frostSlider = document.getElementById('frost');
+        const frostVal = document.getElementById('frost-val');
+        const magnifySlider = document.getElementById('magnify');
+        const magnifyVal = document.getElementById('magnify-val');
+        const bgSelect = document.getElementById('background-select');
+
+        const shadowCheck = document.getElementById('shadow');
+        const specularCheck = document.getElementById('specular');
+        const tiltCheck = document.getElementById('tilt');
+
+        // Rotación de perspectiva
+        let baseRotX = 15;
+        let baseRotY = -25;
+        let rotX = 15;
+        let rotY = -25;
+        let targetRotX = 15;
+        let targetRotY = -25;
+        let isDragging = false;
+        let startX, startY;
+
+        const vsSource = `
+            attribute vec2 a_position;
+            varying vec2 v_uv;
+            void main() {
+                v_uv = (a_position + 1.0) * 0.5;
+                gl_Position = vec4(a_position, 0.0, 1.0);
+            }
+        `;
+
+        const fsSource = `
+            precision mediump float;
+            varying vec2 v_uv;
+            
+            uniform sampler2D u_textTex;
+            uniform sampler2D u_heightTex;
+            uniform sampler2D u_imageTex;
+            
+            // Parámetros de control
+            uniform float u_refraction;
+            uniform float u_bevelDepth;
+            uniform float u_frost;
+            uniform float u_magnify;
+            uniform bool u_specular;
+            uniform bool u_shadow;
+            
+            uniform float u_chromaticAberration;
+            
+            // Tipo de fondo
+            uniform int u_bgType; 
+            uniform bool u_hasImage;
+            
+            // Posición y Perspectiva del Logo
+            uniform vec2 u_logoPos;
+            uniform vec2 u_logoScale;
+            uniform mat3 u_perspectiveMatrix;
+            uniform vec2 u_resolution;
+
+            // Generador de ruido para el efecto Frost
+            float random(vec2 st) {
+                return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+            }
+
+            // Devuelve el color del fondo (Con retorno único para cumplir estrictamente con GLSL ES 1.00)
+            vec3 getBackgroundColor(vec2 uv) {
+                vec3 finalBg = vec3(1.0);
+                if (u_bgType == 0 && u_hasImage) {
+                    finalBg = texture2D(u_imageTex, vec2(uv.x, 1.0 - uv.y)).rgb;
+                } else {
+                    vec2 textUV = uv;
+                    textUV.x *= u_resolution.x / u_resolution.y; 
+                    vec4 textData = texture2D(u_textTex, fract(textUV));
+                    finalBg = vec3(1.0 - textData.r);
+                }
+                return finalBg;
+            }
+
+            void main() {
+                // Mapear coordenadas de la pantalla al espacio del logo (con rotación 3D)
+                vec2 localUV = (v_uv - u_logoPos) / u_logoScale + 0.5;
+                vec3 projUV = u_perspectiveMatrix * vec3(localUV - 0.5, 1.0);
+                vec2 uvLogo = projUV.xy / projUV.z + 0.5;
+                
+                // Muestrear altura del logo desde la textura de mapa de altura de ultra alta resolución (2048x2048)
+                float isGlass = 0.0;
+                vec3 normal = vec3(0.0, 0.0, 1.0);
+                
+                if (uvLogo.x >= 0.0 && uvLogo.x <= 1.0 && uvLogo.y >= 0.0 && uvLogo.y <= 1.0) {
+                    vec2 texUV = vec2(uvLogo.x, 1.0 - uvLogo.y);
+                    
+                    // Cálculo de normales por filtro de Sobel directamente en GPU (Resolución nativa, 0 pixelación)
+                    vec2 texel = 1.0 / 2048.0; 
+                    
+                    float h_c = texture2D(u_heightTex, texUV).r;
+                    float h_l = texture2D(u_heightTex, texUV - vec2(texel.x, 0.0)).r;
+                    float h_r = texture2D(u_heightTex, texUV + vec2(texel.x, 0.0)).r;
+                    float h_t = texture2D(u_heightTex, texUV - vec2(0.0, texel.y)).r;
+                    float h_b = texture2D(u_heightTex, texUV + vec2(0.0, texel.y)).r;
+                    
+                    // Aplicar perfil de domo/semi-esfera matemáticamente en el shader
+                    float sh_c = sin(h_c * 1.570796);
+                    float sh_l = sin(h_l * 1.570796);
+                    float sh_r = sin(h_r * 1.570796);
+                    float sh_t = sin(h_t * 1.570796);
+                    float sh_b = sin(h_b * 1.570796);
+                    
+                    float dx = (sh_r - sh_l);
+                    float dy = (sh_b - sh_t);
+                    
+                    float strength = u_bevelDepth * 9.0;
+                    normal = normalize(vec3(dx * strength, dy * strength, 1.0));
+                    isGlass = h_c; 
+                }
+
+                if (isGlass > 0.0) {
+                    // Aplicar Frost
+                    if (u_frost > 0.0) {
+                        float noiseVal = random(v_uv * 120.0) * 2.0 - 1.0;
+                        normal.xy += noiseVal * u_frost * 0.25;
+                        normal = normalize(normal);
+                    }
+                    
+                    // Lupa (Magnify)
+                    vec2 centerUV = v_uv - 0.5;
+                    vec2 magnifiedUV = centerUV * u_magnify + 0.5;
+                    
+                    // Refracción
+                    vec2 refractOffset = normal.xy * u_refraction * 0.065;
+                    
+                    // Aberración cromática física desplazando canales a lo largo de las normales
+                    vec2 caOffset = normal.xy * u_chromaticAberration * 0.065;
+                    
+                    float r = getBackgroundColor(magnifiedUV + refractOffset + caOffset).r;
+                    float g = getBackgroundColor(magnifiedUV + refractOffset).g;
+                    float b = getBackgroundColor(magnifiedUV + refractOffset - caOffset).b;
+                    vec3 finalColor = vec3(r, g, b);
+                    
+                    // Destellos especulares
+                    if (u_specular) {
+                        vec3 viewDir = vec3(0.0, 0.0, 1.0);
+                        vec3 lightDir = normalize(vec3(0.4, 0.4, 1.0));
+                        vec3 halfDir = normalize(lightDir + viewDir);
+                        float spec = pow(max(dot(normal, halfDir), 0.0), 64.0) * 0.45;
+                        
+                        float fresnel = pow(1.0 - max(dot(normal, viewDir), 0.0), 3.0);
+                        finalColor = mix(finalColor, vec3(1.0), fresnel * 0.15 + 0.01) + vec3(spec);
+                    }
+                    
+                    gl_FragColor = vec4(finalColor, 1.0);
+                } else {
+                    vec3 bgColor = getBackgroundColor(v_uv);
+                    
+                    // Sombra proyectada
+                    if (u_shadow) {
+                        vec2 shadowUV = v_uv - vec2(0.010, -0.012);
+                        vec2 shadowLocal = (shadowUV - u_logoPos) / u_logoScale + 0.5;
+                        vec3 shadowProj = u_perspectiveMatrix * vec3(shadowLocal - 0.5, 1.0);
+                        vec2 shadowLogoUV = shadowProj.xy / shadowProj.z + 0.5;
+                        
+                        float shadowMask = 0.0;
+                        if (shadowLogoUV.x >= 0.0 && shadowLogoUV.x <= 1.0 && shadowLogoUV.y >= 0.0 && shadowLogoUV.y <= 1.0) {
+                            shadowMask = texture2D(u_heightTex, vec2(shadowLogoUV.x, 1.0 - shadowLogoUV.y)).r;
+                        }
+                        bgColor = mix(bgColor, bgColor * 0.78, shadowMask * 0.6);
+                    }
+                    
+                    gl_FragColor = vec4(bgColor, 1.0);
+                }
+            }
+        `;
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+            canvas = document.createElement('canvas');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            container.appendChild(canvas);
+
+            // WebGL
+            gl = canvas.getContext('webgl');
+            if (!gl) {
+                alert('WebGL no disponible');
+                return;
+            }
+
+            // Inicializar texturas
+            initStaticTextTexture();
+            initHeightMapTexture();
+            initImageBackgroundTexture();
+
+            // Shaders
+            const vs = gl.createShader(gl.VERTEX_SHADER);
+            gl.shaderSource(vs, vsSource);
+            gl.compileShader(vs);
+            if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
+                console.error('Vertex shader compilation error:', gl.getShaderInfoLog(vs));
+            }
+
+            const fs = gl.createShader(gl.FRAGMENT_SHADER);
+            gl.shaderSource(fs, fsSource);
+            gl.compileShader(fs);
+            if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+                console.error('Fragment shader compilation error:', gl.getShaderInfoLog(fs));
+            }
+
+            program = gl.createProgram();
+            gl.attachShader(program, vs);
+            gl.attachShader(program, fs);
+            gl.linkProgram(program);
+
+            if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                console.error('Shader Link Error:', gl.getProgramInfoLog(program));
+                return;
+            }
+            gl.useProgram(program);
+
+            // Quad buffer
+            const positionBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+                -1, -1,  1, -1, -1,  1,
+                -1,  1,  1, -1,  1,  1,
+            ]), gl.STATIC_DRAW);
+
+            const a_position = gl.getAttribLocation(program, 'a_position');
+            gl.enableVertexAttribArray(a_position);
+            gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
+
+            // Setup interactividad
+            setupUIEvents();
+            setupDragRotation();
+
+            tick();
+        }
+
+        // TEXTURA DE TEXTO ESTÁTICO (Tipografía Editorial)
+        function initStaticTextTexture() {
+            textCanvas = document.createElement('canvas');
+            textCanvas.width = 1024;
+            textCanvas.height = 1024;
+            textCtx = textCanvas.getContext('2d');
+
+            drawStaticText();
+
+            textTexture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, textTexture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textCanvas);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.generateMipmap(gl.TEXTURE_2D);
+        }
+
+        function drawStaticText() {
+            const w = textCanvas.width;
+            const h = textCanvas.height;
+
+            textCtx.fillStyle = '#000000';
+            textCtx.fillRect(0, 0, w, h);
+            textCtx.fillStyle = '#ffffff'; 
+            
+            const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!?@#$*";
+            const fontSizes = [16, 24, 32, 48, 64, 80, 110];
+            textCtx.textBaseline = 'top';
+            
+            for (let y = 0; y < h; y += 75) {
+                let x = 10;
+                while (x < w - 20) {
+                    const size = fontSizes[Math.floor(Math.random() * fontSizes.length)];
+                    textCtx.font = `800 ${size}px 'Outfit', sans-serif`;
+                    const char = alphabet[Math.floor(Math.random() * alphabet.length)];
+                    textCtx.fillText(char, x, y + (75 - size) / 2);
+                    x += textCtx.measureText(char).width + 12;
+                }
+            }
+        }
+
+        // Carga de la imagen de fondo
+        function initImageBackgroundTexture() {
+            imageTexture = gl.createTexture();
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = "https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?q=80&w=1024&auto=format&fit=crop";
+            img.onload = () => {
+                gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+                hasLoadedImage = true;
+            };
+        }
+
+        // TEXTURA DE MAPA DE ALTURA (Resolución Ultra-Sharp de 2048x2048)
+        function initHeightMapTexture() {
+            heightCanvas = document.createElement('canvas');
+            heightCanvas.width = 2048;
+            heightCanvas.height = 2048;
+            hCtx = heightCanvas.getContext('2d');
+            
+            heightTexture = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, heightTexture);
+            
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+            updateHeightMap();
+        }
+
+        // Dibuja el mapa de altura enmascarado hacia adentro (Cilindrado interno)
+        function updateHeightMap() {
+            const w = heightCanvas.width;
+            const h = heightCanvas.height;
+
+            hCtx.fillStyle = '#000000';
+            hCtx.fillRect(0, 0, w, h);
+
+            hCtx.save();
+            hCtx.translate(w / 2, h / 2);
+            hCtx.scale(2.8, 2.8);
+            hCtx.translate(-579.6797 / 2, -578.7785 / 2);
+
+            const p1 = new Path2D(path1);
+            const p2 = new Path2D(path2);
+
+            const blurVal = parseInt(bevelWidthSlider.value) * 4; 
+            hCtx.filter = `blur(${blurVal}px)`;
+            hCtx.fillStyle = '#ffffff';
+            hCtx.fill(p1);
+            hCtx.fill(p2);
+
+            hCtx.filter = 'none';
+            hCtx.globalCompositeOperation = 'destination-in';
+            hCtx.fillStyle = '#ffffff';
+            hCtx.fill(p1);
+            hCtx.fill(p2);
+
+            hCtx.globalCompositeOperation = 'source-over';
+            hCtx.restore();
+
+            gl.bindTexture(gl.TEXTURE_2D, heightTexture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, heightCanvas);
+        }
+
+        // Matriz de perspectiva 3D
+        function getPerspectiveMatrix(rx, ry) {
+            const radX = rx * Math.PI / 180;
+            const radY = ry * Math.PI / 180;
+
+            const cosX = Math.cos(radX);
+            const sinX = Math.sin(radX);
+            const cosY = Math.cos(radY);
+            const sinY = Math.sin(radY);
+
+            return [
+                cosY,      sinX * sinY,   0.0,
+                0.0,       cosX,          0.0,
+                sinY,     -sinX * cosY,   1.2
+            ];
+        }
+
+        // Bucle de renderizado
+        function tick() {
+            requestAnimationFrame(tick);
+
+            rotX += (targetRotX - rotX) * 0.1;
+            rotY += (targetRotY - rotY) * 0.1;
+
+            // TEXTURE0: Texto estático
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, textTexture);
+            gl.uniform1i(gl.getUniformLocation(program, 'u_textTex'), 0);
+
+            // TEXTURE1: Mapa de altura 2048x2048
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, heightTexture);
+            gl.uniform1i(gl.getUniformLocation(program, 'u_heightTex'), 1);
+
+            // TEXTURE2: Imagen Nebula
+            gl.activeTexture(gl.TEXTURE2);
+            gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+            gl.uniform1i(gl.getUniformLocation(program, 'u_imageTex'), 2);
+
+            // Fondo
+            const bgVal = bgSelect.value;
+            gl.uniform1i(gl.getUniformLocation(program, 'u_bgType'), bgVal === 'nebula' ? 0 : 1);
+            gl.uniform1i(gl.getUniformLocation(program, 'u_hasImage'), hasLoadedImage ? 1 : 0);
+
+            // Cristal
+            gl.uniform1f(gl.getUniformLocation(program, 'u_refraction'), parseFloat(refractionSlider.value));
+            gl.uniform1f(gl.getUniformLocation(program, 'u_chromaticAberration'), parseFloat(aberrationSlider.value));
+            gl.uniform1f(gl.getUniformLocation(program, 'u_bevelDepth'), parseFloat(bevelDepthSlider.value));
+            gl.uniform1f(gl.getUniformLocation(program, 'u_frost'), parseFloat(frostSlider.value));
+            gl.uniform1f(gl.getUniformLocation(program, 'u_magnify'), parseFloat(magnifySlider.value));
+
+            gl.uniform1i(gl.getUniformLocation(program, 'u_specular'), specularCheck.checked ? 1 : 0);
+            gl.uniform1i(gl.getUniformLocation(program, 'u_shadow'), shadowCheck.checked ? 1 : 0);
+
+            gl.uniform2f(gl.getUniformLocation(program, 'u_resolution'), canvas.width, canvas.height);
+
+            // Escala del logo
+            const logoWidth = 0.55; 
+            const logoHeight = logoWidth * (canvas.width / canvas.height);
+            gl.uniform2f(gl.getUniformLocation(program, 'u_logoPos'), 0.5, 0.5);
+            gl.uniform2f(gl.getUniformLocation(program, 'u_logoScale'), logoWidth, logoHeight);
+
+            // Matriz de perspectiva 3D
+            const pMatrix = getPerspectiveMatrix(rotX, rotY);
+            gl.uniformMatrix3fv(gl.getUniformLocation(program, 'u_perspectiveMatrix'), false, new Float32Array(pMatrix));
+
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+        }
+
+        // Eventos UI
+        function setupUIEvents() {
+            refractionSlider.addEventListener('input', (e) => {
+                refractionVal.textContent = parseFloat(e.target.value).toFixed(2);
+            });
+
+            aberrationSlider.addEventListener('input', (e) => {
+                aberrationVal.textContent = parseFloat(e.target.value).toFixed(3);
+            });
+
+            bevelDepthSlider.addEventListener('input', (e) => {
+                bevelDepthVal.textContent = parseFloat(e.target.value).toFixed(2);
+            });
+
+            bevelWidthSlider.addEventListener('input', (e) => {
+                bevelWidthVal.textContent = e.target.value;
+                updateHeightMap(); 
+            });
+
+            frostSlider.addEventListener('input', (e) => {
+                frostVal.textContent = parseFloat(e.target.value).toFixed(2);
+            });
+
+            magnifySlider.addEventListener('input', (e) => {
+                magnifyVal.textContent = parseFloat(e.target.value).toFixed(2);
+            });
+
+            bgSelect.addEventListener('change', () => {
+                drawStaticText();
+                gl.bindTexture(gl.TEXTURE_2D, textTexture);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textCanvas);
+            });
+
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                gl.viewport(0, 0, canvas.width, canvas.height);
+            });
+        }
+
+        // Perspectiva 3D
+        function setupDragRotation() {
+            window.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.controls-panel') || e.target.closest('header')) return;
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+
+                    targetRotY = baseRotY + dx * 0.35;
+                    targetRotX = baseRotX - dy * 0.35;
+
+                    targetRotX = Math.max(-60, Math.min(60, targetRotX));
+                    targetRotY = Math.max(-180, Math.min(180, targetRotY));
+                } else if (tiltCheck.checked) {
+                    const xOffset = (e.clientX - window.innerWidth / 2) / window.innerWidth * 20;
+                    const yOffset = (e.clientY - window.innerHeight / 2) / window.innerHeight * 20;
+                    targetRotX = baseRotX - yOffset;
+                    targetRotY = baseRotY + xOffset;
+                }
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    baseRotX = targetRotX;
+                    baseRotY = targetRotY;
+                }
+            });
+
+            window.addEventListener('dblclick', (e) => {
+                if (e.target.closest('.controls-panel') || e.target.closest('header')) return;
+                baseRotX = 15;
+                baseRotY = -25;
+                targetRotX = 15;
+                targetRotY = -25;
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>

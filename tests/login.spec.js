@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 test.describe('SIREVAQ Login Flow', () => {
   test('debería mostrar la pantalla de login al cargar la página', async ({ page }) => {
     // Navegar a la página principal
-    await page.goto('/');
+    await page.goto('/index.html');
 
     // Verificar que el título sea correcto
     await expect(page).toHaveTitle(/SIREVAQ/);

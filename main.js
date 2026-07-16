@@ -372,7 +372,9 @@ const AppService = {
       return await retryWithBackoff(() => supabaseRequest(body.action, body, options));
     } catch (error) {
       console.error(`[AppService Error] ${action}:`, error);
-      showToast(error.message || "Error de comunicación", false, "bad");
+      if (!options.silent) {
+        showToast(error.message || "Error de comunicación", false, "bad");
+      }
       throw error;
     }
   },
@@ -6361,6 +6363,155 @@ async function supabaseRequest(action = "", payload, options = {}) {
         return { ok: true };
       }
 
+      case "getinfluenza_metas": {
+        const { anio_campana } = payload;
+        const camp = anio_campana || "2025-2026";
+        const { data, error } = await supabase
+          .from('influenza_metas')
+          .select('*')
+          .eq('anio_campana', camp);
+        if (error) throw error;
+        return { ok: true, data: data || [] };
+      }
+
+      case "saveinfluenza_metas": {
+        const { rows } = payload;
+        if (!rows || !rows.length) return { ok: true };
+        const { error } = await supabase
+          .from('influenza_metas')
+          .upsert(rows);
+        if (error) throw error;
+        return { ok: true };
+      }
+
+      case "getinfluenza_capturas": {
+        const { clues, municipio, anio_campana } = payload;
+        const camp = anio_campana || "2025-2026";
+        let query = supabase.from('influenza_capturas').select('*').eq('anio_campana', camp);
+        if (clues) {
+          query = query.eq('clues', clues);
+        } else if (municipio) {
+          query = query.eq('municipio', municipio);
+        }
+        const { data, error } = await query.order('fecha', { ascending: false });
+        if (error) throw error;
+        return { ok: true, data: data || [] };
+      }
+
+      case "saveinfluenza_captura": {
+        const { clues, unidad, municipio, fecha, anio_campana, valores, capturado_por, editado_por } = payload;
+        const camp = anio_campana || "2025-2026";
+        const edPor = editado_por || "UNIDAD";
+
+        // Obtener captura previa si existe para historial
+        const { data: prev } = await supabase
+          .from('influenza_capturas')
+          .select('valores, historial_ediciones')
+          .eq('clues', clues)
+          .eq('fecha', fecha)
+          .maybeSingle();
+
+        let hist = [];
+        if (prev && prev.historial_ediciones) {
+          hist = typeof prev.historial_ediciones === 'string' ? JSON.parse(prev.historial_ediciones) : prev.historial_ediciones;
+        }
+
+        hist.push({
+          fecha_edicion: new Date().toISOString(),
+          editado_por: edPor,
+          usuario: String(USER?.usuario || "DESCONOCIDO").toUpperCase(),
+          valores_anteriores: prev ? prev.valores : null
+        });
+
+        const record = {
+          clues,
+          unidad,
+          municipio,
+          fecha,
+          anio_campana: camp,
+          valores,
+          capturado_por: String(capturado_por || USER?.usuario || "").toUpperCase(),
+          editado_por: edPor,
+          historial_ediciones: hist,
+          updated_at: new Date().toISOString()
+        };
+
+        const { error } = await supabase
+          .from('influenza_capturas')
+          .upsert(record, { onConflict: 'clues,fecha' });
+
+        if (error) throw error;
+        return { ok: true };
+      }
+
+      case "getinfluenza_distribucion": {
+        const { clues, municipio } = payload;
+        let query = supabase.from('influenza_distribucion_frascos').select('*');
+        if (clues) {
+          query = query.eq('clues', clues);
+        } else if (municipio) {
+          query = query.eq('municipio', municipio);
+        }
+        const { data, error } = await query.order('fecha_entrega', { ascending: false });
+        if (error) throw error;
+        return { ok: true, data: data || [] };
+      }
+
+      case "saveinfluenza_distribucion": {
+        const { clues, municipio, cantidad_frascos, fecha_entrega, numero_entrega, entregado_por, lote, fecha_caducidad } = payload;
+        const record = {
+          clues,
+          municipio,
+          cantidad_frascos: Number(cantidad_frascos || 0),
+          fecha_entrega,
+          numero_entrega: Number(numero_entrega || 1),
+          entregado_por: String(entregado_por || USER?.usuario || "").toUpperCase(),
+          lote: lote || null,
+          fecha_caducidad: fecha_caducidad || null
+        };
+        const { error } = await supabase
+          .from('influenza_distribucion_frascos')
+          .insert(record);
+        if (error) throw error;
+        return { ok: true };
+      }
+
+      case "getinfluenza_config": {
+        const { data, error } = await supabase
+          .from('campanas')
+          .select('id, nombre, fecha, activo, fecha_inicio, fecha_fin')
+          .eq('activo', true)
+          .maybeSingle();
+        if (error) throw error;
+        return { ok: true, data: data || null };
+      }
+
+      case "saveinfluenza_config": {
+        const { fecha_inicio, fecha_fin } = payload;
+        
+        // Desactivar campañas previas
+        await supabase
+          .from('campanas')
+          .update({ activo: false })
+          .eq('activo', true);
+
+        // Insertar nueva o actualizar si tiene ID
+        const record = {
+          nombre: "Campaña Influenza " + new Date(fecha_inicio + "T00:00:00").getFullYear() + "-" + new Date(fecha_fin + "T00:00:00").getFullYear(),
+          fecha: fecha_inicio,
+          fecha_inicio,
+          fecha_fin,
+          activo: true
+        };
+
+        const { data, error } = await supabase
+          .from('campanas')
+          .insert(record)
+          .select('id, nombre, fecha, activo, fecha_inicio, fecha_fin');
+        if (error) throw error;
+        return { ok: true, data: data };
+      }
+
       case "requestpasswordreset": {
         const targetEmail = payload.email || payload.usuario || "";
         const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
@@ -6700,6 +6851,20 @@ async function getCachedOrFetch({
       }
 
       return fresh;
+    } catch (fetchError) {
+      try {
+        const raw = sessionStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.data !== undefined) {
+            console.warn(`[Cache Fallback] Usando caché expirada para la llave "${key}" debido a un error de red/servidor:`, fetchError);
+            return parsed.data;
+          }
+        }
+      } catch (cacheError) {
+        console.error("Error al intentar recuperar caché de respaldo:", cacheError);
+      }
+      throw fetchError;
     } finally {
       INFLIGHT_FETCHES.delete(key);
     }
@@ -7485,29 +7650,31 @@ function parseInputToIso(str) {
         if (year < 100) year += 2000;
       }
       d = new Date(year, month, day);
+    } else if (parts.length === 2) {
+      // Soporte para entradas cortas como 03/27 o 3-27 o ENE/25
+      let mIdx = -1;
+      const part0 = parts[0];
+      if (monthsMap[part0] !== undefined) {
+        mIdx = monthsMap[part0];
+      } else {
+        mIdx = parseInt(part0) - 1;
+      }
+      let yStr = parts[1];
+      let y = parseInt(yStr);
+      if (!isNaN(y)) {
+        if (y < 100) y += 2000;
+        if (mIdx >= 0 && mIdx < 12) {
+          d = new Date(y, mIdx + 1, 0); // Último día del mes
+        }
+      }
     }
   }
 
   if (d && !isNaN(d.getTime())) {
-    const months = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
-    const m = months[d.getMonth()];
-    const y = String(d.getFullYear()).slice(-2);
-    return `${m}-${y}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
-  // Soporte para entradas cortas como 03/27 o 3-27
-  const partsShort = s.split(/[\/\-]/);
-  if (partsShort.length === 2) {
-    const mIdx = parseInt(partsShort[0]) - 1;
-    let yStr = partsShort[1];
-    if (yStr.length === 4) yStr = yStr.slice(-2);
-    const months = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
-    if (mIdx >= 0 && mIdx < 12) {
-      return `${months[mIdx]}-${yStr}`;
-    }
-  }
-
-  return s; // Devolver original si no se pudo parsear
+  return null;
 }
 
 // Auto-uppercase para Lote y Caducidad
@@ -8921,7 +9088,7 @@ async function getCaptureOverview(fecha, tipo, force = false) {
       token: TOKEN,
       fecha: safeFecha,
       tipo: safeTipo
-    });
+    }, {}, { silent: true });
 
     if (!r) {
       throw new Error("Sin respuesta del servidor en adminCaptureOverview.");
@@ -11910,8 +12077,9 @@ function activateCapture(tab) {
   updateTabClass("tabCONS", tab === "CONS");
   updateTabClass("tabBIO", tab === "BIO");
   updateTabClass("tabPINOL", tab === "PINOL");
+  updateTabClass("tabINFLUENZA", tab === "INFLUENZA");
 
-  const panels = ["formSR", "formCONS", "formBIO", "formPINOL"];
+  const panels = ["formSR", "formCONS", "formBIO", "formPINOL", "formINFLUENZA"];
   panels.forEach(id => {
     const el = $(id);
     if (el) {
@@ -11925,7 +12093,8 @@ function activateCapture(tab) {
     tab === "SR" ? "formSR" :
     tab === "CONS" ? "formCONS" :
     tab === "BIO" ? "formBIO" :
-    tab === "PINOL" ? "formPINOL" : ""
+    tab === "PINOL" ? "formPINOL" :
+    tab === "INFLUENZA" ? "formINFLUENZA" : ""
   );
 
   if (activeEl) {
@@ -11946,6 +12115,12 @@ function activateCapture(tab) {
   if (tab === "CONS") {
     bindCaptureUtilityEvents();
     syncAguja();
+  }
+
+  if (tab === "INFLUENZA") {
+    if (typeof initInfluenzaCaptureFlow === "function") {
+      initInfluenzaCaptureFlow();
+    }
   }
 
   syncTabGroupIndicator('#desktopCaptureTabs');
@@ -12026,6 +12201,7 @@ window.activateOpsTab = function (tab) {
       "HISTORY": "tabOPS_HISTORY",
       "RDA": "tabOPS_RDA",
       "PINOL": "tabOPS_PINOL",
+      "INFLUENZA": "tabOPS_INFLUENZA",
       "LOTES": "tabLOTES",
       "NOTIFICATIONS": "tabOPS_NOTIFS",
       "SECURITY": "tabOPS_ADMIN"
@@ -12047,6 +12223,7 @@ window.activateOpsTab = function (tab) {
     "HISTORY": "panelHISTORY",
     "RDA": "rdaDashboardOverlay",
     "PINOL": "panelPINOLADMIN",
+    "INFLUENZA": "panelINFLUENZAADMIN",
     "LOTES": "panelLOTES",
     "NOTIFICATIONS": "panelNOTIFS",
     "SECURITY": "panelADMIN"
@@ -12096,7 +12273,7 @@ window.activateOpsTab = function (tab) {
 
   // Standard mainTab cleanups to keep UI in sync
   const isCapTab = (AppState.mainTab === "CAP");
-  const looseForms = ["formSR", "formCONS", "formBIO", "formPINOL", "panelDIST"];
+  const looseForms = ["formSR", "formCONS", "formBIO", "formPINOL", "panelDIST", "formINFLUENZA"];
   looseForms.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
@@ -12130,6 +12307,11 @@ window.activateOpsTab = function (tab) {
     }
     if (tab === "PINOL") {
       if (typeof runSinglePanelTask === 'function') runSinglePanelTask("ops-tab-pinol", () => refreshPinol());
+    }
+    if (tab === "INFLUENZA") {
+      if (typeof runSinglePanelTask === 'function') runSinglePanelTask("ops-tab-influenza", () => {
+        if (typeof refreshInfluenzaAdminPanel === 'function') refreshInfluenzaAdminPanel();
+      });
     }
     if (tab === "RDA") {
       if (typeof resetRDAEsquemaToBasico === 'function') resetRDAEsquemaToBasico();
@@ -18477,6 +18659,13 @@ function syncCommandHub() {
   } else if (captureTab === "PINOL") {
     const flowStatus = getPinolFlowStatus();
     isSaveDisabled = (flowStatus !== "NONE");
+  } else if (captureTab === "INFLUENZA") {
+    const day = new Date().getDay();
+    if (day !== 4 && day !== 5) {
+      isValidDate = false;
+      reasonInvalid = "La captura de Influenza solo se puede realizar los días Jueves o Viernes.";
+    }
+    isSaveDisabled = !isValidDate;
   }
 
   // Lógica del Status Chip (¿Está guardado hoy?)
@@ -18554,11 +18743,17 @@ function syncCommandHub() {
     }
   }
 
-  if (canEdit && captureTab !== "PINOL") hubEdit.style.display = "flex";
-  else hubEdit.style.display = "none";
+  // Para INFLUENZA no hay modo edición/cancelación (manejo propio)
+  if (captureTab === "INFLUENZA") {
+    if (hubEdit) hubEdit.style.display = "none";
+    if (hubCancel) hubCancel.style.display = "none";
+  } else {
+    if (canEdit && captureTab !== "PINOL") hubEdit.style.display = "flex";
+    else hubEdit.style.display = "none";
 
-  if (isEditing && captureTab !== "PINOL") hubCancel.style.display = "flex";
-  else hubCancel.style.display = "none";
+    if (isEditing && captureTab !== "PINOL") hubCancel.style.display = "flex";
+    else hubCancel.style.display = "none";
+  }
 
   if (hubSave) {
     hubSave.disabled = isSaveDisabled;
@@ -18579,6 +18774,9 @@ function syncCommandHub() {
         if (captureTab === "SR") await performSaveSR();
         if (captureTab === "CONS") await performSaveCONS();
         if (captureTab === "BIO") await performSaveBIO();
+        if (captureTab === "INFLUENZA") {
+          if (typeof saveInfluenzaReport === "function") await saveInfluenzaReport();
+        }
         if (captureTab === "PINOL") {
           const btnSavePINOL = document.getElementById("btnSavePINOL");
           if (btnSavePINOL) btnSavePINOL.click();

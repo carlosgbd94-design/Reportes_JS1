@@ -195,6 +195,17 @@
       gap: 4px !important;
       font-size: 11px !important;
     }
+
+    /* Force hide number input spinners on desktop bypassing service worker cache */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none !important;
+      margin: 0 !important;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield !important;
+      appearance: textfield !important;
+    }
   </style>
 
   <!-- Scripts externos -->
@@ -218,6 +229,8 @@
   <script src="pdf_assets.js" defer></script>
   <!-- Archivo Principal -->
   <script src="main.js?v=2026.49" defer></script>
+  <!-- Influenza Meta-Logro Module -->
+  <script src="influenza_module.js" defer></script>
 
   <!-- 🔧 Service Worker Registration (PWA) -->
   <script>
@@ -1103,6 +1116,12 @@
               <span>Pedido</span>
             </button>
 
+            <button class="nav-tab" id="tabINFLUENZA" data-role-gate="UNIDAD" style="display:none"
+              onclick="activateCapture('INFLUENZA')">
+              <span class="material-symbols-rounded">vaccines</span>
+              <span>Influenza</span>
+            </button>
+
             <button class="nav-tab" id="tabPINOL" data-role-gate="UNIDAD" style="display:none"
               onclick="activateCapture('PINOL')">
               <span class="material-symbols-rounded">inventory_2</span>
@@ -1470,7 +1489,86 @@
             <!-- Espacio reservado para flujo de biológicos -->
           </div>
 
+          <!-- INFLUENZA -->
+          <div id="formINFLUENZA" style="display:none" class="flex flex-col gap-6">
+            <!-- Info Insumo Superior -->
+            <div class="flex items-center gap-6 p-6 rounded-[32px] shadow-md mb-2 relative z-10"
+              style="background-color: #f5f3ff; border: 2px solid #ddd6fe;">
+              <div
+                class="w-16 h-16 rounded-2xl bg-surface border border-[#ddd6fe] flex items-center justify-center text-4xl shadow-sm shrink-0">
+                💉
+              </div>
+              <div class="flex-1">
+                <div class="text-[17px] font-black text-violet-900 leading-tight">Meta-Logro de Vacuna Anti Influenza Estacional</div>
+                <div class="text-xs text-violet-500 font-semibold tracking-wide uppercase mt-1">Campaña de Vacunación Anual</div>
+              </div>
+            </div>
 
+            <!-- Subpestañas de Navegación de Influenza para Unidad -->
+            <div class="w-full mb-6 flex justify-start">
+              <div class="nav-container relative" id="influenzaUnitTabsContainer">
+                <div id="influenzaUnitTabIndicator" class="nav-indicator nav-indicator-premium"></div>
+                <button id="subtabUnitCaptura" class="nav-tab active">
+                  <span class="material-symbols-rounded">edit_note</span>
+                  <span>Captura de Reporte</span>
+                </button>
+                <button id="subtabUnitHistorico" class="nav-tab">
+                  <span class="material-symbols-rounded">history</span>
+                  <span>Historial de Reportes</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- SECCIÓN DE CAPTURA -->
+            <div id="secUnitCaptura" class="flex flex-col gap-6 relative w-full overflow-visible">
+
+              <!-- Barra de Controles Superior (Campaña + Semana + Responsable) -->
+              <div class="bg-surface border border-slate-200 rounded-[24px] px-5 py-4 shadow-sm flex flex-wrap gap-4 items-end" style="background-color: #ffffff;">
+                <!-- Campaña -->
+                <div style="min-width:140px; flex:0 1 auto;">
+                  <label for="influenza_campana" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Campaña</label>
+                  <select id="influenza_campana" class="bg-surface border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none" style="min-width:140px;">
+                    <option value="2025-2026">Campaña 2025-2026</option>
+                  </select>
+                </div>
+                <!-- Semana a Reportar -->
+                <div style="min-width:200px; flex:0 1 auto;">
+                  <label for="influenza_semana" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Semana a Reportar</label>
+                  <select id="influenza_semana" class="bg-surface border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none" style="min-width:200px;">
+                    <!-- Generado dinámicamente -->
+                  </select>
+                </div>
+                <!-- Nombre del Responsable -->
+                <div class="flex-1" style="min-width:200px;">
+                  <label for="nombreINFLUENZA" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Nombre del Responsable</label>
+                  <div class="relative w-full">
+                    <span class="material-symbols-rounded" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 17px; color: #94a3b8; pointer-events:none;">person</span>
+                    <input id="nombreINFLUENZA" type="text" placeholder="Nombre de quien reporta" required
+                      style="padding-left: 36px !important; width: 100%; height: 34px; font-size:13px; font-weight:600; color:#374151; border:1.5px solid #cbd5e1; border-radius:12px; outline:none; background:#fff; transition: border-color 0.2s, box-shadow 0.2s;"
+                      onfocus="this.style.borderColor='#8b5cf6'; this.style.boxShadow='0 0 0 3px rgba(139,92,246,0.12)';"
+                      onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='';">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Formulario de Captura -->
+              <div class="flex-1 flex flex-col gap-6 w-full">
+                <!-- Contenedor Dinámico Agrupado de Captura -->
+                <div id="influenzaCaptureGroupsContainer" class="flex flex-col gap-6 rounded-2xl relative z-0">
+                  <!-- JS generará aquí las tarjetas y formularios agrupados -->
+                </div>
+              </div>
+            </div>
+
+            <!-- SECCIÓN DE HISTORIAL -->
+            <div id="secUnitHistorico" class="hidden bg-surface border border-slate-200 rounded-[28px] p-6 shadow-sm" style="background-color: #ffffff;">
+              <h4 class="text-sm font-black text-violet-950 mb-4 uppercase tracking-wider">Historial de Reportes Capturados</h4>
+              <div id="influenzaHistorialList" class="flex flex-col gap-2">
+                <div class="text-sm text-slate-400 font-medium">Cargando historial...</div>
+              </div>
+            </div>
+
+          </div>
 
           <!-- PINOL -->
           <div id="formPINOL" style="display:none" class="flex flex-col gap-8">
@@ -1611,6 +1709,11 @@
             onclick="activateOpsTab('RDA')">
             <span class="material-symbols-rounded premium-anim-bar">stacked_bar_chart</span>
             <span>Indicadores RDA</span>
+          </button>
+
+          <button class="nav-tab" id="tabOPS_INFLUENZA" data-role-gate="ADMIN,MUNICIPAL,JURISDICCIONAL" onclick="activateOpsTab('INFLUENZA')">
+            <span class="material-symbols-rounded">clinical_notes</span>
+            <span>Meta-Logro Influenza</span>
           </button>
 
           <button class="nav-tab" id="tabOPS_PINOL" data-role-gate="ADMIN,MUNICIPAL" onclick="activateOpsTab('PINOL')">
@@ -2234,6 +2337,355 @@
               </tr>
             </tbody>
           </table>
+        </div>
+
+      </div>
+
+      <!-- META LOGRO INFLUENZA ADMIN/MUNICIPAL -->
+      <div
+        class="bg-surface rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8 overflow-visible"
+        id="panelINFLUENZAADMIN" data-role-gate="ADMIN,MUNICIPAL,JURISDICCIONAL" style="display:none">
+        
+        <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-6">
+          <h3 class="text-lg font-extrabold text-primary m-0 tracking-tight flex items-center gap-2">
+            <span class="material-symbols-rounded">clinical_notes</span>
+            Meta-Logro Influenza — Panel de Control
+          </h3>
+          <button class="premium-refresh-btn has-text" id="btnRefreshInfluenzaAdmin" title="Actualizar datos">
+            <span class="material-symbols-rounded">refresh</span> Actualizar
+          </button>
+        </div>
+
+        <!-- Subtítulo de navegación interna -->
+        <div class="w-full mb-8 flex justify-start">
+          <div class="nav-container relative" id="influenzaAdminTabsContainer">
+            <!-- Indicador de cristal líquido -->
+            <div id="influenzaAdminTabIndicator" class="nav-indicator nav-indicator-premium"></div>
+
+            <button id="subtabInfluenzaAvances" class="nav-tab active">
+              <span class="material-symbols-rounded">analytics</span>
+              <span>Avances y Concentrados</span>
+            </button>
+            <button id="subtabInfluenzaMetas" class="nav-tab">
+              <span class="material-symbols-rounded">query_stats</span>
+              <span>Distribución de Metas</span>
+            </button>
+            <button id="subtabInfluenzaFrascos" class="nav-tab" data-role-gate="ADMIN,MUNICIPAL">
+              <span class="material-symbols-rounded">inventory_2</span>
+              <span>Control de Frascos</span>
+            </button>
+            <button id="subtabInfluenzaConfig" class="nav-tab" data-role-gate="ADMIN,JURISDICCIONAL">
+              <span class="material-symbols-rounded">calendar_month</span>
+              <span>Fechas Campaña</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 1: AVANCES Y CONCENTRADOS -->
+        <div id="secInfluenzaAvances" class="flex flex-col gap-6">
+          <!-- Filtros de Consulta -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-wrap gap-4 items-end">
+            <div class="flex-1 min-w-[150px]" id="adminInfluenzaMuniBox">
+              <label for="adminInfluenzaMuni" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Municipio</label>
+              <select id="adminInfluenzaMuni" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
+                <!-- Generado dinámicamente -->
+              </select>
+            </div>
+            <div class="flex-1 min-w-[200px]" id="adminInfluenzaCluesBox">
+              <label for="adminInfluenzaClues" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Unidad / CLUES</label>
+              <select id="adminInfluenzaClues" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
+                <!-- Generado dinámicamente -->
+              </select>
+            </div>
+            <div class="flex-1 min-w-[120px]">
+              <label for="adminInfluenzaSemana" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Semana</label>
+              <select id="adminInfluenzaSemana" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
+                <!-- Generado dinámicamente -->
+              </select>
+            </div>
+            <button class="ghostBtn h-[38px] flex items-center justify-center" id="btnExportInfluenzaConcentrado">
+              <span class="material-symbols-rounded mr-1 text-[18px]">download</span> Exportar Concentrado
+            </button>
+          </div>
+
+          <!-- Comparativa de frascos en el avance municipal -->
+          <div id="muniFrascosAnalisisBox" class="hidden p-4 rounded-xl border border-violet-200 bg-violet-50 text-violet-950 text-sm font-semibold">
+            <!-- Texto de análisis de frascos -->
+          </div>
+
+          <!-- Tabla de Concentrado Municipal por Unidad -->
+          <div id="adminInfluenzaMunicipalTableContainer" class="hidden bg-surface border border-slate-200 rounded-[28px] p-6 shadow-sm flex flex-col gap-4" style="background-color: #ffffff;">
+            <h4 class="text-sm font-black text-primary m-0 uppercase tracking-wider">Desglose de Meta-Logro por Unidad</h4>
+            <div class="tableWrap overflow-x-auto w-full rounded-xl border border-slate-200 shadow-sm">
+              <table class="w-full border-collapse text-left text-xs font-semibold text-slate-700">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200">
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider">Unidad</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">CLUES</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Meta Anual (Dosis)</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Acumulado Aplicado</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Meta Logro %</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Frascos Entregados</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Equivalente Dosis</th>
+                  </tr>
+                </thead>
+                <tbody id="adminInfluenzaMunicipalTbody">
+                  <!-- JS renderizará el listado -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Contenedor para visualización y edición del reporte seleccionado -->
+          <div id="adminInfluenzaReportContainer" class="hidden bg-surface border-2 border-slate-200 rounded-[28px] p-6 shadow-sm flex flex-col gap-6">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+              <div>
+                <h4 class="text-sm font-black text-primary m-0 uppercase tracking-wider" id="adminInfluenzaReportTitle">Reporte de la Unidad</h4>
+                <div class="text-xs text-slate-500 mt-1" id="adminInfluenzaReportSubtitle">Cargando...</div>
+              </div>
+              <div id="adminInfluenzaEditBadge" class="hidden px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                Editado por Municipal
+              </div>
+            </div>
+            
+            <div class="tableWrap overflow-x-auto w-full rounded-xl border border-slate-200 shadow-sm">
+              <table class="w-full border-collapse text-left text-xs font-medium text-slate-700">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200">
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider">Grupo</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider">Subgrupo / Edad</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Meta</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Acumulado</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center" style="width:100px;">Esta Semana</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Avance %</th>
+                  </tr>
+                </thead>
+                <tbody id="adminInfluenzaReportTbody">
+                  <!-- Renderizado dinámico -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Guardar Correcciones -->
+            <div class="flex gap-4">
+              <button class="ghostBtn flex-1 h-[44px]" id="btnCancelAdminInfluenzaEdit">Cancelar</button>
+              <button class="btn flex-1 h-[44px]" id="btnSaveAdminInfluenzaEdit">Guardar Correcciones</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 2: DISTRIBUCIÓN DE METAS -->
+        <div id="secInfluenzaMetas" class="hidden flex flex-row gap-8 items-start relative w-full overflow-visible">
+          <!-- Columna Formulario (Izquierda) -->
+          <div class="flex-1 min-w-0 flex flex-col gap-6 w-full">
+            <div class="hint" id="secInfluenzaMetasHint">
+              Configuración y desglose de metas anuales de la campaña de Influenza.
+            </div>
+
+             <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex gap-4 items-end" style="background-color: #ffffff;">
+               <div class="w-48">
+                 <label for="metaCampaignSelect" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Campaña</label>
+                 <select id="metaCampaignSelect" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
+                   <option value="2025-2026">Campaña 2025-2026</option>
+                 </select>
+               </div>
+             </div>
+
+            <div class="tableWrap overflow-x-auto w-full rounded-2xl border border-outline-variant/30 shadow-sm relative z-0">
+              <table class="w-full border-collapse text-left text-xs font-medium text-slate-700" style="background-color: #ffffff;">
+                <thead id="influenzaMetasThead">
+                  <!-- Columnas dinámicas (Rubro | Subgrupo | Metas por Municipio o por CLUES) -->
+                </thead>
+                <tbody id="influenzaMetasTbody">
+                  <!-- Inputs de Metas -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Floating Command Hub (Derecha - Desktop - Sticky) -->
+          <div class="hidden lg:block w-[80px] shrink-0" style="position: sticky; top: 180px; z-index: 999;">
+            <div class="local-command-hub">
+              <button class="save-chip-premium hub-action-btn-primary" id="btnSaveInfluenzaMetas" title="Guardar Configuración de Metas">
+                <span class="material-symbols-rounded">save</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 3: CONTROL DE FRASCOS -->
+        <div id="secInfluenzaFrascos" class="hidden flex flex-col gap-6">
+          <div class="hint">
+            Registra y gestiona las entregas de frascos de vacunas de influenza asignadas a las unidades de salud del municipio seleccionado.
+          </div>
+
+          <!-- Resumen de Control de Frascos (Municipal KPIs) -->
+          <div class="dashboardKpis mb-2">
+            <div class="kpiCard info">
+              <div class="kpiHeader">
+                <div class="kpiCardLabel">Total Frascos Entregados</div>
+                <div class="kpiIcon"><span class="material-symbols-rounded">inventory_2</span></div>
+              </div>
+              <div class="kpiCardValue font-black text-slate-800" id="muniFrascosEntregados">0</div>
+            </div>
+            
+            <div class="kpiCard ok">
+              <div class="kpiHeader">
+                <div class="kpiCardLabel">Total Frascos Aplicados</div>
+                <div class="kpiIcon"><span class="material-symbols-rounded">vaccines</span></div>
+              </div>
+              <div class="kpiCardValue font-black text-slate-800" id="muniFrascosReportados" style="font-size: 20px; line-height: 1.2;">0 frascos (0 dosis)</div>
+            </div>
+
+            <div class="kpiCard warn">
+              <div class="kpiHeader">
+                <div class="kpiCardLabel">Frascos en Resguardo</div>
+                <div class="kpiIcon"><span class="material-symbols-rounded">hourglass_empty</span></div>
+              </div>
+              <div class="kpiCardValue font-black text-slate-800" id="muniFrascosDiferencia">0 frascos</div>
+            </div>
+          </div>
+          <div id="muniFrascosWarningBox" class="hidden mb-4 p-4 rounded-xl border text-xs font-semibold"></div>
+
+          <!-- Resumen Municipal de Frascos (Solo para ADMIN y JURISDICCIONAL) -->
+          <div id="adminFrascosMunicipalTableContainer" class="hidden flex flex-col gap-4 bg-surface border border-slate-200 rounded-[28px] p-6 mb-4" style="background-color: #ffffff;">
+            <div class="flex items-center justify-between">
+              <h4 class="text-sm font-black text-violet-950 uppercase tracking-wider m-0">Concentrado de Frascos por Municipio</h4>
+              <button class="export-btn-premium text-xs font-black px-4 py-2 bg-violet-900 text-white rounded-xl hover:bg-violet-800 flex items-center gap-2 cursor-pointer transition-colors" id="btnExportFrascosMuni">
+                <span class="material-symbols-rounded text-xs">download</span> Exportar Concentrado
+              </button>
+            </div>
+            <div class="tableWrap overflow-x-auto w-full rounded-2xl border border-slate-100 shadow-sm">
+              <table class="w-full border-collapse text-left text-xs font-semibold text-slate-700">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200">
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider">Municipio</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Frascos Entregados (Total)</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Equivalente en Dosis</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Dosis Aplicadas</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Estimado en Resguardo (Frascos)</th>
+                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Aprovechamiento %</th>
+                  </tr>
+                </thead>
+                <tbody id="adminFrascosMunicipalTbody">
+                  <!-- JS llenará esta tabla con los 4 municipios -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Formulario de Entrega Masiva (Flex Row Layout with Sticky Right Column) -->
+          <div class="flex flex-row gap-8 items-start relative w-full overflow-visible" id="influenzaFrascosDeliveryForm">
+            <!-- Columna Formulario (Izquierda) -->
+            <div class="flex-1 flex flex-col gap-6 w-full">
+              <div class="bg-surface border border-slate-200 rounded-[28px] p-6 flex flex-col gap-4" style="background-color: #ffffff;">
+                <h4 class="text-sm font-black text-violet-950 uppercase tracking-wider m-0">Registrar Entrega de Frascos (Lote)</h4>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label for="frascoFechaInput" class="block text-xs font-bold text-slate-500 mb-1">Fecha de Entrega</label>
+                    <input id="frascoFechaInput" type="date" class="w-full bg-surface border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 outline-none">
+                  </div>
+                  <div>
+                    <label for="frascoEntregaInput" class="block text-xs font-bold text-slate-500 mb-1">Número de Entrega / Remesa</label>
+                    <input id="frascoEntregaInput" type="number" min="1" step="1" class="w-full bg-surface border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 outline-none" placeholder="Ej: 1">
+                  </div>
+                  <div>
+                    <label for="frascoLoteInput" class="block text-xs font-bold text-slate-500 mb-1">Lote</label>
+                    <input id="frascoLoteInput" type="text" class="w-full bg-surface border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 outline-none" placeholder="Ej: LF12345A">
+                  </div>
+                  <div>
+                    <label for="frascoCaducidadInput" class="block text-xs font-bold text-slate-500 mb-1">Fecha de Caducidad</label>
+                    <input id="frascoCaducidadInput" type="date" class="w-full bg-surface border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 outline-none">
+                  </div>
+                </div>
+
+                <!-- Tabla de captura por unidad -->
+                <div class="tableWrap overflow-x-auto w-full rounded-xl border border-slate-200 shadow-sm mt-2">
+                  <table class="w-full border-collapse text-left text-xs font-semibold text-slate-700" style="background-color: #ffffff;">
+                    <thead>
+                      <tr class="bg-slate-50 border-b border-slate-200">
+                        <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider" style="width: 45%;">Unidad / CLUES</th>
+                        <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center" style="width: 30%;">Frascos Entregados Previamente</th>
+                        <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center" style="width: 25%;">Nuevos Frascos a Entregar</th>
+                      </tr>
+                    </thead>
+                    <tbody id="frascosBatchTbody">
+                      <!-- JS poblará la lista de unidades del municipio -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Floating Command Hub (Derecha - Desktop - Sticky) -->
+            <div class="hidden lg:block w-[80px] shrink-0" style="position: sticky; top: 180px; z-index: 999;">
+              <div class="local-command-hub">
+                <button class="save-chip-premium hub-action-btn-primary" id="btnSaveFrascoEntrega" title="Guardar Entregas de Frascos">
+                  <span class="material-symbols-rounded">save</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Historial de Entregas -->
+          <div id="influenzaFrascosHistoryContainer" class="flex flex-col gap-4 mt-6">
+            <h4 class="text-sm font-black text-violet-950 uppercase tracking-wider m-0">Historial de Entregas a Unidades de Salud</h4>
+            <div class="tableWrap overflow-x-auto w-full rounded-2xl border border-outline-variant/30 shadow-sm relative z-0">
+              <table class="w-full border-collapse text-left text-xs font-medium text-slate-700">
+              <thead>
+                <tr class="bg-slate-50 border-b border-slate-200">
+                  <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider">Unidad</th>
+                  <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Entrega #</th>
+                  <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Lote</th>
+                  <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Caducidad</th>
+                  <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Frascos</th>
+                  <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Equivalente Dosis</th>
+                  <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Fecha</th>
+                  <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider">Registrado por</th>
+                </tr>
+              </thead>
+              <tbody id="frascosEntregaTbody">
+                <!-- Filas dinámicas -->
+              </tbody>
+            </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECCIÓN 4: CONFIGURACIÓN DE CAMPAÑA -->
+        <div id="secInfluenzaConfig" class="hidden flex flex-row gap-8 items-start relative w-full overflow-visible">
+          <!-- Columna Formulario (Izquierda) -->
+          <div class="flex-1 min-w-0 flex flex-col gap-6 w-full">
+            <div class="hint">
+              📅 <b>Configuración de Fechas de la Campaña de Influenza</b><br>
+              Establece las fechas oficiales de inicio y término para la temporada actual. Estas fechas determinarán dinámicamente las semanas epidemiológicas de registro y evaluación de metas.
+            </div>
+
+            <div class="bg-surface border border-slate-200 rounded-[28px] p-6 flex flex-col gap-4" style="background-color: #ffffff;">
+              <h4 class="text-sm font-black text-violet-950 uppercase tracking-wider m-0">Establecer Fechas de la Temporada</h4>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label for="configFechaInicio" class="block text-xs font-bold text-slate-500 mb-2">Fecha de Inicio de la Campaña (Primer Viernes)</label>
+                  <input id="configFechaInicio" type="date" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none">
+                </div>
+                <div>
+                  <label for="configFechaFin" class="block text-xs font-bold text-slate-500 mb-2">Fecha de Fin de la Campaña (Último Viernes)</label>
+                  <input id="configFechaFin" type="date" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Floating Command Hub (Derecha - Desktop - Sticky) -->
+          <div class="hidden lg:block w-[80px] shrink-0" style="position: sticky; top: 180px; z-index: 999;">
+            <div class="local-command-hub">
+              <button class="save-chip-premium hub-action-btn-primary" id="btnSaveInfluenzaConfig" title="Guardar Fechas de Campaña">
+                <span class="material-symbols-rounded">save</span>
+              </button>
+            </div>
+          </div>
         </div>
 
       </div>
