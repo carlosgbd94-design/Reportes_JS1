@@ -1641,7 +1641,7 @@ function formatNotifDate(ts) {
   } catch (e) { return ts; }
 }
 
-function formatNotifBody(title, message) {
+function formatNotifBody(title, message, fromUsuario = "") {
   if (!message) return "";
   let clean = message;
   const isDelivery = (title && title.toLowerCase().includes("entrega")) || message.toLowerCase().includes("entregada") || message.toLowerCase().includes("recibido");
@@ -1655,13 +1655,17 @@ function formatNotifBody(title, message) {
   // Robust parsing to capture Unidad, CLUES or User names in both deliveries and requests
   const unidadMatch = message.match(/Unidad:\s*([^.\n\r]+)/i) || 
                       message.match(/Unidad de salud:\s*([^.\n\r]+)/i) ||
+                      message.match(/La unidad\s+([^.\n\r]+?)\s+ha solicitado/i) ||
                       message.match(/en\s+([A-Z0-9\s]+)\s+por/); // matches: "en UNIDAD por USUARIO"
                       
   const unidad = unidadMatch ? unidadMatch[1].trim().split(" CLUES:")[0].split(" Solicitó:")[0] : "";
 
   const solicitanteMatch = message.match(/Solicita(?:nte)?:\s*([^.\n\r]+)/i) ||
                            message.match(/por\s+([^.\n\r]+)/i); // matches: "por USUARIO"
-  const solicitante = solicitanteMatch ? solicitanteMatch[1].trim().replace(/\(.*?\)/g, "").split(" para ")[0] : "";
+  let solicitante = solicitanteMatch ? solicitanteMatch[1].trim().replace(/\(.*?\)/g, "").split(" para ")[0] : "";
+  if (!solicitante && fromUsuario) {
+    solicitante = fromUsuario;
+  }
 
   const fechaMatch = message.match(/Fecha de solicitud:\s*([\d-]+)/i) ||
                      message.match(/Fecha:\s*([\d-]+)/i);
@@ -1796,7 +1800,7 @@ function buildNotificationsHtml(items = []) {
             </div>
           </div>
           
-          <div class="notifBody snippet">${formatNotifBody(item.title, item.message)}
+          <div class="notifBody snippet">${formatNotifBody(item.title, item.message, item.from_usuario)}
             ${(isDesabastoActive && meta?.missing?.length) ? `<div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:4px;">${meta.missing.map(v => `<span style="background:var(--md-sys-color-error-container); color:var(--md-sys-color-on-error-container); padding:2px 6px; border-radius:6px; font-size:9px; font-weight:700;">${v}</span>`).join("")}</div>` : ''}
           </div>
         </div>
@@ -18853,10 +18857,10 @@ function syncCommandHub() {
           const flowStatus = getPinolFlowStatus();
           if (flowStatus === "PENDING") {
             hubStatus.className = "status-chip-v5 pinol-pending";
-            hubStatusText.textContent = "Solicitud en curso";
+            hubStatusText.textContent = "Solicitud enviada";
           } else if (flowStatus === "DELIVERED") {
             hubStatus.className = "status-chip-v5 pinol-delivered";
-            hubStatusText.textContent = "Envío realizado";
+            hubStatusText.textContent = "Insumo enviado";
           } else {
             hubStatus.className = "status-chip-v5";
             hubStatusText.textContent = "Sin solicitud";

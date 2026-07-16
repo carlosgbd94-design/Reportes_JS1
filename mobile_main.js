@@ -564,7 +564,7 @@
             }
             
             if (chkSinMov) {
-                chkSinMov.checked = (savedItem.sin_movimiento === "SI");
+                chkSinMov.checked = (savedItem.sin_movimiento === "SI" || savedItem.sin_movimiento === true);
                 chkSinMov.dispatchEvent(new Event('change'));
             }
             
@@ -856,7 +856,7 @@
         if (lastRecord && lastRecord.length > 0) {
             const lastDate = lastRecord[0].fecha;
             const respName = lastRecord[0].capturado_por;
-            const sinMov = lastRecord[0].sin_movimiento === 'SI';
+            const sinMov = lastRecord[0].sin_movimiento === 'SI' || lastRecord[0].sin_movimiento === true;
 
             const nombreSRInput = document.getElementById('nombreSR');
             if (nombreSRInput && respName) nombreSRInput.value = respName;
@@ -1411,8 +1411,7 @@
                 // Status indicator dot
                 const unreadDot = isUnread ? `<span class="w-1.5 h-1.5 rounded-full bg-blue-600 block shrink-0" title="Nueva"></span>` : '';
 
-                // Format message body using a helper that decodes details like Unit, Date, and custom comments
-                const formatNotifBodyMobile = (title, message) => {
+                    const formatNotifBodyMobile = (title, message, fromUsuario = "") => {
                     if (!message) return '<span class="text-slate-400 italic">Sin descripción de la alerta.</span>';
                     
                     let clean = message;
@@ -1424,10 +1423,20 @@
                         clean = title ? `${title}:` : "Notificación:";
                     }
 
-                    const unidadMatch = message.match(/Unidad:\s*([^.\n]+)/i) || message.match(/Unidad de salud:\s*([^.\n]+)/i);
+                    const unidadMatch = message.match(/Unidad:\s*([^.\n]+)/i) || 
+                                        message.match(/Unidad de salud:\s*([^.\n]+)/i) ||
+                                        message.match(/La unidad\s+([^.\n]+?)\s+ha solicitado/i);
                     const unidad = unidadMatch ? unidadMatch[1].trim().split(" CLUES:")[0].split(" Solicitó:")[0] : "";
 
-                    const fechaMatch = message.match(/Fecha de solicitud:\s*([\d-]+)/i);
+                    const solicitanteMatch = message.match(/Solicita(?:nte)?:\s*([^.\n\r]+)/i) ||
+                                             message.match(/por\s+([^.\n\r]+)/i);
+                    let solicitante = solicitanteMatch ? solicitanteMatch[1].trim().replace(/\(.*?\)/g, "").split(" para ")[0] : "";
+                    if (!solicitante && fromUsuario) {
+                        solicitante = fromUsuario;
+                    }
+
+                    const fechaMatch = message.match(/Fecha de solicitud:\s*([\d-]+)/i) ||
+                                       message.match(/Fecha:\s*([\d-]+)/i);
                     let fechaReq = fechaMatch ? fechaMatch[1] : "";
                     if (fechaReq) {
                         const d = new Date(fechaReq);
@@ -1464,6 +1473,7 @@
                     } else {
                         if (fechaReq) html += `<div class="text-[10px] text-slate-500 font-medium">Fecha de solicitud: ${fechaReq}</div>`;
                         if (unidad) html += `<div class="text-[10px] text-slate-500 font-medium">Unidad de salud: ${unidad}</div>`;
+                        if (solicitante) html += `<div class="text-[10px] text-slate-500 font-medium">Solicita: ${solicitante}</div>`;
                         if (!unidad && message.trim() && message !== title) {
                             html += `<div class="text-[11px] text-slate-500 font-medium mt-1">${message}</div>`;
                         }
@@ -1471,7 +1481,7 @@
                     return html;
                 };
 
-                const displayMsg = formatNotifBodyMobile(notif.title, notif.message);
+                const displayMsg = formatNotifBodyMobile(notif.title, notif.message, notif.from_usuario);
 
                 return `
                     <div class="swipe-container rounded-2xl mb-3.5 border ${isUnread ? 'border-slate-200/80 shadow-sm' : 'border-transparent'}" data-id="${item.id}">
@@ -2209,8 +2219,8 @@
                 dataObject.nombre_responsable = nombreSR;
 
                 const chkSinMov = document.getElementById('chkSinMovimientoSR');
-                const sinMovimiento = chkSinMov && chkSinMov.checked;
-                dataObject.sin_movimiento = sinMovimiento ? "SI" : "NO";
+                const sinMovimiento = !!(chkSinMov && chkSinMov.checked);
+                dataObject.sin_movimiento = sinMovimiento;
 
                 const items = [];
                 let hasInvalid = false;
@@ -2308,7 +2318,7 @@
                     clues: cluesFilter,
                     unidad: currentProfile.unidad || "UNIDAD",
                     capturado_por: nombreSR.toUpperCase(),
-                    sin_movimiento: sinMovimiento ? "SI" : "NO"
+                    sin_movimiento: sinMovimiento
                 };
 
                 const BIOS = ["bcg", "hepatitis_b", "hexavalente", "dpt", "rotavirus", "neumococica_13", "neumococica_20", "srp", "sr", "vph", "varicela", "hepatitis_a", "td", "tdpa", "covid_19", "influenza", "vsr"];
@@ -2388,7 +2398,7 @@
                 dataObject.id = btoa(cluesFilter + ":" + today);
 
                 const chkSinMov = document.getElementById('chkSinMovimientoCONS');
-                dataObject.sin_movimiento = (chkSinMov && chkSinMov.checked) ? "SI" : "NO";
+                dataObject.sin_movimiento = !!(chkSinMov && chkSinMov.checked);
 
                 const srpVal = document.getElementById('srp_dosis')?.value;
                 const srVal = document.getElementById('sr_dosis')?.value;
