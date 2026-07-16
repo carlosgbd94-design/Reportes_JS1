@@ -8021,7 +8021,7 @@ $("btnAddLoteRow")?.addEventListener("click", async () => {
       eventMsg: "Lotes registrados y guardados en Supabase.",
       action: async () => {
         // AppService.call expects { lotes: [...] } for saving
-        await AppService.call("savelotes", { lotes: newLotes });
+        return await AppService.call("savelotes", { lotes: newLotes });
       }
     });
 
@@ -8086,7 +8086,7 @@ window.saveLoteEdit = async function (idx) {
     eventMsg: "Lote editado y guardado en Supabase.",
     action: async () => {
       // Assuming saveLotes replaces or upserts the catalog
-      await AppService.call("savelotes", { lotes: BATCH_CATALOG });
+      return await AppService.call("savelotes", { lotes: BATCH_CATALOG });
     }
   });
 
