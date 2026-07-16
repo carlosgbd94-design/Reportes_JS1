@@ -7677,10 +7677,41 @@ function parseInputToIso(str) {
   return null;
 }
 
-// Auto-uppercase para Lote y Caducidad
+// Auto-uppercase para Lote y Caducidad + Máscara Inteligente para Caducidad
 document.addEventListener("input", (e) => {
-  if (e.target.id === "loteTxt" || e.target.id === "loteCad") {
+  if (e.target.id === "loteTxt") {
     e.target.value = e.target.value.toUpperCase();
+  }
+
+  if (e.target.id === "loteCad" || e.target.classList.contains("inline-edit-input")) {
+    let val = e.target.value.toUpperCase();
+
+    // Si están borrando, no forzar formato de máscara
+    if (e.inputType === "deleteContentBackward") return;
+
+    // Permitir letras, números y guiones/diagonales
+    val = val.replace(/[^A-Z0-9\/\-]/g, "");
+
+    // Si empieza con números, formatear con diagonales automáticamente (ej: DD/MM/YY o MM/YY)
+    if (/^\d/.test(val)) {
+      let digits = val.replace(/\D/g, "");
+      if (digits.length > 8) digits = digits.slice(0, 8);
+
+      if (digits.length > 4) {
+        val = digits.substring(0, 2) + "/" + digits.substring(2, 4) + "/" + digits.substring(4);
+      } else if (digits.length > 2) {
+        val = digits.substring(0, 2) + "/" + digits.substring(2);
+      } else {
+        val = digits;
+      }
+    } else {
+      // Si empieza con letras (ej: JUN26 -> JUN-26)
+      if (/^[A-Z]{3}\d/.test(val)) {
+        val = val.substring(0, 3) + "-" + val.substring(3);
+      }
+    }
+
+    e.target.value = val;
   }
 });
 
