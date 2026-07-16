@@ -4789,8 +4789,20 @@ async function supabaseRequest(action = "", payload, options = {}) {
           allUnits = allUnits.filter(u => isCaravanaUnit_(u));
         }
 
-        // Ordenar alfabéticamente por CLUES
+        // Ordenar por municipio (Corregidora, Huimilpan, Marqués, Querétaro) y luego por CLUES
         allUnits.sort((a, b) => {
+          const getMuniIndex = (muniStr) => {
+            const norm = String(muniStr || "").trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            if (norm.includes("CORREGIDORA")) return 0;
+            if (norm.includes("HUIMILPAN")) return 1;
+            if (norm.includes("MARQUES")) return 2;
+            if (norm.includes("QUERETARO")) return 3;
+            return 999;
+          };
+          const idxA = getMuniIndex(a.municipio || a.MUNICIPIO);
+          const idxB = getMuniIndex(b.municipio || b.MUNICIPIO);
+          if (idxA !== idxB) return idxA - idxB;
+
           const cluesA = String(a.clues || a.CLUES || "").trim().toUpperCase();
           const cluesB = String(b.clues || b.CLUES || "").trim().toUpperCase();
           return cluesA.localeCompare(cluesB);
@@ -11410,6 +11422,18 @@ function renderCaptureSummary(data) {
       return;
     }
     const sortedList = [...list].sort((a, b) => {
+      const getMuniIndex = (muniStr) => {
+        const norm = String(muniStr || "").trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if (norm.includes("CORREGIDORA")) return 0;
+        if (norm.includes("HUIMILPAN")) return 1;
+        if (norm.includes("MARQUES")) return 2;
+        if (norm.includes("QUERETARO")) return 3;
+        return 999;
+      };
+      const idxA = getMuniIndex(a.municipio || a.MUNICIPIO);
+      const idxB = getMuniIndex(b.municipio || b.MUNICIPIO);
+      if (idxA !== idxB) return idxA - idxB;
+
       const cluesA = String(a.clues || a.CLUES || "").trim().toUpperCase();
       const cluesB = String(b.clues || b.CLUES || "").trim().toUpperCase();
       return cluesA.localeCompare(cluesB);
@@ -11462,6 +11486,18 @@ function renderCaptureSummary(data) {
       return;
     }
     const sortedList = [...list].sort((a, b) => {
+      const getMuniIndex = (muniStr) => {
+        const norm = String(muniStr || "").trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if (norm.includes("CORREGIDORA")) return 0;
+        if (norm.includes("HUIMILPAN")) return 1;
+        if (norm.includes("MARQUES")) return 2;
+        if (norm.includes("QUERETARO")) return 3;
+        return 999;
+      };
+      const idxA = getMuniIndex(a.municipio || a.MUNICIPIO);
+      const idxB = getMuniIndex(b.municipio || b.MUNICIPIO);
+      if (idxA !== idxB) return idxA - idxB;
+
       const cluesA = String(a.clues || a.CLUES || "").trim().toUpperCase();
       const cluesB = String(b.clues || b.CLUES || "").trim().toUpperCase();
       return cluesA.localeCompare(cluesB);

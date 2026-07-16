@@ -4,7 +4,7 @@
  * Versión: 2026.3
  */
 
-const CACHE_NAME = 'js1-reportes-v2026-58';
+const CACHE_NAME = 'js1-reportes-v2026-59';
 
 const STATIC_ASSETS = [
   './',
