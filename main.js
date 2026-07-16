@@ -889,16 +889,16 @@ function setBtnBusy(id, busy, busyText = "Procesando…") {
   if (!btn) return;
 
   if (busy) {
-    if (!btn.dataset.originalText) {
-      btn.dataset.originalText = btn.textContent || "";
+    if (!btn.dataset.originalHtml) {
+      btn.dataset.originalHtml = btn.innerHTML || "";
     }
     btn.disabled = true;
     btn.textContent = busyText;
     btn.dataset.busy = "1";
   } else {
     btn.disabled = false;
-    if (btn.dataset.originalText) {
-      btn.textContent = btn.dataset.originalText;
+    if (btn.dataset.originalHtml) {
+      btn.innerHTML = btn.dataset.originalHtml;
     }
     btn.dataset.busy = "0";
   }
@@ -8020,8 +8020,8 @@ $("btnAddLoteRow")?.addEventListener("click", async () => {
       eventTitle: "Alta de Lote(s)",
       eventMsg: "Lotes registrados y guardados en Supabase.",
       action: async () => {
-        // AppService.call expects { lotes: [...] } for saving
-        return await AppService.call("savelotes", { lotes: newLotes });
+        // AppService.call expects the entire catalog for saving since it truncates the table
+        return await AppService.call("savelotes", { lotes: BATCH_CATALOG });
       }
     });
 
