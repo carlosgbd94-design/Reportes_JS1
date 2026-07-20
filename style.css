@@ -2502,7 +2502,8 @@ tr.lote-row-bad.imminent {
 
 /* ===== PREMIUM SELECT / DROPDOWNS GLOBAL DESIGN ===== */
 select {
-  border: 1px solid #cbd5e1 !important;
+  border: 1px solid rgba(203, 213, 225, 0.8) !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), inset 0 -1.5px 0 rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.02) !important;
   border-radius: 9999px !important;
   height: 34px !important;
   padding: 0 36px 0 16px !important;
@@ -2511,7 +2512,7 @@ select {
   color: #0f172a !important;
   outline: none !important;
   cursor: pointer !important;
-  transition: border-color 0.2s !important;
+  transition: all 0.2s !important;
   -webkit-appearance: none !important;
   -moz-appearance: none !important;
   appearance: none !important;
@@ -2520,9 +2521,8 @@ select {
   background-position: right 14px center !important;
   background-size: 14px !important;
 }
-select:focus {
+select:focus, select:hover {
   border-color: #94a3b8 !important;
-  box-shadow: none !important;
 }
 
 .premium-custom-hidden-select {

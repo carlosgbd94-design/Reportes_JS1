@@ -21227,8 +21227,8 @@ function createPremiumCustomDropdown(selectId) {
 
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "w-full bg-white border border-slate-100 rounded-full px-4 py-1.5 text-xs font-extrabold text-slate-700 outline-none flex items-center justify-between gap-2 shadow-sm hover:border-violet-200 transition-colors";
-  btn.style.minHeight = "34px";
+  btn.className = "w-full bg-white rounded-full px-4 py-1.5 text-xs font-extrabold text-slate-700 outline-none flex items-center justify-between gap-2 transition-all duration-200 hover:border-violet-300";
+  btn.style.cssText = "min-height: 34px; border: 1px solid rgba(203, 213, 225, 0.8) !important; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), inset 0 -1.5px 0 rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.02) !important;";
 
   // Copiar clases de ancho/max-ancho a wrapper y botón
   Array.from(select.classList).forEach(c => {
@@ -21501,8 +21501,8 @@ function createPremiumCustomDatePicker(inputId) {
 
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "w-full bg-white border border-slate-100 rounded-full px-4 text-xs font-extrabold text-slate-700 outline-none flex items-center justify-between gap-2 shadow-sm hover:border-violet-200 transition-colors";
-  btn.style.cssText = "min-height: 34px !important; height: 34px !important; padding: 4px 16px !important; margin: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: space-between !important;";
+  btn.className = "w-full bg-white rounded-full px-4 text-xs font-extrabold text-slate-700 outline-none flex items-center justify-between gap-2 transition-all duration-200 hover:border-violet-300";
+  btn.style.cssText = "min-height: 34px !important; height: 34px !important; padding: 4px 16px !important; margin: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: space-between !important; border: 1px solid rgba(203, 213, 225, 0.8) !important; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), inset 0 -1.5px 0 rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.02) !important;";
 
   Array.from(input.classList).forEach(c => {
     if (c.startsWith("w-") || c.startsWith("max-w-") || c.startsWith("flex-")) {
