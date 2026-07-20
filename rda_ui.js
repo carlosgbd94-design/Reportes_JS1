@@ -528,6 +528,19 @@ function renderDashboard() {
     const uniFilter = document.getElementById('rdaFilterUnidad')?.value || '';
     const esquema = _rdaState.esquema || 'basico';
 
+    const container = document.getElementById('rdaDashboardContent');
+    if (container) {
+        if (!_rdaState.originalDashboardHtml) {
+            _rdaState.originalDashboardHtml = container.innerHTML;
+        }
+        if (esquema !== 'meta_logro_influenza' && !document.getElementById('rdaKpiGrid')) {
+            if (_rdaCharts.b) { try { _rdaCharts.b.dispose(); } catch(e){} _rdaCharts.b = null; }
+            if (_rdaCharts.total) { try { _rdaCharts.total.dispose(); } catch(e){} _rdaCharts.total = null; }
+            if (_rdaCharts.d) { try { _rdaCharts.d.dispose(); } catch(e){} _rdaCharts.d = null; }
+            container.innerHTML = _rdaState.originalDashboardHtml;
+        }
+    }
+
     const toggleContainer = document.getElementById('rdaViewToggleContainer');
     if (toggleContainer) {
         toggleContainer.style.display = (esquema === 'basico') ? 'inline-flex' : 'none';

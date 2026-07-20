@@ -4712,6 +4712,13 @@ async function supabaseRequest(action = "", payload, options = {}) {
           const lastDay = new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0);
           fIniStr = dateToLocalYmd(firstDay);
           fFinStr = dateToLocalYmd(lastDay);
+        } else if (tipo === "INF") {
+          const day = dateObj.getDay();
+          const diffToFriday = day === 0 ? -2 : 5 - day;
+          const friday = new Date(dateObj);
+          friday.setDate(dateObj.getDate() + diffToFriday);
+          fIniStr = dateToLocalYmd(friday);
+          fFinStr = fIniStr;
         }
 
         // 🛡️ Aplicar Jerarquía en el catálogo de unidades para el resumen
@@ -4729,10 +4736,19 @@ async function supabaseRequest(action = "", payload, options = {}) {
           fetchAllRpc('get_captures_cons_range_bypass', { p_fecha_inicio: fIniStr, p_fecha_fin: fFinStr })
         ]);
 
+        let resInf = [];
+        if (tipo === "INF") {
+          const { data: activeCamp } = await supabase.from('campanas').select('*').eq('activo', true).maybeSingle();
+          const camp = activeCamp ? activeCamp.nombre.replace("Campaña Influenza ", "") : "2025-2026";
+          const { data: infData } = await supabase.from('influenza_capturas').select('*').eq('fecha', fIniStr).eq('anio_campana', camp);
+          resInf = infData || [];
+        }
+
         let captureRecords = [];
         if (tipo === "SR") captureRecords = resSR || [];
         else if (tipo === "CONS") captureRecords = resCons || [];
         else if (tipo === "BIO") captureRecords = resBio || [];
+        else if (tipo === "INF") captureRecords = resInf || [];
 
         console.log(`[admincaptureoverview DEBUG] Registros de captura encontrados en DB para ${tipo}:`, captureRecords);
 
@@ -4847,6 +4863,11 @@ async function supabaseRequest(action = "", payload, options = {}) {
               }
               if (tipo === "SR") {
                 metadata.tiene_ceros = record?.tiene_ceros || false;
+              }
+              if (tipo === "INF") {
+                const valObj = record?.valores || {};
+                const totalDoses = Object.values(valObj).reduce((sum, val) => sum + Number(val || 0), 0);
+                metadata.influenza_dosis = totalDoses;
               }
               return metadata;
             }),
@@ -5909,6 +5930,31 @@ async function supabaseRequest(action = "", payload, options = {}) {
             filteredData.sort((a, b) => (a.biologico || "").localeCompare(b.biologico || ""));
           }
           return { ok: true, data: filteredData, meta: { fecha: filteredData.length ? filteredData[0].fecha_pedido_programada : targetFecha, tipo } };
+        } else if (tipo === "INF") {
+          const { data: activeCamp } = await supabase.from('campanas').select('*').eq('activo', true).maybeSingle();
+          const camp = activeCamp ? activeCamp.nombre.replace("Campaña Influenza ", "") : "2025-2026";
+          const { data, error } = await window.supabase
+            .from('influenza_capturas')
+            .select('*')
+            .eq('clues', payload.clues)
+            .eq('fecha', fIniStr)
+            .eq('anio_campana', camp)
+            .maybeSingle();
+          if (error) throw error;
+
+          let rows = [];
+          if (data && data.valores) {
+            INFLUENZA_RUBROS.forEach(rb => {
+              const val = Number(data.valores[rb.id] || 0);
+              rows.push({
+                rubro: `${rb.categoria} - ${rb.grupo} (${rb.edad})`,
+                cantidad: val,
+                capturado_por: data.capturado_por || "SISTEMA",
+                fecha: data.fecha
+              });
+            });
+          }
+          return { ok: true, data: rows, meta: { fecha: data ? data.fecha : fIniStr, tipo } };
         } else {
           let query = window.supabase
             .from('consumibles')
@@ -11291,9 +11337,9 @@ function renderCaptureSummary(data) {
   // Título Dinámico Premium
   const titleEl = document.getElementById("captureSummaryTitle");
   if (titleEl) {
-    const tipoTxt = tipo === "CONS" ? "Consumibles" : (tipo === "BIO" ? "Pedido de biológico" : "Existencia de biológicos");
+    const tipoTxt = tipo === "CONS" ? "Consumibles" : (tipo === "BIO" ? "Pedido de biológico" : (tipo === "INF" ? "Meta-Logro Influenza" : "Existencia de biológicos"));
     let t = `Resumen de captura de ${tipoTxt}`;
-    if ((tipo === "SR" || tipo === "CONS") && data.fIniStr && data.fFinStr) {
+    if ((tipo === "SR" || tipo === "CONS" || tipo === "INF") && data.fIniStr && data.fFinStr) {
       t += ` (Semana del ${formatAppDate(data.fIniStr)} al ${formatAppDate(data.fFinStr)})`;
     } else if (tipo === "BIO" && fecha) {
       const dateObj = new Date(`${fecha}T12:00:00`);
@@ -11443,7 +11489,7 @@ function renderCaptureSummary(data) {
       return cluesA.localeCompare(cluesB);
     });
     tbodyCap.innerHTML = sortedList.map(r => {
-      // Determinar estado visual: verde (OK), azul (sin pedido BIO), ámbar (con ceros SR)
+      // Determinar estado visual: verde (OK), azul (sin pedido BIO), ámbar (con ceros SR), violeta (Influenza)
       let iconColor = '#22c55e'; // Verde: capturado normal
       let iconTitle = r.editado === 'SI' ? 'Editado' : 'Capturado';
       let extraTag = '';
@@ -11455,6 +11501,10 @@ function renderCaptureSummary(data) {
         iconColor = '#f43f5e'; // Carmesí/Rosa: capturó con algún biológico en cero
         iconTitle = 'Capturó con algún biológico sin existencia';
         extraTag = '';
+      } else if (tipo === "INF" && typeof r.influenza_dosis === 'number') {
+        iconColor = '#8b5cf6'; // Violeta
+        iconTitle = `Capturado: ${r.influenza_dosis} dosis de influenza`;
+        extraTag = `<span class="opacity-60 font-black uppercase text-[10px] tracking-tighter" style="background:#f5f3ff; color:#7c3aed; padding:2px 6px; border-radius:6px">${r.influenza_dosis} DOSIS</span>`;
       }
 
       const tipoPedidoTag = r.tipo_pedido
@@ -12550,6 +12600,31 @@ async function reloadCaptureSummary(force = false) {
     if (!TOKEN) return null;
 
     try {
+      try {
+        const { data: activeCamp } = await window.supabase.from('campanas').select('*').eq('activo', true).maybeSingle();
+        const selectEl = document.getElementById("summaryTipo");
+        if (selectEl) {
+          const hasInf = Array.from(selectEl.options).some(opt => opt.value === "INF");
+          const selectedFecha = $("summaryFecha")?.value || todayYmdLocal();
+          const isCampanaActive = activeCamp && (selectedFecha >= activeCamp.fecha_inicio && selectedFecha <= activeCamp.fecha_fin);
+          if (isCampanaActive) {
+            if (!hasInf) {
+              const opt = document.createElement("option");
+              opt.value = "INF";
+              opt.textContent = "Meta-Logro Influenza";
+              selectEl.appendChild(opt);
+            }
+          } else {
+            if (hasInf) {
+              const optIndex = Array.from(selectEl.options).findIndex(opt => opt.value === "INF");
+              if (optIndex !== -1) selectEl.remove(optIndex);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Error loading campaign config for summary selector:", err);
+      }
+
       const fecha = $("summaryFecha")?.value || todayYmdLocal();
       const tipo = $("summaryTipo")?.value || "SR";
 
@@ -12614,6 +12689,31 @@ async function reloadCaptureSummarySilent(force = false) {
     if (!TOKEN) return null;
 
     try {
+      try {
+        const { data: activeCamp } = await window.supabase.from('campanas').select('*').eq('activo', true).maybeSingle();
+        const selectEl = document.getElementById("summaryTipo");
+        if (selectEl) {
+          const hasInf = Array.from(selectEl.options).some(opt => opt.value === "INF");
+          const selectedFecha = $("summaryFecha")?.value || todayYmdLocal();
+          const isCampanaActive = activeCamp && (selectedFecha >= activeCamp.fecha_inicio && selectedFecha <= activeCamp.fecha_fin);
+          if (isCampanaActive) {
+            if (!hasInf) {
+              const opt = document.createElement("option");
+              opt.value = "INF";
+              opt.textContent = "Meta-Logro Influenza";
+              selectEl.appendChild(opt);
+            }
+          } else {
+            if (hasInf) {
+              const optIndex = Array.from(selectEl.options).findIndex(opt => opt.value === "INF");
+              if (optIndex !== -1) selectEl.remove(optIndex);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Error loading campaign config for summary selector:", err);
+      }
+
       const fecha = $("summaryFecha")?.value || todayYmdLocal();
       const tipo = $("summaryTipo")?.value || "SR";
 
@@ -15410,6 +15510,43 @@ async function getHistoryMetrics(mes, _ignored, force = false) {
         return null;
       }
 
+      // Check if Influenza campaign is active in this month
+      let expectedFridays = [];
+      let isCampanaActiveInMonth = false;
+      let campName = "2025-2026";
+      let allCampCaptures = [];
+      let allCampMetas = [];
+
+      try {
+        const { data: activeCamp } = await window.supabase.from('campanas').select('*').eq('activo', true).maybeSingle();
+        if (activeCamp) {
+          campName = activeCamp.nombre.replace("Campaña Influenza ", "");
+          const [y, mn] = m.split("-").map(Number);
+          const temp = new Date(y, mn - 1, 1, 12, 0, 0);
+          while (temp.getMonth() === mn - 1) {
+            if (temp.getDay() === 5) { // Friday
+              const ymd = dateToLocalYmd(temp);
+              if (ymd >= activeCamp.fecha_inicio && ymd <= activeCamp.fecha_fin) {
+                expectedFridays.push(ymd);
+              }
+            }
+            temp.setDate(temp.getDate() + 1);
+          }
+          if (expectedFridays.length > 0) {
+            isCampanaActiveInMonth = true;
+            const lastDayOfMonthYmd = dateToLocalYmd(new Date(y, mn, 0, 12, 0, 0));
+            const [capturesRes, metasRes] = await Promise.all([
+              window.supabase.from('influenza_capturas').select('clues, fecha, valores').eq('anio_campana', campName).lte('fecha', lastDayOfMonthYmd),
+              window.supabase.from('influenza_metas').select('clues, metas')
+            ]);
+            allCampCaptures = capturesRes.data || [];
+            allCampMetas = metasRes.data || [];
+          }
+        }
+      } catch (campErr) {
+        console.error("Error loading Influenza campaign for metrics:", campErr);
+      }
+
       // Recalcular isPedidoRequired y el score para no depender de la lógica vieja del RPC
       const targetYm = m.split("-");
       const windowForMonth = calculateBioIntelligentWindow(parseInt(targetYm[0]), parseInt(targetYm[1]) - 1);
@@ -15427,9 +15564,26 @@ async function getHistoryMetrics(mes, _ignored, force = false) {
         let cPct = expectedCons > 0 ? (r.cons_semanas_ok / expectedCons) * 100 : 100;
         let pPct = r.pedido_mensual ? 100 : 0;
         
-        let score = isRequired ?
-          Math.round((bPct * 0.4) + (cPct * 0.4) + (pPct * 0.2)) :
-          Math.round((bPct * 0.5) + (cPct * 0.5));
+        let score = 0;
+        let influenzaPct = null;
+
+        if (isCampanaActiveInMonth) {
+          const unitCaptures = allCampCaptures.filter(c => c.clues === r.clues);
+          const capturedFridays = expectedFridays.filter(fri => unitCaptures.some(c => c.fecha === fri));
+          const capturePct = expectedFridays.length > 0 ? (capturedFridays.length / expectedFridays.length) * 100 : 100;
+
+          influenzaPct = capturePct;
+
+          if (isRequired) {
+            score = Math.round((bPct * 0.3) + (cPct * 0.3) + (pPct * 0.15) + (influenzaPct * 0.25));
+          } else {
+            score = Math.round((bPct * 0.35) + (cPct * 0.35) + (influenzaPct * 0.30));
+          }
+        } else {
+          score = isRequired ?
+            Math.round((bPct * 0.4) + (cPct * 0.4) + (pPct * 0.2)) :
+            Math.round((bPct * 0.5) + (cPct * 0.5));
+        }
         
         if (score > 100) score = 100;
 
@@ -15453,7 +15607,9 @@ async function getHistoryMetrics(mes, _ignored, force = false) {
           tier: tier,
           eBio: expectedBio,
           eCons: expectedCons,
-          isPedidoRequired: isRequired
+          isPedidoRequired: isRequired,
+          influenzaPct: influenzaPct,
+          isInfluenzaActive: isCampanaActiveInMonth
         };
       });
 
@@ -15801,6 +15957,16 @@ function renderHistoryMetrics(data) {
   };
 
   const rows = data?.rows || [];
+  const headerEl = document.getElementById("metricsDesempenoHeader");
+  if (headerEl) {
+    const isInfActive = rows.length > 0 && rows[0].isInfluenzaActive;
+    if (isInfActive) {
+      headerEl.textContent = "Desempeño (BIO + CONS + PEDIDO + INF)";
+    } else {
+      headerEl.textContent = "Desempeño (BIO + CONS + PEDIDO)";
+    }
+  }
+
   const role = data?.role || "UNIDAD";
   const tbody = $("historyTbody");
 
@@ -16000,6 +16166,16 @@ function renderHistoryMetrics(data) {
         let pedidoIcon = !r.isPedidoRequired ? `<span class="material-symbols-rounded text-slate-400 text-[14px]">horizontal_rule</span>` :
           (hasPedido ? `<span class="material-symbols-rounded text-[14px]" style="color: #22c55e !important;" title="Pedido Registrado">check_circle</span>` : `<span class="material-symbols-rounded text-[14px]" style="color: #ef4444 !important;" title="Falta Pedido">cancel</span>`);
 
+        let infCol = "";
+        if (r.isInfluenzaActive && typeof r.influenzaPct === 'number') {
+          infCol = `
+            <div class="flex-1">
+                INF (${Math.round(r.influenzaPct)}%)
+                <div class="lb-progress-wrap"><div class="lb-progress-fill" style="width: ${r.influenzaPct}%; background: linear-gradient(90deg, #a78bfa, #8b5cf6) !important;"></div></div>
+            </div>
+          `;
+        }
+
         html += `
           <tr>
             <td class="text-center">${rankBadge}</td>
@@ -16013,7 +16189,7 @@ function renderHistoryMetrics(data) {
               <span class="font-black text-[16px] text-slate-700">${r.score}%</span>
             </td>
             <td>
-              <div class="flex items-center gap-3 text-[10px] font-bold text-slate-500 w-full max-w-[250px]">
+              <div class="flex items-center gap-3 text-[10px] font-bold text-slate-500 w-full ${r.isInfluenzaActive ? 'max-w-[340px]' : 'max-w-[250px]'}">
                   <div class="flex-1">
                       BIO (${r.bio_semanas_ok}/${r.eBio})
                       <div class="lb-progress-wrap"><div class="lb-progress-fill" style="width: ${bPct}%; background: ${getProgressBg(bPct)} !important;"></div></div>
@@ -16022,6 +16198,7 @@ function renderHistoryMetrics(data) {
                       CONS (${r.cons_semanas_ok}/${r.eCons})
                       <div class="lb-progress-wrap"><div class="lb-progress-fill" style="width: ${cPct}%; background: ${getProgressBg(cPct)} !important;"></div></div>
                   </div>
+                  ${infCol}
                   <div class="flex flex-col items-center justify-center w-10 ml-2" title="Pedido Mensual">
                       <span class="text-[9px]">PED</span>
                       ${pedidoIcon}
@@ -16050,6 +16227,16 @@ function renderHistoryMetrics(data) {
       let pedidoIcon = !r.isPedidoRequired ? `<span class="material-symbols-rounded text-slate-400 text-[14px]">horizontal_rule</span>` :
         (hasPedido ? `<span class="material-symbols-rounded text-[14px]" style="color: #22c55e !important;" title="Pedido Registrado">check_circle</span>` : `<span class="material-symbols-rounded text-[14px]" style="color: #ef4444 !important;" title="Falta Pedido">cancel</span>`);
 
+      let infCol = "";
+      if (r.isInfluenzaActive && typeof r.influenzaPct === 'number') {
+        infCol = `
+          <div class="flex-1">
+              INF (${Math.round(r.influenzaPct)}%)
+              <div class="lb-progress-wrap"><div class="lb-progress-fill" style="width: ${r.influenzaPct}%; background: linear-gradient(90deg, #a78bfa, #8b5cf6) !important;"></div></div>
+          </div>
+        `;
+      }
+
       html += `
         <tr>
           <td class="text-center">${rankBadge}</td>
@@ -16063,7 +16250,7 @@ function renderHistoryMetrics(data) {
             <span class="font-black text-[16px] text-slate-700">${r.score}%</span>
           </td>
           <td>
-            <div class="flex items-center gap-3 text-[10px] font-bold text-slate-500 w-full max-w-[250px]">
+            <div class="flex items-center gap-3 text-[10px] font-bold text-slate-500 w-full ${r.isInfluenzaActive ? 'max-w-[340px]' : 'max-w-[250px]'}">
                 <div class="flex-1">
                     BIO (${r.bio_semanas_ok}/${r.eBio})
                     <div class="lb-progress-wrap"><div class="lb-progress-fill" style="width: ${bPct}%; background: ${getProgressBg(bPct)} !important;"></div></div>
@@ -16072,6 +16259,7 @@ function renderHistoryMetrics(data) {
                     CONS (${r.cons_semanas_ok}/${r.eCons})
                     <div class="lb-progress-wrap"><div class="lb-progress-fill" style="width: ${cPct}%; background: ${getProgressBg(cPct)} !important;"></div></div>
                 </div>
+                ${infCol}
                 <div class="flex flex-col items-center justify-center w-10 ml-2" title="Pedido Mensual">
                     <span class="text-[9px]">PED</span>
                     ${pedidoIcon}
@@ -17153,6 +17341,7 @@ async function openLiveView(clues, unidad, municipio) {
       let tableTitle = "Detalle de Existencia Actual";
       if (tipo === "CONS") { titlePrefix = "Consumibles: "; tableTitle = "Detalle de Consumibles"; }
       else if (tipo === "BIO") { titlePrefix = "Pedido BIO: "; tableTitle = "Detalle del Pedido"; }
+      else if (tipo === "INF") { titlePrefix = "Influenza: "; tableTitle = "Detalle de Aplicación de Vacuna Influenza"; }
       $("liveViewUnidad").textContent = titlePrefix + unidad;
       if ($("liveViewTableTitle")) $("liveViewTableTitle").textContent = tableTitle;
     }
@@ -17849,6 +18038,26 @@ window.renderLiveViewTableContent = function() {
              </td>
              <td style="padding:14px 24px; text-align:center; font-weight:700; color:#475569;">${r.promedio_frascos ?? 0}</td>
              <td style="padding:14px 24px; text-align:center; font-weight:600; color:#64748b;">${r.min_dosis ?? 0} / ${r.max_dosis ?? 0}</td>
+           </tr>
+         `).join("");
+    }
+  } else if (tipo === "INF") {
+    if (headRow) {
+      headRow.innerHTML = `
+           <th style="padding: 16px 24px; text-align: left;">Grupo de Edad / Rubro</th>
+           <th style="padding: 16px 24px; text-align: center;">Dosis Aplicadas</th>
+         `;
+    }
+
+    if (!res.data || !res.data.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay reporte de Influenza para esta fecha.</td></tr>';
+    } else {
+      tbody.innerHTML = res.data.map(r => `
+           <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
+             <td style="padding:14px 24px; font-weight:800; color:#0f172a;">${escapeHtml(r.rubro)}</td>
+             <td style="padding:14px 24px; text-align:center;">
+               <span class="live-view-count-badge" style="background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe;">${r.cantidad || 0}</span>
+             </td>
            </tr>
          `).join("");
     }
@@ -20924,3 +21133,1209 @@ window.switchProfileCardTab = function(tab) {
     }
   });
 };
+
+const setParentZIndex = (element, val) => {
+  let curr = element.parentElement;
+  if (curr && curr !== document.body) {
+    const computedStyle = getComputedStyle(curr);
+    if (curr.classList.contains("relative") || computedStyle.position === "relative" || computedStyle.position === "absolute" || computedStyle.position === "fixed") {
+      if (val) {
+        if (curr._originalZIndex === undefined) {
+          curr._originalZIndex = curr.style.zIndex || "";
+        }
+        curr.style.setProperty("z-index", val, "important");
+      } else {
+        curr.style.zIndex = curr._originalZIndex || "";
+      }
+    }
+  }
+};
+
+function createPremiumCustomDropdown(selectId) {
+  const select = typeof selectId === "string" ? document.getElementById(selectId) : selectId;
+  if (!select) return;
+
+  if (!select.id) {
+    select.id = "select_" + Math.random().toString(36).substring(2, 9);
+  }
+
+  const id = select.id;
+
+  // Clean parent outline if it has border/bg-surface (MD3 group wrapper)
+  const parent = select.parentElement;
+  if (parent && (parent.classList.contains("border") || parent.style.border || parent.className.includes("border-slate-200"))) {
+    parent.className = parent.className.replace(/\bbg-[a-z0-9-]+\b/g, "")
+                                        .replace(/\bborder-[a-z0-9-\/]+\b/g, "")
+                                        .replace(/\bborder\b/g, "")
+                                        .replace(/\brounded-[a-z0-9]+\b/g, "")
+                                        .replace(/\bpx-[0-9]+\b/g, "")
+                                        .replace(/\bshadow-[a-z0-9-]+\b/g, "");
+    parent.style.border = "none";
+    parent.style.background = "transparent";
+    parent.style.boxShadow = "none";
+    
+    Array.from(parent.children).forEach(child => {
+      if (child !== select && child.classList.contains("material-symbols-rounded")) {
+        child.style.display = "none";
+      }
+    });
+  }
+
+  // Evitar duplicados
+  const existingWrapper = document.getElementById(`${id}_custom_wrapper`);
+  if (existingWrapper) existingWrapper.remove();
+
+  const wrapper = document.createElement("div");
+  wrapper.id = `${id}_custom_wrapper`;
+  
+  // Filtrar clases decorativas dinámicamente para evitar doble contorno/borde en el wrapper
+  let wrapperClass = "";
+  if (select.className) {
+    wrapperClass = select.className.split(" ").filter(c => {
+      const lower = c.toLowerCase();
+      if (lower.startsWith("w-") || lower.startsWith("max-w-") || lower.startsWith("flex-") || lower.startsWith("col-") || lower.startsWith("row-") || lower.startsWith("grid-") || lower.startsWith("m-") || lower.startsWith("mt-") || lower.startsWith("mb-") || lower.startsWith("ml-") || lower.startsWith("mr-")) {
+        return true;
+      }
+      if (
+        lower.includes("border") ||
+        lower.includes("bg-") ||
+        lower.includes("rounded") ||
+        lower.includes("px-") ||
+        lower.includes("py-") ||
+        lower.includes("text-") ||
+        lower.includes("font-") ||
+        lower.includes("shadow-") ||
+        lower === "hidden"
+      ) {
+        return false;
+      }
+      return true;
+    }).join(" ");
+  }
+  
+  wrapper.className = wrapperClass.trim() + " relative inline-block custom-select-wrapper";
+  
+  // Copiar solo propiedades de posicionamiento y tamaño de estilos en línea del select para evitar copiar bordes y fondos
+  const layoutProps = ["width", "minWidth", "maxWidth", "margin", "marginTop", "marginBottom", "marginLeft", "marginRight", "flex", "flexGrow", "flexShrink", "flexBasis", "position", "top", "bottom", "left", "right"];
+  layoutProps.forEach(prop => {
+    if (select.style[prop]) {
+      wrapper.style[prop] = select.style[prop];
+    }
+  });
+  
+  wrapper.style.minWidth = select.style.minWidth || "120px";
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "w-full bg-white border border-slate-100 rounded-full px-4 py-1.5 text-xs font-extrabold text-slate-700 outline-none flex items-center justify-between gap-2 shadow-sm hover:border-violet-200 transition-colors";
+  btn.style.minHeight = "34px";
+
+  // Copiar clases de ancho/max-ancho a wrapper y botón
+  Array.from(select.classList).forEach(c => {
+    if (c.startsWith("w-") || c.startsWith("max-w-") || c.startsWith("flex-")) {
+      wrapper.classList.add(c);
+      btn.classList.add(c);
+    }
+  });
+
+  const labelSpan = document.createElement("span");
+  labelSpan.className = "truncate flex items-center gap-1.5";
+  
+  const iconSpan = document.createElement("span");
+  iconSpan.className = "material-symbols-rounded text-slate-400 text-[18px] shrink-0";
+  iconSpan.textContent = "expand_more";
+
+  btn.appendChild(labelSpan);
+  btn.appendChild(iconSpan);
+
+  const dropdown = document.createElement("div");
+  dropdown.className = "hidden absolute left-0 mt-1 bg-white border border-slate-200 rounded-[24px] shadow-xl p-2.5 max-h-[380px] overflow-y-auto flex flex-col gap-1 w-[280px]";
+  dropdown.style.cssText = "display: none; z-index: 99999 !important; max-height: 280px !important; overflow-y: auto !important; width: 320px !important; flex-direction: column !important; gap: 4px !important;";
+
+  const updateBtnLabel = () => {
+    const selectedOption = select.options[select.selectedIndex];
+    labelSpan.textContent = selectedOption ? selectedOption.text : "Seleccionar...";
+  };
+
+  const renderOptions = () => {
+    dropdown.innerHTML = "";
+    Array.from(select.options).forEach(opt => {
+      const isSelected = select.value === opt.value;
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = `w-full text-left p-2.5 rounded-xl border flex items-center justify-between gap-3 transition-all text-xs`;
+      
+      // Estilos en línea explícitos para asegurar máxima visibilidad y diseño premium
+      if (isSelected) {
+        item.style.backgroundColor = "#f3e8ff"; // Fondo violeta claro/lavanda
+        item.style.borderColor = "#c084fc"; // Borde violeta medio
+        item.style.color = "#6b21a8"; // Texto violeta oscuro
+        item.style.fontWeight = "900";
+        item.classList.add("shadow-sm");
+      } else {
+        item.style.backgroundColor = "transparent";
+        item.style.borderColor = "transparent";
+        item.style.color = "#475569"; // slate-600
+        item.style.fontWeight = "700";
+        
+        // Efecto hover premium
+        item.addEventListener("mouseenter", () => {
+          item.style.backgroundColor = "#f8fafc"; // slate-50
+          item.style.color = "#0f172a"; // slate-900
+        });
+        item.addEventListener("mouseleave", () => {
+          item.style.backgroundColor = "transparent";
+          item.style.color = "#475569";
+        });
+      }
+
+      item.innerHTML = `
+        <span style="font-family: inherit;">${opt.text}</span>
+        ${isSelected ? '<span class="material-symbols-rounded text-xs shrink-0" style="color: #6b21a8; font-weight: 900;">check</span>' : ''}
+      `;
+      item.onclick = (e) => {
+        e.stopPropagation();
+        select.value = opt.value;
+        select.dispatchEvent(new Event("change"));
+        dropdown.classList.add("hidden");
+        dropdown.style.display = "none";
+        wrapper.style.zIndex = "";
+        setParentZIndex(wrapper, "");
+        updateBtnLabel();
+      };
+      dropdown.appendChild(item);
+    });
+  };
+
+  btn.onclick = (e) => {
+    e.stopPropagation();
+    
+    // Cerrar otros dropdowns estándar
+    document.querySelectorAll("[id$=_custom_wrapper] > div").forEach(d => {
+      if (d !== dropdown) {
+        d.classList.add("hidden");
+        d.style.display = "none";
+        const wrp = d.parentElement;
+        if (wrp) {
+          wrp.style.zIndex = "";
+          setParentZIndex(wrp, "");
+        }
+      }
+    });
+
+    // También cerrar el selector de semanas de influenza
+    const influenzaSemanaDropdown = document.getElementById("influenza_semana_dropdown");
+    if (influenzaSemanaDropdown) {
+      influenzaSemanaDropdown.classList.add("hidden");
+      influenzaSemanaDropdown.style.display = "none";
+    }
+
+    const isHidden = dropdown.classList.contains("hidden");
+    if (isHidden) {
+      renderOptions();
+      dropdown.classList.remove("hidden");
+      dropdown.style.setProperty("display", "flex", "important");
+      wrapper.style.zIndex = "99999";
+      setParentZIndex(wrapper, "99999");
+    } else {
+      dropdown.classList.add("hidden");
+      dropdown.style.display = "none";
+      wrapper.style.zIndex = "";
+      setParentZIndex(wrapper, "");
+    }
+  };
+
+  document.addEventListener("click", (e) => {
+    if (!wrapper.contains(e.target)) {
+      dropdown.classList.add("hidden");
+      dropdown.style.display = "none";
+      wrapper.style.zIndex = "";
+      setParentZIndex(wrapper, "");
+    }
+  });
+
+  select.addEventListener("change", updateBtnLabel);
+
+  const optionObserver = new MutationObserver(() => {
+    renderOptions();
+    updateBtnLabel();
+  });
+  optionObserver.observe(select, { childList: true });
+
+  // Hook value setters to auto-update custom UI when value changes programmatically
+  try {
+    const originalDescriptor = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
+    if (originalDescriptor && !select._descriptorHooked) {
+      Object.defineProperty(select, "value", {
+        get() {
+          return originalDescriptor.get.call(this);
+        },
+        set(val) {
+          originalDescriptor.set.call(this, val);
+          updateBtnLabel();
+        },
+        configurable: true
+      });
+      select._descriptorHooked = true;
+    }
+  } catch (err) {
+    console.warn("Could not hook property descriptor on select:", err);
+  }
+
+  // Guardar estado de visibilidad ANTES de que nosotros pongamos display:none
+  const wasOriginallyHidden =
+    select.style.display === "none" ||
+    select.classList.contains("hidden") ||
+    getComputedStyle(select).display === "none";
+
+  select.classList.add("premium-custom-hidden-select");
+  select.style.display = "none";
+  select.parentNode.insertBefore(wrapper, select);
+  wrapper.appendChild(btn);
+  wrapper.appendChild(dropdown);
+
+  updateBtnLabel();
+
+  // Estado inicial: mostrar u ocultar según visibilidad original del select
+  if (wasOriginallyHidden) {
+    wrapper.style.setProperty("display", "none", "important");
+  } else {
+    wrapper.style.display = "inline-block";
+  }
+
+  // Sincronizar visibilidad con cambios externos (p.ej. rda_ui.js oculta/muestra el select por municipio)
+  // Usamos un flag para ignorar el display:none que pusimos nosotros mismos
+  select._premiumHiddenBySelf = true;
+
+  const attrObserver = new MutationObserver(() => {
+    // Si el sistema externo puso display:none (no nosotros), ocultar wrapper
+    // Si lo pusimos nosotros (_premiumHiddenBySelf), ignorar
+    const isExternallyHidden =
+      select.classList.contains("hidden") ||
+      select.disabled ||
+      (!select._premiumHiddenBySelf && select.style.display === "none");
+    
+    // También detectar cuando el sistema externo lo muestra con display:block o display:''
+    const isExternallyVisible =
+      select.style.display === "block" ||
+      select.style.display === "" ||
+      select.style.display === "flex" ||
+      select.style.display === "inline" ||
+      select.style.display === "inline-block";
+
+    if (isExternallyVisible) {
+      select._premiumHiddenBySelf = false;
+      wrapper.style.display = "inline-block";
+    } else if (isExternallyHidden) {
+      wrapper.style.setProperty("display", "none", "important");
+    }
+  });
+  attrObserver.observe(select, { attributes: true, attributeFilter: ["style", "class", "disabled"] });
+}
+
+function convertAllSelectsToPremium() {
+  document.querySelectorAll("select").forEach(select => {
+    if (
+      select.id !== "chkSinMovimientoSR" && 
+      select.id !== "chkSinMovimientoCONS" && 
+      select.id !== "chkSinMovimientoINF" && 
+      !select.id.endsWith("_custom_select") && 
+      !select.classList.contains("premium-custom-hidden-select") &&
+      !select.classList.contains("exclude-premium")
+    ) {
+      createPremiumCustomDropdown(select);
+    }
+  });
+}
+
+function createPremiumCustomDatePicker(inputId) {
+  const input = typeof inputId === "string" ? document.getElementById(inputId) : inputId;
+  if (!input) return;
+
+  if (!input.id) {
+    input.id = "date_" + Math.random().toString(36).substring(2, 9);
+  }
+
+  const id = input.id;
+
+  const existingWrapper = document.getElementById(`${id}_custom_wrapper`);
+  if (existingWrapper) existingWrapper.remove();
+
+  const wrapper = document.createElement("div");
+  wrapper.id = `${id}_custom_wrapper`;
+  
+  let wrapperClass = "";
+  if (input.className) {
+    wrapperClass = input.className.split(" ").filter(c => {
+      const lower = c.toLowerCase();
+      if (lower.startsWith("w-") || lower.startsWith("max-w-") || lower.startsWith("flex-") || lower.startsWith("col-") || lower.startsWith("row-") || lower.startsWith("grid-") || lower.startsWith("m-") || lower.startsWith("mt-") || lower.startsWith("mb-") || lower.startsWith("ml-") || lower.startsWith("mr-")) {
+        return true;
+      }
+      if (
+        lower.includes("border") ||
+        lower.includes("bg-") ||
+        lower.includes("rounded") ||
+        lower.includes("px-") ||
+        lower.includes("py-") ||
+        lower.includes("text-") ||
+        lower.includes("font-") ||
+        lower.includes("shadow-") ||
+        lower === "hidden"
+      ) {
+        return false;
+      }
+      return true;
+    }).join(" ");
+  }
+  
+  wrapper.className = wrapperClass.trim() + " relative inline-block custom-date-wrapper";
+  
+  const layoutProps = ["width", "minWidth", "maxWidth", "margin", "marginTop", "marginBottom", "marginLeft", "marginRight", "flex", "flexGrow", "flexShrink", "flexBasis", "position", "top", "bottom", "left", "right"];
+  layoutProps.forEach(prop => {
+    if (input.style[prop]) {
+      wrapper.style[prop] = input.style[prop];
+    }
+  });
+  
+  wrapper.style.minWidth = input.style.minWidth || "120px";
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "w-full bg-white border border-slate-100 rounded-full px-4 text-xs font-extrabold text-slate-700 outline-none flex items-center justify-between gap-2 shadow-sm hover:border-violet-200 transition-colors";
+  btn.style.cssText = "min-height: 34px !important; height: 34px !important; padding: 4px 16px !important; margin: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: space-between !important;";
+
+  Array.from(input.classList).forEach(c => {
+    if (c.startsWith("w-") || c.startsWith("max-w-") || c.startsWith("flex-")) {
+      wrapper.classList.add(c);
+      btn.classList.add(c);
+    }
+  });
+
+  const labelSpan = document.createElement("span");
+  labelSpan.className = "truncate flex items-center gap-1.5";
+  
+  const iconSpan = document.createElement("span");
+  iconSpan.className = "material-symbols-rounded text-slate-400 text-[18px] shrink-0";
+  iconSpan.textContent = "calendar_today";
+
+  btn.appendChild(labelSpan);
+  btn.appendChild(iconSpan);
+
+  const dropdown = document.createElement("div");
+  dropdown.className = "hidden absolute left-0 mt-1 bg-white border border-slate-200 rounded-[24px] shadow-xl p-3 flex flex-col gap-2 w-[292px]";
+  dropdown.style.cssText = "display: none; z-index: 99999 !important;";
+
+  if (!document.getElementById("premium-datepicker-styles")) {
+    const style = document.createElement("style");
+    style.id = "premium-datepicker-styles";
+    style.textContent = `
+      @keyframes premium-date-pop {
+        0% { transform: scale(0.8); opacity: 0.5; }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+      }
+      .premium-date-selected {
+        animation: premium-date-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  const formatDateForDisplay = (ymdStr) => {
+    if (!ymdStr) return "Seleccionar fecha...";
+    const parts = ymdStr.split("-");
+    if (parts.length !== 3) return ymdStr;
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  };
+
+  const updateBtnLabel = () => {
+    labelSpan.textContent = formatDateForDisplay(input.value);
+  };
+
+  const parseYmd = (ymdStr) => {
+    if (!ymdStr) {
+      const today = new Date();
+      return { y: today.getFullYear(), m: today.getMonth(), d: today.getDate() };
+    }
+    const parts = ymdStr.split("-");
+    return { y: parseInt(parts[0], 10), m: parseInt(parts[1], 10) - 1, d: parseInt(parts[2], 10) };
+  };
+
+  let { y: viewYear, m: viewMonth } = parseYmd(input.value);
+  let showPickerView = false;
+
+  const renderCalendar = () => {
+    dropdown.innerHTML = "";
+
+    if (showPickerView) {
+      const header = document.createElement("div");
+      header.className = "flex items-center justify-between w-full mb-1";
+
+      const prevYearBtn = document.createElement("button");
+      prevYearBtn.type = "button";
+      prevYearBtn.className = "rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors cursor-pointer border-0 bg-transparent";
+      prevYearBtn.style.cssText = "width: 24px !important; height: 24px !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;";
+      prevYearBtn.innerHTML = '<span class="material-symbols-rounded text-[18px]">chevron_left</span>';
+      prevYearBtn.onclick = (e) => {
+        e.stopPropagation();
+        viewYear--;
+        renderCalendar();
+      };
+
+      const yearTitle = document.createElement("span");
+      yearTitle.className = "font-black text-slate-700 text-xs select-none";
+      yearTitle.textContent = viewYear;
+
+      const nextYearBtn = document.createElement("button");
+      nextYearBtn.type = "button";
+      nextYearBtn.className = "rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors cursor-pointer border-0 bg-transparent";
+      nextYearBtn.style.cssText = "width: 24px !important; height: 24px !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;";
+      nextYearBtn.innerHTML = '<span class="material-symbols-rounded text-[18px]">chevron_right</span>';
+      nextYearBtn.onclick = (e) => {
+        e.stopPropagation();
+        viewYear++;
+        renderCalendar();
+      };
+
+      header.appendChild(prevYearBtn);
+      header.appendChild(yearTitle);
+      header.appendChild(nextYearBtn);
+      dropdown.appendChild(header);
+
+      const monthGrid = document.createElement("div");
+      monthGrid.style.cssText = "display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; margin: 2px 0 !important;";
+      
+      const monthNamesShort = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+      monthNamesShort.forEach((name, idx) => {
+        const cell = document.createElement("button");
+        cell.type = "button";
+        const isCurrentMonth = (idx === viewMonth);
+        
+        cell.className = "rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer border-0";
+        if (isCurrentMonth) {
+          cell.style.cssText = "min-height: 28px !important; height: 28px !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; background-color: #7c3aed !important; color: #ffffff !important;";
+        } else {
+          cell.style.cssText = "min-height: 28px !important; height: 28px !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; background-color: transparent !important; color: #334155 !important; border: 1px solid #f1f5f9 !important;";
+          cell.onmouseenter = () => cell.style.backgroundColor = "#faf5ff";
+          cell.onmouseleave = () => cell.style.backgroundColor = "transparent";
+        }
+        cell.textContent = name;
+        cell.onclick = (e) => {
+          e.stopPropagation();
+          viewMonth = idx;
+          showPickerView = false;
+          renderCalendar();
+        };
+        monthGrid.appendChild(cell);
+      });
+      dropdown.appendChild(monthGrid);
+      
+      const footer = document.createElement("div");
+      footer.className = "flex items-center justify-end border-t border-slate-100 pt-1.5 mt-1";
+      
+      const backBtn = document.createElement("button");
+      backBtn.type = "button";
+      backBtn.className = "text-violet-600 font-extrabold text-[11px] hover:bg-violet-50 transition-colors border-0 bg-transparent cursor-pointer";
+      backBtn.style.cssText = "min-height: 0 !important; padding: 2px 8px !important; margin: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; height: auto !important;";
+      backBtn.textContent = "Volver";
+      backBtn.onclick = (e) => {
+        e.stopPropagation();
+        showPickerView = false;
+        renderCalendar();
+      };
+      
+      footer.appendChild(backBtn);
+      dropdown.appendChild(footer);
+      return;
+    }
+
+    const header = document.createElement("div");
+    header.className = "flex items-center justify-between w-full mb-0.5";
+
+    const prevBtn = document.createElement("button");
+    prevBtn.type = "button";
+    prevBtn.className = "rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors cursor-pointer border-0 bg-transparent";
+    prevBtn.style.cssText = "width: 24px !important; height: 24px !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;";
+    prevBtn.innerHTML = '<span class="material-symbols-rounded text-[16px]">chevron_left</span>';
+    prevBtn.onclick = (e) => {
+      e.stopPropagation();
+      viewMonth--;
+      if (viewMonth < 0) {
+        viewMonth = 11;
+        viewYear--;
+      }
+      renderCalendar();
+    };
+
+    const titleBtn = document.createElement("button");
+    titleBtn.type = "button";
+    titleBtn.className = "font-black text-slate-700 text-xs uppercase tracking-wider select-none hover:bg-slate-50 rounded-lg transition-colors border-0 bg-transparent cursor-pointer flex items-center gap-1";
+    titleBtn.style.cssText = "min-height: 0 !important; padding: 2px 6px !important; margin: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; height: auto !important;";
+    const monthNames = [
+      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ];
+    titleBtn.innerHTML = `<span>${monthNames[viewMonth]} ${viewYear}</span><span class="material-symbols-rounded text-[14px]">arrow_drop_down</span>`;
+    titleBtn.onclick = (e) => {
+      e.stopPropagation();
+      showPickerView = true;
+      renderCalendar();
+    };
+
+    const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.className = "rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors cursor-pointer border-0 bg-transparent";
+    nextBtn.style.cssText = "width: 24px !important; height: 24px !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;";
+    nextBtn.innerHTML = '<span class="material-symbols-rounded text-[16px]">chevron_right</span>';
+    nextBtn.onclick = (e) => {
+      e.stopPropagation();
+      viewMonth++;
+      if (viewMonth > 11) {
+        viewMonth = 0;
+        viewYear++;
+      }
+      renderCalendar();
+    };
+
+    header.appendChild(prevBtn);
+    header.appendChild(titleBtn);
+    header.appendChild(nextBtn);
+    dropdown.appendChild(header);
+
+    const weekGrid = document.createElement("div");
+    weekGrid.className = "text-center text-[10px] font-black select-none mb-0.5";
+    weekGrid.style.cssText = "display: grid !important; grid-template-columns: repeat(7, 1fr) !important; gap: 6px !important;";
+    ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"].forEach(day => {
+      const cell = document.createElement("div");
+      cell.textContent = day;
+      if (day === "Do") {
+        cell.style.color = "#ef4444";
+      } else {
+        cell.style.color = "#94a3b8";
+      }
+      weekGrid.appendChild(cell);
+    });
+    dropdown.appendChild(weekGrid);
+
+    const daysGrid = document.createElement("div");
+    daysGrid.style.cssText = "display: grid !important; grid-template-columns: repeat(7, 1fr) !important; row-gap: 2px !important; column-gap: 6px !important;";
+
+    const firstDayDate = new Date(viewYear, viewMonth, 1);
+    let startOffset = firstDayDate.getDay() - 1;
+    if (startOffset < 0) startOffset = 6;
+
+    const totalDays = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const prevTotalDays = new Date(viewYear, viewMonth, 0).getDate();
+
+    let cellIndex = 0;
+
+    for (let i = startOffset - 1; i >= 0; i--) {
+      const dayNum = prevTotalDays - i;
+      const cell = document.createElement("button");
+      cell.type = "button";
+      cell.className = "rounded-full border-0 bg-transparent flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors";
+      cell.style.cssText = "width: 32px !important; height: 32px !important; padding: 0 !important; margin: 0 !important; min-height: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 11px !important; font-weight: 500 !important; color: #cbd5e1 !important;";
+      cell.textContent = dayNum;
+      
+      const targetM = viewMonth === 0 ? 11 : viewMonth - 1;
+      const targetY = viewMonth === 0 ? viewYear - 1 : viewYear;
+      cell.onclick = (e) => {
+        e.stopPropagation();
+        selectDate(targetY, targetM, dayNum);
+      };
+      daysGrid.appendChild(cell);
+      cellIndex++;
+    }
+
+    const selectedDateObj = parseYmd(input.value);
+
+    for (let d = 1; d <= totalDays; d++) {
+      const cell = document.createElement("button");
+      cell.type = "button";
+      const isSelected = selectedDateObj.y === viewYear && selectedDateObj.m === viewMonth && selectedDateObj.d === d;
+      
+      if (isSelected) {
+        cell.className = "rounded-full border-0 flex items-center justify-center cursor-pointer shadow-[0_2px_8px_rgba(139,92,246,0.3)] premium-date-selected";
+        cell.style.cssText = "width: 32px !important; height: 32px !important; padding: 0 !important; margin: 0 !important; min-height: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 11px !important; font-weight: 900 !important; background-color: #7c3aed !important; color: #ffffff !important;";
+      } else {
+        const isSunday = (cellIndex % 7 === 6);
+        cell.className = "rounded-full border border-transparent hover:border-violet-200 hover:bg-violet-50/50 flex items-center justify-center transition-all cursor-pointer bg-transparent";
+        cell.style.cssText = `width: 32px !important; height: 32px !important; padding: 0 !important; margin: 0 !important; min-height: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 11px !important; font-weight: 800 !important; color: ${isSunday ? '#ef4444' : '#0f172a'} !important;`;
+      }
+      cell.textContent = d;
+      cell.onclick = (e) => {
+        e.stopPropagation();
+        selectDate(viewYear, viewMonth, d);
+      };
+      daysGrid.appendChild(cell);
+      cellIndex++;
+    }
+
+    const currentCellsCount = startOffset + totalDays;
+    const remainingCells = 42 - currentCellsCount;
+    for (let d = 1; d <= remainingCells; d++) {
+      const cell = document.createElement("button");
+      cell.type = "button";
+      cell.className = "rounded-full border-0 bg-transparent flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors";
+      cell.style.cssText = "width: 32px !important; height: 32px !important; padding: 0 !important; margin: 0 !important; min-height: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 11px !important; font-weight: 500 !important; color: #cbd5e1 !important;";
+      cell.textContent = d;
+
+      const targetM = viewMonth === 11 ? 0 : viewMonth + 1;
+      const targetY = viewMonth === 11 ? viewYear + 1 : viewYear;
+      cell.onclick = (e) => {
+        e.stopPropagation();
+        selectDate(targetY, targetM, d);
+      };
+      daysGrid.appendChild(cell);
+      cellIndex++;
+    }
+
+    dropdown.appendChild(daysGrid);
+
+    const footer = document.createElement("div");
+    footer.className = "flex items-center justify-between border-t border-slate-100 pt-1.5 mt-0.5";
+    
+    const clearBtn = document.createElement("button");
+    clearBtn.type = "button";
+    clearBtn.className = "text-violet-600 font-extrabold text-[11px] hover:bg-violet-50 rounded-lg transition-colors border-0 bg-transparent cursor-pointer";
+    clearBtn.textContent = "Borrar";
+    clearBtn.style.cssText = "min-height: 0 !important; padding: 2px 8px !important; margin: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; height: auto !important;";
+    clearBtn.onclick = (e) => {
+      e.stopPropagation();
+      input.value = "";
+      input.dispatchEvent(new Event("change"));
+      dropdown.classList.add("hidden");
+      dropdown.style.display = "none";
+      wrapper.style.zIndex = "";
+      setParentZIndex(wrapper, "");
+      updateBtnLabel();
+    };
+    
+    const todayBtn = document.createElement("button");
+    todayBtn.type = "button";
+    todayBtn.className = "text-violet-600 font-extrabold text-[11px] hover:bg-violet-50 px-2 py-0.5 rounded-lg transition-colors border-0 bg-transparent cursor-pointer";
+    todayBtn.textContent = "Hoy";
+    todayBtn.style.margin = "0 !important;";
+    todayBtn.onclick = (e) => {
+      e.stopPropagation();
+      const today = new Date();
+      const y = today.getFullYear();
+      const m = String(today.getMonth() + 1).padStart(2, "0");
+      const d = String(today.getDate()).padStart(2, "0");
+      input.value = `${y}-${m}-${d}`;
+      input.dispatchEvent(new Event("change"));
+      dropdown.classList.add("hidden");
+      dropdown.style.display = "none";
+      updateBtnLabel();
+    };
+    
+    footer.appendChild(clearBtn);
+    footer.appendChild(todayBtn);
+    dropdown.appendChild(footer);
+  };
+
+  const selectDate = (y, m, d) => {
+    const formattedMonth = String(m + 1).padStart(2, "0");
+    const formattedDay = String(d).padStart(2, "0");
+    input.value = `${y}-${formattedMonth}-${formattedDay}`;
+    input.dispatchEvent(new Event("change"));
+    dropdown.classList.add("hidden");
+    dropdown.style.display = "none";
+    updateBtnLabel();
+  };
+
+  btn.onclick = (e) => {
+    e.stopPropagation();
+    document.querySelectorAll("[id$=_custom_wrapper] > div").forEach(d => {
+      if (d !== dropdown) {
+        d.classList.add("hidden");
+        d.style.display = "none";
+        const wrp = d.parentElement;
+        if (wrp) {
+          wrp.style.zIndex = "";
+          setParentZIndex(wrp, "");
+        }
+      }
+    });
+
+    const isHidden = dropdown.classList.contains("hidden");
+    if (isHidden) {
+      const currentVal = parseYmd(input.value);
+      viewYear = currentVal.y;
+      viewMonth = currentVal.m;
+      showPickerView = false;
+      renderCalendar();
+      dropdown.classList.remove("hidden");
+      dropdown.style.setProperty("display", "flex", "important");
+      wrapper.style.zIndex = "99999";
+      setParentZIndex(wrapper, "99999");
+    } else {
+      dropdown.classList.add("hidden");
+      dropdown.style.display = "none";
+      wrapper.style.zIndex = "";
+      setParentZIndex(wrapper, "");
+    }
+  };
+
+  document.addEventListener("click", (e) => {
+    if (!wrapper.contains(e.target)) {
+      dropdown.classList.add("hidden");
+      dropdown.style.display = "none";
+      wrapper.style.zIndex = "";
+      setParentZIndex(wrapper, "");
+    }
+  });
+
+  input.addEventListener("change", updateBtnLabel);
+
+  try {
+    const originalDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+    if (originalDescriptor && !input._descriptorHooked) {
+      Object.defineProperty(input, "value", {
+        get() {
+          return originalDescriptor.get.call(this);
+        },
+        set(val) {
+          originalDescriptor.set.call(this, val);
+          updateBtnLabel();
+        },
+        configurable: true
+      });
+      input._descriptorHooked = true;
+    }
+  } catch (err) {
+    console.warn("Could not hook property descriptor on input:", err);
+  }
+
+  const wasOriginallyHidden =
+    input.style.display === "none" ||
+    input.classList.contains("hidden") ||
+    getComputedStyle(input).display === "none";
+
+  input.classList.add("premium-custom-hidden-select");
+  input.style.display = "none";
+  input.parentNode.insertBefore(wrapper, input);
+  wrapper.appendChild(btn);
+  wrapper.appendChild(dropdown);
+
+  updateBtnLabel();
+
+  if (wasOriginallyHidden) {
+    wrapper.style.setProperty("display", "none", "important");
+  } else {
+    wrapper.style.display = "inline-block";
+  }
+
+  input._premiumHiddenBySelf = true;
+
+  const attrObserver = new MutationObserver(() => {
+    const isExternallyHidden =
+      input.classList.contains("hidden") ||
+      input.disabled ||
+      (!input._premiumHiddenBySelf && input.style.display === "none");
+    
+    const isExternallyVisible =
+      input.style.display === "block" ||
+      input.style.display === "" ||
+      input.style.display === "flex" ||
+      input.style.display === "inline" ||
+      input.style.display === "inline-block";
+
+    if (isExternallyVisible) {
+      input._premiumHiddenBySelf = false;
+      wrapper.style.display = "inline-block";
+    } else if (isExternallyHidden) {
+      wrapper.style.setProperty("display", "none", "important");
+    }
+  });
+  attrObserver.observe(input, { attributes: true, attributeFilter: ["style", "class", "disabled"] });
+}
+
+window.createPremiumCustomDropdown = createPremiumCustomDropdown;
+window.createPremiumCustomDatePicker = createPremiumCustomDatePicker;
+window.createPremiumCustomMonthPicker = createPremiumCustomMonthPicker;
+window.convertAllSelectsToPremium = convertAllSelectsToPremium;
+
+function createPremiumCustomMonthPicker(inputId) {
+  const input = typeof inputId === "string" ? document.getElementById(inputId) : inputId;
+  if (!input) return;
+
+  if (!input.id) {
+    input.id = "month_" + Math.random().toString(36).substring(2, 9);
+  }
+
+  const id = input.id;
+
+  const existingWrapper = document.getElementById(`${id}_custom_wrapper`);
+  if (existingWrapper) existingWrapper.remove();
+
+  const wrapper = document.createElement("div");
+  wrapper.id = `${id}_custom_wrapper`;
+  
+  // Clean parent outline if it has border/bg-surface (MD3 group wrapper)
+  const parent = input.parentElement;
+  if (parent && (parent.classList.contains("border") || parent.style.border || parent.className.includes("border-slate-200"))) {
+    parent.className = parent.className.replace(/\bbg-[a-z0-9-]+\b/g, "")
+                                        .replace(/\bborder-[a-z0-9-\/]+\b/g, "")
+                                        .replace(/\bborder\b/g, "")
+                                        .replace(/\brounded-[a-z0-9]+\b/g, "")
+                                        .replace(/\bpx-[0-9]+\b/g, "")
+                                        .replace(/\bshadow-[a-z0-9-]+\b/g, "");
+    parent.style.border = "none";
+    parent.style.background = "transparent";
+    parent.style.boxShadow = "none";
+    
+    Array.from(parent.children).forEach(child => {
+      if (child !== input && child.classList.contains("material-symbols-rounded")) {
+        child.style.display = "none";
+      }
+    });
+  }
+
+  let wrapperClass = "";
+  if (input.className) {
+    wrapperClass = input.className.split(" ").filter(c => {
+      const lower = c.toLowerCase();
+      if (lower.startsWith("w-") || lower.startsWith("max-w-") || lower.startsWith("flex-") || lower.startsWith("col-") || lower.startsWith("row-") || lower.startsWith("grid-") || lower.startsWith("m-") || lower.startsWith("mt-") || lower.startsWith("mb-") || lower.startsWith("ml-") || lower.startsWith("mr-")) {
+        return true;
+      }
+      if (
+        lower.includes("border") ||
+        lower.includes("bg-") ||
+        lower.includes("rounded") ||
+        lower.includes("px-") ||
+        lower.includes("py-") ||
+        lower.includes("text-") ||
+        lower.includes("font-") ||
+        lower.includes("shadow-") ||
+        lower === "hidden"
+      ) {
+        return false;
+      }
+      return true;
+    }).join(" ");
+  }
+  
+  wrapper.className = wrapperClass.trim() + " relative inline-block custom-date-wrapper";
+  
+  const layoutProps = ["width", "minWidth", "maxWidth", "margin", "marginTop", "marginBottom", "marginLeft", "marginRight", "flex", "flexGrow", "flexShrink", "flexBasis", "position", "top", "bottom", "left", "right"];
+  layoutProps.forEach(prop => {
+    if (input.style[prop]) {
+      wrapper.style[prop] = input.style[prop];
+    }
+  });
+  
+  wrapper.style.minWidth = input.style.minWidth || "120px";
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "w-full bg-white border border-slate-100 rounded-full px-4 text-xs font-extrabold text-slate-700 outline-none flex items-center justify-between gap-2 shadow-sm hover:border-violet-200 transition-colors";
+  btn.style.cssText = "min-height: 34px !important; height: 34px !important; padding: 4px 16px !important; margin: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: space-between !important;";
+
+  Array.from(input.classList).forEach(c => {
+    if (c.startsWith("w-") || c.startsWith("max-w-") || c.startsWith("flex-")) {
+      wrapper.classList.add(c);
+      btn.classList.add(c);
+    }
+  });
+
+  const labelSpan = document.createElement("span");
+  labelSpan.className = "truncate flex items-center gap-1.5";
+  
+  const iconSpan = document.createElement("span");
+  iconSpan.className = "material-symbols-rounded text-slate-400 text-[18px] shrink-0";
+  iconSpan.textContent = "calendar_month";
+
+  btn.appendChild(labelSpan);
+  btn.appendChild(iconSpan);
+
+  const dropdown = document.createElement("div");
+  dropdown.className = "hidden absolute left-0 mt-1 bg-white border border-slate-200 rounded-[24px] shadow-xl p-3 flex flex-col gap-2 w-[240px]";
+  dropdown.style.cssText = "display: none; z-index: 99999 !important;";
+
+  const monthNames = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+  ];
+
+  const formatDateForDisplay = (ymStr) => {
+    if (!ymStr) return "Seleccionar mes...";
+    const parts = ymStr.split("-");
+    if (parts.length !== 2) return ymStr;
+    const mIdx = parseInt(parts[1], 10) - 1;
+    return `${monthNames[mIdx]} ${parts[0]}`;
+  };
+
+  const updateBtnLabel = () => {
+    labelSpan.textContent = formatDateForDisplay(input.value);
+  };
+
+  const parseYm = (ymStr) => {
+    if (!ymStr) {
+      const today = new Date();
+      return { y: today.getFullYear(), m: today.getMonth() };
+    }
+    const parts = ymStr.split("-");
+    return { y: parseInt(parts[0], 10), m: parseInt(parts[1], 10) - 1 };
+  };
+
+  let { y: viewYear, m: viewMonth } = parseYm(input.value);
+
+  const renderMonthPicker = () => {
+    dropdown.innerHTML = "";
+
+    const header = document.createElement("div");
+    header.className = "flex items-center justify-between w-full mb-1";
+
+    const prevYearBtn = document.createElement("button");
+    prevYearBtn.type = "button";
+    prevYearBtn.className = "rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors cursor-pointer border-0 bg-transparent";
+    prevYearBtn.style.cssText = "width: 24px !important; height: 24px !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;";
+    prevYearBtn.innerHTML = '<span class="material-symbols-rounded text-[18px]">chevron_left</span>';
+    prevYearBtn.onclick = (e) => {
+      e.stopPropagation();
+      viewYear--;
+      renderMonthPicker();
+    };
+
+    const yearTitle = document.createElement("span");
+    yearTitle.className = "font-black text-slate-700 text-xs select-none";
+    yearTitle.textContent = viewYear;
+
+    const nextYearBtn = document.createElement("button");
+    nextYearBtn.type = "button";
+    nextYearBtn.className = "rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors cursor-pointer border-0 bg-transparent";
+    nextYearBtn.style.cssText = "width: 24px !important; height: 24px !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;";
+    nextYearBtn.innerHTML = '<span class="material-symbols-rounded text-[18px]">chevron_right</span>';
+    nextYearBtn.onclick = (e) => {
+      e.stopPropagation();
+      viewYear++;
+      renderMonthPicker();
+    };
+
+    header.appendChild(prevYearBtn);
+    header.appendChild(yearTitle);
+    header.appendChild(nextYearBtn);
+    dropdown.appendChild(header);
+
+    const monthGrid = document.createElement("div");
+    monthGrid.style.cssText = "display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; margin: 2px 0 !important;";
+    
+    const monthNamesShort = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    monthNamesShort.forEach((name, idx) => {
+      const cell = document.createElement("button");
+      cell.type = "button";
+      const isCurrentMonth = (idx === viewMonth);
+      
+      cell.className = "rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer border-0";
+      if (isCurrentMonth) {
+        cell.style.cssText = "min-height: 28px !important; height: 28px !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; background-color: #7c3aed !important; color: #ffffff !important;";
+      } else {
+        cell.style.cssText = "min-height: 28px !important; height: 28px !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; background-color: transparent !important; color: #334155 !important; border: 1px solid #f1f5f9 !important;";
+        cell.onmouseenter = () => cell.style.backgroundColor = "#faf5ff";
+        cell.onmouseleave = () => cell.style.backgroundColor = "transparent";
+      }
+      cell.textContent = name;
+      cell.onclick = (e) => {
+        e.stopPropagation();
+        viewMonth = idx;
+        selectMonth(viewYear, viewMonth);
+      };
+      monthGrid.appendChild(cell);
+    });
+    dropdown.appendChild(monthGrid);
+    
+    const footer = document.createElement("div");
+    footer.className = "flex items-center justify-between border-t border-slate-100 pt-1.5 mt-1";
+    
+    const clearBtn = document.createElement("button");
+    clearBtn.type = "button";
+    clearBtn.className = "text-violet-600 font-extrabold text-[11px] hover:bg-violet-50 transition-colors border-0 bg-transparent cursor-pointer";
+    clearBtn.style.cssText = "min-height: 0 !important; padding: 2px 8px !important; margin: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; height: auto !important;";
+    clearBtn.textContent = "Borrar";
+    clearBtn.onclick = (e) => {
+      e.stopPropagation();
+      input.value = "";
+      input.dispatchEvent(new Event("change"));
+      dropdown.classList.add("hidden");
+      dropdown.style.display = "none";
+      wrapper.style.zIndex = "";
+      setParentZIndex(wrapper, "");
+      updateBtnLabel();
+    };
+
+    const thisMonthBtn = document.createElement("button");
+    thisMonthBtn.type = "button";
+    thisMonthBtn.className = "text-violet-600 font-extrabold text-[11px] hover:bg-violet-50 transition-colors border-0 bg-transparent cursor-pointer";
+    thisMonthBtn.style.cssText = "min-height: 0 !important; padding: 2px 8px !important; margin: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; height: auto !important;";
+    thisMonthBtn.textContent = "Este mes";
+    thisMonthBtn.onclick = (e) => {
+      e.stopPropagation();
+      const today = new Date();
+      viewYear = today.getFullYear();
+      viewMonth = today.getMonth();
+      selectMonth(viewYear, viewMonth);
+    };
+
+    footer.appendChild(clearBtn);
+    footer.appendChild(thisMonthBtn);
+    dropdown.appendChild(footer);
+  };
+
+  const selectMonth = (y, m) => {
+    const formattedMonth = String(m + 1).padStart(2, "0");
+    input.value = `${y}-${formattedMonth}`;
+    input.dispatchEvent(new Event("change"));
+    dropdown.classList.add("hidden");
+    dropdown.style.display = "none";
+    wrapper.style.zIndex = "";
+    setParentZIndex(wrapper, "");
+    updateBtnLabel();
+  };
+
+  btn.onclick = (e) => {
+    e.stopPropagation();
+    document.querySelectorAll("[id$=_custom_wrapper] > div").forEach(d => {
+      if (d !== dropdown) {
+        d.classList.add("hidden");
+        d.style.display = "none";
+        const wrp = d.parentElement;
+        if (wrp) {
+          wrp.style.zIndex = "";
+          setParentZIndex(wrp, "");
+        }
+      }
+    });
+
+    const isHidden = dropdown.classList.contains("hidden");
+    if (isHidden) {
+      const currentVal = parseYm(input.value);
+      viewYear = currentVal.y;
+      viewMonth = currentVal.m;
+      renderMonthPicker();
+      dropdown.classList.remove("hidden");
+      dropdown.style.setProperty("display", "flex", "important");
+      wrapper.style.zIndex = "99999";
+      setParentZIndex(wrapper, "99999");
+    } else {
+      dropdown.classList.add("hidden");
+      dropdown.style.display = "none";
+      wrapper.style.zIndex = "";
+      setParentZIndex(wrapper, "");
+    }
+  };
+
+  document.addEventListener("click", (e) => {
+    if (!wrapper.contains(e.target)) {
+      dropdown.classList.add("hidden");
+      dropdown.style.display = "none";
+      wrapper.style.zIndex = "";
+      setParentZIndex(wrapper, "");
+    }
+  });
+
+  input.addEventListener("change", updateBtnLabel);
+
+  try {
+    const originalDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+    if (originalDescriptor && !input._descriptorHooked) {
+      Object.defineProperty(input, "value", {
+        get() {
+          return originalDescriptor.get.call(this);
+        },
+        set(val) {
+          originalDescriptor.set.call(this, val);
+          updateBtnLabel();
+        },
+        configurable: true
+      });
+      input._descriptorHooked = true;
+    }
+  } catch (err) {
+    console.warn("Could not hook property descriptor on input:", err);
+  }
+
+  const wasOriginallyHidden =
+    input.style.display === "none" ||
+    input.classList.contains("hidden") ||
+    getComputedStyle(input).display === "none";
+
+  input.classList.add("premium-custom-hidden-select");
+  input.style.display = "none";
+  input.parentNode.insertBefore(wrapper, input);
+  wrapper.appendChild(btn);
+  wrapper.appendChild(dropdown);
+
+  updateBtnLabel();
+
+  if (wasOriginallyHidden) {
+    wrapper.style.setProperty("display", "none", "important");
+  } else {
+    wrapper.style.display = "inline-block";
+  }
+
+  input._premiumHiddenBySelf = true;
+
+  const attrObserver = new MutationObserver(() => {
+    const isExternallyHidden =
+      input.classList.contains("hidden") ||
+      input.disabled ||
+      (!input._premiumHiddenBySelf && input.style.display === "none");
+    
+    const isExternallyVisible =
+      input.style.display === "block" ||
+      input.style.display === "" ||
+      input.style.display === "flex" ||
+      input.style.display === "inline" ||
+      input.style.display === "inline-block";
+
+    if (isExternallyVisible) {
+      input._premiumHiddenBySelf = false;
+      wrapper.style.display = "inline-block";
+    } else if (isExternallyHidden) {
+      wrapper.style.setProperty("display", "none", "important");
+    }
+  });
+  attrObserver.observe(input, { attributes: true, attributeFilter: ["style", "class", "disabled"] });
+}
+
+window.createPremiumCustomDropdown = createPremiumCustomDropdown;
+window.createPremiumCustomDatePicker = createPremiumCustomDatePicker;
+window.createPremiumCustomMonthPicker = createPremiumCustomMonthPicker;
+window.convertAllSelectsToPremium = convertAllSelectsToPremium;
+
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    convertAllSelectsToPremium();
+    createPremiumCustomDatePicker("summaryFecha");
+    createPremiumCustomMonthPicker("histMesEvaluacion");
+  }, 300);
+
+  // Observador de mutaciones para convertir dinámicamente cualquier select nuevo creado
+  const observer = new MutationObserver((mutations) => {
+    // 1. Limpiar wrappers huérfanos (cuyo select original ya no exista en el DOM)
+    document.querySelectorAll("[id$=_custom_wrapper]").forEach(wrp => {
+      const originalId = wrp.id.replace("_custom_wrapper", "");
+      const originalSelect = document.getElementById(originalId);
+      if (!originalSelect || !document.body.contains(originalSelect)) {
+        wrp.remove();
+      }
+    });
+
+    let hasNewSelects = false;
+    mutations.forEach(mutation => {
+      mutation.addedNodes.forEach(node => {
+        if (node.nodeName === "SELECT") {
+          hasNewSelects = true;
+        } else if (node.querySelectorAll && node.querySelectorAll("select").length > 0) {
+          hasNewSelects = true;
+        }
+      });
+    });
+    if (hasNewSelects) {
+      convertAllSelectsToPremium();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+});
+

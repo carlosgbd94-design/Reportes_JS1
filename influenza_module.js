@@ -59,6 +59,10 @@ function getISOWeek(date) {
 }
 
 let _campaignConfig = { fecha_inicio: "2025-10-03", fecha_fin: "2026-04-25" };
+let _uploadedCsvData = null;
+let _conciliacionLastResult = [];
+let _conciliacionFilter = "all"; // all, diff, match
+let _conciliacionSearchQuery = "";
 
 /**
  * Deriva el nombre de campaña (ej. "2025-2026") a partir de las fechas.
@@ -89,7 +93,11 @@ function populateCampaignSelectors() {
 
   ["influenza_campana", "metaCampaignSelect"].forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.innerHTML = html;
+    if (el) {
+      el.innerHTML = html;
+      el.value = name;
+      el.dispatchEvent(new Event("change"));
+    }
   });
 
   // Actualizar badge/eyebrow si existe
@@ -181,10 +189,212 @@ function generateCampaignWeeks() {
   return weeks;
 }
 
+// Helper para renderizar el Selector de Semanas Premium en el Dropdown
+function renderInfluenzaWeekPicker() {
+  const dropdown = document.getElementById("influenza_semana_dropdown");
+  const hiddenInput = document.getElementById("influenza_semana");
+  if (!dropdown || !hiddenInput) return;
+
+  // Ajustar ancho del panel a 360px para dar más espacio a las etiquetas
+  dropdown.style.setProperty("width", "360px", "important");
+
+  const weeks = generateCampaignWeeks();
+  const today = new Date().toISOString().split("T")[0];
+
+  // Determinar semana epidemiológica actual (la primera futura/actual o la última)
+  let currentWeekFecha = null;
+  const futureOrCurrentWeeks = weeks.filter(w => w.fecha >= today);
+  if (futureOrCurrentWeeks.length) {
+    currentWeekFecha = futureOrCurrentWeeks[0].fecha;
+  } else if (weeks.length) {
+    currentWeekFecha = weeks[weeks.length - 1].fecha;
+  }
+
+  dropdown.innerHTML = "";
+
+  weeks.forEach(w => {
+    const captureRecord = _influenzaCapturasCache.find(r => r.fecha === w.fecha);
+    const isCaptured = !!captureRecord;
+    const isSinMov = captureRecord && (captureRecord.sin_movimiento === true || captureRecord.sin_movimiento === 'SI');
+    const isCurrent = w.fecha === currentWeekFecha;
+    const isFuture = w.fecha > today && !isCurrent;
+    
+    let statusBadge = "";
+    if (isSinMov) {
+      statusBadge = `<span style="background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 3px 8px; border-radius: 9999px; font-size: 10px; font-weight: 900; display: inline-flex; align-items: center; gap: 4px;" class="shrink-0 shadow-sm"><span class="material-symbols-rounded text-xs" style="font-size:11px; color: #1d4ed8;">pause_circle</span>Sin Movimiento</span>`;
+    } else if (isCaptured) {
+      statusBadge = `<span style="background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 3px 8px; border-radius: 9999px; font-size: 10px; font-weight: 900; display: inline-flex; align-items: center; gap: 4px;" class="shrink-0 shadow-sm"><span class="material-symbols-rounded text-xs" style="font-size:11px; color: #047857;">check_circle</span>Capturado</span>`;
+    } else if (isFuture) {
+      statusBadge = `<span style="background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 3px 8px; border-radius: 9999px; font-size: 10px; font-weight: 800;" class="shrink-0">Futuro</span>`;
+    } else {
+      statusBadge = `<span style="background-color: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 3px 8px; border-radius: 9999px; font-size: 10px; font-weight: 900; display: inline-flex; align-items: center; gap: 4px;" class="shrink-0 shadow-sm"><span class="material-symbols-rounded text-xs" style="font-size:11px; color: #b45309;">error</span>Pendiente</span>`;
+    }
+
+    const currentBadge = isCurrent ? `<span style="background-color: #7c3aed; color: #ffffff; text-shadow: 0 1px 1px rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 0.05em; font-size: 8px; font-weight: 900; padding: 1.5px 5px; border-radius: 4px; display: inline-flex; align-items: center; margin-left: 6px; line-height: 1;" class="shrink-0">ACTUAL</span>` : "";
+    const isSelected = hiddenInput.value === w.fecha;
+
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = `w-full text-left p-2.5 rounded-xl border flex items-center justify-between gap-2.5 transition-all`;
+
+    // Estilos premium explícitos para el selector de semanas
+    if (isSelected) {
+      item.style.backgroundColor = "#f3e8ff"; // Fondo lavanda/violeta claro
+      item.style.borderColor = "#c084fc"; // Borde violeta medio
+      item.classList.add("shadow-sm");
+    } else {
+      item.style.backgroundColor = "transparent";
+      item.style.borderColor = "#f1f5f9"; // slate-100
+      
+      item.addEventListener("mouseenter", () => {
+        item.style.backgroundColor = "#f8fafc"; // slate-50
+        item.style.borderColor = "#e2e8f0"; // slate-200
+      });
+      item.addEventListener("mouseleave", () => {
+        item.style.backgroundColor = "transparent";
+        item.style.borderColor = "#f1f5f9";
+      });
+    }
+
+    const textStyle = isSelected ? `style="color: #6b21a8; font-weight: 900;"` : `style="color: #1e293b; font-weight: 800;"`;
+    const labelStyle = isSelected ? `style="color: #8b5cf6;"` : `style="color: #94a3b8;"`;
+
+    item.innerHTML = `
+      <div class="flex flex-col min-w-0">
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs shrink-0" ${textStyle}>Semana ${w.semana}</span>
+          ${currentBadge}
+        </div>
+        <span class="text-[10px] mt-0.5 truncate" ${labelStyle}>Corte: ${w.fecha}</span>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        ${statusBadge}
+        ${isSelected ? '<span class="material-symbols-rounded text-xs shrink-0" style="color: #6b21a8; font-weight: 900;">check</span>' : ''}
+      </div>
+    `;
+
+    item.onclick = (e) => {
+      e.stopPropagation();
+      hiddenInput.value = w.fecha;
+      hiddenInput.dispatchEvent(new Event("change"));
+      dropdown.classList.add("hidden");
+      dropdown.style.display = "none";
+    };
+
+    dropdown.appendChild(item);
+  });
+}
+
+// Helper para actualizar la etiqueta del botón selector
+function updateInfluenzaWeekBtnLabel(fecha) {
+  const labelSpan = document.getElementById("influenza_semana_label");
+  if (!labelSpan) return;
+
+  const weeks = generateCampaignWeeks();
+  const selected = weeks.find(w => w.fecha === fecha);
+  if (selected) {
+    const captureRecord = _influenzaCapturasCache.find(r => r.fecha === fecha);
+    const isCaptured = !!captureRecord;
+    const isSinMov = captureRecord && (captureRecord.sin_movimiento === true || captureRecord.sin_movimiento === 'SI');
+    
+    let statusBadge = "";
+    if (isSinMov) {
+      statusBadge = `<span class="text-blue-700 bg-blue-50 border border-blue-200 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm"><span class="material-symbols-rounded text-xs" style="font-size:12px;">pause_circle</span>Sin Movimiento</span>`;
+    } else if (isCaptured) {
+      statusBadge = `<span class="text-emerald-700 bg-emerald-50 border border-emerald-200 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm"><span class="material-symbols-rounded text-xs" style="font-size:12px;">check_circle</span>Capturado</span>`;
+    } else {
+      statusBadge = `<span class="text-amber-700 bg-amber-50 border border-amber-200 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm"><span class="material-symbols-rounded text-xs" style="font-size:12px;">error</span>Pendiente</span>`;
+    }
+    labelSpan.innerHTML = `<span class="font-extrabold text-violet-700">Semana ${selected.semana}</span> <span class="text-slate-400 font-bold">(${selected.fecha})</span> ${statusBadge}`;
+  } else {
+    labelSpan.innerHTML = `<span class="text-slate-400 font-bold">Seleccionar semana...</span>`;
+  }
+}
+
+let SIN_MOVIMIENTO_INF = false;
+
+function updateInfluenzaSinMovimientoUI() {
+  const chkINF = document.getElementById("chkSinMovimientoINF");
+  const cardINF = document.getElementById("cardSinMovimientoINF");
+  if (!chkINF || !cardINF) return;
+
+  const selectedFecha = document.getElementById("influenza_semana").value;
+  const currentReport = _influenzaCapturasCache.find(r => r.fecha === selectedFecha);
+
+  if (currentReport) {
+    cardINF.style.display = "flex";
+    const isSinMov = !!(currentReport.sin_movimiento === true || currentReport.sin_movimiento === 'SI');
+    chkINF.checked = isSinMov;
+    chkINF.disabled = true;
+    SIN_MOVIMIENTO_INF = isSinMov;
+  } else {
+    cardINF.style.display = "flex";
+    chkINF.checked = SIN_MOVIMIENTO_INF;
+    chkINF.disabled = false;
+  }
+
+  // Update styles
+  const iconBg = document.getElementById("iconSinMovimientoINFBg");
+  const labelText = document.getElementById("labelSinMovimientoINF");
+
+  if (chkINF.checked) {
+    cardINF.style.borderColor = "var(--md-sys-color-primary)";
+    cardINF.style.background = "var(--md-sys-color-primary-container)";
+    if (iconBg) {
+      iconBg.style.background = "var(--md-sys-color-primary)";
+      iconBg.style.color = "var(--md-sys-color-on-primary)";
+    }
+    if (labelText) labelText.style.color = "var(--md-sys-color-primary)";
+  } else {
+    cardINF.style.borderColor = "#cbd5e1";
+    cardINF.style.background = "#ffffff";
+    if (iconBg) {
+      iconBg.style.background = "#f1f5f9";
+      iconBg.style.color = "#64748b";
+    }
+    if (labelText) labelText.style.color = "#475569";
+  }
+
+  // Bloquear selectores principales (Semana y Campaña)
+  const isSinMovActive = chkINF.checked;
+  const weekBtn = document.getElementById("influenza_semana_btn");
+
+  if (isSinMovActive) {
+    if (weekBtn) {
+      weekBtn.disabled = true;
+      weekBtn.style.opacity = "0.55";
+      weekBtn.style.pointerEvents = "none";
+    }
+    // We do NOT disable the raw campSelect so that its custom wrapper remains visible.
+    // Instead we only disable the custom wrapper button trigger.
+    const campWrapperBtn = document.querySelector("#influenza_campana_custom_wrapper > button");
+    if (campWrapperBtn) {
+      campWrapperBtn.disabled = true;
+      campWrapperBtn.style.opacity = "0.55";
+      campWrapperBtn.style.pointerEvents = "none";
+    }
+  } else {
+    if (weekBtn) {
+      weekBtn.disabled = false;
+      weekBtn.style.opacity = "";
+      weekBtn.style.pointerEvents = "";
+    }
+    const campWrapperBtn = document.querySelector("#influenza_campana_custom_wrapper > button");
+    if (campWrapperBtn) {
+      campWrapperBtn.disabled = false;
+      campWrapperBtn.style.opacity = "";
+      campWrapperBtn.style.pointerEvents = "";
+    }
+  }
+}
+
 // Inicializar el flujo de captura en UNIDAD
 let _influenzaMetasCache = {};
 let _influenzaCapturasCache = [];
 let _influenzaDistribucionCache = [];
+let _adminInfluenzaTrendChart = null;
+let _adminInfluenzaBreakdownChart = null;
+
 
 async function initInfluenzaCaptureFlow() {
   if (USER.rol !== "UNIDAD") return;
@@ -224,9 +434,10 @@ async function initInfluenzaCaptureFlow() {
 
   const weeks = generateCampaignWeeks();
   const weekSelect = document.getElementById("influenza_semana");
-  if (weekSelect) {
-    weekSelect.innerHTML = weeks.map(w => `<option value="${w.fecha}">${w.label}</option>`).join("");
-    // Autoseleccionar la semana actual si coincide, o la última activa
+  const weekBtn = document.getElementById("influenza_semana_btn");
+  const weekDropdown = document.getElementById("influenza_semana_dropdown");
+
+  if (weekSelect && weekBtn && weekDropdown) {
     const today = new Date().toISOString().split("T")[0];
     const matchingWeek = weeks.find(w => w.fecha >= today);
     if (matchingWeek) {
@@ -235,12 +446,66 @@ async function initInfluenzaCaptureFlow() {
       weekSelect.value = weeks[weeks.length - 1].fecha;
     }
     
+    // Toggle dropdown
+    weekBtn.onclick = (e) => {
+      e.stopPropagation();
+
+      // Cerrar otros dropdowns premium estándar abiertos en el DOM
+      document.querySelectorAll("[id$=_custom_wrapper] > div").forEach(d => {
+        d.classList.add("hidden");
+        d.style.display = "none";
+        const wrp = d.parentElement;
+        if (wrp) {
+          wrp.style.zIndex = "";
+          if (typeof setParentZIndex === 'function') setParentZIndex(wrp, "");
+        }
+      });
+
+      const isHidden = weekDropdown.classList.contains("hidden");
+      if (isHidden) {
+        renderInfluenzaWeekPicker();
+        weekDropdown.classList.remove("hidden");
+        weekDropdown.style.display = "flex";
+      } else {
+        weekDropdown.classList.add("hidden");
+        weekDropdown.style.display = "none";
+      }
+    };
+
+    // Cerrar al dar click fuera
+    document.addEventListener("click", (e) => {
+      if (!weekBtn.contains(e.target) && !weekDropdown.contains(e.target)) {
+        weekDropdown.classList.add("hidden");
+        weekDropdown.style.display = "none";
+      }
+    });
+
+    // Enlazar evento change
     weekSelect.removeEventListener("change", renderCaptureGrid);
     weekSelect.addEventListener("change", renderCaptureGrid);
+    
+    // Auto-actualizar botón y dropdown
+    weekSelect.addEventListener("change", (e) => {
+      updateInfluenzaWeekBtnLabel(e.target.value);
+      updateInfluenzaSinMovimientoUI();
+    });
+  }
+
+  const chkINF = document.getElementById("chkSinMovimientoINF");
+  if (chkINF) {
+    chkINF.onchange = () => {
+      SIN_MOVIMIENTO_INF = chkINF.checked;
+      updateInfluenzaSinMovimientoUI();
+      renderCaptureGrid();
+    };
   }
 
   // Cargar datos iniciales
   await loadInfluenzaUnitData();
+  if (weekSelect) {
+    updateInfluenzaWeekBtnLabel(weekSelect.value);
+    updateInfluenzaSinMovimientoUI();
+  }
   renderCaptureGrid();
   loadInfluenzaHistoryList();
   // Nota: el guardado se maneja desde el globalCommandHub (syncCommandHub → saveInfluenzaReport)
@@ -325,11 +590,14 @@ function renderCaptureGrid() {
 
     const tbody = card.querySelector(".tbody-inputs");
 
+    const chkINF = document.getElementById("chkSinMovimientoINF");
+    const isSinMovActive = chkINF && chkINF.checked;
+
     rubros.forEach(rb => {
       const meta = Number(_influenzaMetasCache[rb.id] || 0);
       const acum = acumuladosPrevios[rb.id];
-      const val = currentValores[rb.id] !== undefined ? currentValores[rb.id] : "";
-      const isLocked = meta === 0;
+      const val = isSinMovActive ? 0 : (currentValores[rb.id] !== undefined ? currentValores[rb.id] : "");
+      const isLocked = meta === 0 || isSinMovActive;
 
       const row = document.createElement("tr");
 
@@ -461,61 +729,203 @@ function updateFlaskCalculation() {
   // La comparación y el balance se manejan ahora a nivel MUNICIPAL.
 }
 
+// Helper to highlight matching terms in text
+function _highlightInfluenzaText(text, queryWords) {
+  if (!text || !queryWords || !queryWords.length) return text || "";
+  let escaped = String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const sortedWords = [...queryWords].sort((a, b) => b.length - a.length);
+  const pattern = sortedWords.map(w => w.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')).join('|');
+  if (!pattern) return escaped;
+  const regex = new RegExp(`(${pattern})`, 'gi');
+  return escaped.replace(regex, '<mark class="bg-violet-100 text-violet-900 rounded px-0.5 font-extrabold">$1</mark>');
+}
+
 async function loadInfluenzaHistoryList() {
   const container = document.getElementById("influenzaHistorialList");
   if (!container) return;
   container.innerHTML = "";
 
   const searchInput = document.getElementById("influenzaHistorialSearch");
-  const filterVal = searchInput ? searchInput.value.toLowerCase().trim() : "";
+  const limitSelect = document.getElementById("influenzaHistorialLimit");
+  const sortSelect = document.getElementById("influenzaHistorialSort");
+  const clearBtn = document.getElementById("influenzaClearSearch");
+  const filterActiveBadge = document.getElementById("influenzaHistorialFiltersActive");
+  const counterEl = document.getElementById("influenzaHistorialCounter");
 
-  // Bind input listener once
+  const filterVal = searchInput ? searchInput.value.toLowerCase().trim() : "";
+  const limitVal = limitSelect ? limitSelect.value : "10";
+  const sortVal = sortSelect ? sortSelect.value : "newest";
+
+  // Bind controls listeners once
   if (searchInput && !searchInput.dataset.listened) {
     searchInput.dataset.listened = "true";
+    
     searchInput.addEventListener("input", () => {
+      if (clearBtn) {
+        if (searchInput.value) {
+          clearBtn.style.display = "flex";
+          clearBtn.classList.remove("hidden");
+        } else {
+          clearBtn.style.display = "none";
+          clearBtn.classList.add("hidden");
+        }
+      }
+      if (filterActiveBadge) {
+        if (searchInput.value.trim()) {
+          filterActiveBadge.style.display = "flex";
+          filterActiveBadge.classList.remove("hidden");
+        } else {
+          filterActiveBadge.style.display = "none";
+          filterActiveBadge.classList.add("hidden");
+        }
+      }
       loadInfluenzaHistoryList();
     });
+
+    if (clearBtn) {
+      clearBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        clearBtn.style.display = "none";
+        clearBtn.classList.add("hidden");
+        if (filterActiveBadge) {
+          filterActiveBadge.style.display = "none";
+          filterActiveBadge.classList.add("hidden");
+        }
+        loadInfluenzaHistoryList();
+      });
+    }
+
+    if (limitSelect) {
+      limitSelect.addEventListener("change", () => loadInfluenzaHistoryList());
+    }
+
+    if (sortSelect) {
+      sortSelect.addEventListener("change", () => loadInfluenzaHistoryList());
+    }
   }
 
   if (!_influenzaCapturasCache.length) {
-    container.innerHTML = `<div class="text-sm text-slate-400 font-medium p-4 text-center">No se han registrado reportes aún.</div>`;
+    container.innerHTML = `<div class="text-sm text-slate-400 font-medium p-8 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">No se han registrado reportes aún.</div>`;
+    if (counterEl) counterEl.textContent = "Mostrando 0 de 0 reportes";
     return;
   }
 
-  const filtered = _influenzaCapturasCache.filter(r => {
-    if (!filterVal) return true;
-    const shortId = r.id ? r.id.substring(0, 8).toUpperCase() : "TEMP";
-    const dateStr = r.fecha.replace(/-/g, "");
-    const folio = `INF-${dateStr}-${shortId}`.toLowerCase();
-    const fecha = r.fecha.toLowerCase();
-    return folio.includes(filterVal) || fecha.includes(filterVal);
-  });
+  const queryWords = filterVal.split(/\s+/).filter(Boolean);
 
-  if (!filtered.length) {
-    container.innerHTML = `<div class="text-sm text-slate-400 font-medium p-4 text-center">No se encontraron reportes que coincidan con la búsqueda.</div>`;
-    return;
-  }
+  const monthsEs = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+  ];
 
-  filtered.forEach(r => {
+  // Map and calculate stats for all items
+  const processedReports = _influenzaCapturasCache.map(r => {
     let totalDosis = 0;
-    Object.values(r.valores).forEach(v => totalDosis += Number(v || 0));
+    if (r.valores) {
+      Object.values(r.valores).forEach(v => totalDosis += Number(v || 0));
+    }
 
-    // Generar Folio Único
     const shortId = r.id ? r.id.substring(0, 8).toUpperCase() : "TEMP";
     const dateStr = r.fecha.replace(/-/g, "");
     const folio = `INF-${dateStr}-${shortId}`;
+    
+    // Construct friendly Spanish date representation for smart search
+    let friendlyDate = "";
+    if (r.fecha) {
+      const parts = r.fecha.split('-');
+      if (parts.length === 3) {
+        const y = parts[0];
+        const m = parseInt(parts[1]) - 1;
+        const d = parseInt(parts[2]);
+        if (m >= 0 && m < 12) {
+          friendlyDate = `${d} de ${monthsEs[m]} de ${y}`;
+        }
+      }
+    }
+
+    return {
+      original: r,
+      totalDosis,
+      folio,
+      friendlyDate,
+      searchText: `${folio} ${r.fecha} ${friendlyDate} ${(r.capturado_por || '').toLowerCase()} ${totalDosis}`.toLowerCase()
+    };
+  });
+
+  // Filter based on smart keywords
+  const filtered = processedReports.filter(p => {
+    if (!queryWords.length) return true;
+    return queryWords.every(word => p.searchText.includes(word));
+  });
+
+  // Sort based on sortVal
+  filtered.sort((a, b) => {
+    if (sortVal === "newest") {
+      return b.original.fecha.localeCompare(a.original.fecha);
+    } else if (sortVal === "oldest") {
+      return a.original.fecha.localeCompare(b.original.fecha);
+    } else if (sortVal === "doses-desc") {
+      return b.totalDosis - a.totalDosis;
+    } else if (sortVal === "doses-asc") {
+      return a.totalDosis - b.totalDosis;
+    }
+    return 0;
+  });
+
+  const totalMatches = filtered.length;
+  const totalCached = _influenzaCapturasCache.length;
+
+  // Apply visual limit
+  let displayCount = totalMatches;
+  let itemsToDisplay = filtered;
+  if (limitVal !== "all") {
+    const limitInt = parseInt(limitVal) || 10;
+    itemsToDisplay = filtered.slice(0, limitInt);
+    displayCount = itemsToDisplay.length;
+  }
+
+  // Update statistics label
+  if (counterEl) {
+    if (filterVal) {
+      counterEl.textContent = `Mostrando ${displayCount} de ${totalMatches} encontrados (Total: ${totalCached})`;
+    } else {
+      counterEl.textContent = `Mostrando ${displayCount} de ${totalCached} reportes`;
+    }
+  }
+
+  if (!itemsToDisplay.length) {
+    container.innerHTML = `<div class="text-sm text-slate-400 font-medium p-8 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">No se encontraron reportes que coincidan con la búsqueda.</div>`;
+    return;
+  }
+
+  itemsToDisplay.forEach(p => {
+    const r = p.original;
+    const folioFormatted = _highlightInfluenzaText(p.folio, queryWords);
+    const fechaFormatted = _highlightInfluenzaText(r.fecha, queryWords);
+    const friendlyDateFormatted = p.friendlyDate ? _highlightInfluenzaText(p.friendlyDate, queryWords) : "";
+    const capturadoFormatted = _highlightInfluenzaText(r.capturado_por || 'Desconocido', queryWords);
 
     const card = document.createElement("div");
-    card.className = "p-4 rounded-xl border border-slate-200 hover:border-violet-300 hover:bg-violet-50/20 transition-all flex items-center justify-between cursor-pointer bg-white";
+    card.className = "p-5 rounded-2xl border border-slate-200 hover:border-violet-300 hover:bg-violet-50/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer bg-white shadow-sm hover:shadow-md";
     card.style.backgroundColor = "#ffffff";
     card.innerHTML = `
-      <div>
-        <div class="text-[10px] font-extrabold text-violet-600 mb-1 tracking-wider">FOLIO: ${folio}</div>
-        <div class="text-sm font-extrabold text-slate-700">Semana del reporte: ${r.fecha}</div>
-        <div class="text-xs text-slate-500 mt-1">Dosis aplicadas: <b>${totalDosis}</b> | Reportado por: ${r.capturado_por}</div>
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600 shrink-0 mt-0.5">
+          <span class="material-symbols-rounded text-[22px]">assignment</span>
+        </div>
+        <div>
+          <div class="text-[11px] font-black text-violet-600 mb-1 tracking-wider uppercase">${folioFormatted}</div>
+          <div class="text-sm font-extrabold text-slate-700 flex items-center gap-1.5">
+            <span class="material-symbols-rounded text-slate-400 text-base">calendar_today</span>
+            Semana: ${fechaFormatted} ${friendlyDateFormatted ? `<span class="text-xs text-slate-400 font-bold">(${friendlyDateFormatted})</span>` : ''}
+          </div>
+          <div class="text-xs text-slate-500 mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>Dosis: <strong class="text-slate-700">${p.totalDosis}</strong></span>
+            <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>Responsable: <strong class="text-slate-700">${capturadoFormatted}</strong></span>
+          </div>
+        </div>
       </div>
-      <button class="ghostBtn h-[32px] text-xs font-bold flex items-center justify-center">
-        <span class="material-symbols-rounded mr-1 text-[16px]">edit</span> Cargar
+      <button class="bg-violet-50 text-violet-700 hover:bg-violet-600 hover:text-white transition-all h-[36px] px-4 rounded-xl text-xs font-black flex items-center justify-center gap-1 shrink-0 self-end sm:self-center shadow-sm">
+        <span class="material-symbols-rounded text-[18px]">edit</span> Cargar reporte
       </button>
     `;
     card.onclick = () => {
@@ -523,7 +933,7 @@ async function loadInfluenzaHistoryList() {
       renderCaptureGrid();
       // Cambiar automáticamente a la pestaña de captura
       document.getElementById("subtabUnitCaptura").click();
-      showToast(`Reporte con folio ${folio} cargado para edición/consulta.`, true, "info");
+      showToast(`Reporte con folio ${p.folio} cargado para edición/consulta.`, true, "info");
     };
     container.appendChild(card);
   });
@@ -540,25 +950,28 @@ async function saveInfluenzaReport() {
   }
 
   // Validaciones del reporte
+  const isSinMov = document.getElementById("chkSinMovimientoINF")?.checked || false;
   let hasOverMetaError = false;
   const valores = {};
   
   for (const rb of INFLUENZA_RUBROS) {
     const input = document.getElementById(`input_inf_${rb.id}`);
-    const val = input ? parseInt(input.value) || 0 : 0;
+    const val = isSinMov ? 0 : (input ? parseInt(input.value) || 0 : 0);
     valores[rb.id] = val;
 
-    // Calcular acumulado
-    let acum = 0;
-    _influenzaCapturasCache.forEach(r => {
-      if (r.fecha !== selectedFecha) {
-        acum += Number(r.valores[rb.id] || 0);
-      }
-    });
+    if (!isSinMov) {
+      // Calcular acumulado
+      let acum = 0;
+      _influenzaCapturasCache.forEach(r => {
+        if (r.fecha !== selectedFecha) {
+          acum += Number(r.valores[rb.id] || 0);
+        }
+      });
 
-    const meta = Number(_influenzaMetasCache[rb.id] || 0);
-    if (meta > 0 && (acum + val) > meta) {
-      hasOverMetaError = true;
+      const meta = Number(_influenzaMetasCache[rb.id] || 0);
+      if (meta > 0 && (acum + val) > meta) {
+        hasOverMetaError = true;
+      }
     }
   }
 
@@ -571,9 +984,6 @@ async function saveInfluenzaReport() {
   const d_dow = new Date().getDay();
   // Permitir capturar/editar solo Jueves (4) o Viernes (5)
   if (d_dow !== 4 && d_dow !== 5) {
-    // Si queremos probar en desarrollo sin restricción, podemos desactivarlo, pero el cliente pidió restrictivo:
-    // "estableceremos de igual manera los días JUEVES Y VIERNES para captura semanal"
-    // Validar con Override si existiese
     showToast("El reporte de Influenza solo se puede capturar los días Jueves o Viernes.", false, "bad");
     return;
   }
@@ -586,7 +996,8 @@ async function saveInfluenzaReport() {
     anio_campana: campana,
     valores,
     capturado_por: nombre,
-    editado_por: "UNIDAD"
+    editado_por: "UNIDAD",
+    sin_movimiento: isSinMov
   };
 
   const totalDosisEstaSemana = Object.values(valores).reduce((s, v) => s + Number(v || 0), 0);
@@ -605,16 +1016,22 @@ async function saveInfluenzaReport() {
   const totalConNuevo = totalAcumPrevio + totalDosisEstaSemana;
   const avanceGlobal = metaTotal > 0 ? Math.round((totalConNuevo / metaTotal) * 100) : 0;
 
+  const runCaptureMsg = isSinMov ? "Registrando sin movimiento..." : "Registrando reporte semanal de Influenza...";
+  const runCaptureSuccess = isSinMov ? "✅ Sin movimiento de Influenza registrado" : `✅ Reporte guardado · ${totalDosisEstaSemana} dosis esta semana · Avance global: ${avanceGlobal}%`;
+  const runCaptureEventMsg = isSinMov ? `Captura semana ${selectedFecha} marcada Sin Movimiento.` : `Captura semana ${selectedFecha}: ${totalDosisEstaSemana} dosis en ${rubrosCapturados} rubros. Avance acumulado: ${avanceGlobal}%.`;
+
   await AppService.runCapture({
     btnId: "btnSaveINFLUENZA",
     title: "Guardando reporte",
-    msg: "Registrando reporte semanal de Influenza...",
-    successMsg: `✅ Reporte guardado · ${totalDosisEstaSemana} dosis esta semana · Avance global: ${avanceGlobal}%`,
+    msg: runCaptureMsg,
+    successMsg: runCaptureSuccess,
     eventTitle: "Influenza",
-    eventMsg: `Captura semana ${selectedFecha}: ${totalDosisEstaSemana} dosis en ${rubrosCapturados} rubros. Avance acumulado: ${avanceGlobal}%.`,
+    eventMsg: runCaptureEventMsg,
     action: async () => {
       const res = await AppService.call("saveinfluenza_captura", payload);
       await loadInfluenzaUnitData();
+      updateInfluenzaWeekBtnLabel(selectedFecha);
+      updateInfluenzaSinMovimientoUI();
       renderCaptureGrid();
       loadInfluenzaHistoryList();
       if (typeof confetti === 'function') {
@@ -743,6 +1160,15 @@ async function populateInfluenzaAdminFilters() {
 
   const role = USER.rol.toUpperCase();
   const allowedMunis = USER.municipiosAllowed || [USER.municipio];
+
+  const scopeBox = document.getElementById("adminInfluenzaExportScopeBox");
+  if (scopeBox) {
+    if (role === "ADMIN" || role === "JURISDICCIONAL") {
+      scopeBox.style.setProperty("display", "block", "important");
+    } else {
+      scopeBox.style.setProperty("display", "none", "important");
+    }
+  }
 
   // Municipios
   let munis = ["QUERETARO", "CORREGIDORA", "EL MARQUES", "HUIMILPAN"];
@@ -1118,11 +1544,18 @@ function renderAvancesAndConcentrados() {
 
   if (unitDetailContainer) unitDetailContainer.classList.add("hidden");
 
-  // Limpiar y reasignar listener de exportar
+  // Limpiar y reasignar listener de exportar concentrado e histórico detallado
   const exportBtn = document.getElementById("btnExportInfluenzaConcentrado");
   if (exportBtn) {
     exportBtn.onclick = () => {
-      exportMunicipalConcentradoRangeExcel(muni, semInicio, semFin);
+      exportConcentradoSimpleExcel();
+    };
+  }
+
+  const exportDetailedBtn = document.getElementById("btnExportConcentradoConUnidades");
+  if (exportDetailedBtn) {
+    exportDetailedBtn.onclick = () => {
+      exportConcentradoDetalladoUnidadesExcel();
     };
   }
 
@@ -1131,6 +1564,9 @@ function renderAvancesAndConcentrados() {
 
   const minFecha = semInicio < semFin ? semInicio : semFin;
   const maxFecha = semInicio < semFin ? semFin : semInicio;
+
+  // Actualizar gráficos y proyecciones
+  updateInfluenzaDashboardVisuals(muni, minFecha, maxFecha);
 
   // Obtener unidades del municipio
   const units = _allUnidades.filter(u => u.municipio.toUpperCase() === muni.toUpperCase());
@@ -1208,6 +1644,228 @@ function renderAvancesAndConcentrados() {
   });
 }
 
+function updateInfluenzaDashboardVisuals(muni, minFecha, maxFecha) {
+  const projCard = document.getElementById("influenzaProjectionCard");
+  const chartsContainer = document.getElementById("influenzaChartsContainer");
+  
+  if (projCard) projCard.classList.remove("hidden");
+  if (chartsContainer) chartsContainer.classList.remove("hidden");
+  
+  const campaignWeeks = generateCampaignWeeks();
+  const weeksSorted = campaignWeeks.map(w => w.fecha).sort();
+  const totalWeeks = weeksSorted.length;
+  
+  const municipalReportsInRange = _adminCapturasArray.filter(r => r.fecha >= minFecha && r.fecha <= maxFecha && r.municipio.toUpperCase() === muni.toUpperCase());
+  
+  let municipalMetaTotal = 0;
+  const muniUnits = _allUnidades.filter(u => u.municipio.toUpperCase() === muni.toUpperCase());
+  muniUnits.forEach(u => {
+    const mRecord = _adminMetasArray.find(r => r.clues === u.clues);
+    if (mRecord && mRecord.metas) {
+      Object.values(mRecord.metas).forEach(v => municipalMetaTotal += Number(v || 0));
+    }
+  });
+
+  let runningCumulative = 0;
+  const trendLabels = [];
+  const actualTrend = [];
+  const expectedTrend = [];
+  
+  const currentWeekIndex = Math.max(1, weeksSorted.indexOf(maxFecha) + 1);
+
+  weeksSorted.forEach((wFecha, idx) => {
+    const weekNum = campaignWeeks.find(cw => cw.fecha === wFecha)?.semana || "N/A";
+    trendLabels.push(`Sem. ${weekNum}`);
+    
+    let weekDoses = 0;
+    _adminCapturasArray.forEach(c => {
+      if (c.municipio.toUpperCase() === muni.toUpperCase() && c.fecha === wFecha) {
+        Object.values(c.valores).forEach(v => weekDoses += Number(v || 0));
+      }
+    });
+    runningCumulative += weekDoses;
+    actualTrend.push(runningCumulative);
+    
+    const expected = municipalMetaTotal > 0 ? Math.round((municipalMetaTotal / totalWeeks) * (idx + 1)) : 0;
+    expectedTrend.push(expected);
+  });
+
+  const accumulatedUpToMax = actualTrend[currentWeekIndex - 1] || 0;
+  const velocity = currentWeekIndex > 0 ? (accumulatedUpToMax / currentWeekIndex) : 0;
+  const projectedEndValue = Math.round(velocity * totalWeeks);
+  const projectedPct = municipalMetaTotal > 0 ? Math.round((projectedEndValue / municipalMetaTotal) * 100) : 0;
+  
+  let statusText, statusBadgeClass, statusDesc;
+  if (projectedPct >= 95) {
+    statusText = "🟢 Óptimo";
+    statusBadgeClass = "bg-emerald-100 text-emerald-800 border-emerald-300";
+    statusDesc = "El ritmo actual de aplicación es excelente. Se proyecta cumplir o superar la meta anual de vacunación al finalizar la campaña invernal.";
+  } else if (projectedPct >= 80) {
+    statusText = "🟡 En Riesgo";
+    statusBadgeClass = "bg-amber-100 text-amber-800 border-amber-300";
+    statusDesc = "Se proyecta un avance del " + projectedPct + "%. Aunque hay progreso constante, se recomienda reforzar las brigadas semanales para consolidar la meta.";
+  } else {
+    statusText = "🔴 Crítico";
+    statusBadgeClass = "bg-rose-100 text-rose-800 border-rose-300";
+    statusDesc = "¡Alerta! Al ritmo semanal promedio de " + Math.round(velocity) + " dosis, se proyecta cubrir únicamente el " + projectedPct + "% de la meta anual. Se requiere intervención y abasto inmediato.";
+  }
+
+  if (projCard) {
+    projCard.innerHTML = `
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-violet-100 pb-4">
+        <div>
+          <div class="text-[10px] font-black text-violet-600 uppercase tracking-widest">Predicción y Proyecciones de Cierre</div>
+          <h3 class="text-sm font-black text-slate-800 mt-1">Análisis de Cumplimiento Municipal: ${muni}</h3>
+        </div>
+        <span class="px-4 py-1.5 rounded-full text-[10px] font-black border ${statusBadgeClass} transition-all">${statusText}</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
+        <div class="bg-white/60 p-4 rounded-xl border border-slate-100">
+          <div class="text-[9px] font-bold text-slate-400 uppercase">Velocidad Promedio</div>
+          <div class="text-base font-extrabold text-violet-950 mt-1">${Math.round(velocity).toLocaleString('es-MX')} <span class="text-xs font-bold text-slate-500">dosis/sem</span></div>
+          <div class="text-[10px] text-slate-500 mt-1">Semanas transcurridas: ${currentWeekIndex} de ${totalWeeks}</div>
+        </div>
+        <div class="bg-white/60 p-4 rounded-xl border border-slate-100">
+          <div class="text-[9px] font-bold text-slate-400 uppercase">Meta Asignada</div>
+          <div class="text-base font-extrabold text-slate-700 mt-1">${municipalMetaTotal.toLocaleString('es-MX')} <span class="text-xs font-bold text-slate-500">dosis</span></div>
+          <div class="text-[10px] text-slate-500 mt-1">Avance real: ${accumulatedUpToMax.toLocaleString('es-MX')} (${municipalMetaTotal > 0 ? Math.round(accumulatedUpToMax / municipalMetaTotal * 100) : 0}%)</div>
+        </div>
+        <div class="bg-white/60 p-4 rounded-xl border border-slate-100">
+          <div class="text-[9px] font-bold text-slate-400 uppercase">Proyección de Cierre</div>
+          <div class="text-base font-extrabold text-slate-800 mt-1">${projectedEndValue.toLocaleString('es-MX')} <span class="text-xs font-bold text-slate-500">dosis</span></div>
+          <div class="text-[10px] text-slate-500 mt-1">Cumplimiento estimado: <b>${projectedPct}%</b></div>
+        </div>
+        <div class="bg-white/60 p-4 rounded-xl border border-slate-100 md:col-span-1 flex flex-col justify-center">
+          <div class="text-[11px] font-semibold text-slate-600 leading-relaxed">${statusDesc}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // 2. Render Trend EChart
+  const ctxTrend = document.getElementById("adminInfluenzaTrendChart");
+  if (ctxTrend && typeof echarts !== 'undefined') {
+    if (_adminInfluenzaTrendChart) {
+      _adminInfluenzaTrendChart.dispose();
+    }
+    _adminInfluenzaTrendChart = echarts.init(ctxTrend);
+    
+    const visibleActual = actualTrend.slice(0, currentWeekIndex);
+    
+    const option = {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'line' }
+      },
+      legend: {
+        data: ['Avance Real Acumulado', 'Meta Lineal Sugerida'],
+        bottom: 0,
+        textStyle: { fontSize: 9, fontWeight: 'bold' }
+      },
+      grid: { left: '3%', right: '4%', top: '8%', bottom: '15%', containLabel: true },
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: trendLabels,
+        axisLabel: { fontSize: 8 }
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: { fontSize: 8 }
+      },
+      series: [
+        {
+          name: 'Avance Real Acumulado',
+          type: 'line',
+          smooth: true,
+          data: visibleActual,
+          itemStyle: { color: '#6d28d9' },
+          lineStyle: { width: 3 },
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: 'rgba(109, 40, 217, 0.2)' },
+              { offset: 1, color: 'rgba(109, 40, 217, 0)' }
+            ])
+          }
+        },
+        {
+          name: 'Meta Lineal Sugerida',
+          type: 'line',
+          smooth: true,
+          data: expectedTrend,
+          itemStyle: { color: '#94a3b8' },
+          lineStyle: { type: 'dashed', width: 2 }
+        }
+      ]
+    };
+    _adminInfluenzaTrendChart.setOption(option);
+  }
+
+  // 3. Render Group Distribution EChart
+  const ctxBreakdown = document.getElementById("adminInfluenzaBreakdownChart");
+  if (ctxBreakdown && typeof echarts !== 'undefined') {
+    if (_adminInfluenzaBreakdownChart) {
+      _adminInfluenzaBreakdownChart.dispose();
+    }
+    _adminInfluenzaBreakdownChart = echarts.init(ctxBreakdown);
+
+    let primDosis = 0;
+    let segDosis = 0;
+    let revac = 0;
+    let riskGroups = 0;
+    let comorbidities = 0;
+
+    municipalReportsInRange.forEach(r => {
+      INFLUENZA_RUBROS.forEach(rb => {
+        const val = Number(r.valores[rb.id] || 0);
+        if (rb.grupo === "Primera dosis") primDosis += val;
+        else if (rb.grupo === "Segunda dosis") segDosis += val;
+        else if (rb.grupo === "Revacunación") revac += val;
+        else if (rb.grupo === "Grupos de riesgo") riskGroups += val;
+        else comorbidities += val;
+      });
+    });
+
+    const pieData = [
+      { value: primDosis, name: 'Primera dosis' },
+      { value: segDosis, name: 'Segunda dosis' },
+      { value: revac, name: 'Revacunación' },
+      { value: riskGroups, name: 'Grupos de riesgo' },
+      { value: comorbidities, name: 'Comorbilidades' }
+    ].filter(item => item.value > 0);
+
+    const option = {
+      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+      legend: { bottom: 0, textStyle: { fontSize: 8, fontWeight: 'bold' } },
+      series: [
+        {
+          name: 'Población',
+          type: 'pie',
+          radius: ['40%', '70%'],
+          avoidLabelOverlap: false,
+          itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+          label: { show: false, position: 'center' },
+          emphasis: {
+            label: { show: true, fontSize: 10, fontWeight: 'bold' }
+          },
+          labelLine: { show: false },
+          color: ['#6d28d9', '#8b5cf6', '#a78bfa', '#f59e0b', '#10b981'],
+          data: pieData.length > 0 ? pieData : [{ value: 1, name: 'Sin datos' }]
+        }
+      ]
+    };
+    _adminInfluenzaBreakdownChart.setOption(option);
+  }
+
+  if (!window._influenzaResizeListenerAttached) {
+    window.addEventListener("resize", () => {
+      if (_adminInfluenzaTrendChart) _adminInfluenzaTrendChart.resize();
+      if (_adminInfluenzaBreakdownChart) _adminInfluenzaBreakdownChart.resize();
+    });
+    window._influenzaResizeListenerAttached = true;
+  }
+}
+
 function renderUnitDetail(clues, unidadNombre, minFecha, maxFecha) {
   const detailContainer = document.getElementById("adminInfluenzaUnitDetailContainer");
   const detailTitle = document.getElementById("adminInfluenzaUnitDetailTitle");
@@ -1216,8 +1874,38 @@ function renderUnitDetail(clues, unidadNombre, minFecha, maxFecha) {
   if (!detailContainer || !detailCards) return;
 
   detailContainer.classList.remove("hidden");
-  detailTitle.textContent = `Detalle de Meta-Logro por Rubro: ${unidadNombre} (${clues}) [Rango: ${minFecha} al ${maxFecha}]`;
+  detailTitle.textContent = `Detalle de Meta-Logro por Rubro: ${unidadNombre} (${clues})`;
   detailCards.innerHTML = "";
+
+  // Poblar selector de meses para reporte mensual de esta unidad
+  const mesSelect = document.getElementById("reporteSemanalMesSelect");
+  if (mesSelect) {
+    const startStr = _campaignConfig.fecha_inicio || "2025-10-03";
+    const endStr   = _campaignConfig.fecha_fin    || "2026-04-25";
+    const startDate = new Date(startStr + "T12:00:00");
+    const endDate = new Date(endStr + "T12:00:00");
+    const monthNames = [
+      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ];
+    const options = [];
+    let current = new Date(startDate.getFullYear(), startDate.getMonth(), 1, 12, 0, 0);
+    while (current <= endDate || (current.getMonth() === endDate.getMonth() && current.getFullYear() === endDate.getFullYear())) {
+      const m = current.getMonth() + 1;
+      const y = current.getFullYear();
+      options.push({ value: `${m}|${y}`, label: `${monthNames[current.getMonth()]} ${y}` });
+      current.setMonth(current.getMonth() + 1);
+    }
+    mesSelect.innerHTML = options.map(o => `<option value="${o.value}">${o.label}</option>`).join("");
+  }
+
+  const exportWeeklyUnitBtn = document.getElementById("btnExportReporteSemanaUnit");
+  if (exportWeeklyUnitBtn) {
+    exportWeeklyUnitBtn.onclick = () => {
+      const mesVal = document.getElementById("reporteSemanalMesSelect").value;
+      exportWeeklyMonthlyUnitExcel(clues, unidadNombre, mesVal);
+    };
+  }
 
   const unitMetaRecord = _adminMetasArray.find(m => m.clues === clues);
   const metas = unitMetaRecord ? unitMetaRecord.metas : {};
@@ -1311,23 +1999,172 @@ function renderUnitDetail(clues, unidadNombre, minFecha, maxFecha) {
 let _currentValidationReport = null;
 
 function initValidationTab() {
-  const valCluesSelect = document.getElementById("validationInfluenzaClues");
   const valSemanaSelect = document.getElementById("validationInfluenzaSemana");
-  const loadBtn = document.getElementById("btnLoadValidationReport");
-  const content = document.getElementById("validationReportContent");
+  const searchInput = document.getElementById("validationUnitSearch");
+  const backBtn = document.getElementById("btnBackToValidationList");
 
-  if (!valCluesSelect || !valSemanaSelect || !loadBtn || !content) return;
+  if (!valSemanaSelect) return;
 
-  const weeks = generateCampaignWeeks();
-  valSemanaSelect.innerHTML = weeks.map(w => `<option value="${w.fecha}">${w.label}</option>`).join("");
+  // Bind weeks options once
+  if (!valSemanaSelect.innerHTML.trim()) {
+    const weeks = generateCampaignWeeks();
+    valSemanaSelect.innerHTML = weeks.map(w => `<option value="${w.fecha}">${w.label}</option>`).join("");
+    // Select last week by default or current week
+    const today = new Date().toISOString().split("T")[0];
+    const matchingWeek = weeks.find(w => w.fecha >= today);
+    if (matchingWeek) {
+      valSemanaSelect.value = matchingWeek.fecha;
+    } else if (weeks.length) {
+      valSemanaSelect.value = weeks[weeks.length - 1].fecha;
+    }
+  }
 
-  content.classList.add("hidden");
+  // Bind events
+  if (!valSemanaSelect.dataset.listened) {
+    valSemanaSelect.dataset.listened = "true";
+    valSemanaSelect.addEventListener("change", () => {
+      renderValidationDashboard();
+    });
+  }
 
-  loadBtn.onclick = () => {
-    const clues = valCluesSelect.value;
-    const fecha = valSemanaSelect.value;
-    renderValidacionEdicionGrid(clues, fecha);
-  };
+  if (searchInput && !searchInput.dataset.listened) {
+    searchInput.dataset.listened = "true";
+    searchInput.addEventListener("input", () => {
+      renderValidationDashboard();
+    });
+  }
+
+  if (backBtn) {
+    backBtn.onclick = () => {
+      document.getElementById("validationReportContent").classList.add("hidden");
+      document.getElementById("validationDashboard").classList.remove("hidden");
+      renderValidationDashboard();
+    };
+  }
+
+  renderValidationDashboard();
+}
+
+function renderValidationDashboard() {
+  const grid = document.getElementById("validationUnitsGrid");
+  const summary = document.getElementById("validationStatsSummary");
+  const valSemanaSelect = document.getElementById("validationInfluenzaSemana");
+  const searchInput = document.getElementById("validationUnitSearch");
+  const muniVal = document.getElementById("adminInfluenzaMuni").value;
+
+  if (!grid || !valSemanaSelect) return;
+
+  const selectedFecha = valSemanaSelect.value;
+  const filterText = searchInput ? searchInput.value.toLowerCase().trim() : "";
+
+  // Get units in selected municipality
+  const muniUnits = _allUnidades.filter(u => u.municipio.toUpperCase() === muniVal.toUpperCase());
+
+  // Filter based on search text
+  const filteredUnits = muniUnits.filter(u => {
+    if (!filterText) return true;
+    return u.unidad.toLowerCase().includes(filterText) || u.clues.toLowerCase().includes(filterText);
+  });
+
+  // Calculate status statistics
+  let totalCount = muniUnits.length;
+  let reportedCount = 0;
+  let validatedCount = 0;
+
+  grid.innerHTML = "";
+
+  if (filteredUnits.length === 0) {
+    grid.innerHTML = `<div class="col-span-full text-center text-sm text-slate-400 font-medium p-8 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">No se encontraron unidades que coincidan con la búsqueda.</div>`;
+  }
+
+  filteredUnits.forEach(u => {
+    const report = _adminCapturasArray.find(r => r.clues === u.clues && r.fecha === selectedFecha);
+    
+    let statusBadge = "";
+    let actionText = "Cargar y reportar";
+    let cardBorder = "border-slate-200 hover:border-violet-300 hover:shadow-md";
+    let btnBg = "";
+    let btnHoverBg = "";
+    let totalDosis = 0;
+
+    if (report) {
+      reportedCount++;
+      if (report.valores) {
+        Object.values(report.valores).forEach(v => totalDosis += Number(v || 0));
+      }
+
+      if (report.editado_por !== "UNIDAD") {
+        validatedCount++;
+        statusBadge = `<span class="bg-violet-50 text-violet-700 border border-violet-200 px-2.5 py-1 rounded-full text-[10px] font-black flex items-center gap-0.5"><span class="material-symbols-rounded text-xs">verified</span>Corregido</span>`;
+        actionText = "Editar corrección";
+        cardBorder = "border-violet-200 hover:border-violet-300 hover:bg-violet-50/10";
+        btnBg = "#0f172a";
+        btnHoverBg = "#1e293b";
+      } else {
+        reportedCount; // No-op
+        statusBadge = `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full text-[10px] font-black flex items-center gap-0.5"><span class="material-symbols-rounded text-xs">check_circle</span>Reportado</span>`;
+        actionText = "Validar / Corregir";
+        cardBorder = "border-emerald-200 hover:border-emerald-300 hover:bg-emerald-50/10";
+        btnBg = "#0f172a";
+        btnHoverBg = "#1e293b";
+      }
+    } else {
+      statusBadge = `<span class="bg-amber-50 text-amber-600 border border-amber-200 px-2.5 py-1 rounded-full text-[10px] font-black flex items-center gap-0.5"><span class="material-symbols-rounded text-xs">error</span>Pendiente</span>`;
+      actionText = "Iniciar captura";
+      cardBorder = "border-amber-200 hover:border-amber-300 hover:bg-amber-50/10";
+      btnBg = "#0f172a";
+      btnHoverBg = "#1e293b";
+    }
+
+    const card = document.createElement("div");
+    card.className = `p-4 rounded-2xl border bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all shadow-sm hover:shadow-md cursor-pointer ${cardBorder}`;
+    card.style.backgroundColor = "#ffffff";
+    card.innerHTML = `
+      <div class="flex items-start gap-3 min-w-0">
+        <div class="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 mt-0.5">
+          <span class="material-symbols-rounded text-[22px] text-slate-500">domain</span>
+        </div>
+        <div class="min-w-0">
+          <div class="text-[10px] font-black text-slate-400 tracking-wider uppercase mb-0.5">${u.clues}</div>
+          <h5 class="text-sm font-extrabold text-slate-800 leading-tight truncate" title="${u.unidad}">${u.unidad}</h5>
+          <div class="text-xs font-bold text-slate-500 flex items-center gap-1.5 mt-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+            Dosis reportadas: <strong class="text-slate-700">${totalDosis}</strong>
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-3 shrink-0 self-end sm:self-center">
+        ${statusBadge}
+        <button class="transition-all h-[36px] px-4 rounded-xl text-xs font-black flex items-center justify-center gap-1 shadow-sm border-0"
+          style="background-color: ${btnBg} !important; color: #ffffff !important; cursor: pointer;"
+          onmouseenter="this.style.setProperty('background-color', '${btnHoverBg}', 'important');"
+          onmouseleave="this.style.setProperty('background-color', '${btnBg}', 'important');">
+          <span class="material-symbols-rounded text-[18px]" style="color: #ffffff !important;">find_in_page</span>
+          <span style="color: #ffffff !important;">${actionText}</span>
+        </button>
+      </div>
+    `;
+
+    card.onclick = () => {
+      document.getElementById("validationDashboard").classList.add("hidden");
+      document.getElementById("validationReportContent").classList.remove("hidden");
+      
+      const valCluesSelect = document.getElementById("validationInfluenzaClues");
+      if (valCluesSelect) valCluesSelect.value = u.clues;
+
+      renderValidacionEdicionGrid(u.clues, selectedFecha);
+    };
+
+    grid.appendChild(card);
+  });
+
+  if (summary) {
+    summary.innerHTML = `
+      <span>${reportedCount} de ${totalCount} Reportadas</span>
+      <span class="text-slate-300 font-normal">|</span>
+      <span class="text-violet-700">${validatedCount} Validadas</span>
+    `;
+  }
 }
 
 function renderValidacionEdicionGrid(clues, fecha) {
@@ -1396,6 +2233,22 @@ function renderValidacionEdicionGrid(clues, fecha) {
       const val = report && report.valores[rb.id] !== undefined ? report.valores[rb.id] : "";
       const isLocked = meta === 0;
 
+      // Extract original captured value from first edit in history, or fallback to current val
+      let originalVal = "—";
+      if (report) {
+        let hist = [];
+        if (report.historial_ediciones) {
+          hist = Array.isArray(report.historial_ediciones)
+            ? report.historial_ediciones
+            : JSON.parse(report.historial_ediciones || "[]");
+        }
+        if (hist.length > 0 && hist[0].valores_previos && hist[0].valores_previos[rb.id] !== undefined) {
+          originalVal = hist[0].valores_previos[rb.id];
+        } else {
+          originalVal = report.valores[rb.id] !== undefined ? report.valores[rb.id] : "0";
+        }
+      }
+
       const currentVal = Number(val || 0);
       const pct = meta > 0 ? Math.round(((acum + currentVal) / meta) * 100) : 0;
       const cappedPct = Math.min(pct, 100);
@@ -1413,6 +2266,7 @@ function renderValidacionEdicionGrid(clues, fecha) {
             ${isLocked ? '<span class="ml-2 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-200 text-slate-400">Sin Meta</span>' : ''}
           </td>
           <td class="p-3 text-center text-xs font-bold text-slate-500">${meta || '—'}</td>
+          <td class="p-3 text-center text-xs font-bold text-slate-400">${originalVal}</td>
           <td class="p-3 text-center text-xs font-bold text-violet-950">${acum}</td>
           <td class="p-3 text-center">
             <input type="number" min="0" step="1"
@@ -1447,8 +2301,9 @@ function renderValidacionEdicionGrid(clues, fecha) {
             <tr class="bg-slate-50 border-b border-slate-200 font-bold text-slate-500">
               <th class="p-3">Edad</th>
               <th class="p-3 text-center">Meta Anual</th>
+              <th class="p-3 text-center">Original (Unidad)</th>
               <th class="p-3 text-center">Logro Previo</th>
-              <th class="p-3 text-center">Esta Semana</th>
+              <th class="p-3 text-center">Corrección</th>
               <th class="p-3">Progreso</th>
             </tr>
           </thead>
@@ -1487,6 +2342,8 @@ function renderValidacionEdicionGrid(clues, fecha) {
 
   document.getElementById("btnCancelValidation").onclick = () => {
     content.classList.add("hidden");
+    document.getElementById("validationDashboard").classList.remove("hidden");
+    renderValidationDashboard();
   };
 
   document.getElementById("btnSaveValidation").onclick = () => {
@@ -1575,7 +2432,9 @@ async function saveValidationReport(clues, fecha) {
     action: async () => {
       const res = await AppService.call("saveinfluenza_captura", payload);
       await loadInfluenzaAdminData();
-      renderValidacionEdicionGrid(clues, fecha);
+      document.getElementById("validationReportContent").classList.add("hidden");
+      document.getElementById("validationDashboard").classList.remove("hidden");
+      renderValidationDashboard();
       if (typeof confetti === 'function') {
         confetti({
           particleCount: 150,
@@ -1592,18 +2451,87 @@ async function saveValidationReport(clues, fecha) {
 function initConciliacionTab() {
   const runBtn = document.getElementById("btnRunConciliacion");
   const resultContainer = document.getElementById("conciliacionResultContainer");
+  const exportBtn = document.getElementById("btnExportConciliacion");
+  const searchInput = document.getElementById("conciliacionSearch");
+  const closeDrawerBtn = document.getElementById("btnCloseConciliacionDrawer");
+  const backdrop = document.getElementById("conciliacionDrawerBackdrop");
+
+  const filterAllBtn = document.getElementById("btnFilterConcAll");
+  const filterDiffBtn = document.getElementById("btnFilterConcDiff");
+  const filterMatchBtn = document.getElementById("btnFilterConcMatch");
 
   if (!runBtn || !resultContainer) return;
 
-  resultContainer.classList.add("hidden");
+  // Limpiar estados
+  _uploadedCsvData = null;
+  _conciliacionLastResult = [];
+  _conciliacionFilter = "all";
+  _conciliacionSearchQuery = "";
 
+  // Botón Consultar Base de Datos
   runBtn.onclick = () => {
+    const docInfo = document.getElementById("conciliacionSourceInfo");
+    if (docInfo) docInfo.textContent = "Fuente: Consulta de Base de Datos";
+    
     const mesAnio = document.getElementById("conciliacionMes").value;
     const clues = document.getElementById("conciliacionClues").value;
     runConciliacionProcess(clues, mesAnio);
   };
+
+  // Filtros de Estado
+  const updateFilterButtons = (activeBtn) => {
+    [filterAllBtn, filterDiffBtn, filterMatchBtn].forEach(btn => {
+      if (!btn) return;
+      btn.className = "px-3 py-1.5 text-[11px] font-bold text-slate-500 rounded-lg transition-all focus:outline-none hover:text-slate-700";
+    });
+    if (activeBtn) {
+      activeBtn.className = "px-3 py-1.5 text-[11px] font-black rounded-lg transition-all focus:outline-none bg-surface text-slate-700 shadow-xs";
+    }
+  };
+
+  if (filterAllBtn) {
+    filterAllBtn.onclick = () => {
+      _conciliacionFilter = "all";
+      updateFilterButtons(filterAllBtn);
+      applyConciliacionFiltersAndSearch();
+    };
+  }
+  if (filterDiffBtn) {
+    filterDiffBtn.onclick = () => {
+      _conciliacionFilter = "diff";
+      updateFilterButtons(filterDiffBtn);
+      applyConciliacionFiltersAndSearch();
+    };
+  }
+  if (filterMatchBtn) {
+    filterMatchBtn.onclick = () => {
+      _conciliacionFilter = "match";
+      updateFilterButtons(filterMatchBtn);
+      applyConciliacionFiltersAndSearch();
+    };
+  }
+
+  // Buscador
+  if (searchInput) {
+    searchInput.oninput = (e) => {
+      _conciliacionSearchQuery = e.target.value;
+      applyConciliacionFiltersAndSearch();
+    };
+  }
+
+  // Exportar Excel
+  if (exportBtn) {
+    exportBtn.onclick = async () => {
+      await exportConciliacionReport();
+    };
+  }
+
+  // Cerrar Drawer
+  if (closeDrawerBtn) closeDrawerBtn.onclick = closeConciliacionDrawer;
+  if (backdrop) backdrop.onclick = closeConciliacionDrawer;
 }
 
+// Ejecutar proceso de conciliación
 async function runConciliacionProcess(clues, mesAnio) {
   const resultContainer = document.getElementById("conciliacionResultContainer");
   const tbody = document.getElementById("conciliacionTbody");
@@ -1619,7 +2547,10 @@ async function runConciliacionProcess(clues, mesAnio) {
   resultContainer.classList.remove("hidden");
   title.textContent = `Conciliación de Carga: ${unitName} (${clues}) — Mes ${mes}/${anio}`;
 
-  const { data: sisRecords, error } = await window.supabase
+  let sisRecords = [];
+
+  // Consultar Base de Datos Supabase (Dato Inmutable)
+  const { data, error } = await window.supabase
     .from("registros_sis")
     .select("variable_sis, valor")
     .eq("clues", clues)
@@ -1628,10 +2559,12 @@ async function runConciliacionProcess(clues, mesAnio) {
 
   if (error) {
     console.error("Error al cargar registros del SIS:", error);
-    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-rose-500 font-bold">Error al cargar datos del SIS oficial.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-rose-500 font-bold">Error al cargar datos del SIS oficial.</td></tr>`;
     return;
   }
+  sisRecords = data || [];
 
+  // Sumar capturas locales de _adminCapturasArray
   const localValues = {};
   INFLUENZA_RUBROS.forEach(rb => {
     localValues[rb.id] = 0;
@@ -1665,7 +2598,7 @@ async function runConciliacionProcess(clues, mesAnio) {
     "r44": "BIE59", "r45": "BIE60", "r46": "BIE61"
   };
 
-  tbody.innerHTML = "";
+  _conciliacionLastResult = [];
   let totalLocal = 0;
   let totalSis = 0;
   let totalDiff = 0;
@@ -1682,51 +2615,54 @@ async function runConciliacionProcess(clues, mesAnio) {
     totalSis += sisVal;
     totalDiff += diff;
 
-    const row = document.createElement("tr");
-    const isDiscrepant = diff !== 0;
-
-    if (isDiscrepant) {
-      row.className = "border-b border-slate-100 conciliacion-discrepante font-bold";
+    if (diff !== 0) {
       discrepanciasCount++;
-    } else {
-      row.className = "border-b border-slate-100 hover:bg-slate-50";
     }
 
-    row.innerHTML = `
-      <td class="p-3"><div style="max-width: 420px; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.35;" title="${rb.categoria} - ${rb.grupo} (${rb.edad})">${rb.categoria} - ${rb.grupo} (${rb.edad})</div></td>
-      <td class="p-3 text-center text-xs font-mono font-bold text-slate-500">${sisVar}</td>
-      <td class="p-3 text-center text-xs font-bold">${localVal.toLocaleString('es-MX')}</td>
-      <td class="p-3 text-center text-xs font-bold">${sisVal.toLocaleString('es-MX')}</td>
-      <td class="p-3 text-center text-xs font-black ${diff > 0 ? 'text-blue-600' : diff < 0 ? 'text-rose-600' : 'text-emerald-600'}">
-        ${diff > 0 ? `+${diff}` : diff}
-      </td>
-      <td class="p-3 text-center text-xs">
-        <span class="px-2 py-0.5 rounded-full font-bold ${isDiscrepant ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}">
-          ${isDiscrepant ? 'Desfase' : 'Conciliado'}
-        </span>
-      </td>
-    `;
-    tbody.appendChild(row);
+    _conciliacionLastResult.push({
+      rb,
+      sisVar,
+      localVal,
+      sisVal,
+      diff
+    });
   });
 
-  // Fila de totales
-  const totalRow = document.createElement("tr");
-  totalRow.className = "bg-slate-50 border-t border-slate-300 font-extrabold text-slate-900";
-  totalRow.innerHTML = `
-    <td class="p-3 text-xs uppercase text-right" colspan="2">TOTAL GENERAL:</td>
-    <td class="p-3 text-center text-xs">${totalLocal.toLocaleString('es-MX')}</td>
-    <td class="p-3 text-center text-xs">${totalSis.toLocaleString('es-MX')}</td>
-    <td class="p-3 text-center text-xs ${totalDiff > 0 ? 'text-blue-700' : totalDiff < 0 ? 'text-rose-700' : 'text-emerald-700'}">
-      ${totalDiff > 0 ? `+${totalDiff}` : totalDiff}
-    </td>
-    <td class="p-3 text-center text-xs">
-      <span class="px-2 py-0.5 rounded-full font-black ${discrepanciasCount > 0 ? 'bg-rose-200 text-rose-900' : 'bg-emerald-200 text-emerald-900'}">
-        ${discrepanciasCount > 0 ? `${discrepanciasCount} Desfases` : 'Sincronizado'}
-      </span>
-    </td>
-  `;
-  tbody.appendChild(totalRow);
+  // Renderizar tabla aplicando filtros y buscador
+  applyConciliacionFiltersAndSearch();
 
+  // Actualizar Tarjetas KPI
+  const kpiTasa = document.getElementById("kpiTasa");
+  const kpiTasaIcon = document.getElementById("kpiTasaIcon");
+  const kpiLocal = document.getElementById("kpiLocal");
+  const kpiSis = document.getElementById("kpiSis");
+  const kpiDiscrepancias = document.getElementById("kpiDiscrepancias");
+
+  const totalRubros = INFLUENZA_RUBROS.length;
+  const tasaPareo = totalRubros > 0 ? ((1 - (discrepanciasCount / totalRubros)) * 100) : 100;
+  
+  if (kpiTasa) kpiTasa.textContent = `${tasaPareo.toFixed(1)}%`;
+  if (kpiLocal) kpiLocal.textContent = totalLocal.toLocaleString('es-MX');
+  if (kpiSis) kpiSis.textContent = totalSis.toLocaleString('es-MX');
+  if (kpiDiscrepancias) {
+    kpiDiscrepancias.textContent = `${discrepanciasCount} (${totalDiff > 0 ? `+${totalDiff}` : totalDiff})`;
+  }
+
+  // Actualizar ícono de la tasa
+  if (kpiTasaIcon) {
+    if (tasaPareo === 100) {
+      kpiTasaIcon.textContent = "check_circle";
+      kpiTasaIcon.parentElement.className = "w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0";
+    } else if (tasaPareo > 85) {
+      kpiTasaIcon.textContent = "info";
+      kpiTasaIcon.parentElement.className = "w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0";
+    } else {
+      kpiTasaIcon.textContent = "error";
+      kpiTasaIcon.parentElement.className = "w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0";
+    }
+  }
+
+  // Fila de totales en el status general
   if (discrepanciasCount > 0) {
     statusEl.className = "px-3 py-1 rounded-full text-xs font-black bg-rose-100 text-rose-800 border border-rose-200";
     statusEl.textContent = `Desconciliado (${discrepanciasCount} discrepancias encontradas)`;
@@ -1736,141 +2672,857 @@ async function runConciliacionProcess(clues, mesAnio) {
   }
 }
 
-async function exportMunicipalConcentradoRangeExcel(muni, semInicio, semFin) {
+// Aplicar filtros y búsquedas en caliente a la tabla
+function applyConciliacionFiltersAndSearch() {
+  const tbody = document.getElementById("conciliacionTbody");
+  if (!tbody || !_conciliacionLastResult.length) return;
+
+  tbody.innerHTML = "";
+  let filtered = _conciliacionLastResult;
+
+  // 1. Filtrar por estado
+  if (_conciliacionFilter === "diff") {
+    filtered = filtered.filter(item => item.diff !== 0);
+  } else if (_conciliacionFilter === "match") {
+    filtered = filtered.filter(item => item.diff === 0);
+  }
+
+  // 2. Filtrar por búsqueda
+  if (_conciliacionSearchQuery.trim()) {
+    const q = _conciliacionSearchQuery.toLowerCase();
+    filtered = filtered.filter(item => 
+      item.rb.categoria.toLowerCase().includes(q) ||
+      item.rb.grupo.toLowerCase().includes(q) ||
+      item.rb.edad.toLowerCase().includes(q) ||
+      item.sisVar.toLowerCase().includes(q)
+    );
+  }
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 font-semibold">No se encontraron rubros con los filtros aplicados.</td></tr>`;
+    return;
+  }
+
+  let subLocal = 0;
+  let subSis = 0;
+  let subDiff = 0;
+
+  filtered.forEach(item => {
+    const isDiscrepant = item.diff !== 0;
+    subLocal += item.localVal;
+    subSis += item.sisVal;
+    subDiff += item.diff;
+
+    const row = document.createElement("tr");
+    if (isDiscrepant) {
+      row.className = "border-b border-slate-100 font-bold bg-rose-50/10 hover:bg-rose-50/20";
+    } else {
+      row.className = "border-b border-slate-100 hover:bg-slate-50";
+    }
+
+    row.innerHTML = `
+      <td class="p-3">
+        <div style="max-width: 420px; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.35;" title="${item.rb.categoria} - ${item.rb.grupo} (${item.rb.edad})">
+          ${item.rb.categoria} - ${item.rb.grupo} (${item.rb.edad})
+        </div>
+      </td>
+      <td class="p-3 text-center text-xs font-mono font-bold text-slate-500">${item.sisVar}</td>
+      <td class="p-3 text-center text-xs font-bold">${item.localVal.toLocaleString('es-MX')}</td>
+      <td class="p-3 text-center text-xs font-bold">${item.sisVal.toLocaleString('es-MX')}</td>
+      <td class="p-3 text-center text-xs font-black ${item.diff > 0 ? 'text-indigo-600' : item.diff < 0 ? 'text-rose-600' : 'text-emerald-600'}">
+        ${item.diff > 0 ? `+${item.diff}` : item.diff}
+      </td>
+      <td class="p-3 text-center text-xs">
+        <span class="px-2.5 py-1 rounded-full text-[10px] font-black ${isDiscrepant ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}">
+          ${isDiscrepant ? 'Desfase' : 'Conciliado'}
+        </span>
+      </td>
+      <td class="p-3 text-center">
+        <button class="w-7 h-7 rounded-full flex items-center justify-center hover:bg-slate-200 text-slate-400 hover:text-primary transition-colors btn-conciliacion-detalle" data-rubro-id="${item.rb.id}" title="Auditar capturas locales">
+          <span class="material-symbols-rounded text-[18px]">history</span>
+        </button>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+
+  // Fila de totales del filtro
+  const totalRow = document.createElement("tr");
+  totalRow.className = "bg-slate-50 border-t border-slate-300 font-extrabold text-slate-900";
+  totalRow.innerHTML = `
+    <td class="p-3 text-xs uppercase text-right" colspan="2">TOTAL FILTRADO:</td>
+    <td class="p-3 text-center text-xs">${subLocal.toLocaleString('es-MX')}</td>
+    <td class="p-3 text-center text-xs">${subSis.toLocaleString('es-MX')}</td>
+    <td class="p-3 text-center text-xs ${subDiff > 0 ? 'text-indigo-700' : subDiff < 0 ? 'text-rose-700' : 'text-emerald-700'}">
+      ${subDiff > 0 ? `+${subDiff}` : subDiff}
+    </td>
+    <td class="p-3 text-center text-xs" colspan="2">
+      <span class="px-2 py-0.5 rounded-full font-black ${subDiff !== 0 ? 'bg-rose-200 text-rose-900' : 'bg-emerald-200 text-emerald-900'}">
+        ${subDiff !== 0 ? 'Diferencia Activa' : 'Sincronizado'}
+      </span>
+    </td>
+  `;
+  tbody.appendChild(totalRow);
+
+  // Agregar click listener a los botones de auditoría
+  tbody.querySelectorAll(".btn-conciliacion-detalle").forEach(btn => {
+    btn.onclick = () => {
+      const rubroId = btn.getAttribute("data-rubro-id");
+      openAuditDrawer(rubroId);
+    };
+  });
+}
+
+// Abrir Drawer de Auditoría Lateral
+function openAuditDrawer(rubroId) {
+  const drawer = document.getElementById("conciliacionDrawer");
+  const backdrop = document.getElementById("conciliacionDrawerBackdrop");
+  const nameEl = document.getElementById("drawerRubroName");
+  const contentEl = document.getElementById("drawerContent");
+
+  if (!drawer || !backdrop) return;
+
+  const rb = INFLUENZA_RUBROS.find(r => r.id === rubroId);
+  if (!rb) return;
+
+  nameEl.textContent = `${rb.categoria} - ${rb.grupo} (${rb.edad})`;
+
+  const mesAnio = document.getElementById("conciliacionMes").value;
+  const clues = document.getElementById("conciliacionClues").value;
+  const [mes, anio] = mesAnio.split("|").map(Number);
+
+  // Buscar capturas locales
+  const matchingCapturas = [];
+  _adminCapturasArray.forEach(c => {
+    if (c.clues === clues) {
+      const d = new Date(c.fecha + "T12:00:00");
+      if (d.getMonth() + 1 === mes && d.getFullYear() === anio) {
+        const val = Number(c.valores[rubroId] || 0);
+        if (val > 0) {
+          matchingCapturas.push({
+            fecha: c.fecha,
+            valor: val,
+            usuario: c.capturado_por || c.usuario || "Usuario del Sistema",
+            comentarios: c.comentarios || ""
+          });
+        }
+      }
+    }
+  });
+
+  // Ordenar por fecha descendente
+  matchingCapturas.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+  contentEl.innerHTML = "";
+
+  if (matchingCapturas.length === 0) {
+    contentEl.innerHTML = `
+      <div class="flex flex-col items-center justify-center p-8 text-center text-slate-400">
+        <span class="material-symbols-rounded text-[48px] mb-2">assignment_late</span>
+        <p class="text-sm font-semibold">No hay capturas locales registradas para este rubro en este mes.</p>
+      </div>
+    `;
+  } else {
+    const timeline = document.createElement("div");
+    timeline.className = "flex flex-col gap-4 relative border-l-2 border-slate-100 pl-4 ml-2";
+
+    matchingCapturas.forEach(cap => {
+      const item = document.createElement("div");
+      item.className = "relative mb-1";
+
+      const dateParts = cap.fecha.split("-");
+      const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+
+      item.innerHTML = `
+        <div class="absolute -left-[23px] top-1.5 w-2.5 h-2.5 rounded-full bg-primary border-2 border-surface"></div>
+        <div class="bg-slate-50 border border-slate-150 rounded-xl p-3 shadow-2xs hover:bg-slate-100/50 transition-colors">
+          <div class="flex justify-between items-center mb-1">
+            <span class="text-xs font-bold text-slate-800">${formattedDate}</span>
+            <span class="px-2 py-0.5 rounded-full text-xs font-black bg-primary/10 text-primary">${cap.valor} dosis</span>
+          </div>
+          <div class="text-[10px] text-slate-500 font-semibold flex items-center gap-1">
+            <span class="material-symbols-rounded text-[12px]">person</span>
+            ${cap.usuario}
+          </div>
+          ${cap.comentarios ? `
+            <div class="mt-2 text-[10px] italic text-slate-600 bg-surface border border-slate-100 p-2 rounded-lg">
+              "${cap.comentarios}"
+            </div>
+          ` : ""}
+        </div>
+      `;
+      timeline.appendChild(item);
+    });
+
+    contentEl.appendChild(timeline);
+  }
+
+  drawer.classList.remove("hidden");
+  backdrop.classList.remove("hidden");
+
+  // Pequeño timeout para asegurar que el DOM dibuje la clase hidden y luego anime
+  setTimeout(() => {
+    drawer.classList.remove("translate-x-full");
+    backdrop.classList.remove("opacity-0");
+  }, 30);
+}
+
+// Cerrar Drawer de Auditoría Lateral
+function closeConciliacionDrawer() {
+  const drawer = document.getElementById("conciliacionDrawer");
+  const backdrop = document.getElementById("conciliacionDrawerBackdrop");
+
+  if (!drawer || !backdrop) return;
+
+  drawer.classList.add("translate-x-full");
+  backdrop.classList.add("opacity-0");
+
+  setTimeout(() => {
+    drawer.classList.add("hidden");
+    backdrop.classList.add("hidden");
+  }, 300);
+}
+
+// Exportar Reporte de Conciliación a Excel con ExcelJS
+async function exportConciliacionReport() {
+  if (!_conciliacionLastResult || _conciliacionLastResult.length === 0) {
+    showToast("No hay datos de conciliación para exportar.", false, "bad");
+    return;
+  }
+
+  const mesAnio = document.getElementById("conciliacionMes").value;
+  const clues = document.getElementById("conciliacionClues").value;
+  const [mes, anio] = mesAnio.split("|").map(Number);
+  const unitData = _allUnidades.find(u => u.clues === clues);
+  const unitName = unitData ? unitData.unidad : clues;
+
   try {
-    showToast("Generando concentrado municipal en Excel...", true, "info");
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Conciliación SIS');
+
+    sheet.columns = [
+      { header: 'Rubro (Edad)', key: 'rubro', width: 45 },
+      { header: 'Clave SIS', key: 'clave', width: 15 },
+      { header: 'Captura Local', key: 'local', width: 20 },
+      { header: 'SIS Oficial (CSV)', key: 'sis', width: 20 },
+      { header: 'Diferencia', key: 'diff', width: 15 },
+      { header: 'Estatus', key: 'status', width: 15 }
+    ];
+
+    sheet.insertRow(1, []);
+    sheet.insertRow(2, [`REPORTE DE CONCILIACIÓN DE INFLUENZA`]);
+    sheet.insertRow(3, [`Unidad: ${unitName} (${clues})  |  Mes: ${mes}/${anio}`]);
+    sheet.insertRow(4, [`Fecha de exportación: ${new Date().toLocaleDateString('es-MX')}`]);
+    sheet.insertRow(5, []);
+
+    sheet.mergeCells('A2:F2');
+    sheet.mergeCells('A3:F3');
+    sheet.mergeCells('A4:F4');
+
+    const titleCell = sheet.getCell('A2');
+    titleCell.font = { name: 'Montserrat', family: 4, size: 16, bold: true, color: { argb: 'FF1E293B' } };
+    titleCell.alignment = { horizontal: 'center' };
+
+    const subtitleCell = sheet.getCell('A3');
+    subtitleCell.font = { name: 'Montserrat', family: 4, size: 11, italic: true, color: { argb: 'FF475569' } };
+    subtitleCell.alignment = { horizontal: 'center' };
+
+    const dateCell = sheet.getCell('A4');
+    dateCell.font = { name: 'Montserrat', family: 4, size: 9, color: { argb: 'FF64748B' } };
+    dateCell.alignment = { horizontal: 'center' };
+
+    const headerRow = sheet.getRow(6);
+    headerRow.values = ['Rubro (Edad)', 'Clave SIS', 'Captura Local', 'SIS Oficial (CSV)', 'Diferencia', 'Estatus'];
+    headerRow.font = { name: 'Montserrat', family: 4, size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.height = 25;
+
+    headerRow.eachCell((cell) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF1E3A8A' }
+      };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+        bottom: { style: 'medium', color: { argb: 'FF1E3A8A' } },
+        left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+        right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+      };
+    });
+
+    let rowIdx = 7;
+    let totalLocal = 0;
+    let totalSis = 0;
+
+    _conciliacionLastResult.forEach(item => {
+      const isDiscrepant = item.diff !== 0;
+      totalLocal += item.localVal;
+      totalSis += item.sisVal;
+
+      const row = sheet.addRow({
+        rubro: `${item.rb.categoria} - ${item.rb.grupo} (${item.rb.edad})`,
+        clave: item.sisVar,
+        local: item.localVal,
+        sis: item.sisVal,
+        diff: item.diff,
+        status: isDiscrepant ? 'Desfase' : 'Conciliado'
+      });
+
+      row.height = 20;
+      row.getCell('rubro').alignment = { horizontal: 'left', vertical: 'middle' };
+      row.getCell('clave').alignment = { horizontal: 'center', vertical: 'middle' };
+      row.getCell('local').alignment = { horizontal: 'right', vertical: 'middle' };
+      row.getCell('sis').alignment = { horizontal: 'right', vertical: 'middle' };
+      row.getCell('diff').alignment = { horizontal: 'right', vertical: 'middle' };
+      row.getCell('status').alignment = { horizontal: 'center', vertical: 'middle' };
+
+      row.eachCell((cell, colNumber) => {
+        cell.font = { name: 'Montserrat', family: 4, size: 9 };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+          right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+        };
+
+        if (isDiscrepant) {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFF1F2' }
+          };
+          if (colNumber === 5) {
+            cell.font = { name: 'Montserrat', family: 4, size: 9, bold: true, color: { argb: 'FFE11D48' } };
+          }
+          if (colNumber === 6) {
+            cell.font = { name: 'Montserrat', family: 4, size: 9, bold: true, color: { argb: 'FF9F1239' } };
+          }
+        } else {
+          if (colNumber === 5) {
+            cell.font = { name: 'Montserrat', family: 4, size: 9, color: { argb: 'FF059669' } };
+          }
+          if (colNumber === 6) {
+            cell.font = { name: 'Montserrat', family: 4, size: 9, bold: true, color: { argb: 'FF065F46' } };
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFE6F4EA' }
+            };
+          }
+        }
+      });
+
+      rowIdx++;
+    });
+
+    const totalRow = sheet.addRow({
+      rubro: 'TOTAL GENERAL:',
+      clave: '',
+      local: totalLocal,
+      sis: totalSis,
+      diff: totalLocal - totalSis,
+      status: totalLocal === totalSis ? 'Sincronizado' : 'Desfases'
+    });
+    totalRow.height = 24;
+    sheet.mergeCells(`A${rowIdx}:B${rowIdx}`);
+
+    totalRow.eachCell((cell) => {
+      cell.font = { name: 'Montserrat', family: 4, size: 10, bold: true };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFF1F5F9' }
+      };
+      cell.border = {
+        top: { style: 'medium', color: { argb: 'FF94A3B8' } },
+        bottom: { style: 'double', color: { argb: 'FF475569' } },
+        left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+      };
+    });
+
+    totalRow.getCell('rubro').alignment = { horizontal: 'right', vertical: 'middle' };
+    totalRow.getCell('local').alignment = { horizontal: 'right', vertical: 'middle' };
+    totalRow.getCell('sis').alignment = { horizontal: 'right', vertical: 'middle' };
+    totalRow.getCell('diff').alignment = { horizontal: 'right', vertical: 'middle' };
+    totalRow.getCell('status').alignment = { horizontal: 'center', vertical: 'middle' };
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Conciliacion_Influenza_${clues}_Mes_${mes}_${anio}.xlsx`;
+    link.click();
+
+    showToast("Reporte de conciliación exportado correctamente.", true, "good");
+  } catch (err) {
+    console.error("Error al exportar a Excel:", err);
+    showToast("Error al exportar el reporte a Excel.", false, "bad");
+  }
+}
+
+// --- FUNCIONES PREMIUM DE EXPORTACIÓN A EXCEL (CON EXCELJS) ---
+
+function applyPremiumStyles(cell, options = {}) {
+  cell.font = {
+    name: 'Montserrat',
+    family: 4,
+    size: options.size || 9,
+    bold: !!options.bold,
+    italic: !!options.italic,
+    color: options.color
+  };
+  if (options.align) {
+    cell.alignment = { horizontal: options.align, vertical: 'middle' };
+  }
+}
+
+function copyColumnStyle(ws, srcColIndex, destColIndex) {
+  for (let row = 10; row <= 59; row++) {
+    const srcCell = ws.getCell(row, srcColIndex);
+    const destCell = ws.getCell(row, destColIndex);
     
-    const response = await fetch("./Análisis_Meta_Logro_Influenza_2025-2026_UNIDAD_DE_SALUD.xlsx");
-    if (!response.ok) throw new Error("No se pudo cargar la plantilla de Excel.");
+    // Clonar las propiedades de estilo para evitar referencias cruzadas
+    destCell.font = srcCell.font ? { ...srcCell.font } : undefined;
+    destCell.fill = srcCell.fill ? { ...srcCell.fill } : undefined;
+    destCell.border = srcCell.border ? { ...srcCell.border } : undefined;
+    destCell.alignment = srcCell.alignment ? { ...srcCell.alignment } : undefined;
+    destCell.numFmt = srcCell.numFmt;
+  }
+}
+
+function centerHeadersAcrossColumns(ws, lastColIndex) {
+  const lastColLetter = ws.getColumn(lastColIndex).letter;
+  for (let row = 1; row <= 5; row++) {
+    try {
+      ws.unmergeCells(`A${row}:L${row}`);
+    } catch(e) {}
+    try {
+      ws.unmergeCells(`A${row}:I${row}`);
+    } catch(e) {}
+    try {
+      ws.mergeCells(`A${row}:${lastColLetter}${row}`);
+      ws.getCell(`A${row}`).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      applyPremiumStyles(ws.getCell(`A${row}`), { bold: row === 5 ? false : true, size: row === 1 ? 14 : row === 5 ? 10 : 11 });
+    } catch(e) {}
+  }
+}
+
+function applyPremiumFooterAndPageSetup(ws, activeCampana) {
+  ws.pageSetup = {
+    orientation: 'landscape',
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0
+  };
+  ws.headerFooter = {
+    oddFooter: `&L&"Montserrat,Regular"&8Campaña: ${activeCampana} &C&"Montserrat,Regular"&8Fecha de Reporte: ${new Date().toLocaleDateString()} &R&"Montserrat,Regular"&8Página &P de &N`
+  };
+}
+
+// 1. PLANTILLA 1: Reporte mensual por unidad separado por semanas
+async function exportWeeklyMonthlyUnitExcel(clues, unidadNombre, mesAnio) {
+  try {
+    showToast("Generando reporte mensual por semanas...", true, "info");
+    
+    const [mes, anio] = mesAnio.split("|").map(Number);
+    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    const mesNombre = monthNames[mes - 1];
+    
+    const response = await fetch("./PLANTILLA REPORTE POR SEMANA.xlsx");
+    if (!response.ok) throw new Error("No se pudo cargar la plantilla de reporte semanal.");
     const arrayBuffer = await response.arrayBuffer();
     
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(arrayBuffer);
+    const ws = wb.worksheets[0];
     
-    const minFecha = semInicio < semFin ? semInicio : semFin;
-    const maxFecha = semInicio < semFin ? semFin : semInicio;
-    const units = _allUnidades.filter(u => u.municipio.toUpperCase() === muni.toUpperCase());
+    // Escribir cabecera
+    const cellUnit = ws.getCell('B6');
+    cellUnit.value = `UNIDAD DE SALUD: ${unidadNombre.toUpperCase()} (${clues})`;
+    applyPremiumStyles(cellUnit, { bold: true, size: 10 });
     
-    const sheetMeta = wb.getWorksheet('ANÁLIS DE META-LOGRO') || wb.worksheets[1];
-    if (sheetMeta) {
-      sheetMeta.getCell('A5').value = `Meta-Logro de Vacuna Anti Influenza Estacional Temporada Invernal 2025-2026 - Concentrado Municipal: ${muni} (${minFecha} al ${maxFecha})`;
-      
-      INFLUENZA_RUBROS.forEach((rb, idx) => {
-        let totalMeta = 0;
-        units.forEach(u => {
-          const unitMetaRecord = _adminMetasArray.find(m => m.clues === u.clues);
-          totalMeta += unitMetaRecord ? Number(unitMetaRecord.metas[rb.id] || 0) : 0;
-        });
-        sheetMeta.getCell(9 + idx, 8).value = totalMeta;
-        
-        let totalLogro = 0;
-        _adminCapturasArray.forEach(c => {
-          if (c.municipio.toUpperCase() === muni.toUpperCase() && c.fecha >= minFecha && c.fecha <= maxFecha) {
-            totalLogro += Number(c.valores[rb.id] || 0);
-          }
-        });
-        sheetMeta.getCell(9 + idx, 7).value = totalLogro;
-      });
-      
-      sheetMeta.getCell('G55').value = { formula: 'SUM(G9:G54)' };
+    const cellMonth = ws.getCell('I6');
+    cellMonth.value = `MES: ${mesNombre.toUpperCase()} ${anio}`;
+    applyPremiumStyles(cellMonth, { bold: true, size: 10 });
+    
+    // Limpiar cuadrícula de semanas (Semana 1 a 5 = Columnas G a K / 7 a 11)
+    for (let r = 9; r <= 54; r++) {
+      for (let c = 7; c <= 11; c++) {
+        ws.getCell(r, c).value = null;
+      }
     }
     
-    const ws = wb.addWorksheet('CONCENTRADO MUNICIPAL', { views: [{ showGridLines: true }] });
-    const sheets = wb.worksheets;
-    const addedSheet = sheets.pop();
-    sheets.unshift(addedSheet);
+    // Obtener capturas del mes y unidad
+    const campana = document.getElementById("influenza_campana")?.value || "2025-2026";
+    const unitCaptures = _adminCapturasArray.filter(c => c.clues === clues);
     
-    ws.getColumn(1).width = 4;
-    ws.getColumn(2).width = 35;
-    ws.getColumn(3).width = 18;
-    ws.getColumn(4).width = 15;
-    ws.getColumn(5).width = 18;
-    ws.getColumn(6).width = 15;
-    
-    ws.getCell('B2').value = "ANÁLISIS DE META-LOGRO DE INFLUENZA";
-    ws.getCell('B2').font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FF2E1065' } };
-    
-    ws.getCell('B3').value = `CONCENTRADO MUNICIPAL: ${muni} (${minFecha} al ${maxFecha})`;
-    ws.getCell('B3').font = { name: 'Arial', size: 11, italic: true };
-    
-    const headers = ["#", "UNIDAD DE SALUD", "CLUES", "META ANUAL", "LOGRO ACUMULADO", "% AVANCE"];
-    const headerRow = ws.getRow(5);
-    headers.forEach((h, colIdx) => {
-      const cell = headerRow.getCell(colIdx + 1);
-      cell.value = h;
-      cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2E1065' } };
-      cell.alignment = { horizontal: 'center', vertical: 'middle' };
-    });
-    headerRow.height = 28;
-    
-    let rowIdx = 6;
-    units.forEach((u, idx) => {
-      const unitMetaRecord = _adminMetasArray.find(m => m.clues === u.clues);
-      let totalMeta = 0;
-      if (unitMetaRecord && unitMetaRecord.metas) {
-        Object.values(unitMetaRecord.metas).forEach(v => totalMeta += Number(v || 0));
+    unitCaptures.forEach(cap => {
+      const capDate = new Date(cap.fecha + "T12:00:00");
+      if (capDate.getMonth() + 1 === mes && capDate.getFullYear() === anio) {
+        const { weekNumInMonth } = mapDateToMonthAndWeek(cap.fecha);
+        INFLUENZA_RUBROS.forEach((rb, idx) => {
+          const row = 9 + idx;
+          const col = 7 + (weekNumInMonth - 1);
+          const val = Number(cap.valores[rb.id] || 0);
+          
+          ws.getCell(row, col).value = (ws.getCell(row, col).value || 0) + val;
+        });
       }
-      
-      let totalLogro = 0;
-      _adminCapturasArray.forEach(c => {
-        if (c.clues === u.clues && c.fecha >= minFecha && c.fecha <= maxFecha) {
-          Object.values(c.valores).forEach(v => totalLogro += Number(v || 0));
+    });
+    
+    // Aplicar fuentes y formatos en las celdas semanales
+    for (let r = 9; r <= 54; r++) {
+      for (let c = 7; c <= 12; c++) {
+        const cell = ws.getCell(r, c);
+        applyPremiumStyles(cell, { size: 9, bold: r === 54 });
+        if (cell.value !== null && typeof cell.value === 'number') {
+          cell.numFmt = '#,##0';
         }
-      });
-      
-      const pct = totalMeta > 0 ? (totalLogro / totalMeta) : 0;
-      
-      ws.getCell(rowIdx, 1).value = idx + 1;
-      ws.getCell(rowIdx, 2).value = u.unidad;
-      ws.getCell(rowIdx, 3).value = u.clues;
-      ws.getCell(rowIdx, 4).value = totalMeta;
-      ws.getCell(rowIdx, 5).value = totalLogro;
-      ws.getCell(rowIdx, 6).value = pct;
-      
-      ws.getCell(rowIdx, 4).numFmt = '#,##0';
-      ws.getCell(rowIdx, 5).numFmt = '#,##0';
-      ws.getCell(rowIdx, 6).numFmt = '0.0%';
-      
-      const bgColor = idx % 2 === 0 ? 'FFF9F5F0' : 'FFFFFFFF';
-      for (let c = 1; c <= 6; c++) {
-        ws.getCell(rowIdx, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
-        ws.getCell(rowIdx, c).border = {
-          bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-          right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
-        };
       }
-      
-      rowIdx++;
-    });
+    }
     
-    ws.getCell(rowIdx, 2).value = "TOTAL MUNICIPIO";
-    ws.getCell(rowIdx, 2).font = { name: 'Arial', size: 10, bold: true };
-    
-    ws.getCell(rowIdx, 4).value = { formula: `SUM(D6:D${rowIdx-1})` };
-    ws.getCell(rowIdx, 5).value = { formula: `SUM(E6:E${rowIdx-1})` };
-    ws.getCell(rowIdx, 6).value = { formula: `AVERAGE(F6:F${rowIdx-1})` };
-    
-    ws.getCell(rowIdx, 4).font = { name: 'Arial', size: 10, bold: true };
-    ws.getCell(rowIdx, 5).font = { name: 'Arial', size: 10, bold: true };
-    ws.getCell(rowIdx, 6).font = { name: 'Arial', size: 10, bold: true };
-    
-    ws.getCell(rowIdx, 4).numFmt = '#,##0';
-    ws.getCell(rowIdx, 5).numFmt = '#,##0';
-    ws.getCell(rowIdx, 6).numFmt = '0.0%';
+    applyPremiumFooterAndPageSetup(ws, campana);
     
     const buffer = await wb.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `Concentrado_Influenza_2025-2026_${muni.replace(/ /g, "_")}_rango.xlsx`;
+    link.download = `Reporte_Semanal_Mensual_${unidadNombre.replace(/ /g, "_")}_${mesNombre}_${anio}.xlsx`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast("Concentrado municipal Excel descargado exitosamente.", true, "good");
+    showToast("Reporte mensual descargado exitosamente.", true, "good");
   } catch (err) {
-    console.error("Error al exportar concentrado Excel:", err);
+    console.error("Error al exportar reporte semanal:", err);
     showToast("Error al generar el archivo Excel.", false, "bad");
+  }
+}
+
+// 2. PLANTILLA 2: Concentrado de totales (Simple)
+async function exportConcentradoSimpleExcel() {
+  const scope = document.getElementById("adminInfluenzaExportScope")?.value || "single";
+  const selectMuni = document.getElementById("adminInfluenzaMuni")?.value || USER.municipio;
+  const role = USER.rol.toUpperCase();
+  
+  if (role === "ADMIN" || role === "JURISDICCIONAL") {
+    if (scope === "muni_4") {
+      const munis = ["QUERETARO", "CORREGIDORA", "EL MARQUES", "HUIMILPAN"];
+      for (const m of munis) {
+        await generateConcentradoSimpleFile(m, "municipio");
+      }
+      return;
+    } else if (scope === "single") {
+      await generateConcentradoSimpleFile(null, "jurisdiccion");
+      return;
+    }
+  }
+  
+  // Default o rol Municipal
+  await generateConcentradoSimpleFile(selectMuni, "municipio");
+}
+
+async function generateConcentradoSimpleFile(muniName, type = "municipio") {
+  try {
+    const scopeLabel = type === "jurisdiccion" ? "JURISDICCION SANITARIA" : `MUNICIPIO DE ${muniName}`;
+    showToast(`Generando Concentrado Simple para ${scopeLabel}...`, true, "info");
+    
+    const response = await fetch("./PLANTILLA, CONCENTRADO DE INFLUENZA.xlsx");
+    if (!response.ok) throw new Error("No se pudo cargar la plantilla de concentrado.");
+    const arrayBuffer = await response.arrayBuffer();
+    
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(arrayBuffer);
+    const ws = wb.worksheets[0];
+    
+    // Escribir cabecera
+    const cellScope = ws.getCell('B8');
+    cellScope.value = `ÁMBITO DE EXPORTACIÓN: ${scopeLabel}`;
+    applyPremiumStyles(cellScope, { bold: true, size: 10 });
+    
+    // Obtener unidades
+    let targetUnits = _allUnidades;
+    if (type === "municipio") {
+      targetUnits = _allUnidades.filter(u => u.municipio.toUpperCase() === muniName.toUpperCase());
+    }
+    const targetClues = targetUnits.map(u => u.clues);
+    
+    // Mapear Meta y Logro
+    INFLUENZA_RUBROS.forEach((rb, idx) => {
+      const row = 11 + idx;
+      
+      // Sumar metas
+      let totalMeta = 0;
+      targetClues.forEach(clues => {
+        const mRecord = _adminMetasArray.find(m => m.clues === clues);
+        totalMeta += mRecord ? Number(mRecord.metas[rb.id] || 0) : 0;
+      });
+      
+      // Sumar logros (todas las semanas reportadas)
+      let totalLogro = 0;
+      _adminCapturasArray.forEach(cap => {
+        if (targetClues.includes(cap.clues)) {
+          totalLogro += Number(cap.valores[rb.id] || 0);
+        }
+      });
+      
+      ws.getCell(row, 7).value = totalLogro; // Logro (G)
+      ws.getCell(row, 8).value = totalMeta;  // Meta (H)
+      ws.getCell(row, 9).value = { formula: `IFERROR(G${row}/H${row}," ")` }; // % (I)
+    });
+    
+    // Aplicar fuentes y formatos Montserrat
+    for (let r = 11; r <= 58; r++) {
+      for (let c = 7; c <= 9; c++) {
+        const cell = ws.getCell(r, c);
+        applyPremiumStyles(cell, { size: 9, bold: r >= 57 });
+        if (c !== 9 && typeof cell.value === 'number') {
+          cell.numFmt = '#,##0';
+        } else if (c === 9) {
+          cell.numFmt = '0.0%';
+        }
+      }
+    }
+    
+    const campana = document.getElementById("influenza_campana")?.value || "2025-2026";
+    applyPremiumFooterAndPageSetup(ws, campana);
+    
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Concentrado_Totales_Influenza_${scopeLabel.replace(/ /g, "_")}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast(`Concentrado simple de ${type} descargado.`, true, "good");
+  } catch (err) {
+    console.error("Error al generar concentrado simple:", err);
+    showToast("Error al generar el concentrado.", false, "bad");
+  }
+}
+
+// 3. PLANTILLA 3: Concentrado Detallado con Unidades/Municipios
+async function exportConcentradoDetalladoUnidadesExcel() {
+  const scope = document.getElementById("adminInfluenzaExportScope")?.value || "single";
+  const selectMuni = document.getElementById("adminInfluenzaMuni")?.value || USER.municipio;
+  const role = USER.rol.toUpperCase();
+  
+  if (role === "ADMIN" || role === "JURISDICCIONAL") {
+    if (scope === "muni_4") {
+      const munis = ["QUERETARO", "CORREGIDORA", "EL MARQUES", "HUIMILPAN"];
+      for (const m of munis) {
+        await generateConcentradoDetalladoFile(m, "municipio");
+      }
+      return;
+    } else if (scope === "single") {
+      await generateConcentradoDetalladoFile(null, "jurisdiccion");
+      return;
+    }
+  }
+  
+  // Default o rol Municipal
+  await generateConcentradoDetalladoFile(selectMuni, "municipio");
+}
+
+async function generateConcentradoDetalladoFile(muniName, type = "municipio") {
+  try {
+    const scopeLabel = type === "jurisdiccion" ? "CONSOLIDADO JURISDICCIONAL" : `MUNICIPIO: ${muniName}`;
+    showToast(`Generando Concentrado Detallado para ${scopeLabel}...`, true, "info");
+    
+    const response = await fetch("./PLANTILLA, CONCENTRADO DE INFLUENZA CON UNIDADES O MUNICIPIOS.xlsx");
+    if (!response.ok) throw new Error("No se pudo cargar la plantilla detallada.");
+    const arrayBuffer = await response.arrayBuffer();
+    
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(arrayBuffer);
+    const ws = wb.worksheets[0];
+    
+    // Cabecera
+    const cellScope = ws.getCell('B8');
+    cellScope.value = `ÁMBITO: ${scopeLabel}`;
+    applyPremiumStyles(cellScope, { bold: true, size: 10 });
+    
+    let currentColumn = 7; // Empezar en Columna G (7)
+    
+    // Si es municipal, listamos las unidades de ese municipio
+    if (type === "municipio") {
+      const units = _allUnidades.filter(u => u.municipio.toUpperCase() === muniName.toUpperCase());
+      
+      // Asegurarse de ordenar por CLUES como se especificó
+      units.sort((a, b) => a.clues.localeCompare(b.clues));
+      
+      units.forEach(u => {
+        writeUnitDataColumns(ws, currentColumn, u.unidad, u.clues, [u.clues]);
+        currentColumn += 3;
+      });
+      
+      // Agregar columna de TOTAL MUNICIPAL
+      writeUnitDataColumns(ws, currentColumn, `TOTAL ${muniName}`, "MUNICIPAL", units.map(u => u.clues), true);
+      currentColumn += 3;
+      
+    } else {
+      // Jurisdiccional consolidado en un solo archivo:
+      // Agrupar unidades por municipio, ordenadas por CLUES
+      const munis = ["CORREGIDORA", "HUIMILPAN", "EL MARQUES", "QUERETARO"];
+      
+      munis.forEach(m => {
+        const unitsMuni = _allUnidades.filter(u => u.municipio.toUpperCase() === m.toUpperCase());
+        unitsMuni.sort((a, b) => a.clues.localeCompare(b.clues));
+        
+        // Escribir las unidades de este municipio
+        unitsMuni.forEach(u => {
+          writeUnitDataColumns(ws, currentColumn, u.unidad, u.clues, [u.clues]);
+          currentColumn += 3;
+        });
+        
+        // Escribir Subtotal del municipio
+        writeUnitDataColumns(ws, currentColumn, `TOTAL ${m}`, `SUBTOTAL ${m}`, unitsMuni.map(u => u.clues), true);
+        currentColumn += 3;
+      });
+      
+      // Al final, TOTAL JURISDICCIONAL
+      writeUnitDataColumns(ws, currentColumn, "TOTAL JURISDICCIONAL", "JURISDICCIONAL", _allUnidades.map(u => u.clues), true);
+      currentColumn += 3;
+    }
+    
+    // Centrar logos y cabeceras de títulos de forma adaptativa
+    centerHeadersAcrossColumns(ws, currentColumn - 1);
+    
+    // Formato de página y pie de página
+    const campana = document.getElementById("influenza_campana")?.value || "2025-2026";
+    applyPremiumFooterAndPageSetup(ws, campana);
+    
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Concentrado_Detallado_Influenza_${scopeLabel.replace(/ /g, "_")}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast(`Concentrado con unidades de ${muniName || 'Jurisdicción'} descargado.`, true, "good");
+  } catch (err) {
+    console.error("Error al generar concentrado detallado:", err);
+    showToast("Error al generar el concentrado detallado.", false, "bad");
+  }
+}
+
+// Helper para escribir un grupo de 3 columnas (Logro, Meta, %) para una unidad o totalizador
+function writeUnitDataColumns(ws, startCol, headerName, clues, cluesArray, isTotal = false) {
+  // Copiar estilos de columnas G, H, I (7, 8, 9)
+  copyColumnStyle(ws, 7, startCol);
+  copyColumnStyle(ws, 8, startCol + 1);
+  copyColumnStyle(ws, 9, startCol + 2);
+  
+  const col1Letter = ws.getColumn(startCol).letter;
+  const col2Letter = ws.getColumn(startCol + 1).letter;
+  const col3Letter = ws.getColumn(startCol + 2).letter;
+  
+  // Fusionar fila 10 para el nombre de la unidad/municipio
+  try {
+    ws.mergeCells(`${col1Letter}10:${col3Letter}10`);
+  } catch(e) {}
+  
+  const headerCell = ws.getCell(`${col1Letter}10`);
+  headerCell.value = `${headerName.toUpperCase()}\n(${clues})`;
+  applyPremiumStyles(headerCell, { bold: true, size: 8, align: 'center' });
+  headerCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  
+  // Rellenar subencabezados fila 11
+  ws.getCell(`${col1Letter}11`).value = "LOGRO";
+  ws.getCell(`${col2Letter}11`).value = "META";
+  ws.getCell(`${col3Letter}11`).value = "%";
+  
+  // Poblar rubros (Fila 12 a 57)
+  INFLUENZA_RUBROS.forEach((rb, idx) => {
+    const row = 12 + idx;
+    
+    // Metas
+    let metaVal = 0;
+    cluesArray.forEach(c => {
+      const mRecord = _adminMetasArray.find(m => m.clues === c);
+      metaVal += mRecord ? Number(mRecord.metas[rb.id] || 0) : 0;
+    });
+    
+    // Logros
+    let logroVal = 0;
+    _adminCapturasArray.forEach(cap => {
+      if (cluesArray.includes(cap.clues)) {
+        logroVal += Number(cap.valores[rb.id] || 0);
+      }
+    });
+    
+    const cellL = ws.getCell(row, startCol);
+    const cellM = ws.getCell(row, startCol + 1);
+    const cellP = ws.getCell(row, startCol + 2);
+    
+    cellL.value = logroVal;
+    cellM.value = metaVal;
+    cellP.value = { formula: `IFERROR(${col1Letter}${row}/${col2Letter}${row}," ")` };
+    
+    applyPremiumStyles(cellL, { size: 9 });
+    applyPremiumStyles(cellM, { size: 9 });
+    applyPremiumStyles(cellP, { size: 9 });
+    
+    cellL.numFmt = '#,##0';
+    cellM.numFmt = '#,##0';
+    cellP.numFmt = '0.0%';
+    
+    if (isTotal) {
+      cellL.fill = cellM.fill = cellP.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFF5F3FF' } // Fondo violeta claro para subtotales/totales
+      };
+    }
+  });
+  
+  // Fila 58: Total Dosis
+  const cellTL = ws.getCell(58, startCol);
+  const cellTM = ws.getCell(58, startCol + 1);
+  const cellTP = ws.getCell(58, startCol + 2);
+  
+  cellTL.value = { formula: `SUM(${col1Letter}12:${col1Letter}57)` };
+  cellTM.value = { formula: `SUM(${col2Letter}12:${col2Letter}57)` };
+  cellTP.value = { formula: `IFERROR(${col1Letter}58/${col2Letter}58," ")` };
+  
+  applyPremiumStyles(cellTL, { bold: true, size: 9 });
+  applyPremiumStyles(cellTM, { bold: true, size: 9 });
+  applyPremiumStyles(cellTP, { bold: true, size: 9 });
+  
+  cellTL.numFmt = '#,##0';
+  cellTM.numFmt = '#,##0';
+  cellTP.numFmt = '0.0%';
+  
+  // Fila 59: Frascos
+  const cellFL = ws.getCell(59, startCol);
+  const cellFM = ws.getCell(59, startCol + 1);
+  const cellFP = ws.getCell(59, startCol + 2);
+  
+  cellFL.value = { formula: `IFERROR(${col1Letter}58/10," ")` };
+  cellFM.value = { formula: `IFERROR(${col2Letter}58/10," ")` };
+  cellFP.value = { formula: `IFERROR(${col2Letter}59/${col1Letter}59," ")` };
+  
+  applyPremiumStyles(cellFL, { bold: true, size: 9 });
+  applyPremiumStyles(cellFM, { bold: true, size: 9 });
+  applyPremiumStyles(cellFP, { bold: true, size: 9 });
+  
+  cellFL.numFmt = '#,##0';
+  cellFM.numFmt = '#,##0';
+  cellFP.numFmt = '0.0%';
+  
+  if (isTotal) {
+    [58, 59].forEach(r => {
+      for (let c = startCol; c <= startCol + 2; c++) {
+        ws.getCell(r, c).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFE0D7FF' } // Destacado más fuerte para totales finales
+        };
+      }
+    });
   }
 }
 
