@@ -2500,6 +2500,42 @@ tr.lote-row-bad.imminent {
   transform: translateY(-50%) scale(0.95);
 }
 
+/* ===== PREMIUM SELECT / DROPDOWNS GLOBAL DESIGN ===== */
+select {
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 9999px !important;
+  height: 34px !important;
+  padding: 0 36px 0 16px !important;
+  background-color: #ffffff !important;
+  font-weight: 600 !important;
+  color: #0f172a !important;
+  outline: none !important;
+  cursor: pointer !important;
+  transition: border-color 0.2s !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  background-size: 14px !important;
+}
+select:focus {
+  border-color: #94a3b8 !important;
+  box-shadow: none !important;
+}
+
+.premium-custom-hidden-select {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+
 /* ===== ICONOS MODERNOS / CRYSTAL ===== */
 .material-symbols-rounded {
   font-family: "Material Symbols Rounded" !important;
@@ -6711,8 +6747,11 @@ input, textarea, select, [contenteditable] {
 #subtabUnitCaptura.active .material-symbols-rounded { color: #0ea5e9 !important; }
 #subtabUnitHistorico.active .material-symbols-rounded { color: #f43f5e !important; }
 #subtabInfluenzaAvances.active .material-symbols-rounded { color: #3b82f6 !important; }
+#subtabInfluenzaValidacion.active .material-symbols-rounded { color: #8b5cf6 !important; }
+#subtabInfluenzaConciliacion.active .material-symbols-rounded { color: #ec4899 !important; }
 #subtabInfluenzaMetas.active .material-symbols-rounded { color: #10b981 !important; }
 #subtabInfluenzaFrascos.active .material-symbols-rounded { color: #f59e0b !important; }
+#subtabInfluenzaConfig.active .material-symbols-rounded { color: #ef4444 !important; }
 
 /* ==========================================================================
    COMMAND HUB & PREMIUM ACTION CHIPS

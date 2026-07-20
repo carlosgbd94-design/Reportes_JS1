@@ -1524,7 +1524,7 @@
             <div id="secUnitCaptura" class="flex flex-col gap-6 relative w-full overflow-visible">
 
               <!-- Barra de Controles Superior (Campaña + Semana + Responsable) -->
-              <div class="bg-surface border border-slate-200 rounded-[24px] px-5 py-4 shadow-sm flex flex-wrap gap-4 items-end" style="background-color: #ffffff;">
+              <div class="bg-surface border border-slate-200 rounded-[24px] px-5 py-4 shadow-sm flex flex-wrap gap-4 items-end relative z-50" style="background-color: #ffffff;">
                 <!-- Campaña -->
                 <div style="min-width:140px; flex:0 1 auto;">
                   <label for="influenza_campana" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Campaña</label>
@@ -1532,12 +1532,19 @@
                     <option value="2025-2026">Campaña 2025-2026</option>
                   </select>
                 </div>
-                <!-- Semana a Reportar -->
-                <div style="min-width:200px; flex:0 1 auto;">
-                  <label for="influenza_semana" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Semana a Reportar</label>
-                  <select id="influenza_semana" class="bg-surface border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none" style="min-width:200px;">
-                    <!-- Generado dinámicamente -->
-                  </select>
+                <!-- Semana a Reportar Custom Premium Picker -->
+                <div class="relative" style="min-width: 260px; flex: 0 1 auto;">
+                  <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Semana a Reportar</label>
+                  <button type="button" id="influenza_semana_btn" class="w-full bg-surface border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-extrabold text-slate-700 outline-none flex items-center justify-between gap-2 shadow-sm hover:border-violet-400 transition-colors" style="min-height: 34px; background-color: #ffffff;">
+                    <span id="influenza_semana_label" class="flex items-center gap-1.5">Seleccionar semana...</span>
+                    <span class="material-symbols-rounded text-slate-400 text-[18px]">expand_more</span>
+                  </button>
+                  <input type="hidden" id="influenza_semana" />
+                  
+                  <!-- Dropdown Panel -->
+                  <div id="influenza_semana_dropdown" class="hidden absolute left-0 mt-1 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2.5 flex flex-col gap-1 w-[320px]" style="display: none; max-height: 280px !important; overflow-y: auto !important;">
+                    <!-- Las semanas se generarán dinámicamente aquí -->
+                  </div>
                 </div>
                 <!-- Nombre del Responsable -->
                 <div class="flex-1" style="min-width:200px;">
@@ -1549,6 +1556,24 @@
                       onfocus="this.style.borderColor='#8b5cf6'; this.style.boxShadow='0 0 0 3px rgba(139,92,246,0.12)';"
                       onblur="this.style.borderColor='#cbd5e1'; this.style.boxShadow='';">
                   </div>
+                </div>
+                <!-- 🛡️ Toggle Sin Movimiento Influenza -->
+                <div id="cardSinMovimientoINF" style="display:none; flex: 0 1 auto; align-items: center;"
+                  class="flex items-center gap-3 px-4 py-1 rounded-[20px] border border-slate-200 bg-surface shadow-sm transition-all duration-300 h-[34px]">
+                  <div id="iconSinMovimientoINFBg"
+                    class="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 transition-colors shrink-0">
+                    <span class="material-symbols-rounded text-[16px]">pause_circle</span>
+                  </div>
+                  <span id="labelSinMovimientoINF"
+                    class="text-[10px] font-black uppercase tracking-wider text-slate-600 transition-colors leading-tight">Sin Movimiento</span>
+                  <label class="premium-switch" style="flex: 0 0 50px; width: 50px; height: 28px;">
+                    <input type="checkbox" id="chkSinMovimientoINF">
+                    <span class="premium-switch-track">
+                      <span class="premium-switch-thumb">
+                        <span class="premium-switch-icon material-symbols-rounded">check</span>
+                      </span>
+                    </span>
+                  </label>
                 </div>
               </div>
 
@@ -1565,14 +1590,58 @@
             <div id="secUnitHistorico" class="hidden bg-surface border border-slate-200 rounded-[28px] p-6 shadow-sm" style="background-color: #ffffff;">
               <h4 class="text-sm font-black text-violet-950 mb-4 uppercase tracking-wider">Historial de Reportes Capturados</h4>
               
-              <!-- Buscador del Historial -->
-              <div class="relative w-full mb-4" style="height: 48px; display: flex; align-items: center;">
-                <span class="material-symbols-rounded absolute text-slate-400 text-[20px] pointer-events-none select-none" style="left: 16px !important; top: 50% !important; transform: translateY(-50%) !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; height: 20px !important; width: 20px !important;">search</span>
-                <input type="text" id="influenzaHistorialSearch" placeholder="Buscar por folio o fecha (YYYY-MM-DD)..."
-                  class="w-full bg-surface rounded-xl border border-slate-200 text-[13px] font-bold text-primary outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all shadow-sm" style="padding-left: 48px !important; height: 48px; width: 100%;" />
+              <!-- Buscador del Historial y Controles Premium -->
+              <div class="flex flex-col gap-4 mb-4">
+                <div class="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+                  <!-- Buscador Principal -->
+                  <div class="relative flex-1" style="height: 48px;">
+                    <span class="material-symbols-rounded absolute text-slate-400 text-[20px] pointer-events-none select-none" style="left: 16px !important; top: 50% !important; transform: translateY(-50%) !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; height: 20px !important; width: 20px !important;">search</span>
+                    <input type="text" id="influenzaHistorialSearch" placeholder="Buscar por folio, fecha (Enero, 2026...), responsable..."
+                      class="w-full bg-surface rounded-2xl border border-slate-200 text-[13px] font-bold text-primary outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200 transition-all shadow-sm" style="padding-left: 48px !important; padding-right: 40px !important; height: 48px; width: 100%;" />
+                    <!-- Botón de Limpiar Búsqueda -->
+                    <button id="influenzaClearSearch" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors" style="display: none; align-items: center; justify-content: center; height: 24px; width: 24px;">
+                      <span class="material-symbols-rounded text-[18px]">close</span>
+                    </button>
+                  </div>
+                  
+                  <!-- Selectores de Control -->
+                  <div class="flex flex-wrap items-center gap-3">
+                    <!-- Cantidad a mostrar -->
+                    <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2 shadow-sm">
+                      <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Mostrar:</span>
+                      <select id="influenzaHistorialLimit" class="bg-transparent text-xs font-extrabold text-slate-700 outline-none cursor-pointer">
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="all">Todos</option>
+                      </select>
+                    </div>
+                    
+                    <!-- Ordenar por -->
+                    <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-3 py-2 shadow-sm">
+                      <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Orden:</span>
+                      <select id="influenzaHistorialSort" class="bg-transparent text-xs font-extrabold text-slate-700 outline-none cursor-pointer">
+                        <option value="newest">Más recientes</option>
+                        <option value="oldest">Más antiguos</option>
+                        <option value="doses-desc">Mayor dosis</option>
+                        <option value="doses-asc">Menor dosis</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Barra de Estadísticas y Resultados -->
+                <div id="influenzaHistorialMetaBar" class="flex flex-wrap items-center justify-between gap-2 px-1 text-xs font-bold text-slate-500">
+                  <span id="influenzaHistorialCounter">Mostrando 0 de 0 reportes</span>
+                  <div id="influenzaHistorialFiltersActive" class="hidden items-center gap-1.5 bg-violet-50 text-violet-700 px-2.5 py-1 rounded-full text-[11px]" style="display: none;">
+                    <span class="w-1.5 h-1.5 rounded-full bg-violet-500"></span>
+                    <span>Búsqueda activa</span>
+                  </div>
+                </div>
               </div>
 
-              <div id="influenzaHistorialList" class="flex flex-col gap-2">
+              <div id="influenzaHistorialList" class="flex flex-col gap-3">
                 <div class="text-sm text-slate-400 font-medium">Cargando historial...</div>
               </div>
             </div>
@@ -1853,30 +1922,24 @@
                     <label for="notifTargetScope"
                       class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">1.
                       Alcance</label>
-                    <div class="modern-input-group">
-                      <span class="input-icon material-symbols-rounded">groups</span>
-                      <select id="notifTargetScope">
-                        <option value="ALL_MY_UNITS">Toda la Red / Jurisdicción</option>
-                        <option value="MUNICIPIO">A todas las unidades de un municipio</option>
-                        <option value="CLUES">A una unidad (CLUES) específica</option>
-                        <option value="USUARIO">A un usuario en particular</option>
-                      </select>
-                    </div>
+                    <select id="notifTargetScope" class="w-full">
+                      <option value="ALL_MY_UNITS">Toda la Red / Jurisdicción</option>
+                      <option value="MUNICIPIO">A todas las unidades de un municipio</option>
+                      <option value="CLUES">A una unidad (CLUES) específica</option>
+                      <option value="USUARIO">A un usuario en particular</option>
+                    </select>
                   </div>
 
                   <div>
                     <label for="notifType"
                       class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">2.
                       Prioridad</label>
-                    <div class="modern-input-group">
-                      <span class="input-icon material-symbols-rounded">priority_high</span>
-                      <select id="notifType">
-                        <option value="INFO">💡 Información General</option>
-                        <option value="SUCCESS">✅ Operación Exitosa</option>
-                        <option value="WARN">⚠️ Alerta Operativa</option>
-                        <option value="ERROR">🚨 Bloqueo / Urgente</option>
-                      </select>
-                    </div>
+                    <select id="notifType" class="w-full">
+                      <option value="INFO">💡 Información General</option>
+                      <option value="SUCCESS">✅ Operación Exitosa</option>
+                      <option value="WARN">⚠️ Alerta Operativa</option>
+                      <option value="ERROR">🚨 Bloqueo / Urgente</option>
+                    </select>
                   </div>
                 </div>
 
@@ -1886,26 +1949,21 @@
                     <label for="notifTargetMunicipio"
                       class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Municipio
                       Destino</label>
-                    <div class="modern-input-group">
-                      <span class="input-icon material-symbols-rounded">location_city</span>
-                      <select id="notifTargetMunicipio"></select>
-                    </div>
+                    <select id="notifTargetMunicipio" class="w-full"></select>
                   </div>
 
                   <div id="notifUnidadBox" style="display:none">
                     <label for="notifTargetClues"
                       class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Unidad
                       / CLUES</label>
-                    <select id="notifTargetClues"
-                      class="w-full bg-surface-container border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-surface focus:border-primary outline-none transition-all shadow-sm"></select>
+                    <select id="notifTargetClues" class="w-full"></select>
                   </div>
 
                   <div id="notifUserBox" style="display:none" class="sm:col-span-2">
                     <label for="notifTargetUser"
                       class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Usuario
                       Destino</label>
-                    <select id="notifTargetUser"
-                      class="w-full bg-surface-container border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-surface focus:border-primary outline-none transition-all shadow-sm"></select>
+                    <select id="notifTargetUser" class="w-full"></select>
                   </div>
                 </div>
 
@@ -2053,24 +2111,20 @@
             <label for="summaryTipo"
               class="text-[11px] font-black text-primary/50 uppercase tracking-widest block mb-2 ml-1">Tipo de
               consulta</label>
-            <div class="modern-input-group">
-              <span class="input-icon material-symbols-rounded">manage_search</span>
-              <select id="summaryTipo">
+            <select id="summaryTipo" class="w-full">
                 <option value="SR">Existencia de biológicos</option>
                 <option value="CONS">Consumibles</option>
                 <option value="BIO">Pedido de biológico</option>
-              </select>
-            </div>
+            </select>
           </div>
 
           <div class="flex-1 w-full md:max-w-[280px]">
             <label for="summaryFecha"
               class="text-[11px] font-black text-primary/50 uppercase tracking-widest block mb-2 ml-1">Fecha a
               consultar</label>
-            <div class="modern-input-group">
-              <span class="input-icon material-symbols-rounded">calendar_month</span>
-              <input type="date" id="summaryFecha">
-            </div>
+            <input type="date" id="summaryFecha"
+              class="w-full bg-white border border-slate-100 rounded-full px-4 text-xs font-extrabold text-slate-700 outline-none shadow-sm"
+              style="min-height:34px; height:34px;">
           </div>
         </div>
 
@@ -2257,7 +2311,8 @@
         </div>
 
         <div
-          class="flex flex-row flex-wrap items-center gap-3 mt-4 mb-6 p-2 bg-surface-container/50 backdrop-blur-md border border-slate-200/60 rounded-2xl w-fit">
+          class="flex flex-row flex-wrap items-center gap-3 mt-4 mb-6 p-2 bg-surface-container/50 backdrop-blur-md border border-slate-200/60 rounded-2xl w-fit"
+          style="position: relative; z-index: 20 !important;">
           <!-- Mes a Evaluar -->
           <div class="flex items-center gap-2 px-2">
             <span class="text-[11px] font-black uppercase tracking-widest text-slate-500">Mes a Evaluar:</span>
@@ -2336,7 +2391,7 @@
                 <th class="p-4">Municipio</th>
                 <th class="p-4">Unidad</th>
                 <th class="p-4 text-center">Score Total</th>
-                <th class="p-4 w-64">Desempeño (BIO + CONS + PEDIDO)</th>
+                <th id="metricsDesempenoHeader" class="p-4 w-64">Desempeño (BIO + CONS + PEDIDO)</th>
               </tr>
             </thead>
             <tbody id="historyTbody"
@@ -2414,20 +2469,54 @@
                 <!-- Generado dinámicamente -->
               </select>
             </div>
-            <div class="flex-1 min-w-[120px]">
+             <div class="flex-1 min-w-[120px]">
               <label for="adminInfluenzaSemanaFin" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Semana Fin</label>
               <select id="adminInfluenzaSemanaFin" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
                 <!-- Generado dinámicamente -->
               </select>
             </div>
-            <button class="ghostBtn h-[38px] flex items-center justify-center" id="btnExportInfluenzaConcentrado">
-              <span class="material-symbols-rounded mr-1 text-[18px]">download</span> Exportar Concentrado
+            <div class="flex-1 min-w-[180px]" id="adminInfluenzaExportScopeBox">
+              <label for="adminInfluenzaExportScope" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Ámbito de Concentrado</label>
+              <select id="adminInfluenzaExportScope" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
+                <option value="single">Un solo archivo (Consolidado)</option>
+                <option value="muni_4">4 archivos (1 por Municipio)</option>
+                <option value="muni_selected">Municipio seleccionado</option>
+              </select>
+            </div>
+            <button class="ghostBtn h-[38px] flex items-center justify-center border-violet-300 text-violet-850 bg-violet-50 hover:bg-violet-100/50" id="btnExportInfluenzaConcentrado" title="Exporta el total usando la plantilla de Concentrado de Totales">
+              <span class="material-symbols-rounded mr-1 text-[18px]">download</span> Concentrado Totales
+            </button>
+            <button class="ghostBtn h-[38px] flex items-center justify-center border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100/50" id="btnExportConcentradoConUnidades" title="Exporta el concentrado con desglose de unidades o municipios en columnas">
+              <span class="material-symbols-rounded mr-1 text-[18px]">table_chart</span> Concentrado con Unidades
             </button>
           </div>
 
           <!-- Comparativa de frascos en el avance municipal -->
           <div id="muniFrascosAnalisisBox" class="hidden p-4 rounded-xl border border-violet-200 bg-violet-50 text-violet-950 text-sm font-semibold">
             <!-- Texto de análisis de frascos -->
+          </div>
+
+          <!-- Proyecciones Inteligentes -->
+          <div id="influenzaProjectionCard" class="hidden p-5 rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50/50 via-white to-fuchsia-50/30 shadow-sm flex flex-col gap-3">
+            <!-- Generado dinámicamente -->
+          </div>
+
+          <!-- Contenedores de Gráficos -->
+          <div id="influenzaChartsContainer" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white border border-slate-200 rounded-[24px] p-5 shadow-sm flex flex-col gap-3" style="background-color: #ffffff;">
+              <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                <span class="text-xs font-black text-violet-950 uppercase tracking-wider">Tendencia de Avance Acumulado</span>
+                <span class="text-[10px] text-slate-400 font-bold">Dosis acumuladas vs. Meta</span>
+              </div>
+              <div id="adminInfluenzaTrendChart" style="width: 100%; height: 280px;"></div>
+            </div>
+            <div class="bg-white border border-slate-200 rounded-[24px] p-5 shadow-sm flex flex-col gap-3" style="background-color: #ffffff;">
+              <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                <span class="text-xs font-black text-violet-950 uppercase tracking-wider">Distribución por Grupo de Población</span>
+                <span class="text-[10px] text-slate-400 font-bold">Desglose de dosis aplicadas</span>
+              </div>
+              <div id="adminInfluenzaBreakdownChart" style="width: 100%; height: 280px;"></div>
+            </div>
           </div>
 
           <!-- Tabla de Concentrado Municipal por Unidad -->
@@ -2458,7 +2547,17 @@
 
           <!-- Desglose de Meta-Logro de la unidad seleccionada al hacer clic -->
           <div id="adminInfluenzaUnitDetailContainer" class="hidden bg-surface border border-slate-200 rounded-[28px] p-6 shadow-sm flex flex-col gap-4" style="background-color: #ffffff;">
-            <h4 class="text-sm font-black text-slate-700 mb-2 uppercase tracking-wider" id="adminInfluenzaUnitDetailTitle">Detalle por Unidad</h4>
+            <div class="flex flex-wrap gap-4 items-center justify-between border-b border-slate-100 pb-4">
+              <h4 class="text-sm font-black text-slate-700 m-0 uppercase tracking-wider" id="adminInfluenzaUnitDetailTitle">Detalle por Unidad</h4>
+              <div class="flex items-center gap-3">
+                <select id="reporteSemanalMesSelect" class="bg-surface border border-slate-300 rounded-xl px-4 py-1.5 text-xs font-semibold text-slate-700 outline-none">
+                  <!-- JS poblará con meses de campaña -->
+                </select>
+                <button class="ghostBtn h-[32px] text-xs font-bold flex items-center justify-center border-violet-300 text-violet-800 bg-violet-50 hover:bg-violet-100/50" id="btnExportReporteSemanaUnit">
+                  <span class="material-symbols-rounded mr-1 text-[16px]">calendar_month</span> Reporte Mensual por Semanas
+                </button>
+              </div>
+            </div>
             <div id="adminInfluenzaUnitDetailCards" class="flex flex-col gap-6">
               <!-- JS renderizará las tarjetas de meta-logro por rubros agrupados -->
             </div>
@@ -2468,31 +2567,60 @@
         <!-- SECCIÓN 1.1: VALIDACIÓN Y EDICIÓN -->
         <div id="secInfluenzaValidacion" class="hidden flex flex-col gap-6">
           <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-wrap gap-4 items-end">
-            <div class="flex-1 min-w-[200px]" id="validationInfluenzaCluesBox">
-              <label for="validationInfluenzaClues" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Unidad / CLUES</label>
-              <select id="validationInfluenzaClues" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
-                <!-- Generado dinámicamente -->
-              </select>
-            </div>
-            <div class="flex-1 min-w-[150px]">
+            <div class="flex-none" style="width: 220px;">
               <label for="validationInfluenzaSemana" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Semana a Validar</label>
-              <select id="validationInfluenzaSemana" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
+              <select id="validationInfluenzaSemana" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none" style="height: 38px;">
                 <!-- Generado dinámicamente -->
               </select>
             </div>
-            <button class="btn h-[38px] flex items-center justify-center px-6" id="btnLoadValidationReport">
-              <span class="material-symbols-rounded mr-1 text-[18px]">find_in_page</span> Cargar Reporte
-            </button>
+            <!-- Buscador dinámico de unidades -->
+            <div class="flex-1 min-w-[200px]" id="validationUnitSearchBox">
+              <label for="validationUnitSearch" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Buscar Unidad</label>
+              <div class="relative w-full">
+                <span class="material-symbols-rounded absolute text-slate-400 text-[18px] pointer-events-none select-none left-3 top-1/2 -translate-y-1/2">search</span>
+                <input type="text" id="validationUnitSearch" placeholder="Buscar por CLUES o nombre de la unidad médica..." class="w-full bg-surface border border-slate-300 rounded-xl pr-4 py-2 text-sm font-semibold text-slate-700 outline-none" style="padding-left: 36px !important; height: 38px;" />
+              </div>
+            </div>
+            
+            <!-- Select y botón ocultos para mantener compatibilidad técnica con otras funciones -->
+            <select id="validationInfluenzaClues" class="hidden"></select>
+            <button class="hidden" id="btnLoadValidationReport"></button>
           </div>
 
+          <!-- SUB-PANEL 1: CONTROL DE ENTREGAS (DASHBOARD) -->
+          <div id="validationDashboard" class="flex flex-col gap-4">
+            <div class="flex items-center justify-between">
+              <h4 class="text-sm font-black text-violet-950 uppercase tracking-wider m-0">Estado de Reportes Semanales</h4>
+              <div class="flex gap-2 text-xs font-black text-slate-600 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-full" id="validationStatsSummary">
+                <!-- JS insertará contadores del estado de captura de la semana -->
+              </div>
+            </div>
+            
+            <!-- Listado de Unidades de esta Jurisdicción/Municipio -->
+            <div id="validationUnitsGrid" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <!-- JS renderizará las tarjetas de unidades y sus estatus de forma dinámica -->
+            </div>
+          </div>
+
+          <!-- SUB-PANEL 2: DETALLE Y CORRECCIÓN (FORMULARIO) -->
           <div id="validationReportContent" class="hidden flex flex-col gap-6">
             <div class="flex items-center justify-between border-b border-slate-200 pb-4">
               <div>
                 <h4 class="text-sm font-black text-primary m-0 uppercase tracking-wider" id="validationReportTitle">Reporte de Validación</h4>
                 <div class="text-xs text-slate-500 mt-1" id="validationReportSubtitle">—</div>
               </div>
-              <div id="validationReportEditBadge" class="hidden px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                <!-- Badge de historial -->
+              <div class="flex items-center gap-3">
+                <div id="validationReportEditBadge" class="hidden px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                  <!-- Badge de historial -->
+                </div>
+                <!-- Botón Regresar Premium y Animado -->
+                <button type="button" id="btnBackToValidationList" class="group flex items-center gap-2 transition-all duration-300 px-4 py-2.5 rounded-2xl text-xs font-black shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 border-0"
+                  style="background-color: #f1f5f9 !important; color: #334155 !important; cursor: pointer;"
+                  onmouseenter="this.style.setProperty('background-color', '#0f172a', 'important'); this.style.setProperty('color', '#ffffff', 'important'); this.querySelector('.material-symbols-rounded').style.setProperty('color', '#ffffff', 'important');"
+                  onmouseleave="this.style.setProperty('background-color', '#f1f5f9', 'important'); this.style.setProperty('color', '#334155', 'important'); this.querySelector('.material-symbols-rounded').style.setProperty('color', '#334155', 'important');">
+                  <span class="material-symbols-rounded text-[18px] transition-transform duration-300 group-hover:-translate-x-1" style="color: #334155 !important;">arrow_back</span>
+                  <span>Volver al listado</span>
+                </button>
               </div>
             </div>
 
@@ -2503,13 +2631,13 @@
                 <label for="validationNombreResponsable">Nombre de quien realiza/autoriza la corrección</label>
               </div>
 
-              <!-- Contenedor dinámico de tarjetas de captura (mismo estilo elegante que captura de unidad) -->
+              <!-- Contenedor dinámico de tarjetas de captura -->
               <div id="validationCardsContainer" class="flex flex-col gap-6">
                 <!-- JS renderizará los rubros agrupados en tarjetas con inputs numéricos -->
               </div>
 
               <div class="flex gap-4 mt-6">
-                <button class="ghostBtn flex-1 h-[48px]" id="btnCancelValidation">Cancelar</button>
+                <button class="ghostBtn flex-1 h-[48px]" id="btnCancelValidation">Cancelar y Volver</button>
                 <button class="btn flex-1 h-[48px]" id="btnSaveValidation">Guardar Corrección del Supervisor</button>
               </div>
             </div>
@@ -2518,56 +2646,158 @@
 
         <!-- SECCIÓN 1.2: CONCILIACIÓN VS CSV -->
         <div id="secInfluenzaConciliacion" class="hidden flex flex-col gap-6">
-          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-wrap gap-4 items-end">
-            <div class="w-48">
-              <label for="conciliacionMes" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Mes de Evaluación</label>
-              <select id="conciliacionMes" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
-                <option value="10|2026">Octubre 2026</option>
-                <option value="11|2026">Noviembre 2026</option>
-                <option value="12|2026">Diciembre 2026</option>
-                <option value="1|2027">Enero 2027</option>
-                <option value="2|2027">Febrero 2027</option>
-                <option value="3|2027">Marzo 2027</option>
-                <option value="4|2027">Abril 2027</option>
-              </select>
+          <!-- Selector de Parámetros -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div class="flex-1 flex flex-wrap gap-4">
+              <div class="w-48 flex-1 min-w-[150px]">
+                <label for="conciliacionMes" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Mes de Evaluación</label>
+                <select id="conciliacionMes" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
+                  <option value="10|2026">Octubre 2026</option>
+                  <option value="11|2026">Noviembre 2026</option>
+                  <option value="12|2026">Diciembre 2026</option>
+                  <option value="1|2027">Enero 2027</option>
+                  <option value="2|2027">Febrero 2027</option>
+                  <option value="3|2027">Marzo 2027</option>
+                  <option value="4|2027">Abril 2027</option>
+                </select>
+              </div>
+              <div class="flex-1 min-w-[250px]" id="conciliacionCluesBox">
+                <label for="conciliacionClues" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Unidad / CLUES</label>
+                <select id="conciliacionClues" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
+                  <!-- Generado dinámicamente -->
+                </select>
+              </div>
             </div>
-            <div class="flex-1 min-w-[200px]" id="conciliacionCluesBox">
-              <label for="conciliacionClues" class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Unidad / CLUES</label>
-              <select id="conciliacionClues" class="w-full bg-surface border border-slate-300 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 outline-none">
-                <!-- Generado dinámicamente -->
-              </select>
-            </div>
-            <button class="btn h-[38px] flex items-center justify-center px-6" id="btnRunConciliacion">
-              <span class="material-symbols-rounded mr-1 text-[18px]">rule</span> Conciliar Datos
+            <button class="btn h-[42px] px-8 flex items-center justify-center font-extrabold" id="btnRunConciliacion">
+              <span class="material-symbols-rounded mr-2 text-[20px]">database</span> Consultar Base de Datos
             </button>
           </div>
 
-          <div id="conciliacionResultContainer" class="hidden bg-surface border border-slate-200 rounded-[28px] p-6 shadow-sm flex flex-col gap-4" style="background-color: #ffffff;">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-              <h4 class="text-sm font-black text-primary m-0 uppercase tracking-wider" id="conciliacionTitle">Diferencias de Carga (Captura Local vs. CSV Oficial)</h4>
-              <div id="conciliacionGeneralStatus" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                Estatus
+          <!-- Contenedor de Resultados (Dashboard e Historial) -->
+          <div id="conciliacionResultContainer" class="hidden flex flex-col gap-6">
+            
+            <!-- Fila de Tarjetas KPI (Forzada a 1 sola fila con Flexbox inline) -->
+            <div style="display: flex; gap: 16px; width: 100%; flex-wrap: nowrap;" id="conciliacionKpis">
+              <!-- Tasa de Conciliación -->
+              <div class="bg-surface border border-slate-200 rounded-2xl p-4 shadow-2xs flex items-center gap-3" style="flex: 1; min-width: 0;">
+                <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                  <span class="material-symbols-rounded text-[20px]" id="kpiTasaIcon">check_circle</span>
+                </div>
+                <div style="min-width: 0;">
+                  <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">Tasa de Pareo</div>
+                  <div class="text-base font-black text-slate-800 leading-none" id="kpiTasa">100%</div>
+                </div>
+              </div>
+
+              <!-- Total Captura Local -->
+              <div class="bg-surface border border-slate-200 rounded-2xl p-4 shadow-2xs flex items-center gap-3" style="flex: 1; min-width: 0;">
+                <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0">
+                  <span class="material-symbols-rounded text-[20px]">assignment</span>
+                </div>
+                <div style="min-width: 0;">
+                  <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">Captura Local</div>
+                  <div class="text-base font-black text-slate-800 leading-none" id="kpiLocal">0</div>
+                </div>
+              </div>
+
+              <!-- Total SIS CSV -->
+              <div class="bg-surface border border-slate-200 rounded-2xl p-4 shadow-2xs flex items-center gap-3" style="flex: 1; min-width: 0;">
+                <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center flex-shrink-0">
+                  <span class="material-symbols-rounded text-[20px]">text_snippet</span>
+                </div>
+                <div style="min-width: 0;">
+                  <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">SIS Oficial</div>
+                  <div class="text-base font-black text-slate-800 leading-none" id="kpiSis">0</div>
+                </div>
+              </div>
+
+              <!-- Discrepancias Totales -->
+              <div class="bg-surface border border-slate-200 rounded-2xl p-4 shadow-2xs flex items-center gap-3" style="flex: 1; min-width: 0;">
+                <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center flex-shrink-0">
+                  <span class="material-symbols-rounded text-[20px]">warning</span>
+                </div>
+                <div style="min-width: 0;">
+                  <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider leading-none mb-1">Discrepancias</div>
+                  <div class="text-base font-black text-slate-800 leading-none" id="kpiDiscrepancias">0</div>
+                </div>
               </div>
             </div>
 
-            <div class="tableWrap overflow-x-auto w-full rounded-xl border border-slate-200 shadow-sm">
-              <table class="w-full border-collapse text-left text-xs font-semibold text-slate-700">
-                <thead>
-                  <tr class="bg-slate-50 border-b border-slate-200">
-                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider">Rubro (Edad)</th>
-                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Clave SIS</th>
-                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Captura Local (Acumulado)</th>
-                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Archivo CSV (SIS)</th>
-                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Diferencia</th>
-                    <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center">Estado</th>
-                  </tr>
-                </thead>
-                <tbody id="conciliacionTbody">
-                  <!-- JS renderizará los datos de conciliación -->
-                </tbody>
-              </table>
+            <!-- Tabla y Filtros -->
+            <div class="bg-surface border border-slate-200 rounded-[28px] p-6 shadow-sm flex flex-col gap-4" style="background-color: #ffffff;">
+              <div class="flex flex-wrap justify-between items-center border-b border-slate-100 pb-3 gap-3">
+                <div>
+                  <h4 class="text-sm font-black text-primary m-0 uppercase tracking-wider" id="conciliacionTitle">Diferencias de Carga</h4>
+                  <div class="text-[10px] font-bold text-slate-400 mt-1 uppercase" id="conciliacionSourceInfo">Fuente: Consulta de Base de Datos</div>
+                </div>
+                <div class="flex gap-2 items-center">
+                  <div id="conciliacionGeneralStatus" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                    Estatus
+                  </div>
+                </div>
+              </div>
+
+              <!-- Barra de herramientas: Búsqueda y Filtros de Estado -->
+              <div class="flex flex-wrap justify-between items-center gap-3 bg-slate-50/50 border border-slate-100 rounded-xl p-3">
+                <div class="flex gap-2 items-center flex-1 min-w-[240px]">
+                  <div class="relative w-full flex items-center">
+                    <span class="material-symbols-rounded absolute left-3 top-1/2 transform -translate-y-1/2 text-[18px] text-slate-400 select-none pointer-events-none z-10">search</span>
+                    <input type="text" id="conciliacionSearch" placeholder="Buscar rubro, edad o clave SIS..." class="w-full bg-surface border border-slate-200 rounded-xl pr-4 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-primary transition-colors h-[38px]" style="padding-left: 45px !important;" />
+                  </div>
+                </div>
+                <div class="flex gap-2 items-center">
+                  <div class="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+                    <button class="px-3 py-1.5 text-[11px] font-black rounded-lg transition-all focus:outline-none bg-surface text-slate-700 shadow-xs" id="btnFilterConcAll">Todos</button>
+                    <button class="px-3 py-1.5 text-[11px] font-bold text-slate-500 rounded-lg transition-all focus:outline-none hover:text-slate-700" id="btnFilterConcDiff">Solo Desfases</button>
+                    <button class="px-3 py-1.5 text-[11px] font-bold text-slate-500 rounded-lg transition-all focus:outline-none hover:text-slate-700" id="btnFilterConcMatch">Conciliados</button>
+                  </div>
+                  
+                  <button id="btnExportConciliacion" class="ghostBtn h-[32px] px-3 text-[11px] font-extrabold flex items-center justify-center gap-1">
+                    <span class="material-symbols-rounded text-[14px]">download</span> Exportar Reporte
+                  </button>
+                </div>
+              </div>
+
+              <!-- Contenedor de la Tabla -->
+              <div class="tableWrap overflow-x-auto w-full rounded-xl border border-slate-200 shadow-xs">
+                <table class="w-full border-collapse text-left text-xs font-semibold text-slate-700">
+                  <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200">
+                      <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider">Rubro (Edad)</th>
+                      <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center w-[120px]">Clave SIS</th>
+                      <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center w-[160px]">Captura Local (Acumulado)</th>
+                      <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center w-[160px]">Archivo CSV (SIS)</th>
+                      <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center w-[120px]">Diferencia</th>
+                      <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center w-[140px]">Estado</th>
+                      <th class="p-3 text-xs font-black text-slate-500 uppercase tracking-wider text-center w-[60px]"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="conciliacionTbody">
+                    <!-- JS renderizará los datos de conciliación -->
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
+
+          <!-- PANEL DE AUDITORÍA LATERAL (DRAWER) -->
+          <div id="conciliacionDrawer" class="fixed inset-y-0 right-0 w-[450px] bg-surface shadow-2xl z-50 border-l border-slate-200 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col hidden">
+            <!-- Header -->
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <div>
+                <h3 class="text-sm font-black text-primary uppercase tracking-wider mb-1">Auditoría de Capturas</h3>
+                <p class="text-xs text-slate-500 font-semibold" id="drawerRubroName">Nombre del Rubro</p>
+              </div>
+              <button id="btnCloseConciliacionDrawer" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors text-slate-600">
+                <span class="material-symbols-rounded">close</span>
+              </button>
+            </div>
+            <!-- Content -->
+            <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-4" id="drawerContent">
+              <!-- Detalle temporal se pintará aquí -->
+            </div>
+          </div>
+          <div id="conciliacionDrawerBackdrop" class="fixed inset-0 bg-slate-900/30 backdrop-blur-xs z-40 hidden transition-opacity duration-300 opacity-0"></div>
         </div>
 
         <!-- SECCIÓN 2: DISTRIBUCIÓN DE METAS -->
@@ -2904,10 +3134,7 @@
             <div class="mb-5">
               <label
                 class="text-[10px] font-black text-primary/50 uppercase tracking-widest block mb-2 px-2">Biológico</label>
-              <div class="modern-input-group">
-                <span class="input-icon material-symbols-rounded">vaccines</span>
-                <select id="loteBio" class="h-[50px] text-[14px] font-bold"></select>
-              </div>
+              <select id="loteBio" class="w-full"></select>
             </div>
 
             <!-- Fila 2: Lote, Caducidad y Recepción (FORZADO HORIZONTAL) -->
