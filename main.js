@@ -691,41 +691,305 @@ function smartLoader(taskFn, options = {}) {
     });
 }
 
+// ===== SIREVAQ AUDIO FX ENGINE =====
+const SirevaqAudioEngine = (() => {
+  let audioCtx = null;
+  const getContext = () => {
+    if (!audioCtx) {
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtxClass) audioCtx = new AudioCtxClass();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    return audioCtx;
+  };
+
+  return {
+    play: (type = 'incoming') => {
+      try {
+        const chkSound = document.getElementById("chkNotifSound");
+        if (chkSound && !chkSound.checked) return;
+
+        const ctx = getContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+
+        if (type === 'incoming' || type === 'receive') {
+          // --- FM Synthesis: Cristal Chime Premium ---
+          // Nota 1
+          const carrier1 = ctx.createOscillator();
+          const modulator1 = ctx.createOscillator();
+          const modGain1 = ctx.createGain();
+          const filter1 = ctx.createBiquadFilter();
+          const gain1 = ctx.createGain();
+
+          carrier1.type = "sine";
+          modulator1.type = "sine";
+          filter1.type = "lowpass";
+          filter1.frequency.setValueAtTime(2500, now);
+          filter1.Q.setValueAtTime(4, now);
+
+          carrier1.frequency.setValueAtTime(880, now); // A5
+          modulator1.frequency.setValueAtTime(1760, now); // 2 * carrier
+          modGain1.gain.setValueAtTime(450, now);
+          modGain1.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+
+          gain1.gain.setValueAtTime(0.12, now);
+          gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+          modulator1.connect(modGain1);
+          modGain1.connect(carrier1.frequency);
+          carrier1.connect(filter1);
+          filter1.connect(gain1);
+          gain1.connect(ctx.destination);
+
+          modulator1.start(now);
+          carrier1.start(now);
+          modulator1.stop(now + 0.35);
+          carrier1.stop(now + 0.35);
+
+          // Nota 2 (Chime Sweep ligeramente retardada)
+          const delay = 0.08;
+          const carrier2 = ctx.createOscillator();
+          const modulator2 = ctx.createOscillator();
+          const modGain2 = ctx.createGain();
+          const filter2 = ctx.createBiquadFilter();
+          const gain2 = ctx.createGain();
+
+          carrier2.type = "sine";
+          modulator2.type = "sine";
+          filter2.type = "lowpass";
+          filter2.frequency.setValueAtTime(2500, now + delay);
+          filter2.Q.setValueAtTime(4, now + delay);
+
+          carrier2.frequency.setValueAtTime(1108.73, now + delay); // C#6
+          modulator2.frequency.setValueAtTime(2217.46, now + delay);
+          modGain2.gain.setValueAtTime(500, now + delay);
+          modGain2.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.45);
+
+          gain2.gain.setValueAtTime(0.1, now + delay);
+          gain2.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.45);
+
+          modulator2.connect(modGain2);
+          modGain2.connect(carrier2.frequency);
+          carrier2.connect(filter2);
+          filter2.connect(gain2);
+          gain2.connect(ctx.destination);
+
+          modulator2.start(now + delay);
+          carrier2.start(now + delay);
+          modulator2.stop(now + delay + 0.45);
+          carrier2.stop(now + delay + 0.45);
+
+        } else if (type === 'desabasto' || type === 'urgent') {
+          // --- Alerta Crítica Desabasto: Radar Frecuencia Modulada (880Hz / 587Hz) ---
+          [0, 0.18, 0.36].forEach((delay, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const filter = ctx.createBiquadFilter();
+
+            osc.type = "triangle";
+            osc.frequency.setValueAtTime(idx % 2 === 0 ? 880 : 587.33, now + delay);
+            osc.frequency.linearRampToValueAtTime(idx % 2 === 0 ? 700 : 450, now + delay + 0.15);
+
+            filter.type = "peaking";
+            filter.frequency.setValueAtTime(1000, now + delay);
+            filter.Q.setValueAtTime(6, now + delay);
+
+            gain.gain.setValueAtTime(0.18, now + delay);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.16);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start(now + delay);
+            osc.stop(now + delay + 0.16);
+          });
+
+        } else if (type === 'success' || type === 'sent' || type === 'good') {
+          // --- Acorde Mayor Premium Armónico Sweep (C5 - E5 - G5 - C6) ---
+          const freqs = [523.25, 659.25, 783.99, 1046.50];
+          freqs.forEach((f, i) => {
+            const osc = ctx.createOscillator();
+            const modulator = ctx.createOscillator();
+            const modGain = ctx.createGain();
+            const gain = ctx.createGain();
+            const filter = ctx.createBiquadFilter();
+
+            osc.type = "sine";
+            modulator.type = "sine";
+            filter.type = "lowpass";
+            filter.frequency.setValueAtTime(1500, now + i * 0.05);
+
+            osc.frequency.setValueAtTime(f, now + i * 0.05);
+            modulator.frequency.setValueAtTime(f * 2, now + i * 0.05);
+            modGain.gain.setValueAtTime(150, now + i * 0.05);
+            modGain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.05 + 0.4);
+
+            gain.gain.setValueAtTime(0.08, now + i * 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.4);
+
+            modulator.connect(modGain);
+            modGain.connect(osc.frequency);
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(ctx.destination);
+
+            modulator.start(now + i * 0.05);
+            osc.start(now + i * 0.05);
+            modulator.stop(now + i * 0.05 + 0.4);
+            osc.stop(now + i * 0.05 + 0.4);
+          });
+
+        } else if (type === 'error' || type === 'bad') {
+          // --- Error: Doble Pulso Sofisticado ---
+          [0, 0.12].forEach((delay) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "sawtooth";
+            osc.frequency.setValueAtTime(150, now + delay);
+            osc.frequency.linearRampToValueAtTime(80, now + delay + 0.12);
+            gain.gain.setValueAtTime(0.1, now + delay);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.12);
+            
+            const filter = ctx.createBiquadFilter();
+            filter.type = "lowpass";
+            filter.frequency.setValueAtTime(300, now + delay);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.start(now + delay);
+            osc.stop(now + delay + 0.12);
+          });
+
+        } else if (type === 'click' || type === 'pop') {
+          // --- Bubble Click Sutil ---
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(880, now);
+          osc.frequency.exponentialRampToValueAtTime(440, now + 0.04);
+          
+          gain.gain.setValueAtTime(0.06, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+          
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          
+          osc.start(now);
+          osc.stop(now + 0.04);
+
+        } else if (type === 'modal' || type === 'swish') {
+          // --- Swish de Cristal ---
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          const filter = ctx.createBiquadFilter();
+
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(300, now);
+          osc.frequency.exponentialRampToValueAtTime(900, now + 0.12);
+
+          filter.type = "bandpass";
+          filter.frequency.setValueAtTime(600, now);
+          filter.Q.setValueAtTime(2, now);
+
+          gain.gain.setValueAtTime(0.04, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now);
+          osc.stop(now + 0.12);
+        }
+      } catch (e) {
+        console.warn("[AudioEngine] Error playing sound:", e);
+      }
+    }
+  };
+})();
+
+function playNotificationSound(type = "incoming") {
+  SirevaqAudioEngine.play(type);
+}
+
 function playPremiumConfirmSound() {
-  try {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
-    const now = ctx.currentTime;
-    
-    // Alert chime: two quick sharp beeps (880Hz / A5)
-    // First beep
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.type = "triangle";
-    osc1.frequency.setValueAtTime(880, now);
-    gain1.gain.setValueAtTime(0.12, now);
-    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
-    osc1.start(now);
-    osc1.stop(now + 0.1);
-    
-    // Second beep slightly delayed
-    const delay = 0.12;
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.type = "triangle";
-    osc2.frequency.setValueAtTime(880, now + delay);
-    gain2.gain.setValueAtTime(0.12, now + delay);
-    gain2.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.15);
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.start(now + delay);
-    osc2.stop(now + delay + 0.15);
-  } catch (e) {
-    console.warn("AudioContext error:", e);
+  SirevaqAudioEngine.play('success');
+}
+
+function showSmartToastNotification(notif = {}) {
+  let container = document.getElementById("smartToastContainer");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "smartToastContainer";
+    container.className = "smart-toast-container";
+    document.body.appendChild(container);
   }
+
+  const isDesabasto = notif.type === 'ALERTA_DESABASTO';
+  const isPinol = notif.meta_json && String(notif.meta_json).includes('PINOL');
+  
+  if (isDesabasto) {
+    SirevaqAudioEngine.play('desabasto');
+  } else {
+    SirevaqAudioEngine.play('incoming');
+  }
+
+  const bellBtn = document.getElementById("btnTopNotifications");
+  if (bellBtn) {
+    bellBtn.classList.remove("bell-ring-active");
+    void bellBtn.offsetWidth;
+    bellBtn.classList.add("bell-ring-active");
+    setTimeout(() => bellBtn.classList.remove("bell-ring-active"), 1200);
+  }
+
+  const toastCard = document.createElement("div");
+  toastCard.className = `smart-toast-card ${isDesabasto ? 'toast-desabasto' : ''}`;
+  
+  const icon = isDesabasto ? 'error_outline' : (isPinol ? 'local_shipping' : 'notifications_active');
+  const badgeLabel = isDesabasto ? 'DESABASTO' : (isPinol ? 'PINOL' : 'SISTEMA');
+  const badgeClass = isDesabasto ? 'badge-desabasto' : (isPinol ? 'badge-pinol' : 'badge-info');
+
+  toastCard.innerHTML = `
+    <div class="smart-toast-header">
+      <div class="smart-toast-tag ${badgeClass}">
+        <span class="material-symbols-rounded" style="font-size:14px;">${icon}</span> ${badgeLabel}
+      </div>
+      <button type="button" class="smart-toast-close" onclick="this.closest('.smart-toast-card').remove()">
+        <span class="material-symbols-rounded" style="font-size:16px;">close</span>
+      </button>
+    </div>
+    <div class="smart-toast-title">${escapeAttr(notif.title || 'Nueva Notificación')}</div>
+    <div class="smart-toast-body">${escapeAttr(notif.message || '')}</div>
+    <div class="smart-toast-actions">
+      <button type="button" class="smart-toast-btn primary" onclick="openNotificationPanelAndHighlight('${escapeAttr(notif.id || '')}'); this.closest('.smart-toast-card').remove();">
+        Ver Detalle
+      </button>
+      <button type="button" class="smart-toast-btn secondary" onclick="this.closest('.smart-toast-card').remove()">
+        Entendido
+      </button>
+    </div>
+    <div class="smart-toast-progress"></div>
+  `;
+
+  container.appendChild(toastCard);
+
+  setTimeout(() => {
+    if (toastCard.parentNode) {
+      toastCard.classList.add("toast-leaving");
+      setTimeout(() => toastCard.remove(), 350);
+    }
+  }, 6000);
+}
+
+function openNotificationPanelAndHighlight(notifId) {
+  const btn = document.getElementById("btnTopNotifications");
+  if (btn) btn.click();
 }
 
 function showToast(msg, ok = true, type = null, options = {}) {
@@ -784,6 +1048,10 @@ function showToast(msg, ok = true, type = null, options = {}) {
   toastEl.style.setProperty('--toast-duration', `${duration}ms`);
 
   container.appendChild(toastEl);
+
+  // Trigger audio FX
+  if (finalType === "good") SirevaqAudioEngine.play('success');
+  else if (finalType === "bad" || finalType === "warn") SirevaqAudioEngine.play('error');
 
   // Entrance animation
   requestAnimationFrame(() => {
@@ -1241,8 +1509,22 @@ function initNotificationsRealtime() {
         table: 'notificaciones_perfil',
         filter: `usuario=eq.${usuario}`
       },
-      (payload) => {
+      async (payload) => {
         console.log("[Realtime] Cambio en mi buzón:", payload.eventType, payload.new?.notificacion_id || payload.old?.notificacion_id);
+        if (payload.eventType === 'INSERT' && payload.new?.notificacion_id) {
+          try {
+            const { data: masterNotif } = await supabase
+              .from('notificaciones')
+              .select('*')
+              .eq('id', payload.new.notificacion_id)
+              .maybeSingle();
+            if (masterNotif) {
+              showSmartToastNotification(masterNotif);
+            }
+          } catch (eToast) {
+            console.warn("[Realtime] Error mostrando Smart Toast:", eToast);
+          }
+        }
         loadNotifications({ silent: true }).catch(() => { });
       }
     )
@@ -2356,6 +2638,30 @@ async function deleteNotificationFlow(id) {
   } catch (e) {
     console.error("deleteNotificationFlow error:", e);
     showToast(e.message || "No se pudo eliminar la notificación", false);
+  } finally {
+    hideOverlay();
+  }
+}
+
+async function clearAllNotificationsFlow() {
+  try {
+    const ok = window.confirm("¿Deseas vaciar tu buzón personal de notificaciones?");
+    if (!ok) return;
+
+    showOverlay("Limpiando tu buzón…", "Notificaciones");
+
+    const r = await apiCall("clearAllNotifications", {});
+    if (!r || !r.ok) {
+      showToast((r && r.error) ? r.error : "No se pudieron borrar las notificaciones", false);
+      return;
+    }
+
+    LIVE_STATE.notifications = [];
+    rerenderNotificationsFromState();
+    showToast("Tu buzón ha sido limpiado");
+  } catch (e) {
+    console.error("clearAllNotificationsFlow error:", e);
+    showToast(e.message || "No se pudo limpiar el buzón", false);
   } finally {
     hideOverlay();
   }
@@ -4398,14 +4704,14 @@ async function supabaseRequest(action = "", payload, options = {}) {
             from_usuario: 'SISTEMA',
             from_rol: 'SYS',
             target_scope: 'MUNICIPIO',
-            target_municipio: municipio,
+            target_municipio: finalMuni,
             title: '🚨 Desabasto detectado',
             message: `La unidad ${unidad} capturó sin existencias de: ${finalMissing.join(', ')}.`,
             status: 'UNREAD',
             meta_json: JSON.stringify({
               clues: clues,
               unidad: unidad,
-              municipio: municipio,
+              municipio: finalMuni,
               missing: finalMissing,
               status: 'activa'
             })
@@ -4550,7 +4856,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
         console.log(`[Notif] Cargando buzón personal de ${usuario}...`);
 
         // 1. Consultar mi buzón personal (notificaciones_perfil + JOIN notificaciones)
-        const { data: misBuzon, error: buzonErr } = await supabase
+        let { data: misBuzon, error: buzonErr } = await supabase
           .from('notificaciones_perfil')
           .select('id, notificacion_id, status, read_ts, notificacion:notificaciones(*)')
           .eq('usuario', usuario)
@@ -4561,6 +4867,82 @@ async function supabaseRequest(action = "", payload, options = {}) {
         if (buzonErr) {
           console.error(`[Notif] Error al cargar buzón:`, buzonErr);
           throw buzonErr;
+        }
+
+        // 1.b Backfill dinámico para notificaciones maestras huérfanas de este usuario
+        try {
+          const userMuni = USER?.municipio ? normalizeTextKey_(USER.municipio) : "";
+          const userClues = USER?.clues || "";
+          const userRole = String(USER?.rol || "").toUpperCase();
+
+          const { data: masterNotifs } = await supabase
+            .from('notificaciones')
+            .select('*')
+            .order('created_ts', { ascending: false })
+            .limit(200);
+
+          if (masterNotifs && masterNotifs.length) {
+            const { data: existingPerfil } = await supabase
+              .from('notificaciones_perfil')
+              .select('notificacion_id')
+              .eq('usuario', usuario);
+
+            const existingIds = new Set((existingPerfil || []).map(p => p.notificacion_id));
+            const newPerfilRows = [];
+
+            masterNotifs.forEach(n => {
+              if (existingIds.has(n.id)) return;
+              let matches = false;
+              const scope = (n.target_scope || n.scope || 'GLOBAL').toUpperCase();
+              if (scope === 'GLOBAL') {
+                matches = true;
+              } else if (scope === 'USUARIO' && n.target_usuario === usuario) {
+                matches = true;
+              } else if (scope === 'MUNICIPIO' || scope === 'MUNICIPIO_UNITS') {
+                const targetMuniNorm = n.target_municipio ? normalizeTextKey_(n.target_municipio) : "";
+                if (userRole === 'ADMIN' || userRole === 'JURISDICCIONAL' || userRole === 'VISUALIZADOR_JURISDICCIONAL') {
+                  matches = true;
+                } else if (userRole === 'MUNICIPAL' || userRole === 'CARAVANAS') {
+                  let allowed = USER?.municipios_allowed;
+                  if (typeof allowed === "string") try { allowed = JSON.parse(allowed); } catch (e) { allowed = [allowed]; }
+                  const allowedList = Array.isArray(allowed) ? allowed.map(m => normalizeTextKey_(m)) : [];
+                  if (allowedList.includes("*") || (targetMuniNorm && allowedList.includes(targetMuniNorm)) || (userMuni && userMuni === targetMuniNorm)) {
+                    matches = true;
+                  }
+                }
+              } else if (scope === 'CLUES' && (n.target_clues === userClues || userRole === 'ADMIN' || userRole === 'JURISDICCIONAL')) {
+                matches = true;
+              }
+
+              if (matches && n.from_usuario !== usuario) {
+                newPerfilRows.push({
+                  notificacion_id: n.id,
+                  usuario: usuario,
+                  status: 'UNREAD',
+                  deleted: false
+                });
+              }
+            });
+
+            if (newPerfilRows.length) {
+              console.log(`[Notif Backfill] Insertando ${newPerfilRows.length} copias faltantes para ${usuario}`);
+              await supabase
+                .from('notificaciones_perfil')
+                .upsert(newPerfilRows, { onConflict: 'notificacion_id,usuario', ignoreDuplicates: true });
+
+              const { data: reloadedBuzon } = await supabase
+                .from('notificaciones_perfil')
+                .select('id, notificacion_id, status, read_ts, notificacion:notificaciones(*)')
+                .eq('usuario', usuario)
+                .eq('deleted', false)
+                .order('created_at', { ascending: false })
+                .limit(300);
+
+              if (reloadedBuzon) misBuzon = reloadedBuzon;
+            }
+          }
+        } catch (eBackfill) {
+          console.warn("[Notif Backfill] Error realizando backfill:", eBackfill);
         }
 
         console.log(`[Notif] Items en buzón:`, misBuzon?.length || 0);
@@ -5658,6 +6040,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
           observaciones: d.observaciones || "",
           capturado_por: d.capturado_por,
           estatus: d.estatus,
+          estatus_visual: d.estatus_visual,
           fecha_entrega: d.fecha_entrega || d.timestamp_entrega,
           entregado_por: d.entregado_por,
           recibido_ts: d.recibido_ts
@@ -5824,6 +6207,17 @@ async function supabaseRequest(action = "", payload, options = {}) {
           .eq('notificacion_id', payload.id)
           .eq('usuario', USER.usuario);
         if (delError) throw delError;
+        return { ok: true };
+      }
+
+      case "clearallnotifications": {
+        // Per-profile: soft-delete TODAS mis copias sin afectar a otros usuarios
+        const { error: clearError } = await supabase
+          .from('notificaciones_perfil')
+          .update({ deleted: true, deleted_ts: new Date().toISOString() })
+          .eq('usuario', USER.usuario)
+          .eq('deleted', false);
+        if (clearError) throw clearError;
         return { ok: true };
       }
 
@@ -6595,29 +6989,43 @@ async function supabaseRequest(action = "", payload, options = {}) {
       }
 
       case "saveinfluenza_config": {
-        const { fecha_inicio, fecha_fin } = payload;
+        const { id, fecha_inicio, fecha_fin, activo } = payload;
+        const isActivo = activo !== undefined ? activo : true;
         
-        // Desactivar campañas previas
-        await supabase
-          .from('campanas')
-          .update({ activo: false })
-          .eq('activo', true);
+        if (isActivo) {
+          // Desactivar campañas previas de influenza
+          await supabase
+            .from('campanas')
+            .update({ activo: false })
+            .ilike('nombre', 'Campaña Influenza%');
+        }
 
-        // Insertar nueva o actualizar si tiene ID
+        const nameStart = new Date(fecha_inicio + "T00:00:00").getFullYear();
+        const nameEnd = new Date(fecha_fin + "T00:00:00").getFullYear();
         const record = {
-          nombre: "Campaña Influenza " + new Date(fecha_inicio + "T00:00:00").getFullYear() + "-" + new Date(fecha_fin + "T00:00:00").getFullYear(),
+          nombre: "Campaña Influenza " + nameStart + "-" + nameEnd,
           fecha: fecha_inicio,
           fecha_inicio,
           fecha_fin,
-          activo: true
+          activo: isActivo
         };
 
-        const { data, error } = await supabase
-          .from('campanas')
-          .insert(record)
-          .select('id, nombre, fecha, activo, fecha_inicio, fecha_fin');
-        if (error) throw error;
-        return { ok: true, data: data };
+        if (id) {
+          const { data, error } = await supabase
+            .from('campanas')
+            .update(record)
+            .eq('id', id)
+            .select('id, nombre, fecha, activo, fecha_inicio, fecha_fin');
+          if (error) throw error;
+          return { ok: true, data: data };
+        } else {
+          const { data, error } = await supabase
+            .from('campanas')
+            .insert(record)
+            .select('id, nombre, fecha, activo, fecha_inicio, fecha_fin');
+          if (error) throw error;
+          return { ok: true, data: data };
+        }
       }
 
       case "requestpasswordreset": {
@@ -8374,7 +8782,9 @@ window.addSRRow = function (data = null) {
       </td>
       <td class="p-4 py-3" data-label="Frascos">
         <div class="flex items-center justify-center gap-2">
-          <span class="material-symbols-rounded text-slate-400 text-[18px] pointer-events-none" title="Frascos">inventory_2</span>
+          <div class="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 shrink-0 shadow-sm" title="Frascos">
+            <span class="material-symbols-rounded text-[18px]">inventory_2</span>
+          </div>
           <input type="number" class="sr-cantidad-input w-[80px] text-center bg-slate-50 border-2 border-slate-400 rounded-xl py-2 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" min="0" step="any" value="${data?.cantidad || ""}" placeholder="0">
         </div>
       </td>
@@ -10405,16 +10815,18 @@ function refreshBioAlerts(force = false) {
     const totalDisponible = existencia + pedido;
     const faltantePromedio = Math.max(0, promedio - totalDisponible);
 
-    // 🛡️ REGLA SENIOR: Bloqueo en múltiplos de 5 para biológicos críticos
-    const requires5 = [
-      "HEXAVALENTE",
+    // 🛡️ REGLA SENIOR: Bloqueo en múltiplos para biológicos críticos (Hexavalente múltiplo de 10, otros críticos de 5)
+    let multiplo = 1;
+    if (bioKey === "HEXAVALENTE") {
+      multiplo = 10;
+    } else if ([
       "ROTAVIRUS",
       "NEUMOCOCICA 13",
       "NEUMOCOCICA 20",
       "SRP"
-    ].includes(bioKey);
-
-    const multiplo = requires5 ? 5 : 1;
+    ].includes(bioKey)) {
+      multiplo = 5;
+    }
 
     if (isNaN(existencia) || !Number.isInteger(pedido) || existencia < 0 || pedido < 0) {
       msgs.push("Cantidades inválidas.");
@@ -10444,10 +10856,9 @@ function refreshBioAlerts(force = false) {
     if (!omitirAdvertenciaPorCaravana && promedio > 0 && threshold < promedio) {
       const diff = promedio - threshold;
       msgs.push(`Faltan ${diff} fr.`);
-      if (level !== "bad") {
-        level = "warn";
-        hasStrongAlert = true;
-      }
+      level = "bad"; // Cambiado de 'warn' a 'bad' para bloquear guardado
+      hasStrongAlert = true;
+      hasBlockingError = true;
     }
 
     if (!msgs.length) {
@@ -13073,7 +13484,23 @@ async function performSaveBIO() {
   if (HAS_SAVED_BIO && !EDIT_BIO) return showToast("Pedido ya capturado", false, "warn");
 
   const bioValidation = refreshBioAlerts(true);
-  if (bioValidation?.hasBlockingError) return showToast("Corrige los errores antes de guardar", false, "warn");
+  if (bioValidation?.hasBlockingError) {
+    const errorDetails = [];
+    BIO_STATE.rows.forEach((r, i) => {
+      if (!BIO_STATE.cache) return;
+      const cached = BIO_STATE.cache[i];
+      if (!cached || !cached.alert) return;
+      const alertHtml = cached.alert.innerHTML;
+      if (alertHtml.includes("bio-chip extra") || alertHtml.includes("ERROR") || alertHtml.includes("✕")) {
+        const text = cached.alert.innerText.replace(/✕|ERROR/g, "").trim().replace(/\n+/g, " ");
+        errorDetails.push(`• ${r.biologico}: ${text}`);
+      }
+    });
+    if (errorDetails.length > 0) {
+      return showToast(`No se puede guardar el pedido. Corrige los siguientes errores:\n${errorDetails.join("\n")}`, false, "warn");
+    }
+    return showToast("Corrige los errores antes de guardar", false, "warn");
+  }
 
   const nombre = $("nombreBIO")?.value.trim() || "";
   if (!nombre) return showToast("Por favor, ingresa el nombre de la persona que realiza la captura.", false, "warn");
@@ -13149,7 +13576,8 @@ async function performSaveBIO() {
   for (const item of items) {
     const normKey = normalizeStr(item.biologico);
 
-    // REGLA A: Múltiplos de 5 para biológicos críticos (Hexavalente, Neumocócicas, SRP, Rotavirus)
+    // REGLA A: Múltiplos para biológicos críticos (Hexavalente múltiplo de 10, otros de 5)
+    const isHexavalente = normKey === "HEXAVALENTE";
     const isCritical = criticalBioNames.some(cName => {
       const normCritical = cName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
       return normKey === normCritical; // <-- Igualdad estricta (Evita falsos positivos con .includes)
@@ -13157,8 +13585,9 @@ async function performSaveBIO() {
 
     if (isCritical) {
       const pedidoVal = Number(item.pedido_frascos || 0);
-      if (pedidoVal % 5 !== 0) {
-        return showToast(`El pedido para ${item.biologico} debe ser múltiplo de 5 (se ingresó ${pedidoVal}).`, false, "warn");
+      const multi = isHexavalente ? 10 : 5;
+      if (pedidoVal % multi !== 0) {
+        return showToast(`El pedido para ${item.biologico} debe ser múltiplo de ${multi} (se ingresó ${pedidoVal}).`, false, "warn");
       }
     }
 
@@ -15121,7 +15550,7 @@ function updatePinolTabBadge(items) {
   const tabMain = $("tabCAP");
 
   const pendientes = (items || []).filter(x =>
-    String(x.estatus || "PENDIENTE").toUpperCase() === "PENDIENTE"
+    String(x.estatus_visual || x.estatus || "PENDIENTE").toUpperCase() === "PENDIENTE"
   ).length;
 
   const hasPending = pendientes > 0;
@@ -15338,10 +15767,30 @@ async function refreshPinol() {
     }
 
     if (alertMsgEl) {
-      alertMsgEl.className = "hint pinolAlertBox " + (pendientes.length > 0 ? "warn" : "ok");
+      alertMsgEl.className = "pinolBannerAlert " + (pendientes.length > 0 ? "warn" : "ok");
+      const atendidasPorMunicipio = entregadas.length + recibidas.length;
       alertMsgEl.innerHTML = pendientes.length > 0
-        ? `⚠️ Hay <b>${pendientes.length}</b> solicitud(es) de pinol pendientes por atender.`
-        : `✅ No hay solicitudes pendientes de pinol. <span style="opacity:.9">Recibidas por unidad: <b>${recibidas.length}</b></span>`;
+        ? `<div style="display:flex; align-items:center; gap:14px;">
+             <div style="background:#ef4444; color:#fff; border-radius:14px; min-width:40px; height:40px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow: 0 4px 12px rgba(239,68,68,0.4);">
+               <span class="material-symbols-rounded" style="font-size: 26px; animation: pinolWarningRotate 1.2s infinite alternate ease-in-out;">warning</span>
+             </div>
+             <div>
+               <div style="font-size: 14px; font-weight: 900; letter-spacing: -0.01em; color: #991b1b;">⚠️ SOLICITUDES PENDIENTES POR ATENDER</div>
+               <div style="font-size: 13px; font-weight: 700; opacity: 0.9; margin-top: 2px;">Hay <b>${pendientes.length}</b> unidad(es) esperando entrega de insumo por el perfil municipal.</div>
+             </div>
+           </div>`
+        : `<div style="display:flex; align-items:center; gap:14px;">
+             <div style="background:#10b981; color:#fff; border-radius:14px; min-width:40px; height:40px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow: 0 4px 12px rgba(16,185,129,0.35);">
+               <span class="material-symbols-rounded" style="font-size: 26px;">task_alt</span>
+             </div>
+             <div>
+               <div style="font-size: 14px; font-weight: 900; letter-spacing: -0.01em; color: #065f46;">✅ SOLICITUDES AL DÍA POR EL MUNICIPIO</div>
+               <div style="font-size: 12.5px; font-weight: 700; opacity: 0.9; margin-top: 2px;">
+                 El municipio ha surtido <b>${atendidasPorMunicipio}</b> de <b>${total}</b> solicitudes. 
+                 <span style="font-weight:600; opacity: 0.85;">(${recibidas.length} con acuse de recibido por la unidad, ${entregadas.length} en tránsito sin acuse).</span>
+               </div>
+             </div>
+           </div>`;
     }
 
     let filtered = safeItems.slice();
@@ -16357,7 +16806,7 @@ async function watchPinolRealtime() {
   try {
     const items = await listPinol(false);
     const pendientes = (items || []).filter(x =>
-      String(x.estatus || "PENDIENTE").toUpperCase() === "PENDIENTE"
+      String(x.estatus_visual || x.estatus || "PENDIENTE").toUpperCase() === "PENDIENTE"
     ).length;
 
     if (LIVE_STATE.pinolPendientes === null) {
@@ -17281,8 +17730,57 @@ async function handleFileUploadFlow() {
 }
 
 // ✅ VISTA EN VIVO LOGIC
-let CHART_SEM = null;
-let CHART_CAD = null;
+window.activeLiveViewFilter = null; // { type: 'semaforo'|'caducidad'|'insumo'|'dosis'|'pedido'|'biologico', value: string }
+window.currentLiveViewParams = null; // Para refrescar { clues, unidad, municipio }
+window.currentLiveViewRes = null;
+window.currentLiveViewTab = 'existencia';
+window.CHART_SEM = null;
+window.CHART_CAD = null;
+
+// ✅ SKELETON LOADERS PARA CARGAS EN VIVO
+window.showLiveViewSkeletons = function() {
+  const tbody = $("liveViewTbody");
+  const chartLeft = $("liveChartLeft");
+  const chartRight = $("liveChartRight");
+
+  // Destruir gráficos previos si existen
+  if (window.CHART_SEM) { try { window.CHART_SEM.dispose(); } catch(e){} window.CHART_SEM = null; }
+  if (window.CHART_CAD) { try { window.CHART_CAD.dispose(); } catch(e){} window.CHART_CAD = null; }
+
+  if (chartLeft) {
+    chartLeft.innerHTML = `
+      <div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%;">
+        <div class="live-skeleton" style="width:70px; height:70px; border-radius:50%;"></div>
+      </div>
+    `;
+  }
+  if (chartRight) {
+    chartRight.innerHTML = `
+      <div style="display:flex; align-items:flex-end; justify-content:space-around; width:100%; height:100%; padding-bottom:10px;">
+        <div class="live-skeleton" style="width:12px; height:40px;"></div>
+        <div class="live-skeleton" style="width:12px; height:60px;"></div>
+        <div class="live-skeleton" style="width:12px; height:50px;"></div>
+        <div class="live-skeleton" style="width:12px; height:75px;"></div>
+      </div>
+    `;
+  }
+  if (tbody) {
+    let rowsHtml = "";
+    for (let i = 0; i < 4; i++) {
+      rowsHtml += `
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding:18px 24px;"><div class="live-skeleton" style="width:120px; height:16px;"></div></td>
+          <td style="padding:18px 24px;"><div class="live-skeleton" style="width:80px; height:16px; margin:0 auto;"></div></td>
+          <td style="padding:18px 24px;"><div class="live-skeleton" style="width:50px; height:16px; margin:0 auto;"></div></td>
+          <td style="padding:18px 24px;"><div class="live-skeleton" style="width:70px; height:16px; margin:0 auto;"></div></td>
+          <td style="padding:18px 24px;"><div class="live-skeleton" style="width:60px; height:20px; border-radius:12px; margin:0 auto;"></div></td>
+          <td style="padding:18px 24px;"><div class="live-skeleton" style="width:100px; height:16px; margin:0 auto;"></div></td>
+        </tr>
+      `;
+    }
+    tbody.innerHTML = rowsHtml;
+  }
+};
 
 function formatAppDate(dateStr) {
   if (!dateStr || dateStr === "—") return "—";
@@ -17325,11 +17823,33 @@ async function openLiveView(clues, unidad, municipio) {
     /* Semaforización de Cumplimiento (Bulletproof) */
     /* CSS handled externally: #bCumplimiento.good, #bCumplimiento[data-tone="good"] { ... } */
 
-    // 1. Mostrar modal inmediatamente con estado de carga
+    // 1. Mostrar modal inmediatamente con estado de carga (Esqueletos Shimmer)
     overlay.classList.add("show");
     overlay.style.display = "flex";
     overlay.ariaHidden = "false";
-    tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:60px; text-align:center;"><div class="spinner-small" style="margin:0 auto 12px;"></div>Obteniendo detalle...</td></tr>';
+
+    if (!document.getElementById("liveViewSkeletonStyle")) {
+      const style = document.createElement("style");
+      style.id = "liveViewSkeletonStyle";
+      style.innerHTML = `
+        @keyframes liveShimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .live-skeleton {
+          background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+          background-size: 200% 100%;
+          animation: liveShimmer 1.5s infinite linear;
+          border-radius: 8px;
+        }
+        .live-view-row.hover-highlight {
+          background-color: #f0f9ff !important;
+          cursor: pointer;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    window.showLiveViewSkeletons();
 
     const fecha = ($("summaryFecha") && $("summaryFecha").value) ? $("summaryFecha").value : todayYmdLocal();
     const tipo = ($("summaryTipo") && $("summaryTipo").value) ? $("summaryTipo").value : "SR";
@@ -17391,8 +17911,24 @@ async function openLiveView(clues, unidad, municipio) {
       $("liveViewMunicipio").insertAdjacentHTML('beforeend', `<span style="margin-left:8px; font-size:11px; background:#f1f5f9; color:#475569; padding:2px 10px; border-radius:20px; font-weight:700;">👤 Capturó: ${escapeHtml(capturistaStr)}</span>`);
     }
 
-    // 4. Renderizar el contenido inicial
+    // 4. Renderizar el contenido inicial y el timeline
     renderLiveViewTableContent();
+    if (window.renderLiveViewTimeline) {
+      window.renderLiveViewTimeline();
+    }
+
+    // Asociar botones del encabezado
+    const refreshBtn = document.getElementById("btnLiveViewRefresh");
+    if (refreshBtn) refreshBtn.onclick = window.refreshLiveViewCurrentData;
+
+    const pdfBtn = document.getElementById("btnLiveViewExportPDF");
+    if (pdfBtn) pdfBtn.onclick = window.exportLiveViewPDF;
+
+    const pngBtn = document.getElementById("btnLiveViewExportPNG");
+    if (pngBtn) pngBtn.onclick = window.exportLiveViewPNG;
+
+    const clearFilterBtn = document.getElementById("btnLiveViewClearFilter");
+    if (clearFilterBtn) clearFilterBtn.onclick = window.clearLiveViewFilter;
 
     // --- EFECTO PREMIUM CHARTS: CARGA ESCALA ---
     setTimeout(() => {
@@ -17468,14 +18004,45 @@ function getSemaforoStatus(val) {
   return { key: "lejana", label: "Vigente", color: "#10b981" };
 }
 
+function setupChartFilter(chart, type) {
+  if (!chart) return;
+  chart.off('click');
+  chart.on('click', (params) => {
+    let filterVal = params.name || params.value;
+    if (!filterVal && params.componentType === 'series') {
+      filterVal = params.name;
+    }
+    if (!filterVal) return;
+
+    window.activeLiveViewFilter = { type: type, value: filterVal };
+
+    const bar = document.getElementById("liveViewActiveFilterBar");
+    const txt = document.getElementById("liveViewActiveFilterText");
+    if (bar && txt) {
+      const typeLabel = type === 'semaforo' ? 'Vigencia' : type === 'caducidad' ? 'Periodo' : type === 'insumo' ? 'Insumo' : type === 'biologico' ? 'Biológico' : type === 'pedido' ? 'Inventario' : 'Filtro';
+      txt.textContent = `${typeLabel}: ${filterVal}`;
+      bar.style.display = "block";
+    }
+
+    renderLiveViewTableContent();
+  });
+}
+
+window.clearLiveViewFilter = function() {
+  window.activeLiveViewFilter = null;
+  const bar = document.getElementById("liveViewActiveFilterBar");
+  if (bar) bar.style.display = "none";
+  renderLiveViewTableContent();
+};
+
 function renderLiveCharts(tipo, leftData, rightData) {
   try {
     const ctxLeft = $("liveChartLeft");
     const ctxRight = $("liveChartRight");
     if (!ctxLeft || !ctxRight) return;
 
-    if (CHART_SEM) { CHART_SEM.dispose(); CHART_SEM = null; }
-    if (CHART_CAD) { CHART_CAD.dispose(); CHART_CAD = null; }
+    if (window.CHART_SEM) { window.CHART_SEM.dispose(); window.CHART_SEM = null; }
+    if (window.CHART_CAD) { window.CHART_CAD.dispose(); window.CHART_CAD = null; }
 
     const setDOM = (kL, tL, dL, kR, tR, dR) => {
       if ($("liveChartLeftKicker")) $("liveChartLeftKicker").textContent = kL;
@@ -17491,15 +18058,15 @@ function renderLiveCharts(tipo, leftData, rightData) {
       let sem = leftData || { pronto: 0, normal: 0, lejana: 0 };
       let cad = rightData || { m3: 0, m6: 0, m12: 0, more: 0 };
 
-      CHART_SEM = echarts.init(ctxLeft);
-      CHART_SEM.setOption({
+      window.CHART_SEM = echarts.init(ctxLeft);
+      window.CHART_SEM.setOption({
         animationDuration: 1000, animationEasing: 'exponentialOut',
         tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.95)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
         series: [{
           type: 'pie', radius: ['60%', '90%'], avoidLabelOverlap: false,
           itemStyle: { borderRadius: 8, borderColor: '#fff', borderWidth: 2 },
           label: { show: false },
-          emphasis: { scale: true, scaleSize: 6 }, // Usamos escala en lugar de sombras para evitar bugs de GPU
+          emphasis: { scale: true, scaleSize: 6 },
           data: [
             {
               value: sem.pronto, name: 'Próxima',
@@ -17532,8 +18099,8 @@ function renderLiveCharts(tipo, leftData, rightData) {
         }]
       });
 
-      CHART_CAD = echarts.init(ctxRight);
-      CHART_CAD.setOption({
+      window.CHART_CAD = echarts.init(ctxRight);
+      window.CHART_CAD.setOption({
         animationDuration: 1000, animationEasing: 'exponentialOut',
         tooltip: { trigger: 'axis', axisPointer: { type: 'none' }, backgroundColor: 'rgba(15, 23, 42, 0.95)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
         grid: { left: '0%', right: '0%', top: '15%', bottom: '5%', containLabel: true },
@@ -17552,14 +18119,17 @@ function renderLiveCharts(tipo, leftData, rightData) {
         }]
       });
 
+      setupChartFilter(window.CHART_SEM, 'semaforo');
+      setupChartFilter(window.CHART_CAD, 'caducidad');
+
     } else if (tipo === "BIO") {
       setDOM("Balance Global", "Relación de Inventario", "Total Existencia vs Pedido", "Volumen Solicitado", "Top Biológicos", "Mayor cantidad de frascos");
       let ex = leftData?.existencia || 0;
       let pd = leftData?.pedido || 0;
       let top = rightData || [];
 
-      CHART_SEM = echarts.init(ctxLeft);
-      CHART_SEM.setOption({
+      window.CHART_SEM = echarts.init(ctxLeft);
+      window.CHART_SEM.setOption({
         animationDuration: 1000, animationEasing: 'exponentialOut',
         tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.95)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
         series: [{
@@ -17593,8 +18163,8 @@ function renderLiveCharts(tipo, leftData, rightData) {
       let topLabels = top.length ? top.map(t => t.bio) : ['Sin datos'];
       let topCant = top.length ? top.map(t => t.cant) : [0];
 
-      CHART_CAD = echarts.init(ctxRight);
-      CHART_CAD.setOption({
+      window.CHART_CAD = echarts.init(ctxRight);
+      window.CHART_CAD.setOption({
         animationDuration: 1000, animationEasing: 'exponentialOut',
         tooltip: { trigger: 'axis', axisPointer: { type: 'none' }, backgroundColor: 'rgba(15, 23, 42, 0.95)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
         grid: { left: '0%', right: '0%', top: '15%', bottom: '5%', containLabel: true },
@@ -17613,13 +18183,16 @@ function renderLiveCharts(tipo, leftData, rightData) {
         }]
       });
 
+      setupChartFilter(window.CHART_SEM, 'pedido');
+      setupChartFilter(window.CHART_CAD, 'biologico');
+
     } else if (tipo === "CONS") {
       setDOM("Distribución", "Insumos Reportados", "Proporción de material", "Dosis Reportadas", "Existencia Dosis", "SRP vs SR");
       let j5 = leftData?.j5 || 0, j05 = leftData?.j05 || 0, ag = leftData?.ag || 0;
       let srp = rightData?.srp || 0, sr = rightData?.sr || 0;
 
-      CHART_SEM = echarts.init(ctxLeft);
-      CHART_SEM.setOption({
+      window.CHART_SEM = echarts.init(ctxLeft);
+      window.CHART_SEM.setOption({
         animationDuration: 1000, animationEasing: 'exponentialOut',
         tooltip: { trigger: 'item', backgroundColor: 'rgba(15, 23, 42, 0.95)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
         series: [{
@@ -17659,8 +18232,8 @@ function renderLiveCharts(tipo, leftData, rightData) {
         }]
       });
 
-      CHART_CAD = echarts.init(ctxRight);
-      CHART_CAD.setOption({
+      window.CHART_CAD = echarts.init(ctxRight);
+      window.CHART_CAD.setOption({
         animationDuration: 1000, animationEasing: 'exponentialOut',
         tooltip: { trigger: 'axis', axisPointer: { type: 'none' }, backgroundColor: 'rgba(15, 23, 42, 0.95)', textStyle: { color: '#fff', fontSize: 10 }, borderWidth: 0, borderRadius: 8, padding: [4, 8] },
         grid: { left: '0%', right: '0%', top: '15%', bottom: '5%', containLabel: true },
@@ -17678,6 +18251,8 @@ function renderLiveCharts(tipo, leftData, rightData) {
           }
         }]
       });
+
+      setupChartFilter(window.CHART_SEM, 'insumo');
     }
   } catch (err) {
     console.warn("Chart error:", err);
@@ -17719,6 +18294,343 @@ window.switchLiveViewTab = function(tab) {
     }
   }
   renderLiveViewTableContent();
+};
+
+// ✅ EXPORTAR LIVE VIEW A PDF (UNA SOLA HOJA CON MEMBRETE CORPORATIVO)
+window.exportLiveViewPDF = function() {
+  const overlay = document.getElementById("liveViewOverlay");
+  const modal = document.querySelector("#liveViewOverlay .modal");
+  const modalBody = document.querySelector("#liveViewOverlay .modalBody");
+  if (!modal || !overlay) return;
+
+  const refreshBtn = document.getElementById("btnLiveViewRefresh");
+  const pdfBtn = document.getElementById("btnLiveViewExportPDF");
+  const pngBtn = document.getElementById("btnLiveViewExportPNG");
+  const closeBtn = document.getElementById("btnLiveViewClose");
+
+  if (refreshBtn) refreshBtn.style.display = "none";
+  if (pdfBtn) pdfBtn.style.display = "none";
+  if (pngBtn) pngBtn.style.display = "none";
+  if (closeBtn) closeBtn.style.display = "none";
+
+  const clues = window.currentLiveViewParams ? window.currentLiveViewParams.clues : "CLUES";
+  const unidad = window.currentLiveViewParams ? window.currentLiveViewParams.unidad : "Unidad";
+  const res = window.currentLiveViewRes;
+  const fecha = (res && res.meta && res.meta.fecha) ? res.meta.fecha : todayYmdLocal();
+
+  const cleanUnidad = normalizePath(unidad).replace(/[^a-zA-Z0-9]/g, '_');
+  const cleanClues = normalizePath(clues).replace(/[^a-zA-Z0-9]/g, '_');
+  const filename = `reporte_${cleanUnidad}_${cleanClues}_${fecha}.pdf`;
+
+  // Construir e inyectar membrete corporativo premium
+  const headerHtml = `
+    <div id="tempPdfHeader" style="width: 100%; border-bottom: 2.5px solid #0284c7; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; font-family: system-ui, sans-serif;">
+      <div>
+        <div style="font-size: 18px; font-weight: 900; color: #0284c7; text-transform: uppercase; letter-spacing: 0.05em;">SIREVAQ - REPORTE DE CONTROL DE BIOLÓGICOS</div>
+        <div style="font-size: 11px; color: #64748b; font-weight: 700; margin-top: 2px;">Sistema Digital de Registro y Validación de Inventario</div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">UNIDAD DE SALUD</div>
+        <div style="font-size: 13px; font-weight: 900; color: #0f172a;">${unidad} (${clues})</div>
+      </div>
+    </div>
+  `;
+  modal.insertAdjacentHTML('afterbegin', headerHtml);
+
+  // Construir e inyectar pie de página
+  const footerHtml = `
+    <div id="tempPdfFooter" style="width: 100%; border-top: 1px solid #e2e8f0; padding-top: 10px; margin-top: 24px; display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #94a3b8; font-weight: 700; font-family: system-ui, sans-serif;">
+      <div>Generado por el Sistema SIREVAQ</div>
+      <div>Fecha de Emisión: ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}</div>
+      <div>Página 1 de 1</div>
+    </div>
+  `;
+  modal.insertAdjacentHTML('beforeend', footerHtml);
+
+  const originalOverlayPosition = overlay.style.position;
+  const originalOverlayTop = overlay.style.top;
+  const originalOverlayLeft = overlay.style.left;
+  const originalOverlayAlign = overlay.style.alignItems;
+  const originalOverlayJustify = overlay.style.justifyContent;
+  const originalOverlayPadding = overlay.style.padding;
+
+  const originalHeight = modal.style.height;
+  const originalMaxHeight = modal.style.maxHeight;
+  const originalOverflow = modal.style.overflow;
+  const originalTransform = modal.style.transform;
+  const originalMargin = modal.style.margin;
+  const originalPosition = modal.style.position;
+  const originalTop = modal.style.top;
+  const originalLeft = modal.style.left;
+  const originalBoxShadow = modal.style.boxShadow;
+
+  let originalBodyOverflow = "";
+  if (modalBody) {
+    originalBodyOverflow = modalBody.style.overflowY;
+    modalBody.style.overflowY = "visible";
+  }
+
+  overlay.style.position = "absolute";
+  overlay.style.top = "0";
+  overlay.style.left = "0";
+  overlay.style.alignItems = "flex-start";
+  overlay.style.justifyContent = "flex-start";
+  overlay.style.padding = "0";
+
+  modal.style.position = "relative";
+  modal.style.top = "0";
+  modal.style.left = "0";
+  modal.style.transform = "none";
+  modal.style.margin = "0";
+  modal.style.height = "auto";
+  modal.style.maxHeight = "none";
+  modal.style.overflow = "visible";
+  modal.style.boxShadow = "none";
+
+  const originalScrollTop = window.scrollY;
+  window.scrollTo(0, 0);
+
+  html2canvas(modal, { useCORS: true, scale: 2, logging: false, scrollY: 0 }).then(canvas => {
+    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+    const pdfWidth = canvas.width / 2;
+    const pdfHeight = canvas.height / 2;
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+      orientation: pdfWidth > pdfHeight ? 'l' : 'p',
+      unit: 'px',
+      format: [pdfWidth, pdfHeight]
+    });
+
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save(filename);
+
+    document.getElementById("tempPdfHeader")?.remove();
+    document.getElementById("tempPdfFooter")?.remove();
+
+    overlay.style.position = originalOverlayPosition;
+    overlay.style.top = originalOverlayTop;
+    overlay.style.left = originalOverlayLeft;
+    overlay.style.alignItems = originalOverlayAlign;
+    overlay.style.justifyContent = originalOverlayJustify;
+    overlay.style.padding = originalOverlayPadding;
+
+    modal.style.position = originalPosition;
+    modal.style.top = originalTop;
+    modal.style.left = originalLeft;
+    modal.style.transform = originalTransform;
+    modal.style.margin = originalMargin;
+    modal.style.height = originalHeight;
+    modal.style.maxHeight = originalMaxHeight;
+    modal.style.overflow = originalOverflow;
+    modal.style.boxShadow = originalBoxShadow;
+
+    if (modalBody) {
+      modalBody.style.overflowY = originalBodyOverflow;
+    }
+
+    window.scrollTo(0, originalScrollTop);
+
+    if (refreshBtn) refreshBtn.style.display = "flex";
+    if (pdfBtn) pdfBtn.style.display = "flex";
+    if (pngBtn) pngBtn.style.display = "flex";
+    if (closeBtn) closeBtn.style.display = "flex";
+  }).catch(err => {
+    console.error("PDF Export error:", err);
+    document.getElementById("tempPdfHeader")?.remove();
+    document.getElementById("tempPdfFooter")?.remove();
+
+    overlay.style.position = originalOverlayPosition;
+    overlay.style.top = originalOverlayTop;
+    overlay.style.left = originalOverlayLeft;
+    overlay.style.alignItems = originalOverlayAlign;
+    overlay.style.justifyContent = originalOverlayJustify;
+    overlay.style.padding = originalOverlayPadding;
+
+    modal.style.position = originalPosition;
+    modal.style.top = originalTop;
+    modal.style.left = originalLeft;
+    modal.style.transform = originalTransform;
+    modal.style.margin = originalMargin;
+    modal.style.height = originalHeight;
+    modal.style.maxHeight = originalMaxHeight;
+    modal.style.overflow = originalOverflow;
+    modal.style.boxShadow = originalBoxShadow;
+
+    if (modalBody) {
+      modalBody.style.overflowY = originalBodyOverflow;
+    }
+
+    window.scrollTo(0, originalScrollTop);
+
+    if (refreshBtn) refreshBtn.style.display = "flex";
+    if (pdfBtn) pdfBtn.style.display = "flex";
+    if (pngBtn) pngBtn.style.display = "flex";
+    if (closeBtn) closeBtn.style.display = "flex";
+    showToast("Error al exportar PDF: " + err.message, false);
+  });
+};
+
+// ✅ EXPORTAR LIVE VIEW A IMAGEN PNG (SIN CORTES)
+window.exportLiveViewPNG = function() {
+  const overlay = document.getElementById("liveViewOverlay");
+  const modal = document.querySelector("#liveViewOverlay .modal");
+  const modalBody = document.querySelector("#liveViewOverlay .modalBody");
+  if (!modal || !overlay) return;
+
+  const refreshBtn = document.getElementById("btnLiveViewRefresh");
+  const pdfBtn = document.getElementById("btnLiveViewExportPDF");
+  const pngBtn = document.getElementById("btnLiveViewExportPNG");
+  const closeBtn = document.getElementById("btnLiveViewClose");
+
+  if (refreshBtn) refreshBtn.style.display = "none";
+  if (pdfBtn) pdfBtn.style.display = "none";
+  if (pngBtn) pngBtn.style.display = "none";
+  if (closeBtn) closeBtn.style.display = "none";
+
+  const clues = window.currentLiveViewParams ? window.currentLiveViewParams.clues : "CLUES";
+  const unidad = window.currentLiveViewParams ? window.currentLiveViewParams.unidad : "Unidad";
+  const res = window.currentLiveViewRes;
+  const fecha = (res && res.meta && res.meta.fecha) ? res.meta.fecha : todayYmdLocal();
+
+  const cleanUnidad = normalizePath(unidad).replace(/[^a-zA-Z0-9]/g, '_');
+  const cleanClues = normalizePath(clues).replace(/[^a-zA-Z0-9]/g, '_');
+  const filename = `reporte_${cleanUnidad}_${cleanClues}_${fecha}.png`;
+
+  const originalOverlayPosition = overlay.style.position;
+  const originalOverlayTop = overlay.style.top;
+  const originalOverlayLeft = overlay.style.left;
+  const originalOverlayAlign = overlay.style.alignItems;
+  const originalOverlayJustify = overlay.style.justifyContent;
+  const originalOverlayPadding = overlay.style.padding;
+
+  const originalHeight = modal.style.height;
+  const originalMaxHeight = modal.style.maxHeight;
+  const originalOverflow = modal.style.overflow;
+  const originalTransform = modal.style.transform;
+  const originalMargin = modal.style.margin;
+  const originalPosition = modal.style.position;
+  const originalTop = modal.style.top;
+  const originalLeft = modal.style.left;
+  const originalBoxShadow = modal.style.boxShadow;
+
+  let originalBodyOverflow = "";
+  if (modalBody) {
+    originalBodyOverflow = modalBody.style.overflowY;
+    modalBody.style.overflowY = "visible";
+  }
+
+  overlay.style.position = "absolute";
+  overlay.style.top = "0";
+  overlay.style.left = "0";
+  overlay.style.alignItems = "flex-start";
+  overlay.style.justifyContent = "flex-start";
+  overlay.style.padding = "0";
+
+  modal.style.position = "relative";
+  modal.style.top = "0";
+  modal.style.left = "0";
+  modal.style.transform = "none";
+  modal.style.margin = "0";
+  modal.style.height = "auto";
+  modal.style.maxHeight = "none";
+  modal.style.overflow = "visible";
+  modal.style.boxShadow = "none";
+
+  const originalScrollTop = window.scrollY;
+  window.scrollTo(0, 0);
+
+  html2canvas(modal, { useCORS: true, scale: 2, logging: false, scrollY: 0 }).then(canvas => {
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = canvas.toDataURL('image/png', 1.0);
+    link.click();
+
+    overlay.style.position = originalOverlayPosition;
+    overlay.style.top = originalOverlayTop;
+    overlay.style.left = originalOverlayLeft;
+    overlay.style.alignItems = originalOverlayAlign;
+    overlay.style.justifyContent = originalOverlayJustify;
+    overlay.style.padding = originalOverlayPadding;
+
+    modal.style.position = originalPosition;
+    modal.style.top = originalTop;
+    modal.style.left = originalLeft;
+    modal.style.transform = originalTransform;
+    modal.style.margin = originalMargin;
+    modal.style.height = originalHeight;
+    modal.style.maxHeight = originalMaxHeight;
+    modal.style.overflow = originalOverflow;
+    modal.style.boxShadow = originalBoxShadow;
+
+    if (modalBody) {
+      modalBody.style.overflowY = originalBodyOverflow;
+    }
+
+    window.scrollTo(0, originalScrollTop);
+
+    if (refreshBtn) refreshBtn.style.display = "flex";
+    if (pdfBtn) pdfBtn.style.display = "flex";
+    if (pngBtn) pngBtn.style.display = "flex";
+    if (closeBtn) closeBtn.style.display = "flex";
+  }).catch(err => {
+    console.error("PNG Export error:", err);
+    overlay.style.position = originalOverlayPosition;
+    overlay.style.top = originalOverlayTop;
+    overlay.style.left = originalOverlayLeft;
+    overlay.style.alignItems = originalOverlayAlign;
+    overlay.style.justifyContent = originalOverlayJustify;
+    overlay.style.padding = originalOverlayPadding;
+
+    modal.style.position = originalPosition;
+    modal.style.top = originalTop;
+    modal.style.left = originalLeft;
+    modal.style.transform = originalTransform;
+    modal.style.margin = originalMargin;
+    modal.style.height = originalHeight;
+    modal.style.maxHeight = originalMaxHeight;
+    modal.style.overflow = originalOverflow;
+    modal.style.boxShadow = originalBoxShadow;
+
+    if (modalBody) {
+      modalBody.style.overflowY = originalBodyOverflow;
+    }
+
+    window.scrollTo(0, originalScrollTop);
+
+    if (refreshBtn) refreshBtn.style.display = "flex";
+    if (pdfBtn) pdfBtn.style.display = "flex";
+    if (pngBtn) pngBtn.style.display = "flex";
+    if (closeBtn) closeBtn.style.display = "flex";
+    showToast("Error al exportar imagen: " + err.message, false);
+  });
+};
+
+// ✅ REFRESCAR DATOS EN TIEMPO REAL
+window.refreshLiveViewCurrentData = async function() {
+  const params = window.currentLiveViewParams;
+  if (!params) return;
+
+  const refreshBtn = document.getElementById("btnLiveViewRefresh");
+  let originalHtml = "";
+  if (refreshBtn) {
+    originalHtml = refreshBtn.innerHTML;
+    refreshBtn.style.pointerEvents = "none";
+    refreshBtn.innerHTML = '<span class="material-symbols-rounded spinner-small" style="font-size: 24px; animation: spin 1s linear infinite;">progress_activity</span>';
+  }
+
+  try {
+    window.showLiveViewSkeletons();
+    await openLiveView(params.clues, params.unidad, params.municipio);
+    showToast("Datos actualizados correctamente", true);
+  } catch (err) {
+    showToast("Error al refrescar datos: " + err.message, false);
+  } finally {
+    if (refreshBtn) {
+      refreshBtn.style.pointerEvents = "auto";
+      refreshBtn.innerHTML = originalHtml;
+    }
+  }
 };
 
 function getPermanenciaStatusHelper(recepcionIso) {
@@ -17848,6 +18760,13 @@ window.renderLiveViewTableContent = function() {
   const headRow = $("liveViewTable")?.querySelector("thead tr");
   if (!tbody) return;
 
+  // Limpiar alerta de desabasto/cero por defecto al renderizar
+  const zeroAlertEl = $("liveViewZeroAlert");
+  if (zeroAlertEl) {
+    zeroAlertEl.style.display = 'none';
+    zeroAlertEl.innerHTML = '';
+  }
+
   const tipo = (res.meta && res.meta.tipo) ? res.meta.tipo.toUpperCase() : "SR";
   const tab = window.currentLiveViewTab || 'existencia';
 
@@ -17866,15 +18785,13 @@ window.renderLiveViewTableContent = function() {
 
       if (!res.data || !res.data.length) {
         tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay registros detallados para esta fecha.</td></tr>';
-        const zeroAlertEmpty = $("liveViewZeroAlert");
-        if (zeroAlertEmpty) { zeroAlertEmpty.style.display = 'none'; zeroAlertEmpty.innerHTML = ''; }
         renderLiveCharts("SR", null, null);
       } else {
         const items = res.data;
         let semStats = { pronto: 0, normal: 0, lejana: 0 };
         let cadStats = { m3: 0, m6: 0, m12: 0, more: 0 };
 
-        tbody.innerHTML = items.map(r => {
+        items.forEach(r => {
           const status = getSemaforoStatus(r.caducidad);
           semStats[status.key]++;
           const diffMonths = getMonthsTo(r.caducidad);
@@ -17882,35 +18799,61 @@ window.renderLiveViewTableContent = function() {
           else if (diffMonths <= 6) cadStats.m6++;
           else if (diffMonths <= 12) cadStats.m12++;
           else cadStats.more++;
+        });
 
-          const perm = getPermanenciaStatusHelper(r.fecha_recepcion);
-
-          let tipoBadge = "";
-          if (r.tipo === "PRESTAMO_DESABASTO" || r.tipo === "Préstamo por desabasto") {
-            tipoBadge = `<span style="background: #fffbeb; color: #d97706; border: 1px solid #fde68a; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 12px; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">🤝 P. DESABASTO</span>`;
-          } else if (r.tipo === "PRESTAMO_ARF" || r.tipo === "Préstamo por ARF") {
-            tipoBadge = `<span style="background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 12px; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">🤝 P. ARF</span>`;
+        // Aplicar filtros dinámicos si existen
+        let displayItems = items;
+        if (window.activeLiveViewFilter) {
+          const filter = window.activeLiveViewFilter;
+          if (filter.type === 'semaforo') {
+            displayItems = items.filter(r => getSemaforoStatus(r.caducidad).label === filter.value);
+          } else if (filter.type === 'caducidad') {
+            displayItems = items.filter(r => {
+              const diffMonths = getMonthsTo(r.caducidad);
+              if (filter.value === '< 3m') return diffMonths <= 3;
+              if (filter.value === '3-6m') return diffMonths > 3 && diffMonths <= 6;
+              if (filter.value === '6-12m') return diffMonths > 6 && diffMonths <= 12;
+              if (filter.value === '> 12m') return diffMonths > 12;
+              return true;
+            });
           }
+        }
 
-          return `
-                <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
-                  <td style="padding:14px 24px; font-weight:800; color:#0f172a; white-space: nowrap;">
-                    <span style="vertical-align: middle;">${escapeHtml(r.biologico || "—")}</span>${tipoBadge}
-                  </td>
-                  <td style="padding:14px 24px; font-weight:600; color:#475569;">${escapeHtml(r.lote || "—")}</td>
-                  <td style="padding:14px 24px; text-align:center;">
-                    <span class="live-view-count-badge">${escapeHtml(r.cantidad || 0)}</span>
-                  </td>
-                  <td style="padding:14px 24px; font-weight:700; text-align:center; color:#1e293b;">${escapeHtml(isoToMmmaa(r.caducidad))}</td>
-                  <td style="padding:14px 24px; text-align:center;">
-                    <span class="status-pill-pro ${status.key}">${status.label}</span>
-                  </td>
-                  <td style="padding:14px 24px; text-align:center; min-width: 190px;">
-                    ${perm.html}
-                  </td>
-                </tr>
-              `;
-        }).join("");
+        if (displayItems.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">Ningún registro coincide con el filtro seleccionado.</td></tr>';
+        } else {
+          tbody.innerHTML = displayItems.map(r => {
+            const status = getSemaforoStatus(r.caducidad);
+            const diffMonths = getMonthsTo(r.caducidad);
+            const perm = getPermanenciaStatusHelper(r.fecha_recepcion);
+
+            let tipoBadge = "";
+            if (r.tipo === "PRESTAMO_DESABASTO" || r.tipo === "Préstamo por desabasto") {
+              tipoBadge = `<span style="background: #fffbeb; color: #d97706; border: 1px solid #fde68a; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 12px; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">🤝 P. DESABASTO</span>`;
+            } else if (r.tipo === "PRESTAMO_ARF" || r.tipo === "Préstamo por ARF") {
+              tipoBadge = `<span style="background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 12px; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">🤝 P. ARF</span>`;
+            }
+
+            return `
+                  <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;" data-type="sr" data-status="${status.label}" data-months="${diffMonths}">
+                    <td style="padding:14px 24px; font-weight:800; color:#0f172a; white-space: nowrap;">
+                      <span style="vertical-align: middle;">${escapeHtml(r.biologico || "—")}</span>${tipoBadge}
+                    </td>
+                    <td style="padding:14px 24px; font-weight:600; color:#475569;">${escapeHtml(r.lote || "—")}</td>
+                    <td style="padding:14px 24px; text-align:center;">
+                      <span class="live-view-count-badge">${escapeHtml(r.cantidad || 0)}</span>
+                    </td>
+                    <td style="padding:14px 24px; font-weight:700; text-align:center; color:#1e293b;">${escapeHtml(isoToMmmaa(r.caducidad))}</td>
+                    <td style="padding:14px 24px; text-align:center;">
+                      <span class="status-pill-pro ${status.key}">${status.label}</span>
+                    </td>
+                    <td style="padding:14px 24px; text-align:center; min-width: 190px;">
+                      ${perm.html}
+                    </td>
+                  </tr>
+                `;
+          }).join("");
+        }
 
         highlightZeroRows(items);
         renderLiveCharts("SR", semStats, cadStats);
@@ -17975,7 +18918,7 @@ window.renderLiveViewTableContent = function() {
             statusBg = "#f1f5f9";
           }
 
-          if (prevQty === 0 && currQty === 0) return; // Omitir dummy rows si ambas son 0
+          if (prevQty === 0 && currQty === 0) return;
 
           moveRows.push({
             biologico: currentItem ? currentItem.biologico : (prevItems.find(r => (r.biologico || '').trim().toUpperCase() === bioName)?.biologico || bioName),
@@ -18027,8 +18970,43 @@ window.renderLiveViewTableContent = function() {
       renderLiveCharts("BIO", null, null);
     } else {
       const items = res.data;
-      tbody.innerHTML = items.map(r => `
-           <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
+      let leftData = { existencia: 0, pedido: 0 };
+      let rightDataMap = {};
+
+      items.forEach(r => {
+        const existQty = r.existencia_actual_frascos ?? r.existencia ?? 0;
+        const pedQty = r.pedido_frascos ?? r.solicitud ?? 0;
+        leftData.existencia += Number(existQty);
+        leftData.pedido += Number(pedQty);
+
+        const name = (r.biologico || "—");
+        rightDataMap[name] = (rightDataMap[name] || 0) + Number(pedQty);
+      });
+
+      const topList = Object.keys(rightDataMap)
+        .map(k => ({ bio: k, cant: rightDataMap[k] }))
+        .sort((a, b) => b.cant - a.cant)
+        .slice(0, 5);
+
+      // Aplicar filtros dinámicos si existen
+      let displayItems = items;
+      if (window.activeLiveViewFilter) {
+        const filter = window.activeLiveViewFilter;
+        if (filter.type === 'biologico') {
+          displayItems = items.filter(r => (r.biologico || '').trim().toUpperCase() === filter.value.trim().toUpperCase());
+        } else if (filter.type === 'pedido') {
+          displayItems = items.filter(r => {
+            const existQty = r.existencia_actual_frascos ?? r.existencia ?? 0;
+            const pedQty = r.pedido_frascos ?? r.solicitud ?? 0;
+            if (filter.value === 'Existencia Actual') return existQty > 0;
+            if (filter.value === 'Pedido Solicitado') return pedQty > 0;
+            return true;
+          });
+        }
+      }
+
+      tbody.innerHTML = displayItems.map(r => `
+           <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;" data-type="bio" data-biologico="${r.biologico || ''}">
              <td style="padding:14px 24px; font-weight:800; color:#0f172a;">${escapeHtml(r.biologico || "—")}</td>
              <td style="padding:14px 24px; text-align:center;">
                <span class="live-view-count-badge bg-slate-100 text-slate-800">${r.existencia_actual_frascos ?? r.existencia ?? 0}</span>
@@ -18040,6 +19018,8 @@ window.renderLiveViewTableContent = function() {
              <td style="padding:14px 24px; text-align:center; font-weight:600; color:#64748b;">${r.min_dosis ?? 0} / ${r.max_dosis ?? 0}</td>
            </tr>
          `).join("");
+
+      renderLiveCharts("BIO", leftData, topList);
     }
   } else if (tipo === "INF") {
     if (headRow) {
@@ -18082,16 +19062,94 @@ window.renderLiveViewTableContent = function() {
         { label: "Jeringa de 0.5 ml", val: c.jeringa_aplic_05ml_0605502657 || 0 },
         { label: "Aguja", val: c.aguja_0600403711 || 0 }
       ];
-      tbody.innerHTML = rows.map(r => `
-           <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
+
+      // Aplicar filtros dinámicos si existen
+      let displayItems = rows;
+      if (window.activeLiveViewFilter) {
+        const filter = window.activeLiveViewFilter;
+        if (filter.type === 'insumo') {
+          displayItems = rows.filter(r => r.label.trim().toUpperCase().includes(filter.value.trim().toUpperCase()));
+        }
+      }
+
+      tbody.innerHTML = displayItems.map(r => `
+           <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;" data-type="cons" data-insumo="${r.label}">
              <td style="padding:16px 24px; font-weight:800; color:#0f172a;">${r.label}</td>
              <td style="padding:16px 24px; text-align:center;">
                <span class="live-view-count-badge">${r.val || 0}</span>
              </td>
            </tr>
          `).join("");
+
+      const leftData = { j5: c.jeringa_reconst_5ml_0605500438 || 0, j05: c.jeringa_aplic_05ml_0605502657 || 0, ag: c.aguja_0600403711 || 0 };
+      const rightData = { srp: c.srp_dosis || 0, sr: c.sr_dosis || 0 };
+      renderLiveCharts("CONS", leftData, rightData);
     }
   }
+
+};
+
+// ✅ RENDERIZACIÓN DE LA LÍNEA DE TIEMPO / TIMELINE DE AUDITORÍA
+window.renderLiveViewTimeline = function() {
+  const container = $("liveViewTimeline");
+  const res = window.currentLiveViewRes;
+  if (!container || !res || !res.meta) return;
+
+  const user = res.meta.capturado_por || "SISTEMA";
+  const fecha = formatAppDate(res.meta.fecha);
+  const tipo = (res.meta.tipo || "SR").toUpperCase();
+  const logs = [];
+
+  const isSystem = (user.toUpperCase() === "SISTEMA");
+  logs.push({
+    title: isSystem ? "Replicación de Datos Automática" : "Registro de Datos Manual",
+    desc: isSystem ? "El sistema heredó las existencias de la jornada activa previa." : `Información capturada por el operador: ${user}.`,
+    time: fecha,
+    icon: isSystem ? "cloud_sync" : "person_edit",
+    color: isSystem ? "#0284c7" : "#8b5cf6"
+  });
+
+  if (tipo === "SR" && res.data && res.data.length > 0) {
+    const bioTotals = {};
+    res.data.forEach(r => {
+      const name = (r.biologico || '').trim().toUpperCase();
+      if (name) bioTotals[name] = (bioTotals[name] || 0) + Number(r.cantidad || 0);
+    });
+    const ceros = Object.keys(bioTotals).filter(name => bioTotals[name] === 0);
+    if (ceros.length > 0) {
+      logs.push({
+        title: "Alerta de Consistencia: Biológicos en Cero",
+        desc: `Se identificaron ${ceros.length} vacuna(s) sin existencia física.`,
+        time: "Verificación de Stock",
+        icon: "warning",
+        color: "#f43f5e"
+      });
+    } else {
+      logs.push({
+        title: "Consistencia de Inventario Conforme",
+        desc: "Todos los biológicos activos cuentan con existencias registradas.",
+        time: "Verificación de Stock",
+        icon: "verified",
+        color: "#10b981"
+      });
+    }
+  }
+
+  container.innerHTML = logs.map(l => `
+    <div style="display: flex; gap: 14px; font-family: system-ui, sans-serif;">
+      <div style="display: flex; flex-direction: column; align-items: center;">
+        <div style="width: 32px; height: 32px; border-radius: 50%; background: ${l.color}20; color: ${l.color}; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+          <span class="material-symbols-rounded" style="font-size: 18px;">${l.icon}</span>
+        </div>
+        <div style="width: 2px; flex: 1; background: #e2e8f0; margin-top: 4px;"></div>
+      </div>
+      <div style="padding-bottom: 8px;">
+        <div style="font-size: 13px; font-weight: 850; color: var(--md-sys-color-on-surface);">${escapeHtml(l.title)}</div>
+        <div style="font-size: 11px; color: var(--md-sys-color-on-surface-variant); margin-top: 2px;">${escapeHtml(l.desc)}</div>
+        <div style="font-size: 10px; font-weight: 700; color: #94a3b8; margin-top: 4px; text-transform: uppercase;">${escapeHtml(l.time)}</div>
+      </div>
+    </div>
+  `).join("");
 };
 
 // ✅ AUTO-UPPERCASE FOR LOTES
@@ -21155,6 +22213,15 @@ function createPremiumCustomDropdown(selectId) {
   const select = typeof selectId === "string" ? document.getElementById(selectId) : selectId;
   if (!select) return;
 
+  if (select._premiumAttrObserver) {
+    select._premiumAttrObserver.disconnect();
+    delete select._premiumAttrObserver;
+  }
+  if (select._premiumOptionObserver) {
+    select._premiumOptionObserver.disconnect();
+    delete select._premiumOptionObserver;
+  }
+
   if (!select.id) {
     select.id = "select_" + Math.random().toString(36).substring(2, 9);
   }
@@ -21183,7 +22250,11 @@ function createPremiumCustomDropdown(selectId) {
 
   // Evitar duplicados
   const existingWrapper = document.getElementById(`${id}_custom_wrapper`);
-  if (existingWrapper) existingWrapper.remove();
+  let wasCurrentlyHidden = false;
+  if (existingWrapper) {
+    wasCurrentlyHidden = existingWrapper.style.display === "none" || existingWrapper.style.getPropertyValue("display") === "none";
+    existingWrapper.remove();
+  }
 
   const wrapper = document.createElement("div");
   wrapper.id = `${id}_custom_wrapper`;
@@ -21223,7 +22294,14 @@ function createPremiumCustomDropdown(selectId) {
     }
   });
   
-  wrapper.style.minWidth = select.style.minWidth || "120px";
+  const isInTable = !!select.closest("td, th, table");
+  if (select.style.minWidth) {
+    wrapper.style.minWidth = select.style.minWidth;
+  } else if (isInTable || select.classList.contains("sr-lote-select") || select.classList.contains("sr-bio-select") || select.classList.contains("sr-tipo-select")) {
+    wrapper.style.minWidth = "0px";
+  } else {
+    wrapper.style.minWidth = "140px";
+  }
 
   const btn = document.createElement("button");
   btn.type = "button";
@@ -21232,14 +22310,15 @@ function createPremiumCustomDropdown(selectId) {
 
   // Copiar clases de ancho/max-ancho a wrapper y botón
   Array.from(select.classList).forEach(c => {
-    if (c.startsWith("w-") || c.startsWith("max-w-") || c.startsWith("flex-")) {
+    if (c.startsWith("w-") || c.startsWith("max-w-") || c.startsWith("flex-") || c.startsWith("sr-")) {
       wrapper.classList.add(c);
       btn.classList.add(c);
     }
   });
 
   const labelSpan = document.createElement("span");
-  labelSpan.className = "truncate flex items-center gap-1.5";
+  labelSpan.className = "truncate min-w-0 flex-1 text-left block";
+  labelSpan.style.cssText = "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;";
   
   const iconSpan = document.createElement("span");
   iconSpan.className = "material-symbols-rounded text-slate-400 text-[18px] shrink-0";
@@ -21249,8 +22328,8 @@ function createPremiumCustomDropdown(selectId) {
   btn.appendChild(iconSpan);
 
   const dropdown = document.createElement("div");
-  dropdown.className = "hidden absolute left-0 mt-1 bg-white border border-slate-200 rounded-[24px] shadow-xl p-2.5 max-h-[380px] overflow-y-auto flex flex-col gap-1 w-[280px]";
-  dropdown.style.cssText = "display: none; z-index: 99999 !important; max-height: 280px !important; overflow-y: auto !important; width: 320px !important; flex-direction: column !important; gap: 4px !important;";
+  dropdown.className = "hidden absolute left-0 mt-1 rounded-2xl bg-white/45 backdrop-blur-xl border border-slate-200/80 shadow-xl transition-all duration-200 z-[99999] p-1 flex flex-col gap-0.5 min-w-full w-max max-w-[380px] max-h-[380px] overflow-y-auto";
+  dropdown.style.cssText = "display: none; z-index: 99999 !important; max-height: 280px !important; overflow-y: auto !important; min-width: 100% !important; width: max-content !important; max-width: min(90vw, 380px) !important; flex-direction: column !important; gap: 2px !important; background: rgba(255, 255, 255, 0.45) !important; backdrop-filter: blur(16px) !important; -webkit-backdrop-filter: blur(16px) !important; border: 1px solid rgba(226, 232, 240, 0.8) !important; border-radius: 16px !important; box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.1) !important; padding: 4px !important;";
 
   const updateBtnLabel = () => {
     const selectedOption = select.options[select.selectedIndex];
@@ -21263,7 +22342,8 @@ function createPremiumCustomDropdown(selectId) {
       const isSelected = select.value === opt.value;
       const item = document.createElement("button");
       item.type = "button";
-      item.className = `w-full text-left p-2.5 rounded-xl border flex items-center justify-between gap-3 transition-all text-xs`;
+      item.className = `w-full text-left rounded-lg border flex items-center justify-between gap-2 transition-all text-xs`;
+      item.style.cssText = "padding: 3px 10px !important; min-height: 24px !important; line-height: 1.25 !important; border-radius: 8px !important;";
       
       // Estilos en línea explícitos para asegurar máxima visibilidad y diseño premium
       if (isSelected) {
@@ -21278,20 +22358,24 @@ function createPremiumCustomDropdown(selectId) {
         item.style.color = "#475569"; // slate-600
         item.style.fontWeight = "700";
         
-        // Efecto hover premium
+        // Efecto hover premium de alto contraste
         item.addEventListener("mouseenter", () => {
-          item.style.backgroundColor = "#f8fafc"; // slate-50
+          item.style.backgroundColor = "#e2e8f0"; // slate-200 realce claro y perceptible
+          item.style.borderColor = "#cbd5e1"; // slate-300
           item.style.color = "#0f172a"; // slate-900
+          item.style.fontWeight = "800";
         });
         item.addEventListener("mouseleave", () => {
           item.style.backgroundColor = "transparent";
+          item.style.borderColor = "transparent";
           item.style.color = "#475569";
+          item.style.fontWeight = "700";
         });
       }
 
       item.innerHTML = `
-        <span style="font-family: inherit;">${opt.text}</span>
-        ${isSelected ? '<span class="material-symbols-rounded text-xs shrink-0" style="color: #6b21a8; font-weight: 900;">check</span>' : ''}
+        <span style="font-family: inherit; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.25;" class="truncate">${opt.text}</span>
+        ${isSelected ? '<span class="material-symbols-rounded text-xs shrink-0" style="color: #6b21a8; font-weight: 900; font-size: 14px !important;">check</span>' : ''}
       `;
       item.onclick = (e) => {
         e.stopPropagation();
@@ -21361,6 +22445,7 @@ function createPremiumCustomDropdown(selectId) {
     updateBtnLabel();
   });
   optionObserver.observe(select, { childList: true });
+  select._premiumOptionObserver = optionObserver;
 
   // Hook value setters to auto-update custom UI when value changes programmatically
   try {
@@ -21383,10 +22468,29 @@ function createPremiumCustomDropdown(selectId) {
   }
 
   // Guardar estado de visibilidad ANTES de que nosotros pongamos display:none
-  const wasOriginallyHidden =
-    select.style.display === "none" ||
-    select.classList.contains("hidden") ||
-    getComputedStyle(select).display === "none";
+  let wasOriginallyHidden = false;
+  const isCustomHidden = select.classList.contains("premium-custom-hidden-select");
+  const selfHidden = select.classList.contains("hidden") || 
+                     (select.style.display === "none" && !isCustomHidden);
+  if (selfHidden) {
+    wasOriginallyHidden = true;
+  } else if (!isCustomHidden) {
+    const computedHidden = getComputedStyle(select).display === "none";
+    if (computedHidden) {
+      let parentHidden = false;
+      let curr = select.parentElement;
+      while (curr && curr !== document.body) {
+        if (curr.style.display === "none" || curr.classList.contains("hidden")) {
+          parentHidden = true;
+          break;
+        }
+        curr = curr.parentElement;
+      }
+      if (!parentHidden) {
+        wasOriginallyHidden = true;
+      }
+    }
+  }
 
   select.classList.add("premium-custom-hidden-select");
   select.style.display = "none";
@@ -21431,6 +22535,7 @@ function createPremiumCustomDropdown(selectId) {
     }
   });
   attrObserver.observe(select, { attributes: true, attributeFilter: ["style", "class", "disabled"] });
+  select._premiumAttrObserver = attrObserver;
 }
 
 function convertAllSelectsToPremium() {
@@ -21440,10 +22545,13 @@ function convertAllSelectsToPremium() {
       select.id !== "chkSinMovimientoCONS" && 
       select.id !== "chkSinMovimientoINF" && 
       !select.id.endsWith("_custom_select") && 
-      !select.classList.contains("premium-custom-hidden-select") &&
       !select.classList.contains("exclude-premium")
     ) {
-      createPremiumCustomDropdown(select);
+      const wrapperId = select.id ? `${select.id}_custom_wrapper` : null;
+      const hasWrapper = wrapperId && document.getElementById(wrapperId);
+      if (!hasWrapper || !select.classList.contains("premium-custom-hidden-select")) {
+        createPremiumCustomDropdown(select);
+      }
     }
   });
 }
@@ -21522,8 +22630,8 @@ function createPremiumCustomDatePicker(inputId) {
   btn.appendChild(iconSpan);
 
   const dropdown = document.createElement("div");
-  dropdown.className = "hidden absolute left-0 mt-1 bg-white border border-slate-200 rounded-[24px] shadow-xl p-3 flex flex-col gap-2 w-[292px]";
-  dropdown.style.cssText = "display: none; z-index: 99999 !important;";
+  dropdown.className = "hidden absolute left-0 mt-1 rounded-2xl bg-white/65 backdrop-blur-xl border border-slate-200/80 shadow-xl transition-all duration-200 z-[99999] p-3 flex flex-col gap-2 w-[292px]";
+  dropdown.style.cssText = "display: none; z-index: 99999 !important; background: rgba(255, 255, 255, 0.65) !important; backdrop-filter: blur(16px) !important; -webkit-backdrop-filter: blur(16px) !important; border: 1px solid rgba(226, 232, 240, 0.8) !important; border-radius: 16px !important; box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.1) !important; padding: 8px !important;";
 
   if (!document.getElementById("premium-datepicker-styles")) {
     const style = document.createElement("style");
@@ -22050,8 +23158,8 @@ function createPremiumCustomMonthPicker(inputId) {
   btn.appendChild(iconSpan);
 
   const dropdown = document.createElement("div");
-  dropdown.className = "hidden absolute left-0 mt-1 bg-white border border-slate-200 rounded-[24px] shadow-xl p-3 flex flex-col gap-2 w-[240px]";
-  dropdown.style.cssText = "display: none; z-index: 99999 !important;";
+  dropdown.className = "hidden absolute left-0 mt-1 rounded-2xl bg-white/65 backdrop-blur-xl border border-slate-200/80 shadow-xl transition-all duration-200 z-[99999] p-3 flex flex-col gap-2 w-[240px]";
+  dropdown.style.cssText = "display: none; z-index: 99999 !important; background: rgba(255, 255, 255, 0.65) !important; backdrop-filter: blur(16px) !important; -webkit-backdrop-filter: blur(16px) !important; border: 1px solid rgba(226, 232, 240, 0.8) !important; border-radius: 16px !important; box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.1) !important; padding: 8px !important;";
 
   const monthNames = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -22325,13 +23433,32 @@ window.addEventListener("load", () => {
     let hasNewSelects = false;
     mutations.forEach(mutation => {
       mutation.addedNodes.forEach(node => {
-        if (node.nodeName === "SELECT") {
-          hasNewSelects = true;
-        } else if (node.querySelectorAll && node.querySelectorAll("select").length > 0) {
-          hasNewSelects = true;
+        if (node.nodeType === 1) {
+          if (node.nodeName === "SELECT") {
+            hasNewSelects = true;
+          } else if (typeof node.querySelectorAll === "function" && node.querySelectorAll("select").length > 0) {
+            hasNewSelects = true;
+          }
         }
       });
     });
+
+    // Detectar si algún select activo en el DOM se quedó sin su wrapper
+    document.querySelectorAll("select").forEach(select => {
+      if (
+        select.id !== "chkSinMovimientoSR" && 
+        select.id !== "chkSinMovimientoCONS" && 
+        select.id !== "chkSinMovimientoINF" && 
+        !select.id.endsWith("_custom_select") && 
+        !select.classList.contains("exclude-premium")
+      ) {
+        const wrapperId = select.id ? `${select.id}_custom_wrapper` : null;
+        if (wrapperId && !document.getElementById(wrapperId)) {
+          hasNewSelects = true;
+        }
+      }
+    });
+
     if (hasNewSelects) {
       convertAllSelectsToPremium();
     }

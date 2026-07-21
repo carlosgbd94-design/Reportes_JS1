@@ -1351,6 +1351,82 @@
         container.appendChild(fragment);
     };
 
+    // --- Pinol Confirm Receipt Flow ---
+    const canConfirmPinolReceipt = (item) => {
+        if (!currentProfile || String(currentProfile.rol || "").toUpperCase() !== "UNIDAD") return false;
+        if (!item || !item.notificacion) return false;
+
+        let meta = {};
+        try {
+            meta = typeof item.notificacion.meta_json === "string" 
+                ? JSON.parse(item.notificacion.meta_json) 
+                : (item.notificacion.meta_json || {});
+        } catch (e) {
+            meta = {};
+        }
+
+        const source = String(meta.source || "").toUpperCase();
+        const event = String(meta.event || "").toUpperCase();
+        const alreadyConfirmed = String(meta.confirmed_by_unit || "").toUpperCase() === "SI";
+        const status = String(item.status || "").toUpperCase();
+
+        return source === "PINOL" &&
+            event === "PINOL_ENTREGADO" &&
+            !alreadyConfirmed &&
+            status !== "READ";
+    };
+
+    const confirmPinolReceiptMobile = async (notificationId) => {
+        try {
+            const { data: notif, error: fetchErr } = await supabaseClient
+                .from('notificaciones')
+                .select('*')
+                .eq('id', notificationId)
+                .single();
+                
+            if (fetchErr || !notif) throw new Error("Notificación no encontrada");
+            
+            const meta = typeof notif.meta_json === "string" 
+                ? JSON.parse(notif.meta_json) 
+                : (notif.meta_json || {});
+            const pinolId = meta.pinol_id;
+            
+            meta.confirmed_by_unit = "SI";
+            meta.confirmation_ts = new Date().toISOString();
+            
+            await supabaseClient
+                .from('notificaciones')
+                .update({ meta_json: JSON.stringify(meta) })
+                .eq('id', notificationId);
+                
+            await supabaseClient
+                .from('notificaciones_perfil')
+                .update({ status: 'READ', read_ts: new Date().toISOString() })
+                .eq('notificacion_id', notificationId)
+                .eq('usuario', currentProfile.usuario);
+                
+            if (pinolId) {
+                await supabaseClient
+                    .from('pinol_solicitudes')
+                    .update({
+                        estatus: 'RECIBIDO',
+                        recibido_ts: new Date().toISOString()
+                    })
+                    .eq('id', pinolId);
+            }
+            
+            showToast("Recepción confirmada correctamente", "success");
+            hasActivePinol = false;
+            
+            await loadNotifications();
+            applyFormLocks();
+            syncCommandHub();
+        } catch (err) {
+            console.error("Error confirming pinol receipt:", err);
+            showToast("Error al confirmar recepción", "error");
+        }
+    };
+
     // --- Notificaciones ---
     const loadNotifications = async () => {
         if (!currentUser || !currentProfile) return;
@@ -1482,6 +1558,13 @@
                 };
 
                 const displayMsg = formatNotifBodyMobile(notif.title, notif.message, notif.from_usuario);
+                const canConfirm = canConfirmPinolReceipt(item);
+                const confirmBtnHtml = canConfirm 
+                    ? `<button class="btn-confirm-pinol-receipt mt-3 w-full py-2.5 px-4 bg-emerald-600 active:bg-emerald-700 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all" data-notif-id="${item.notificacion_id}">
+                         <span class="material-symbols-rounded text-sm">task_alt</span>
+                         <span>Confirmar Recibido</span>
+                       </button>` 
+                    : '';
 
                 return `
                     <div class="swipe-container rounded-2xl mb-3.5 border ${isUnread ? 'border-slate-200/80 shadow-sm' : 'border-transparent'}" data-id="${item.id}">
@@ -1509,12 +1592,24 @@
                                 </div>
                             </div>
                             <div class="leading-normal">${displayMsg}</div>
+                            ${confirmBtnHtml}
                         </div>
                     </div>
                 `;
             }).join('');
 
             bindSwipeEvents();
+
+            // Bind click event to confirm pinol receipt buttons
+            list.querySelectorAll('.btn-confirm-pinol-receipt').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation(); // Avoid triggering card click/swipe
+                    const notifId = btn.dataset.notifId;
+                    btn.disabled = true;
+                    btn.textContent = "Confirmando...";
+                    await confirmPinolReceiptMobile(notifId);
+                });
+            });
         }
     };
 
@@ -2115,6 +2210,12 @@
             hub.classList.add('visible');
             syncCommandHub();
         }
+
+        // Keep local captures state in sync from database to apply locks immediately
+        checkCapturesState().then(() => {
+            applyFormLocks();
+            syncCommandHub();
+        }).catch(err => console.error("Error refreshing captures on panel switch:", err));
     };
 
 
@@ -2378,6 +2479,74 @@
                 if (resSummary.error) throw resSummary.error;
                 if (resDetail.error) throw resDetail.error;
 
+                // --- Generar Alerta de Desabasto en Móvil ---
+                const missingBios = BIOS.filter(b => summaryRecord[b] === 0);
+                if (missingBios.length > 0) {
+                    try {
+                        const BIOS_MAP_MOBILE = {
+                            "bcg": "BCG", "hepatitis_b": "HEPATITIS B", "hexavalente": "HEXAVALENTE",
+                            "dpt": "DPT", "rotavirus": "ROTAVIRUS", "neumococica_13": "NEUMOCÓCICA 13",
+                            "neumococica_20": "NEUMOCÓCICA 20", "srp": "SRP", "sr": "SR",
+                            "vph": "VPH", "varicela": "VARICELA", "hepatitis_a": "HEPATITIS A",
+                            "td": "TD", "tdpa": "TDPA", "covid_19": "COVID-19", "influenza": "INFLUENZA", "vsr": "VSR"
+                        };
+                        const missingNames = missingBios.map(b => BIOS_MAP_MOBILE[b] || b.toUpperCase());
+                        const notifId = 'NOTIF:DESABASTO:' + btoa(cluesFilter + ":" + dataObject.fecha_captura + ":" + Date.now());
+                        const desabastoRecord = {
+                            id: notifId,
+                            type: 'ALERTA_DESABASTO',
+                            created_ts: new Date().toISOString(),
+                            created_date: dataObject.fecha_captura,
+                            from_usuario: currentProfile.usuario || 'SISTEMA',
+                            from_rol: currentProfile.rol || 'SR',
+                            target_scope: 'MUNICIPIO',
+                            target_municipio: muniFilter,
+                            title: '🚨 Desabasto detectado',
+                            message: `La unidad ${currentProfile.unidad || cluesFilter} capturó sin existencias de: ${missingNames.join(', ')}.`,
+                            status: 'UNREAD',
+                            meta_json: JSON.stringify({
+                                clues: cluesFilter,
+                                unidad: currentProfile.unidad || cluesFilter,
+                                municipio: muniFilter,
+                                missing: missingNames,
+                                status: 'activa'
+                            })
+                        };
+                        await supabaseClient.from('notificaciones').insert(desabastoRecord);
+                        
+                        // Fan-out a supervisores municipales y admins
+                        const { data: activeUsers } = await supabaseClient.from('usuarios_legacy').select('usuario, rol, municipios_allowed').eq('activo', 'SI');
+                        const recipients = new Set();
+                        (activeUsers || []).forEach(u => {
+                            const r = String(u.rol || '').toUpperCase();
+                            if (r === 'ADMIN' || r === 'JURISDICCIONAL' || r === 'VISUALIZADOR_JURISDICCIONAL') {
+                                recipients.add(u.usuario);
+                            } else if (r === 'MUNICIPAL') {
+                                let allowed = u.municipios_allowed;
+                                if (typeof allowed === 'string') { try { allowed = JSON.parse(allowed); } catch (e) { allowed = [allowed]; } }
+                                const normAllowed = (Array.isArray(allowed) ? allowed : []).map(m => String(m).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+                                const normMuni = String(muniFilter).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                                if (normAllowed.includes("*") || normAllowed.includes(normMuni)) {
+                                    recipients.add(u.usuario);
+                                }
+                            }
+                        });
+                        recipients.delete(currentProfile.usuario);
+                        const recipientList = Array.from(recipients).filter(Boolean);
+                        if (recipientList.length > 0) {
+                            const fanoutRows = recipientList.map(u => ({
+                                notificacion_id: notifId,
+                                usuario: u,
+                                status: 'UNREAD',
+                                deleted: false
+                            }));
+                            await supabaseClient.from('notificaciones_perfil').upsert(fanoutRows, { onConflict: 'notificacion_id,usuario', ignoreDuplicates: true });
+                        }
+                    } catch (eNotif) {
+                        console.warn("[Mobile] Error creando alerta de desabasto:", eNotif);
+                    }
+                }
+
                 showToast("Reporte guardado con éxito");
                 hasTodaySR = true;
                 isEditingSR = false;
@@ -2455,9 +2624,14 @@
                             return;
                         }
                         const bioKey = String(bioName).trim().toUpperCase();
-                        const requires5 = ["BCG", "HEXAVALENTE", "ROTAVIRUS", "NEUMOCOCICA 13", "NEUMOCOCICA 20", "SRP"].includes(bioKey);
-                        if (field === 'pedido' && requires5 && val % 5 !== 0) {
-                            showToast(`El pedido para ${bioName} debe ser múltiplo de 5 (se ingresó ${val})`, "error");
+                        let multiplo = 1;
+                        if (bioKey === "HEXAVALENTE") {
+                            multiplo = 10;
+                        } else if (["BCG", "ROTAVIRUS", "NEUMOCOCICA 13", "NEUMOCOCICA 20", "SRP"].includes(bioKey)) {
+                            multiplo = 5;
+                        }
+                        if (field === 'pedido' && multiplo > 1 && val > 0 && val % multiplo !== 0) {
+                            showToast(`El pedido para ${bioName} debe ser múltiplo de ${multiplo} (se ingresó ${val})`, "error");
                             hasError = true;
                             return;
                         }

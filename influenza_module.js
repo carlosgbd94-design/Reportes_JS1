@@ -59,6 +59,9 @@ function getISOWeek(date) {
 }
 
 let _campaignConfig = { fecha_inicio: "2025-10-03", fecha_fin: "2026-04-25" };
+let _allCampaigns = [];
+let _activeCampaign = null;
+let _selectedCampaign = null;
 let _uploadedCsvData = null;
 let _conciliacionLastResult = [];
 let _conciliacionFilter = "all"; // all, diff, match
@@ -87,26 +90,128 @@ function deriveCampaignName(startStr, endStr) {
 
 /** Puebla todos los selectores de campaña en el DOM */
 function populateCampaignSelectors() {
-  const name = deriveCampaignName(_campaignConfig.fecha_inicio, _campaignConfig.fecha_fin);
-  const label = `Campaña ${name}`;
-  const html  = `<option value="${name}">${label}</option>`;
+  const infCampanas = _allCampaigns.filter(c => c.nombre && c.nombre.startsWith("Campaña Influenza"));
+  
+  let html = "";
+  if (infCampanas.length > 0) {
+    html = infCampanas.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join("");
+  } else {
+    const name = deriveCampaignName(_campaignConfig.fecha_inicio, _campaignConfig.fecha_fin);
+    html = `<option value="Campaña Influenza ${name}">Campaña Influenza ${name}</option>`;
+  }
 
   ["influenza_campana", "metaCampaignSelect"].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
       el.innerHTML = html;
-      el.value = name;
-      el.dispatchEvent(new Event("change"));
+      if (_selectedCampaign) {
+        el.value = _selectedCampaign.nombre;
+      }
+      
+      // Si el wrapper premium ya existe, actualizarlo sin recrearlo (evita el bug de display:none
+      // cuando el contenedor padre aún está oculto al momento del rebuild)
+      const existingWrapper = document.getElementById(`${id}_custom_wrapper`);
+      if (existingWrapper) {
+        // Forzar visibilidad del wrapper y actualizar el label del botón
+        existingWrapper.style.removeProperty("display");
+        existingWrapper.style.display = "inline-block";
+        const btn = existingWrapper.querySelector("button > span.truncate");
+        if (btn && el.options[el.selectedIndex]) {
+          btn.textContent = el.options[el.selectedIndex].text;
+        }
+        // Actualizar opciones en el panel desplegable
+        const optPanel = existingWrapper.querySelector("div");
+        if (optPanel) {
+          optPanel.innerHTML = "";
+          Array.from(el.options).forEach(opt => {
+            const item = document.createElement("button");
+            item.type = "button";
+            item.dataset.value = opt.value;
+            item.className = "w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 rounded-full hover:bg-slate-100 transition-colors duration-150" + (opt.value === el.value ? " bg-violet-50 text-violet-700" : "");
+            item.textContent = opt.text;
+            item.onclick = () => {
+              el.value = opt.value;
+              el.dispatchEvent(new Event("change", { bubbles: true }));
+              optPanel.classList.add("hidden");
+              optPanel.style.display = "none";
+            };
+            optPanel.appendChild(item);
+          });
+        }
+      } else if (window.createPremiumCustomDropdown) {
+        // Solo crear desde cero si no existe el wrapper
+        window.createPremiumCustomDropdown(el);
+      }
     }
   });
 
   // Actualizar badge/eyebrow si existe
   const badge = document.getElementById("influenzaCampaignBadge");
-  if (badge) badge.textContent = label;
+  if (badge) {
+    badge.textContent = _selectedCampaign ? _selectedCampaign.nombre : `Campaña Influenza ${deriveCampaignName(_campaignConfig.fecha_inicio, _campaignConfig.fecha_fin)}`;
+  }
 
   // Generar dinámicamente los meses de conciliación basados en la campaña activa y sus fechas variables
   populateConciliacionMonths();
 }
+
+async function selectCampaignByName(name) {
+  const found = _allCampaigns.find(c => c.nombre === name);
+  if (!found) return;
+
+  _selectedCampaign = found;
+  _campaignConfig.fecha_inicio = found.fecha_inicio;
+  _campaignConfig.fecha_fin = found.fecha_fin;
+
+  // Sincronizar el valor de ambos selectores si existen
+  ["influenza_campana", "metaCampaignSelect"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.value !== name) {
+      el.value = name;
+      // Solo actualizar el label del wrapper premium si ya existe — no recrearlo
+      const wrapper = document.getElementById(`${id}_custom_wrapper`);
+      if (wrapper) {
+        const labelSpan = wrapper.querySelector("button > span.truncate");
+        if (labelSpan) labelSpan.textContent = name;
+      }
+    }
+  });
+
+  const badge = document.getElementById("influenzaCampaignBadge");
+  if (badge) badge.textContent = found.nombre;
+
+  populateConciliacionMonths();
+}
+
+async function handleInfluenzaCampanaChange(e) {
+  await selectCampaignByName(e.target.value);
+  await loadInfluenzaUnitData();
+
+  const weeks = generateCampaignWeeks();
+  const weekSelect = document.getElementById("influenza_semana");
+  if (weekSelect && weeks.length) {
+    const today = new Date().toISOString().split("T")[0];
+    const matchingWeek = weeks.find(w => w.fecha >= today);
+    if (matchingWeek) {
+      weekSelect.value = matchingWeek.fecha;
+    } else {
+      weekSelect.value = weeks[weeks.length - 1].fecha;
+    }
+    updateInfluenzaWeekBtnLabel(weekSelect.value);
+    updateInfluenzaSinMovimientoUI();
+  }
+
+  renderCaptureGrid();
+  loadInfluenzaHistoryList();
+}
+
+async function handleMetaCampaignSelectChange(e) {
+  await selectCampaignByName(e.target.value);
+  await loadInfluenzaAdminData();
+  await populateInfluenzaAdminFilters();
+  renderActiveAdminSection();
+}
+
 
 function populateConciliacionMonths() {
   const conciliacionMesSelect = document.getElementById("conciliacionMes");
@@ -142,10 +247,29 @@ function populateConciliacionMonths() {
 
 async function loadCampaignConfig() {
   try {
-    const resConfig = await AppService.call("getinfluenza_config", {});
-    if (resConfig && resConfig.data) {
-      _campaignConfig.fecha_inicio = resConfig.data.fecha_inicio;
-      _campaignConfig.fecha_fin    = resConfig.data.fecha_fin;
+    const { data, error } = await window.supabase
+      .from("campanas")
+      .select("*")
+      .order("fecha_inicio", { ascending: false });
+
+    if (error) throw error;
+
+    _allCampaigns = data || [];
+    const infCampanas = _allCampaigns.filter(c => c.nombre && c.nombre.startsWith("Campaña Influenza"));
+    
+    _activeCampaign = infCampanas.find(c => c.activo) || _allCampaigns.find(c => c.activo) || infCampanas[0] || _allCampaigns[0] || null;
+
+    if (_activeCampaign) {
+      _campaignConfig.fecha_inicio = _activeCampaign.fecha_inicio;
+      _campaignConfig.fecha_fin    = _activeCampaign.fecha_fin;
+      if (!_selectedCampaign) {
+        _selectedCampaign = _activeCampaign;
+      }
+    }
+    
+    if (_selectedCampaign) {
+      _campaignConfig.fecha_inicio = _selectedCampaign.fecha_inicio;
+      _campaignConfig.fecha_fin    = _selectedCampaign.fecha_fin;
     }
   } catch (err) {
     console.error("Error al cargar configuración de campaña:", err);
@@ -401,6 +525,12 @@ async function initInfluenzaCaptureFlow() {
   
   await loadCampaignConfig();
   
+  const campanaSelect = document.getElementById("influenza_campana");
+  if (campanaSelect) {
+    campanaSelect.removeEventListener("change", handleInfluenzaCampanaChange);
+    campanaSelect.addEventListener("change", handleInfluenzaCampanaChange);
+  }
+  
   // Enlazar pestañas de Unidad
   const unitTabs = ["subtabUnitCaptura", "subtabUnitHistorico"];
   unitTabs.forEach(t => {
@@ -425,12 +555,33 @@ async function initInfluenzaCaptureFlow() {
     }
   });
   
-  // Inicializar indicador
+  // Activar pestaña por defecto (Captura de Reporte)
+  document.getElementById("subtabUnitCaptura")?.click();
+  
+  // Forzar visibilidad del wrapper del selector de campaña DESPUÉS de que el panel sea visible.
+  // Esto corrige el bug donde createPremiumCustomDropdown se llamó mientras secUnitCaptura
+  // aún tenía display:none, lo que causaba que wasOriginallyHidden = true y el wrapper
+  // quedaba oculto con display:none !important de forma permanente.
   setTimeout(() => {
+    ["influenza_campana", "metaCampaignSelect"].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const wrapper = document.getElementById(`${id}_custom_wrapper`);
+      if (wrapper) {
+        // Forzar el wrapper a visible (anula cualquier display:none !important puesto durante init)
+        wrapper.style.setProperty("display", "inline-block", "important");
+        if (el._premiumHiddenBySelf !== false) {
+          el._premiumHiddenBySelf = true;
+        }
+      } else if (window.createPremiumCustomDropdown) {
+        // Si no existe aún (raro), crearlo ahora que el panel es visible
+        window.createPremiumCustomDropdown(el);
+      }
+    });
     if (typeof syncTabGroupIndicator === 'function') {
       syncTabGroupIndicator('#influenzaUnitTabsContainer');
     }
-  }, 150);
+  }, 100);
 
   const weeks = generateCampaignWeeks();
   const weekSelect = document.getElementById("influenza_semana");
@@ -1056,6 +1207,12 @@ async function refreshInfluenzaAdminPanel() {
   // Cargar configuración de fechas
   await loadCampaignConfig();
 
+  const metaCampSelect = document.getElementById("metaCampaignSelect");
+  if (metaCampSelect) {
+    metaCampSelect.removeEventListener("change", handleMetaCampaignSelectChange);
+    metaCampSelect.addEventListener("change", handleMetaCampaignSelectChange);
+  }
+
   // Cargar metas de la campaña y catálogo de unidades
   await loadInfluenzaAdminData();
 
@@ -1559,6 +1716,26 @@ function renderAvancesAndConcentrados() {
     };
   }
 
+  // Lógica de toggle para el dropdown de exportación
+  const trigger = document.getElementById("btnExportInfluenzaDropdownTrigger");
+  const menu = document.getElementById("exportInfluenzaMenu");
+  if (trigger && menu) {
+    trigger.onclick = (e) => {
+      e.stopPropagation();
+      menu.classList.toggle("hidden");
+    };
+    
+    // Cerrar al hacer clic fuera
+    if (!window._exportDropdownOutsideClickListener) {
+      window._exportDropdownOutsideClickListener = (e) => {
+        if (!trigger.contains(e.target) && !menu.contains(e.target)) {
+          menu.classList.add("hidden");
+        }
+      };
+      document.addEventListener("click", window._exportDropdownOutsideClickListener);
+    }
+  }
+
   if (muniFrascosBox) muniFrascosBox.style.setProperty("display", "block", "important");
   if (muniTableContainer) muniTableContainer.style.setProperty("display", "flex", "important");
 
@@ -1590,10 +1767,38 @@ function renderAvancesAndConcentrados() {
   const dif = totalFrascosEntregados - frascosAplicadosRange;
 
   muniFrascosBox.innerHTML = `
-    <div class="text-sm font-extrabold text-violet-900 mb-2">Resumen Municipal: ${muni} (Semanas del ${minFecha} al ${maxFecha})</div>
-    <div>Dosis aplicadas en este rango en el municipio: <b>${totalDosesRange.toLocaleString('es-MX')} dosis</b> (${frascosAplicadosRange} frascos).</div>
-    <div>Total de frascos entregados acumulado: <b>${totalFrascosEntregados} frascos</b> (${totalFrascosEntregados * 10} dosis).</div>
-    <div class="mt-1">Diferencia (Frascos estimados en resguardo en el municipio): <b>${dif} frascos</b>.</div>
+    <div class="text-xs font-black text-violet-950 uppercase tracking-widest mb-3 mt-6 ml-1">Resumen Municipal: ${muni} (Semanas del ${minFecha} al ${maxFecha})</div>
+    <div class="dashboardKpis w-full" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;">
+      <!-- KPI 1: Dosis Aplicadas -->
+      <div class="kpiCard" style="border-left-color: #6366f1 !important; background-color: #f5f3ff !important; --kpi-color: #6366f1; --kpi-bg: #e0e7ff;">
+        <div class="kpiHeader">
+          <div class="kpiCardLabel" style="color: #4f46e5;">Dosis Aplicadas</div>
+          <div class="kpiIcon"><span class="material-symbols-rounded">vaccines</span></div>
+        </div>
+        <div class="kpiCardValue" style="color: #312e81;">${totalDosesRange.toLocaleString('es-MX')}</div>
+        <div style="font-size: 10px; font-weight: 800; color: #6366f1; text-transform: uppercase; margin-top: 6px;">${frascosAplicadosRange.toLocaleString('es-MX')} frascos equiv.</div>
+      </div>
+      
+      <!-- KPI 2: Frascos Entregados -->
+      <div class="kpiCard" style="border-left-color: #a855f7 !important; background-color: #faf5ff !important; --kpi-color: #a855f7; --kpi-bg: #f3e8ff;">
+        <div class="kpiHeader">
+          <div class="kpiCardLabel" style="color: #9333ea;">Frascos Entregados</div>
+          <div class="kpiIcon"><span class="material-symbols-rounded">inventory_2</span></div>
+        </div>
+        <div class="kpiCardValue" style="color: #581c87;">${totalFrascosEntregados.toLocaleString('es-MX')}</div>
+        <div style="font-size: 10px; font-weight: 800; color: #a855f7; text-transform: uppercase; margin-top: 6px;">${(totalFrascosEntregados * 10).toLocaleString('es-MX')} dosis equiv.</div>
+      </div>
+
+      <!-- KPI 3: Estimado en Resguardo -->
+      <div class="kpiCard" style="border-left-color: #ec4899 !important; background-color: #fdf2f8 !important; --kpi-color: #ec4899; --kpi-bg: #fce7f3;">
+        <div class="kpiHeader">
+          <div class="kpiCardLabel" style="color: #db2777;">Diferencia en Resguardo</div>
+          <div class="kpiIcon"><span class="material-symbols-rounded">hourglass_empty</span></div>
+        </div>
+        <div class="kpiCardValue" style="color: #831843;">${dif.toLocaleString('es-MX')}</div>
+        <div style="font-size: 10px; font-weight: 800; color: #ec4899; text-transform: uppercase; margin-top: 6px;">${(dif * 10).toLocaleString('es-MX')} dosis equiv.</div>
+      </div>
+    </div>
   `;
 
   // Renderizar desglose de unidades
@@ -1646,10 +1851,19 @@ function renderAvancesAndConcentrados() {
 
 function updateInfluenzaDashboardVisuals(muni, minFecha, maxFecha) {
   const projCard = document.getElementById("influenzaProjectionCard");
-  const chartsContainer = document.getElementById("influenzaChartsContainer");
+  const topGrid = document.getElementById("influenzaTopGrid");
+  const trendContainer = document.getElementById("influenzaTrendContainer");
   
-  if (projCard) projCard.classList.remove("hidden");
-  if (chartsContainer) chartsContainer.classList.remove("hidden");
+  if (topGrid) {
+    topGrid.classList.remove("hidden");
+    topGrid.style.setProperty("display", "grid", "important");
+    topGrid.style.setProperty("grid-template-columns", "1fr 1fr", "important");
+    topGrid.style.setProperty("gap", "24px", "important");
+  }
+  if (trendContainer) {
+    trendContainer.classList.remove("hidden");
+    trendContainer.style.setProperty("display", "block", "important");
+  }
   
   const campaignWeeks = generateCampaignWeeks();
   const weeksSorted = campaignWeeks.map(w => w.fecha).sort();
@@ -1712,31 +1926,31 @@ function updateInfluenzaDashboardVisuals(muni, minFecha, maxFecha) {
 
   if (projCard) {
     projCard.innerHTML = `
-      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-violet-100 pb-4">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-violet-100 pb-3">
         <div>
           <div class="text-[10px] font-black text-violet-600 uppercase tracking-widest">Predicción y Proyecciones de Cierre</div>
-          <h3 class="text-sm font-black text-slate-800 mt-1">Análisis de Cumplimiento Municipal: ${muni}</h3>
+          <h3 class="text-xs font-black text-slate-800 mt-1">Análisis de Cumplimiento Municipal: ${muni}</h3>
         </div>
-        <span class="px-4 py-1.5 rounded-full text-[10px] font-black border ${statusBadgeClass} transition-all">${statusText}</span>
+        <span class="px-3 py-1 rounded-full text-[9px] font-black border ${statusBadgeClass} transition-all">${statusText}</span>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
-        <div class="bg-white/60 p-4 rounded-xl border border-slate-100">
-          <div class="text-[9px] font-bold text-slate-400 uppercase">Velocidad Promedio</div>
-          <div class="text-base font-extrabold text-violet-950 mt-1">${Math.round(velocity).toLocaleString('es-MX')} <span class="text-xs font-bold text-slate-500">dosis/sem</span></div>
-          <div class="text-[10px] text-slate-500 mt-1">Semanas transcurridas: ${currentWeekIndex} de ${totalWeeks}</div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 flex-grow">
+        <div class="bg-white/60 p-3 rounded-xl border border-slate-100 flex flex-col justify-between">
+          <div class="text-[9px] font-bold text-slate-450 uppercase leading-none">Velocidad Promedio</div>
+          <div class="text-base font-extrabold text-violet-950 mt-1.5 leading-none">${Math.round(velocity).toLocaleString('es-MX')} <span class="text-xs font-bold text-slate-500">d/sem</span></div>
+          <div class="text-[10px] text-slate-500 mt-1.5 leading-none">Semanas: ${currentWeekIndex} de ${totalWeeks}</div>
         </div>
-        <div class="bg-white/60 p-4 rounded-xl border border-slate-100">
-          <div class="text-[9px] font-bold text-slate-400 uppercase">Meta Asignada</div>
-          <div class="text-base font-extrabold text-slate-700 mt-1">${municipalMetaTotal.toLocaleString('es-MX')} <span class="text-xs font-bold text-slate-500">dosis</span></div>
-          <div class="text-[10px] text-slate-500 mt-1">Avance real: ${accumulatedUpToMax.toLocaleString('es-MX')} (${municipalMetaTotal > 0 ? Math.round(accumulatedUpToMax / municipalMetaTotal * 100) : 0}%)</div>
+        <div class="bg-white/60 p-3 rounded-xl border border-slate-100 flex flex-col justify-between">
+          <div class="text-[9px] font-bold text-slate-450 uppercase leading-none">Meta Asignada</div>
+          <div class="text-base font-extrabold text-slate-700 mt-1.5 leading-none">${municipalMetaTotal.toLocaleString('es-MX')} <span class="text-xs font-bold text-slate-500">dosis</span></div>
+          <div class="text-[10px] text-slate-500 mt-1.5 leading-none">Avance: ${accumulatedUpToMax.toLocaleString('es-MX')} (${municipalMetaTotal > 0 ? Math.round(accumulatedUpToMax / municipalMetaTotal * 100) : 0}%)</div>
         </div>
-        <div class="bg-white/60 p-4 rounded-xl border border-slate-100">
-          <div class="text-[9px] font-bold text-slate-400 uppercase">Proyección de Cierre</div>
-          <div class="text-base font-extrabold text-slate-800 mt-1">${projectedEndValue.toLocaleString('es-MX')} <span class="text-xs font-bold text-slate-500">dosis</span></div>
-          <div class="text-[10px] text-slate-500 mt-1">Cumplimiento estimado: <b>${projectedPct}%</b></div>
+        <div class="bg-white/60 p-3 rounded-xl border border-slate-100 flex flex-col justify-between">
+          <div class="text-[9px] font-bold text-slate-450 uppercase leading-none">Proyección de Cierre</div>
+          <div class="text-base font-extrabold text-slate-800 mt-1.5 leading-none">${projectedEndValue.toLocaleString('es-MX')} <span class="text-xs font-bold text-slate-500">dosis</span></div>
+          <div class="text-[10px] text-slate-500 mt-1.5 leading-none">Cumplimiento: <b>${projectedPct}%</b></div>
         </div>
-        <div class="bg-white/60 p-4 rounded-xl border border-slate-100 md:col-span-1 flex flex-col justify-center">
-          <div class="text-[11px] font-semibold text-slate-600 leading-relaxed">${statusDesc}</div>
+        <div class="bg-white/60 p-3 rounded-xl border border-slate-100 flex flex-col justify-center">
+          <div class="text-[10px] font-semibold text-slate-650 leading-relaxed">${statusDesc}</div>
         </div>
       </div>
     `;
@@ -1834,23 +2048,113 @@ function updateInfluenzaDashboardVisuals(muni, minFecha, maxFecha) {
       { value: comorbidities, name: 'Comorbilidades' }
     ].filter(item => item.value > 0);
 
+    const totalDoses = pieData.reduce((sum, item) => sum + item.value, 0);
+    const hasData = totalDoses > 0;
+
     const option = {
-      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-      legend: { bottom: 0, textStyle: { fontSize: 8, fontWeight: 'bold' } },
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b}: <b>{c}</b> ({d}%)',
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderColor: '#e2e8f0',
+        borderWidth: 1,
+        textStyle: { color: '#334155', fontSize: 11, fontWeight: 'bold' },
+        shadowColor: 'rgba(0,0,0,0.05)',
+        shadowBlur: 10
+      },
+      legend: {
+        bottom: 0,
+        itemWidth: 12,
+        itemHeight: 12,
+        itemGap: 12,
+        textStyle: { fontSize: 9, fontWeight: 'bold', color: '#64748b' }
+      },
       series: [
         {
           name: 'Población',
           type: 'pie',
-          radius: ['40%', '70%'],
+          radius: ['52%', '72%'],
           avoidLabelOverlap: false,
-          itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
-          label: { show: false, position: 'center' },
+          itemStyle: {
+            borderRadius: 8,
+            borderColor: '#fff',
+            borderWidth: 2,
+            shadowColor: 'rgba(0, 0, 0, 0.04)',
+            shadowBlur: 8
+          },
+          label: {
+            show: hasData,
+            position: 'center',
+            formatter: '{total|' + totalDoses.toLocaleString('es-MX') + '}\n{label|dosis}',
+            rich: {
+              total: {
+                fontSize: 16,
+                fontWeight: '900',
+                color: '#1e1b4b',
+                lineHeight: 22
+              },
+              label: {
+                fontSize: 9,
+                color: '#94a3b8',
+                fontWeight: 'bold',
+                textTransform: 'uppercase'
+              }
+            }
+          },
           emphasis: {
-            label: { show: true, fontSize: 10, fontWeight: 'bold' }
+            itemStyle: {
+              shadowBlur: 12,
+              shadowOffsetX: 0,
+              shadowColor: 'rgba(0, 0, 0, 0.08)'
+            }
           },
           labelLine: { show: false },
-          color: ['#6d28d9', '#8b5cf6', '#a78bfa', '#f59e0b', '#10b981'],
-          data: pieData.length > 0 ? pieData : [{ value: 1, name: 'Sin datos' }]
+          color: [
+            new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#8b5cf6' },
+              { offset: 1, color: '#6d28d9' }
+            ]),
+            new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#14b8a6' },
+              { offset: 1, color: '#0d9488' }
+            ]),
+            new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#ec4899' },
+              { offset: 1, color: '#db2777' }
+            ]),
+            new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#f59e0b' },
+              { offset: 1, color: '#d97706' }
+            ]),
+            new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: '#6366f1' },
+              { offset: 1, color: '#4f46e5' }
+            ])
+          ],
+          data: hasData ? pieData : [{
+            value: 1,
+            name: 'Sin datos',
+            itemStyle: { color: '#fbcfe8', borderRadius: 8 },
+            label: {
+              show: true,
+              position: 'center',
+              formatter: '{total|Sin Datos}\n{label|campaña}',
+              rich: {
+                total: {
+                  fontSize: 16,
+                  fontWeight: '900',
+                  color: '#db2777',
+                  lineHeight: 22
+                },
+                label: {
+                  fontSize: 9,
+                  color: '#f472b6',
+                  fontWeight: 'bold',
+                  textTransform: 'uppercase'
+                }
+              }
+            }
+          }]
         }
       ]
     };
@@ -4229,16 +4533,133 @@ async function renderInfluenzaIndicatorsDashboard(muniFilter, uniFilter) {
   `;
 }
 
+let _editingCampaignId = null;
+
+function renderInfluenzaCampanasTable() {
+  const tbody = document.getElementById("influenzaCampanasTableBody");
+  if (!tbody) return;
+
+  const infCampanas = _allCampaigns.filter(c => c.nombre && c.nombre.startsWith("Campaña Influenza"));
+  if (infCampanas.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-400">No hay campañas registradas.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = infCampanas.map(c => {
+    const statusBadge = c.activo 
+      ? '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">Activo</span>'
+      : '<span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-500 border border-slate-200">Inactivo</span>';
+
+    const actBtn = c.activo
+      ? `<button class="opacity-50 cursor-not-allowed text-[10px] font-black text-slate-400 px-3 py-1.5 rounded-full border border-slate-200" disabled>Activa</button>`
+      : `<button onclick="window.activateInfluenzaCampaign('${c.id}')" class="text-[10px] font-black text-violet-700 hover:bg-violet-50 transition-colors px-3 py-1.5 rounded-full border border-violet-200 shadow-sm flex items-center gap-1">
+           <span class="material-symbols-rounded text-xs" style="font-size:12px;">check</span> Activar
+         </button>`;
+
+    const editBtn = `<button onclick="window.startEditInfluenzaCampaign('${c.id}')" class="text-[10px] font-black text-slate-700 hover:bg-slate-100 transition-colors px-3 py-1.5 rounded-full border border-slate-300 shadow-sm flex items-center gap-1">
+                       <span class="material-symbols-rounded text-xs" style="font-size:12px;">edit</span> Editar
+                     </button>`;
+
+    return `
+      <tr class="border-b border-slate-100 hover:bg-violet-50/10 transition-colors duration-150">
+        <td class="p-3 font-bold text-slate-700">${c.nombre}</td>
+        <td class="p-3 text-center font-semibold text-slate-600">${c.fecha_inicio}</td>
+        <td class="p-3 text-center font-semibold text-slate-600">${c.fecha_fin}</td>
+        <td class="p-3 text-center">${statusBadge}</td>
+        <td class="p-3 text-right">
+          <div class="inline-flex gap-2 justify-end">
+            ${editBtn}
+            ${actBtn}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+window.startEditInfluenzaCampaign = (id) => {
+  const c = _allCampaigns.find(x => x.id === id);
+  if (!c) return;
+
+  _editingCampaignId = c.id;
+  
+  const startInput = document.getElementById("configFechaInicio");
+  const endInput = document.getElementById("configFechaFin");
+  const formTitle = document.getElementById("influenzaConfigFormTitle");
+  const cancelBtn = document.getElementById("btnCancelInfluenzaConfigEdit");
+
+  if (startInput) startInput.value = c.fecha_inicio;
+  if (endInput) endInput.value = c.fecha_fin;
+  if (formTitle) formTitle.textContent = `Editando ${c.nombre}`;
+  if (cancelBtn) cancelBtn.classList.remove("hidden");
+};
+
+window.cancelEditInfluenzaCampaign = () => {
+  _editingCampaignId = null;
+  
+  const startInput = document.getElementById("configFechaInicio");
+  const endInput = document.getElementById("configFechaFin");
+  const formTitle = document.getElementById("influenzaConfigFormTitle");
+  const cancelBtn = document.getElementById("btnCancelInfluenzaConfigEdit");
+
+  if (startInput) startInput.value = _campaignConfig.fecha_inicio || "";
+  if (endInput) endInput.value = _campaignConfig.fecha_fin || "";
+  if (formTitle) formTitle.textContent = "Establecer Fechas de la Temporada";
+  if (cancelBtn) cancelBtn.classList.add("hidden");
+};
+
+window.activateInfluenzaCampaign = async (id) => {
+  const c = _allCampaigns.find(x => x.id === id);
+  if (!c) return;
+
+  await AppService.runCapture({
+    btnId: "btnSaveInfluenzaConfig",
+    title: "Activando Campaña",
+    msg: `Estableciendo ${c.nombre} como la campaña activa de Influenza...`,
+    successMsg: `Campaña ${c.nombre} activada correctamente`,
+    eventTitle: "Influenza",
+    eventMsg: `Activación de campaña ${c.nombre}`,
+    action: async () => {
+      const res = await AppService.call("saveinfluenza_config", {
+        id: c.id,
+        fecha_inicio: c.fecha_inicio,
+        fecha_fin: c.fecha_fin,
+        activo: true
+      });
+
+      await loadCampaignConfig();
+      await loadInfluenzaAdminData();
+      await populateInfluenzaAdminFilters();
+      renderActiveAdminSection();
+      renderCampaignConfigScreen();
+      return res;
+    }
+  });
+};
+
 function renderCampaignConfigScreen() {
   const startInput = document.getElementById("configFechaInicio");
   const endInput = document.getElementById("configFechaFin");
   const saveBtn = document.getElementById("btnSaveInfluenzaConfig");
+  const cancelBtn = document.getElementById("btnCancelInfluenzaConfigEdit");
 
   if (!startInput || !endInput || !saveBtn) return;
 
-  // Cargar valores actuales en los inputs
-  startInput.value = _campaignConfig.fecha_inicio || "";
-  endInput.value = _campaignConfig.fecha_fin || "";
+  // Cargar valores iniciales en los inputs si no estamos editando
+  if (!_editingCampaignId) {
+    startInput.value = _campaignConfig.fecha_inicio || "";
+    endInput.value = _campaignConfig.fecha_fin || "";
+  }
+
+  // Renderizar la tabla de campañas
+  renderInfluenzaCampanasTable();
+
+  // Enlazar botón cancelar
+  if (cancelBtn) {
+    cancelBtn.onclick = () => {
+      window.cancelEditInfluenzaCampaign();
+    };
+  }
 
   saveBtn.onclick = async () => {
     const startVal = startInput.value;
@@ -4254,24 +4675,51 @@ function renderCampaignConfigScreen() {
       return;
     }
 
+    const modeText = _editingCampaignId ? "Guardando cambios" : "Creando nueva campaña";
+    const modeMsg = _editingCampaignId 
+      ? "Actualizando fechas de la campaña seleccionada..."
+      : "Creando y registrando nueva campaña de Influenza...";
+
     await AppService.runCapture({
       btnId: "btnSaveInfluenzaConfig",
-      title: "Guardando configuración",
-      msg: "Actualizando fechas oficiales de la campaña de Influenza...",
+      title: modeText,
+      msg: modeMsg,
       successMsg: "Fechas de campaña guardadas correctamente",
       eventTitle: "Influenza",
-      eventMsg: "Actualización de fechas oficiales de campaña",
+      eventMsg: "Guardado de fechas oficiales de campaña",
       action: async () => {
+        let isActivo = false;
+        if (_editingCampaignId) {
+          const original = _allCampaigns.find(x => x.id === _editingCampaignId);
+          if (original && original.activo) {
+            isActivo = true;
+          }
+        } else {
+          const activeCamp = _allCampaigns.find(x => x.activo);
+          if (!activeCamp) {
+            isActivo = true;
+          }
+        }
+
         const res = await AppService.call("saveinfluenza_config", {
+          id: _editingCampaignId,
           fecha_inicio: startVal,
-          fecha_fin: endVal
+          fecha_fin: endVal,
+          activo: isActivo
         });
 
-        // Actualizar configuración en memoria y recrear las semanas
+        // Limpiar modo edición
+        _editingCampaignId = null;
+        if (cancelBtn) cancelBtn.classList.add("hidden");
+        const formTitle = document.getElementById("influenzaConfigFormTitle");
+        if (formTitle) formTitle.textContent = "Establecer Fechas de la Temporada";
+
         await loadCampaignConfig();
-        
-        // Repoblar los filtros y vistas
+        await loadInfluenzaAdminData();
         await populateInfluenzaAdminFilters();
+        
+        renderActiveAdminSection();
+        renderCampaignConfigScreen();
         
         return res;
       }
