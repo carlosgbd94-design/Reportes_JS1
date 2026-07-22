@@ -5199,7 +5199,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
           if (u) finalMuni = u.municipio;
         }
 
-        const items = payload.items || [];
+        const isEditedByHigherRole = ["ADMIN", "JURISDICCIONAL", "MUNICIPAL", "ESTATAL"].includes((USER.rol || "").toUpperCase());
         const records = items.map(it => ({
           id: btoa(finalClues + ":" + it.biologico + ":" + Date.now()),
           timestamp: new Date().toISOString(),
@@ -5216,10 +5216,14 @@ async function supabaseRequest(action = "", payload, options = {}) {
           pedido_frascos: Number(it.pedido_frascos || 0),
           tipo_pedido: payload.tipo_pedido || "MENSUAL",
           sin_pedido: payload.sin_pedido || false,
-          capturado_por: String(payload.nombre || USER.nombre || USER.usuario || "").toUpperCase()
+          capturado_por: String(payload.nombre || USER.nombre || USER.usuario || "").toUpperCase(),
+          editado: isEditedByHigherRole ? "SI" : "NO",
+          editado_por: isEditedByHigherRole ? String(USER.rol || "").toUpperCase() : null,
+          editado_nombre: isEditedByHigherRole ? String(USER.nombre || USER.usuario || "").toUpperCase() : null,
+          editado_ts: isEditedByHigherRole ? new Date().toISOString() : null
         }));
 
-        console.log("[Capture Logic] Preparando guardado de BIO para:", { clues: finalClues, fecha: payload.fecha || todayYmdLocal() });
+        console.log("[Capture Logic] Preparando guardado de BIO para:", { clues: finalClues, fecha: payload.fecha || todayYmdLocal(), editado_por: USER.rol });
 
         // PURGAR PREVIAMENTE PARA EVITAR DUPLICADOS AL EDITAR (Incluyendo Legacy)
         let deleteQuery = supabase.from('biologicos_pedido').delete().eq('clues', finalClues);
@@ -12344,12 +12348,16 @@ function renderCaptureSummary(data) {
       return cluesA.localeCompare(cluesB);
     });
     tbodyCap.innerHTML = sortedList.map(r => {
-      // Determinar estado visual: verde (OK), azul (sin pedido BIO), ámbar (con ceros SR), violeta (Influenza)
+      // Determinar estado visual: verde (OK), azul (sin pedido BIO), ámbar (editado/con ceros SR), violeta (Influenza)
       let iconColor = '#22c55e'; // Verde: capturado normal
-      let iconTitle = r.editado === 'SI' ? 'Editado' : 'Capturado';
+      let iconTitle = r.editado === 'SI' || r.editado_por ? `Editado por ${r.editado_por || 'JURISDICCIÓN'}` : 'Capturado';
       let extraTag = '';
 
-      if (r.sin_pedido) {
+      if (r.editado === 'SI' || r.editado_por) {
+        iconColor = '#f59e0b'; // Ámbar / Naranja: Pedido Editado por Jurisdicción o Municipio
+        iconTitle = `Pedido Editado por ${r.editado_por || 'JURISDICCIÓN'}`;
+        extraTag = `<span class="opacity-90 font-black uppercase text-[10px] tracking-tighter" style="background:#fffbeb; color:#b45309; border:1px solid #fde68a; padding:2px 8px; border-radius:12px; margin-left:6px; display:inline-flex; align-items:center; gap:3px;">✍️ EDITADO POR ${escapeHtml(r.editado_por || 'JURISDICCIÓN')}</span>`;
+      } else if (r.sin_pedido) {
         iconColor = '#3b82f6'; // Azul: sin pedido biológico
         iconTitle = 'Sin pedido de biológico (Solo Existencias)';
       } else if (r.tiene_ceros) {
@@ -18192,6 +18200,40 @@ async function handleFileUploadFlow() {
   }
 }
 
+// ✅ CÓDIGOS DE COLOR HEXADECIMALES DEDICADOS POR BIOLÓGICO
+window.BIOLOGICO_COLORS = {
+  "BCG": "#0284c7",              // Azul Ciano brillante
+  "HEXAVALENTE": "#7c3aed",      // Violeta Institucional
+  "HEXAVALENTE 13": "#7c3aed",
+  "NEUMOCOCICA 13": "#2563eb",   // Azul Real
+  "NEUMOCOCICA 13 VALENTE": "#2563eb",
+  "NEUMOCOCICA": "#2563eb",
+  "ROTAVIRUS": "#ea580c",         // Naranja Ámbar
+  "DPT": "#d97706",               // Ámbar Cálido
+  "TDPA": "#b45309",              // Bronce
+  "TD": "#475569",                // Gris Grafito
+  "SR": "#059669",                // Esmeralda
+  "SRP": "#10b981",               // Verde Brillante
+  "COVID-19": "#dc2626",          // Rojo Carmesí
+  "COVID 19": "#dc2626",
+  "HEPATITIS A": "#db2777",       // Rosa Magenta
+  "HEPATITIS B": "#e11d48",       // Carmesí Intenso
+  "INFLUENZA": "#8b5cf6",         // Púrpura Orquídea
+  "VARICELA": "#06b6d4",          // Turquesa
+  "VPH": "#9333ea",               // Violeta Oscuro
+  "SABIN": "#16a34a"              // Verde Bosque
+};
+
+window.getBiologicoColor = function(name) {
+  if (!name) return "#0f172a";
+  const clean = String(name).trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  for (const [key, color] of Object.entries(window.BIOLOGICO_COLORS)) {
+    const normKey = key.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (clean.includes(normKey) || normKey.includes(clean)) return color;
+  }
+  return "#0f172a";
+};
+
 // ✅ VISTA EN VIVO LOGIC
 window.activeLiveViewFilter = null; // { type: 'semaforo'|'caducidad'|'insumo'|'dosis'|'pedido'|'biologico', value: string }
 window.currentLiveViewParams = null; // Para refrescar { clues, unidad, municipio }
@@ -18358,10 +18400,17 @@ async function openLiveView(clues, unidad, municipio) {
       }
     }
 
-    // 3.5 Actualizar la fecha y capturista
+    // 3.5 Actualizar la fecha y capturista + Leyenda de Edición
     let capturistaStr = "—";
+    let editadoTag = "";
     if (res.data && res.data.length > 0) {
       capturistaStr = res.data[0].capturado_por || "SISTEMA";
+      const editRecord = res.data.find(it => it.editado_por || it.editado === 'SI');
+      if (editRecord || res.meta?.editado_por) {
+        const editorRole = (editRecord?.editado_por || res.meta?.editado_por || "JURISDICCIÓN").toUpperCase();
+        const editorName = editRecord?.editado_nombre ? ` (${editRecord.editado_nombre})` : "";
+        editadoTag = `<span style="margin-left:8px; font-size:11px; background:#fffbeb; color:#b45309; border:1px solid #fde68a; padding:3px 12px; border-radius:20px; font-weight:800; display:inline-flex; align-items:center; gap:4px; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.15);">✏️ EDITADO POR ${escapeHtml(editorRole)}${escapeHtml(editorName)}</span>`;
+      }
     }
 
     if (res.meta && res.meta.fecha && res.meta.fecha !== fecha) {
@@ -18371,7 +18420,7 @@ async function openLiveView(clues, unidad, municipio) {
     }
 
     if ($("liveViewMunicipio")) {
-      $("liveViewMunicipio").insertAdjacentHTML('beforeend', `<span style="margin-left:8px; font-size:11px; background:#f1f5f9; color:#475569; padding:2px 10px; border-radius:20px; font-weight:700;">👤 Capturó: ${escapeHtml(capturistaStr)}</span>`);
+      $("liveViewMunicipio").insertAdjacentHTML('beforeend', `<span style="margin-left:8px; font-size:11px; background:#f1f5f9; color:#475569; padding:2px 10px; border-radius:20px; font-weight:700;">👤 Capturó: ${escapeHtml(capturistaStr)}</span>${editadoTag}`);
     }
 
     // 4. Renderizar el contenido inicial y el timeline
@@ -18392,6 +18441,36 @@ async function openLiveView(clues, unidad, municipio) {
 
     const clearFilterBtn = document.getElementById("btnLiveViewClearFilter");
     if (clearFilterBtn) clearFilterBtn.onclick = window.clearLiveViewFilter;
+
+    // Botón "Editar Pedido" en la Live View (Para roles autorizados)
+    let editBioBtn = document.getElementById("btnLiveViewEditBio");
+    const canEditRole = ["ADMIN", "JURISDICCIONAL", "MUNICIPAL", "ESTATAL"].includes((USER.rol || "").toUpperCase());
+    
+    if (tipo === "BIO" && canEditRole) {
+      if (!editBioBtn) {
+        const actionsHost = refreshBtn?.parentNode;
+        if (actionsHost) {
+          editBioBtn = document.createElement("button");
+          editBioBtn.id = "btnLiveViewEditBio";
+          editBioBtn.className = "live-view-btn-v2";
+          editBioBtn.style.cssText = "background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); color: #b45309; border: 1px solid #fde68a; font-weight: 800; padding: 6px 14px; border-radius: 12px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2); cursor: pointer; transition: all 0.2s ease;";
+          editBioBtn.innerHTML = `<span class="material-symbols-rounded" style="font-size:18px;">edit_note</span> <span>Editar Pedido</span>`;
+          actionsHost.insertBefore(editBioBtn, refreshBtn);
+        }
+      }
+      if (editBioBtn) {
+        editBioBtn.style.display = "inline-flex";
+        editBioBtn.onclick = () => {
+          // Ocultar Live View y activar modo edición
+          $("liveViewOverlay").classList.remove("show");
+          $("liveViewOverlay").style.display = "none";
+          showTab("tabBIO");
+          performEditBIO();
+        };
+      }
+    } else if (editBioBtn) {
+      editBioBtn.style.display = "none";
+    }
 
     // --- EFECTO PREMIUM CHARTS: CARGA ESCALA ---
     setTimeout(() => {
@@ -19289,6 +19368,8 @@ window.renderLiveViewTableContent = function() {
             const status = getSemaforoStatus(r.caducidad);
             const diffMonths = getMonthsTo(r.caducidad);
             const perm = getPermanenciaStatusHelper(r.fecha_recepcion);
+            const bioName = r.biologico || "—";
+            const color = getBiologicoColor(bioName);
 
             let tipoBadge = "";
             if (r.tipo === "PRESTAMO_DESABASTO" || r.tipo === "Préstamo por desabasto") {
@@ -19299,12 +19380,13 @@ window.renderLiveViewTableContent = function() {
 
             return `
                   <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;" data-type="sr" data-status="${status.label}" data-months="${diffMonths}">
-                    <td style="padding:14px 24px; font-weight:800; color:#0f172a; white-space: nowrap;">
-                      <span style="vertical-align: middle;">${escapeHtml(r.biologico || "—")}</span>${tipoBadge}
+                    <td style="padding:14px 24px; font-weight:900; color:${color}; font-size:14px; white-space: nowrap;">
+                      <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${color}; margin-right:6px; vertical-align:middle;"></span>
+                      <span style="vertical-align: middle;">${escapeHtml(bioName)}</span>${tipoBadge}
                     </td>
                     <td style="padding:14px 24px; font-weight:600; color:#475569;">${escapeHtml(r.lote || "—")}</td>
                     <td style="padding:14px 24px; text-align:center;">
-                      <span class="live-view-count-badge">${escapeHtml(r.cantidad || 0)}</span>
+                      <span class="live-view-count-badge" style="color:${color}; font-weight:900;">${escapeHtml(r.cantidad || 0)}</span>
                     </td>
                     <td style="padding:14px 24px; font-weight:700; text-align:center; color:#1e293b;">${escapeHtml(isoToMmmaa(r.caducidad))}</td>
                     <td style="padding:14px 24px; text-align:center;">
@@ -19468,19 +19550,29 @@ window.renderLiveViewTableContent = function() {
         }
       }
 
-      tbody.innerHTML = displayItems.map(r => `
-           <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;" data-type="bio" data-biologico="${r.biologico || ''}">
-             <td style="padding:14px 24px; font-weight:800; color:#0f172a;">${escapeHtml(r.biologico || "—")}</td>
-             <td style="padding:14px 24px; text-align:center;">
-               <span class="live-view-count-badge bg-slate-100 text-slate-800">${r.existencia_actual_frascos ?? r.existencia ?? 0}</span>
+      tbody.innerHTML = displayItems.map(r => {
+        const bioName = r.biologico || "—";
+        const color = getBiologicoColor(bioName);
+        const existQty = r.existencia_actual_frascos ?? r.existencia ?? 0;
+        const pedQty = r.pedido_frascos ?? r.solicitud ?? 0;
+
+        return `
+           <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;" data-type="bio" data-biologico="${escapeHtml(bioName)}">
+             <td style="padding:14px 24px; font-weight:900; color:${color}; font-size:14px; letter-spacing:-0.01em;">
+               <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${color}; margin-right:8px; vertical-align:middle; box-shadow: 0 0 8px ${color}60;"></span>
+               ${escapeHtml(bioName)}
              </td>
              <td style="padding:14px 24px; text-align:center;">
-               <span class="live-view-count-badge">${r.pedido_frascos ?? r.solicitud ?? 0}</span>
+               <span class="live-view-count-badge" style="background:#f8fafc; color:${color}; border:1px solid ${color}30; font-weight:900; font-size:13px;">${existQty}</span>
              </td>
-             <td style="padding:14px 24px; text-align:center; font-weight:700; color:#475569;">${r.promedio_frascos ?? 0}</td>
-             <td style="padding:14px 24px; text-align:center; font-weight:600; color:#64748b;">${r.min_dosis ?? 0} / ${r.max_dosis ?? 0}</td>
+             <td style="padding:14px 24px; text-align:center;">
+               <span class="live-view-count-badge" style="background:${color}12; color:${color}; border:1.5px solid ${color}50; font-weight:900; font-size:14px; box-shadow: 0 2px 8px ${color}20;">${pedQty}</span>
+             </td>
+             <td style="padding:14px 24px; text-align:center; font-weight:800; color:${color};">${r.promedio_frascos ?? 0}</td>
+             <td style="padding:14px 24px; text-align:center; font-weight:700; color:${color}cc;">${r.min_dosis ?? 0} / ${r.max_dosis ?? 0}</td>
            </tr>
-         `).join("");
+         `;
+      }).join("");
 
       renderLiveCharts("BIO", leftData, topList);
     }
