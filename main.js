@@ -18205,28 +18205,39 @@ async function handleFileUploadFlow() {
   }
 }
 
-// ✅ CÓDIGOS DE COLOR HEXADECIMALES DEDICADOS POR BIOLÓGICO
+// ✅ CÓDIGOS DE COLOR HEXADECIMALES DEDICADOS POR BIOLÓGICO (valores fg de rda_ui.js nameMap)
 window.BIOLOGICO_COLORS = {
-  "BCG": "#0284c7",              // Azul Ciano brillante
-  "HEXAVALENTE": "#7c3aed",      // Violeta Institucional
-  "HEXAVALENTE 13": "#7c3aed",
-  "NEUMOCOCICA 13": "#2563eb",   // Azul Real
-  "NEUMOCOCICA 13 VALENTE": "#2563eb",
-  "NEUMOCOCICA": "#2563eb",
-  "ROTAVIRUS": "#ea580c",         // Naranja Ámbar
-  "DPT": "#d97706",               // Ámbar Cálido
-  "TDPA": "#b45309",              // Bronce
-  "TD": "#475569",                // Gris Grafito
-  "SR": "#059669",                // Esmeralda
-  "SRP": "#10b981",               // Verde Brillante
-  "COVID-19": "#dc2626",          // Rojo Carmesí
-  "COVID 19": "#dc2626",
-  "HEPATITIS A": "#db2777",       // Rosa Magenta
-  "HEPATITIS B": "#e11d48",       // Carmesí Intenso
-  "INFLUENZA": "#8b5cf6",         // Púrpura Orquídea
-  "VARICELA": "#06b6d4",          // Turquesa
-  "VPH": "#9333ea",               // Violeta Oscuro
-  "SABIN": "#16a34a"              // Verde Bosque
+  "BCG":               "#3A86B7",
+  "HepB":              "#C43D3D",
+  "HEPATITIS B":       "#C43D3D",
+  "Hexavalente":       "#9ACD32",
+  "HEXAVALENTE":       "#9ACD32",
+  "Rotavirus":         "#264653",
+  "ROTAVIRUS":         "#264653",
+  "Neumo 13":          "#3D405B",
+  "Neumo 20":          "#3D405B",
+  "NEUMOCOCICA 13":    "#3D405B",
+  "NEUMOCOCICA":       "#3D405B",
+  "SRP":               "#B23A48",
+  "DPT":               "#E9C46A",
+  "Influenza":         "#C26750",
+  "INFLUENZA":         "#C26750",
+  "VPH":               "#2A9D8F",
+  "Td":                "#5C5C5C",
+  "TD":                "#5C5C5C",
+  "Td Mayores":        "#5C5C5C",
+  "Tdpa":              "#E76F51",
+  "TDPA":              "#E76F51",
+  "SR":                "#7B5EA7",
+  "Varicela":          "#059669",
+  "VARICELA":          "#059669",
+  "VSR":               "#A66B50",
+  "COVID-19":          "#4A4A4A",
+  "COVID 19":          "#4A4A4A",
+  "HepA":              "#4b5563",
+  "HEPATITIS A":       "#4b5563",
+  "Hepatitis A":       "#4b5563",
+  "SABIN":             "#16a34a"
 };
 
 window.getBiologicoColor = function(name) {
@@ -18447,36 +18458,27 @@ async function openLiveView(clues, unidad, municipio) {
     const clearFilterBtn = document.getElementById("btnLiveViewClearFilter");
     if (clearFilterBtn) clearFilterBtn.onclick = window.clearLiveViewFilter;
 
-    // Botón "Editar Pedido" en la Live View (Diseño idéntico de botón puro a los demás botones de la cabecera)
-    let editBioBtn = document.getElementById("btnLiveViewEditBio");
+    // Botón "Editar Pedido" en la Live View (estático en HTML como premium-icon-btn)
+    const editBioBtn = document.getElementById("btnLiveViewEditBio");
     const canEditRole = ["ADMIN", "JURISDICCIONAL", "MUNICIPAL", "ESTATAL"].includes((USER.rol || "").toUpperCase());
-    
-    if (tipo === "BIO" && canEditRole) {
-      if (!editBioBtn) {
-        const actionsHost = refreshBtn?.parentNode;
-        if (actionsHost) {
-          editBioBtn = document.createElement("button");
-          editBioBtn.id = "btnLiveViewEditBio";
-          editBioBtn.type = "button";
-          editBioBtn.className = "live-view-btn-v2";
-          editBioBtn.title = "Editar pedido de biológico";
-          editBioBtn.style.cssText = "background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; border-radius: 12px; padding: 6px 12px; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; transition: all 0.2s ease;";
-          editBioBtn.innerHTML = `<span class="material-symbols-rounded" style="font-size:18px;">edit_square</span> <span>Editar</span>`;
-          actionsHost.insertBefore(editBioBtn, refreshBtn);
-        }
-      }
-      if (editBioBtn) {
+
+    if (editBioBtn) {
+      if (tipo === "BIO" && canEditRole) {
         editBioBtn.style.display = "inline-flex";
         editBioBtn.onclick = () => {
-          $("liveViewOverlay").classList.remove("show");
-          $("liveViewOverlay").style.display = "none";
-          if (typeof performEditBIO === "function") {
-            performEditBIO();
-          }
+          // Cerrar Live View
+          const overlay = $("liveViewOverlay");
+          if (overlay) { overlay.classList.remove("show"); overlay.style.display = "none"; }
+          // Activar tab BIO en el hub de captura (click en el nav item si existe)
+          const navBio = document.querySelector('[data-tab="BIO"], #navTabBIO, .capture-tab-bio');
+          if (navBio) navBio.click();
+          // Ejecutar modo edición
+          if (typeof performEditBIO === "function") performEditBIO();
         };
+      } else {
+        editBioBtn.style.display = "none";
+        editBioBtn.onclick = null;
       }
-    } else if (editBioBtn) {
-      editBioBtn.style.display = "none";
     }
 
     // --- EFECTO PREMIUM CHARTS: CARGA ESCALA ---
@@ -19559,20 +19561,21 @@ window.renderLiveViewTableContent = function() {
 
       tbody.innerHTML = displayItems.map(r => {
         const bioName = r.biologico || "—";
+        const color = window.getBiologicoColor(bioName);
         const existQty = r.existencia_actual_frascos ?? r.existencia ?? 0;
         const pedQty = r.pedido_frascos ?? r.solicitud ?? 0;
 
         return `
            <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;" data-type="bio" data-biologico="${escapeHtml(bioName)}">
-             <td style="padding:14px 24px; font-weight:900; color:#0f172a; font-size:13px; letter-spacing:-0.01em;">
-               <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#0ea5e9; margin-right:8px; vertical-align:middle;"></span>
+             <td style="padding:14px 24px; font-weight:900; color:${color}; font-size:13px; letter-spacing:-0.01em;">
+               <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${color}; margin-right:8px; vertical-align:middle;"></span>
                ${escapeHtml(bioName)}
              </td>
              <td style="padding:14px 24px; text-align:center;">
                <span style="display:inline-flex; align-items:center; justify-content:center; min-width:54px; height:28px; padding:0 10px; border-radius:20px; background:#f1f5f9; color:#334155; font-weight:800; font-size:13px; border:1px solid #e2e8f0;">${existQty}</span>
              </td>
              <td style="padding:14px 24px; text-align:center;">
-               <span style="display:inline-flex; align-items:center; justify-content:center; min-width:54px; height:28px; padding:0 10px; border-radius:20px; background:#e0f2fe; color:#0369a1; font-weight:900; font-size:13px; border:1px solid #bae6fd;">${pedQty}</span>
+               <span style="display:inline-flex; align-items:center; justify-content:center; min-width:54px; height:28px; padding:0 10px; border-radius:20px; background:${color}18; color:${color}; font-weight:900; font-size:13px; border:1px solid ${color}40;">${pedQty}</span>
              </td>
              <td style="padding:14px 24px; text-align:center; font-weight:700; color:#475569;">${r.promedio_frascos ?? 0}</td>
              <td style="padding:14px 24px; text-align:center; font-weight:600; color:#64748b;">${r.min_dosis ?? 0} / ${r.max_dosis ?? 0}</td>

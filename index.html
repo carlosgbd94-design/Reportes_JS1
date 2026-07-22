@@ -5896,8 +5896,20 @@
             transform: rotate(180deg) scale(1.15);
             color: var(--md-sys-color-error) !important;
           }
+          /* 5. Editar Pedido (Bounce + color violeta en hover) */
+          .premium-icon-btn#btnLiveViewEditBio:hover .material-symbols-rounded {
+            transform: translateY(-4px) scale(1.2);
+            color: #7c3aed !important;
+          }
+          /* Ocultar boton editar por defecto, solo aparece en BIO */
+          #btnLiveViewEditBio {
+            display: none;
+          }
         </style>
         <div style="display: flex; align-items: center; gap: 16px;">
+          <button class="premium-icon-btn" id="btnLiveViewEditBio" title="Editar pedido de biológico">
+            <span class="material-symbols-rounded">edit_square</span>
+          </button>
           <button class="premium-icon-btn" id="btnLiveViewRefresh" title="Actualizar datos">
             <span class="material-symbols-rounded">refresh</span>
           </button>
