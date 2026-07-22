@@ -1893,10 +1893,37 @@
               </div>
             </div>
 
+            <!-- BARRA COMPACTA SUPERIOR: AJUSTES & INTEGRACIONES -->
+            <div class="mb-5 p-3.5 rounded-2xl bg-surface-container/70 border border-slate-200/60 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-rounded text-primary/70 text-[18px]">tune</span>
+                <span class="text-[11px] font-black text-primary/80 uppercase tracking-wider">Ajustes & Integraciones</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-4 sm:gap-6">
+                <!-- Switch Sonido -->
+                <div class="flex items-center gap-2">
+                  <span id="lblSoundIcon" class="material-symbols-rounded text-[18px] text-primary/70">volume_up</span>
+                  <span class="text-[11px] sm:text-[12px] font-extrabold text-slate-700">Efectos de Sonido</span>
+                  <label class="premium-switch scale-90">
+                    <input type="checkbox" id="chkNotifSound" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <!-- Push Notifications -->
+                <div class="flex items-center gap-2 pl-3 sm:pl-5 border-l border-slate-200">
+                  <span class="material-symbols-rounded text-[18px] text-primary/70">notifications_active</span>
+                  <span class="text-[11px] sm:text-[12px] font-extrabold text-slate-700">Push</span>
+                  <button type="button" id="btnRequestPushPermission" class="miniBtn flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black border-none cursor-pointer bg-primary/10 text-primary hover:bg-primary/20 transition-all">
+                    <span class="material-symbols-rounded text-[13px]">sensors</span> <span id="lblPushStatus">Activar</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <!-- Fila de Plantillas Rápidas (Chips Premium) -->
-            <div class="mb-8">
+            <div class="mb-6">
               <label
-                class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-3 ml-1">Plantillas
+                class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Plantillas
                 Rápidas de Aviso</label>
               <div class="flex flex-wrap gap-2.5" id="notifQuickTemplates">
                 <button type="button" class="notif-tpl-chip" data-template="CAPTURA_PENDIENTE">
@@ -1916,24 +1943,25 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <!-- COLUMNA IZQUIERDA (7 COLS): CONFIGURACIÓN Y CONTENIDO -->
-              <div class="lg:col-span-7 flex flex-col gap-6">
-                <!-- Fila: Alcance y Tipo -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div>
+              <div class="lg:col-span-7 flex flex-col gap-5">
+                <!-- Fila Compacta en 1 Fila (2 Columnas Rígidas): Alcance y Prioridad -->
+                <div style="display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 16px !important; width: 100% !important;" class="w-full">
+                  <div style="min-width: 0 !important; width: 100% !important;">
                     <label for="notifTargetScope"
-                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">1.
+                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2 ml-1">1.
                       Alcance</label>
                     <select id="notifTargetScope" class="w-full">
                       <option value="ALL_MY_UNITS">Toda la Red / Jurisdicción</option>
+                      <option value="ALL_CLUES">Solo Unidades (CLUES)</option>
                       <option value="MUNICIPIO">A todas las unidades de un municipio</option>
                       <option value="CLUES">A una unidad (CLUES) específica</option>
                       <option value="USUARIO">A un usuario en particular</option>
                     </select>
                   </div>
 
-                  <div>
+                  <div style="min-width: 0 !important; width: 100% !important;">
                     <label for="notifType"
-                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">2.
+                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2 ml-1">2.
                       Prioridad</label>
                     <select id="notifType" class="w-full">
                       <option value="INFO">💡 Información General</option>
@@ -1945,24 +1973,24 @@
                 </div>
 
                 <!-- Selectores Dinámicos de Ubicación/Destinatario (Grid side-by-side) -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div id="notifMunicipioBox" style="display:none">
                     <label for="notifTargetMunicipio"
-                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Municipio
+                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2 ml-1">Municipio
                       Destino</label>
                     <select id="notifTargetMunicipio" class="w-full"></select>
                   </div>
 
                   <div id="notifUnidadBox" style="display:none">
                     <label for="notifTargetClues"
-                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Unidad
+                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2 ml-1">Unidad
                       / CLUES</label>
                     <select id="notifTargetClues" class="w-full"></select>
                   </div>
 
                   <div id="notifUserBox" style="display:none" class="sm:col-span-2">
                     <label for="notifTargetUser"
-                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Usuario
+                      class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2 ml-1">Usuario
                       Destino</label>
                     <select id="notifTargetUser" class="w-full"></select>
                   </div>
@@ -1971,21 +1999,21 @@
                 <!-- Campos de Texto del Mensaje -->
                 <div>
                   <label for="notifTitle"
-                    class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2.5 ml-1">Título
+                    class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block mb-2 ml-1">Título
                     del Aviso</label>
                   <input id="notifTitle" placeholder="Ej. Actualización de Inventario" maxlength="60"
-                    class="w-full bg-surface-container border-2 border-slate-100 rounded-2xl px-5 h-[56px] text-[15px] font-bold text-primary focus:bg-surface focus:border-primary outline-none transition-all shadow-sm placeholder:text-slate-300">
+                    class="w-full bg-surface-container border-2 border-slate-100 rounded-2xl px-5 h-[52px] text-[15px] font-bold text-primary focus:bg-surface focus:border-primary outline-none transition-all shadow-sm placeholder:text-slate-300">
                 </div>
 
                 <div>
-                  <div class="flex justify-between items-center mb-2.5">
+                  <div class="flex justify-between items-center mb-2">
                     <label for="notifMessage"
                       class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block ml-1">Mensaje
                       Institucional</label>
                     <span id="notifCharCount" class="text-[10px] font-bold text-slate-400">0 / 250</span>
                   </div>
-                  <textarea id="notifMessage" rows="5" maxlength="250"
-                    class="w-full bg-surface-container border-2 border-slate-100 rounded-2xl p-5 text-[15px] font-bold text-primary focus:bg-surface focus:border-primary outline-none transition-all resize-none shadow-sm placeholder:text-slate-300"
+                  <textarea id="notifMessage" rows="4" maxlength="250"
+                    class="w-full bg-surface-container border-2 border-slate-100 rounded-2xl p-4 text-[14px] font-bold text-primary focus:bg-surface focus:border-primary outline-none transition-all resize-none shadow-sm placeholder:text-slate-300"
                     placeholder="Escribe el cuerpo de la notificación..."></textarea>
                   <!-- Character progress bar -->
                   <div class="w-full h-1 bg-slate-100 rounded-full mt-2 overflow-hidden">
@@ -1995,14 +2023,14 @@
                 </div>
 
                 <button type="button"
-                  class="bg-primary text-primary-on rounded-2xl h-[64px] font-black text-[16px] uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-3 w-full border-none cursor-pointer mt-2"
+                  class="bg-primary text-primary-on rounded-2xl h-[56px] font-black text-[15px] uppercase tracking-widest shadow-xl shadow-primary/20 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-3 w-full border-none cursor-pointer mt-1"
                   id="btnSendNotification">
-                  <span class="material-symbols-rounded text-[24px]"
+                  <span class="material-symbols-rounded text-[22px]"
                     style="text-transform: none !important;">send</span> Enviar comunicado
                 </button>
               </div>
 
-              <!-- COLUMNA DERECHA (5 COLS): LIVE PREVIEW & CONTROLES EXTRA -->
+              <!-- COLUMNA DERECHA (5 COLS): LIVE PREVIEW -->
               <div class="lg:col-span-5 flex flex-col gap-6 lg:border-l lg:border-outline-variant/30 lg:pl-8">
                 <!-- Caja de Vista Previa -->
                 <div class="flex-1 flex flex-col">
@@ -2011,7 +2039,7 @@
                     en Vivo</span>
 
                   <div
-                    class="preview-container flex-1 rounded-[24px] bg-surface-container border border-slate-200/50 p-6 flex flex-col justify-center items-center relative overflow-hidden min-h-[200px]">
+                    class="preview-container flex-1 rounded-[24px] bg-surface-container border border-slate-200/50 p-6 flex flex-col justify-center items-center relative overflow-hidden min-h-[220px]">
                     <div class="absolute inset-0 bg-grid-pattern opacity-5"></div>
 
                     <!-- Tarjeta de Notificación Previsualizada -->
@@ -2033,47 +2061,6 @@
                             class="material-symbols-rounded text-[12px]">verified</span> Oficial</span>
                       </div>
                     </div>
-                  </div>
-                </div>
-
-                <!-- Configuración Extra -->
-                <div class="bg-surface-container/50 rounded-2xl p-5 border border-slate-200/50 flex flex-col gap-4">
-                  <span class="text-[11px] font-black text-primary/45 uppercase tracking-[0.15em] block ml-1">Ajustes &
-                    Integraciones</span>
-
-                  <!-- Switch de Sonido -->
-                  <div class="flex items-center justify-between py-2 border-b border-slate-100">
-                    <div class="flex items-center gap-3">
-                      <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                        <span id="lblSoundIcon" class="material-symbols-rounded text-[20px]">volume_up</span>
-                      </div>
-                      <div>
-                        <div class="text-[13px] font-bold text-primary">Efectos de Sonido</div>
-                        <div class="text-[10px] font-medium text-slate-400">Sonido sutil en envío/recepción</div>
-                      </div>
-                    </div>
-                    <label class="premium-switch">
-                      <input type="checkbox" id="chkNotifSound" checked>
-                      <span class="slider"></span>
-                    </label>
-                  </div>
-
-                  <!-- Botón de Notificaciones de Escritorio -->
-                  <div class="flex items-center justify-between py-1">
-                    <div class="flex items-center gap-3">
-                      <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                        <span class="material-symbols-rounded text-[20px]">notifications_active</span>
-                      </div>
-                      <div>
-                        <div class="text-[13px] font-bold text-primary">Notificaciones Push</div>
-                        <div class="text-[10px] font-medium text-slate-400" id="lblPushStatus">Alertas nativas de
-                          Windows</div>
-                      </div>
-                    </div>
-                    <button type="button" id="btnRequestPushPermission"
-                      class="miniBtn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border-none cursor-pointer bg-primary/10 text-primary hover:bg-primary/20 transition-all">
-                      <span class="material-symbols-rounded text-[14px]">sensors</span> Activar
-                    </button>
                   </div>
                 </div>
               </div>
@@ -7331,6 +7318,46 @@
       <div id="bcgDirList"
         style="flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; background: var(--md-sys-color-surface);">
         <!-- Lista inyectada por JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔔 MODAL DE LECTURA COMPLETA DE NOTIFICACIÓN (LIQUID GLASS) -->
+  <div id="modalNotifDetail" class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md hidden transition-opacity duration-300">
+    <div class="relative w-full max-w-xl bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+      <!-- Modal Header -->
+      <div class="px-6 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-between border-b border-slate-700/50">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-400">
+            <span class="material-symbols-rounded text-2xl">campaign</span>
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold tracking-wide text-white" id="notifDetailModalScope">COMUNICADO INSTITUCIONAL</h3>
+            <p class="text-xs text-slate-300 font-medium" id="notifDetailModalDate">—</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeNotifDetailModal()" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
+          <span class="material-symbols-rounded text-xl">close</span>
+        </button>
+      </div>
+      <!-- Modal Body -->
+      <div class="p-6 overflow-y-auto flex-1 space-y-4">
+        <div id="notifDetailModalTitle" class="text-xl font-black text-slate-900 leading-snug"></div>
+        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 text-slate-800 text-sm leading-relaxed font-normal whitespace-pre-wrap break-words" id="notifDetailModalMessage"></div>
+        <div class="flex items-center justify-between pt-2 text-xs text-slate-500 font-semibold border-t border-slate-100">
+          <div class="flex items-center gap-1.5" id="notifDetailModalSender">
+            <span class="material-symbols-rounded text-base text-sky-600">account_circle</span>
+            <span>Emitido por: —</span>
+          </div>
+          <div id="notifDetailModalType" class="px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 text-[11px] font-bold">INFO</div>
+        </div>
+      </div>
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 bg-slate-100/80 border-t border-slate-200/80 flex items-center justify-end gap-3">
+        <button type="button" onclick="closeNotifDetailModal()" class="px-5 py-2.5 rounded-full text-xs font-bold text-slate-700 bg-slate-200 hover:bg-slate-300 transition-colors">Cerrar</button>
+        <button type="button" id="notifDetailModalReadBtn" class="px-5 py-2.5 rounded-full text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 transition-colors shadow-md flex items-center gap-1.5">
+          <span class="material-symbols-rounded text-base">done_all</span> Marcar como Leída
+        </button>
       </div>
     </div>
   </div>

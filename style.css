@@ -4481,8 +4481,11 @@ input[disabled] {
   font-size: 18px;
 }
 
-/* Semaforizaci*/
-/* Semaforizaci*/
+/* Dynamic Chip Transitions & Semaphorization */
+#bCumplimiento {
+  transition: background 0.6s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.6s ease, box-shadow 0.6s ease, color 0.4s ease !important;
+}
+
 #bCumplimiento[data-tone="good"] { 
   background: linear-gradient(135deg, #059669 0%, #10b981 100%) !important; 
   color: white !important; 
@@ -4506,6 +4509,12 @@ input[disabled] {
   color: white !important; 
   border-color: rgba(255,255,255,0.2) !important;
   box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.3) !important;
+}
+#bCumplimiento[data-tone="neutral"] { 
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important; 
+  color: white !important; 
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.35) !important;
 }
 
 #bCumplimiento[data-tone] #dayTxt,
@@ -10074,7 +10083,7 @@ html body .modern-input-group input[type="date"]:focus,
   background: radial-gradient(700px 220px at 0% 0%, rgba(239, 68, 68, 0.12), transparent 55%), #ffffff !important;
 }
 
-/* Custom Searchable Select Styles */
+/* Custom Searchable Select Styles (Pill + Liquid Glass Panel) */
 .searchable-select-wrapper {
   position: relative;
   width: 100%;
@@ -10084,35 +10093,41 @@ html body .modern-input-group input[type="date"]:focus,
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
 }
 
 .searchable-select-input-container span.input-icon {
   position: absolute;
   left: 16px;
-  color: #94a3b8;
+  color: #64748b;
   font-size: 20px;
   pointer-events: none;
+  z-index: 2;
 }
 
 .searchable-select-input {
   width: 100%;
-  height: 56px;
-  background-color: #f8fafc;
-  border: 2px solid #e2e8f0;
-  border-radius: 16px;
-  padding: 0 44px 0 72px !important;
-  font-size: 14px;
+  height: 46px;
+  background-color: #ffffff;
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 9999px !important;
+  padding: 0 44px 0 48px !important;
+  font-size: 13.5px;
   font-weight: 700;
-  color: #003366;
+  color: #0f172a;
   outline: none;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   box-sizing: border-box;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), inset 0 -1.5px 0 rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.02);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .searchable-select-input:focus {
-  background-color: var(--md-sys-color-surface);
+  background-color: #ffffff;
   border-color: #0284c7;
-  box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.1);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
 }
 
 .searchable-select-clear-btn {
@@ -10126,19 +10141,21 @@ html body .modern-input-group input[type="date"]:focus,
   align-items: center;
   justify-content: center;
   padding: 4px;
+  z-index: 2;
 }
 
 .searchable-select-clear-btn:hover {
-  color: #64748b;
+  color: #0f172a;
 }
 
 .searchable-select-arrow {
   position: absolute;
   right: 16px;
-  color: #94a3b8;
+  color: #64748b;
   font-size: 20px;
   pointer-events: none;
   transition: transform 0.2s ease;
+  z-index: 2;
 }
 
 .searchable-select-wrapper.open .searchable-select-arrow {
@@ -10149,20 +10166,23 @@ html body .modern-input-group input[type="date"]:focus,
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  width: 100%;
-  max-height: 250px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(0, 51, 102, 0.08);
-  border-radius: 16px;
-  box-shadow: 0 12px 30px rgba(0, 51, 102, 0.1);
-  z-index: 1000;
+  min-width: 100% !important;
+  width: max-content !important;
+  max-width: min(90vw, 420px) !important;
+  max-height: 260px;
+  background: rgba(255, 255, 255, 0.45) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  border-radius: 16px !important;
+  padding: 4px !important;
+  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.1) !important;
+  z-index: 99999 !important;
   overflow-y: auto;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(-8px) scale(0.98);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(-6px) scale(0.98);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .searchable-select-wrapper.open .searchable-select-dropdown {
@@ -10172,32 +10192,40 @@ html body .modern-input-group input[type="date"]:focus,
 }
 
 .searchable-select-option {
-  padding: 12px 18px;
-  font-size: 13.5px;
+  padding: 6px 12px !important;
+  min-height: 28px !important;
+  border-radius: 8px !important;
+  font-size: 13px;
   font-weight: 700;
   color: #334155;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .searchable-select-option:hover {
-  background-color: rgba(2, 132, 199, 0.06);
-  color: #0284c7;
+  background: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+  font-weight: 800 !important;
 }
 
 .searchable-select-option.selected {
-  background-color: rgba(2, 132, 199, 0.1);
-  color: #0284c7;
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
 }
 
 .searchable-select-no-results {
-  padding: 16px;
-  font-size: 13px;
+  padding: 12px;
+  font-size: 12px;
   font-weight: 600;
-  color: #94a3b8;
+  color: #64748b;
   text-align: center;
 }
 

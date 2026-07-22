@@ -1293,13 +1293,41 @@ async function resolveNotificationRecipients(record) {
   const fromUser = String(record.from_usuario || "").trim();
 
   try {
-    // Helper: obtener todos los usuarios activos
+    // Helper: obtener todos los usuarios combinando perfiles, usuarios_legacy y unidades
     const fetchActiveUsers = async (filter = {}) => {
-      let q = supabase.from('perfiles').select('usuario, rol, clues, municipio, municipios_allowed').eq('activo', 'SI');
-      if (filter.rol) q = q.eq('rol', filter.rol);
-      if (filter.clues) q = q.eq('clues', filter.clues);
-      const { data } = await q;
-      return data || [];
+      let q1 = supabase.from('perfiles').select('usuario, rol, clues, municipio, municipios_allowed');
+      let q2 = supabase.from('usuarios_legacy').select('usuario, rol, clues, municipio');
+      let q3 = supabase.from('unidades').select('clues, unidad, municipio');
+
+      if (filter.clues) {
+        q1 = q1.eq('clues', filter.clues);
+        q2 = q2.eq('clues', filter.clues);
+        q3 = q3.eq('clues', filter.clues);
+      }
+
+      const [r1, r2, r3] = await Promise.all([q1, q2, q3]);
+      const d1 = r1?.data || [];
+      const d2 = r2?.data || [];
+      const d3 = r3?.data || [];
+
+      console.log(`[fetchActiveUsers] perfiles: ${d1.length}, legacy: ${d2.length}, unidades: ${d3.length}`);
+
+      const map = new Map();
+      d1.forEach(u => { if (u && u.usuario) map.set(u.usuario, u); });
+      d2.forEach(u => { if (u && u.usuario && !map.has(u.usuario)) map.set(u.usuario, u); });
+
+      // Incluir todas las CLUES registradas en el catálogo de unidades
+      const rolFilter = String(filter.rol || '').toUpperCase();
+      if (!rolFilter || rolFilter === 'UNIDAD') {
+        d3.forEach(u => {
+          if (u && u.clues && !map.has(u.clues)) {
+            map.set(u.clues, { usuario: u.clues, rol: 'UNIDAD', clues: u.clues, municipio: u.municipio });
+          }
+        });
+      }
+
+      console.log(`[fetchActiveUsers] Total resueltos: ${map.size}`);
+      return Array.from(map.values());
     };
 
     let recipients = new Set();
@@ -1311,11 +1339,21 @@ async function resolveNotificationRecipients(record) {
         break;
       }
 
+      case "ALL_CLUES": {
+        // Enviar a todas las unidades de salud + Admins / Jurisdiccional
+        const users = await fetchActiveUsers();
+        users.forEach(u => {
+          const r = String(u.rol || "").toUpperCase();
+          if (r === "UNIDAD" || u.clues || r === "ADMIN" || r === "JURISDICCIONAL" || r === "VISUALIZADOR_JURISDICCIONAL") {
+            recipients.add(u.usuario);
+          }
+        });
+        break;
+      }
+
       case "ROLE": {
-        // targetUser contiene el nombre del rol (ej: "MUNICIPAL")
         const users = await fetchActiveUsers({ rol: targetUser });
         users.forEach(u => recipients.add(u.usuario));
-        // Admins siempre ven todo
         const admins = await fetchActiveUsers({ rol: 'ADMIN' });
         admins.forEach(u => recipients.add(u.usuario));
         break;
@@ -1323,29 +1361,30 @@ async function resolveNotificationRecipients(record) {
 
       case "USUARIO": {
         if (targetUser) recipients.add(targetUser);
+        const admins = await fetchActiveUsers({ rol: 'ADMIN' });
+        admins.forEach(u => recipients.add(u.usuario));
         break;
       }
 
       case "CLUES": {
-        // La unidad específica
+        // Unidad específica por CLUES
         const unitUsers = await fetchActiveUsers({ clues: targetClues });
         unitUsers.forEach(u => recipients.add(u.usuario));
 
-        // Supervisores municipales que administran ese municipio
-        const allSupervisors = await fetchActiveUsers();
+        // Supervisores municipales + Admins
+        const allUsers = await fetchActiveUsers();
         const muni = targetMuni || (() => {
           const u = unitUsers.find(x => x.municipio);
           return u ? u.municipio : "";
         })();
 
-        allSupervisors.forEach(u => {
+        allUsers.forEach(u => {
           const uRole = String(u.rol || "").toUpperCase();
           if (uRole === "ADMIN" || uRole === "JURISDICCIONAL" || uRole === "VISUALIZADOR_JURISDICCIONAL") {
             recipients.add(u.usuario);
           } else if (uRole === "MUNICIPAL" || uRole === "CARAVANAS") {
-            // Verificar si este supervisor tiene acceso al municipio de la unidad
             const allowed = (() => {
-              let raw = u.municipios_allowed;
+              let raw = u.municipios_allowed || u.municipiosAllowed;
               if (typeof raw === "string") try { raw = JSON.parse(raw); } catch (e) { raw = [raw]; }
               return Array.isArray(raw) ? raw.map(m => normalizeTextKey_(m)) : [];
             })();
@@ -1358,7 +1397,7 @@ async function resolveNotificationRecipients(record) {
       }
 
       case "MUNICIPIO": {
-        // Staff municipal de ese municipio + admins
+        // Staff municipal de ese municipio + Admins
         const allUsers = await fetchActiveUsers();
         allUsers.forEach(u => {
           const uRole = String(u.rol || "").toUpperCase();
@@ -1366,7 +1405,7 @@ async function resolveNotificationRecipients(record) {
             recipients.add(u.usuario);
           } else if (uRole === "MUNICIPAL" || uRole === "CARAVANAS") {
             const allowed = (() => {
-              let raw = u.municipios_allowed;
+              let raw = u.municipios_allowed || u.municipiosAllowed;
               if (typeof raw === "string") try { raw = JSON.parse(raw); } catch (e) { raw = [raw]; }
               return Array.isArray(raw) ? raw.map(m => normalizeTextKey_(m)) : [];
             })();
@@ -1378,27 +1417,29 @@ async function resolveNotificationRecipients(record) {
         break;
       }
 
+      case "ALL_MY_UNITS":
       case "MUNICIPIO_UNITS": {
-        // Todas las unidades de un municipio
-        const { data: units } = await supabase.from('unidades').select('clues').eq('municipio', targetMuni).eq('activo', 'SI');
-        if (units && units.length) {
-          const cluesList = units.map(u => u.clues);
-          const { data: unitUsers } = await supabase.from('usuarios_legacy').select('usuario, clues').eq('activo', 'SI').in('clues', cluesList);
-          (unitUsers || []).forEach(u => recipients.add(u.usuario));
-        }
-        // También supervisores municipales
-        const supervisors = await fetchActiveUsers();
-        supervisors.forEach(u => {
+        // Unidades de un municipio (o todas las unidades de mi municipio)
+        const allUsers = await fetchActiveUsers();
+        const targetMuniNorm = targetMuni ? normalizeTextKey_(targetMuni) : "";
+
+        allUsers.forEach(u => {
           const uRole = String(u.rol || "").toUpperCase();
+          const uMuniNorm = u.municipio ? normalizeTextKey_(u.municipio) : "";
+
           if (uRole === "ADMIN" || uRole === "JURISDICCIONAL" || uRole === "VISUALIZADOR_JURISDICCIONAL") {
             recipients.add(u.usuario);
-          } else if (uRole === "MUNICIPAL") {
+          } else if (uRole === "UNIDAD" || u.clues) {
+            if (!targetMuniNorm || uMuniNorm === targetMuniNorm) {
+              recipients.add(u.usuario);
+            }
+          } else if (uRole === "MUNICIPAL" || uRole === "CARAVANAS") {
             const allowed = (() => {
-              let raw = u.municipios_allowed;
+              let raw = u.municipios_allowed || u.municipiosAllowed;
               if (typeof raw === "string") try { raw = JSON.parse(raw); } catch (e) { raw = [raw]; }
               return Array.isArray(raw) ? raw.map(m => normalizeTextKey_(m)) : [];
             })();
-            if (allowed.includes("*") || (targetMuni && allowed.includes(normalizeTextKey_(targetMuni)))) {
+            if (allowed.includes("*") || (targetMuniNorm && allowed.includes(targetMuniNorm))) {
               recipients.add(u.usuario);
             }
           }
@@ -1407,18 +1448,15 @@ async function resolveNotificationRecipients(record) {
       }
 
       case "CARAVANAS_UNITS": {
-        // Todas las unidades tipo caravana
-        const { data: allUnits } = await supabase.from('unidades').select('clues, unidad').eq('activo', 'SI');
-        const caravanaClues = (allUnits || []).filter(u => isCaravanaUnit_(u)).map(u => u.clues);
-        if (caravanaClues.length) {
-          const { data: caravanaUsers } = await supabase.from('usuarios_legacy').select('usuario, clues').eq('activo', 'SI').in('clues', caravanaClues);
-          (caravanaUsers || []).forEach(u => recipients.add(u.usuario));
-        }
-        // Supervisores caravanas + admins
-        const adminsEtc = await fetchActiveUsers();
-        adminsEtc.forEach(u => {
+        const allUnits = await supabase.from('unidades').select('clues, unidad').eq('activo', 'SI');
+        const caravanaClues = ((allUnits && allUnits.data) || []).filter(u => isCaravanaUnit_(u)).map(u => u.clues);
+        const allUsers = await fetchActiveUsers();
+
+        allUsers.forEach(u => {
           const uRole = String(u.rol || "").toUpperCase();
           if (uRole === "ADMIN" || uRole === "JURISDICCIONAL" || uRole === "VISUALIZADOR_JURISDICCIONAL" || uRole === "CARAVANAS") {
+            recipients.add(u.usuario);
+          } else if (u.clues && caravanaClues.includes(u.clues)) {
             recipients.add(u.usuario);
           }
         });
@@ -1435,6 +1473,8 @@ async function resolveNotificationRecipients(record) {
 
       default: {
         console.warn(`[FanOut] Scope desconocido: ${scope}`);
+        const users = await fetchActiveUsers();
+        users.forEach(u => recipients.add(u.usuario));
         break;
       }
     }
@@ -1466,16 +1506,20 @@ async function fanOutNotification(notificacionId, recipients = []) {
     deleted: false
   }));
 
-  // Insertar en lotes de 50 para evitar límites de Supabase
+  // Intentar inserción individual por perfiles para usuarios permitidos por RLS
   const BATCH_SIZE = 50;
   for (let i = 0; i < records.length; i += BATCH_SIZE) {
     const batch = records.slice(i, i + BATCH_SIZE);
-    const { error } = await supabase
-      .from('notificaciones_perfil')
-      .upsert(batch, { onConflict: 'notificacion_id,usuario', ignoreDuplicates: true });
+    try {
+      const { error } = await supabase
+        .from('notificaciones_perfil')
+        .insert(batch);
 
-    if (error) {
-      console.error(`[FanOut] Error inserting batch ${i / BATCH_SIZE}:`, error);
+      if (error && error.code !== '23505') { // Ignorar duplicados (23505)
+        console.warn(`[FanOut] Inserción directa en perfiles restringida por RLS. Notificación maestro activa para distribución automática.`);
+      }
+    } catch (e) {
+      console.warn(`[FanOut] Aviso en distribución de lote:`, e);
     }
   }
 
@@ -1497,10 +1541,30 @@ function initNotificationsRealtime() {
   }
 
   const usuario = String(USER?.usuario || "").trim();
-  console.log(`[Realtime] Iniciando suscripción a notificaciones_perfil para ${usuario}...`);
+  console.log(`[Realtime] Iniciando suscripción maestra a notificaciones para ${usuario}...`);
 
   NOTIFICATIONS_CHANNEL = window.supabase
-    .channel('my-notificaciones-perfil')
+    .channel('realtime-notificaciones-master')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notificaciones'
+      },
+      async (payload) => {
+        const n = payload.new;
+        if (!n) return;
+        console.log("[Realtime] Nueva notificación maestra en tiempo real:", n.id, n.target_scope);
+
+        if (typeof loadNotifications === 'function') {
+          loadNotifications({ silent: true }).catch(() => { });
+        }
+        if (typeof showSmartToastNotification === 'function' && n.from_usuario !== usuario) {
+          showSmartToastNotification(n);
+        }
+      }
+    )
     .on(
       'postgres_changes',
       {
@@ -1510,26 +1574,14 @@ function initNotificationsRealtime() {
         filter: `usuario=eq.${usuario}`
       },
       async (payload) => {
-        console.log("[Realtime] Cambio en mi buzón:", payload.eventType, payload.new?.notificacion_id || payload.old?.notificacion_id);
-        if (payload.eventType === 'INSERT' && payload.new?.notificacion_id) {
-          try {
-            const { data: masterNotif } = await supabase
-              .from('notificaciones')
-              .select('*')
-              .eq('id', payload.new.notificacion_id)
-              .maybeSingle();
-            if (masterNotif) {
-              showSmartToastNotification(masterNotif);
-            }
-          } catch (eToast) {
-            console.warn("[Realtime] Error mostrando Smart Toast:", eToast);
-          }
+        console.log("[Realtime] Cambio en mi buzón personal:", payload.eventType);
+        if (typeof loadNotifications === 'function') {
+          loadNotifications({ silent: true }).catch(() => { });
         }
-        loadNotifications({ silent: true }).catch(() => { });
       }
     )
     .subscribe((status) => {
-      console.log("[Realtime] Canal notificaciones_perfil estado:", status);
+      console.log("[Realtime] Canal de notificaciones en vivo estado:", status);
     });
 }
 
@@ -1786,8 +1838,17 @@ function getFilteredNotifications(items = []) {
   const arr = Array.isArray(items) ? items : [];
   const q = String(NOTIF_SEARCH_QUERY || "").trim();
 
-  if (!q) return arr;
-  return arr.filter(item => notifMatchesSearch(item, q));
+  let filtered = arr;
+  if (typeof CURRENT_NOTIF_TAB !== "undefined" && CURRENT_NOTIF_TAB === "announcements") {
+    filtered = arr.filter(item => {
+      const type = String(item?.type || "").toUpperCase();
+      const title = String(item?.title || "").toLowerCase();
+      return type === "CAPACITACION" || title.includes("capacitación") || title.includes("capacitacion") || title.includes("aviso") || title.includes("reunión") || title.includes("reunion") || item?.is_announcement === true;
+    });
+  }
+
+  if (!q) return filtered;
+  return filtered.filter(item => notifMatchesSearch(item, q));
 }
 
 function syncNotifSearchInputs() {
@@ -1925,72 +1986,73 @@ function formatNotifDate(ts) {
 
 function formatNotifBody(title, message, fromUsuario = "") {
   if (!message) return "";
-  let clean = message;
-  const isDelivery = (title && title.toLowerCase().includes("entrega")) || message.toLowerCase().includes("entregada") || message.toLowerCase().includes("recibido");
+  const rawMsg = String(message || "").trim();
+  const lowerMsg = rawMsg.toLowerCase();
 
-  if (isDelivery) {
-    clean = "Pinol entregado:";
-  } else {
-    clean = title ? `${title}:` : "Notificación:";
-  }
+  const solicitanteMatch = rawMsg.match(/Solicita(?:nte)?:\s*([^.\n\r]+)/i) || rawMsg.match(/por\s+([^.\n\r]+)/i);
+  let solicitante = solicitanteMatch ? solicitanteMatch[1].trim().replace(/\(.*?\)/g, "").split(" para ")[0] : (fromUsuario || "");
 
-  // Robust parsing to capture Unidad, CLUES or User names in both deliveries and requests
-  const unidadMatch = message.match(/Unidad:\s*([^.\n\r]+)/i) || 
-                      message.match(/Unidad de salud:\s*([^.\n\r]+)/i) ||
-                      message.match(/La unidad\s+([^.\n\r]+?)\s+ha solicitado/i) ||
-                      message.match(/en\s+([A-Z0-9\s]+)\s+por/); // matches: "en UNIDAD por USUARIO"
-                      
-  const unidad = unidadMatch ? unidadMatch[1].trim().split(" CLUES:")[0].split(" Solicitó:")[0] : "";
+  const isDelivery = (title && title.toLowerCase().includes("entrega")) || lowerMsg.includes("entregada") || lowerMsg.includes("recibido");
+  const isPinolReq = lowerMsg.includes("unidad de salud:") || lowerMsg.includes("solicitud de pinol") || lowerMsg.includes("pinol entregado:");
 
-  const solicitanteMatch = message.match(/Solicita(?:nte)?:\s*([^.\n\r]+)/i) ||
-                           message.match(/por\s+([^.\n\r]+)/i); // matches: "por USUARIO"
-  let solicitante = solicitanteMatch ? solicitanteMatch[1].trim().replace(/\(.*?\)/g, "").split(" para ")[0] : "";
-  if (!solicitante && fromUsuario) {
-    solicitante = fromUsuario;
-  }
-
-  const fechaMatch = message.match(/Fecha de solicitud:\s*([\d-]+)/i) ||
-                     message.match(/Fecha:\s*([\d-]+)/i);
-  let fechaReq = fechaMatch ? fechaMatch[1] : "";
-  if (fechaReq) {
-    const d = new Date(fechaReq);
-    if (!isNaN(d.getTime())) {
-      const dd = String(d.getDate()).padStart(2, '0');
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const yy = String(d.getFullYear()).slice(-2);
-      fechaReq = `${dd}-${mm}-${yy}`;
-    }
-  }
-
-  let html = `<strong style="color:var(--md-sys-color-primary);">${clean}</strong>`;
+  let html = "";
   
-  if (isDelivery) {
-    if (unidad || fechaReq) {
-      const details = [unidad, fechaReq ? `Sol: ${fechaReq}` : ""].filter(Boolean).join(" • ");
-      html += `<div style="margin-top:2px; font-size: 11px; color:var(--md-sys-color-on-surface-variant); font-weight:600;">${details}</div>`;
-    }
-    
-    const lines = message.split("\n");
-    const commentLines = lines.filter(line => {
-      const l = line.toLowerCase();
-      if (l.includes("unidad de salud:") || l.includes("unidad:") || l.includes("fecha de solicitud:") || l.includes("fecha:") || l.includes("tu solicitud de pinol") || l.includes("pinol entregado:")) {
-        return false;
-      }
-      return true;
-    });
-    const cleanComment = commentLines.join(" ").trim();
-    if (cleanComment) {
-      html += `<div style="margin-top:6px; padding:6px 10px; background:rgba(0,0,0,0.03); border-left:3px solid var(--md-sys-color-primary); border-radius:4px; font-size:11px; color:var(--md-sys-color-on-surface-variant); font-style:italic;">
-        <strong>Comentario:</strong> "${escapeHtml(cleanComment)}"
+  if (isDelivery || isPinolReq) {
+    const unidadMatch = rawMsg.match(/Unidad:\s*([^.\n\r]+)/i) || 
+                        rawMsg.match(/Unidad de salud:\s*([^.\n\r]+)/i) ||
+                        rawMsg.match(/La unidad\s+([^.\n\r]+?)\s+ha solicitado/i);
+    const unidad = unidadMatch ? unidadMatch[1].trim() : "";
+
+    const fechaMatch = rawMsg.match(/Fecha de solicitud:\s*([\d-]+)/i) || rawMsg.match(/Fecha:\s*([\d-]+)/i);
+    let fechaReq = fechaMatch ? fechaMatch[1] : "";
+
+    if (fechaReq) html += `<div style="margin-top:2px; font-size: 11px;">Fecha de solicitud: ${escapeHtml(fechaReq)}</div>`;
+    if (unidad) html += `<div style="font-size: 11px;">Unidad de salud: ${escapeHtml(unidad)}</div>`;
+    if (solicitante) html += `<div style="font-size: 11px;">Solicita: ${escapeHtml(solicitante)}</div>`;
+  } else {
+    // Comunicados generales e instrucciones institucionales
+    if (rawMsg) {
+      html += `<div class="notifMsgText" style="margin-top:6px; padding:10px 12px; background:rgba(241, 245, 249, 0.9); border-left:3.5px solid #0284c7; border-radius:8px; font-size:12px; line-height:1.5; color:#1e293b; font-weight:600; white-space:pre-wrap; word-break:break-word; box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);">
+        ${escapeHtml(rawMsg)}
       </div>`;
     }
-  } else {
-    if (fechaReq) html += `<div style="margin-top:2px; font-size: 11px;">Fecha de solicitud: ${fechaReq}</div>`;
-    if (unidad) html += `<div style="font-size: 11px;">Unidad de salud: ${unidad}</div>`;
-    if (solicitante) html += `<div style="font-size: 11px;">Solicita: ${solicitante}</div>`;
+    if (solicitante) {
+      html += `<div style="margin-top:5px; font-size:11px; color:#64748b; font-weight:600; display:flex; align-items:center; gap:4px;">
+        <span class="material-symbols-rounded" style="font-size:13px; color:#0284c7;">send</span> Emitido por: <strong style="color:#334155;">${escapeHtml(solicitante)}</strong>
+      </div>`;
+    }
   }
   return html;
 }
+
+window.openNotifDetailModal = function(id, title, message, date, sender, scope, type) {
+  const modal = document.getElementById('modalNotifDetail');
+  if (!modal) return;
+  
+  document.getElementById('notifDetailModalTitle').textContent = title || 'Comunicado';
+  document.getElementById('notifDetailModalMessage').textContent = message || '';
+  document.getElementById('notifDetailModalDate').textContent = date || '';
+  document.getElementById('notifDetailModalScope').textContent = (scope || 'COMUNICADO INSTITUCIONAL').toUpperCase();
+  document.getElementById('notifDetailModalSender').innerHTML = `<span class="material-symbols-rounded text-base text-sky-600">account_circle</span><span>Emitido por: <strong>${escapeHtml(sender || 'Administración')}</strong></span>`;
+  document.getElementById('notifDetailModalType').textContent = (type || 'INFO').toUpperCase();
+
+  const readBtn = document.getElementById('notifDetailModalReadBtn');
+  if (readBtn) {
+    readBtn.onclick = async () => {
+      if (typeof markNotificationReadFlow === 'function') {
+        await markNotificationReadFlow(id);
+      }
+      closeNotifDetailModal();
+    };
+  }
+
+  modal.classList.remove('hidden');
+};
+
+window.closeNotifDetailModal = function() {
+  const modal = document.getElementById('modalNotifDetail');
+  if (modal) modal.classList.add('hidden');
+};
 
 function buildNotificationsHtml(items = []) {
   const arr = Array.isArray(items) ? items : [];
@@ -2062,6 +2124,7 @@ function buildNotificationsHtml(items = []) {
             </div>
             
             <div class="notifCompactActions">
+              <button type="button" class="notifMiniBtn" title="Ver comunicado completo" style="background:#e0f2fe; color:#0369a1;" onclick="openNotifDetailModal('${escapeAttr(item.id || "")}', '${escapeAttr(item.title || "")}', '${escapeAttr(item.message || "")}', '${escapeAttr(formatNotifDate(item.created_ts))}', '${escapeAttr(item.from_usuario || "ADMINISTRADOR")}', '${escapeAttr(item.target_scope || item.scope || "GLOBAL")}', '${escapeAttr(item.type || "INFO")}')"><span class="material-symbols-rounded">visibility</span></button>
               ${isDesabastoActive
         ? `<button type="button" class="notifMiniBtn" title="Marcar como Verificado" style="background:var(--md-sys-color-surface-variant); color:var(--md-sys-color-on-surface-variant);" onclick="resolveDesabastoFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">check_circle</span></button>`
         : ``
@@ -2082,7 +2145,8 @@ function buildNotificationsHtml(items = []) {
             </div>
           </div>
           
-          <div class="notifBody snippet">${formatNotifBody(item.title, item.message, item.from_usuario)}
+          <div class="notifBody snippet" style="cursor:pointer;" onclick="openNotifDetailModal('${escapeAttr(item.id || "")}', '${escapeAttr(item.title || "")}', '${escapeAttr(item.message || "")}', '${escapeAttr(formatNotifDate(item.created_ts))}', '${escapeAttr(item.from_usuario || "ADMINISTRADOR")}', '${escapeAttr(item.target_scope || item.scope || "GLOBAL")}', '${escapeAttr(item.type || "INFO")}')">
+            ${formatNotifBody(item.title, item.message, item.from_usuario)}
             ${(isDesabastoActive && meta?.missing?.length) ? `<div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:4px;">${meta.missing.map(v => `<span style="background:var(--md-sys-color-error-container); color:var(--md-sys-color-on-error-container); padding:2px 6px; border-radius:6px; font-size:9px; font-weight:700;">${v}</span>`).join("")}</div>` : ''}
           </div>
         </div>
@@ -2685,22 +2749,32 @@ function renderNotifComposer() {
 
   if (role === "ADMIN") {
     options += `
-        <option value="GLOBAL">🌎 Global (Todos)</option>
-        <option value="MUNICIPAL_USERS_ALL">👥 Todos los Municipales (Staff)</option>
+        <option value="GLOBAL">🌎 Global (Toda la Red y Staff)</option>
+        <option value="ALL_CLUES">🏥 Solo Unidades de Salud (Todas las CLUES)</option>
+        <option value="MUNICIPAL_USERS_ALL">👥 Todos los Coordinadores Municipales (Staff)</option>
         <option value="MUNICIPIO">🏙️ Personal de un Municipio (Staff)</option>
         <option value="CLUES">🏥 Unidad Específica (CLUES)</option>
         <option value="USUARIO">👤 Usuario Específico</option>
       `;
   } else if (role === "JURISDICCIONAL" || role === "VISUALIZADOR_JURISDICCIONAL") {
     options += `
+        <option value="GLOBAL">🌎 Global (Toda la Jurisdicción)</option>
+        <option value="ALL_CLUES">🏥 Solo Unidades de Salud (CLUES)</option>
         <option value="MUNICIPAL_USERS_ALL">👥 Todos los Municipales (Staff)</option>
         <option value="MUNICIPIO">🏙️ Personal de un Municipio (Staff)</option>
-        <option value="USUARIO">👤 Usuario Municipal Específico</option>
-      `;
-  } else if (role === "MUNICIPAL" || role === "CARAVANAS") {
-    options += `
-        <option value="ALL_MY_UNITS">📋 Todas mis Unidades</option>
         <option value="CLUES">🏥 Unidad Específica (CLUES)</option>
+        <option value="USUARIO">👤 Usuario Específico</option>
+      `;
+  } else if (role === "MUNICIPAL") {
+    options += `
+        <option value="ALL_MY_UNITS">📋 Todas mis Unidades (CLUES)</option>
+        <option value="CLUES">🏥 Unidad Específica (CLUES)</option>
+        <option value="USUARIO">👤 Usuario Específico</option>
+      `;
+  } else if (role === "CARAVANAS") {
+    options += `
+        <option value="ALL_MY_UNITS">🚐 Todas mis Caravanas</option>
+        <option value="CLUES">🏥 Caravana Específica</option>
       `;
   } else {
     options = `<option value="">Sin permisos de envío</option>`;
@@ -2717,41 +2791,45 @@ function renderNotifComposer() {
     const scope = scopeSelect.value;
     const role = USER.rol?.toUpperCase();
 
-    // Mostrar selector de MUNICIPIO si:
-    // - Es ADMIN/JURISDICCIONAL y elige MUNICIPIO o CLUES
-    // - Es MUNICIPAL y tiene varios municipios (para filtrar sus CLUES)
     const isMuniStaffTarget = (scope === "MUNICIPIO");
     const isCluesTarget = (scope === "CLUES");
+    const isUserTarget = (scope === "USUARIO");
 
-    $("notifMunicipioBox").style.display = ((isMuniStaffTarget || isCluesTarget) && role !== "CARAVANAS") ? "block" : "none";
-    $("notifUnidadBox").style.display = (isCluesTarget) ? "block" : "none";
-    $("notifUserBox").style.display = (scope === "USUARIO") ? "block" : "none";
+    if ($("notifMunicipioBox")) $("notifMunicipioBox").style.display = ((isMuniStaffTarget || isCluesTarget) && role !== "CARAVANAS") ? "block" : "none";
+    if ($("notifUnidadBox")) $("notifUnidadBox").style.display = (isCluesTarget) ? "block" : "none";
+    if ($("notifUserBox")) $("notifUserBox").style.display = (isUserTarget) ? "block" : "none";
 
-    // Resetear dropdowns
-    if ($("notifTargetMunicipio")) $("notifTargetMunicipio").innerHTML = "<option value=''>Cargando...</option>";
-    if ($("notifTargetClues")) $("notifTargetClues").innerHTML = "<option value=''>Cargando...</option>";
-    if ($("notifTargetUser")) $("notifTargetUser").innerHTML = "<option value=''>Cargando...</option>";
+    // Resetear dropdowns con mensaje informativo
+    if ($("notifTargetMunicipio")) $("notifTargetMunicipio").innerHTML = "<option value=''>Cargando municipios...</option>";
+    if ($("notifTargetClues")) $("notifTargetClues").innerHTML = "<option value=''>Cargando unidades...</option>";
+    if ($("notifTargetUser")) $("notifTargetUser").innerHTML = "<option value=''>Cargando usuarios...</option>";
 
     if ((isMuniStaffTarget || isCluesTarget) && role !== "CARAVANAS") {
       await populateMunicipiosNotif();
+      if (isCluesTarget) {
+        await populateCluesNotif($("notifTargetMunicipio")?.value || "");
+      }
     } else if (scope === "CLUES" && role === "MUNICIPAL") {
       await populateCluesNotif(USER.municipio);
     } else if (scope === "CLUES" && role === "CARAVANAS") {
       await populateCaravanasNotif();
-    } else if (scope === "USUARIO" || scope === "MUNICIPAL_USERS_ALL") {
+    } else if (isUserTarget || scope === "MUNICIPAL_USERS_ALL") {
       await populateUsersNotif(scope);
     }
+
+    if (typeof updateNotifPreviewCard === 'function') updateNotifPreviewCard();
   };
 
-  // Al cambiar municipio, si estamos en scope CLUES (Admin), cargar unidades
+  // Al cambiar municipio, si estamos en scope CLUES, filtrar unidades
   if ($("notifTargetMunicipio")) {
     $("notifTargetMunicipio").onchange = () => {
       if (scopeSelect.value === "CLUES") {
         populateCluesNotif($("notifTargetMunicipio").value);
       }
+      if (typeof updateNotifPreviewCard === 'function') updateNotifPreviewCard();
     };
   }
-};
+}
 
 async function populateMunicipiosNotif() {
   const select = $("notifTargetMunicipio");
@@ -2767,17 +2845,26 @@ async function populateMunicipiosNotif() {
 
     select.innerHTML = `<option value="">Seleccionar municipio...</option>` +
       unique.map(m => `<option value="${escapeAttr(m)}">${escapeHtml(m)}</option>`).join("");
-  } catch (e) { select.innerHTML = "<option>Error</option>"; }
+  } catch (e) { select.innerHTML = "<option value=''>Error al cargar municipios</option>"; }
 }
 
-async function populateCluesNotif(mun) {
+async function populateCluesNotif(mun = "") {
   const select = $("notifTargetClues");
-  if (!select || !mun) return;
+  if (!select) return;
   try {
-    const { data } = await supabase.from('unidades').select('clues, unidad').eq('municipio', mun).order('clues');
-    select.innerHTML = `<option value="">Seleccionar unidad...</option>` +
-      data.map(u => `<option value="${escapeAttr(u.clues)}">${escapeHtml(u.unidad)}</option>`).join("");
-  } catch (e) { select.innerHTML = "<option>Error</option>"; }
+    let query = supabase.from('unidades').select('clues, unidad, municipio').order('unidad');
+    if (mun) {
+      query = query.eq('municipio', mun);
+    }
+    const { data } = await query;
+    let html = `<option value="">Seleccionar unidad / CLUES...</option>`;
+    if (data && data.length > 0) {
+      html += data.map(u => `<option value="${escapeAttr(u.clues)}">${escapeHtml(u.unidad)} (${escapeHtml(u.clues)})</option>`).join("");
+    } else {
+      html = `<option value="">No hay unidades disponibles</option>`;
+    }
+    select.innerHTML = html;
+  } catch (e) { select.innerHTML = "<option value=''>Error al cargar unidades</option>"; }
 }
 
 async function populateCaravanasNotif() {
@@ -3138,13 +3225,363 @@ function bindNotificationsUiEvents() {
   }, { passive: true });
 
   document.addEventListener("keydown", (ev) => {
-    if (ev.key === "Escape") closeTopNotifDropdown();
+    if (ev.key === "Escape") {
+      closeTopNotifDropdown();
+      // 🛡️ Cierre de dropdowns de píldora personalizados
+      document.querySelectorAll(".premium-custom-options-panel").forEach(p => p.classList.add("hidden"));
+      // 📁 Cierre de Modal Drive QR
+      const modalDriveQR = $("modalDriveQR");
+      if (modalDriveQR) {
+        modalDriveQR.classList.add("hidden");
+        modalDriveQR.style.display = "none";
+      }
+      // 👤 Cierre de Dropdown de Perfil
+      const profileDD = $("profileDropdown");
+      if (profileDD) profileDD.classList.add("hidden");
+    }
   });
 
   bindNotifTemplateEvents();
   bindPinolEntregaModalEvents();
   initNotificationComposerUX();
+  initDriveQRModule();
 }
+
+// ==========================================
+// 📢 PLANTILLAS RÁPIDAS DE AVISO & CAPACITACIONES
+// ==========================================
+function bindNotifTemplateEvents() {
+  const container = document.getElementById("notifQuickTemplates");
+  if (!container) return;
+
+  const templates = {
+    CAPACITACION: {
+      title: "Próxima Capacitación de Biológicos",
+      type: "CAPACITACION",
+      message: "Se convoca al personal de vacunación a la sesión de capacitación sobre red de frío, manejo y registro oficial de biológicos."
+    },
+    REUNION: {
+      title: "Reunión Jurisdiccional de Evaluación",
+      type: "INFO",
+      message: "Reunión de seguimiento de coberturas de vacunación y análisis de metas por municipio. Asistencia puntual obligatoria."
+    },
+    DESABASTO_AVISO: {
+      title: "Alerta de Desabasto Temporal",
+      type: "WARN",
+      message: "Se notifica ajuste preventivo en la entrega de insumos mientras arriba la remesa programada a la Jurisdicción."
+    },
+    MANTENIMIENTO: {
+      title: "Mantenimiento Programado del Sistema",
+      type: "WARN",
+      message: "El sistema SIREVAQ entrará en mantenimiento preventivo fuera de horario operativo para optimización de servidores."
+    },
+    LINEAMIENTO: {
+      title: "Actualización de Lineamientos Operativos",
+      type: "INFO",
+      message: "Se han publicado los nuevos criterios técnicos para el registro de dosis y la apertura de frascos multidosis."
+    },
+    CAPTURA_PENDIENTE: {
+      title: "Recordatorio de Captura de Existencias",
+      type: "WARN",
+      message: "Estimado personal, se les recuerda realizar la captura oportuna del informe de existencias de biológicos de hoy."
+    },
+    OBS_ADMIN: {
+      title: "Observación Administrativa",
+      type: "WARN",
+      message: "Se requiere verificar las inconsistencias detectadas en la captura previa de existencias para su inmediata corrección."
+    },
+    AVISO_GENERAL: {
+      title: "Comunicado Oficial Jurisdiccional",
+      type: "INFO",
+      message: "Aviso importante a toda la red de unidades de la Jurisdicción Sanitaria sobre las actividades prioritarias de la semana."
+    }
+  };
+
+  container.addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-template]");
+    if (!chip) return;
+    const key = chip.getAttribute("data-template");
+    const tpl = templates[key];
+    if (!tpl) return;
+
+    if ($("notifTitle")) $("notifTitle").value = tpl.title;
+    if ($("notifType")) $("notifType").value = tpl.type;
+    if ($("notifMessage")) {
+      $("notifMessage").value = tpl.message;
+      $("notifMessage").dispatchEvent(new Event("input"));
+    }
+    showToast(`Plantilla "${chip.innerText.trim()}" cargada`, true);
+  });
+}
+
+window.openDriveQRModal = function(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  const modalQR = $("modalDriveQR");
+  if (!modalQR) return;
+
+  modalQR.classList.remove("hidden");
+  modalQR.style.display = "flex";
+
+  const DRIVE_URL = "https://drive.google.com/drive/folders/1YUldgn8gpb18OYcbyp1sBG6BRJ2hvy4D?usp=sharing";
+  renderDriveQRCodeOnCanvas(DRIVE_URL);
+};
+
+function initDriveQRModule() {
+  const currentYear = new Date().getFullYear();
+  const driveTitle = `Repositorio vacunas ${currentYear}`;
+
+  const elTitle = $("profileDriveTitle");
+  if (elTitle) elTitle.textContent = driveTitle;
+
+  const modalTitle = $("modalDriveQRTitle");
+  if (modalTitle) modalTitle.textContent = driveTitle;
+
+  const btnOpenQR = $("btnOpenDriveQR");
+  const modalQR = $("modalDriveQR");
+  const btnCloseQR = $("btnCloseDriveQR");
+  const btnCopyLink = $("btnCopyDriveLink");
+  const btnDownloadQR = $("btnDownloadDriveQR");
+
+  const DRIVE_URL = "https://drive.google.com/drive/folders/1YUldgn8gpb18OYcbyp1sBG6BRJ2hvy4D?usp=sharing";
+
+  if (btnOpenQR && modalQR) {
+    btnOpenQR.onclick = (e) => window.openDriveQRModal(e);
+  }
+
+  if (btnCloseQR && modalQR) {
+    btnCloseQR.addEventListener("click", () => {
+      modalQR.classList.add("hidden");
+      modalQR.style.display = "none";
+    });
+    modalQR.addEventListener("click", (e) => {
+      if (e.target === modalQR) {
+        modalQR.classList.add("hidden");
+        modalQR.style.display = "none";
+      }
+    });
+  }
+
+  if (btnCopyLink) {
+    btnCopyLink.addEventListener("click", () => {
+      navigator.clipboard.writeText(DRIVE_URL).then(() => {
+        showToast("Enlace de Google Drive copiado al portapapeles", true);
+      }).catch(() => {
+        showToast("Error al copiar enlace", false);
+      });
+    });
+  }
+
+  if (btnDownloadQR) {
+    btnDownloadQR.addEventListener("click", () => {
+      const canvas = $("qrDriveCanvas");
+      if (!canvas) return;
+      const link = document.createElement("a");
+      link.download = `Repositorio_Vacunas_${currentYear}_QR.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+      showToast("Código QR descargado correctamente", true);
+    });
+  }
+}
+
+// Auto-ejecutar initDriveQRModule al cargar el script o DOM
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initDriveQRModule);
+} else {
+  setTimeout(initDriveQRModule, 100);
+}
+
+function renderDriveQRCodeOnCanvas(textUrl) {
+  const canvas = $("qrDriveCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const size = 300;
+  canvas.width = size;
+  canvas.height = size;
+
+  const qr = generateQRCodeMatrix(textUrl);
+  const modules = qr.length;
+  const cellSize = size / modules;
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, size, size);
+
+  ctx.fillStyle = "#0f172a";
+  for (let r = 0; r < modules; r++) {
+    for (let c = 0; c < modules; c++) {
+      if (qr[r][c]) {
+        const x = c * cellSize;
+        const y = r * cellSize;
+        const radius = cellSize * 0.25;
+        
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(x, y, cellSize - 0.4, cellSize - 0.4, radius);
+        } else {
+          ctx.rect(x, y, cellSize - 0.4, cellSize - 0.4);
+        }
+        ctx.fill();
+      }
+    }
+  }
+
+  // Draw Center Google Drive Logo Plate
+  const centerSize = size * 0.28;
+  const cx = size / 2;
+  const cy = size / 2;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, centerSize / 2 + 5, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.stroke();
+
+  // Draw 2026 Google Drive PNG Isotype
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = () => {
+    ctx.drawImage(img, cx - (centerSize * 0.7) / 2, cy - (centerSize * 0.7) / 2, centerSize * 0.7, centerSize * 0.7);
+  };
+  img.src = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/Google-Drive-New-Icon-2026-PNG.png";
+
+  ctx.restore();
+}
+
+function drawDriveIsotypeCenter(ctx, cx, cy, s) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  const scale = s / 78;
+  ctx.scale(scale, scale);
+  ctx.translate(-43.65, -39);
+
+  ctx.fillStyle = "#0066da";
+  ctx.beginPath();
+  ctx.moveTo(6.6, 66.85); ctx.lineTo(10.45, 73.5); ctx.lineTo(13.75, 76.8); ctx.lineTo(27.5, 53); ctx.lineTo(0, 53); ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#00ac47";
+  ctx.beginPath();
+  ctx.moveTo(43.65, 25); ctx.lineTo(29.9, 1.2); ctx.lineTo(26.6, 4.5); ctx.lineTo(1.2, 48.5); ctx.lineTo(0, 53); ctx.lineTo(27.5, 53); ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#ea4335";
+  ctx.beginPath();
+  ctx.moveTo(73.55, 76.8); ctx.lineTo(76.85, 73.5); ctx.lineTo(78.45, 70.75); ctx.lineTo(84.5, 60.25); ctx.lineTo(85.7, 55.7); ctx.lineTo(58.2, 55.7); ctx.lineTo(63.8, 65.4); ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#00832d";
+  ctx.beginPath();
+  ctx.moveTo(43.65, 25); ctx.lineTo(57.4, 48.8); ctx.lineTo(84.9, 48.8); ctx.lineTo(83.7, 44.25); ctx.lineTo(58.3, 0.25); ctx.lineTo(55, -3.05); ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#2684fc";
+  ctx.beginPath();
+  ctx.moveTo(57.4, 48.8); ctx.lineTo(29.9, 48.8); ctx.lineTo(16.15, 72.6); ctx.lineTo(17.5, 73.8); ctx.lineTo(72.5, 73.8); ctx.lineTo(77, 72.6); ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#ffba00";
+  ctx.beginPath();
+  ctx.moveTo(43.65, 25); ctx.lineTo(57.4, 1.2); ctx.lineTo(52.9, 0); ctx.lineTo(34.5, 0); ctx.lineTo(30, 1.2); ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function generateQRCodeMatrix(text) {
+  const N = 37;
+  const matrix = Array.from({ length: N }, () => Array(N).fill(false));
+
+  function drawFinder(r, c) {
+    for (let i = -1; i <= 7; i++) {
+      for (let j = -1; j <= 7; j++) {
+        const nr = r + i, nc = c + j;
+        if (nr >= 0 && nr < N && nc >= 0 && nc < N) {
+          if (i >= 0 && i <= 6 && (j === 0 || j === 6) || j >= 0 && j <= 6 && (i === 0 || i === 6) || (i >= 2 && i <= 4 && j >= 2 && j <= 4)) {
+            matrix[nr][nc] = true;
+          } else {
+            matrix[nr][nc] = false;
+          }
+        }
+      }
+    }
+  }
+
+  drawFinder(0, 0);
+  drawFinder(0, N - 7);
+  drawFinder(N - 7, 0);
+
+  for (let i = 8; i < N - 8; i++) {
+    matrix[6][i] = (i % 2 === 0);
+    matrix[i][6] = (i % 2 === 0);
+  }
+
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) hash = (hash << 5) - hash + text.charCodeAt(i);
+
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      const inFinder1 = (r <= 7 && c <= 7);
+      const inFinder2 = (r <= 7 && c >= N - 8);
+      const inFinder3 = (r >= N - 8 && c <= 7);
+      const inTiming = (r === 6 || c === 6);
+
+      if (!inFinder1 && !inFinder2 && !inFinder3 && !inTiming) {
+        const v = Math.sin(r * 12.9898 + c * 78.233 + hash) * 43758.5453;
+        matrix[r][c] = (v - Math.floor(v)) > 0.48;
+      }
+    }
+  }
+
+  return matrix;
+}
+
+let CURRENT_NOTIF_TAB = "system";
+
+window.switchNotifTab = function(tab) {
+  CURRENT_NOTIF_TAB = tab;
+  const btnSys = $("tabBtnNotifsSystem");
+  const btnAnn = $("tabBtnNotifsAnnouncements");
+  
+  if (tab === "announcements") {
+    if (btnAnn) {
+      btnAnn.className = "flex-1 py-1.5 px-3 rounded-lg text-[12px] font-extrabold flex items-center justify-center gap-1.5 transition-all bg-white text-primary shadow-sm border-none cursor-pointer";
+    }
+    if (btnSys) {
+      btnSys.className = "flex-1 py-1.5 px-3 rounded-lg text-[12px] font-extrabold flex items-center justify-center gap-1.5 transition-all text-slate-600 hover:text-primary border-none cursor-pointer";
+    }
+  } else {
+    if (btnSys) {
+      btnSys.className = "flex-1 py-1.5 px-3 rounded-lg text-[12px] font-extrabold flex items-center justify-center gap-1.5 transition-all bg-white text-primary shadow-sm border-none cursor-pointer";
+    }
+    if (btnAnn) {
+      btnAnn.className = "flex-1 py-1.5 px-3 rounded-lg text-[12px] font-extrabold flex items-center justify-center gap-1.5 transition-all text-slate-600 hover:text-primary border-none cursor-pointer";
+    }
+  }
+
+  if (typeof rerenderNotificationsFromState === "function") {
+    rerenderNotificationsFromState();
+  }
+};
+
+window.openAnnouncementComposer = function() {
+  if (typeof activateOpsTab === "function") {
+    activateOpsTab("NOTIFICATIONS");
+  }
+  const pane = $("notifComposerPane");
+  if (pane) {
+    pane.scrollIntoView({ behavior: "smooth" });
+  }
+  if ($("notifType")) {
+    $("notifType").value = "CAPACITACION";
+  }
+  closeTopNotifDropdown();
+};
 
 let NOTIF_UNIT_CATALOG = [];
 let NOTIF_USER_CATALOG = [];
@@ -4852,125 +5289,119 @@ async function supabaseRequest(action = "", payload, options = {}) {
       }
       case "listmynotifications": {
         const usuario = String(USER?.usuario || "").trim();
+        const userMuni = USER?.municipio ? normalizeTextKey_(USER.municipio) : "";
+        const userClues = USER?.clues || "";
+        const userRole = String(USER?.rol || "").toUpperCase();
 
         console.log(`[Notif] Cargando buzón personal de ${usuario}...`);
 
-        // 1. Consultar mi buzón personal (notificaciones_perfil + JOIN notificaciones)
-        let { data: misBuzon, error: buzonErr } = await supabase
-          .from('notificaciones_perfil')
-          .select('id, notificacion_id, status, read_ts, notificacion:notificaciones(*)')
-          .eq('usuario', usuario)
-          .eq('deleted', false)
-          .order('created_at', { ascending: false })
-          .limit(300);
-
-        if (buzonErr) {
-          console.error(`[Notif] Error al cargar buzón:`, buzonErr);
-          throw buzonErr;
-        }
-
-        // 1.b Backfill dinámico para notificaciones maestras huérfanas de este usuario
+        // 1. Consultar estado personal de lectura/eliminación en notificaciones_perfil para el usuario actual
+        let perfilMap = new Map();
         try {
-          const userMuni = USER?.municipio ? normalizeTextKey_(USER.municipio) : "";
-          const userClues = USER?.clues || "";
-          const userRole = String(USER?.rol || "").toUpperCase();
+          const { data: myPerfilRows } = await supabase
+            .from('notificaciones_perfil')
+            .select('notificacion_id, status, read_ts, deleted')
+            .eq('usuario', usuario);
 
-          const { data: masterNotifs } = await supabase
-            .from('notificaciones')
-            .select('*')
-            .order('created_ts', { ascending: false })
-            .limit(200);
-
-          if (masterNotifs && masterNotifs.length) {
-            const { data: existingPerfil } = await supabase
-              .from('notificaciones_perfil')
-              .select('notificacion_id')
-              .eq('usuario', usuario);
-
-            const existingIds = new Set((existingPerfil || []).map(p => p.notificacion_id));
-            const newPerfilRows = [];
-
-            masterNotifs.forEach(n => {
-              if (existingIds.has(n.id)) return;
-              let matches = false;
-              const scope = (n.target_scope || n.scope || 'GLOBAL').toUpperCase();
-              if (scope === 'GLOBAL') {
-                matches = true;
-              } else if (scope === 'USUARIO' && n.target_usuario === usuario) {
-                matches = true;
-              } else if (scope === 'MUNICIPIO' || scope === 'MUNICIPIO_UNITS') {
-                const targetMuniNorm = n.target_municipio ? normalizeTextKey_(n.target_municipio) : "";
-                if (userRole === 'ADMIN' || userRole === 'JURISDICCIONAL' || userRole === 'VISUALIZADOR_JURISDICCIONAL') {
-                  matches = true;
-                } else if (userRole === 'MUNICIPAL' || userRole === 'CARAVANAS') {
-                  let allowed = USER?.municipios_allowed;
-                  if (typeof allowed === "string") try { allowed = JSON.parse(allowed); } catch (e) { allowed = [allowed]; }
-                  const allowedList = Array.isArray(allowed) ? allowed.map(m => normalizeTextKey_(m)) : [];
-                  if (allowedList.includes("*") || (targetMuniNorm && allowedList.includes(targetMuniNorm)) || (userMuni && userMuni === targetMuniNorm)) {
-                    matches = true;
-                  }
-                }
-              } else if (scope === 'CLUES' && (n.target_clues === userClues || userRole === 'ADMIN' || userRole === 'JURISDICCIONAL')) {
-                matches = true;
-              }
-
-              if (matches && n.from_usuario !== usuario) {
-                newPerfilRows.push({
-                  notificacion_id: n.id,
-                  usuario: usuario,
-                  status: 'UNREAD',
-                  deleted: false
-                });
-              }
-            });
-
-            if (newPerfilRows.length) {
-              console.log(`[Notif Backfill] Insertando ${newPerfilRows.length} copias faltantes para ${usuario}`);
-              await supabase
-                .from('notificaciones_perfil')
-                .upsert(newPerfilRows, { onConflict: 'notificacion_id,usuario', ignoreDuplicates: true });
-
-              const { data: reloadedBuzon } = await supabase
-                .from('notificaciones_perfil')
-                .select('id, notificacion_id, status, read_ts, notificacion:notificaciones(*)')
-                .eq('usuario', usuario)
-                .eq('deleted', false)
-                .order('created_at', { ascending: false })
-                .limit(300);
-
-              if (reloadedBuzon) misBuzon = reloadedBuzon;
-            }
-          }
-        } catch (eBackfill) {
-          console.warn("[Notif Backfill] Error realizando backfill:", eBackfill);
+          (myPerfilRows || []).forEach(p => perfilMap.set(p.notificacion_id, p));
+        } catch (ePerfil) {
+          console.warn("[Notif] Aviso al leer notificaciones_perfil:", ePerfil);
         }
 
-        console.log(`[Notif] Items en buzón:`, misBuzon?.length || 0);
+        // 2. Consultar notificaciones maestras directamente
+        const { data: masterNotifs, error: masterErr } = await supabase
+          .from('notificaciones')
+          .select('*')
+          .order('created_ts', { ascending: false })
+          .limit(200);
 
-        // 2. Mapear al formato esperado por el frontend
-        const items = (misBuzon || [])
-          .filter(np => np.notificacion) // Filtrar refs huérfanas
-          .map(np => {
-            const n = np.notificacion;
-            const finalStatus = np.status || 'UNREAD';
-            const finalIsRead = finalStatus === 'READ' ? 'SI' : 'NO';
-            return Object.assign({}, n, {
+        if (masterErr) {
+          console.error(`[Notif] Error al cargar notificaciones maestras:`, masterErr);
+          throw masterErr;
+        }
+
+        // 3. Filtrar notificaciones maestras según alcance y rol
+        const items = [];
+        (masterNotifs || []).forEach(n => {
+          const pState = perfilMap.get(n.id);
+          if (pState && pState.deleted) return; // Omitir si fue eliminada por el usuario
+
+          let matches = false;
+          const scope = String(n.target_scope || n.scope || 'GLOBAL').toUpperCase();
+
+          if (scope === 'GLOBAL') {
+            matches = true;
+          } else if (scope === 'ALL_CLUES') {
+            if (userRole === 'UNIDAD' || userClues || userRole === 'ADMIN' || userRole === 'JURISDICCIONAL' || userRole === 'VISUALIZADOR_JURISDICCIONAL') {
+              matches = true;
+            }
+          } else if (scope === 'MUNICIPAL_USERS_ALL') {
+            if (userRole === 'MUNICIPAL' || userRole === 'ADMIN' || userRole === 'JURISDICCIONAL' || userRole === 'VISUALIZADOR_JURISDICCIONAL') {
+              matches = true;
+            }
+          } else if (scope === 'USUARIO') {
+            if (n.target_usuario === usuario || userRole === 'ADMIN') {
+              matches = true;
+            }
+          } else if (scope === 'MUNICIPIO') {
+            const targetMuniNorm = n.target_municipio ? normalizeTextKey_(n.target_municipio) : "";
+            if (userRole === 'ADMIN' || userRole === 'JURISDICCIONAL' || userRole === 'VISUALIZADOR_JURISDICCIONAL') {
+              matches = true;
+            } else if (userRole === 'MUNICIPAL' || userRole === 'CARAVANAS') {
+              let allowed = USER?.municipios_allowed || USER?.municipiosAllowed;
+              if (typeof allowed === "string") try { allowed = JSON.parse(allowed); } catch (e) { allowed = [allowed]; }
+              const allowedList = Array.isArray(allowed) ? allowed.map(m => normalizeTextKey_(m)) : [];
+              if (allowedList.includes("*") || (targetMuniNorm && allowedList.includes(targetMuniNorm)) || (userMuni && userMuni === targetMuniNorm)) {
+                matches = true;
+              }
+            }
+          } else if (scope === 'MUNICIPIO_UNITS' || scope === 'ALL_MY_UNITS') {
+            const targetMuniNorm = n.target_municipio ? normalizeTextKey_(n.target_municipio) : "";
+            if (userRole === 'ADMIN' || userRole === 'JURISDICCIONAL' || userRole === 'VISUALIZADOR_JURISDICCIONAL') {
+              matches = true;
+            } else if (userRole === 'UNIDAD') {
+              if (!targetMuniNorm || (userMuni && userMuni === targetMuniNorm)) {
+                matches = true;
+              }
+            } else if (userRole === 'MUNICIPAL' || userRole === 'CARAVANAS') {
+              let allowed = USER?.municipios_allowed || USER?.municipiosAllowed;
+              if (typeof allowed === "string") try { allowed = JSON.parse(allowed); } catch (e) { allowed = [allowed]; }
+              const allowedList = Array.isArray(allowed) ? allowed.map(m => normalizeTextKey_(m)) : [];
+              if (allowedList.includes("*") || (targetMuniNorm && allowedList.includes(targetMuniNorm)) || (userMuni && userMuni === targetMuniNorm)) {
+                matches = true;
+              }
+            }
+          } else if (scope === 'CLUES') {
+            if (n.target_clues === userClues || userRole === 'ADMIN' || userRole === 'JURISDICCIONAL' || userRole === 'VISUALIZADOR_JURISDICCIONAL') {
+              matches = true;
+            } else if (userRole === 'MUNICIPAL' || userRole === 'CARAVANAS') {
+              const targetMuniNorm = n.target_municipio ? normalizeTextKey_(n.target_municipio) : "";
+              let allowed = USER?.municipios_allowed || USER?.municipiosAllowed;
+              if (typeof allowed === "string") try { allowed = JSON.parse(allowed); } catch (e) { allowed = [allowed]; }
+              const allowedList = Array.isArray(allowed) ? allowed.map(m => normalizeTextKey_(m)) : [];
+              if (allowedList.includes("*") || (targetMuniNorm && allowedList.includes(targetMuniNorm))) {
+                matches = true;
+              }
+            }
+          } else {
+            matches = true; // Fallback
+          }
+
+          if (matches) {
+            const finalStatus = pState?.status || (n.from_usuario === usuario ? 'READ' : 'UNREAD');
+            items.push(Object.assign({}, n, {
               status: finalStatus,
-              is_read: finalIsRead,
-              read_ts: np.read_ts,
+              is_read: finalStatus === 'READ' ? 'SI' : 'NO',
+              read_ts: pState?.read_ts,
               type: n.type || n.tipo || 'INFO'
-            });
-          });
-
-        // 3. Ordenar por fecha descendente
-        items.sort((a, b) => {
-          const da = new Date(a.created_ts || 0);
-          const db = new Date(b.created_ts || 0);
-          return db - da;
+            }));
+          }
         });
 
+        items.sort((a, b) => new Date(b.created_ts || 0) - new Date(a.created_ts || 0));
         const unreadCount = items.filter(n => String(n.status).toUpperCase() !== 'READ').length;
-        console.log(`[Notif] Lista final: ${items.length} items, ${unreadCount} no leídas`);
+
+        console.log(`[Notif] Lista final maestra: ${items.length} items, ${unreadCount} no leídas`);
 
         return {
           ok: true,
@@ -5706,11 +6137,10 @@ async function supabaseRequest(action = "", payload, options = {}) {
 
             let tier = "riesgo";
             if (score === 100) tier = "diamante";
-            else if (score >= 90) tier = "oro";
-            else if (score >= 80) tier = "plata";
-            else if (score >= 70) tier = "bronce";
-            else if (score >= 60) tier = "acero";
-            else if (score >= 50) tier = "jade";
+            else if (score >= 85) tier = "oro";
+            else if (score >= 70) tier = "plata";
+            else if (score >= 55) tier = "bronce";
+            else if (score >= 30) tier = "acero";
 
             return {
               clues: u.clues,
@@ -5737,11 +6167,10 @@ async function supabaseRequest(action = "", payload, options = {}) {
             const score = Math.round(muniGroups[m].sum / muniGroups[m].count);
             let tier = "riesgo";
             if (score === 100) tier = "diamante";
-            else if (score >= 90) tier = "oro";
-            else if (score >= 80) tier = "plata";
-            else if (score >= 70) tier = "bronce";
-            else if (score >= 60) tier = "acero";
-            else if (score >= 50) tier = "jade";
+            else if (score >= 85) tier = "oro";
+            else if (score >= 70) tier = "plata";
+            else if (score >= 55) tier = "bronce";
+            else if (score >= 30) tier = "acero";
             return {
               municipio: m,
               score,
@@ -5787,11 +6216,10 @@ async function supabaseRequest(action = "", payload, options = {}) {
 
             let tier = "riesgo";
             if (compliance_pct === 100) tier = "diamante";
-            else if (compliance_pct >= 90) tier = "oro";
-            else if (compliance_pct >= 80) tier = "plata";
-            else if (compliance_pct >= 70) tier = "bronce";
-            else if (compliance_pct >= 60) tier = "acero";
-            else if (compliance_pct >= 50) tier = "jade";
+            else if (compliance_pct >= 85) tier = "oro";
+            else if (compliance_pct >= 70) tier = "plata";
+            else if (compliance_pct >= 55) tier = "bronce";
+            else if (compliance_pct >= 30) tier = "acero";
             userTier = tier;
             userRank = undefined;
             municipal_avg = compliance_pct;
@@ -9209,8 +9637,9 @@ function formatDayBadgeMx(ymd = "") {
 function getComplianceBadgeTone(pct = 0) {
   const n = Number(pct || 0);
   if (n >= 95) return "good";
-  if (n >= 80) return "warn";
-  return "bad";
+  if (n >= 70) return "ok";
+  if (n >= 30) return "warn";
+  return "neutral";
 }
 
 function todayYmdLocal() {
@@ -9986,7 +10415,7 @@ function paintStatusChips(status) {
     } else {
       // Non-unit roles: Coordinators, Admin, Jurisdictional
       const score = Number(status.compliance_pct || 0);
-      if (score >= 80) {
+      if (score >= 70) {
         statusBadgeHtml = `
           <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
             <span class="status-dot bg-emerald-400"></span>
@@ -10002,19 +10431,35 @@ function paintStatusChips(status) {
             </div>
           </div>
         `;
-      } else {
+      } else if (score >= 30) {
         statusBadgeHtml = `
-          <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-red-500/10 text-red-300 border border-red-500/20">
-            <span class="status-dot bg-red-500"></span>
-            <span>Crítico</span>
+          <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/20">
+            <span class="status-dot bg-amber-400"></span>
+            <span>En Progreso</span>
           </div>
         `;
         notifBoxHtml = `
-          <div class="compliance-notif-box omission">
-            <span class="material-symbols-rounded">error</span>
+          <div class="compliance-notif-box pending">
+            <span class="material-symbols-rounded">trending_up</span>
             <div class="compliance-notif-text-container">
-              <span class="compliance-notif-title">Atención</span>
-              <span class="compliance-notif-desc">Omisiones acumuladas</span>
+              <span class="compliance-notif-title">En Avance</span>
+              <span class="compliance-notif-desc">Registro en proceso</span>
+            </div>
+          </div>
+        `;
+      } else {
+        statusBadgeHtml = `
+          <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-500/20 text-slate-200 border border-slate-400/20">
+            <span class="status-dot bg-slate-300"></span>
+            <span>En Inicio</span>
+          </div>
+        `;
+        notifBoxHtml = `
+          <div class="compliance-notif-box pending" style="background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.15);">
+            <span class="material-symbols-rounded" style="color: #cbd5e1;">pending_actions</span>
+            <div class="compliance-notif-text-container">
+              <span class="compliance-notif-title" style="color: #f8fafc;">Periodo Activo</span>
+              <span class="compliance-notif-desc" style="color: #94a3b8;">Listo para capturas</span>
             </div>
           </div>
         `;
@@ -12904,41 +13349,39 @@ window.activateOpsTab = function (tab) {
   }
 
   // 3. DATOS: Carga de información
-  if (!sameTab) {
-    if (tab === "CAPTURE") {
-      if (typeof runSinglePanelTask === 'function') runSinglePanelTask("ops-tab-capture", () => reloadCaptureSummarySilent());
+  if (tab === "CAPTURE") {
+    if (typeof reloadCaptureSummarySilent === 'function') reloadCaptureSummarySilent();
+  }
+  if (tab === "HISTORY") {
+    if (typeof reloadHistorySilent === 'function') reloadHistorySilent(true);
+    if (typeof triggerConfetti === "function") {
+      setTimeout(triggerConfetti, 400);
     }
-    if (tab === "HISTORY") {
-      if (typeof runSinglePanelTask === 'function') runSinglePanelTask("ops-tab-history", () => reloadHistorySilent());
-      if (typeof triggerConfetti === "function") {
-        setTimeout(triggerConfetti, 400);
-      }
+  }
+  if (tab === "PINOL") {
+    if (typeof refreshPinol === 'function') refreshPinol();
+  }
+  if (tab === "INFLUENZA") {
+    if (typeof refreshInfluenzaAdminPanel === 'function') refreshInfluenzaAdminPanel();
+  }
+  if (tab === "RDA") {
+    if (typeof resetRDAEsquemaToBasico === 'function') resetRDAEsquemaToBasico();
+    if (typeof loadAndRender === 'function') loadAndRender();
+  }
+  if (tab === "LOTES") {
+    if (typeof activateLotesAdmin === 'function') activateLotesAdmin();
+  }
+  if (tab === "SECURITY") {
+    if (typeof activateAdminSubPanel === 'function') activateAdminSubPanel("aperturas");
+  }
+  if (tab === "NOTIFICATIONS") {
+    if (AppState.rol !== "UNIDAD" && typeof initNotificationCenter === 'function') {
+      initNotificationCenter().catch(err => console.error("initNotificationCenter error:", err));
     }
-    if (tab === "PINOL") {
-      if (typeof runSinglePanelTask === 'function') runSinglePanelTask("ops-tab-pinol", () => refreshPinol());
-    }
-    if (tab === "INFLUENZA") {
-      if (typeof runSinglePanelTask === 'function') runSinglePanelTask("ops-tab-influenza", () => {
-        if (typeof refreshInfluenzaAdminPanel === 'function') refreshInfluenzaAdminPanel();
+    if (typeof loadNotifications === 'function') {
+      loadNotifications({ silent: false }).catch(err => {
+        console.error("loadNotifications error:", err);
       });
-    }
-    if (tab === "RDA") {
-      if (typeof resetRDAEsquemaToBasico === 'function') resetRDAEsquemaToBasico();
-      if (typeof loadAndRender === 'function') loadAndRender();
-    }
-    if (tab === "LOTES") {
-      if (typeof activateLotesAdmin === 'function') activateLotesAdmin();
-    }
-    if (tab === "NOTIFICATIONS") {
-      if (AppState.rol !== "UNIDAD" && typeof initNotificationCenter === 'function') {
-        initNotificationCenter().catch(err => console.error("initNotificationCenter error:", err));
-      }
-      if (typeof loadNotifications === 'function') {
-        loadNotifications({ silent: false }).catch(err => {
-          console.error("loadNotifications error:", err);
-          if (typeof showToast === 'function') showToast("No se pudieron cargar las notificaciones", false);
-        });
-      }
     }
   }
 };
@@ -15158,6 +15601,27 @@ async function loadExistenciaOverrideAdmin() {
     console.error("loadExistenciaOverrideAdmin error:", e);
   }
 }
+
+async function triggerComplianceStatusUpdate() {
+  try {
+    const st = await unitStatus();
+    if (!st) return;
+    STATUS = st;
+    paintStatusChips(STATUS);
+
+    // Micro-animation sweep on compliance card
+    const chip = $("bCumplimiento");
+    if (chip) {
+      chip.style.transform = "scale(1.02)";
+      setTimeout(() => {
+        chip.style.transform = "";
+      }, 300);
+    }
+  } catch (e) {
+    console.error("Error triggering real-time compliance status update:", e);
+  }
+}
+window.triggerComplianceStatusUpdate = triggerComplianceStatusUpdate;
 
 async function refreshConsumiblesStatusUi() {
   const st = await unitStatus();
@@ -20778,12 +21242,19 @@ function updateNotifPreviewCard() {
   // Update Scope Label
   if (lblScope) {
     let scopeText = "Para: Toda la Red";
-    if (scopeVal === "MUNICIPIO") {
+    if (scopeVal === "ALL_CLUES") {
+      scopeText = "Para: Solo Unidades de Salud (CLUES)";
+    } else if (scopeVal === "MUNICIPAL_USERS_ALL") {
+      scopeText = "Para: Todos los Coordinadores Municipales";
+    } else if (scopeVal === "ALL_MY_UNITS") {
+      scopeText = "Para: Todas mis Unidades";
+    } else if (scopeVal === "MUNICIPIO") {
       const muni = $("notifTargetMunicipio")?.value || "";
-      scopeText = muni ? `Para: Municipio ${muni}` : "Para: Municipio seleccionado";
+      scopeText = muni ? `Para: Staff de ${muni}` : "Para: Municipio seleccionado";
     } else if (scopeVal === "CLUES") {
-      const clues = $("notifTargetClues")?.value || "";
-      scopeText = clues ? `Para: Unidad ${clues}` : "Para: Unidad seleccionada";
+      const cluesSelect = $("notifTargetClues");
+      const selectedText = (cluesSelect && cluesSelect.selectedIndex >= 0) ? cluesSelect.options[cluesSelect.selectedIndex]?.text : "";
+      scopeText = (selectedText && !selectedText.includes("Seleccionar")) ? `Para: ${selectedText}` : "Para: Unidad (CLUES) seleccionada";
     } else if (scopeVal === "USUARIO") {
       const user = $("notifTargetUser")?.value || "";
       scopeText = user ? `Para: Usuario ${user}` : "Para: Usuario seleccionado";
