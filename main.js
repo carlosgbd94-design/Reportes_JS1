@@ -14170,7 +14170,6 @@ function performCancelEditCONS() {
   showToast("Edición cancelada");
 }
 function performEditBIO() {
-  if (!HAS_SAVED_BIO) return;
   setEditModeBIO(true);
   showToast("Modo edición activado (Pedido de biológico)", true, "warn");
 }
@@ -18244,8 +18243,14 @@ window.BIOLOGICO_COLORS = {
 window.getBiologicoColor = function(name) {
   if (!name) return "#0f172a";
   const clean = String(name).trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  // Buscar coincidencia exacta primero
   for (const [key, color] of Object.entries(window.BIOLOGICO_COLORS)) {
-    const normKey = key.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const normKey = key.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    if (clean === normKey) return color;
+  }
+  // Coincidencia por subcadena
+  for (const [key, color] of Object.entries(window.BIOLOGICO_COLORS)) {
+    const normKey = key.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
     if (clean.includes(normKey) || normKey.includes(clean)) return color;
   }
   return "#0f172a";
@@ -18467,14 +18472,7 @@ async function openLiveView(clues, unidad, municipio) {
       if (tipo === "BIO" && canEditRole) {
         editBioBtn.style.display = "inline-flex";
         editBioBtn.onclick = () => {
-          // Cerrar Live View
-          const overlay = $("liveViewOverlay");
-          if (overlay) { overlay.classList.remove("show"); overlay.style.display = "none"; }
-          // Activar tab BIO en el hub de captura (click en el nav item si existe)
-          const navBio = document.querySelector('[data-tab="BIO"], #navTabBIO, .capture-tab-bio');
-          if (navBio) navBio.click();
-          // Ejecutar modo edición
-          if (typeof performEditBIO === "function") performEditBIO();
+          window.openBioEditModal();
         };
       } else {
         editBioBtn.style.display = "none";
@@ -18494,6 +18492,133 @@ async function openLiveView(clues, unidad, municipio) {
     showToast("Error al cargar detalle: " + e.message, false);
   }
 }
+
+// ============================================================================
+// ✏️ MODAL EDITAR PEDIDO DE BIOLÓGICO (DESDE VISTA EN VIVO)
+// ============================================================================
+window.openBioEditModal = function() {
+  const modal = $("modalBioEditOverlay");
+  const tbody = $("tbodyBioEditModal");
+  const res = window.currentLiveViewRes;
+
+  if (!modal || !tbody || !res || !res.data) {
+    return showToast("No hay datos de pedido cargados para editar.", false, "warn");
+  }
+
+  // Ocultar modal Live View mientras se edita para evitar encimados
+  const liveOverlay = $("liveViewOverlay");
+  if (liveOverlay) {
+    liveOverlay.classList.remove("show");
+    liveOverlay.style.display = "none";
+  }
+
+  const titleEl = $("modalBioEditTitle");
+  const subEl = $("modalBioEditSub");
+  if (titleEl) titleEl.textContent = `Editar Pedido: ${res.meta?.unidad || res.data[0]?.unidad || "Unidad"}`;
+  if (subEl) subEl.textContent = `CLUES: ${res.meta?.clues || res.data[0]?.clues} | Fecha: ${res.meta?.fecha || todayYmdLocal()}`;
+
+  tbody.innerHTML = res.data.map((r) => {
+    const bioName = r.biologico || "—";
+    const color = window.getBiologicoColor(bioName);
+    const existQty = r.existencia_actual_frascos ?? r.existencia ?? 0;
+    const pedQty = r.pedido_frascos ?? r.solicitud ?? 0;
+
+    return `
+      <tr style="border-bottom:1px solid #f1f5f9;" data-bio="${escapeHtml(bioName)}" data-id="${r.id || ''}">
+        <td style="padding:12px; font-weight:800; color:${color}; font-size:13px;">
+          ${escapeHtml(bioName)}
+        </td>
+        <td style="padding:12px; text-align:center;">
+          <input type="number" min="0" class="input-exist" value="${existQty}" style="width:75px; text-align:center; padding:6px; border-radius:8px; border:1px solid #cbd5e1; font-weight:700; font-size:13px;" />
+        </td>
+        <td style="padding:12px; text-align:center;">
+          <input type="number" min="0" class="input-ped" value="${pedQty}" style="width:75px; text-align:center; padding:6px; border-radius:8px; border:1px solid #bae6fd; background:#f0f9ff; color:${color}; font-weight:900; font-size:14px;" />
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  modal.style.display = "flex";
+};
+
+window.closeBioEditModal = function() {
+  const modal = $("modalBioEditOverlay");
+  if (modal) modal.style.display = "none";
+  const liveOverlay = $("liveViewOverlay");
+  if (liveOverlay) {
+    liveOverlay.classList.add("show");
+    liveOverlay.style.display = "flex";
+  }
+};
+
+window.saveBioEditModal = async function() {
+  const tbody = $("tbodyBioEditModal");
+  const res = window.currentLiveViewRes;
+  const btnSave = $("btnSaveBioEditModal");
+
+  if (!tbody || !res) return;
+
+  const rows = tbody.querySelectorAll("tr");
+  const updatedItems = [];
+
+  rows.forEach(tr => {
+    const bioName = tr.getAttribute("data-bio");
+    const existInp = tr.querySelector(".input-exist");
+    const pedInp = tr.querySelector(".input-ped");
+
+    if (bioName && existInp && pedInp) {
+      updatedItems.push({
+        biologico: bioName,
+        existencia_actual_frascos: Number(existInp.value || 0),
+        pedido_frascos: Number(pedInp.value || 0),
+        promedio_frascos: 0,
+        min_dosis: 0,
+        max_dosis: 0
+      });
+    }
+  });
+
+  // Evaluar automáticamente si el pedido pasa a estar en ceros (sin pedido)
+  const isSinPedido = updatedItems.length > 0 && updatedItems.every(it => Number(it.pedido_frascos || 0) === 0);
+
+  if (btnSave) {
+    btnSave.disabled = true;
+    btnSave.innerHTML = `<span class="material-symbols-rounded" style="font-size:18px; animation:spin 1s linear infinite;">sync</span> Guardando...`;
+  }
+
+  try {
+    const payload = {
+      action: "savebio",
+      clues: res.meta?.clues || res.data[0]?.clues,
+      unidad: res.meta?.unidad || res.data[0]?.unidad,
+      municipio: res.meta?.municipio || res.data[0]?.municipio,
+      fecha: res.meta?.fecha || todayYmdLocal(),
+      fechaPedidoProgramada: res.meta?.fecha || todayYmdLocal(),
+      tipo_pedido: "MENSUAL",
+      sin_pedido: isSinPedido,
+      items: updatedItems
+    };
+
+    const saveRes = await apiCall(payload);
+    if (!saveRes || !saveRes.ok) throw new Error(saveRes?.error || "No se pudo guardar la edición");
+
+    showToast("¡Pedido editado exitosamente!", true, "good");
+    window.closeBioEditModal();
+
+    // Refrescar Live View
+    if (window.refreshLiveViewCurrentData) {
+      window.refreshLiveViewCurrentData();
+    }
+  } catch (err) {
+    console.error("[BioEdit Error]", err);
+    showToast("Error al guardar edición: " + (err.message || err), false, "bad");
+  } finally {
+    if (btnSave) {
+      btnSave.disabled = false;
+      btnSave.innerHTML = `<span class="material-symbols-rounded" style="font-size:18px;">save</span> Guardar Cambios`;
+    }
+  }
+};
 
 function getMonthsTo(mmmaa) {
   if (!mmmaa) return 99;
@@ -19391,7 +19516,6 @@ window.renderLiveViewTableContent = function() {
             return `
                   <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;" data-type="sr" data-status="${status.label}" data-months="${diffMonths}">
                     <td style="padding:14px 24px; font-weight:900; color:${color}; font-size:14px; white-space: nowrap;">
-                      <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${color}; margin-right:6px; vertical-align:middle;"></span>
                       <span style="vertical-align: middle;">${escapeHtml(bioName)}</span>${tipoBadge}
                     </td>
                     <td style="padding:14px 24px; font-weight:600; color:#475569;">${escapeHtml(r.lote || "—")}</td>
@@ -19569,7 +19693,6 @@ window.renderLiveViewTableContent = function() {
         return `
            <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;" data-type="bio" data-biologico="${escapeHtml(bioName)}">
              <td style="padding:14px 24px; font-weight:900; color:${color}; font-size:13px; letter-spacing:-0.01em;">
-               <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${color}; margin-right:8px; vertical-align:middle;"></span>
                ${escapeHtml(bioName)}
              </td>
              <td style="padding:14px 24px; text-align:center;">
