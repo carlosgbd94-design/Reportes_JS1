@@ -2012,12 +2012,15 @@ function formatNotifBody(title, message, fromUsuario = "") {
   } else {
     // Comunicados generales e instrucciones institucionales
     if (rawMsg) {
-      html += `<div class="notifMsgText" style="margin-top:6px; padding:10px 12px; background:rgba(241, 245, 249, 0.9); border-left:3.5px solid #0284c7; border-radius:8px; font-size:12px; line-height:1.5; color:#1e293b; font-weight:600; white-space:pre-wrap; word-break:break-word; box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);">
-        ${escapeHtml(rawMsg)}
+      html += `<div class="notifMsgText" style="margin-top:6px; padding:12px 14px; background:linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.85) 100%); border:1px solid rgba(255, 255, 255, 0.9); border-radius:14px; font-size:12px; line-height:1.6; color:#334155; font-weight:600; white-space:pre-wrap; word-break:break-word; box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.05), inset 0 1px 1px 0 rgba(255, 255, 255, 1), inset 0 -1px 2px 0 rgba(148, 163, 184, 0.12); display:flex; items-start; gap:10px;">
+        <div style="width:28px; height:28px; border-radius:10px; background:rgba(2, 132, 199, 0.08); color:#0284c7; display:flex; align-items:center; justify-content:center; flex-shrink:0; border:1px solid rgba(2, 132, 199, 0.15); margin-top:2px;">
+          <span class="material-symbols-rounded" style="font-size:16px;">campaign</span>
+        </div>
+        <div style="flex:1;">${escapeHtml(rawMsg)}</div>
       </div>`;
     }
     if (solicitante) {
-      html += `<div style="margin-top:5px; font-size:11px; color:#64748b; font-weight:600; display:flex; align-items:center; gap:4px;">
+      html += `<div style="margin-top:6px; font-size:11px; color:#64748b; font-weight:600; display:flex; align-items:center; gap:4px;">
         <span class="material-symbols-rounded" style="font-size:13px; color:#0284c7;">send</span> Emitido por: <strong style="color:#334155;">${escapeHtml(solicitante)}</strong>
       </div>`;
     }
@@ -2124,24 +2127,24 @@ function buildNotificationsHtml(items = []) {
             </div>
             
             <div class="notifCompactActions">
-              <button type="button" class="notifMiniBtn" title="Ver comunicado completo" style="background:#e0f2fe; color:#0369a1;" onclick="openNotifDetailModal('${escapeAttr(item.id || "")}', '${escapeAttr(item.title || "")}', '${escapeAttr(item.message || "")}', '${escapeAttr(formatNotifDate(item.created_ts))}', '${escapeAttr(item.from_usuario || "ADMINISTRADOR")}', '${escapeAttr(item.target_scope || item.scope || "GLOBAL")}', '${escapeAttr(item.type || "INFO")}')"><span class="material-symbols-rounded">visibility</span></button>
+              <button type="button" class="notifIconPureBtn notifIconPureBtn-info" title="Ver comunicado completo" onclick="openNotifDetailModal('${escapeAttr(item.id || "")}', '${escapeAttr(item.title || "")}', '${escapeAttr(item.message || "")}', '${escapeAttr(formatNotifDate(item.created_ts))}', '${escapeAttr(item.from_usuario || "ADMINISTRADOR")}', '${escapeAttr(item.target_scope || item.scope || "GLOBAL")}', '${escapeAttr(item.type || "INFO")}')"><span class="material-symbols-rounded">visibility</span></button>
               ${isDesabastoActive
-        ? `<button type="button" class="notifMiniBtn" title="Marcar como Verificado" style="background:var(--md-sys-color-surface-variant); color:var(--md-sys-color-on-surface-variant);" onclick="resolveDesabastoFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">check_circle</span></button>`
+        ? `<button type="button" class="notifIconPureBtn notifIconPureBtn-success" title="Marcar como Verificado" onclick="resolveDesabastoFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">check_circle</span></button>`
         : ``
       }
               ${showConfirmPinol
-        ? `<button type="button" class="notifMiniBtn good" title="Confirmar" onclick="confirmPinolReceiptFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">task_alt</span></button>`
+        ? `<button type="button" class="notifIconPureBtn notifIconPureBtn-success" title="Confirmar" onclick="confirmPinolReceiptFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">task_alt</span></button>`
         : ``
       }
               ${(!showConfirmPinol && !pinolConfirmed && !isPinolAck && !isRead && !isDesabasto && meta && meta.event === 'PINOL_SOLICITADO')
-        ? `<button type="button" class="notifMiniBtn primary" title="Ir a surtir solicitud" onclick="goToPinolPanelFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">local_shipping</span></button>`
+        ? `<button type="button" class="notifIconPureBtn notifIconPureBtn-primary" title="Ir a surtir solicitud" onclick="goToPinolPanelFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">local_shipping</span></button>`
         : ``
       }
               ${!showConfirmPinol && !pinolConfirmed && !isPinolAck && !isRead && !isDesabasto && !(meta && meta.event === 'PINOL_SOLICITADO')
-        ? `<button type="button" class="notifMiniBtn primary" title="Leída" onclick="markNotificationReadFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">done</span></button>`
+        ? `<button type="button" class="notifIconPureBtn notifIconPureBtn-success" title="Leída" onclick="markNotificationReadFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">done</span></button>`
         : ``
       }
-              <button type="button" class="notifMiniBtn delete" title="Borrar" onclick="deleteNotificationFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">delete</span></button>
+              <button type="button" class="notifIconPureBtn notifIconPureBtn-danger" title="Borrar" onclick="deleteNotificationFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">delete</span></button>
             </div>
           </div>
           
@@ -3025,7 +3028,7 @@ function ensureNotifActionButton(anchorEl, buttonId, labelText) {
 }
 
 function ensureNotifSearchBox(anchorEl, boxId, inputId, clearBtnId) {
-  if ($(inputId) || !anchorEl || !anchorEl.parentNode) return $(boxId) || null;
+  if ($(inputId)) return $(boxId) || null;
 
   const wrap = document.createElement("div");
   wrap.className = "notifSearchBox";
@@ -3042,23 +3045,22 @@ function ensureNotifSearchBox(anchorEl, boxId, inputId, clearBtnId) {
   input.placeholder = "Buscar notificación…";
   input.autocomplete = "off";
 
-  const clearBtn = document.createElement("button");
-  clearBtn.type = "button";
-  clearBtn.className = "ghostBtn notifSearchClearBtn";
-  clearBtn.id = clearBtnId;
-  clearBtn.style.display = "none";
-
-  const clearIcon = document.createElement("span");
-  clearIcon.className = "material-symbols-rounded";
-  clearIcon.textContent = "close";
-
-  clearBtn.appendChild(clearIcon);
-
   wrap.appendChild(icon);
   wrap.appendChild(input);
-  wrap.appendChild(clearBtn);
 
-  anchorEl.insertAdjacentElement("beforebegin", wrap);
+  // For the top panel: insert the search box at the top of .topNotifBody
+  // For the side panel: insert before the anchor (refresh button)
+  if (boxId === "topNotifSearchBox") {
+    const topBody = document.querySelector(".topNotifBody");
+    if (topBody) {
+      topBody.insertBefore(wrap, topBody.firstChild);
+    } else if (anchorEl && anchorEl.parentNode) {
+      anchorEl.insertAdjacentElement("beforebegin", wrap);
+    }
+  } else {
+    if (!anchorEl || !anchorEl.parentNode) return null;
+    anchorEl.insertAdjacentElement("beforebegin", wrap);
+  }
   return wrap;
 }
 
@@ -3103,12 +3105,13 @@ function normalizeNotifToolbarLayout() {
     ["btnNotifRefresh", "btnNotifOnlyUnread", "btnNotifMarkVisibleRead"]
   );
 
+  // Top panel: btnTopNotifClose stays in the header — do NOT move it to the actions row
   ensureNotifToolbarRows(
     "topNotifSearchBox",
     "topNotifToolbarSearchRow",
     "topNotifToolbarActionsRow",
     "topNotifToolbarActionsRow",
-    ["btnTopNotifRefresh", "btnTopNotifOnlyUnread", "btnTopNotifMarkVisibleRead", "btnTopNotifClose"]
+    ["btnTopNotifRefresh", "btnTopNotifOnlyUnread", "btnTopNotifMarkVisibleRead"]
   );
 }
 
@@ -5154,12 +5157,19 @@ async function supabaseRequest(action = "", payload, options = {}) {
             })
           };
 
-          await supabase.from('notificaciones').insert(desabastoRecord);
-
-          // Fan-out: crear copias individuales para cada destinatario
-          const desabastoRecipients = await resolveNotificationRecipients(desabastoRecord);
-          await fanOutNotification(desabastoRecord.id, desabastoRecipients);
-          console.log(`[Capture Logic] Alerta de desabasto generada para: ${finalMissing.join(', ')} → ${desabastoRecipients.length} destinatarios`);
+          try {
+            const { error: desabInsertErr } = await supabase.from('notificaciones').insert(desabastoRecord);
+            if (desabInsertErr) {
+              console.warn('[Notif Desabasto] INSERT bloqueado por RLS — la notificación se generará vía Trigger:', desabInsertErr.message);
+            } else {
+              // Fan-out: crear copias individuales para cada destinatario
+              const desabastoRecipients = await resolveNotificationRecipients(desabastoRecord);
+              await fanOutNotification(desabastoRecord.id, desabastoRecipients);
+              console.log(`[Capture Logic] Alerta de desabasto generada para: ${finalMissing.join(', ')} → ${desabastoRecipients.length} destinatarios`);
+            }
+          } catch (desabErr) {
+            console.warn('[Notif Desabasto] Error al crear alerta (no bloquea la captura):', desabErr);
+          }
         }
 
         return { ok: true };
@@ -7133,12 +7143,21 @@ async function supabaseRequest(action = "", payload, options = {}) {
             meta_json: JSON.stringify({ source: 'PINOL', event: 'PINOL_ENTREGADO', pinol_id: sol.id })
           };
 
-          await supabase.from('notificaciones').insert(pinolNotifRecord);
-
-          // Fan-out: crear copias individuales para cada destinatario
-          const pinolRecipients = await resolveNotificationRecipients(pinolNotifRecord);
-          await fanOutNotification(pinolNotifRecord.id, pinolRecipients);
-          console.log(`[Notif] Pinol entregado → ${pinolRecipients.length} destinatarios`);
+          try {
+            const { error: notifInsertErr } = await supabase.from('notificaciones').insert(pinolNotifRecord);
+            if (notifInsertErr) {
+              // RLS puede bloquear INSERT para roles sin permiso (ej: MUNICIPAL)
+              // La notificación se generará mediante Trigger en Supabase
+              console.warn('[Notif Pinol] INSERT bloqueado por RLS — la notificación se generará vía Trigger:', notifInsertErr.message);
+            } else {
+              // Fan-out: crear copias individuales para cada destinatario
+              const pinolRecipients = await resolveNotificationRecipients(pinolNotifRecord);
+              await fanOutNotification(pinolNotifRecord.id, pinolRecipients);
+              console.log(`[Notif] Pinol entregado → ${pinolRecipients.length} destinatarios`);
+            }
+          } catch (notifErr) {
+            console.warn('[Notif Pinol] Error al crear notificación de entrega (no bloquea el flujo):', notifErr);
+          }
         }
         return { ok: true };
       }
