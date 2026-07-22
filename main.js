@@ -3029,6 +3029,7 @@ function ensureNotifActionButton(anchorEl, buttonId, labelText) {
 
 function ensureNotifSearchBox(anchorEl, boxId, inputId, clearBtnId) {
   if ($(inputId)) return $(boxId) || null;
+  if (!anchorEl || !anchorEl.parentNode) return null;
 
   const wrap = document.createElement("div");
   wrap.className = "notifSearchBox";
@@ -3048,19 +3049,7 @@ function ensureNotifSearchBox(anchorEl, boxId, inputId, clearBtnId) {
   wrap.appendChild(icon);
   wrap.appendChild(input);
 
-  // For the top panel: insert the search box at the top of .topNotifBody
-  // For the side panel: insert before the anchor (refresh button)
-  if (boxId === "topNotifSearchBox") {
-    const topBody = document.querySelector(".topNotifBody");
-    if (topBody) {
-      topBody.insertBefore(wrap, topBody.firstChild);
-    } else if (anchorEl && anchorEl.parentNode) {
-      anchorEl.insertAdjacentElement("beforebegin", wrap);
-    }
-  } else {
-    if (!anchorEl || !anchorEl.parentNode) return null;
-    anchorEl.insertAdjacentElement("beforebegin", wrap);
-  }
+  anchorEl.insertAdjacentElement("beforebegin", wrap);
   return wrap;
 }
 
@@ -3103,15 +3092,6 @@ function normalizeNotifToolbarLayout() {
     "notifToolbarActionsRow",
     "notifToolbarActionsRow",
     ["btnNotifRefresh", "btnNotifOnlyUnread", "btnNotifMarkVisibleRead"]
-  );
-
-  // Top panel: btnTopNotifClose stays in the header — do NOT move it to the actions row
-  ensureNotifToolbarRows(
-    "topNotifSearchBox",
-    "topNotifToolbarSearchRow",
-    "topNotifToolbarActionsRow",
-    "topNotifToolbarActionsRow",
-    ["btnTopNotifRefresh", "btnTopNotifOnlyUnread", "btnTopNotifMarkVisibleRead"]
   );
 }
 

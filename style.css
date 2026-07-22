@@ -1610,6 +1610,7 @@ label,
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  background: #ffffff;
 }
 
 /* Elegante difuminado (Fade Out) en la parte inferior de la lista */
@@ -1619,7 +1620,7 @@ label,
   bottom: 0;
   left: 0;
   right: 0;
-  height: 40px;
+  height: 36px;
   background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.95) 85%, rgba(255, 255, 255, 1) 100%);
   pointer-events: none;
   z-index: 20;
@@ -1632,12 +1633,12 @@ label,
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 8px 10px 12px 10px;
+  padding: 8px 10px 32px 10px; /* Padding inferior para que las tarjetas de abajo no se corten */
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .topNotifList > * {
@@ -10149,7 +10150,7 @@ html body .modern-input-group input[type="date"]:focus,
   transform: translateY(0) scale(0.95);
 }
 
-/* Fix modalNotifDetail layout & Opacity */
+/* Fix modalNotifDetail layout & High Contrast Styles */
 #modalNotifDetail {
   position: fixed !important;
   inset: 0 !important;
@@ -10172,8 +10173,77 @@ html body .modern-input-group input[type="date"]:focus,
   max-width: 560px !important;
   margin: auto !important;
   background: #ffffff !important;
-  opacity: 1 !important;
+  border-radius: 24px !important;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35) !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+}
+
+/* Modal Header contrast fix */
+#modalNotifDetail .bg-gradient-to-r {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+  padding: 18px 24px !important;
+}
+
+#modalNotifDetail .w-10.h-10 {
+  background: rgba(14, 165, 233, 0.2) !important;
+  border: 1px solid rgba(56, 189, 248, 0.4) !important;
+  color: #38bdf8 !important;
+}
+
+#modalNotifDetail .w-10.h-10 span {
+  font-size: 24px !important;
+  color: #38bdf8 !important;
+}
+
+/* Modal Close Button */
+#modalNotifDetail button[onclick="closeNotifDetailModal()"] {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  transition: all 0.2s ease !important;
+}
+#modalNotifDetail button[onclick="closeNotifDetailModal()"]:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Modal Body text contrast */
+#notifDetailModalMessage {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  font-weight: 500 !important;
+}
+
+/* Modal Footer Buttons high contrast */
+#modalNotifDetail .bg-slate-100\/80 {
+  background: #f1f5f9 !important;
+  border-top: 1px solid #e2e8f0 !important;
+  padding: 14px 24px !important;
+}
+
+#modalNotifDetail button.bg-slate-200 {
+  background: #e2e8f0 !important;
+  color: #1e293b !important;
+  font-weight: 800 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+#modalNotifDetail button.bg-slate-200:hover {
+  background: #cbd5e1 !important;
+}
+
+#notifDetailModalReadBtn {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3) !important;
+  border: none !important;
+}
+#notifDetailModalReadBtn:hover {
+  background: #0369a1 !important;
 }
 #notifPreviewCard {
   width: 100%;
