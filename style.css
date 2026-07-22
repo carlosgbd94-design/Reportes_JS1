@@ -1389,6 +1389,21 @@ label,
   box-shadow: 0 12px 36px rgba(0, 0, 0, .14) !important;
 }
 
+/* Elegante difuminado (Fade Out) en el borde inferior DEL CONTENEDOR FLOTANTE COMPLETO */
+.topNotifDropdown::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.85) 60%, rgba(255, 255, 255, 1) 100%);
+  pointer-events: none;
+  z-index: 99999;
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
+}
+
 .topNotifCard {
   width: 100% !important;
   height: auto !important;
@@ -1402,21 +1417,6 @@ label,
   display: flex !important;
   flex-direction: column !important;
   position: relative !important;
-}
-
-/* Difuminado suave (Fade Out) en la parte inferior del contenedor de notificaciones */
-.topNotifCard::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 48px;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.85) 60%, rgba(255, 255, 255, 1) 100%);
-  pointer-events: none;
-  z-index: 100;
-  border-bottom-left-radius: 18px;
-  border-bottom-right-radius: 18px;
 }
 
 .topNotifCardHead {
@@ -4181,16 +4181,24 @@ input[disabled] {
 
 .notifSearchInput {
   border: none !important;
+  outline: none !important;
   background-color: transparent !important;
   background: transparent !important;
   padding: 0 !important;
   height: auto !important;
   min-height: 0 !important;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text);
   box-shadow: none !important;
   width: 100%;
+}
+
+.notifSearchInput:focus {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }
 
 
