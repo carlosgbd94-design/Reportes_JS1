@@ -12354,9 +12354,9 @@ function renderCaptureSummary(data) {
       let extraTag = '';
 
       if (r.editado === 'SI' || r.editado_por) {
-        iconColor = '#f59e0b'; // Ámbar / Naranja: Pedido Editado por Jurisdicción o Municipio
+        iconColor = '#8b5cf6'; // Violeta Orquídea: Pedido Editado (Diferente del Ámbar de pendiente)
         iconTitle = `Pedido Editado por ${r.editado_por || 'JURISDICCIÓN'}`;
-        extraTag = `<span class="opacity-90 font-black uppercase text-[10px] tracking-tighter" style="background:#fffbeb; color:#b45309; border:1px solid #fde68a; padding:2px 8px; border-radius:12px; margin-left:6px; display:inline-flex; align-items:center; gap:3px;">✍️ EDITADO POR ${escapeHtml(r.editado_por || 'JURISDICCIÓN')}</span>`;
+        extraTag = `<span class="opacity-90 font-black uppercase text-[10px] tracking-tighter" style="background:#f5f3ff; color:#6d28d9; border:1px solid #ddd6fe; padding:2px 8px; border-radius:12px; margin-left:6px; display:inline-flex; align-items:center; gap:3px;">✍️ EDITADO POR ${escapeHtml(r.editado_por || 'JURISDICCIÓN')}</span>`;
       } else if (r.sin_pedido) {
         iconColor = '#3b82f6'; // Azul: sin pedido biológico
         iconTitle = 'Sin pedido de biológico (Solo Existencias)';
@@ -18414,7 +18414,7 @@ async function openLiveView(clues, unidad, municipio) {
       if (editRecord || res.meta?.editado_por) {
         const editorRole = (editRecord?.editado_por || res.meta?.editado_por || "JURISDICCIÓN").toUpperCase();
         const editorName = editRecord?.editado_nombre ? ` (${editRecord.editado_nombre})` : "";
-        editadoTag = `<span style="margin-left:8px; font-size:11px; background:#fffbeb; color:#b45309; border:1px solid #fde68a; padding:3px 12px; border-radius:20px; font-weight:800; display:inline-flex; align-items:center; gap:4px; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.15);">✏️ EDITADO POR ${escapeHtml(editorRole)}${escapeHtml(editorName)}</span>`;
+        editadoTag = `<span style="margin-left:8px; font-size:11px; background:#f5f3ff; color:#6d28d9; border:1px solid #ddd6fe; padding:3px 12px; border-radius:20px; font-weight:800; display:inline-flex; align-items:center; gap:4px; box-shadow: 0 2px 6px rgba(139, 92, 246, 0.15);">✏️ EDITADO POR ${escapeHtml(editorRole)}${escapeHtml(editorName)}</span>`;
       }
     }
 
@@ -18447,7 +18447,7 @@ async function openLiveView(clues, unidad, municipio) {
     const clearFilterBtn = document.getElementById("btnLiveViewClearFilter");
     if (clearFilterBtn) clearFilterBtn.onclick = window.clearLiveViewFilter;
 
-    // Botón "Editar Pedido" en la Live View (Para roles autorizados)
+    // Botón "Editar Pedido" en la Live View (Diseño idéntico de botón puro a los demás botones de la cabecera)
     let editBioBtn = document.getElementById("btnLiveViewEditBio");
     const canEditRole = ["ADMIN", "JURISDICCIONAL", "MUNICIPAL", "ESTATAL"].includes((USER.rol || "").toUpperCase());
     
@@ -18457,9 +18457,11 @@ async function openLiveView(clues, unidad, municipio) {
         if (actionsHost) {
           editBioBtn = document.createElement("button");
           editBioBtn.id = "btnLiveViewEditBio";
+          editBioBtn.type = "button";
           editBioBtn.className = "live-view-btn-v2";
-          editBioBtn.style.cssText = "background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 12px; height: 36px; padding: 0 14px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; cursor: pointer; flex-shrink: 0; transition: all 0.2s ease;";
-          editBioBtn.innerHTML = `<span class="material-symbols-rounded" style="font-size:18px; color:#b45309;">edit_note</span> <span style="line-height:1; font-weight:800;">Editar Pedido</span>`;
+          editBioBtn.title = "Editar pedido de biológico";
+          editBioBtn.style.cssText = "background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; border-radius: 12px; padding: 6px 12px; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; transition: all 0.2s ease;";
+          editBioBtn.innerHTML = `<span class="material-symbols-rounded" style="font-size:18px;">edit_square</span> <span>Editar</span>`;
           actionsHost.insertBefore(editBioBtn, refreshBtn);
         }
       }
@@ -18468,8 +18470,9 @@ async function openLiveView(clues, unidad, municipio) {
         editBioBtn.onclick = () => {
           $("liveViewOverlay").classList.remove("show");
           $("liveViewOverlay").style.display = "none";
-          showTab("tabBIO");
-          performEditBIO();
+          if (typeof performEditBIO === "function") {
+            performEditBIO();
+          }
         };
       }
     } else if (editBioBtn) {
