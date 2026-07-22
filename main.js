@@ -12437,6 +12437,11 @@ function renderCaptureSummary(data) {
     legendBio.style.display = (tipo === "BIO") ? "flex" : "none";
   }
 
+  const legendEditado = $("legendBioEditado");
+  if (legendEditado) {
+    legendEditado.style.display = (tipo === "BIO") ? "flex" : "none";
+  }
+
   // Leyenda de ceros: siempre visible en SR
   const legendCeros = $("legendBioConCeros");
   if (legendCeros) {
@@ -18453,15 +18458,14 @@ async function openLiveView(clues, unidad, municipio) {
           editBioBtn = document.createElement("button");
           editBioBtn.id = "btnLiveViewEditBio";
           editBioBtn.className = "live-view-btn-v2";
-          editBioBtn.style.cssText = "background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); color: #b45309; border: 1px solid #fde68a; font-weight: 800; padding: 6px 14px; border-radius: 12px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2); cursor: pointer; transition: all 0.2s ease;";
-          editBioBtn.innerHTML = `<span class="material-symbols-rounded" style="font-size:18px;">edit_note</span> <span>Editar Pedido</span>`;
+          editBioBtn.style.cssText = "background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 800; font-size: 12px; height: 36px; padding: 0 14px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; cursor: pointer; flex-shrink: 0; transition: all 0.2s ease;";
+          editBioBtn.innerHTML = `<span class="material-symbols-rounded" style="font-size:18px; color:#b45309;">edit_note</span> <span style="line-height:1; font-weight:800;">Editar Pedido</span>`;
           actionsHost.insertBefore(editBioBtn, refreshBtn);
         }
       }
       if (editBioBtn) {
         editBioBtn.style.display = "inline-flex";
         editBioBtn.onclick = () => {
-          // Ocultar Live View y activar modo edición
           $("liveViewOverlay").classList.remove("show");
           $("liveViewOverlay").style.display = "none";
           showTab("tabBIO");
@@ -19552,24 +19556,23 @@ window.renderLiveViewTableContent = function() {
 
       tbody.innerHTML = displayItems.map(r => {
         const bioName = r.biologico || "—";
-        const color = getBiologicoColor(bioName);
         const existQty = r.existencia_actual_frascos ?? r.existencia ?? 0;
         const pedQty = r.pedido_frascos ?? r.solicitud ?? 0;
 
         return `
            <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;" data-type="bio" data-biologico="${escapeHtml(bioName)}">
-             <td style="padding:14px 24px; font-weight:900; color:${color}; font-size:14px; letter-spacing:-0.01em;">
-               <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${color}; margin-right:8px; vertical-align:middle; box-shadow: 0 0 8px ${color}60;"></span>
+             <td style="padding:14px 24px; font-weight:900; color:#0f172a; font-size:13px; letter-spacing:-0.01em;">
+               <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#0ea5e9; margin-right:8px; vertical-align:middle;"></span>
                ${escapeHtml(bioName)}
              </td>
              <td style="padding:14px 24px; text-align:center;">
-               <span class="live-view-count-badge" style="background:#f8fafc; color:${color}; border:1px solid ${color}30; font-weight:900; font-size:13px;">${existQty}</span>
+               <span style="display:inline-flex; align-items:center; justify-content:center; min-width:54px; height:28px; padding:0 10px; border-radius:20px; background:#f1f5f9; color:#334155; font-weight:800; font-size:13px; border:1px solid #e2e8f0;">${existQty}</span>
              </td>
              <td style="padding:14px 24px; text-align:center;">
-               <span class="live-view-count-badge" style="background:${color}12; color:${color}; border:1.5px solid ${color}50; font-weight:900; font-size:14px; box-shadow: 0 2px 8px ${color}20;">${pedQty}</span>
+               <span style="display:inline-flex; align-items:center; justify-content:center; min-width:54px; height:28px; padding:0 10px; border-radius:20px; background:#e0f2fe; color:#0369a1; font-weight:900; font-size:13px; border:1px solid #bae6fd;">${pedQty}</span>
              </td>
-             <td style="padding:14px 24px; text-align:center; font-weight:800; color:${color};">${r.promedio_frascos ?? 0}</td>
-             <td style="padding:14px 24px; text-align:center; font-weight:700; color:${color}cc;">${r.min_dosis ?? 0} / ${r.max_dosis ?? 0}</td>
+             <td style="padding:14px 24px; text-align:center; font-weight:700; color:#475569;">${r.promedio_frascos ?? 0}</td>
+             <td style="padding:14px 24px; text-align:center; font-weight:600; color:#64748b;">${r.min_dosis ?? 0} / ${r.max_dosis ?? 0}</td>
            </tr>
          `;
       }).join("");
