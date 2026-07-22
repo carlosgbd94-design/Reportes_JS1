@@ -1397,10 +1397,26 @@ label,
   border: 1px solid rgba(226, 232, 240, 0.9) !important;
   border-radius: 18px !important;
   background: #ffffff !important;
-  box-shadow: none !important;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.15) !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
+  position: relative !important;
+}
+
+/* Difuminado suave (Fade Out) en la parte inferior del contenedor de notificaciones */
+.topNotifCard::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.85) 60%, rgba(255, 255, 255, 1) 100%);
+  pointer-events: none;
+  z-index: 100;
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
 }
 
 .topNotifCardHead {
@@ -1602,7 +1618,7 @@ label,
   text-overflow: ellipsis;
 }
 
-/* ===== topNotifBody: flex scroll container con Fade Gradient Inferior ===== */
+/* ===== topNotifBody: flex scroll container ===== */
 .topNotifBody {
   flex: 1 1 auto;
   min-height: 0;
@@ -1611,21 +1627,6 @@ label,
   overflow: hidden;
   position: relative;
   background: #ffffff;
-}
-
-/* Elegante difuminado (Fade Out) en la parte inferior de la lista */
-.topNotifBody::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 36px;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.95) 85%, rgba(255, 255, 255, 1) 100%);
-  pointer-events: none;
-  z-index: 20;
-  border-bottom-left-radius: 18px;
-  border-bottom-right-radius: 18px;
 }
 
 .topNotifList {

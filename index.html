@@ -840,30 +840,33 @@
               </div>
             </div>
 
-            <div class="topNotifHeadActions">
-              <button type="button" class="notifIconPureBtn notifIconPureBtn-info" id="btnTopNotifRefresh"
-                title="Actualizar bandeja de entrada">
-                <span class="material-symbols-rounded">refresh</span>
-              </button>
-              <button type="button" class="notifIconPureBtn notifIconPureBtn-primary" id="btnTopNotifOnlyUnread" title="Mostrar solo no leídas">
-                <span class="material-symbols-rounded">filter_alt</span>
-              </button>
-              <button type="button" class="notifIconPureBtn notifIconPureBtn-success" id="btnTopNotifMarkVisibleRead"
-                title="Marcar visibles como leídas">
-                <span class="material-symbols-rounded">done_all</span>
-              </button>
-              <button type="button" class="notifIconPureBtn notifIconPureBtn-danger" id="btnTopNotifClose" title="Cerrar panel">
-                <span class="material-symbols-rounded">close</span>
-              </button>
-            </div>
+            <div class="topNotifHeadActions" style="display: flex; align-items: center; gap: 8px; margin-top: 8px; width: 100%;">
+              <!-- Buscador a la izquierda de los botones -->
+              <div class="notifSearchBox" id="topNotifSearchBox" style="flex: 1; min-width: 0; margin: 0;">
+                <span class="material-symbols-rounded notifSearchIcon">search</span>
+                <input type="text" id="topNotifSearchInput" class="input notifSearchInput" placeholder="Buscar notificación…" autocomplete="off">
+                <button type="button" id="btnTopNotifClearSearch" class="notifSearchClearBtn" style="display:none; background:none; border:none; cursor:pointer; color:#94a3b8; padding:0 4px;">
+                  <span class="material-symbols-rounded" style="font-size:16px;">close</span>
+                </button>
+              </div>
 
-            <!-- Buscador Estático Integrado -->
-            <div class="notifSearchBox" id="topNotifSearchBox" style="margin-top: 8px;">
-              <span class="material-symbols-rounded notifSearchIcon">search</span>
-              <input type="text" id="topNotifSearchInput" class="input notifSearchInput" placeholder="Buscar notificación…" autocomplete="off">
-              <button type="button" id="btnTopNotifClearSearch" class="notifSearchClearBtn" style="display:none; background:none; border:none; cursor:pointer; color:#94a3b8; padding:0 4px;">
-                <span class="material-symbols-rounded" style="font-size:16px;">close</span>
-              </button>
+              <!-- Botones de Acción compactos a la derecha -->
+              <div style="display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
+                <button type="button" class="notifIconPureBtn notifIconPureBtn-info" id="btnTopNotifRefresh"
+                  title="Actualizar bandeja de entrada">
+                  <span class="material-symbols-rounded">refresh</span>
+                </button>
+                <button type="button" class="notifIconPureBtn notifIconPureBtn-primary" id="btnTopNotifOnlyUnread" title="Mostrar solo no leídas">
+                  <span class="material-symbols-rounded">filter_alt</span>
+                </button>
+                <button type="button" class="notifIconPureBtn notifIconPureBtn-success" id="btnTopNotifMarkVisibleRead"
+                  title="Marcar visibles como leídas">
+                  <span class="material-symbols-rounded">done_all</span>
+                </button>
+                <button type="button" class="notifIconPureBtn notifIconPureBtn-danger" id="btnTopNotifClose" title="Cerrar panel">
+                  <span class="material-symbols-rounded">close</span>
+                </button>
+              </div>
             </div>
           </div>
           <div class="topNotifBody">
