@@ -1602,13 +1602,29 @@ label,
   text-overflow: ellipsis;
 }
 
-/* ===== topNotifBody: flex scroll container ===== */
+/* ===== topNotifBody: flex scroll container con Fade Gradient Inferior ===== */
 .topNotifBody {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
+}
+
+/* Elegante difuminado (Fade Out) en la parte inferior */
+.topNotifBody::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.95));
+  pointer-events: none;
+  z-index: 10;
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
 }
 
 .topNotifList {
@@ -10133,7 +10149,29 @@ html body .modern-input-group input[type="date"]:focus,
   transform: translateY(0) scale(0.95);
 }
 
-/* Preview card override states */
+/* Fix modalNotifDetail layout */
+#modalNotifDetail {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 99999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
+  background: rgba(15, 23, 42, 0.55) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+#modalNotifDetail.hidden {
+  display: none !important;
+}
+
+#modalNotifDetail > div {
+  width: 100% !important;
+  max-width: 540px !important;
+  margin: auto !important;
+}
 #notifPreviewCard {
   width: 100%;
   margin: 0;
