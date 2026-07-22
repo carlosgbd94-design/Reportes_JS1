@@ -5199,6 +5199,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
           if (u) finalMuni = u.municipio;
         }
 
+        const items = payload.items || [];
         const isEditedByHigherRole = ["ADMIN", "JURISDICCIONAL", "MUNICIPAL", "ESTATAL"].includes((USER.rol || "").toUpperCase());
         const records = items.map(it => ({
           id: btoa(finalClues + ":" + it.biologico + ":" + Date.now()),
