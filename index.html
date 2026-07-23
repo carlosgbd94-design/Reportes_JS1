@@ -629,7 +629,7 @@
               </div>
 
               <!-- 📁 GOOGLE DRIVE REPOSITORIO & QR BUTTON -->
-              <div class="mt-3 pt-3 border-t border-slate-200/80 flex items-center gap-2 w-full" id="profileDriveSection">
+              <div class="flex items-center gap-2 w-full" id="profileDriveSection" style="margin-top: 14px !important; padding-top: 14px !important; border-top: 1px solid rgba(203, 213, 225, 0.8) !important;">
                 <a href="https://drive.google.com/drive/folders/1YUldgn8gpb18OYcbyp1sBG6BRJ2hvy4D?usp=sharing" target="_blank" rel="noopener noreferrer" 
                   class="flex-1 no-underline"
                   style="display: flex; height: 38px; min-height: 38px; max-height: 38px; border-radius: 12px; font-weight: 700; font-size: 11px; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid #cbd5e1; background: transparent; color: #475569; cursor: pointer; transition: all 0.2s; min-width: 0; box-sizing: border-box; padding: 0 10px; margin: 0;">
@@ -7481,14 +7481,16 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex items-center gap-2.5 w-full">
-        <button type="button" id="btnCopyDriveLink" class="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border-none shadow-sm">
-          <span class="material-symbols-rounded text-base">content_copy</span>
+      <div class="flex items-center gap-2.5 w-full mt-2">
+        <button type="button" id="btnCopyDriveLink" 
+          style="flex: 1; height: 42px; border-radius: 14px; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1.5px solid #cbd5e1; background: #f8fafc; color: #334155; cursor: pointer; transition: all 0.2s; box-sizing: border-box;">
+          <span class="material-symbols-rounded" style="font-size: 18px;">content_copy</span>
           <span>Copiar Enlace</span>
         </button>
-        <button type="button" id="btnDownloadDriveQR" class="flex-1 py-2.5 px-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border-none shadow-md">
-          <span class="material-symbols-rounded text-base">download</span>
-          <span>Descargar QR</span>
+        <button type="button" id="btnDownloadDriveQR" 
+          style="flex: 1; height: 42px; border-radius: 14px; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff !important; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25); box-sizing: border-box;">
+          <span class="material-symbols-rounded" style="font-size: 18px; color: white;">download</span>
+          <span style="color: white !important;">Descargar QR</span>
         </button>
       </div>
 

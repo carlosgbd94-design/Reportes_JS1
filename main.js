@@ -23142,23 +23142,23 @@ function renderDriveQRCodeOnCanvas(textUrl) {
 }
 
 function drawCenterDriveLogo(ctx, size) {
-  const centerSize = size * 0.26;
+  const centerSize = size * 0.15;
   const cx = size / 2;
   const cy = size / 2;
 
   ctx.save();
   ctx.beginPath();
-  ctx.arc(cx, cy, centerSize / 2 + 4, 0, Math.PI * 2);
+  ctx.arc(cx, cy, centerSize / 2 + 3, 0, Math.PI * 2);
   ctx.fillStyle = "#ffffff";
   ctx.fill();
-  ctx.lineWidth = 2.5;
+  ctx.lineWidth = 1.5;
   ctx.strokeStyle = "#cbd5e1";
   ctx.stroke();
 
   const logoImg = new Image();
   logoImg.crossOrigin = "anonymous";
   logoImg.onload = () => {
-    ctx.drawImage(logoImg, cx - (centerSize * 0.68) / 2, cy - (centerSize * 0.68) / 2, centerSize * 0.68, centerSize * 0.68);
+    ctx.drawImage(logoImg, cx - (centerSize * 0.7) / 2, cy - (centerSize * 0.7) / 2, centerSize * 0.7, centerSize * 0.7);
   };
   logoImg.src = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/Google-Drive-New-Icon-2026-PNG.png";
 
