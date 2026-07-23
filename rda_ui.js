@@ -293,7 +293,11 @@ function initRDADashboard() {
         btn.addEventListener('mouseleave', () => btn.style.background = 'transparent');
         btn.addEventListener('click', () => {
             expDrop.style.display = 'none';
-            btn.dataset.export === 'individual' ? exportIndividualPDF() : exportMasivoZIP();
+            const type = btn.dataset.export;
+            if (type === 'individual') exportIndividualPDF();
+            else if (type === 'png' || type === 'jpeg') exportDashboardImagen(type);
+            else if (type === 'masivo_pdf') exportMasivoZIP('pdf');
+            else if (type === 'masivo_img') exportMasivoZIP('png');
         });
     });
 
@@ -1924,7 +1928,7 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             // ==========================================
             // SECCIÓN DE GRÁFICAS
             // ==========================================
-            const chartSectionHeight = 110;
+            const chartSectionHeight = isSingleUnit ? 78 : 110;
             const cardWidth = 117.2;
             const gap = 15;
 
@@ -1935,20 +1939,20 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(9);
             doc.setTextColor(100, 116, 139);
-            doc.text(titleChart1, marginX + 6, currentY + 8);
+            doc.text(titleChart1, marginX + 6, currentY + 7);
             if (imgChart1Base64) {
-                doc.addImage(imgChart1Base64, 'PNG', marginX + 10, currentY + 12, cardWidth - 20, chartSectionHeight - 20, undefined, 'FAST');
+                doc.addImage(imgChart1Base64, 'PNG', marginX + 6, currentY + 10, cardWidth - 12, chartSectionHeight - 14, undefined, 'FAST');
             }
 
             // Tarjeta B (Gráfica 2)
             doc.setFillColor(255, 255, 255);
             doc.roundedRect(marginX + cardWidth + gap, currentY, cardWidth, chartSectionHeight, 4, 4, 'FD');
-            doc.text(titleChart2, marginX + cardWidth + gap + 6, currentY + 8);
+            doc.text(titleChart2, marginX + cardWidth + gap + 6, currentY + 7);
             if (imgTopBase64) {
-                doc.addImage(imgTopBase64, 'PNG', marginX + cardWidth + gap + 10, currentY + 12, cardWidth - 20, chartSectionHeight - 20, undefined, 'FAST');
+                doc.addImage(imgTopBase64, 'PNG', marginX + cardWidth + gap + 6, currentY + 10, cardWidth - 12, chartSectionHeight - 14, undefined, 'FAST');
             }
 
-            currentY += chartSectionHeight + 8;
+            currentY += chartSectionHeight + 6;
 
             if (!isSingleUnit) {
                 doc.addPage();
@@ -1982,7 +1986,7 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
                 styles: {
                     fontSize: 8,
                     font: 'helvetica',
-                    cellPadding: 5,
+                    cellPadding: isSingleUnit ? 3.2 : 5,
                     valign: 'middle',
                     lineColor: [241, 245, 249], 
                     lineWidth: { bottom: 0.5 },
@@ -2115,7 +2119,67 @@ async function exportIndividualPDF() {
     }
 }
 
-async function exportMasivoZIP() {
+async function exportDashboardImagen(format = 'png') {
+    const content = document.getElementById('rdaDashboardContent');
+    if (!content) return;
+    if (typeof html2canvas === 'undefined') {
+        if (typeof showToast === 'function') showToast('Librería de captura no disponible', false, 'bad');
+        return;
+    }
+
+    if (typeof showOverlay === 'function') showOverlay('Generando imagen de alta calidad...', 'Captura HD');
+
+    const muni = document.getElementById('rdaFilterMunicipio')?.value || '';
+    const uni = document.getElementById('rdaFilterUnidad')?.value || '';
+    const ext = format.toLowerCase() === 'jpeg' ? 'jpg' : 'png';
+    let fname = `Indicadores_RDA2026_${_tLabel()}_${_dateStr()}.${ext}`;
+
+    if (uni) {
+        const u = (_rdaCache.unidades||[]).find(x=>x.clues===uni);
+        fname = `RDA_${uni}_${_safeName(u?.nombre)}_${_tLabel()}.${ext}`;
+    } else if (muni) {
+        fname = `RDA_${_safeName(muni)}_${_tLabel()}.${ext}`;
+    }
+
+    try {
+        // Captura completa en 1 sola pieza continua con resolución 2.5x HD (Retina Quality)
+        const canvas = await html2canvas(content, {
+            scale: 2.5,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#f8fafc',
+            scrollX: 0,
+            scrollY: 0,
+            onclone: (clonedDoc) => {
+                const clonedContent = clonedDoc.getElementById('rdaDashboardContent');
+                if (clonedContent) {
+                    clonedContent.style.overflow = 'visible';
+                    clonedContent.style.maxHeight = 'none';
+                    clonedContent.style.height = 'auto';
+                }
+            }
+        });
+
+        const mimeType = format.toLowerCase() === 'jpeg' ? 'image/jpeg' : 'image/png';
+        const imgData = canvas.toDataURL(mimeType, 0.95);
+
+        const link = document.createElement('a');
+        link.download = fname;
+        link.href = imgData;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        if (typeof showToast === 'function') showToast(`Imagen ${format.toUpperCase()} exportada en Alta Calidad`, true, 'good');
+    } catch (e) {
+        console.error('[RDA Export Image Error]', e);
+        if (typeof showToast === 'function') showToast('Error al exportar imagen', false, 'bad');
+    } finally {
+        if (typeof hideOverlay === 'function') hideOverlay();
+    }
+}
+
+async function exportMasivoZIP(mode = 'pdf') {
     if (typeof JSZip === 'undefined') { 
         if (typeof showToast === 'function') showToast('JSZip no disponible', false, 'bad'); 
         return; 
@@ -2137,10 +2201,12 @@ async function exportMasivoZIP() {
     }
 
     if (targets.length > 50) {
-        if (!confirm(`Vas a generar ${targets.length} reportes vectoriales nativos. El proceso se ejecutará de forma ultra-rápida. ¿Continuar?`)) return;
+        const tipoStr = mode === 'png' ? 'imágenes PNG de alta resolución' : 'reportes vectoriales PDF';
+        if (!confirm(`Vas a generar ${targets.length} ${tipoStr}. El proceso se ejecutará de forma masiva. ¿Continuar?`)) return;
     }
 
-    if (typeof showOverlay === 'function') showOverlay('Iniciando proceso masivo vectorial...', 'ZIP');
+    const labelProceso = mode === 'png' ? 'ZIP Imágenes PNG HD' : 'ZIP PDFs';
+    if (typeof showOverlay === 'function') showOverlay('Iniciando proceso masivo...', labelProceso);
 
     // Desactivar temporalmente animaciones para mayor velocidad y sincronía
     let originalChartAnim = null;
@@ -2151,12 +2217,13 @@ async function exportMasivoZIP() {
 
     try {
         const zip = new JSZip();
+        const content = document.getElementById('rdaDashboardContent');
 
         for (let i = 0; i < targets.length; i++) {
             const u = targets[i];
             const pct = Math.round(((i + 1) / targets.length) * 100);
             if (typeof showOverlay === 'function') {
-                showOverlay(`${pct}%: ${(u.nombre||u.clues).substring(0,25)}`, 'Generando reporte nativo...');
+                showOverlay(`${pct}%: ${(u.nombre||u.clues).substring(0,25)}`, mode === 'png' ? 'Capturando imagen HD...' : 'Generando reporte PDF...');
             }
 
             muniSelect.value = u.municipio ? u.municipio.toUpperCase() : '';
@@ -2165,23 +2232,48 @@ async function exportMasivoZIP() {
             
             if (typeof renderDashboard === 'function') renderDashboard();
 
-            // Sincronización instantánea sin animaciones (100ms es suficiente gracias al motor vectorial nativo)
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Esperar renderizado de ECharts
+            await new Promise(resolve => setTimeout(resolve, 150));
 
-            const fname = `RDA_${u.clues}_${_safeName(u.nombre)}.pdf`;
-            const blob = await generarPDFRobusto('rdaDashboardContent', fname, true);
-            zip.file(fname, blob);
+            if (mode === 'png') {
+                const fname = `RDA_${u.clues}_${_safeName(u.nombre)}.png`;
+                if (typeof html2canvas !== 'undefined' && content) {
+                    const canvas = await html2canvas(content, {
+                        scale: 2.5,
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: '#f8fafc',
+                        scrollX: 0,
+                        scrollY: 0,
+                        onclone: (clonedDoc) => {
+                            const clonedContent = clonedDoc.getElementById('rdaDashboardContent');
+                            if (clonedContent) {
+                                clonedContent.style.overflow = 'visible';
+                                clonedContent.style.maxHeight = 'none';
+                                clonedContent.style.height = 'auto';
+                            }
+                        }
+                    });
+                    const base64Data = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, "");
+                    zip.file(fname, base64Data, { base64: true });
+                }
+            } else {
+                const fname = `RDA_${u.clues}_${_safeName(u.nombre)}.pdf`;
+                const blob = await generarPDFRobusto('rdaDashboardContent', fname, true);
+                zip.file(fname, blob);
+            }
         }
 
         if (typeof showOverlay === 'function') showOverlay('Finalizando compresión...', 'ZIP');
         const zipBlob = await zip.generateAsync({ type: 'blob' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(zipBlob);
-        link.download = `Indicadores_RDA2026_${_safeName(originalMuni) || 'JS1'}_${_dateStr()}.zip`;
+        const tagMode = mode === 'png' ? 'PNG_HD' : 'PDF';
+        link.download = `Indicadores_RDA2026_${tagMode}_${_safeName(originalMuni) || 'JS1'}_${_dateStr()}.zip`;
         link.click();
         URL.revokeObjectURL(link.href);
 
-        if (typeof showToast === 'function') showToast(`Exportación masiva completada`, true, 'good');
+        if (typeof showToast === 'function') showToast(`Exportación masiva de ${mode.toUpperCase()}s completada`, true, 'good');
 
     } catch (e) {
         console.error('[RDA ZIP]', e);

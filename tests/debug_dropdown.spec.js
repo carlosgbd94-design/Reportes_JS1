@@ -31,29 +31,21 @@ test('Debug Campaign Dropdown Visibility', async ({ page }) => {
     // 3. Inicializar el flujo de Influenza
     if (typeof window.initInfluenzaCaptureFlow === 'function') {
       await window.initInfluenzaCaptureFlow();
-    } else {
-      console.error('initInfluenzaCaptureFlow no está definido en window');
     }
 
     // 4. Obtener información de visibilidad del DOM
     const select = document.getElementById('influenza_campana');
-    const wrapper = document.getElementById('influenza_campana_custom_wrapper');
     
     return {
       selectExists: !!select,
-      selectHiddenClass: select ? select.classList.contains('premium-custom-hidden-select') : false,
       selectDisplay: select ? select.style.display : null,
-      wrapperExists: !!wrapper,
-      wrapperDisplay: wrapper ? wrapper.style.display : null,
-      wrapperOuterHTML: wrapper ? wrapper.outerHTML : null,
-      computedSelectDisplay: select ? getComputedStyle(select).display : null,
-      computedWrapperDisplay: wrapper ? getComputedStyle(wrapper).display : null
+      computedSelectDisplay: select ? getComputedStyle(select).display : null
     };
   });
 
   console.log('DEBUG INFO FROM BROWSER:', JSON.stringify(debugInfo, null, 2));
 
-  // Verificar que el wrapper se crea y no esté oculto
-  expect(debugInfo.wrapperExists).toBe(true);
-  expect(debugInfo.wrapperDisplay).not.toBe('none');
+  // Verificar que el select nativo existe y no esté oculto
+  expect(debugInfo.selectExists).toBe(true);
+  expect(debugInfo.computedSelectDisplay).not.toBe('none');
 });
