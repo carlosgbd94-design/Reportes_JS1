@@ -629,15 +629,15 @@
               </div>
 
               <!-- 📁 GOOGLE DRIVE REPOSITORIO & QR BUTTON -->
-              <div class="mt-2.5 pt-2.5 border-t border-slate-200/60 flex items-center gap-2" id="profileDriveSection">
+              <div class="mt-3 pt-3 border-t border-slate-200/80 flex items-center gap-2 w-full" id="profileDriveSection">
                 <a href="https://drive.google.com/drive/folders/1YUldgn8gpb18OYcbyp1sBG6BRJ2hvy4D?usp=sharing" target="_blank" rel="noopener noreferrer" 
-                  class="profile-action-btn flex-1 no-underline"
-                  style="display: flex; height: 38px; border-radius: 12px; font-weight: 700; font-size: 13px; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid #cbd5e1; background: transparent; color: #475569; cursor: pointer; transition: all 0.2s; min-width: 0;">
+                  class="flex-1 no-underline"
+                  style="display: flex; height: 38px; min-height: 38px; max-height: 38px; border-radius: 12px; font-weight: 700; font-size: 11px; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid #cbd5e1; background: transparent; color: #475569; cursor: pointer; transition: all 0.2s; min-width: 0; box-sizing: border-box; padding: 0 10px; margin: 0;">
                   <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/Google-Drive-New-Icon-2026-PNG.png" alt="Google Drive" class="w-5 h-5 object-contain flex-none">
-                  <span id="profileDriveTitle" class="truncate">Repositorio vacunas 2026</span>
+                  <span id="profileDriveTitle" class="truncate uppercase tracking-wider">REPOSITORIO VACUNAS 2026</span>
                 </a>
-                <button type="button" id="btnOpenDriveQR" onclick="window.openDriveQRModal(event)" title="Ver Código QR" class="profile-action-btn flex-none"
-                  style="display: flex; width: 38px; height: 38px; border-radius: 12px; align-items: center; justify-content: center; border: 1.5px solid #cbd5e1; background: transparent; color: #475569; cursor: pointer; transition: all 0.2s;">
+                <button type="button" id="btnOpenDriveQR" onclick="window.openDriveQRModal(event)" title="Ver Código QR" class="flex-none"
+                  style="display: flex; width: 38px; min-width: 38px; max-width: 38px; height: 38px; min-height: 38px; max-height: 38px; border-radius: 12px; align-items: center; justify-content: center; border: 1.5px solid #cbd5e1; background: transparent; color: #475569; cursor: pointer; transition: all 0.2s; box-sizing: border-box; padding: 0; margin: 0;">
                   <span class="material-symbols-rounded" style="font-size: 20px;">qr_code_2</span>
                 </button>
               </div>
@@ -7456,6 +7456,8 @@
         </button>
       </div>
     </div>
+  </div>
+
   <!-- 📁 MODAL DE CÓDIGO QR PARA REPOSITORIO DE GOOGLE DRIVE -->
   <div id="modalDriveQR" class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-md hidden transition-opacity duration-300">
     <div class="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col items-center p-6 text-center animate-in fade-in zoom-in-95 duration-200">
