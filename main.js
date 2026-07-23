@@ -22,6 +22,36 @@ console.error = function (...args) {
   originalConsoleError.apply(console, args);
 };
 
+// Cuadro de confirmación custom premium que sustituye a confirm() de navegador
+window.showConfirmDialog = function(title, message) {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('genericConfirmOverlay');
+        const titleEl = document.getElementById('genericConfirmTitle');
+        const msgEl = document.getElementById('genericConfirmMessage');
+        const btnAccept = document.getElementById('btnGenericConfirmAccept');
+        const btnCancel = document.getElementById('btnGenericConfirmCancel');
+
+        if (!overlay || !titleEl || !msgEl || !btnAccept || !btnCancel) {
+            resolve(confirm(message));
+            return;
+        }
+
+        titleEl.textContent = title;
+        msgEl.textContent = message;
+        overlay.style.display = 'flex';
+
+        const cleanup = (val) => {
+            overlay.style.display = 'none';
+            btnAccept.onclick = null;
+            btnCancel.onclick = null;
+            resolve(val);
+        };
+
+        btnAccept.onclick = () => cleanup(true);
+        btnCancel.onclick = () => cleanup(false);
+    });
+};
+
 // SUPABASE CONFIG (CORE SERVICE)
 if (window.location.hash && window.location.hash.includes('type=recovery')) {
   window.location.href = "reset.html" + window.location.hash;

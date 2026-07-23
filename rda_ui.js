@@ -2202,7 +2202,14 @@ async function exportMasivoZIP(mode = 'pdf') {
 
     if (targets.length > 50) {
         const tipoStr = mode === 'png' ? 'imágenes PNG de alta resolución' : 'reportes vectoriales PDF';
-        if (!confirm(`Vas a generar ${targets.length} ${tipoStr}. El proceso se ejecutará de forma masiva. ¿Continuar?`)) return;
+        const msg = `Vas a generar ${targets.length} ${tipoStr}. El proceso se ejecutará de forma masiva. ¿Continuar?`;
+        let confirmResult = false;
+        if (typeof window.showConfirmDialog === 'function') {
+            confirmResult = await window.showConfirmDialog("Exportación Masiva ZIP", msg);
+        } else {
+            confirmResult = confirm(msg);
+        }
+        if (!confirmResult) return;
     }
 
     const labelProceso = mode === 'png' ? 'ZIP Imágenes PNG HD' : 'ZIP PDFs';
