@@ -38,10 +38,16 @@ window.showConfirmDialog = function(title, message) {
 
         titleEl.textContent = title;
         msgEl.textContent = message;
+        overlay.classList.add('show');
         overlay.style.display = 'flex';
+        overlay.style.opacity = '1';
+        overlay.style.pointerEvents = 'auto';
 
         const cleanup = (val) => {
+            overlay.classList.remove('show');
             overlay.style.display = 'none';
+            overlay.style.opacity = '';
+            overlay.style.pointerEvents = '';
             btnAccept.onclick = null;
             btnCancel.onclick = null;
             resolve(val);
