@@ -627,6 +627,20 @@
                   <span>Directorio BCG</span>
                 </button>
               </div>
+
+              <!-- 📁 GOOGLE DRIVE REPOSITORIO & QR BUTTON -->
+              <div class="mt-2.5 pt-2.5 border-t border-slate-200/60 flex items-center gap-2" id="profileDriveSection">
+                <a href="https://drive.google.com/drive/folders/1YUldgn8gpb18OYcbyp1sBG6BRJ2hvy4D?usp=sharing" target="_blank" rel="noopener noreferrer" 
+                  class="profile-action-btn flex-1 no-underline"
+                  style="display: flex; height: 38px; border-radius: 12px; font-weight: 700; font-size: 13px; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid #cbd5e1; background: transparent; color: #475569; cursor: pointer; transition: all 0.2s; min-width: 0;">
+                  <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/Google-Drive-New-Icon-2026-PNG.png" alt="Google Drive" class="w-5 h-5 object-contain flex-none">
+                  <span id="profileDriveTitle" class="truncate">Repositorio vacunas 2026</span>
+                </a>
+                <button type="button" id="btnOpenDriveQR" onclick="window.openDriveQRModal(event)" title="Ver Código QR" class="profile-action-btn flex-none"
+                  style="display: flex; width: 38px; height: 38px; border-radius: 12px; align-items: center; justify-content: center; border: 1.5px solid #cbd5e1; background: transparent; color: #475569; cursor: pointer; transition: all 0.2s;">
+                  <span class="material-symbols-rounded" style="font-size: 20px;">qr_code_2</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -7441,6 +7455,41 @@
           <span class="material-symbols-rounded text-base">done_all</span> Marcar como Leída
         </button>
       </div>
+    </div>
+  <!-- 📁 MODAL DE CÓDIGO QR PARA REPOSITORIO DE GOOGLE DRIVE -->
+  <div id="modalDriveQR" class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-md hidden transition-opacity duration-300">
+    <div class="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col items-center p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+      
+      <!-- Close button -->
+      <button type="button" id="btnCloseDriveQR" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 flex items-center justify-center transition-colors cursor-pointer border-none">
+        <span class="material-symbols-rounded text-xl">close</span>
+      </button>
+
+      <!-- Header Icon & Title -->
+      <div class="w-14 h-14 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center mb-3 text-sky-600 shadow-inner">
+        <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/Google-Drive-New-Icon-2026-PNG.png" alt="Google Drive" class="w-8 h-8 object-contain">
+      </div>
+      
+      <h3 id="modalDriveQRTitle" class="text-lg font-black text-slate-800 tracking-tight mb-1">Repositorio vacunas</h3>
+      <p class="text-xs text-slate-500 font-semibold mb-5">Escanea este código para acceder a los archivos oficiales de Google Drive</p>
+
+      <!-- QR Canvas Container -->
+      <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 shadow-inner mb-5 flex items-center justify-center">
+        <canvas id="qrDriveCanvas" class="w-[240px] h-[240px] rounded-xl bg-white shadow-sm"></canvas>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2.5 w-full">
+        <button type="button" id="btnCopyDriveLink" class="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border-none shadow-sm">
+          <span class="material-symbols-rounded text-base">content_copy</span>
+          <span>Copiar Enlace</span>
+        </button>
+        <button type="button" id="btnDownloadDriveQR" class="flex-1 py-2.5 px-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border-none shadow-md">
+          <span class="material-symbols-rounded text-base">download</span>
+          <span>Descargar QR</span>
+        </button>
+      </div>
+
     </div>
   </div>
 

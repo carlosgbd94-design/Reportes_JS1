@@ -23100,3 +23100,140 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+// ==========================================
+// 📁 GOOGLE DRIVE REPOSITORIO & QR GENERATOR MODULE
+// ==========================================
+window.openDriveQRModal = function(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  const modalQR = document.getElementById("modalDriveQR");
+  if (!modalQR) return;
+
+  modalQR.classList.remove("hidden");
+  modalQR.style.display = "flex";
+
+  const DRIVE_URL = "https://drive.google.com/drive/folders/1YUldgn8gpb18OYcbyp1sBG6BRJ2hvy4D?usp=sharing";
+  renderDriveQRCodeOnCanvas(DRIVE_URL);
+};
+
+function renderDriveQRCodeOnCanvas(textUrl) {
+  const canvas = document.getElementById("qrDriveCanvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const size = 300;
+  canvas.width = size;
+  canvas.height = size;
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, size, size);
+
+  const qrImg = new Image();
+  qrImg.crossOrigin = "anonymous";
+  qrImg.onload = () => {
+    ctx.drawImage(qrImg, 0, 0, size, size);
+    drawCenterDriveLogo(ctx, size);
+  };
+  qrImg.onerror = () => {
+    drawCenterDriveLogo(ctx, size);
+  };
+  qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=2&ecc=H&data=${encodeURIComponent(textUrl)}`;
+}
+
+function drawCenterDriveLogo(ctx, size) {
+  const centerSize = size * 0.26;
+  const cx = size / 2;
+  const cy = size / 2;
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, centerSize / 2 + 4, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.stroke();
+
+  const logoImg = new Image();
+  logoImg.crossOrigin = "anonymous";
+  logoImg.onload = () => {
+    ctx.drawImage(logoImg, cx - (centerSize * 0.68) / 2, cy - (centerSize * 0.68) / 2, centerSize * 0.68, centerSize * 0.68);
+  };
+  logoImg.src = "https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/Google-Drive-New-Icon-2026-PNG.png";
+
+  ctx.restore();
+}
+
+function initDriveQRModule() {
+  const currentYear = new Date().getFullYear();
+  const driveTitle = `Repositorio vacunas ${currentYear}`;
+
+  const elTitle = document.getElementById("profileDriveTitle");
+  if (elTitle) elTitle.textContent = driveTitle;
+
+  const modalTitle = document.getElementById("modalDriveQRTitle");
+  if (modalTitle) modalTitle.textContent = driveTitle;
+
+  const btnOpenQR = document.getElementById("btnOpenDriveQR");
+  const modalQR = document.getElementById("modalDriveQR");
+  const btnCloseQR = document.getElementById("btnCloseDriveQR");
+  const btnCopyLink = document.getElementById("btnCopyDriveLink");
+  const btnDownloadQR = document.getElementById("btnDownloadDriveQR");
+
+  const DRIVE_URL = "https://drive.google.com/drive/folders/1YUldgn8gpb18OYcbyp1sBG6BRJ2hvy4D?usp=sharing";
+
+  if (btnOpenQR && modalQR) {
+    btnOpenQR.onclick = (e) => window.openDriveQRModal(e);
+  }
+
+  if (btnCloseQR && modalQR) {
+    btnCloseQR.addEventListener("click", () => {
+      modalQR.classList.add("hidden");
+      modalQR.style.display = "none";
+    });
+    modalQR.addEventListener("click", (e) => {
+      if (e.target === modalQR) {
+        modalQR.classList.add("hidden");
+        modalQR.style.display = "none";
+      }
+    });
+  }
+
+  if (btnCopyLink) {
+    btnCopyLink.addEventListener("click", () => {
+      navigator.clipboard.writeText(DRIVE_URL).then(() => {
+        if (typeof showToast === 'function') {
+          showToast("Enlace de Google Drive copiado al portapapeles", true);
+        } else {
+          alert("Enlace de Google Drive copiado");
+        }
+      }).catch(() => {
+        if (typeof showToast === 'function') {
+          showToast("Error al copiar enlace", false);
+        }
+      });
+    });
+  }
+
+  if (btnDownloadQR) {
+    btnDownloadQR.addEventListener("click", () => {
+      const canvas = document.getElementById("qrDriveCanvas");
+      if (!canvas) return;
+      const link = document.createElement("a");
+      link.download = `Repositorio_Vacunas_${currentYear}_QR.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+      if (typeof showToast === 'function') {
+        showToast("Código QR descargado correctamente", true);
+      }
+    });
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initDriveQRModule);
+} else {
+  setTimeout(initDriveQRModule, 100);
+}
+
