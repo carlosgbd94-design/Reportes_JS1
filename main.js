@@ -5177,7 +5177,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
 
         console.log(`[Capture Logic] Desabasto por transición: ${desabastoTransicion.join(', ')} | Ceros explícitos: ${explicitZerosOrig.join(', ')}`);
 
-        // 4. Ejecutar Inserción Dual en Paralelo (summaryRecord ya tiene tiene_ceros)
+        // 4. Ejecutar Inserción Dual (Renglones de detalle primero, luego resumen global)
         console.log("[Capture Logic] Preparando guardado de SR para:", { clues, fecha, tiene_ceros: summaryRecord.tiene_ceros });
 
         // PURGAR PREVIAMENTE PARA EVITAR DUPLICADOS AL EDITAR
@@ -5186,13 +5186,21 @@ async function supabaseRequest(action = "", payload, options = {}) {
           supabase.from('existencia_detalle').delete().eq('clues', clues).eq('fecha', fecha)
         ]);
 
-        const [resSummary, resDetail] = await Promise.all([
-          supabase.from('biologicos_existencia').insert(summaryRecord),
-          supabase.from('existencia_detalle').insert(detailRecords)
-        ]);
+        // Insertar primero el detalle si existen partidas
+        if (detailRecords && detailRecords.length > 0) {
+          const resDetail = await supabase.from('existencia_detalle').insert(detailRecords);
+          if (resDetail.error) {
+            console.error("[Capture Logic] Error insertando existencia_detalle:", resDetail.error);
+            throw resDetail.error;
+          }
+        }
 
-        if (resSummary.error) throw resSummary.error;
-        if (resDetail.error) throw resDetail.error;
+        // Insertar el resumen global solo tras confirmar que el detalle se insertó con éxito
+        const resSummary = await supabase.from('biologicos_existencia').insert(summaryRecord);
+        if (resSummary.error) {
+          console.error("[Capture Logic] Error insertando biologicos_existencia:", resSummary.error);
+          throw resSummary.error;
+        }
 
         console.log("[Capture Logic] SR Guardado correctamente.");
 
@@ -5332,29 +5340,45 @@ async function supabaseRequest(action = "", payload, options = {}) {
         const fechaStr = payload.fecha || todayYmdLocal();
         const clues = USER.clues;
 
-        // Paralelizar consultas (Usamos existencia_detalle para traer los lotes capturados)
-        const [resSR, resCons] = await Promise.all([
+        // Paralelizar consultas (Usamos existencia_detalle para traer los lotes capturados y biologicos_existencia como respaldo si solo existe el resumen)
+        const [resSR, resSummary, resCons] = await Promise.all([
           supabase.from('existencia_detalle').select('*').eq('clues', clues).eq('fecha', fechaStr),
+          supabase.from('biologicos_existencia').select('*').eq('clues', clues).eq('fecha', fechaStr).maybeSingle(),
           supabase.from('consumibles').select('*').eq('clues', clues).eq('fecha', fechaStr).maybeSingle()
         ]);
 
         const srItems = resSR.data || [];
+        const srSummary = resSummary.data || null;
         const consData = resCons.data || null;
-        console.log(`[Supabase DEBUG] getTodayReports raw:`, { srItems, consData });
+        console.log(`[Supabase DEBUG] getTodayReports raw:`, { srItems, srSummary, consData });
+
+        let srData = null;
+        if (srItems.length) {
+          srData = {
+            capturado_por: srItems[0].capturado_por || srItems[0].capturado || (srSummary ? srSummary.capturado_por : ""),
+            items: srItems.map(it => ({
+              biologico: it.biologico,
+              lote: it.lote,
+              caducidad: it.caducidad,
+              cantidad: it.cantidad,
+              fecha_recepcion: it.fecha_recepcion,
+              tipo: it.tipo || "REQUISICION"
+            })),
+            ...(srSummary || {})
+          };
+        } else if (srSummary) {
+          // Si no hay lotes en existencia_detalle pero sí existe el registro global en biologicos_existencia:
+          srData = {
+            capturado_por: srSummary.capturado_por || "",
+            items: [],
+            ...srSummary
+          };
+        }
 
         return {
           ok: true,
           data: {
-            sr: srItems.length ? {
-              capturado_por: srItems[0].capturado_por || srItems[0].capturado || "",
-              items: srItems.map(it => ({
-                biologico: it.biologico,
-                lote: it.lote,
-                caducidad: it.caducidad,
-                cantidad: it.cantidad,
-                fecha_recepcion: it.fecha_recepcion
-              }))
-            } : null,
+            sr: srData,
             cons: consData ? {
               capturado_por: consData.capturado_por,
               srp_dosis: consData.srp_dosis,

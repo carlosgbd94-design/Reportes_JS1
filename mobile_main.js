@@ -2470,14 +2470,14 @@
                     };
                 });
 
-                // Insert into both tables
-                const [resSummary, resDetail] = await Promise.all([
-                    supabaseClient.from('biologicos_existencia').insert(summaryRecord),
-                    items.length > 0 ? supabaseClient.from('existencia_detalle').insert(detailRecords) : Promise.resolve({ error: null })
-                ]);
+                // Insert into both tables (sequential guard to prevent orphan summary records)
+                if (items.length > 0) {
+                    const resDetail = await supabaseClient.from('existencia_detalle').insert(detailRecords);
+                    if (resDetail.error) throw resDetail.error;
+                }
 
+                const resSummary = await supabaseClient.from('biologicos_existencia').insert(summaryRecord);
                 if (resSummary.error) throw resSummary.error;
-                if (resDetail.error) throw resDetail.error;
 
                 // --- Generar Alerta de Desabasto en Móvil ---
                 const missingBios = BIOS.filter(b => summaryRecord[b] === 0);
