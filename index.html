@@ -4386,36 +4386,36 @@
             </button>
             <div id="rdaExportDropdown" style="
                   display: none; position: absolute; top: 100%; right: 0; margin-top: 8px;
-                  background: var(--md-sys-color-surface); border-radius: 16px; min-width: 250px;
+                  background: var(--md-sys-color-surface); border-radius: 16px; min-width: 270px;
                   box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
                   border: 1px solid var(--md-sys-color-outline-variant); padding: 6px; overflow: hidden; z-index: 100;
                 ">
               <button class="rda-export-opt" data-export="individual"
-                style="width: 100%; padding: 12px 16px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer; display: flex; align-items: center; gap: 12px; border-radius: 8px;">
-                <span class="material-symbols-rounded" style="color: #dc2626; font-size: 20px; width: 24px; display: inline-flex; justify-content: center; align-items: center; flex-shrink: 0; font-variation-settings: 'FILL' 0 !important; -webkit-font-smoothing: antialiased;">picture_as_pdf</span>
-                <span>Reporte PDF Individual</span>
+                style="width: 100%; padding: 12px 16px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer; display: flex; align-items: center; gap: 12px; border-radius: 8px; box-sizing: border-box;">
+                <span class="material-symbols-rounded" style="color: #dc2626; font-size: 20px; width: 24px; min-width: 24px; display: inline-flex; justify-content: center; align-items: center; flex-shrink: 0; font-variation-settings: 'FILL' 0 !important; -webkit-font-smoothing: antialiased;">picture_as_pdf</span>
+                <span style="white-space: nowrap;">Reporte PDF Individual</span>
               </button>
               <button class="rda-export-opt" data-export="png"
-                style="width: 100%; padding: 12px 16px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer; display: flex; align-items: center; gap: 12px; border-radius: 8px;">
-                <span class="material-symbols-rounded" style="color: #2563eb; font-size: 20px; width: 24px; display: inline-flex; justify-content: center; align-items: center; flex-shrink: 0;">image</span>
-                <span>Imagen PNG (Alta Calidad)</span>
+                style="width: 100%; padding: 12px 16px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer; display: flex; align-items: center; gap: 12px; border-radius: 8px; box-sizing: border-box;">
+                <span class="material-symbols-rounded" style="color: #2563eb; font-size: 20px; width: 24px; min-width: 24px; display: inline-flex; justify-content: center; align-items: center; flex-shrink: 0;">image</span>
+                <span style="white-space: nowrap;">Imagen PNG (Alta Calidad)</span>
               </button>
               <button class="rda-export-opt" data-export="jpeg"
-                style="width: 100%; padding: 12px 16px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer; display: flex; align-items: center; gap: 12px; border-radius: 8px;">
-                <span class="material-symbols-rounded" style="color: #059669; font-size: 20px; width: 24px; display: inline-flex; justify-content: center; align-items: center; flex-shrink: 0;">photo_library</span>
-                <span>Imagen JPEG (Alta Calidad)</span>
+                style="width: 100%; padding: 12px 16px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer; display: flex; align-items: center; gap: 12px; border-radius: 8px; box-sizing: border-box;">
+                <span class="material-symbols-rounded" style="color: #059669; font-size: 20px; width: 24px; min-width: 24px; display: inline-flex; justify-content: center; align-items: center; flex-shrink: 0;">photo_library</span>
+                <span style="white-space: nowrap;">Imagen JPEG (Alta Calidad)</span>
               </button>
               <button class="rda-export-opt" data-export="masivo_pdf"
                 data-role-gate="ADMIN,JURISDICCIONAL,VISUALIZADOR_JURISDICCIONAL,MUNICIPAL,CARAVANAS"
-                style="width: 100%; padding: 12px 16px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer; display: flex; align-items: center; gap: 12px; border-radius: 8px;">
-                <span class="material-symbols-rounded" style="color: #4338ca; font-size: 20px; width: 24px; display: inline-flex; justify-content: center; align-items: center; flex-shrink: 0;">folder_zip</span>
-                <span>ZIP Masivo (PDFs)</span>
+                style="width: 100%; padding: 12px 16px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer; display: flex; align-items: center; gap: 12px; border-radius: 8px; box-sizing: border-box;">
+                <span class="material-symbols-rounded" style="color: #4338ca; font-size: 20px; width: 24px; min-width: 24px; display: inline-flex; justify-content: center; align-items: center; flex-shrink: 0;">folder_zip</span>
+                <span style="white-space: nowrap;">ZIP Masivo (PDFs)</span>
               </button>
               <button class="rda-export-opt" data-export="masivo_img"
                 data-role-gate="ADMIN,JURISDICCIONAL,VISUALIZADOR_JURISDICCIONAL,MUNICIPAL,CARAVANAS"
-                style="width: 100%; padding: 12px 16px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer; display: flex; align-items: center; gap: 12px; border-radius: 8px;">
-                <span class="material-symbols-rounded" style="color: #d97706; font-size: 20px; width: 24px; display: inline-flex; justify-content: center; align-items: center; flex-shrink: 0;">collections</span>
-                <span>ZIP Masivo (Imágenes PNG)</span>
+                style="width: 100%; padding: 12px 16px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer; display: flex; align-items: center; gap: 12px; border-radius: 8px; box-sizing: border-box;">
+                <span class="material-symbols-rounded" style="color: #d97706; font-size: 20px; width: 24px; min-width: 24px; display: inline-flex; justify-content: center; align-items: center; flex-shrink: 0;">collections</span>
+                <span style="white-space: nowrap;">ZIP Masivo (Imágenes PNG)</span>
               </button>
             </div>
           </div>
