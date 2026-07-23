@@ -2545,15 +2545,18 @@ tr.lote-row-bad.imminent {
   transform: translateY(-50%) scale(0.95);
 }
 
-/* ===== PREMIUM SELECT / DROPDOWNS GLOBAL DESIGN ===== */
-select {
+/* ===== PREMIUM SELECT / DROPDOWNS & DATE INPUTS GLOBAL DESIGN ===== */
+select, input[type="date"], input[type="month"] {
   border: 1px solid rgba(203, 213, 225, 0.8) !important;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), inset 0 -1.5px 0 rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.02) !important;
-  border-radius: 9999px !important;
-  height: 34px !important;
+  border-radius: 18px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
   padding: 0 36px 0 16px !important;
   background-color: #ffffff !important;
   font-weight: 600 !important;
+  font-size: 14px !important;
   color: #0f172a !important;
   outline: none !important;
   cursor: pointer !important;
@@ -2565,8 +2568,9 @@ select {
   background-repeat: no-repeat !important;
   background-position: right 14px center !important;
   background-size: 14px !important;
+  box-sizing: border-box !important;
 }
-select:focus, select:hover {
+select:focus, select:hover, input[type="date"]:focus, input[type="date"]:hover {
   border-color: #94a3b8 !important;
 }
 
@@ -6091,7 +6095,7 @@ body.bioConfirmOpen {
 #formBIO .bioInput {
   border: 1.5px solid #c3c7cf !important; /* outline-variant */
   background-color: var(--md-sys-color-surface) !important;
-  border-radius: 12px !important;
+  border-radius: 18px !important;
   padding: 8px 12px !important;
   font-size: 14px !important;
   font-weight: 700 !important;
