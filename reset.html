@@ -474,13 +474,19 @@
       else if (finalType === "warn") icon = "warning";
 
       toastEl.innerHTML = `
-        <div class="toast-icon">
-          <span class="material-symbols-rounded">${icon}</span>
+        <div class="toast-ring-icon">
+          <svg class="toast-ring-svg" viewBox="0 0 36 36">
+            <path class="toast-ring-bg" stroke-width="3" stroke="currentColor" fill="none" pathLength="100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            <path class="toast-ring-circle" stroke-width="3" stroke-linecap="round" stroke="currentColor" fill="none" pathLength="100" style="animation: toastRingProgress ${duration}ms linear forwards !important;" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+          </svg>
+          <span class="material-symbols-rounded toast-ring-symbol">${icon}</span>
         </div>
         <div class="toast-content">
           <div class="toast-message">${msg}</div>
         </div>
-        <div class="toast-timer"></div>
+        <button type="button" class="toast-close-btn" title="Cerrar" onclick="this.closest('.toast-new').remove()">
+          <span class="material-symbols-rounded" style="font-size:15px;">close</span>
+        </button>
       `;
 
       toastEl.style.setProperty('--toast-duration', `${duration}ms`);

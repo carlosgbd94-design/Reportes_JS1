@@ -999,8 +999,11 @@ function showToast(msg, ok = true, type = null, options = {}) {
   const {
     force = false,
     cooldownMs = 1500,
-    duration = 4000,
-    title = ""
+    duration = 4500,
+    title = "",
+    field = "",
+    details = "",
+    action = null
   } = options || {};
 
   const finalType = type ? type : (ok ? "good" : "bad");
@@ -1016,7 +1019,7 @@ function showToast(msg, ok = true, type = null, options = {}) {
   LIVE_STATE.toastMeta.key = toastKey;
   LIVE_STATE.toastMeta.ts = now;
 
-  // Create modern toast element
+  // Create modern toast element (Proposal 1 Liquid Glassmorphism & Aurora Glow)
   const toastEl = document.createElement("div");
   toastEl.className = `toast-new ${finalType}`;
 
@@ -1029,20 +1032,39 @@ function showToast(msg, ok = true, type = null, options = {}) {
   let displayTitle = title;
   if (!displayTitle) {
     if (finalType === "good") displayTitle = "Éxito";
-    else if (finalType === "bad") displayTitle = "Error";
-    else if (finalType === "warn") displayTitle = "Atención";
+    else if (finalType === "bad") displayTitle = "Error en el reporte";
+    else if (finalType === "warn") displayTitle = "Atención requerida";
     else if (finalType === "info") displayTitle = "Información";
   }
 
+  const detailsHtml = (details || field) ? `
+    <div class="toast-details-box">
+      ${field ? `<div><b>Campo:</b> ${escapeHtml(field)}</div>` : ''}
+      ${details ? `<div>${escapeHtml(details)}</div>` : ''}
+    </div>
+  ` : '';
+
+  const actionHtml = action ? `
+    <button type="button" class="toast-action-btn" onclick="${escapeAttr(action.onclick || '')}">${escapeHtml(action.label || 'Corregir')}</button>
+  ` : '';
+
   toastEl.innerHTML = `
-      <div class="toast-icon">
-        <span class="material-symbols-rounded">${icon}</span>
+      <div class="toast-ring-icon">
+        <svg class="toast-ring-svg" viewBox="0 0 36 36">
+          <path class="toast-ring-bg" stroke-width="3" stroke="currentColor" fill="none" pathLength="100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+          <path class="toast-ring-circle" stroke-width="3" stroke-linecap="round" stroke="currentColor" fill="none" pathLength="100" style="animation: toastRingProgress ${duration}ms linear forwards !important;" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+        </svg>
+        <span class="material-symbols-rounded toast-ring-symbol">${icon}</span>
       </div>
       <div class="toast-content">
-        <div class="toast-title">${displayTitle}</div>
-        <div class="toast-message">${cleanMsg}</div>
+        <div class="toast-title">${escapeHtml(displayTitle)}</div>
+        <div class="toast-message">${escapeHtml(cleanMsg)}</div>
+        ${detailsHtml}
+        ${actionHtml}
       </div>
-      <div class="toast-timer"></div>
+      <button type="button" class="toast-close-btn" title="Cerrar" onclick="this.closest('.toast-new').remove()">
+        <span class="material-symbols-rounded" style="font-size:15px;">close</span>
+      </button>
     `;
 
   toastEl.style.setProperty('--toast-duration', `${duration}ms`);
@@ -2074,6 +2096,34 @@ function buildNotificationsHtml(items = []) {
     const pinolConfirmed = isPinolReceiptConfirmed(item);
     const isPinolAck = isPinolAckNotif(item);
 
+    const isPinol = (meta && String(meta.source || "").toUpperCase() === "PINOL") ||
+      (meta && meta.event === 'PINOL_SOLICITADO') ||
+      String(item.title || "").toLowerCase().includes("pinol");
+
+    const isDesabasto = type === "ALERTA_DESABASTO";
+    const isDesabastoActive = isDesabasto && meta?.status === "activa";
+
+    let leadingIcon = "";
+    if (isPinol) {
+      leadingIcon = `
+        <span class="notifPinolBottleBadge" title="Solicitud de Pinol">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 3h6v2H9z"/>
+            <path d="M10 5v3l-2 2v10a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V10l-2-2V5"/>
+            <line x1="8" y1="13" x2="16" y2="13"/>
+          </svg>
+        </span>
+      `;
+    } else if (isDesabasto) {
+      leadingIcon = `
+        <span class="notifDesabastoIconBadge ${isDesabastoActive ? 'active' : 'resolved'}" title="Alerta de Desabasto">
+          <span class="material-symbols-rounded">${isDesabastoActive ? 'warning' : 'check_circle'}</span>
+        </span>
+      `;
+    } else if (!isRead && !pinolConfirmed && !isPinolAck) {
+      leadingIcon = `<span class="notifUnreadDot"></span>`;
+    }
+
     const pinolTag = (meta && String(meta.source || "").toUpperCase() === "PINOL")
       ? `<span class="notifPillPinol"><span class="material-symbols-rounded">inventory_2</span>PINOL</span>`
       : "";
@@ -2082,40 +2132,27 @@ function buildNotificationsHtml(items = []) {
       ? `<span class="notifPillFrascos"><span class="material-symbols-rounded">science</span>FRASCOS</span>`
       : "";
 
-    const unreadDot = !isRead && !pinolConfirmed && !isPinolAck
-      ? `<span class="notifUnreadDot"></span>`
-      : ``;
-
-    const typeIcon = (
-      type === "SUCCESS" ? "verified" :
-        type === "WARN" || type === "WARNING" ? "warning" :
-          type === "ERROR" ? "error" :
-            type === "ALERTA_DESABASTO" ? "error_outline" :
-              "notifications"
-    );
-
-    const isDesabasto = type === "ALERTA_DESABASTO";
-    const isDesabastoActive = isDesabasto && meta?.status === "activa";
     const desabastoTag = isDesabasto
-      ? `<span style="background:var(--md-sys-color-error-container); color:var(--md-sys-color-on-error-container); padding:2px 8px; border-radius:8px; font-size:10px; font-weight:800; display:inline-flex; align-items:center; gap:4px; margin-left:6px;"><span class="material-symbols-rounded" style="font-size:12px; animation: pulse 2s infinite;">error_outline</span> DESABASTO</span>`
+      ? `<span class="notifDesabastoTag ${isDesabastoActive ? 'active' : 'resolved'}"><span class="material-symbols-rounded">${isDesabastoActive ? 'error_outline' : 'task_alt'}</span> ${isDesabastoActive ? 'DESABASTO' : 'DESABASTO RESUELTO'}</span>`
       : "";
 
     const cardClass = [
       "notifCard",
       isRead ? "read" : "unread",
       pinolConfirmed ? "flowClosed" : "",
-      (isDesabasto && !isDesabastoActive) ? "flowClosed" : ""
+      isPinol ? "notifCardPinol" : "",
+      isDesabasto ? "notifCardDesabasto" : "",
+      (isDesabasto && isDesabastoActive) ? "desabastoActive" : "",
+      (isDesabasto && !isDesabastoActive) ? "flowClosed desabastoResolved" : ""
     ].join(" ").trim();
 
-    const extraStyle = isDesabastoActive ? "border-left: 4px solid var(--md-sys-color-error);" : (isDesabasto ? "border-left: 4px solid var(--md-sys-color-outline-variant);" : "");
-
     return `
-      <div class="${cardClass}" data-id="${escapeAttr(item.id || "")}" style="${extraStyle}">
+      <div class="${cardClass}" data-id="${escapeAttr(item.id || "")}">
         <div class="notifCardContent">
           <div class="notifHeaderRow">
             <div class="notifMainInfo">
               <div class="notifCardTitle">
-                ${unreadDot}
+                ${leadingIcon}
                 ${escapeHtml(item.title || "Notificación")}
                 ${pinolTag}
                 ${frascosTag}
@@ -2623,6 +2660,44 @@ async function markVisibleNotificationsReadFlow() {
   }
 }
 
+async function resolveDesabastoFlow(id) {
+  try {
+    if (!id) {
+      showToast("No se recibió el identificador de la notificación", false);
+      return;
+    }
+    showOverlay("Verificando alerta de desabasto…", "Desabasto");
+
+    const r = await apiCall("resolveDesabasto", { id });
+    if (!r || !r.ok) {
+      showToast((r && r.error) ? r.error : "No se pudo marcar como verificado", false);
+      return;
+    }
+
+    applyLocalNotificationRead(id);
+
+    const current = Array.isArray(LIVE_STATE.notifications) ? LIVE_STATE.notifications : [];
+    LIVE_STATE.notifications = current.map(item => {
+      if (String(item?.id || "") !== String(id || "")) return item;
+      const patched = patchNotificationMeta(item, { status: "resuelta" });
+      return Object.assign({}, patched, { status: "READ", is_read: "SI" });
+    });
+
+    rerenderNotificationsFromState();
+    showToast("Alerta de desabasto marcada como verificada/resuelta");
+
+    const unreadNow = Number($("notifUnreadKpi")?.textContent || 0);
+    if (unreadNow <= 0) {
+      clearTabAttention("tabNOTIFS", "bNotif");
+    }
+  } catch (e) {
+    console.error("resolveDesabastoFlow error:", e);
+    showToast(e.message || "Error al resolver la alerta de desabasto", false);
+  } finally {
+    hideOverlay();
+  }
+}
+
 async function markNotificationReadFlow(id) {
   try {
     showOverlay("Marcando notificación como leída…", "Notificaciones");
@@ -2733,6 +2808,15 @@ async function clearAllNotificationsFlow() {
     hideOverlay();
   }
 }
+
+// Global window attachments for inline event handlers
+window.resolveDesabastoFlow = resolveDesabastoFlow;
+window.markNotificationReadFlow = markNotificationReadFlow;
+window.goToPinolPanelFlow = goToPinolPanelFlow;
+window.confirmPinolReceiptFlow = confirmPinolReceiptFlow;
+window.deleteNotificationFlow = deleteNotificationFlow;
+window.clearAllNotificationsFlow = clearAllNotificationsFlow;
+window.markVisibleNotificationsReadFlow = markVisibleNotificationsReadFlow;
 
 // === CENTRO DE NOTIFICACIONES: LÓGICA DE ENVÍO HIERÁRQUICO ===
 window.initNotificationCenter = async function () {
@@ -9244,12 +9328,12 @@ window.addSRRow = function (data = null) {
 
   // Inyectar caché de DOM
   tr._cache = {
-    bioSelect: tr.querySelector(".sr-bio-select"),
-    loteSelect: tr.querySelector(".sr-lote-select"),
+    bioSelect: tr.querySelector("select.sr-bio-select"),
+    loteSelect: tr.querySelector("select.sr-lote-select"),
     cadCell: tr.querySelector(".sr-cad-cell"),
-    recepcionInput: tr.querySelector(".sr-recepcion-input"),
-    tipoSelect: tr.querySelector(".sr-tipo-select"),
-    cantidadInput: tr.querySelector(".sr-cantidad-input"),
+    recepcionInput: tr.querySelector("input.sr-recepcion-input"),
+    tipoSelect: tr.querySelector("select.sr-tipo-select"),
+    cantidadInput: tr.querySelector("input.sr-cantidad-input"),
     permanenciaHint: tr.querySelector(".sr-permanencia-hint")
   };
 
@@ -22908,6 +22992,21 @@ function createPremiumCustomDropdown(selectId) {
   const select = typeof selectId === "string" ? document.getElementById(selectId) : selectId;
   if (!select) return;
 
+  // Assign ID first so we can check the wrapper
+  if (!select.id) {
+    select.id = "select_" + Math.random().toString(36).substring(2, 9);
+  }
+
+  const id = select.id;
+
+  // CRITICAL: guard must come BEFORE observer disconnect, otherwise we kill
+  // the live observers of an already-working dropdown and never recreate them.
+  if (select.classList.contains("premium-custom-hidden-select")) {
+    const existingWrapper = document.getElementById(`${id}_custom_wrapper`);
+    if (existingWrapper) return; // already converted – do nothing
+  }
+
+  // Only disconnect when we are actually going to recreate the dropdown
   if (select._premiumAttrObserver) {
     select._premiumAttrObserver.disconnect();
     delete select._premiumAttrObserver;
@@ -22917,25 +23016,20 @@ function createPremiumCustomDropdown(selectId) {
     delete select._premiumOptionObserver;
   }
 
-  if (!select.id) {
-    select.id = "select_" + Math.random().toString(36).substring(2, 9);
-  }
-
-  const id = select.id;
-
   // Clean parent outline if it has border/bg-surface (MD3 group wrapper)
   const parent = select.parentElement;
-  if (parent && (parent.classList.contains("border") || parent.style.border || parent.className.includes("border-slate-200"))) {
-    parent.className = parent.className.replace(/\bbg-[a-z0-9-]+\b/g, "")
-                                        .replace(/\bborder-[a-z0-9-\/]+\b/g, "")
-                                        .replace(/\bborder\b/g, "")
-                                        .replace(/\brounded-[a-z0-9]+\b/g, "")
-                                        .replace(/\bpx-[0-9]+\b/g, "")
-                                        .replace(/\bshadow-[a-z0-9-]+\b/g, "");
-    parent.style.border = "none";
-    parent.style.background = "transparent";
-    parent.style.boxShadow = "none";
-    
+  if (parent) {
+    if (parent.classList.contains("border") || parent.style.border || parent.className.includes("border-slate-200")) {
+      parent.className = parent.className.replace(/\bbg-[a-z0-9-]+\b/g, "")
+                                          .replace(/\bborder-[a-z0-9-\/]+\b/g, "")
+                                          .replace(/\bborder\b/g, "")
+                                          .replace(/\brounded-[a-z0-9]+\b/g, "")
+                                          .replace(/\bpx-[0-9]+\b/g, "")
+                                          .replace(/\bshadow-[a-z0-9-]+\b/g, "");
+      parent.style.border = "none";
+      parent.style.background = "transparent";
+      parent.style.boxShadow = "none";
+    }
     Array.from(parent.children).forEach(child => {
       if (child !== select && child.classList.contains("material-symbols-rounded")) {
         child.style.display = "none";
@@ -23003,33 +23097,62 @@ function createPremiumCustomDropdown(selectId) {
   btn.className = "w-full bg-white rounded-full px-4 py-1.5 text-xs font-extrabold text-slate-700 outline-none flex items-center justify-between gap-2 transition-all duration-200 hover:border-violet-300";
   btn.style.cssText = "min-height: 34px; border: 1px solid rgba(203, 213, 225, 0.8) !important; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), inset 0 -1.5px 0 rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.02) !important;";
 
-  // Copiar clases de ancho/max-ancho a wrapper y botón
+  // Copiar clases de ancho/max-ancho a wrapper y botón (excluyendo identificadores específicos como sr-*)
   Array.from(select.classList).forEach(c => {
-    if (c.startsWith("w-") || c.startsWith("max-w-") || c.startsWith("flex-") || c.startsWith("sr-")) {
+    if (c.startsWith("w-") || c.startsWith("max-w-") || c.startsWith("flex-")) {
       wrapper.classList.add(c);
       btn.classList.add(c);
     }
   });
 
   const labelSpan = document.createElement("span");
-  labelSpan.className = "truncate min-w-0 flex-1 text-left block";
-  labelSpan.style.cssText = "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;";
+  labelSpan.className = "truncate min-w-0 flex-1 text-left block pointer-events-none";
+  labelSpan.style.cssText = "overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none;";
   
   const iconSpan = document.createElement("span");
-  iconSpan.className = "material-symbols-rounded text-slate-400 text-[18px] shrink-0";
+  iconSpan.className = "material-symbols-rounded text-slate-400 text-[18px] shrink-0 pointer-events-none";
+  iconSpan.style.cssText = "pointer-events: none;";
   iconSpan.textContent = "expand_more";
 
   btn.appendChild(labelSpan);
   btn.appendChild(iconSpan);
 
   const dropdown = document.createElement("div");
-  dropdown.className = "hidden absolute left-0 mt-1 rounded-2xl bg-white/45 backdrop-blur-xl border border-slate-200/80 shadow-xl transition-all duration-200 z-[99999] p-1 flex flex-col gap-0.5 min-w-full w-max max-w-[380px] max-h-[380px] overflow-y-auto";
-  dropdown.style.cssText = "display: none; z-index: 99999 !important; max-height: 280px !important; overflow-y: auto !important; min-width: 100% !important; width: max-content !important; max-width: min(90vw, 380px) !important; flex-direction: column !important; gap: 2px !important; background: rgba(255, 255, 255, 0.45) !important; backdrop-filter: blur(16px) !important; -webkit-backdrop-filter: blur(16px) !important; border: 1px solid rgba(226, 232, 240, 0.8) !important; border-radius: 16px !important; box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.1) !important; padding: 4px !important;";
+  dropdown.className = "hidden absolute left-0 mt-1 rounded-2xl bg-white/85 backdrop-blur-xl border border-slate-200/80 shadow-xl transition-all duration-200 z-[99999] p-1 flex flex-col gap-0.5 min-w-full w-max max-w-[380px] max-h-[380px] overflow-y-auto premium-custom-dropdown-panel";
+  dropdown.style.cssText = "display: none; position: absolute !important; top: calc(100% + 4px) !important; left: 0 !important; z-index: 99999 !important; max-height: 280px !important; overflow-y: auto !important; min-width: 100% !important; width: max-content !important; max-width: min(90vw, 380px) !important; flex-direction: column !important; gap: 2px !important; background: rgba(255, 255, 255, 0.85) !important; backdrop-filter: blur(16px) !important; -webkit-backdrop-filter: blur(16px) !important; border: 1px solid rgba(226, 232, 240, 0.8) !important; border-radius: 16px !important; box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.1) !important; padding: 4px !important;";
 
   const updateBtnLabel = () => {
     const selectedOption = select.options[select.selectedIndex];
     labelSpan.textContent = selectedOption ? selectedOption.text : "Seleccionar...";
   };
+
+  const updatePosition = () => {
+    if (dropdown.classList.contains("hidden") || dropdown.style.display === "none") return;
+    const rect = btn.getBoundingClientRect();
+    if (!rect || rect.width === 0) return;
+
+    const availableSpaceBelow = window.innerHeight - rect.bottom;
+    const dropdownHeight = Math.min(dropdown.scrollHeight || 280, 280);
+
+    dropdown.style.setProperty("position", "fixed", "important");
+    if (availableSpaceBelow < dropdownHeight && rect.top > dropdownHeight) {
+      dropdown.style.setProperty("top", `${Math.max(10, rect.top - dropdownHeight - 4)}px`, "important");
+    } else {
+      dropdown.style.setProperty("top", `${rect.bottom + 4}px`, "important");
+    }
+    dropdown.style.setProperty("left", `${rect.left}px`, "important");
+    dropdown.style.setProperty("min-width", `${rect.width}px`, "important");
+    dropdown.style.setProperty("z-index", "99999", "important");
+  };
+
+  const handleScrollOrResize = () => {
+    if (!dropdown.classList.contains("hidden") && dropdown.style.display !== "none") {
+      updatePosition();
+    }
+  };
+
+  window.addEventListener("scroll", handleScrollOrResize, { capture: true, passive: true });
+  window.addEventListener("resize", handleScrollOrResize, { passive: true });
 
   const renderOptions = () => {
     dropdown.innerHTML = "";
@@ -23086,19 +23209,31 @@ function createPremiumCustomDropdown(selectId) {
     });
   };
 
+  const syncDisabledState = () => {
+    const isDisabled = select.disabled || select.readOnly || select.hasAttribute("disabled") || select.hasAttribute("readonly") || !!select.closest("fieldset:disabled");
+    btn.disabled = isDisabled;
+    if (isDisabled) {
+      btn.style.setProperty("opacity", "0.6", "important");
+      btn.style.setProperty("cursor", "not-allowed", "important");
+      btn.style.setProperty("pointer-events", "none", "important");
+      dropdown.classList.add("hidden");
+      dropdown.style.display = "none";
+    } else {
+      btn.style.opacity = "";
+      btn.style.cursor = "pointer";
+      btn.style.pointerEvents = "auto";
+    }
+  };
+
   btn.onclick = (e) => {
     e.stopPropagation();
+    if (select.disabled || select.readOnly || select.hasAttribute("disabled") || select.hasAttribute("readonly") || !!select.closest("fieldset:disabled")) return;
     
     // Cerrar otros dropdowns estándar
     document.querySelectorAll("[id$=_custom_wrapper] > div").forEach(d => {
       if (d !== dropdown) {
         d.classList.add("hidden");
         d.style.display = "none";
-        const wrp = d.parentElement;
-        if (wrp) {
-          wrp.style.zIndex = "";
-          setParentZIndex(wrp, "");
-        }
       }
     });
 
@@ -23114,24 +23249,12 @@ function createPremiumCustomDropdown(selectId) {
       renderOptions();
       dropdown.classList.remove("hidden");
       dropdown.style.setProperty("display", "flex", "important");
-      wrapper.style.zIndex = "99999";
-      setParentZIndex(wrapper, "99999");
+      updatePosition();
     } else {
       dropdown.classList.add("hidden");
       dropdown.style.display = "none";
-      wrapper.style.zIndex = "";
-      setParentZIndex(wrapper, "");
     }
   };
-
-  document.addEventListener("click", (e) => {
-    if (!wrapper.contains(e.target)) {
-      dropdown.classList.add("hidden");
-      dropdown.style.display = "none";
-      wrapper.style.zIndex = "";
-      setParentZIndex(wrapper, "");
-    }
-  });
 
   select.addEventListener("change", updateBtnLabel);
 
@@ -23194,6 +23317,7 @@ function createPremiumCustomDropdown(selectId) {
   wrapper.appendChild(dropdown);
 
   updateBtnLabel();
+  syncDisabledState();
 
   // Estado inicial: mostrar u ocultar según visibilidad original del select
   if (wasOriginallyHidden) {
@@ -23207,11 +23331,11 @@ function createPremiumCustomDropdown(selectId) {
   select._premiumHiddenBySelf = true;
 
   const attrObserver = new MutationObserver(() => {
+    syncDisabledState();
+
     // Si el sistema externo puso display:none (no nosotros), ocultar wrapper
-    // Si lo pusimos nosotros (_premiumHiddenBySelf), ignorar
     const isExternallyHidden =
       select.classList.contains("hidden") ||
-      select.disabled ||
       (!select._premiumHiddenBySelf && select.style.display === "none");
     
     // También detectar cuando el sistema externo lo muestra con display:block o display:''
@@ -23229,7 +23353,7 @@ function createPremiumCustomDropdown(selectId) {
       wrapper.style.setProperty("display", "none", "important");
     }
   });
-  attrObserver.observe(select, { attributes: true, attributeFilter: ["style", "class", "disabled"] });
+  attrObserver.observe(select, { attributes: true, attributeFilter: ["style", "class", "disabled", "readonly"] });
   select._premiumAttrObserver = attrObserver;
 }
 
@@ -23242,8 +23366,11 @@ function convertAllSelectsToPremium() {
       !select.id.endsWith("_custom_select") && 
       !select.classList.contains("exclude-premium")
     ) {
-      const wrapperId = select.id ? `${select.id}_custom_wrapper` : null;
-      const hasWrapper = wrapperId && document.getElementById(wrapperId);
+      if (!select.id) {
+        select.id = "select_" + Math.random().toString(36).substring(2, 9);
+      }
+      const wrapperId = `${select.id}_custom_wrapper`;
+      const hasWrapper = document.getElementById(wrapperId);
       if (!hasWrapper || !select.classList.contains("premium-custom-hidden-select")) {
         createPremiumCustomDropdown(select);
       }
@@ -23251,907 +23378,53 @@ function convertAllSelectsToPremium() {
   });
 }
 
-function createPremiumCustomDatePicker(inputId) {
-  const input = typeof inputId === "string" ? document.getElementById(inputId) : inputId;
-  if (!input) return;
-
-  if (!input.id) {
-    input.id = "date_" + Math.random().toString(36).substring(2, 9);
-  }
-
-  const id = input.id;
-
-  const existingWrapper = document.getElementById(`${id}_custom_wrapper`);
-  if (existingWrapper) existingWrapper.remove();
-
-  const wrapper = document.createElement("div");
-  wrapper.id = `${id}_custom_wrapper`;
-  
-  let wrapperClass = "";
-  if (input.className) {
-    wrapperClass = input.className.split(" ").filter(c => {
-      const lower = c.toLowerCase();
-      if (lower.startsWith("w-") || lower.startsWith("max-w-") || lower.startsWith("flex-") || lower.startsWith("col-") || lower.startsWith("row-") || lower.startsWith("grid-") || lower.startsWith("m-") || lower.startsWith("mt-") || lower.startsWith("mb-") || lower.startsWith("ml-") || lower.startsWith("mr-")) {
-        return true;
-      }
-      if (
-        lower.includes("border") ||
-        lower.includes("bg-") ||
-        lower.includes("rounded") ||
-        lower.includes("px-") ||
-        lower.includes("py-") ||
-        lower.includes("text-") ||
-        lower.includes("font-") ||
-        lower.includes("shadow-") ||
-        lower === "hidden"
-      ) {
-        return false;
-      }
-      return true;
-    }).join(" ");
-  }
-  
-  wrapper.className = wrapperClass.trim() + " relative inline-block custom-date-wrapper";
-  
-  const layoutProps = ["width", "minWidth", "maxWidth", "margin", "marginTop", "marginBottom", "marginLeft", "marginRight", "flex", "flexGrow", "flexShrink", "flexBasis", "position", "top", "bottom", "left", "right"];
-  layoutProps.forEach(prop => {
-    if (input.style[prop]) {
-      wrapper.style[prop] = input.style[prop];
-    }
-  });
-  
-  wrapper.style.minWidth = input.style.minWidth || "120px";
-
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "w-full bg-white rounded-full px-4 text-xs font-extrabold text-slate-700 outline-none flex items-center justify-between gap-2 transition-all duration-200 hover:border-violet-300";
-  btn.style.cssText = "min-height: 34px !important; height: 34px !important; padding: 4px 16px !important; margin: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: space-between !important; border: 1px solid rgba(203, 213, 225, 0.8) !important; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), inset 0 -1.5px 0 rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.02) !important;";
-
-  Array.from(input.classList).forEach(c => {
-    if (c.startsWith("w-") || c.startsWith("max-w-") || c.startsWith("flex-")) {
-      wrapper.classList.add(c);
-      btn.classList.add(c);
-    }
-  });
-
-  const labelSpan = document.createElement("span");
-  labelSpan.className = "truncate flex items-center gap-1.5";
-  
-  const iconSpan = document.createElement("span");
-  iconSpan.className = "material-symbols-rounded text-slate-400 text-[18px] shrink-0";
-  iconSpan.textContent = "calendar_today";
-
-  btn.appendChild(labelSpan);
-  btn.appendChild(iconSpan);
-
-  const dropdown = document.createElement("div");
-  dropdown.className = "hidden absolute left-0 mt-1 rounded-2xl bg-white/65 backdrop-blur-xl border border-slate-200/80 shadow-xl transition-all duration-200 z-[99999] p-3 flex flex-col gap-2 w-[292px]";
-  dropdown.style.cssText = "display: none; z-index: 99999 !important; background: rgba(255, 255, 255, 0.65) !important; backdrop-filter: blur(16px) !important; -webkit-backdrop-filter: blur(16px) !important; border: 1px solid rgba(226, 232, 240, 0.8) !important; border-radius: 16px !important; box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.1) !important; padding: 8px !important;";
-
-  if (!document.getElementById("premium-datepicker-styles")) {
-    const style = document.createElement("style");
-    style.id = "premium-datepicker-styles";
-    style.textContent = `
-      @keyframes premium-date-pop {
-        0% { transform: scale(0.8); opacity: 0.5; }
-        50% { transform: scale(1.1); }
-        100% { transform: scale(1); }
-      }
-      .premium-date-selected {
-        animation: premium-date-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  const formatDateForDisplay = (ymdStr) => {
-    if (!ymdStr) return "Seleccionar fecha...";
-    const parts = ymdStr.split("-");
-    if (parts.length !== 3) return ymdStr;
-    return `${parts[2]}/${parts[1]}/${parts[0]}`;
-  };
-
-  const updateBtnLabel = () => {
-    labelSpan.textContent = formatDateForDisplay(input.value);
-  };
-
-  const parseYmd = (ymdStr) => {
-    if (!ymdStr) {
-      const today = new Date();
-      return { y: today.getFullYear(), m: today.getMonth(), d: today.getDate() };
-    }
-    const parts = ymdStr.split("-");
-    return { y: parseInt(parts[0], 10), m: parseInt(parts[1], 10) - 1, d: parseInt(parts[2], 10) };
-  };
-
-  let { y: viewYear, m: viewMonth } = parseYmd(input.value);
-  let showPickerView = false;
-
-  const renderCalendar = () => {
-    dropdown.innerHTML = "";
-
-    if (showPickerView) {
-      const header = document.createElement("div");
-      header.className = "flex items-center justify-between w-full mb-1";
-
-      const prevYearBtn = document.createElement("button");
-      prevYearBtn.type = "button";
-      prevYearBtn.className = "rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors cursor-pointer border-0 bg-transparent";
-      prevYearBtn.style.cssText = "width: 24px !important; height: 24px !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;";
-      prevYearBtn.innerHTML = '<span class="material-symbols-rounded text-[18px]">chevron_left</span>';
-      prevYearBtn.onclick = (e) => {
-        e.stopPropagation();
-        viewYear--;
-        renderCalendar();
-      };
-
-      const yearTitle = document.createElement("span");
-      yearTitle.className = "font-black text-slate-700 text-xs select-none";
-      yearTitle.textContent = viewYear;
-
-      const nextYearBtn = document.createElement("button");
-      nextYearBtn.type = "button";
-      nextYearBtn.className = "rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors cursor-pointer border-0 bg-transparent";
-      nextYearBtn.style.cssText = "width: 24px !important; height: 24px !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;";
-      nextYearBtn.innerHTML = '<span class="material-symbols-rounded text-[18px]">chevron_right</span>';
-      nextYearBtn.onclick = (e) => {
-        e.stopPropagation();
-        viewYear++;
-        renderCalendar();
-      };
-
-      header.appendChild(prevYearBtn);
-      header.appendChild(yearTitle);
-      header.appendChild(nextYearBtn);
-      dropdown.appendChild(header);
-
-      const monthGrid = document.createElement("div");
-      monthGrid.style.cssText = "display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; margin: 2px 0 !important;";
-      
-      const monthNamesShort = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-      monthNamesShort.forEach((name, idx) => {
-        const cell = document.createElement("button");
-        cell.type = "button";
-        const isCurrentMonth = (idx === viewMonth);
-        
-        cell.className = "rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer border-0";
-        if (isCurrentMonth) {
-          cell.style.cssText = "min-height: 28px !important; height: 28px !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; background-color: #7c3aed !important; color: #ffffff !important;";
-        } else {
-          cell.style.cssText = "min-height: 28px !important; height: 28px !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; background-color: transparent !important; color: #334155 !important; border: 1px solid #f1f5f9 !important;";
-          cell.onmouseenter = () => cell.style.backgroundColor = "#faf5ff";
-          cell.onmouseleave = () => cell.style.backgroundColor = "transparent";
-        }
-        cell.textContent = name;
-        cell.onclick = (e) => {
-          e.stopPropagation();
-          viewMonth = idx;
-          showPickerView = false;
-          renderCalendar();
-        };
-        monthGrid.appendChild(cell);
-      });
-      dropdown.appendChild(monthGrid);
-      
-      const footer = document.createElement("div");
-      footer.className = "flex items-center justify-end border-t border-slate-100 pt-1.5 mt-1";
-      
-      const backBtn = document.createElement("button");
-      backBtn.type = "button";
-      backBtn.className = "text-violet-600 font-extrabold text-[11px] hover:bg-violet-50 transition-colors border-0 bg-transparent cursor-pointer";
-      backBtn.style.cssText = "min-height: 0 !important; padding: 2px 8px !important; margin: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; height: auto !important;";
-      backBtn.textContent = "Volver";
-      backBtn.onclick = (e) => {
-        e.stopPropagation();
-        showPickerView = false;
-        renderCalendar();
-      };
-      
-      footer.appendChild(backBtn);
-      dropdown.appendChild(footer);
-      return;
-    }
-
-    const header = document.createElement("div");
-    header.className = "flex items-center justify-between w-full mb-0.5";
-
-    const prevBtn = document.createElement("button");
-    prevBtn.type = "button";
-    prevBtn.className = "rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors cursor-pointer border-0 bg-transparent";
-    prevBtn.style.cssText = "width: 24px !important; height: 24px !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;";
-    prevBtn.innerHTML = '<span class="material-symbols-rounded text-[16px]">chevron_left</span>';
-    prevBtn.onclick = (e) => {
-      e.stopPropagation();
-      viewMonth--;
-      if (viewMonth < 0) {
-        viewMonth = 11;
-        viewYear--;
-      }
-      renderCalendar();
-    };
-
-    const titleBtn = document.createElement("button");
-    titleBtn.type = "button";
-    titleBtn.className = "font-black text-slate-700 text-xs uppercase tracking-wider select-none hover:bg-slate-50 rounded-lg transition-colors border-0 bg-transparent cursor-pointer flex items-center gap-1";
-    titleBtn.style.cssText = "min-height: 0 !important; padding: 2px 6px !important; margin: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; height: auto !important;";
-    const monthNames = [
-      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-    ];
-    titleBtn.innerHTML = `<span>${monthNames[viewMonth]} ${viewYear}</span><span class="material-symbols-rounded text-[14px]">arrow_drop_down</span>`;
-    titleBtn.onclick = (e) => {
-      e.stopPropagation();
-      showPickerView = true;
-      renderCalendar();
-    };
-
-    const nextBtn = document.createElement("button");
-    nextBtn.type = "button";
-    nextBtn.className = "rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors cursor-pointer border-0 bg-transparent";
-    nextBtn.style.cssText = "width: 24px !important; height: 24px !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;";
-    nextBtn.innerHTML = '<span class="material-symbols-rounded text-[16px]">chevron_right</span>';
-    nextBtn.onclick = (e) => {
-      e.stopPropagation();
-      viewMonth++;
-      if (viewMonth > 11) {
-        viewMonth = 0;
-        viewYear++;
-      }
-      renderCalendar();
-    };
-
-    header.appendChild(prevBtn);
-    header.appendChild(titleBtn);
-    header.appendChild(nextBtn);
-    dropdown.appendChild(header);
-
-    const weekGrid = document.createElement("div");
-    weekGrid.className = "text-center text-[10px] font-black select-none mb-0.5";
-    weekGrid.style.cssText = "display: grid !important; grid-template-columns: repeat(7, 1fr) !important; gap: 6px !important;";
-    ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"].forEach(day => {
-      const cell = document.createElement("div");
-      cell.textContent = day;
-      if (day === "Do") {
-        cell.style.color = "#ef4444";
-      } else {
-        cell.style.color = "#94a3b8";
-      }
-      weekGrid.appendChild(cell);
-    });
-    dropdown.appendChild(weekGrid);
-
-    const daysGrid = document.createElement("div");
-    daysGrid.style.cssText = "display: grid !important; grid-template-columns: repeat(7, 1fr) !important; row-gap: 2px !important; column-gap: 6px !important;";
-
-    const firstDayDate = new Date(viewYear, viewMonth, 1);
-    let startOffset = firstDayDate.getDay() - 1;
-    if (startOffset < 0) startOffset = 6;
-
-    const totalDays = new Date(viewYear, viewMonth + 1, 0).getDate();
-    const prevTotalDays = new Date(viewYear, viewMonth, 0).getDate();
-
-    let cellIndex = 0;
-
-    for (let i = startOffset - 1; i >= 0; i--) {
-      const dayNum = prevTotalDays - i;
-      const cell = document.createElement("button");
-      cell.type = "button";
-      cell.className = "rounded-full border-0 bg-transparent flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors";
-      cell.style.cssText = "width: 32px !important; height: 32px !important; padding: 0 !important; margin: 0 !important; min-height: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 11px !important; font-weight: 500 !important; color: #cbd5e1 !important;";
-      cell.textContent = dayNum;
-      
-      const targetM = viewMonth === 0 ? 11 : viewMonth - 1;
-      const targetY = viewMonth === 0 ? viewYear - 1 : viewYear;
-      cell.onclick = (e) => {
-        e.stopPropagation();
-        selectDate(targetY, targetM, dayNum);
-      };
-      daysGrid.appendChild(cell);
-      cellIndex++;
-    }
-
-    const selectedDateObj = parseYmd(input.value);
-
-    for (let d = 1; d <= totalDays; d++) {
-      const cell = document.createElement("button");
-      cell.type = "button";
-      const isSelected = selectedDateObj.y === viewYear && selectedDateObj.m === viewMonth && selectedDateObj.d === d;
-      
-      if (isSelected) {
-        cell.className = "rounded-full border-0 flex items-center justify-center cursor-pointer shadow-[0_2px_8px_rgba(139,92,246,0.3)] premium-date-selected";
-        cell.style.cssText = "width: 32px !important; height: 32px !important; padding: 0 !important; margin: 0 !important; min-height: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 11px !important; font-weight: 900 !important; background-color: #7c3aed !important; color: #ffffff !important;";
-      } else {
-        const isSunday = (cellIndex % 7 === 6);
-        cell.className = "rounded-full border border-transparent hover:border-violet-200 hover:bg-violet-50/50 flex items-center justify-center transition-all cursor-pointer bg-transparent";
-        cell.style.cssText = `width: 32px !important; height: 32px !important; padding: 0 !important; margin: 0 !important; min-height: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 11px !important; font-weight: 800 !important; color: ${isSunday ? '#ef4444' : '#0f172a'} !important;`;
-      }
-      cell.textContent = d;
-      cell.onclick = (e) => {
-        e.stopPropagation();
-        selectDate(viewYear, viewMonth, d);
-      };
-      daysGrid.appendChild(cell);
-      cellIndex++;
-    }
-
-    const currentCellsCount = startOffset + totalDays;
-    const remainingCells = 42 - currentCellsCount;
-    for (let d = 1; d <= remainingCells; d++) {
-      const cell = document.createElement("button");
-      cell.type = "button";
-      cell.className = "rounded-full border-0 bg-transparent flex items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors";
-      cell.style.cssText = "width: 32px !important; height: 32px !important; padding: 0 !important; margin: 0 !important; min-height: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; font-size: 11px !important; font-weight: 500 !important; color: #cbd5e1 !important;";
-      cell.textContent = d;
-
-      const targetM = viewMonth === 11 ? 0 : viewMonth + 1;
-      const targetY = viewMonth === 11 ? viewYear + 1 : viewYear;
-      cell.onclick = (e) => {
-        e.stopPropagation();
-        selectDate(targetY, targetM, d);
-      };
-      daysGrid.appendChild(cell);
-      cellIndex++;
-    }
-
-    dropdown.appendChild(daysGrid);
-
-    const footer = document.createElement("div");
-    footer.className = "flex items-center justify-between border-t border-slate-100 pt-1.5 mt-0.5";
-    
-    const clearBtn = document.createElement("button");
-    clearBtn.type = "button";
-    clearBtn.className = "text-violet-600 font-extrabold text-[11px] hover:bg-violet-50 rounded-lg transition-colors border-0 bg-transparent cursor-pointer";
-    clearBtn.textContent = "Borrar";
-    clearBtn.style.cssText = "min-height: 0 !important; padding: 2px 8px !important; margin: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; height: auto !important;";
-    clearBtn.onclick = (e) => {
-      e.stopPropagation();
-      input.value = "";
-      input.dispatchEvent(new Event("change"));
-      dropdown.classList.add("hidden");
-      dropdown.style.display = "none";
-      wrapper.style.zIndex = "";
-      setParentZIndex(wrapper, "");
-      updateBtnLabel();
-    };
-    
-    const todayBtn = document.createElement("button");
-    todayBtn.type = "button";
-    todayBtn.className = "text-violet-600 font-extrabold text-[11px] hover:bg-violet-50 px-2 py-0.5 rounded-lg transition-colors border-0 bg-transparent cursor-pointer";
-    todayBtn.textContent = "Hoy";
-    todayBtn.style.margin = "0 !important;";
-    todayBtn.onclick = (e) => {
-      e.stopPropagation();
-      const today = new Date();
-      const y = today.getFullYear();
-      const m = String(today.getMonth() + 1).padStart(2, "0");
-      const d = String(today.getDate()).padStart(2, "0");
-      input.value = `${y}-${m}-${d}`;
-      input.dispatchEvent(new Event("change"));
-      dropdown.classList.add("hidden");
-      dropdown.style.display = "none";
-      updateBtnLabel();
-    };
-    
-    footer.appendChild(clearBtn);
-    footer.appendChild(todayBtn);
-    dropdown.appendChild(footer);
-  };
-
-  const selectDate = (y, m, d) => {
-    const formattedMonth = String(m + 1).padStart(2, "0");
-    const formattedDay = String(d).padStart(2, "0");
-    input.value = `${y}-${formattedMonth}-${formattedDay}`;
-    input.dispatchEvent(new Event("change"));
-    dropdown.classList.add("hidden");
-    dropdown.style.display = "none";
-    updateBtnLabel();
-  };
-
-  btn.onclick = (e) => {
-    e.stopPropagation();
-    document.querySelectorAll("[id$=_custom_wrapper] > div").forEach(d => {
-      if (d !== dropdown) {
-        d.classList.add("hidden");
-        d.style.display = "none";
-        const wrp = d.parentElement;
-        if (wrp) {
-          wrp.style.zIndex = "";
-          setParentZIndex(wrp, "");
-        }
-      }
-    });
-
-    const isHidden = dropdown.classList.contains("hidden");
-    if (isHidden) {
-      const currentVal = parseYmd(input.value);
-      viewYear = currentVal.y;
-      viewMonth = currentVal.m;
-      showPickerView = false;
-      renderCalendar();
-      dropdown.classList.remove("hidden");
-      dropdown.style.setProperty("display", "flex", "important");
-      wrapper.style.zIndex = "99999";
-      setParentZIndex(wrapper, "99999");
-    } else {
-      dropdown.classList.add("hidden");
-      dropdown.style.display = "none";
-      wrapper.style.zIndex = "";
-      setParentZIndex(wrapper, "");
-    }
-  };
-
-  document.addEventListener("click", (e) => {
-    if (!wrapper.contains(e.target)) {
-      dropdown.classList.add("hidden");
-      dropdown.style.display = "none";
-      wrapper.style.zIndex = "";
-      setParentZIndex(wrapper, "");
-    }
-  });
-
-  input.addEventListener("change", updateBtnLabel);
-
-  try {
-    const originalDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
-    if (originalDescriptor && !input._descriptorHooked) {
-      Object.defineProperty(input, "value", {
-        get() {
-          return originalDescriptor.get.call(this);
-        },
-        set(val) {
-          originalDescriptor.set.call(this, val);
-          updateBtnLabel();
-        },
-        configurable: true
-      });
-      input._descriptorHooked = true;
-    }
-  } catch (err) {
-    console.warn("Could not hook property descriptor on input:", err);
-  }
-
-  const wasOriginallyHidden =
-    input.style.display === "none" ||
-    input.classList.contains("hidden") ||
-    getComputedStyle(input).display === "none";
-
-  input.classList.add("premium-custom-hidden-select");
-  input.style.display = "none";
-  input.parentNode.insertBefore(wrapper, input);
-  wrapper.appendChild(btn);
-  wrapper.appendChild(dropdown);
-
-  updateBtnLabel();
-
-  if (wasOriginallyHidden) {
-    wrapper.style.setProperty("display", "none", "important");
-  } else {
-    wrapper.style.display = "inline-block";
-  }
-
-  input._premiumHiddenBySelf = true;
-
-  const attrObserver = new MutationObserver(() => {
-    const isExternallyHidden =
-      input.classList.contains("hidden") ||
-      input.disabled ||
-      (!input._premiumHiddenBySelf && input.style.display === "none");
-    
-    const isExternallyVisible =
-      input.style.display === "block" ||
-      input.style.display === "" ||
-      input.style.display === "flex" ||
-      input.style.display === "inline" ||
-      input.style.display === "inline-block";
-
-    if (isExternallyVisible) {
-      input._premiumHiddenBySelf = false;
-      wrapper.style.display = "inline-block";
-    } else if (isExternallyHidden) {
-      wrapper.style.setProperty("display", "none", "important");
-    }
-  });
-  attrObserver.observe(input, { attributes: true, attributeFilter: ["style", "class", "disabled"] });
-}
-
-window.createPremiumCustomDropdown = createPremiumCustomDropdown;
-window.createPremiumCustomDatePicker = createPremiumCustomDatePicker;
-window.createPremiumCustomMonthPicker = createPremiumCustomMonthPicker;
+window.createPremiumCustomDropdown = createPremiumCustomDropdown;
 window.convertAllSelectsToPremium = convertAllSelectsToPremium;
+
+
 
-function createPremiumCustomMonthPicker(inputId) {
-  const input = typeof inputId === "string" ? document.getElementById(inputId) : inputId;
-  if (!input) return;
-
-  if (!input.id) {
-    input.id = "month_" + Math.random().toString(36).substring(2, 9);
-  }
-
-  const id = input.id;
-
-  const existingWrapper = document.getElementById(`${id}_custom_wrapper`);
-  if (existingWrapper) existingWrapper.remove();
-
-  const wrapper = document.createElement("div");
-  wrapper.id = `${id}_custom_wrapper`;
-  
-  // Clean parent outline if it has border/bg-surface (MD3 group wrapper)
-  const parent = input.parentElement;
-  if (parent && (parent.classList.contains("border") || parent.style.border || parent.className.includes("border-slate-200"))) {
-    parent.className = parent.className.replace(/\bbg-[a-z0-9-]+\b/g, "")
-                                        .replace(/\bborder-[a-z0-9-\/]+\b/g, "")
-                                        .replace(/\bborder\b/g, "")
-                                        .replace(/\brounded-[a-z0-9]+\b/g, "")
-                                        .replace(/\bpx-[0-9]+\b/g, "")
-                                        .replace(/\bshadow-[a-z0-9-]+\b/g, "");
-    parent.style.border = "none";
-    parent.style.background = "transparent";
-    parent.style.boxShadow = "none";
-    
-    Array.from(parent.children).forEach(child => {
-      if (child !== input && child.classList.contains("material-symbols-rounded")) {
-        child.style.display = "none";
-      }
-    });
-  }
-
-  let wrapperClass = "";
-  if (input.className) {
-    wrapperClass = input.className.split(" ").filter(c => {
-      const lower = c.toLowerCase();
-      if (lower.startsWith("w-") || lower.startsWith("max-w-") || lower.startsWith("flex-") || lower.startsWith("col-") || lower.startsWith("row-") || lower.startsWith("grid-") || lower.startsWith("m-") || lower.startsWith("mt-") || lower.startsWith("mb-") || lower.startsWith("ml-") || lower.startsWith("mr-")) {
-        return true;
-      }
-      if (
-        lower.includes("border") ||
-        lower.includes("bg-") ||
-        lower.includes("rounded") ||
-        lower.includes("px-") ||
-        lower.includes("py-") ||
-        lower.includes("text-") ||
-        lower.includes("font-") ||
-        lower.includes("shadow-") ||
-        lower === "hidden"
-      ) {
-        return false;
-      }
-      return true;
-    }).join(" ");
-  }
-  
-  wrapper.className = wrapperClass.trim() + " relative inline-block custom-date-wrapper";
-  
-  const layoutProps = ["width", "minWidth", "maxWidth", "margin", "marginTop", "marginBottom", "marginLeft", "marginRight", "flex", "flexGrow", "flexShrink", "flexBasis", "position", "top", "bottom", "left", "right"];
-  layoutProps.forEach(prop => {
-    if (input.style[prop]) {
-      wrapper.style[prop] = input.style[prop];
-    }
-  });
-  
-  wrapper.style.minWidth = input.style.minWidth || "120px";
-
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "w-full bg-white border border-slate-100 rounded-full px-4 text-xs font-extrabold text-slate-700 outline-none flex items-center justify-between gap-2 shadow-sm hover:border-violet-200 transition-colors";
-  btn.style.cssText = "min-height: 34px !important; height: 34px !important; padding: 4px 16px !important; margin: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: space-between !important;";
-
-  Array.from(input.classList).forEach(c => {
-    if (c.startsWith("w-") || c.startsWith("max-w-") || c.startsWith("flex-")) {
-      wrapper.classList.add(c);
-      btn.classList.add(c);
-    }
-  });
-
-  const labelSpan = document.createElement("span");
-  labelSpan.className = "truncate flex items-center gap-1.5";
-  
-  const iconSpan = document.createElement("span");
-  iconSpan.className = "material-symbols-rounded text-slate-400 text-[18px] shrink-0";
-  iconSpan.textContent = "calendar_month";
-
-  btn.appendChild(labelSpan);
-  btn.appendChild(iconSpan);
-
-  const dropdown = document.createElement("div");
-  dropdown.className = "hidden absolute left-0 mt-1 rounded-2xl bg-white/65 backdrop-blur-xl border border-slate-200/80 shadow-xl transition-all duration-200 z-[99999] p-3 flex flex-col gap-2 w-[240px]";
-  dropdown.style.cssText = "display: none; z-index: 99999 !important; background: rgba(255, 255, 255, 0.65) !important; backdrop-filter: blur(16px) !important; -webkit-backdrop-filter: blur(16px) !important; border: 1px solid rgba(226, 232, 240, 0.8) !important; border-radius: 16px !important; box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.1) !important; padding: 8px !important;";
-
-  const monthNames = [
-    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-  ];
-
-  const formatDateForDisplay = (ymStr) => {
-    if (!ymStr) return "Seleccionar mes...";
-    const parts = ymStr.split("-");
-    if (parts.length !== 2) return ymStr;
-    const mIdx = parseInt(parts[1], 10) - 1;
-    return `${monthNames[mIdx]} ${parts[0]}`;
-  };
-
-  const updateBtnLabel = () => {
-    labelSpan.textContent = formatDateForDisplay(input.value);
-  };
-
-  const parseYm = (ymStr) => {
-    if (!ymStr) {
-      const today = new Date();
-      return { y: today.getFullYear(), m: today.getMonth() };
-    }
-    const parts = ymStr.split("-");
-    return { y: parseInt(parts[0], 10), m: parseInt(parts[1], 10) - 1 };
-  };
-
-  let { y: viewYear, m: viewMonth } = parseYm(input.value);
-
-  const renderMonthPicker = () => {
-    dropdown.innerHTML = "";
-
-    const header = document.createElement("div");
-    header.className = "flex items-center justify-between w-full mb-1";
-
-    const prevYearBtn = document.createElement("button");
-    prevYearBtn.type = "button";
-    prevYearBtn.className = "rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors cursor-pointer border-0 bg-transparent";
-    prevYearBtn.style.cssText = "width: 24px !important; height: 24px !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;";
-    prevYearBtn.innerHTML = '<span class="material-symbols-rounded text-[18px]">chevron_left</span>';
-    prevYearBtn.onclick = (e) => {
-      e.stopPropagation();
-      viewYear--;
-      renderMonthPicker();
-    };
-
-    const yearTitle = document.createElement("span");
-    yearTitle.className = "font-black text-slate-700 text-xs select-none";
-    yearTitle.textContent = viewYear;
-
-    const nextYearBtn = document.createElement("button");
-    nextYearBtn.type = "button";
-    nextYearBtn.className = "rounded-full hover:bg-slate-100 text-slate-500 flex items-center justify-center transition-colors cursor-pointer border-0 bg-transparent";
-    nextYearBtn.style.cssText = "width: 24px !important; height: 24px !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;";
-    nextYearBtn.innerHTML = '<span class="material-symbols-rounded text-[18px]">chevron_right</span>';
-    nextYearBtn.onclick = (e) => {
-      e.stopPropagation();
-      viewYear++;
-      renderMonthPicker();
-    };
-
-    header.appendChild(prevYearBtn);
-    header.appendChild(yearTitle);
-    header.appendChild(nextYearBtn);
-    dropdown.appendChild(header);
-
-    const monthGrid = document.createElement("div");
-    monthGrid.style.cssText = "display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; margin: 2px 0 !important;";
-    
-    const monthNamesShort = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-    monthNamesShort.forEach((name, idx) => {
-      const cell = document.createElement("button");
-      cell.type = "button";
-      const isCurrentMonth = (idx === viewMonth);
-      
-      cell.className = "rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer border-0";
-      if (isCurrentMonth) {
-        cell.style.cssText = "min-height: 28px !important; height: 28px !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; background-color: #7c3aed !important; color: #ffffff !important;";
-      } else {
-        cell.style.cssText = "min-height: 28px !important; height: 28px !important; padding: 0 !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; background-color: transparent !important; color: #334155 !important; border: 1px solid #f1f5f9 !important;";
-        cell.onmouseenter = () => cell.style.backgroundColor = "#faf5ff";
-        cell.onmouseleave = () => cell.style.backgroundColor = "transparent";
-      }
-      cell.textContent = name;
-      cell.onclick = (e) => {
-        e.stopPropagation();
-        viewMonth = idx;
-        selectMonth(viewYear, viewMonth);
-      };
-      monthGrid.appendChild(cell);
-    });
-    dropdown.appendChild(monthGrid);
-    
-    const footer = document.createElement("div");
-    footer.className = "flex items-center justify-between border-t border-slate-100 pt-1.5 mt-1";
-    
-    const clearBtn = document.createElement("button");
-    clearBtn.type = "button";
-    clearBtn.className = "text-violet-600 font-extrabold text-[11px] hover:bg-violet-50 transition-colors border-0 bg-transparent cursor-pointer";
-    clearBtn.style.cssText = "min-height: 0 !important; padding: 2px 8px !important; margin: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; height: auto !important;";
-    clearBtn.textContent = "Borrar";
-    clearBtn.onclick = (e) => {
-      e.stopPropagation();
-      input.value = "";
-      input.dispatchEvent(new Event("change"));
-      dropdown.classList.add("hidden");
-      dropdown.style.display = "none";
-      wrapper.style.zIndex = "";
-      setParentZIndex(wrapper, "");
-      updateBtnLabel();
-    };
-
-    const thisMonthBtn = document.createElement("button");
-    thisMonthBtn.type = "button";
-    thisMonthBtn.className = "text-violet-600 font-extrabold text-[11px] hover:bg-violet-50 transition-colors border-0 bg-transparent cursor-pointer";
-    thisMonthBtn.style.cssText = "min-height: 0 !important; padding: 2px 8px !important; margin: 0 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; height: auto !important;";
-    thisMonthBtn.textContent = "Este mes";
-    thisMonthBtn.onclick = (e) => {
-      e.stopPropagation();
-      const today = new Date();
-      viewYear = today.getFullYear();
-      viewMonth = today.getMonth();
-      selectMonth(viewYear, viewMonth);
-    };
-
-    footer.appendChild(clearBtn);
-    footer.appendChild(thisMonthBtn);
-    dropdown.appendChild(footer);
-  };
-
-  const selectMonth = (y, m) => {
-    const formattedMonth = String(m + 1).padStart(2, "0");
-    input.value = `${y}-${formattedMonth}`;
-    input.dispatchEvent(new Event("change"));
-    dropdown.classList.add("hidden");
-    dropdown.style.display = "none";
-    wrapper.style.zIndex = "";
-    setParentZIndex(wrapper, "");
-    updateBtnLabel();
-  };
-
-  btn.onclick = (e) => {
-    e.stopPropagation();
-    document.querySelectorAll("[id$=_custom_wrapper] > div").forEach(d => {
-      if (d !== dropdown) {
-        d.classList.add("hidden");
-        d.style.display = "none";
-        const wrp = d.parentElement;
-        if (wrp) {
-          wrp.style.zIndex = "";
-          setParentZIndex(wrp, "");
-        }
-      }
-    });
-
-    const isHidden = dropdown.classList.contains("hidden");
-    if (isHidden) {
-      const currentVal = parseYm(input.value);
-      viewYear = currentVal.y;
-      viewMonth = currentVal.m;
-      renderMonthPicker();
-      dropdown.classList.remove("hidden");
-      dropdown.style.setProperty("display", "flex", "important");
-      wrapper.style.zIndex = "99999";
-      setParentZIndex(wrapper, "99999");
-    } else {
-      dropdown.classList.add("hidden");
-      dropdown.style.display = "none";
-      wrapper.style.zIndex = "";
-      setParentZIndex(wrapper, "");
-    }
-  };
-
-  document.addEventListener("click", (e) => {
-    if (!wrapper.contains(e.target)) {
-      dropdown.classList.add("hidden");
-      dropdown.style.display = "none";
-      wrapper.style.zIndex = "";
-      setParentZIndex(wrapper, "");
-    }
-  });
-
-  input.addEventListener("change", updateBtnLabel);
-
-  try {
-    const originalDescriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
-    if (originalDescriptor && !input._descriptorHooked) {
-      Object.defineProperty(input, "value", {
-        get() {
-          return originalDescriptor.get.call(this);
-        },
-        set(val) {
-          originalDescriptor.set.call(this, val);
-          updateBtnLabel();
-        },
-        configurable: true
-      });
-      input._descriptorHooked = true;
-    }
-  } catch (err) {
-    console.warn("Could not hook property descriptor on input:", err);
-  }
-
-  const wasOriginallyHidden =
-    input.style.display === "none" ||
-    input.classList.contains("hidden") ||
-    getComputedStyle(input).display === "none";
-
-  input.classList.add("premium-custom-hidden-select");
-  input.style.display = "none";
-  input.parentNode.insertBefore(wrapper, input);
-  wrapper.appendChild(btn);
-  wrapper.appendChild(dropdown);
-
-  updateBtnLabel();
-
-  if (wasOriginallyHidden) {
-    wrapper.style.setProperty("display", "none", "important");
-  } else {
-    wrapper.style.display = "inline-block";
-  }
-
-  input._premiumHiddenBySelf = true;
-
-  const attrObserver = new MutationObserver(() => {
-    const isExternallyHidden =
-      input.classList.contains("hidden") ||
-      input.disabled ||
-      (!input._premiumHiddenBySelf && input.style.display === "none");
-    
-    const isExternallyVisible =
-      input.style.display === "block" ||
-      input.style.display === "" ||
-      input.style.display === "flex" ||
-      input.style.display === "inline" ||
-      input.style.display === "inline-block";
-
-    if (isExternallyVisible) {
-      input._premiumHiddenBySelf = false;
-      wrapper.style.display = "inline-block";
-    } else if (isExternallyHidden) {
-      wrapper.style.setProperty("display", "none", "important");
-    }
-  });
-  attrObserver.observe(input, { attributes: true, attributeFilter: ["style", "class", "disabled"] });
-}
-
-window.createPremiumCustomDropdown = createPremiumCustomDropdown;
-window.createPremiumCustomDatePicker = createPremiumCustomDatePicker;
-window.createPremiumCustomMonthPicker = createPremiumCustomMonthPicker;
-window.convertAllSelectsToPremium = convertAllSelectsToPremium;
+window.createPremiumCustomDropdown = createPremiumCustomDropdown;
+window.convertAllSelectsToPremium = convertAllSelectsToPremium;
 
 window.addEventListener("load", () => {
   setTimeout(() => {
-    convertAllSelectsToPremium();
-    createPremiumCustomDatePicker("summaryFecha");
-    createPremiumCustomMonthPicker("histMesEvaluacion");
+    convertAllSelectsToPremium();
   }, 300);
 
-  // Observador de mutaciones para convertir dinámicamente cualquier select nuevo creado
+  // Observador de mutaciones para convertir dinámicamente cualquier select o input de fecha nuevo.
+  // ONLY reacts to addedNodes - never does a full-DOM scan on every mutation,
+  // because that scan was disconnecting live observers every time the calendar re-rendered.
   const observer = new MutationObserver((mutations) => {
-    // 1. Limpiar wrappers huérfanos (cuyo select original ya no exista en el DOM)
+    // 1. Limpiar wrappers huérfanos (cuyo elemento original ya no exista en el DOM)
     document.querySelectorAll("[id$=_custom_wrapper]").forEach(wrp => {
       const originalId = wrp.id.replace("_custom_wrapper", "");
-      const originalSelect = document.getElementById(originalId);
-      if (!originalSelect || !document.body.contains(originalSelect)) {
+      const originalElem = document.getElementById(originalId);
+      if (!originalElem || !document.body.contains(originalElem)) {
         wrp.remove();
       }
     });
 
-    let hasNewSelects = false;
+    let hasNewSelects = false;
+
     mutations.forEach(mutation => {
       mutation.addedNodes.forEach(node => {
         if (node.nodeType === 1) {
+          // Skip nodes that are themselves premium wrappers or their children
+          if (node.id && node.id.endsWith("_custom_wrapper")) return;
+          if (node.closest && node.closest("[id$=_custom_wrapper]")) return;
+
           if (node.nodeName === "SELECT") {
-            hasNewSelects = true;
-          } else if (typeof node.querySelectorAll === "function" && node.querySelectorAll("select").length > 0) {
-            hasNewSelects = true;
+            if (!node.classList.contains("premium-custom-hidden-select") && !node.classList.contains("exclude-premium")) {
+              hasNewSelects = true;
+            }
+          } else if (typeof node.querySelectorAll === "function") {
+            const selects = node.querySelectorAll("select:not(.premium-custom-hidden-select):not(.exclude-premium)");
+            if (selects.length > 0) hasNewSelects = true;
+            const dates = node.querySelectorAll("input[type='date']:not(.premium-custom-hidden-select):not(.exclude-premium), input[type='month']:not(.premium-custom-hidden-select):not(.exclude-premium)");
+            if (dates.length > 0) hasNewDates = true;
           }
         }
       });
-    });
-
-    // Detectar si algún select activo en el DOM se quedó sin su wrapper
-    document.querySelectorAll("select").forEach(select => {
-      if (
-        select.id !== "chkSinMovimientoSR" && 
-        select.id !== "chkSinMovimientoCONS" && 
-        select.id !== "chkSinMovimientoINF" && 
-        !select.id.endsWith("_custom_select") && 
-        !select.classList.contains("exclude-premium")
-      ) {
-        const wrapperId = select.id ? `${select.id}_custom_wrapper` : null;
-        if (wrapperId && !document.getElementById(wrapperId)) {
-          hasNewSelects = true;
-        }
-      }
     });
 
     if (hasNewSelects) {
@@ -24159,5 +23432,20 @@ window.addEventListener("load", () => {
     }
   });
   observer.observe(document.body, { childList: true, subtree: true });
+});
+
+// Listener global para cerrar cualquier desplegable o calendario abierto con la tecla Escape
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" || e.key === "Esc") {
+    document.querySelectorAll("[id$=_custom_wrapper] > div").forEach(d => {
+      d.classList.add("hidden");
+      d.style.display = "none";
+    });
+    const influenzaSemanaDropdown = document.getElementById("influenza_semana_dropdown");
+    if (influenzaSemanaDropdown) {
+      influenzaSemanaDropdown.classList.add("hidden");
+      influenzaSemanaDropdown.style.display = "none";
+    }
+  }
 });
 

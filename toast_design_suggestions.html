@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIREVAQ - Toast Híbrida (Opción 1 + Opción 7 con Botón Hundido)</title>
+  <!-- Google Fonts & Material Symbols -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+      /* Fondo con contenido para comprobar la transparencia realista */
+      background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    .material-symbols-rounded {
+      font-variation-settings: 'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 24;
+    }
+
+    @keyframes ringProgress {
+      from { stroke-dashoffset: 0; }
+      to { stroke-dashoffset: 100; }
+    }
+
+    /* -------------------------------------------------------------
+       DISEÑO HÍBRIDO AJUSTADO
+       ------------------------------------------------------------- */
+    .toast-hybrid {
+      /* Transparencia incrementada con mayor desenfoque de fondo */
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(24px) saturate(190%);
+      -webkit-backdrop-filter: blur(24px) saturate(190%);
+      border-radius: 22px;
+      padding: 14px 18px;
+      box-shadow: 0 20px 40px -12px rgba(15, 23, 42, 0.09), 0 4px 14px rgba(15, 23, 42, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.95);
+      position: relative;
+      overflow: hidden;
+      max-width: min(92vw, 460px);
+    }
+
+    /* Resplandor ambiental radial */
+    .toast-hybrid::before {
+      content: "";
+      position: absolute;
+      top: -30px;
+      left: -30px;
+      width: 120px;
+      height: 120px;
+      background: radial-gradient(circle, var(--toast-aurora, rgba(16, 185, 129, 0.22)) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Anillo de conteo circular SVG (Opción 7) */
+    .toast-hybrid .progress-ring-circle {
+      stroke-dasharray: 100;
+      stroke-dashoffset: 0;
+      animation: ringProgress var(--ring-duration, 4000ms) linear forwards;
+    }
+
+    /* Botón de cerrar de la Opción 7 con efecto 3D "Sumido/Inset" */
+    .toast-close-btn-sunken {
+      width: 28px;
+      height: 28px;
+      border-radius: 9999px;
+      background: #f1f5f9;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      /* Efecto de hendidura/sumido mediante sombra interior (Inset) */
+      box-shadow: 
+        inset 0 2px 4px rgba(15, 23, 42, 0.12),
+        inset 0 -1px 2px rgba(255, 255, 255, 0.8),
+        0 1px 2px rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      transition: all 0.15s ease;
+      cursor: pointer;
+    }
+
+    .toast-close-btn-sunken:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+      box-shadow: 
+        inset 0 2px 6px rgba(15, 23, 42, 0.18),
+        inset 0 -1px 2px rgba(255, 255, 255, 0.9);
+      transform: translateY(0.5px);
+    }
+
+    .toast-close-btn-sunken:active {
+      transform: translateY(1px);
+      box-shadow: 
+        inset 0 3px 7px rgba(15, 23, 42, 0.25);
+    }
+  </style>
+</head>
+<body class="p-4 md:p-10 min-h-screen flex flex-col justify-between">
+
+  <div>
+    <!-- Header -->
+    <header class="max-w-4xl mx-auto mb-10 text-center">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-xs mb-3 border border-emerald-200">
+        <span class="material-symbols-rounded text-sm">auto_awesome</span> SIREVAQ - Toast Híbrido Ajustado
+      </div>
+      <h1 class="text-3xl md:text-4xl font-black tracking-tight text-slate-900 mb-2">
+        Toast Híbrido con Mayor Transparencia y Botón Sumido
+      </h1>
+      <p class="text-slate-500 max-w-xl mx-auto text-sm">
+        Contenedor rectangular redondeado con **85% de transparencia + blur 24px**, anillo de conteo circular SVG y **botón cerrar con hendidura táctil (efecto 3D sumido)**.
+      </p>
+    </header>
+
+    <!-- Muestras -->
+    <main class="max-w-xl mx-auto space-y-6">
+
+      <!-- ÉXITO -->
+      <div class="bg-white/40 p-4 rounded-3xl border border-slate-200/60 backdrop-blur-md">
+        <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full uppercase tracking-wider mb-3 inline-block">1. Éxito (Success)</span>
+        
+        <div class="toast-hybrid" style="--toast-aurora: rgba(16, 185, 129, 0.22);">
+          <div class="flex items-center gap-3.5 relative z-10">
+            <!-- Anillo de progreso SVG + Icono -->
+            <div class="relative w-10 h-10 flex items-center justify-center shrink-0">
+              <svg class="w-10 h-10 transform -rotate-90" viewBox="0 0 36 36">
+                <path class="text-emerald-100" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="text-emerald-500 progress-ring-circle" stroke-width="3" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              </svg>
+              <span class="material-symbols-rounded text-base text-emerald-600 absolute">check</span>
+            </div>
+
+            <!-- Contenido -->
+            <div class="flex-1 min-w-0">
+              <h4 class="font-extrabold text-sm text-slate-800">Registro guardado con éxito</h4>
+              <p class="text-xs text-slate-500 mt-0.5 leading-normal">Se han actualizado las dosis aplicadas del biológico Influenza correctamente.</p>
+            </div>
+
+            <!-- Botón Cerrar Sumido (Inset Neumorphic) -->
+            <button class="toast-close-btn-sunken shrink-0" title="Cerrar">
+              <span class="material-symbols-rounded text-sm">close</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADVERTENCIA -->
+      <div class="bg-white/40 p-4 rounded-3xl border border-slate-200/60 backdrop-blur-md">
+        <span class="text-xs font-bold text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full uppercase tracking-wider mb-3 inline-block">2. Advertencia (Warning)</span>
+        
+        <div class="toast-hybrid" style="--toast-aurora: rgba(245, 158, 11, 0.25);">
+          <div class="flex items-center gap-3.5 relative z-10">
+            <div class="relative w-10 h-10 flex items-center justify-center shrink-0">
+              <svg class="w-10 h-10 transform -rotate-90" viewBox="0 0 36 36">
+                <path class="text-amber-100" stroke-width="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="text-amber-500 progress-ring-circle" stroke-width="3" stroke-linecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              </svg>
+              <span class="material-symbols-rounded text-base text-amber-600 absolute">warning</span>
+            </div>
+
+            <div class="flex-1 min-w-0">
+              <h4 class="font-extrabold text-sm text-slate-800">Lote próximo a caducar</h4>
+              <p class="text-xs text-slate-500 mt-0.5 leading-normal">Quedan menos de 15 días para la fecha límite del biológico SR.</p>
+            </div>
+
+            <button class="toast-close-btn-sunken shrink-0" title="Cerrar">
+              <span class="material-symbols-rounded text-sm">close</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <footer class="text-center text-xs text-slate-400 mt-10">
+    SIREVAQ UI Design System • Ajustes aplicados.
+  </footer>
+
+</body>
+</html>
