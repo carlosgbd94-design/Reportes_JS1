@@ -18490,6 +18490,8 @@ async function openLiveView(clues, unidad, municipio) {
 
   if (!overlay || !tbody) return;
 
+  window.currentLiveViewParams = { clues, unidad, municipio };
+
   try {
     /* Semaforización de Cumplimiento (Bulletproof) */
     /* CSS handled externally: #bCumplimiento.good, #bCumplimiento[data-tone="good"] { ... } */
