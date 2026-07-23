@@ -18667,8 +18667,12 @@ window.openBioEditModal = function() {
     const existQty = r.existencia_actual_frascos ?? r.existencia ?? 0;
     const pedQty = r.pedido_frascos ?? r.solicitud ?? 0;
 
+    const minDosis = r.min_dosis ?? 0;
+    const maxDosis = r.max_dosis ?? 0;
+    const promedioFrascos = r.promedio_frascos ?? 0;
+
     return `
-      <tr style="border-bottom:1px solid #f1f5f9;" data-bio="${escapeHtml(bioName)}" data-id="${r.id || ''}">
+      <tr style="border-bottom:1px solid #f1f5f9;" data-bio="${escapeHtml(bioName)}" data-id="${r.id || ''}" data-min="${minDosis}" data-max="${maxDosis}" data-prom="${promedioFrascos}">
         <td style="padding:12px; font-weight:800; color:${color}; font-size:13px;">
           ${escapeHtml(bioName)}
         </td>
@@ -18678,7 +18682,7 @@ window.openBioEditModal = function() {
         <td style="padding:12px; text-align:center;">
           <input type="number" min="0" class="input-ped" value="${pedQty}" style="width:75px; text-align:center; padding:6px; border-radius:8px; border:1px solid #bae6fd; background:#f0f9ff; color:${color}; font-weight:900; font-size:14px;" />
         </td>
-      </tr>
+        </tr>
     `;
   }).join("");
 
@@ -18709,15 +18713,18 @@ window.saveBioEditModal = async function() {
     const bioName = tr.getAttribute("data-bio");
     const existInp = tr.querySelector(".input-exist");
     const pedInp = tr.querySelector(".input-ped");
+    const minDosis = Number(tr.getAttribute("data-min") || 0);
+    const maxDosis = Number(tr.getAttribute("data-max") || 0);
+    const promedioFrascos = Number(tr.getAttribute("data-prom") || 0);
 
     if (bioName && existInp && pedInp) {
       updatedItems.push({
         biologico: bioName,
         existencia_actual_frascos: Number(existInp.value || 0),
         pedido_frascos: Number(pedInp.value || 0),
-        promedio_frascos: 0,
-        min_dosis: 0,
-        max_dosis: 0
+        promedio_frascos: promedioFrascos,
+        min_dosis: minDosis,
+        max_dosis: maxDosis
       });
     }
   });
