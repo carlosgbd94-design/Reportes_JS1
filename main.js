@@ -3275,7 +3275,7 @@ function bindNotificationsUiEvents() {
   btnNotifOnlyUnread?.addEventListener("click", toggleUnread);
   btnTopNotifOnlyUnread?.addEventListener("click", toggleUnread);
 
-  const markAllVisible = () => markVisibleNotificationsAsRead();
+  const markAllVisible = () => markVisibleNotificationsReadFlow();
 
   btnNotifMarkVisibleRead?.addEventListener("click", markAllVisible);
   btnTopNotifMarkVisibleRead?.addEventListener("click", markAllVisible);
@@ -15188,43 +15188,166 @@ async function loadCapacitacionesAdmin() {
   if (!tbody) return;
 
   try {
-    tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-slate-400">Cargando capacitaciones...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-slate-400">Cargando capacitaciones...</td></tr>';
     
-    const { data, error } = await supabase
-      .from("capacitaciones")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const [capRes, evRes] = await Promise.all([
+      supabase.from("capacitaciones").select("*").order("created_at", { ascending: false }),
+      supabase.from("archivos_drive").select("capacitacion, clues_id").not("capacitacion", "is", null)
+    ]);
 
-    if (error) throw error;
+    if (capRes.error) throw capRes.error;
+    const data = capRes.data;
 
     if (!data || data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-slate-400">No hay capacitaciones creadas.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-slate-400">No hay capacitaciones creadas.</td></tr>';
       return;
     }
 
+    // Calcular unidades únicas que han subido evidencia por cada capacitación
+    const capUnitsMap = {};
+    if (evRes.data) {
+      evRes.data.forEach(item => {
+        if (!item.capacitacion) return;
+        const cName = item.capacitacion;
+        if (!capUnitsMap[cName]) capUnitsMap[cName] = new Set();
+        if (item.clues_id) capUnitsMap[cName].add(item.clues_id);
+      });
+    }
+
+    const now = new Date();
+
     tbody.innerHTML = data.map(c => {
+      const evDate = new Date(c.fecha + "T00:00:00");
+      const limitDate = new Date(evDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const isExpired = now > limitDate;
+
+      const unitsCount = capUnitsMap[c.nombre] ? capUnitsMap[c.nombre].size : 0;
+
       const statusBadge = c.activo 
-        ? '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-green-100 text-green-700">Activo</span>'
-        : '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600">Inactivo</span>';
+        ? '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100/80 text-emerald-700">Activo</span>'
+        : '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-500">Inactivo</span>';
       
-      const actionBtn = c.activo
-        ? `<button onclick="window.toggleCapacitacionStatus('${c.id}', false)" class="px-3 py-1 rounded bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold hover:bg-slate-200 cursor-pointer">Desactivar</button>`
-        : `<button onclick="window.toggleCapacitacionStatus('${c.id}', true)" class="px-3 py-1 rounded bg-primary/10 text-primary border border-primary/20 text-xs font-bold hover:bg-primary/20 cursor-pointer">Activar</button>`;
+      const deadlineBadge = isExpired
+        ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100/80 text-amber-800" title="Plazo cerrado para unidades">
+            <span class="material-symbols-rounded" style="font-size:13px;">lock</span> CERRADO (${limitDate.toLocaleDateString()})
+           </span>`
+        : `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-teal-100/80 text-teal-800" title="Plazo abierto para unidades">
+            <span class="material-symbols-rounded" style="font-size:13px;">schedule</span> ${limitDate.toLocaleDateString()}
+           </span>`;
+
+      // Botones ultralimpios sin contenedores pesados con micro-animación al pasar el mouse
+      const downloadZipBtn = `<button onclick="window.downloadCapacitacionZip('${c.nombre}')" title="Descargar paquete de evidencias ZIP" class="action-icon-btn btn-zip"><span class="material-symbols-rounded block">download_for_offline</span></button>`;
+
+      const editBtn = `<button onclick="window.openEditCapacitacionModal('${c.id}', '${c.nombre}', '${c.fecha}')" title="Editar capacitación" class="action-icon-btn btn-edit"><span class="material-symbols-rounded block">edit</span></button>`;
+
+      const toggleBtn = c.activo
+        ? `<button onclick="window.toggleCapacitacionStatus('${c.id}', false)" title="Desactivar" class="action-icon-btn btn-deactivate"><span class="material-symbols-rounded block">block</span></button>`
+        : `<button onclick="window.toggleCapacitacionStatus('${c.id}', true)" title="Activar" class="action-icon-btn btn-activate"><span class="material-symbols-rounded block">check_circle</span></button>`;
+
+      const deleteBtn = `<button onclick="window.deleteCapacitacion('${c.id}', '${c.nombre}')" title="Eliminar capacitación" class="action-icon-btn btn-delete"><span class="material-symbols-rounded block">delete</span></button>`;
+
+      const unitsBadge = `<span class="px-2.5 py-1 rounded-xl text-[12px] font-extrabold bg-blue-50 text-blue-700 border border-blue-100 inline-flex items-center gap-1">
+          <span class="material-symbols-rounded text-blue-500" style="font-size:14px;">domain</span> ${unitsCount} unidades
+        </span>`;
 
       return `
-        <tr class="hover:bg-slate-50">
-          <td class="px-6 py-4 font-bold text-primary">${c.nombre.replace(/_/g, ' ')}</td>
-          <td class="px-6 py-4 text-slate-500 font-semibold">${c.fecha}</td>
-          <td class="px-6 py-4">${statusBadge}</td>
-          <td class="px-6 py-4">${actionBtn}</td>
+        <tr class="hover:bg-slate-50/80 transition-colors">
+          <td class="px-6 py-4 font-bold text-primary text-xs text-left max-w-0 w-full" title="${c.nombre.replace(/_/g, ' ')}">
+            <div class="truncate">${c.nombre.replace(/_/g, ' ')}</div>
+          </td>
+          <td class="px-4 py-4 text-slate-600 font-semibold text-xs text-left whitespace-nowrap">${c.fecha}</td>
+          <td class="px-4 py-4 text-left">${deadlineBadge}</td>
+          <td class="px-4 py-4 text-center">${unitsBadge}</td>
+          <td class="px-4 py-4 text-left">${statusBadge}</td>
+          <td class="px-6 py-4 text-right">
+            <div class="inline-flex items-center justify-end gap-0.5">
+              ${downloadZipBtn}
+              ${editBtn}
+              ${toggleBtn}
+              ${deleteBtn}
+            </div>
+          </td>
         </tr>
       `;
     }).join("");
   } catch (err) {
     console.error("Error al cargar capacitaciones de admin:", err);
-    tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-red-500">Error al cargar capacitaciones.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">Error al cargar capacitaciones.</td></tr>';
   }
 }
+
+// Descargar evidencias en ZIP
+window.downloadCapacitacionZip = async function (capacitacionNombre) {
+  const cleanName = capacitacionNombre.replace(/_/g, ' ');
+  try {
+    showOverlay(`Buscando archivos de "${cleanName}"...`, "Preparando descarga");
+    const { data: files, error } = await supabase
+      .from("archivos_drive")
+      .select("*")
+      .eq("capacitacion", capacitacionNombre);
+
+    if (error) throw error;
+
+    if (!files || files.length === 0) {
+      hideOverlay();
+      showToast(`No hay archivos cargados aún para "${cleanName}"`, false, "warn");
+      return;
+    }
+
+    if (typeof JSZip === 'undefined') {
+      await new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+
+    const zip = new JSZip();
+    const folder = zip.folder(capacitacionNombre);
+    let downloadedCount = 0;
+
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const url = f.public_url || `${SUPABASE_URL}/storage/v1/object/public/evidencias/${encodeURIComponent(f.name)}`;
+      updateOverlay(`Descargando (${i + 1}/${files.length}): ${f.name.split('/').pop()}`, "Generando ZIP");
+      try {
+        const resp = await fetch(url);
+        if (resp.ok) {
+          const blob = await resp.blob();
+          const fileName = f.name.split('/').pop() || `evidencia_${i + 1}`;
+          folder.file(fileName, blob);
+          downloadedCount++;
+        }
+      } catch (e) {
+        console.warn("No se pudo descargar archivo:", f.name, e);
+      }
+    }
+
+    if (downloadedCount === 0) {
+      hideOverlay();
+      showToast("No se pudo obtener el contenido de los archivos.", false, "bad");
+      return;
+    }
+
+    updateOverlay("Empaquetando ZIP final...", "Descargando");
+    const content = await zip.generateAsync({ type: "blob" });
+    hideOverlay();
+
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(content);
+    link.download = `Evidencias_${capacitacionNombre}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast(`Se descargaron ${downloadedCount} archivos en ZIP`, true, "good");
+  } catch (err) {
+    hideOverlay();
+    showToast("Error al empaquetar ZIP: " + err.message, false, "bad");
+  }
+};
 
 window.toggleCapacitacionStatus = async function (id, newStatus) {
   try {
@@ -15241,6 +15364,103 @@ window.toggleCapacitacionStatus = async function (id, newStatus) {
   } catch (err) {
     hideOverlay();
     showToast("Error al cambiar estado: " + err.message, false, "bad");
+  }
+};
+
+window.openEditCapacitacionModal = function (id, nombre, fecha) {
+  $("editCapId").value = id;
+  $("editCapNombre").value = nombre.replace(/_/g, ' ');
+  $("editCapFecha").value = fecha;
+
+  const overlay = $("editCapacitacionOverlay");
+  const modal = overlay?.querySelector(".modal");
+  if (overlay && modal) {
+    overlay.classList.add("show");
+    if (typeof gsap !== 'undefined') {
+      gsap.fromTo(overlay, { opacity: 0 }, { opacity: 1, duration: 0.3 });
+      gsap.fromTo(modal, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.7)" });
+    }
+  }
+};
+
+function closeEditCapacitacionModal() {
+  const overlay = $("editCapacitacionOverlay");
+  const modal = overlay?.querySelector(".modal");
+  if (overlay && modal) {
+    if (typeof gsap !== 'undefined') {
+      gsap.to(modal, { scale: 0.9, opacity: 0, duration: 0.25 });
+      gsap.to(overlay, { opacity: 0, duration: 0.25, onComplete: () => {
+        overlay.classList.remove("show");
+        $("editCapId").value = "";
+        $("editCapNombre").value = "";
+        $("editCapFecha").value = "";
+      }});
+    } else {
+      overlay.classList.remove("show");
+      $("editCapId").value = "";
+      $("editCapNombre").value = "";
+      $("editCapFecha").value = "";
+    }
+  }
+}
+
+$("btnCancelEditCap")?.addEventListener("click", closeEditCapacitacionModal);
+
+$("btnSaveEditCap")?.addEventListener("click", async () => {
+  const id = $("editCapId")?.value;
+  const nombre = $("editCapNombre")?.value.trim();
+  const fecha = $("editCapFecha")?.value;
+
+  if (!id || !nombre || !fecha) {
+    showToast("Por favor llena todos los campos", false, "warn");
+    return;
+  }
+
+  const normalizedNombre = nombre.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, '_');
+
+  try {
+    showOverlay("Actualizando capacitación...", "Guardando");
+    const { error } = await supabase
+      .from("capacitaciones")
+      .update({
+        nombre: normalizedNombre,
+        fecha: fecha
+      })
+      .eq("id", id);
+
+    hideOverlay();
+    if (error) throw error;
+
+    showToast("Capacitación actualizada correctamente", true, "good");
+    closeEditCapacitacionModal();
+    loadCapacitacionesAdmin();
+  } catch (err) {
+    hideOverlay();
+    showToast("Error al editar: " + err.message, false, "bad");
+  }
+});
+
+window.deleteCapacitacion = async function (id, nombre) {
+  const displayNombre = nombre.replace(/_/g, ' ');
+  if (!confirm(`¿Estás seguro de eliminar la capacitación "${displayNombre}"?\n\nEsta acción no se puede deshacer.`)) {
+    return;
+  }
+
+  try {
+    showOverlay("Eliminando capacitación...", "Procesando");
+    const { error } = await supabase
+      .from("capacitaciones")
+      .delete()
+      .eq("id", id);
+
+    hideOverlay();
+    if (error) throw error;
+
+    showToast("Capacitación eliminada", true, "good");
+    loadCapacitacionesAdmin();
+  } catch (err) {
+    hideOverlay();
+    showToast("Error al eliminar: " + err.message, false, "bad");
   }
 };
 
@@ -17908,7 +18128,7 @@ async function loadActiveCapacitaciones() {
 
     if (data && data.length > 0) {
       select.innerHTML = '<option value="" disabled selected>Selecciona una capacitación...</option>' +
-        data.map(c => `<option value="${c.nombre}" data-date="${c.fecha}">${c.nombre.replace(/_/g, ' ')}</option>`).join("");
+        data.map(c => `<option value="${c.nombre}" data-date="${c.fecha}">${c.nombre.replace(/_/g, ' ')} (${c.fecha})</option>`).join("");
     } else {
       select.innerHTML = '<option value="" disabled selected>No hay capacitaciones activas</option>';
     }
@@ -21037,6 +21257,25 @@ function syncCommandHub() {
       };
     } else {
       hubSave.onclick = async () => {
+        if (!navigator.onLine && window.OfflineDB) {
+          // INTERCEPCIÓN MODO OFFLINE AUTOMÁTICA
+          let payload = {};
+          let actionType = 'INSERT_INFLUENZA_DIARIO';
+          
+          if (captureTab === "INFLUENZA") {
+            const inputs = document.querySelectorAll(".tbody-inputs input[type='number']");
+            const valores = {};
+            inputs.forEach(inp => { if (inp.value) valores[inp.id || inp.name] = inp.value; });
+            payload = { fecha: document.getElementById("influenza_semana")?.value, valores: valores, clues: USER?.clues };
+          }
+
+          const saved = await window.OfflineDB.saveOfflineRecord(actionType, payload);
+          if (saved) {
+            showToast("🟡 Captura guardada localmente (Modo sin conexión). Se sincronizará al volver la red.", true, "warning");
+            return;
+          }
+        }
+
         if (captureTab === "SR") await performSaveSR();
         if (captureTab === "CONS") await performSaveCONS();
         if (captureTab === "BIO") await performSaveBIO();
@@ -22640,6 +22879,7 @@ async function openBCGDirectorio() {
       return !uName.includes("UMME") && !uName.includes("FAM") && !uClues.includes("UMME") && !uClues.includes("FAM");
     });
     window.bcgDirAperturas = resApertura.data || [];
+    window._bcgAperturasCache = window.bcgDirAperturas;
 
     // Llenar select de municipios
     const munis = Array.from(new Set(window.bcgDirUnits.map(u => u.municipio))).filter(Boolean).sort();

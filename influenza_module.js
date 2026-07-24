@@ -677,6 +677,16 @@ async function loadInfluenzaUnitData() {
     // 3. Distribución de frascos
     const resFrascos = await AppService.call("getinfluenza_distribucion", { clues: USER.clues });
     _influenzaDistribucionCache = resFrascos.data || [];
+
+    // 📈 4. CONEXIÓN AUTOMÁTICA: Pronóstico de Desabasto
+    if (window.StockPredictor) {
+      const totalStock = _influenzaDistribucionCache.reduce((acc, curr) => acc + (Number(curr.existencia_dosis) || Number(curr.dosis_restantes) || 0), 0) || 45;
+      const historyApplies = _influenzaCapturasCache.map(c => {
+        const totalSemana = Object.values(c.valores || {}).reduce((a, b) => a + Number(b || 0), 0);
+        return { fecha: c.fecha, dosis: totalSemana };
+      });
+      window.StockPredictor.renderPredictiveWidget("influenzaStockPredictorContainer", totalStock, historyApplies, USER?.clues);
+    }
   } catch (err) {
     console.error("Error al cargar datos de Influenza:", err);
   }

@@ -4,7 +4,7 @@
  * Versión: 2026.3
  */
 
-const CACHE_NAME = 'js1-reportes-v2026-60';
+const CACHE_NAME = 'js1-reportes-v2026-61';
 
 const STATIC_ASSETS = [
   './',
@@ -12,6 +12,10 @@ const STATIC_ASSETS = [
   './style.css',
   './tailwind_compiled.css',
   './main.js',
+  './influenza_module.js',
+  './offline_db.js',
+  './stock_predictor.js',
+  './export_manager.js',
   './mobile.html',
   './mobile_style.css',
   './mobile_main.js',
