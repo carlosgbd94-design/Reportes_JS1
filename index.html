@@ -22,6 +22,15 @@
   <!-- Sentry Error Monitoring -->
   <script src="https://js.sentry-cdn.com/ad5eb763bc0b321edddbb0ce59e2c0f0.min.js" crossorigin="anonymous"></script>
 
+  <!-- Dexie.js (IndexedDB Wrapper), SheetJS (XLSX Export) & Lucide Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Módulos de Optimización y Modales SIREVAQ -->
+  <script src="sirevaq_storage.js"></script>
+  <script src="sirevaq_utils.js"></script>
+
   <!-- PostHog Analytics -->
   <script>
     !function (t, e) { var o, n, p, r; e.__SV || (window.posthog = e, e._i = [], e.init = function (i, s, a) { function g(t, e) { var o = e.split("."); 2 == o.length && (t = t[o[0]], e = o[1]), t[e] = function () { t.push([e].concat(Array.prototype.slice.call(arguments, 0))) } } (p = t.createElement("script")).type = "text/javascript", p.async = !0, p.src = s.api_host.replace(".i.posthog.com", "-assets.i.posthog.com") + "/static/array.js", (r = t.getElementsByTagName("script")[0]).parentNode.insertBefore(p, r); var u = e; for (void 0 !== a ? u = e[a] = [] : a = "posthog", u.people = u.people || [], u.toString = function (t) { var e = "posthog"; return "posthog" !== a && (e += "." + a), t || (e += " (stub)"), e }, u.people.toString = function () { return u.toString(1) + ".people (stub)" }, o = "init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group reset groups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags resetActiveView Exception clear_session_tracking group reset groups set_config session_recording_started".split(" "), n = 0; n < o.length; n++)g(u, o[n]); e._i.push([i, s, a]) }, e.__SV = 1) }(document, window.posthog || []);
@@ -234,7 +243,7 @@
   <!-- Assets para PDF -->
   <script src="pdf_assets.js" defer></script>
   <!-- Archivo Principal -->
-  <script src="main.js?v=2026.51" defer></script>
+  <script src="main.js?v=2026.65" defer></script>
   <!-- Influenza Meta-Logro Module -->
   <script src="influenza_module.js" defer></script>
 
@@ -7736,14 +7745,14 @@
     }
   </style>
 
-  <!-- 🛡️ MODAL DIRECTORIO BCG -->
-  <div class="overlay" id="bcgDirectorioOverlay"
-    style="background: rgba(3,8,18,0.55) !important; z-index:9999; align-items: center; justify-content: center; position: fixed; inset: 0;">
+  <!-- 🛡️ MODAL DIRECTORIO BCG (HTML5 Dialog Nativo) -->
+  <dialog id="bcgDirectorioDialog" class="sirevaq-native-modal"
+    style="border: none; padding: 0; background: transparent; max-width: 100vw; max-height: 100vh; overflow: visible;">
     <div class="modal"
-      style="width: 100%; max-width:640px; height: 85vh; background: var(--md-sys-color-surface); border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden; display: flex; flex-direction: column; padding: 0;">
+      style="width: 90vw; max-width:640px; height: 85vh; background: var(--md-sys-color-surface); border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden; display: flex; flex-direction: column; padding: 0; margin: auto;">
       <div class="modalHead"
         style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); padding: 24px 24px 20px; color: white; flex-shrink: 0; position: relative;">
-        <button id="btnCancelBCGDir" type="button"
+        <button id="btnCancelBCGDir" type="button" onclick="SirevaqModal.close('bcgDirectorioDialog')"
           style="position: absolute; right: 20px; top: 20px; background: rgba(255,255,255,0.15); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; transition: all 0.2s ease; outline: none;"
           onmouseover="this.style.background='rgba(255,255,255,0.25)'"
           onmouseout="this.style.background='rgba(255,255,255,0.15)'">
@@ -7794,7 +7803,7 @@
         <!-- Lista inyectada por JS -->
       </div>
     </div>
-  </div>
+  </dialog>
 
   <!-- 🔔 MODAL DE LECTURA COMPLETA DE NOTIFICACIÓN (LIQUID GLASS) -->
   <div id="modalNotifDetail"

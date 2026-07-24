@@ -2546,7 +2546,7 @@ function applyNotificationsViewState(items = [], unreadServerCount = null) {
 
 function rerenderNotificationsFromState() {
   const items = Array.isArray(LIVE_STATE.notifications) ? LIVE_STATE.notifications : [];
-  applyNotificationsViewState(items);
+  return applyNotificationsViewState(items);
 }
 
 function patchNotificationMeta(item, patch = {}) {
@@ -2579,7 +2579,10 @@ function applyLocalNotificationRead(id) {
       return String(item?.status || "UNREAD").toUpperCase() !== "READ";
     });
 
-  rerenderNotificationsFromState();
+  const resState = rerenderNotificationsFromState();
+  if (resState && typeof resState.unreadLocal === "number") {
+    LAST_NOTIF_UNREAD = resState.unreadLocal;
+  }
 }
 
 function applyLocalNotificationDelete(id) {
@@ -2853,6 +2856,8 @@ window.confirmPinolReceiptFlow = confirmPinolReceiptFlow;
 window.deleteNotificationFlow = deleteNotificationFlow;
 window.clearAllNotificationsFlow = clearAllNotificationsFlow;
 window.markVisibleNotificationsReadFlow = markVisibleNotificationsReadFlow;
+// Alias por compatibilidad con versiones cacheadas anteriores
+window.markVisibleNotificationsAsRead = markVisibleNotificationsReadFlow;
 
 // === CENTRO DE NOTIFICACIONES: LÓGICA DE ENVÍO HIERÁRQUICO ===
 window.initNotificationCenter = async function () {
@@ -6731,17 +6736,24 @@ async function supabaseRequest(action = "", payload, options = {}) {
       }
 
       case "marknotificationread": {
-        // Per-profile: marcar SOLO mi copia como leída
+        const targetUsuario = String(USER?.usuario || AppState?.user?.usuario || payload.usuario || "").trim();
+        if (!targetUsuario) throw new Error("No hay usuario autenticado para registrar la lectura.");
+
+        // Per-profile: marcar SOLO mi copia como leída (upsert por si no existía fila per-profile)
         const { error } = await supabase
           .from('notificaciones_perfil')
-          .update({ status: 'READ', read_ts: new Date().toISOString() })
-          .eq('notificacion_id', payload.id)
-          .eq('usuario', USER.usuario);
+          .upsert({
+            notificacion_id: payload.id,
+            usuario: targetUsuario,
+            status: 'READ',
+            read_ts: new Date().toISOString()
+          }, { onConflict: 'notificacion_id,usuario' });
         if (error) throw error;
         return { ok: true };
       }
 
       case "resolvedesabasto": {
+        const targetUsuario = String(USER?.usuario || AppState?.user?.usuario || payload.usuario || "").trim();
         // Obtenemos la notificación primero para actualizar meta_json
         const { data: notifDesab } = await supabase.from('notificaciones').select('meta_json').eq('id', payload.id).single();
         if (!notifDesab) throw new Error("Notificación no encontrada");
@@ -6756,23 +6768,34 @@ async function supabaseRequest(action = "", payload, options = {}) {
           .update({ meta_json: JSON.stringify(metaDesab) })
           .eq('id', payload.id);
 
-        // 2. Marcar MI copia como leída en notificaciones_perfil
-        const { error: errorDesab } = await supabase
-          .from('notificaciones_perfil')
-          .update({ status: 'READ', read_ts: new Date().toISOString() })
-          .eq('notificacion_id', payload.id)
-          .eq('usuario', USER.usuario);
-        if (errorDesab) console.warn("[Notif] Error actualizando perfil desabasto:", errorDesab);
+        // 2. Marcar MI copia como leída en notificaciones_perfil (upsert)
+        if (targetUsuario) {
+          const { error: errorDesab } = await supabase
+            .from('notificaciones_perfil')
+            .upsert({
+              notificacion_id: payload.id,
+              usuario: targetUsuario,
+              status: 'READ',
+              read_ts: new Date().toISOString()
+            }, { onConflict: 'notificacion_id,usuario' });
+          if (errorDesab) console.warn("[Notif] Error actualizando perfil desabasto:", errorDesab);
+        }
         return { ok: true };
       }
 
       case "deletenotification": {
-        // Per-profile: soft-delete SOLO mi copia
+        const targetUsuario = String(USER?.usuario || AppState?.user?.usuario || payload.usuario || "").trim();
+        if (!targetUsuario) throw new Error("No hay usuario autenticado.");
+
+        // Per-profile: soft-delete SOLO mi copia (upsert)
         const { error: delError } = await supabase
           .from('notificaciones_perfil')
-          .update({ deleted: true, deleted_ts: new Date().toISOString() })
-          .eq('notificacion_id', payload.id)
-          .eq('usuario', USER.usuario);
+          .upsert({
+            notificacion_id: payload.id,
+            usuario: targetUsuario,
+            deleted: true,
+            deleted_ts: new Date().toISOString()
+          }, { onConflict: 'notificacion_id,usuario' });
         if (delError) throw delError;
         return { ok: true };
       }
@@ -9361,7 +9384,7 @@ window.addSRRow = function (data = null) {
           <div class="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 shrink-0 shadow-sm" title="Frascos">
             <span class="material-symbols-rounded text-[18px]">inventory_2</span>
           </div>
-          <input type="number" class="sr-cantidad-input w-[80px] text-center bg-slate-50 border-2 border-slate-400 rounded-xl py-2 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" min="0" step="any" value="${data?.cantidad || ""}" placeholder="0">
+          <input type="number" class="sr-cantidad-input w-[80px] text-center bg-slate-50 border-2 border-slate-400 rounded-xl py-2 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" min="0" step="any" value="${data?.cantidad || ""}" placeholder="0" autocomplete="off" data-lpignore="true" data-form-type="other" name="no-autofill-cant-${Date.now()}">
         </div>
       </td>
       <td class="p-4 py-3 text-center" data-label="Acción">
