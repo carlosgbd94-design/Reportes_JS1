@@ -592,6 +592,32 @@ function renderDashboard() {
         toggleContainer.style.display = (esquema === 'basico') ? 'inline-flex' : 'none';
     }
 
+    // Labels generales de filtro
+    const scopeEl = document.getElementById('rdaScopeLabel');
+    if (scopeEl) {
+        if (uniFilter) {
+            const uMatch = (_rdaCache.unidades||[]).find(x => x.clues === uniFilter);
+            scopeEl.textContent = `[${uniFilter}] ${uMatch?.nombre || uniFilter}`;
+        } else if (muniFilter) {
+            scopeEl.textContent = `Municipio: ${muniFilter.toUpperCase()}`;
+        } else {
+            scopeEl.textContent = 'Jurisdicción Sanitaria 1 (4 Municipios)';
+        }
+    }
+    const cierreEl = document.getElementById('rdaCierreLabel');
+    if (cierreEl) {
+        const labelMap = {
+            basico: 'Esquema Básico (0-8 años)',
+            adultos: 'Adolescentes y Adultos',
+            mayores: 'Adultos Mayores',
+            embarazadas: 'Embarazadas',
+            invernal: 'Temporada Invernal',
+            comparativa_multianual: 'Comparativa Multianual (2025 vs 2026)'
+        };
+        const label = labelMap[esquema] || 'Análisis RDA';
+        cierreEl.textContent = `${label} | Cierre: ${MONTH_NAMES[(_rdaCache.maxMes||12)-1] || 'Sin datos'}`;
+    }
+
     if (esquema === 'meta_logro_influenza') {
         if (typeof renderInfluenzaIndicatorsDashboard === 'function') {
             renderInfluenzaIndicatorsDashboard(muniFilter, uniFilter);
@@ -607,26 +633,6 @@ function renderDashboard() {
     let fUnits = unidades;
     if (muniFilter) fUnits = fUnits.filter(u => (u.municipio || '').toUpperCase().trim() === muniFilter.toUpperCase().trim());
     if (uniFilter) fUnits = fUnits.filter(u => u.clues === uniFilter);
-
-    // Labels
-    const scopeEl = document.getElementById('rdaScopeLabel');
-    if (scopeEl) {
-        if (uniFilter) scopeEl.textContent = fUnits[0]?.nombre || uniFilter;
-        else if (muniFilter) scopeEl.textContent = `Municipio: ${muniFilter}`;
-        else scopeEl.textContent = 'Jurisdicción Sanitaria 1';
-    }
-    const cierreEl = document.getElementById('rdaCierreLabel');
-    if (cierreEl) {
-        const labelMap = {
-            basico: 'Esquema Básico (0-8 años)',
-            adultos: 'Adolescentes y Adultos',
-            mayores: 'Adultos Mayores',
-            embarazadas: 'Embarazadas',
-            invernal: 'Temporada Invernal'
-        };
-        const label = labelMap[esquema] || 'Análisis RDA';
-        cierreEl.textContent = `${label} | Cierre: ${MONTH_NAMES[maxMes-1] || 'Sin datos'}`;
-    }
 
     // Calcular agregaciones a nivel de filtro actual
     let agg = {
@@ -3966,26 +3972,30 @@ window.closeModalAndUnlockBody = function(modalId) {
     }
 };
 
-// Panel Único de Comparativa Multianual (2025 vs 2026)
+// Panel Único de Comparativa Multianual Executive (2025 vs 2026)
 async function renderComparativaMultianual(muniFilter, uniFilter) {
     const container = document.getElementById('rdaDashboardContent');
     if (!container) return;
 
-    if (typeof showOverlay === 'function') showOverlay("Cargando comparativa multianual 2025 vs 2026...", "Procesando");
+    if (typeof showOverlay === 'function') showOverlay("Generando Suite de Diagnóstico Multianual (2025 vs 2026)...", "Análisis Avanzado");
 
     try {
         const maxMes = _rdaCache.maxMes || 12;
+        const maxMesName = MONTH_NAMES[maxMes - 1] || 'FINAL';
         
-        // Fetch 2025 data
+        // Consultar agregaciones 2025 y 2026 simultáneamente
         const { data: ind2025, error: err2025 } = await window.supabase.rpc('get_rda_indicators', { p_anio: 2025, p_max_mes: maxMes });
-        // Fetch 2026 data
         const { data: ind2026, error: err2026 } = await window.supabase.rpc('get_rda_indicators', { p_anio: 2026, p_max_mes: maxMes });
 
         if (err2025) throw err2025;
         if (err2026) throw err2026;
 
-        let u2025 = ind2025 || [];
-        let u2026 = ind2026 || [];
+        let raw2025 = ind2025 || [];
+        let raw2026 = ind2026 || [];
+
+        // Filtrado dinámico
+        let u2025 = raw2025;
+        let u2026 = raw2026;
 
         if (muniFilter) {
             u2025 = u2025.filter(u => (u.municipio || '').toUpperCase().trim() === muniFilter.toUpperCase().trim());
@@ -3996,112 +4006,318 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
             u2026 = u2026.filter(u => u.clues === uniFilter);
         }
 
-        const calcTotals = (arr, is2025 = false) => {
-            let res = {
+        // Función totalizadora segura
+        const calcTotals = (arr) => {
+            let r = {
                 pM1: 0, p1A: 0, p4A: 0, p6A: 0,
                 bcg: 0, hepb: 0, rota: 0, hexaM1: 0, hexa1A: 0, neumoM1: 0, neumo1A: 0, srp1: 0, srp2: 0, dpt: 0, srp6: 0
             };
             for (const u of arr) {
-                res.pM1 += u.pob_menor_1 || 0; res.p1A += u.pob_1_ano || 0; res.p4A += u.pob_4_anos || 0; res.p6A += u.pob_6_anos || 0;
-                res.bcg += u.bcg_dosis || 0; res.hepb += u.hepb_0_7_dosis || 0; res.rota += u.rota_2_dosis || 0;
-                res.hexaM1 += (u.hexa_1_dosis||0) + (u.hexa_2_dosis||0) + (u.hexa_3_dosis||0);
-                res.hexa1A += u.hexa_ref_dosis || 0;
-                res.neumoM1 += (u.neumo_1_dosis||0) + (u.neumo_2_dosis||0) + (u.neumo_c1_dosis||0) + (u.neumo_c2_dosis||0);
-                res.neumo1A += (u.neumo_ref_dosis||0) + (u.neumo_c3_dosis||0);
-                res.srp1 += u.srp_1_dosis || 0; res.srp2 += u.srp_2_dosis || 0; res.dpt += u.dpt_4_dosis || 0; res.srp6 += u.srp_6_dosis || 0;
+                r.pM1 += u.pob_menor_1 || 0; r.p1A += u.pob_1_ano || 0; r.p4A += u.pob_4_anos || 0; r.p6A += u.pob_6_anos || 0;
+                r.bcg += u.bcg_dosis || 0; r.hepb += u.hepb_0_7_dosis || 0; r.rota += u.rota_2_dosis || 0;
+                r.hexaM1 += (u.hexa_1_dosis||0) + (u.hexa_2_dosis||0) + (u.hexa_3_dosis||0);
+                r.hexa1A += u.hexa_ref_dosis || 0;
+                r.neumoM1 += (u.neumo_1_dosis||0) + (u.neumo_2_dosis||0) + (u.neumo_c1_dosis||0) + (u.neumo_c2_dosis||0);
+                r.neumo1A += (u.neumo_ref_dosis||0) + (u.neumo_c3_dosis||0);
+                r.srp1 += u.srp_1_dosis || 0; r.srp2 += u.srp_2_dosis || 0; r.dpt += u.dpt_4_dosis || 0; r.srp6 += u.srp_6_dosis || 0;
             }
-            const fM1 = (res.pM1 * 0.0833) * maxMes;
-            const f1A = (res.p1A * 0.0833) * maxMes;
-            const f4A = (res.p4A * 0.0833) * maxMes;
-            const f6A = ((res.p6A || res.p4A) * 0.0833) * maxMes;
+            const fM1 = (r.pM1 * 0.0833) * maxMes;
+            const f1A = (r.p1A * 0.0833) * maxMes;
+            const f4A = (r.p4A * 0.0833) * maxMes;
+            const f6A = ((r.p6A || r.p4A) * 0.0833) * maxMes;
 
-            const dosisM1 = res.bcg + res.hepb + res.hexaM1 + res.rota + res.neumoM1;
-            const dosis1A = res.hexa1A + res.neumo1A + res.srp2;
-            const dosis4A = res.dpt;
-            const dosis6A = res.srp6;
+            const dosisM1 = r.bcg + r.hepb + r.hexaM1 + r.rota + r.neumoM1;
+            const dosis1A = r.hexa1A + r.neumo1A + r.srp2;
+            const dosis4A = r.dpt;
+            const dosis6A = r.srp6;
 
-            res.covM1 = fM1 > 0 ? Math.round((((dosisM1 / 4.0) / fM1) * 100) * 10) / 10 : 0;
-            res.cov1A = f1A > 0 ? Math.round((((dosis1A / 3.0) / f1A) * 100) * 10) / 10 : 0;
-            res.cov4A = f4A > 0 ? Math.round(((dosis4A / f4A) * 100) * 10) / 10 : 0;
-            res.cov6A = f6A > 0 ? Math.round(((dosis6A / f6A) * 100) * 10) / 10 : 0;
+            r.covM1 = fM1 > 0 ? Math.round((((dosisM1 / 4.0) / fM1) * 100) * 10) / 10 : 0;
+            r.cov1A = f1A > 0 ? Math.round((((dosis1A / 3.0) / f1A) * 100) * 10) / 10 : 0;
+            r.cov4A = f4A > 0 ? Math.round(((dosis4A / f4A) * 100) * 10) / 10 : 0;
+            r.cov6A = f6A > 0 ? Math.round(((dosis6A / f6A) * 100) * 10) / 10 : 0;
 
-            return res;
+            r.appBCG = r.bcg; r.appHepB = r.hepb; r.appRota = r.rota; r.appHexaM1 = r.hexaM1;
+            r.appHexa1A = r.hexa1A; r.appNeumoM1 = r.neumoM1; r.appNeumo1A = r.neumo1A; r.appSRP = r.srp1 + r.srp2; r.appDPT = r.dpt; r.appSRP6 = r.srp6;
+
+            r.covBCG = fM1 > 0 ? Math.round((r.appBCG / fM1 * 100) * 10) / 10 : 0;
+            r.covHepB = fM1 > 0 ? Math.round((r.appHepB / fM1 * 100) * 10) / 10 : 0;
+            r.covRota = fM1 > 0 ? Math.round((r.appRota / fM1 * 100) * 10) / 10 : 0;
+            r.covHexaM1 = fM1 > 0 ? Math.round((r.appHexaM1 / fM1 * 100) * 10) / 10 : 0;
+            r.covHexa1A = f1A > 0 ? Math.round((r.appHexa1A / f1A * 100) * 10) / 10 : 0;
+            r.covNeumoM1 = fM1 > 0 ? Math.round((r.appNeumoM1 / fM1 * 100) * 10) / 10 : 0;
+            r.covNeumo1A = f1A > 0 ? Math.round((r.appNeumo1A / f1A * 100) * 10) / 10 : 0;
+            r.covSRP = f1A > 0 ? Math.round((r.appSRP / f1A * 100) * 10) / 10 : 0;
+            r.covDPT = f4A > 0 ? Math.round((r.appDPT / f4A * 100) * 10) / 10 : 0;
+            r.covSRP6 = f6A > 0 ? Math.round((r.appSRP6 / f6A * 100) * 10) / 10 : 0;
+
+            return r;
         };
 
-        const t25 = calcTotals(u2025, true);
-        const t26 = calcTotals(u2026, false);
+        const t25 = calcTotals(u2025);
+        const t26 = calcTotals(u2026);
 
+        // Agrupación de Municipios de la JS1
+        const munisJS1 = ['CORREGIDORA', 'HUIMILPAN', 'EL MARQUÉS', 'QUERÉTARO'];
+        const compMunis = munisJS1.map(m => {
+            const arr25 = raw2025.filter(u => (u.municipio || '').toUpperCase().trim() === m);
+            const arr26 = raw2026.filter(u => (u.municipio || '').toUpperCase().trim() === m);
+            return {
+                nombre: m,
+                t25: calcTotals(arr25),
+                t26: calcTotals(arr26)
+            };
+        });
+
+        // Título dinámico
+        let activeScopeTitle = "Jurisdicción Sanitaria 1 (4 Municipios Totalizadores)";
+        if (uniFilter) {
+            const uM = (_rdaCache.unidades||[]).find(x => x.clues === uniFilter);
+            activeScopeTitle = `CLUES: ${uniFilter} - ${uM?.nombre || 'Unidad Médica'}`;
+        } else if (muniFilter) {
+            activeScopeTitle = `Municipio: ${muniFilter.toUpperCase()}`;
+        }
+
+        // Generar HTML Executive
         container.innerHTML = `
-            <div style="background: white; border-radius: 24px; padding: 32px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(15,23,42,0.04);">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; border-bottom: 2px solid #f1f5f9; padding-bottom: 16px;">
+            <div style="background: #ffffff; border-radius: 24px; padding: 32px; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(15,23,42,0.04);">
+                
+                <!-- HEADER CON CONTROL DE BOTONES Y EMBLEMA EXECUTIVE -->
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #f1f5f9;">
                     <div>
-                        <h2 style="margin: 0; font-size: 20px; font-weight: 900; color: #0f172a;">📊 Comparativa Multianual (2025 vs 2026)</h2>
-                        <p style="margin: 4px 0 0 0; font-size: 13px; font-weight: 600; color: #64748b;">Análisis comparativo directo a Cierre: ${MONTH_NAMES[maxMes-1] || 'Final'}</p>
-                    </div>
-                    <span style="background: #0284c7; color: white; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 800;">Corte Evaluado: Mes 1 a ${maxMes}</span>
-                </div>
-
-                <!-- KPI CARDS COMPARISON -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 32px;">
-                    <div style="background: #f8fafc; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0;">
-                        <div style="font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase;">Menores de 1 Año (<1)</div>
-                        <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 8px;">
-                            <div><span style="font-size: 11px; color: #94a3b8; font-weight: 700;">2025:</span> <strong style="font-size: 22px; color: #0f172a;">${t25.covM1}%</strong></div>
-                            <div><span style="font-size: 11px; color: #0284c7; font-weight: 700;">2026:</span> <strong style="font-size: 22px; color: #0284c7;">${t26.covM1}%</strong></div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="background: #0284c7; color: white; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 900; letter-spacing: 0.05em;">EXECUTIVE COMPARATIVE SUITE</span>
+                            <span style="font-size: 12px; font-weight: 800; color: #64748b; background: #f1f5f9; padding: 4px 10px; border-radius: 8px;">Cierre Evaluado: 1 al ${maxMes} (${maxMesName})</span>
                         </div>
-                        <div style="font-size: 11px; font-weight: 700; color: ${t26.covM1 >= t25.covM1 ? '#166534' : '#9f1239'}; margin-top: 6px;">
-                            ${t26.covM1 >= t25.covM1 ? '▲' : '▼'} Dif: ${(t26.covM1 - t25.covM1).toFixed(1)}% pts
-                        </div>
-                    </div>
-
-                    <div style="background: #f8fafc; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0;">
-                        <div style="font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase;">Niños de 1 Año (1)</div>
-                        <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 8px;">
-                            <div><span style="font-size: 11px; color: #94a3b8; font-weight: 700;">2025:</span> <strong style="font-size: 22px; color: #0f172a;">${t25.cov1A}%</strong></div>
-                            <div><span style="font-size: 11px; color: #0284c7; font-weight: 700;">2026:</span> <strong style="font-size: 22px; color: #0284c7;">${t26.cov1A}%</strong></div>
-                        </div>
-                        <div style="font-size: 11px; font-weight: 700; color: ${t26.cov1A >= t25.cov1A ? '#166534' : '#9f1239'}; margin-top: 6px;">
-                            ${t26.cov1A >= t25.cov1A ? '▲' : '▼'} Dif: ${(t26.cov1A - t25.cov1A).toFixed(1)}% pts
-                        </div>
-                    </div>
-
-                    <div style="background: #f8fafc; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0;">
-                        <div style="font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase;">Niños de 4 Años (4)</div>
-                        <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 8px;">
-                            <div><span style="font-size: 11px; color: #94a3b8; font-weight: 700;">2025:</span> <strong style="font-size: 22px; color: #0f172a;">${t25.cov4A}%</strong></div>
-                            <div><span style="font-size: 11px; color: #0284c7; font-weight: 700;">2026:</span> <strong style="font-size: 22px; color: #0284c7;">${t26.cov4A}%</strong></div>
-                        </div>
-                        <div style="font-size: 11px; font-weight: 700; color: ${t26.cov4A >= t25.cov4A ? '#166534' : '#9f1239'}; margin-top: 6px;">
-                            ${t26.cov4A >= t25.cov4A ? '▲' : '▼'} Dif: ${(t26.cov4A - t25.cov4A).toFixed(1)}% pts
-                        </div>
+                        <h2 style="margin: 8px 0 0 0; font-size: 22px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em;">
+                            Comparativa Multianual de Cobertura Vacunal (2025 vs 2026)
+                        </h2>
+                        <p style="margin: 4px 0 0 0; font-size: 13px; font-weight: 700; color: #0284c7;">
+                            Filtro Activo: <strong>${activeScopeTitle}</strong>
+                        </p>
                     </div>
                 </div>
 
-                <!-- ECHARTS COMPARATIVE HISTOGRAM -->
-                <div style="height: 380px; width: 100%;" id="chartComparativeMulti"></div>
+                <!-- CARDS DE DIAGNÓSTICO ESTRATÉGICO -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-bottom: 32px;">
+                    <!-- Menor 1 -->
+                    <div style="background: #f8fafc; border-radius: 18px; padding: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden;">
+                        <div style="font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Menores de 1 Año (<1)</div>
+                        <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-top: 12px;">
+                            <div>
+                                <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Año 2025</span>
+                                <div style="font-size: 20px; font-weight: 900; color: #475569;">${t25.covM1}%</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="font-size: 10px; font-weight: 800; color: #0284c7; text-transform: uppercase;">Año 2026</span>
+                                <div style="font-size: 24px; font-weight: 900; color: #0284c7;">${t26.covM1}%</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+                            <span style="font-size: 11px; font-weight: 800; color: ${t26.covM1 >= t25.covM1 ? '#166534' : '#9f1239'};">
+                                ${t26.covM1 >= t25.covM1 ? '▲ +'+(t26.covM1-t25.covM1).toFixed(1) : '▼ '+(t26.covM1-t25.covM1).toFixed(1)}% pts
+                            </span>
+                            <span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: ${t26.covM1 >= 95 ? '#dcfce7' : '#fef2f2'}; color: ${t26.covM1 >= 95 ? '#15803d' : '#b91c1c'};">
+                                ${t26.covM1 >= 95 ? 'META LOGRADA' : 'EN DESARROLLO'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 1 Año -->
+                    <div style="background: #f8fafc; border-radius: 18px; padding: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden;">
+                        <div style="font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Niños de 1 Año (1)</div>
+                        <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-top: 12px;">
+                            <div>
+                                <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Año 2025</span>
+                                <div style="font-size: 20px; font-weight: 900; color: #475569;">${t25.cov1A}%</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="font-size: 10px; font-weight: 800; color: #0284c7; text-transform: uppercase;">Año 2026</span>
+                                <div style="font-size: 24px; font-weight: 900; color: #0284c7;">${t26.cov1A}%</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+                            <span style="font-size: 11px; font-weight: 800; color: ${t26.cov1A >= t25.cov1A ? '#166534' : '#9f1239'};">
+                                ${t26.cov1A >= t25.cov1A ? '▲ +'+(t26.cov1A-t25.cov1A).toFixed(1) : '▼ '+(t26.cov1A-t25.cov1A).toFixed(1)}% pts
+                            </span>
+                            <span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: ${t26.cov1A >= 95 ? '#dcfce7' : '#fef2f2'}; color: ${t26.cov1A >= 95 ? '#15803d' : '#b91c1c'};">
+                                ${t26.cov1A >= 95 ? 'META LOGRADA' : 'REQUIERE REFORZAR'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 4 Años -->
+                    <div style="background: #f8fafc; border-radius: 18px; padding: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden;">
+                        <div style="font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Niños de 4 Años (4)</div>
+                        <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-top: 12px;">
+                            <div>
+                                <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Año 2025</span>
+                                <div style="font-size: 20px; font-weight: 900; color: #475569;">${t25.cov4A}%</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="font-size: 10px; font-weight: 800; color: #0284c7; text-transform: uppercase;">Año 2026</span>
+                                <div style="font-size: 24px; font-weight: 900; color: #0284c7;">${t26.cov4A}%</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+                            <span style="font-size: 11px; font-weight: 800; color: ${t26.cov4A >= t25.cov4A ? '#166534' : '#9f1239'};">
+                                ${t26.cov4A >= t25.cov4A ? '▲ +'+(t26.cov4A-t25.cov4A).toFixed(1) : '▼ '+(t26.cov4A-t25.cov4A).toFixed(1)}% pts
+                            </span>
+                            <span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: ${t26.cov4A >= 95 ? '#dcfce7' : '#fef2f2'}; color: ${t26.cov4A >= 95 ? '#15803d' : '#b91c1c'};">
+                                ${t26.cov4A >= 95 ? 'META LOGRADA' : 'EN SEGUIMIENTO'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HISTOGRAMA GRÁFICO DUAL -->
+                <div style="background: #f8fafc; border-radius: 20px; padding: 24px; border: 1px solid #e2e8f0; margin-bottom: 32px;">
+                    <div id="chartComparativeMulti" style="width: 100%; height: 380px;"></div>
+                </div>
+
+                <!-- TABLA 1: DESGLOSE POR MUNICIPIOS DE LA JURISDICCIÓN SANITARIA 1 -->
+                <div style="margin-bottom: 32px;">
+                    <h3 style="margin: 0 0 16px 0; font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em;">
+                        📍 Comportamiento por Municipio (Avance 2025 vs 2026 a Cierre Mes ${maxMes})
+                    </h3>
+                    <div style="overflow-x: auto; border-radius: 16px; border: 1px solid #e2e8f0;">
+                        <table style="width: 100%; border-collapse: collapse; background: white; font-size: 12px;">
+                            <thead>
+                                <tr style="background: #f1f5f9; text-align: center; font-weight: 900; color: #475569;">
+                                    <th style="padding: 12px 16px; text-align: left;">MUNICIPIO</th>
+                                    <th style="padding: 12px 16px;" colspan="2">< 1 AÑO</th>
+                                    <th style="padding: 12px 16px;" colspan="2">1 AÑO</th>
+                                    <th style="padding: 12px 16px;" colspan="2">4 AÑOS</th>
+                                    <th style="padding: 12px 16px;">TENDENCIA GLOBAL</th>
+                                </tr>
+                                <tr style="background: #f8fafc; text-align: center; font-weight: 800; color: #64748b; border-bottom: 2px solid #e2e8f0;">
+                                    <th style="padding: 8px 16px; text-align: left;">JS1 QUERÉTARO</th>
+                                    <th style="padding: 8px 12px; color: #64748b;">2025</th>
+                                    <th style="padding: 8px 12px; color: #0284c7;">2026</th>
+                                    <th style="padding: 8px 12px; color: #64748b;">2025</th>
+                                    <th style="padding: 8px 12px; color: #0284c7;">2026</th>
+                                    <th style="padding: 8px 12px; color: #64748b;">2025</th>
+                                    <th style="padding: 8px 12px; color: #0284c7;">2026</th>
+                                    <th style="padding: 8px 16px;">COMPORTAMIENTO</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${compMunis.map(m => {
+                                    const difM1 = (m.t26.covM1 - m.t25.covM1).toFixed(1);
+                                    const dif1A = (m.t26.cov1A - m.t25.cov1A).toFixed(1);
+                                    const isPositive = (m.t26.covM1 + m.t26.cov1A) >= (m.t25.covM1 + m.t25.cov1A);
+                                    return `
+                                        <tr style="border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: 700;">
+                                            <td style="padding: 12px 16px; text-align: left; font-weight: 900; color: #0f172a;">${m.nombre}</td>
+                                            <td style="padding: 12px; color: #64748b;">${m.t25.covM1}%</td>
+                                            <td style="padding: 12px; color: #0284c7; font-weight: 900;">${m.t26.covM1}%</td>
+                                            <td style="padding: 12px; color: #64748b;">${m.t25.cov1A}%</td>
+                                            <td style="padding: 12px; color: #0284c7; font-weight: 900;">${m.t26.cov1A}%</td>
+                                            <td style="padding: 12px; color: #64748b;">${m.t25.cov4A}%</td>
+                                            <td style="padding: 12px; color: #0284c7; font-weight: 900;">${m.t26.cov4A}%</td>
+                                            <td style="padding: 12px 16px;">
+                                                <span style="display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 900; background: ${isPositive ? '#f0fdf4' : '#fff1f2'}; color: ${isPositive ? '#166534' : '#9f1239'}; border: 1px solid ${isPositive ? '#bbf7d0' : '#fecdd3'};">
+                                                    ${isPositive ? '▲ ASCENDENTE' : '▼ EN REVISIÓN'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                                <tr style="background: #f1f5f9; text-align: center; font-weight: 900; color: #0f172a; border-top: 2px solid #cbd5e1;">
+                                    <td style="padding: 14px 16px; text-align: left;">TOTAL JURISDICCIONAL</td>
+                                    <td style="padding: 14px;">${t25.covM1}%</td>
+                                    <td style="padding: 14px; color: #0284c7;">${t26.covM1}%</td>
+                                    <td style="padding: 14px;">${t25.cov1A}%</td>
+                                    <td style="padding: 14px; color: #0284c7;">${t26.cov1A}%</td>
+                                    <td style="padding: 14px;">${t25.cov4A}%</td>
+                                    <td style="padding: 14px; color: #0284c7;">${t26.cov4A}%</td>
+                                    <td style="padding: 14px;">
+                                        <span style="display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 900; background: #e0f2fe; color: #0369a1;">
+                                            CONSOLIDADO JS1
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TABLA 2: MATRIZ DETALLADA POR BIOLÓGICO -->
+                <div>
+                    <h3 style="margin: 0 0 16px 0; font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em;">
+                        💉 Matriz de Comparativa por Biológico Individual (Dosis y Cobertura)
+                    </h3>
+                    <div style="overflow-x: auto; border-radius: 16px; border: 1px solid #e2e8f0;">
+                        <table style="width: 100%; border-collapse: collapse; background: white; font-size: 12px;">
+                            <thead>
+                                <tr style="background: #f8fafc; font-weight: 900; color: #475569; border-bottom: 2px solid #e2e8f0;">
+                                    <th style="padding: 12px 16px; text-align: left;">BIOLÓGICO / DOSIS</th>
+                                    <th style="padding: 12px 16px; text-align: center;">GRUPO EDAD</th>
+                                    <th style="padding: 12px 16px; text-align: center;">DOSIS 2025</th>
+                                    <th style="padding: 12px 16px; text-align: center;">DOSIS 2026</th>
+                                    <th style="padding: 12px 16px; text-align: center;">COV 2025</th>
+                                    <th style="padding: 12px 16px; text-align: center;">COV 2026</th>
+                                    <th style="padding: 12px 16px; text-align: center;">VARIACIÓN % PTS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${[
+                                    { n: 'BCG (Única)', g: '< 1 Año', d25: t25.appBCG, d26: t26.appBCG, c25: t25.covBCG, c26: t26.covBCG },
+                                    { n: 'Hepatitis B (0-7 días)', g: '< 1 Año', d25: t25.appHepB, d26: t26.appHepB, c25: t25.covHepB, c26: t26.covHepB },
+                                    { n: 'Rotavirus (2a Dosis)', g: '< 1 Año', d25: t25.appRota, d26: t26.appRota, c25: t25.covRota, c26: t26.covRota },
+                                    { n: 'Hexavalente (3a Dosis)', g: '< 1 Año', d25: t25.appHexaM1, d26: t26.appHexaM1, c25: t25.covHexaM1, c26: t26.covHexaM1 },
+                                    { n: 'Hexavalente (Refuerzo)', g: '1 Año', d25: t25.appHexa1A, d26: t26.appHexa1A, c25: t25.covHexa1A, c26: t26.covHexa1A },
+                                    { n: 'Neumococo (2a Dosis)', g: '< 1 Año', d25: t25.appNeumoM1, d26: t26.appNeumoM1, c25: t25.covNeumoM1, c26: t26.covNeumoM1 },
+                                    { n: 'Neumococo (Refuerzo)', g: '1 Año', d25: t25.appNeumo1A, d26: t26.appNeumo1A, c25: t25.covNeumo1A, c26: t26.covNeumo1A },
+                                    { n: 'SRP (Dosis Completa)', g: '1 Año', d25: t25.appSRP, d26: t26.appSRP, c25: t25.covSRP, c26: t26.covSRP },
+                                    { n: 'DPT (4 Años)', g: '4 Años', d25: t25.appDPT, d26: t26.appDPT, c25: t25.covDPT, c26: t26.covDPT }
+                                ].map(b => {
+                                    const dif = (b.c26 - b.c25).toFixed(1);
+                                    const isUp = b.c26 >= b.c25;
+                                    return `
+                                        <tr style="border-bottom: 1px solid #f1f5f9; font-weight: 700;">
+                                            <td style="padding: 10px 16px; color: #0f172a; font-weight: 900;">${b.n}</td>
+                                            <td style="padding: 10px 16px; text-align: center; color: #64748b;">${b.g}</td>
+                                            <td style="padding: 10px 16px; text-align: center; color: #64748b;">${b.d25.toLocaleString('es-MX')}</td>
+                                            <td style="padding: 10px 16px; text-align: center; color: #0284c7; font-weight: 900;">${b.d26.toLocaleString('es-MX')}</td>
+                                            <td style="padding: 10px 16px; text-align: center; color: #64748b;">${b.c25}%</td>
+                                            <td style="padding: 10px 16px; text-align: center; color: #0284c7; font-weight: 900;">${b.c26}%</td>
+                                            <td style="padding: 10px 16px; text-align: center; font-weight: 900; color: ${isUp ? '#166534' : '#9f1239'};">
+                                                ${isUp ? '▲ +'+dif : '▼ '+dif}% pts
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
         `;
 
+        // Renderizar ECharts Histogram Dual
         if (typeof echarts !== 'undefined') {
             const chartDom = document.getElementById('chartComparativeMulti');
             if (chartDom) {
                 const compChart = echarts.init(chartDom);
                 compChart.setOption({
-                    title: { text: 'Avance % de Cobertura por Grupo de Edad (2025 vs 2026)', left: 'center', textStyle: { fontSize: 14, fontWeight: '900', color: '#0f172a' } },
-                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-                    legend: { bottom: 0 },
-                    grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
-                    xAxis: { type: 'category', data: ['< 1 Año', '1 Año', '4 Años'] },
-                    yAxis: { type: 'value', axisLabel: { formatter: '{value}%' } },
+                    title: { text: 'Avance % de Cobertura por Grupo de Edad (2025 vs 2026)', left: 'left', textStyle: { fontSize: 15, fontWeight: '900', color: '#0f172a' } },
+                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, backgroundColor: '#0f172a', textStyle: { color: '#ffffff', fontFamily: 'Inter' } },
+                    legend: { right: 10, textStyle: { fontFamily: 'Inter', fontWeight: 'bold', color: '#64748b' } },
+                    grid: { left: '2%', right: '2%', bottom: '10%', top: '18%', containLabel: true },
+                    xAxis: { type: 'category', data: ['< 1 Año', '1 Año', '4 Años'], axisLabel: { fontWeight: 'bold', color: '#0f172a' } },
+                    yAxis: { type: 'value', axisLabel: { formatter: '{value}%', color: '#64748b' }, splitLine: { lineStyle: { type: 'dashed', color: '#e2e8f0' } } },
                     series: [
-                        { name: 'Año 2025', type: 'bar', data: [t25.covM1, t25.cov1A, t25.cov4A], itemStyle: { color: '#94a3b8', borderRadius: [6,6,0,0] } },
-                        { name: 'Año 2026', type: 'bar', data: [t26.covM1, t26.cov1A, t26.cov4A], itemStyle: { color: '#0284c7', borderRadius: [6,6,0,0] } }
+                        { name: 'Año 2025', type: 'bar', data: [t25.covM1, t25.cov1A, t25.cov4A], itemStyle: { color: '#94a3b8', borderRadius: [6,6,0,0] }, barWidth: 32 },
+                        { name: 'Año 2026', type: 'bar', data: [t26.covM1, t26.cov1A, t26.cov4A], itemStyle: { color: '#0284c7', borderRadius: [6,6,0,0] }, barWidth: 32 }
                     ]
                 });
+                window.addEventListener('resize', () => compChart.resize());
             }
         }
+
     } catch (e) {
-        console.error("Error cargando comparativa multianual:", e);
+        console.error("Error cargando comparativa multianual executive:", e);
         container.innerHTML = `<div style="padding: 32px; color: #ef4444; font-weight: 700;">Error al generar comparativa: ${e.message}</div>`;
     } finally {
         if (typeof hideOverlay === 'function') hideOverlay();
