@@ -191,9 +191,12 @@ class RDAParser {
             const mesRaw   = this._getCol(row, 'MES');
             const anioRaw  = this._getCol(row, 'ANO') || this._getCol(row, 'ANIO');
 
+            const uiYearVal = parseInt(document.getElementById('csvAnioSelector')?.value || '2026', 10);
+            const rawYearParsed = parseInt(anioRaw, 10);
+            const anio = (!isNaN(rawYearParsed) && rawYearParsed >= 2020 && rawYearParsed <= 2035) ? rawYearParsed : uiYearVal;
+
             const valor = parseInt(valorRaw, 10);
             const mes   = parseInt(mesRaw, 10);
-            const anio  = parseInt(anioRaw, 10);
 
             if (!clues || !variable || isNaN(valor) || isNaN(mes) || isNaN(anio)) {
                 ignorados++;
@@ -289,9 +292,12 @@ class RDAParser {
             const anioRaw  = this._getCol(row, 'ANO') || this._getCol(row, 'ANIO');
             const municipio = this._getCol(row, 'MUNICIPIO') || 'DESCONOCIDO';
 
+            const uiYearVal = parseInt(document.getElementById('csvAnioSelector')?.value || '2026', 10);
+            const rawYearParsed = parseInt(anioRaw, 10);
+            const anio = (!isNaN(rawYearParsed) && rawYearParsed >= 2020 && rawYearParsed <= 2035) ? rawYearParsed : uiYearVal;
+
             const valor = parseInt(valorRaw, 10);
             const mes   = parseInt(mesRaw, 10);
-            const anio  = parseInt(anioRaw, 10);
 
             if (!clues || !variable || isNaN(valor) || isNaN(mes) || isNaN(anio)) continue;
 
@@ -340,7 +346,8 @@ class RDAParser {
         // 2. Llamada RPC atómica — Una sola transacción: upsert unidades + borrado + inserción masiva.
         //    Si se pierde la conexión a la mitad, Postgres hace rollback automático y la BD
         //    queda íntegra. Se reemplaza el antiguo sistema de múltiples peticiones secuenciales.
-        await this.rpcUpsert(Object.values(uniqueUnits), cleanData, mesesArray);
+        const loadYear = cleanData[0]?.anio;
+        await this.rpcUpsert(Object.values(uniqueUnits), cleanData, mesesArray, loadYear);
     }
 
     static chunkArray(array, size) {
@@ -351,7 +358,7 @@ class RDAParser {
         return chunks;
     }
 
-    static async rpcUpsert(unidades, registros, meses) {
+    static async rpcUpsert(unidades, registros, meses, loadYear) {
         const total = registros.length;
         try {
             // 1. Sincronizar unidades médicas (en lotes de 100)
@@ -366,14 +373,23 @@ class RDAParser {
                 if (unitErr) throw new Error(`Error al registrar unidades médicas: ${unitErr.message}`);
             }
 
-            // 2. Limpiar registros previos de los meses en el CSV
+            // 2. Limpiar registros previos de los meses Y año en el CSV
             if (typeof showOverlay === 'function') {
-                showOverlay("Limpiando registros de meses previos para evitar duplicados...", "Sincronizando");
+                showOverlay("Limpiando registros del año y meses correspondientes...", "Sincronizando");
             }
+
+            // Obtener el año del lote cargado
+            const targetYear = loadYear || registros[0]?.anio;
+            if (!targetYear || isNaN(targetYear)) {
+                throw new Error("No se pudo identificar el año en los registros del lote.");
+            }
+
             const { error: delErr } = await window.supabase
                 .from('registros_sis')
                 .delete()
+                .eq('anio', targetYear)
                 .in('mes', meses);
+
             if (delErr) throw new Error(`Error al limpiar base de datos: ${delErr.message}`);
 
             // 3. Insertar nuevos registros en lotes de 5000
@@ -429,6 +445,7 @@ class RDAParser {
         const POB_MENOR_PATTERNS = ['POB_MENOR', 'MENOR_1', 'MENORES'];
         const POB_1_PATTERNS     = ['POB_1_ANO', 'POB_1ANO', '1_ANO', 'UN_ANO', 'DE_1_ANO'];
         const POB_4_PATTERNS     = ['POB_4_ANO', 'POB_4ANO', '4_ANO', 'CUATRO', 'DE_4_ANO'];
+        const POB_6_PATTERNS     = ['POB_6_ANO', 'POB_6ANO', '6_ANO', 'SEIS', 'DE_6_ANO'];
 
         let validos = 0;
         let ignorados = 0;
@@ -438,15 +455,16 @@ class RDAParser {
         const colMenor = this._findColByPatterns(sampleRow, POB_MENOR_PATTERNS);
         const col1     = this._findColByPatterns(sampleRow, POB_1_PATTERNS);
         const col4     = this._findColByPatterns(sampleRow, POB_4_PATTERNS);
+        const col6     = this._findColByPatterns(sampleRow, POB_6_PATTERNS);
 
-        if (!colMenor && !col1 && !col4) {
-            this._showSchemaError("No se encontraron columnas de población (POB_MENOR_1, POB_1_ANO, POB_4_ANOS).");
+        if (!colMenor && !col1 && !col4 && !col6) {
+            this._showSchemaError("No se encontraron columnas de población (POB_MENOR_1, POB_1_ANO, POB_4_ANOS, POB_6_ANOS).");
             return;
         }
 
         const reasonCounts = {
             noClues: { label: "Falta el campo CLUES", count: 0, examples: [] },
-            noPop: { label: "Faltan valores numéricos de población (menor 1, 1 año, 4 años)", count: 0, examples: [] }
+            noPop: { label: "Faltan valores numéricos de población (menor 1, 1 año, 4 años, 6 años)", count: 0, examples: [] }
         };
 
         for (let i = 0; i < data.length; i++) {
@@ -465,9 +483,10 @@ class RDAParser {
             const pMenor = colMenor ? parseInt(row[colMenor], 10) : NaN;
             const p1     = col1     ? parseInt(row[col1], 10)     : NaN;
             const p4     = col4     ? parseInt(row[col4], 10)     : NaN;
+            const p6     = col6     ? parseInt(row[col6], 10)     : NaN;
 
             // Al menos un valor de población debe ser numérico
-            if (isNaN(pMenor) && isNaN(p1) && isNaN(p4)) { 
+            if (isNaN(pMenor) && isNaN(p1) && isNaN(p4) && isNaN(p6)) { 
                 ignorados++; 
                 reasonCounts.noPop.count++;
                 if (reasonCounts.noPop.examples.length < 5) {
@@ -522,7 +541,7 @@ class RDAParser {
         if (validos > 0) {
             this.pendingData = data;
             // Guardar las columnas detectadas para el procesamiento posterior
-            this._pobCols = { colMenor, col1, col4 };
+            this._pobCols = { colMenor, col1, col4, col6 };
             document.getElementById('btnConfirmUploadCSV').classList.remove('opacity-50', 'pointer-events-none');
 
             // Mostrar aviso de población en lugar de aviso de meses
@@ -532,7 +551,7 @@ class RDAParser {
                 const p = warn.querySelector('p');
                 if (h5) h5.textContent = 'Actualización de Población';
                 if (p) p.innerHTML = `Se actualizarán los datos demográficos de <strong>${validos}</strong> unidades médicas. ` +
-                    `Columnas detectadas: ${[colMenor, col1, col4].filter(Boolean).join(', ')}.`;
+                    `Columnas detectadas: ${[colMenor, col1, col4, col6].filter(Boolean).join(', ')}.`;
                 warn.style.display = 'block';
             }
         } else {
@@ -544,7 +563,8 @@ class RDAParser {
     static async processPoblacionData(data) {
         if (typeof showOverlay === 'function') showOverlay("Actualizando población...", "Procesando");
 
-        const { colMenor, col1, col4 } = this._pobCols || {};
+        const { colMenor, col1, col4, col6 } = this._pobCols || {};
+        const selectedAnio = parseInt(document.getElementById('csvAnioSelector')?.value || '2026', 10);
         const payload = [];
 
         for (const row of data) {
@@ -554,36 +574,57 @@ class RDAParser {
             const pMenor = colMenor ? parseInt(row[colMenor], 10) : NaN;
             const p1     = col1     ? parseInt(row[col1], 10)     : NaN;
             const p4     = col4     ? parseInt(row[col4], 10)     : NaN;
+            const p6     = col6     ? parseInt(row[col6], 10)     : NaN;
 
-            if (isNaN(pMenor) && isNaN(p1) && isNaN(p4)) continue;
+            if (isNaN(pMenor) && isNaN(p1) && isNaN(p4) && isNaN(p6)) continue;
 
             payload.push({
                 clues,
                 pob_menor_1: isNaN(pMenor) ? 0 : pMenor,
                 pob_1_ano:   isNaN(p1)     ? 0 : p1,
-                pob_4_anos:  isNaN(p4)     ? 0 : p4
+                pob_4_anos:  isNaN(p4)     ? 0 : p4,
+                pob_6_anos:  isNaN(p6)     ? 0 : p6
             });
         }
 
-        console.log(`[RDA Parser] 👥 Enviando ${payload.length} registros de población...`);
+        console.log(`[RDA Parser] 👥 Enviando ${payload.length} registros de población para el año ${selectedAnio}...`);
 
         try {
+            // 1. Intentar vía RPC atómico por año
             const { data: result, error } = await window.supabase.rpc('upsert_poblacion_data', {
-                p_data: payload
+                p_data: payload,
+                p_anio: selectedAnio
             });
 
-            if (typeof hideOverlay === 'function') hideOverlay();
-
             if (error) {
-                console.error('[RDA Parser] ❌ Error en upsert_poblacion_data:', error);
-                if (typeof showToast === 'function') showToast(`Error: ${error.message}`, false, 'bad');
-                return;
+                console.warn('[RDA Parser] ⚠️ RPC upsert_poblacion_data no disponible, ejecutando actualización directa acotada por año...');
+                
+                // Fallback directo por año en tabla poblacion_unidades acotada por (clues, anio)
+                const pobRows = payload.map(p => ({
+                    clues: p.clues,
+                    anio: selectedAnio,
+                    pob_menor_1: p.pob_menor_1,
+                    pob_1_ano: p.pob_1_ano,
+                    pob_4_anos: p.pob_4_anos,
+                    pob_6_anos: p.pob_6_anos
+                }));
+
+                const { error: directErr } = await window.supabase
+                    .from('poblacion_unidades')
+                    .upsert(pobRows, { onConflict: 'clues,anio' });
+
+                if (directErr) {
+                    console.error('[RDA Parser] ❌ Error en actualización directa de poblacion_unidades:', directErr);
+                    if (typeof hideOverlay === 'function') hideOverlay();
+                    if (typeof showToast === 'function') showToast(`Error al guardar población: ${directErr.message}`, false, 'bad');
+                    return;
+                }
             }
 
-            const updated = result?.registros_actualizados ?? 0;
-            const total   = result?.total_enviados ?? payload.length;
-            console.log(`[RDA Parser] ✅ Población actualizada: ${updated}/${total} registros`);
-            if (typeof showToast === 'function') showToast(`Población actualizada: ${updated} unidades`, true, 'good');
+            if (typeof hideOverlay === 'function') hideOverlay();
+            const total = payload.length;
+            console.log(`[RDA Parser] ✅ Población ${selectedAnio} guardada aisladamente para ${total} unidades.`);
+            if (typeof showToast === 'function') showToast(`Población ${selectedAnio} guardada correctamente (${total} unidades)`, true, 'good');
 
             // Lanzar celebración premium
             if (typeof window.triggerConfetti === 'function') window.triggerConfetti();
@@ -605,4 +646,252 @@ window.handleCsvDrop = function(event) {
         document.getElementById('rdaCsvInput').files = event.dataTransfer.files;
         RDAParser.parseCSVAndPreview(file);
     }
+};
+
+// ==============================================================================
+// CONCENTRADOR E INSPECTOR WEB SIS (PROCESAMIENTO DE ARCHIVOS MÚLTIPLES EN JS)
+// ==============================================================================
+let _selectedSisFiles = [];
+let _concentratedResultBlob = null;
+
+window.handleSisConcFilesSelect = function(files) {
+    if (!files || !files.length) return;
+    _selectedSisFiles = Array.from(files);
+    
+    const fileListEl = document.getElementById('sisConcFileList');
+    if (fileListEl) {
+        fileListEl.innerHTML = _selectedSisFiles.map((f, i) => `
+            <span class="px-3 py-1 rounded-xl bg-slate-200 text-slate-800 border border-slate-300 flex items-center gap-1">
+                📄 ${f.name} <span class="text-[10px] text-slate-500">(${Math.round(f.size/1024)} KB)</span>
+            </span>
+        `).join('');
+    }
+
+    const consoleEl = document.getElementById('sisConcConsole');
+    if (consoleEl) {
+        consoleEl.innerHTML = `<div class="text-teal-400">➜ Se seleccionaron ${_selectedSisFiles.length} archivos para unificar y compilar. Haz clic en "Compilar & Limpiar".</div>`;
+    }
+    document.getElementById('btnDownloadConcentrated').style.display = 'none';
+};
+
+window.runWebSisConcentrator = async function() {
+    const consoleEl = document.getElementById('sisConcConsole');
+    const autoZero = document.getElementById('sisConcAutoZero')?.checked ?? true;
+    const targetSheet = (document.getElementById('sisConcTargetSheet')?.value || 'CSV').trim().toUpperCase();
+
+    if (!_selectedSisFiles || _selectedSisFiles.length === 0) {
+        if (typeof showToast === 'function') showToast("Por favor selecciona al menos un archivo .xlsx o .csv", false, 'bad');
+        return;
+    }
+
+    const log = (msg, color = 'text-slate-200') => {
+        if (consoleEl) {
+            consoleEl.innerHTML += `<div class="${color}">${msg}</div>`;
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
+    };
+
+    consoleEl.innerHTML = '';
+    log("==========================================================", "text-teal-400 font-bold");
+    log(" 🚀 INICIANDO CONCENTRADOR WEB SIS", "text-teal-400 font-bold");
+    log("==========================================================", "text-teal-400 font-bold");
+
+    let allRows = [];
+    let stats = { procesados: 0, omitidos: 0, vaciosCorr: 0, duplicados: 0 };
+    const ordenMunicipios = ['QUERÉTARO', 'CORREGIDORA', 'MARQUÉS', 'HUIMILPAN'];
+
+    for (let i = 0; i < _selectedSisFiles.length; i++) {
+        const file = _selectedSisFiles[i];
+        log(`[${i+1}/${_selectedSisFiles.length}] Procesando: ${file.name}...`);
+
+        try {
+            let jsonRows = [];
+            if (file.name.endsWith('.csv')) {
+                const text = await file.text();
+                const workbook = XLSX.read(text, { type: 'string' });
+                const sheetName = workbook.SheetNames[0];
+                jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: false, defval: '' });
+            } else {
+                const buffer = await file.arrayBuffer();
+                const workbook = XLSX.read(buffer, { type: 'array' });
+                
+                // Buscar la hoja especificada
+                let sheetName = workbook.SheetNames.find(s => s.trim().toUpperCase() === targetSheet);
+                if (!sheetName && workbook.SheetNames.length > 0) {
+                    sheetName = workbook.SheetNames[0]; // fallback
+                }
+
+                if (!sheetName) throw new Error(`No se encontró la hoja '${targetSheet}'.`);
+                jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: false, defval: '' });
+            }
+
+            if (!jsonRows || jsonRows.length === 0) {
+                log(`   └─ ⚠️ Archivo vacío o sin datos válidos. Omitido.`, "text-amber-400");
+                stats.omitidos++;
+                continue;
+            }
+
+            // Normalización de claves por fila y saneamiento a "0"
+            let processedRows = jsonRows.map((row, index) => {
+                let normRow = {};
+                for (let k in row) {
+                    let keyNorm = RDAParser._normalizeKey(k);
+                    if (keyNorm.startsWith('UNNAMED')) continue;
+
+                    let val = String(row[k] ?? '').trim();
+                    // Sanitizar " " -> 0
+                    if (autoZero && (val === '' || val === 'nan' || val === 'null' || val === 'None')) {
+                        val = '0';
+                        stats.vaciosCorr++;
+                    }
+                    normRow[keyNorm] = val;
+                }
+
+                // Estandarización de nombres de columnas
+                if (normRow['VARIABLE'] && !normRow['VARIABLE_SIS']) normRow['VARIABLE_SIS'] = normRow['VARIABLE'];
+                if (normRow['DOSIS'] && !normRow['VALOR']) normRow['VALOR'] = normRow['DOSIS'];
+                if (normRow['AÑO'] && !normRow['ANIO']) normRow['ANIO'] = normRow['AÑO'];
+
+                // Homologación de municipio
+                if (normRow['MUNICIPIO']) {
+                    let m = normRow['MUNICIPIO'].toUpperCase().trim();
+                    if (m === 'EL MARQUÉS' || m === 'EL MARQUES' || m === 'MARQUES') m = 'MARQUÉS';
+                    if (m === 'QUERETARO') m = 'QUERÉTARO';
+                    normRow['MUNICIPIO'] = m;
+                }
+
+                normRow['_ORDEN_ORIGINAL'] = index;
+                return normRow;
+            });
+
+            allRows.push(...processedRows);
+            stats.procesados++;
+            log(`   └─ ✅ OK: ${processedRows.length} registros cargados.`, "text-emerald-400");
+        } catch (err) {
+            log(`   └─ ❌ ERROR: ${err.message}`, "text-rose-400");
+            stats.omitidos++;
+        }
+    }
+
+    if (allRows.length === 0) {
+        log("\n❌ No se extrajo ningún registro de los archivos seleccionados.", "text-rose-400 font-bold");
+        return;
+    }
+
+    log("\n----------------------------------------------------------", "text-slate-500");
+    log("⚙️ APLICANDO DEDUPLICACIÓN Y ORDENAMIENTO TOP-DOWN...", "text-teal-400 font-bold");
+
+    // 1. Deduplicación inteligente por [CLUES, VARIABLE_SIS, MES, ANIO]
+    const dedupeMap = new Map();
+    const rowsBefore = allRows.length;
+    allRows.forEach(row => {
+        const key = `${row['CLUES']||''}_${row['VARIABLE_SIS']||''}_${row['MES']||''}_${row['ANIO']||''}`;
+        dedupeMap.set(key, row);
+    });
+    allRows = Array.from(dedupeMap.values());
+    stats.duplicados = rowsBefore - allRows.length;
+
+    // 2. Ordenamiento Top-Down (Mes -> Municipio -> CLUES -> Orden)
+    allRows.sort((a, b) => {
+        const mesA = parseInt(a['MES'], 10) || 0;
+        const mesB = parseInt(b['MES'], 10) || 0;
+        if (mesA !== mesB) return mesA - mesB;
+
+        const idxA = ordenMunicipios.indexOf(a['MUNICIPIO']);
+        const idxB = ordenMunicipios.indexOf(b['MUNICIPIO']);
+        if (idxA !== idxB) return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+
+        const cluesA = a['CLUES'] || '';
+        const cluesB = b['CLUES'] || '';
+        if (cluesA !== cluesB) return cluesA.localeCompare(cluesB);
+
+        return (a['_ORDEN_ORIGINAL'] || 0) - (b['_ORDEN_ORIGINAL'] || 0);
+    });
+
+    // 3. MOTOR DE AUDITORÍA Y DIAGNÓSTICO DE SALUD DE DATOS EPIDEMIOLÓGICOS (SIN TOCAR TABLAS BD)
+    log("\n----------------------------------------------------------", "text-slate-500");
+    log("🔍 EJECUTANDO MOTOR DE AUDITORÍA Y COMPROBACIÓN DE SALUD...", "text-indigo-400 font-bold");
+
+    let audit = {
+        cluesDesconocidas: new Set(),
+        variablesSinMapeo: new Set(),
+        valoresNegativos: 0,
+        picosAnomalos: 0,
+        mesesPresentes: new Set(),
+        municipiosUnicos: new Set()
+    };
+
+    const validDictVars = new Set(Object.values(window.DICT_RDA || {}).flat());
+
+    allRows.forEach((r, idx) => {
+        const c = (r['CLUES'] || '').toUpperCase();
+        const v = (r['VARIABLE_SIS'] || '').toUpperCase();
+        const val = parseInt(r['VALOR'], 10) || 0;
+        const m = parseInt(r['MES'], 10);
+
+        if (m >= 1 && m <= 12) audit.mesesPresentes.add(m);
+        if (r['MUNICIPIO']) audit.municipiosUnicos.add(r['MUNICIPIO']);
+
+        // Validar formato de CLUES (ej: QTSSA...)
+        if (c && !c.startsWith('QT') && !c.startsWith('CLUES')) {
+            audit.cluesDesconocidas.add(c);
+        }
+
+        // Detectar si la clave SIS no está mapeada en ninguna vacuna RDA
+        if (v && validDictVars.size > 0 && !validDictVars.has(v)) {
+            audit.variablesSinMapeo.add(v);
+        }
+
+        // Anomalías en valores
+        if (val < 0) audit.valoresNegativos++;
+        if (val > 1500) audit.picosAnomalos++; // Alerta si una sola dosis mensual supera 1,500 aplicadas
+    });
+
+    log(`📈 Meses detectados en el lote : [${Array.from(audit.mesesPresentes).sort((a,b)=>a-b).join(', ')}]`, "text-slate-200");
+    log(`🏛️ Municipios agregados        : [${Array.from(audit.municipiosUnicos).join(', ')}]`, "text-slate-200");
+
+    if (audit.cluesDesconocidas.size > 0) {
+        log(`🚨 ALERTA ESTRUCTURAL: ${audit.cluesDesconocidas.size} CLUES con sintaxis inusual: [${Array.from(audit.cluesDesconocidas).slice(0, 5).join(', ')}]`, "text-rose-400");
+    }
+
+    if (audit.picosAnomalos > 0) {
+        log(`⚠️ ALERTA DE DATOS: Se detectaron ${audit.picosAnomalos} registros con valores >1,500 dosis (posible error de captura).`, "text-amber-400");
+    }
+
+    // 4. Generar CSV String final y Blob (Exclusivo en memoria del navegador)
+    if (allRows.length > 0) {
+        allRows.forEach(r => delete r['_ORDEN_ORIGINAL']);
+        
+        const worksheet = XLSX.utils.json_to_sheet(allRows);
+        const csvString = XLSX.utils.sheet_to_csv(worksheet);
+        
+        _concentratedResultBlob = new Blob(["\ufeff" + csvString], { type: 'text/csv;charset=utf-8;' });
+
+        log("\n==========================================================", "text-emerald-400 font-bold");
+        log(" 🎉 ¡COMPILACIÓN Y ANÁLISIS COMPLETADO CON ÉXITO!", "text-emerald-400 font-bold");
+        log("==========================================================", "text-emerald-400 font-bold");
+        log(`📊 Registros limpios consolidados : ${allRows.length.toLocaleString()}`, "text-slate-100 font-bold");
+        log(`📁 Archivos procesados con éxito  : ${stats.procesados}`, "text-slate-100");
+        log(`🧹 Celdas vacías corregidas a "0"  : ${stats.vaciosCorr.toLocaleString()}`, "text-slate-100");
+        log(`🛡️ Duplicados eliminados          : ${stats.duplicados.toLocaleString()}`, "text-slate-100");
+        log(`🔒 Estado Base de Datos           : 100% Intacta (Procesamiento en Memoria)`, "text-teal-300 font-bold");
+
+        const dlBtn = document.getElementById('btnDownloadConcentrated');
+        if (dlBtn) {
+            dlBtn.style.display = 'inline-flex';
+            dlBtn.style.backgroundColor = '#059669';
+            dlBtn.style.color = '#ffffff';
+        }
+        if (typeof showToast === 'function') showToast("¡Análisis completado! Archivo listo para descarga.", true, 'good');
+    }
+};
+
+window.downloadConcentratedResult = function() {
+    if (!_concentratedResultBlob) return;
+    const url = URL.createObjectURL(_concentratedResultBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `concentrado_total_sis_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
 };

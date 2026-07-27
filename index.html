@@ -4361,23 +4361,69 @@
         <!-- SUB-PANEL 6: MAPEADOR DE VARIABLES SIS -->
         <div id="adminSection_mapeador" class="admin-sub-panel animate-in fade-in slide-in-from-bottom-4 duration-500"
           style="display:none;">
-          <div class="mb-6">
-            <h4 class="text-[18px] font-black text-primary m-0 tracking-tight">Mapeador Dinámico de Variables SIS</h4>
-            <p class="text-[12px] font-bold text-slate-400 mt-1">Configura las claves/variables SIS del CSV asociadas a
-              cada tipo de biológico del sistema para los cálculos del RDA.</p>
+          <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h4 class="text-[18px] font-black text-primary m-0 tracking-tight">Mapeador Dinámico de Variables SIS</h4>
+              <p class="text-[12px] font-bold text-slate-400 mt-1">Configura las claves/variables SIS del CSV asociadas a
+                cada tipo de biológico del sistema para los cálculos del RDA.</p>
+            </div>
+
+            <button type="button" onclick="document.getElementById('modalSisConcentrator').classList.add('show');"
+              style="background-color: #0d9488 !important; color: #ffffff !important; border: none !important;"
+              class="h-10 px-5 rounded-2xl font-extrabold text-xs shadow-md cursor-pointer flex items-center gap-2 transition-all">
+              <span class="material-symbols-rounded text-lg text-white">merge</span>
+              ⚡ Concentrador Masivo Excel (.xlsx / .csv)
+            </button>
           </div>
 
           <div class="bg-surface rounded-3xl border border-outline-variant/30 shadow-sm overflow-hidden">
+            <!-- Botonera Dinámica de Años con Diseño de Pestañas Generales -->
+            <div class="px-6 py-4 bg-slate-100/70 border-b border-outline-variant/20 flex flex-wrap items-center justify-between gap-4">
+              <div class="flex items-center gap-2" id="sisMappingYearTabs">
+                <span class="text-xs font-black text-slate-500 uppercase tracking-widest mr-2">Año de Plantilla:</span>
+                <button type="button" data-anio="2025" onclick="window.switchSisMappingYear(2025)" style="background-color: #e2e8f0 !important; color: #0f172a !important; border: 1px solid #cbd5e1 !important;" class="px-4 py-2 rounded-xl font-extrabold text-xs shadow-sm cursor-pointer transition-all">2025</button>
+                <button type="button" data-anio="2026" onclick="window.switchSisMappingYear(2026)" style="background-color: #0f172a !important; color: #ffffff !important; border: 1px solid #0f172a !important;" class="px-4 py-2 rounded-xl font-black text-xs shadow-md cursor-pointer transition-all">2026</button>
+                <button type="button" data-anio="2027" onclick="window.switchSisMappingYear(2027)" style="background-color: #e2e8f0 !important; color: #0f172a !important; border: 1px solid #cbd5e1 !important;" class="px-4 py-2 rounded-xl font-extrabold text-xs shadow-sm cursor-pointer transition-all">2027</button>
+                <button type="button" onclick="window.addNewSisMappingYear()" style="background-color: #f1f5f9 !important; color: #334155 !important; border: 1px dashed #94a3b8 !important;" class="px-3.5 py-2 rounded-xl font-extrabold text-xs cursor-pointer flex items-center gap-1 transition-all">+ Nuevo Año</button>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="window.openSisDragDropMapperModal()" style="background-color: #6366f1 !important; color: #ffffff !important; border: none !important;" class="px-4 py-2 rounded-xl font-extrabold text-xs cursor-pointer flex items-center gap-2 transition-all shadow-md hover:bg-indigo-600">
+                  <span class="material-symbols-rounded text-sm text-white">drag_indicator</span>
+                  ⚡ Asignador Visual Multi-Selección & Drag & Drop
+                </button>
+
+                <button type="button" onclick="document.getElementById('sisKeyImportInput').click()" style="background-color: #0d9488 !important; color: #ffffff !important; border: none !important;" class="px-4 py-2 rounded-xl font-extrabold text-xs cursor-pointer flex items-center gap-2 transition-all shadow-sm">
+                  <span class="material-symbols-rounded text-sm text-white">upload_file</span>
+                  📥 Cargar Catálogo Federal (.xlsx / .csv)
+                </button>
+                <input type="file" id="sisKeyImportInput" accept=".xlsx,.xls,.csv" style="display:none;" onchange="window.handleImportFederalKeyCatalog(this.files)">
+
+                <button type="button" onclick="window.clearRegistrosSisTable()" style="background-color: #e11d48 !important; color: #ffffff !important; border: none !important;" class="px-4 py-2 rounded-xl font-extrabold text-xs cursor-pointer flex items-center gap-2 transition-all shadow-sm hover:bg-rose-700">
+                  <span class="material-symbols-rounded text-sm text-white">delete_sweep</span>
+                  🗑️ Purgar / Vaciar BD SIS
+                </button>
+              </div>
+            </div>
+
             <div class="p-6 flex flex-wrap items-center justify-between gap-4 border-b border-outline-variant/10">
               <div class="flex flex-wrap items-center gap-4">
-                <span class="text-xs font-bold text-primary/60">Edita la lista de variables separadas por comas o
-                  presionando Enter.</span>
+                <!-- Selector de Vista: Por Biológico Madre vs Por Esquema/Dosis -->
+                <div class="flex items-center gap-1 bg-slate-200/70 p-1 rounded-2xl border border-slate-300" id="adminMappingViewToggle">
+                  <button type="button" id="btnViewMotherBio" onclick="window.switchAdminMappingView('mother')" style="background-color: #0f172a !important; color: #ffffff !important;" class="px-4 py-1.5 rounded-xl font-extrabold text-xs cursor-pointer transition-all shadow-sm">
+                    Vista por Biológico Madre (Total Dosis)
+                  </button>
+                  <button type="button" id="btnViewDoseScheme" onclick="window.switchAdminMappingView('dose')" style="background-color: transparent !important; color: #334155 !important;" class="px-4 py-1.5 rounded-xl font-bold text-xs cursor-pointer transition-all hover:bg-slate-300/60">
+                    Vista por Esquema / Dosis RDA
+                  </button>
+                </div>
+
                 <div style="position: relative; display: inline-block;">
-                  <span class="material-symbols-rounded"
-                    style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 18px;">search</span>
-                  <input type="text" id="sisMappingSearch" placeholder="Buscar biológico..."
-                    style="height: 38px; padding-left: 38px; padding-right: 16px; border-radius: 9999px; border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; font-size: 12px; font-weight: 700; outline: none; width: 240px; transition: all 0.2s;"
-                    oninput="window.renderSisMappingTable(this.value)" />
+                  <input type="text" id="sisMappingSearch" name="search_query_filter_sis_biologicos" placeholder="🔍 Buscar biológico..."
+                    autocomplete="new-password" data-lpignore="true" data-form-type="other"
+                    onfocus="if (this.value.includes('@')) this.value = '';"
+                    oninput="if (this.value.includes('@')) this.value = ''; window.renderSisMappingTable(this.value);"
+                    style="height: 38px; padding: 0 16px; border-radius: 9999px; border: 1px solid #cbd5e1; background: #ffffff; color: #0f172a; font-size: 12px; font-weight: 700; outline: none; width: 220px; transition: all 0.2s;" />
                 </div>
               </div>
               <button id="btnSaveSisMapping" onclick="window.saveSisMappingUi()"
@@ -4713,7 +4759,7 @@
 
           <!-- KPI GRID -->
           <div id="rdaKpiGrid"
-            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; margin-bottom: 32px;">
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px;">
             <!-- Menor 1 -->
             <div class="rda-kpi-card">
               <div class="rda-icon-box" style="background: #f0fdfa; color: #0d9488;">
@@ -5168,6 +5214,50 @@
         </button>
       </div>
 
+      <!-- Hints de Plantilla y Selector de Año -->
+      <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap gap-4 items-center justify-between">
+        <div class="flex items-center gap-2">
+          <label for="csvAnioSelector" class="text-xs font-bold text-slate-700 uppercase tracking-wider">Año destino:</label>
+          <select id="csvAnioSelector" class="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-800 outline-none cursor-pointer">
+            <option value="2026" selected>2026</option>
+            <option value="2025">2025</option>
+            <option value="2027">2027</option>
+          </select>
+        </div>
+
+        <button type="button" 
+          onclick="const h = document.getElementById('csvHelpBox'); h.style.display = h.style.display === 'none' ? 'block' : 'none';"
+          class="text-xs font-bold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-3 py-1.5 rounded-lg border border-teal-200 cursor-pointer flex items-center gap-1">
+          <span class="material-symbols-rounded text-sm">help_outline</span>
+          💡 Plantilla y Formato CSV
+        </button>
+      </div>
+
+      <!-- Caja de Ayuda Desplegable (Hints) -->
+      <div id="csvHelpBox" style="display: none;" class="p-4 bg-teal-50/70 border-b border-teal-200 text-xs text-teal-950">
+        <div class="font-bold mb-1 text-teal-900 flex items-center gap-1">
+          <span class="material-symbols-rounded text-base text-teal-700">info</span> Estructura esperada para el archivo CSV:
+        </div>
+        <p class="mb-2 leading-relaxed text-teal-900/90">
+          • <strong>Para Datos SIS</strong>: Debe contener las columnas <code>CLUES</code>, <code>ANIO</code> (o seleccionar año arriba), <code>MES</code> (1 al 12), <code>VARIABLE_SIS</code> (ej. VAC69, VBC01) y <code>VALOR</code>.<br>
+          • <strong>Para Población Anual</strong>: Debe contener <code>CLUES</code> y al menos una columna de población: <code>POB_MENOR_1</code>, <code>POB_1_ANO</code>, <code>POB_4_ANOS</code> o <code>POB_6_ANOS</code>.
+        </p>
+        <div class="flex items-center gap-3 mt-2">
+          <button type="button" 
+            onclick="const link = document.createElement('a'); link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent('CLUES,POB_MENOR_1,POB_1_ANO,POB_4_ANOS,POB_6_ANOS\nQTSSA000830,229,226,221,0\nQTSSA000842,145,143,140,0'); link.download = 'plantilla_poblacion_modelo.csv'; document.body.appendChild(link); link.click(); document.body.removeChild(link);"
+            style="background-color: #0d9488 !important; color: #ffffff !important; border: none !important;"
+            class="px-3.5 py-1.5 rounded-xl font-extrabold text-xs cursor-pointer flex items-center gap-1.5 shadow-sm transition-all hover:bg-teal-700">
+            <span class="material-symbols-rounded text-sm text-white">download</span> Descargar Modelo Población (.csv)
+          </button>
+          <button type="button" 
+            onclick="const link = document.createElement('a'); link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent('CLUES,ANIO,MES,VARIABLE_SIS,VALOR\nQTSSA000830,2026,1,VAC69,15\nQTSSA000830,2026,1,VBC01,10'); link.download = 'plantilla_sis_modelo.csv'; document.body.appendChild(link); link.click(); document.body.removeChild(link);"
+            style="background-color: #0f172a !important; color: #ffffff !important; border: none !important;"
+            class="px-3.5 py-1.5 rounded-xl font-extrabold text-xs cursor-pointer flex items-center gap-1.5 shadow-sm transition-all hover:bg-slate-800">
+            <span class="material-symbols-rounded text-sm text-white">download</span> Descargar Modelo SIS (.csv)
+          </button>
+        </div>
+      </div>
+
       <!-- Body -->
       <div class="p-6 overflow-y-auto flex-1 min-h-0">
         <div id="csvDropZone"
@@ -5255,6 +5345,236 @@
           class="h-10 px-6 rounded-full bg-primary text-primary-on text-[12px] font-bold shadow-sm transition-all hover:translate-y-[-1px] hover:shadow-md cursor-pointer border-none flex items-center gap-2 opacity-50 pointer-events-none">
           <span class="material-symbols-rounded text-[18px]">check_circle</span>
           Confirmar y Subir
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ MODAL CONCENTRADOR E INSPECTOR MASIVO SIS (EXCEL / CSV) -->
+  <div id="modalSisConcentrator"
+    class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
+    aria-hidden="true">
+    <div class="w-full max-w-[720px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] flex flex-col"
+      style="max-height: 88vh;">
+      <!-- Header -->
+      <div class="flex items-center justify-between p-6 bg-slate-900 text-white border-b border-slate-800">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center">
+            <span class="material-symbols-rounded text-2xl">merge</span>
+          </div>
+          <div>
+            <h3 class="text-base font-black m-0 tracking-tight text-white">Concentrador & Diagnóstico Web SIS</h3>
+            <p class="text-xs text-slate-400 m-0">Selecciona múltiples archivos Excel o CSV para unificarlos y limpiarlos en 1 solo CSV listo para el RDA.</p>
+          </div>
+        </div>
+        <button type="button" style="background-color: #334155 !important; color: #ffffff !important; border: none !important;" class="w-8 h-8 flex items-center justify-center rounded-full transition-colors cursor-pointer"
+          onclick="document.getElementById('modalSisConcentrator').classList.remove('show');">
+          <span class="material-symbols-rounded text-lg text-white">close</span>
+        </button>
+      </div>
+
+      <!-- Configuración & Drop Zone -->
+      <div class="p-6 overflow-y-auto flex-1 space-y-4">
+        <!-- Opciones de saneamiento -->
+        <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div class="flex items-center gap-2">
+            <label for="sisConcTargetSheet" class="font-bold text-slate-700">Hoja Excel:</label>
+            <input type="text" id="sisConcTargetSheet" value="CSV" class="w-20 px-2 py-1 bg-white border border-slate-300 rounded-lg text-center font-black text-slate-800 outline-none">
+          </div>
+          <label class="flex items-center gap-2 font-bold text-teal-800 cursor-pointer">
+            <input type="checkbox" id="sisConcAutoZero" checked class="w-4 h-4 accent-teal-600">
+            <span>Convertir espacios vacíos (" ") a 0 automáticamente</span>
+          </label>
+        </div>
+
+        <!-- Drop Zone -->
+        <div id="sisConcDropZone"
+          class="w-full h-[150px] rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-2 bg-slate-50/50 hover:bg-slate-100/50 hover:border-slate-400 transition-all cursor-pointer"
+          onclick="document.getElementById('sisConcFileInput').click()">
+          <input type="file" id="sisConcFileInput" multiple accept=".xlsx,.xls,.csv" style="display:none;" onchange="window.handleSisConcFilesSelect(this.files)">
+          <span class="material-symbols-rounded text-3xl text-slate-400">note_add</span>
+          <div class="text-center">
+            <h4 class="text-xs font-black text-slate-700 m-0">Selecciona o arrastra tus archivos .xlsx o .csv</h4>
+            <p class="text-[11px] text-slate-400 m-0 mt-0.5">Puedes seleccionar múltiples archivos mensuales simultáneamente</p>
+          </div>
+        </div>
+
+        <!-- Archivos Seleccionados badge list -->
+        <div id="sisConcFileList" class="flex flex-wrap gap-2 text-xs font-bold text-slate-600"></div>
+
+        <!-- Consola Log Diagnóstico -->
+        <div class="bg-slate-950 rounded-2xl p-4 font-mono text-[11px] text-slate-200 h-[180px] overflow-y-auto space-y-1 shadow-inner border border-slate-800" id="sisConcConsole">
+          <div class="text-slate-500">// Diagnóstico y compilación de salud SIS... Lista para iniciar.</div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="p-6 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3">
+        <button type="button" id="btnDownloadConcentrated" style="display:none; background-color: #059669 !important; color: #ffffff !important; border: none !important;" onclick="window.downloadConcentratedResult()"
+          class="h-10 px-5 rounded-full font-extrabold text-xs shadow-md hover:bg-emerald-700 cursor-pointer flex items-center gap-2 transition-all">
+          <span class="material-symbols-rounded text-lg text-white">download</span>
+          Descargar Concentrado (.csv)
+        </button>
+
+        <div class="flex items-center gap-2 ml-auto">
+          <button type="button" style="background-color: #e2e8f0 !important; color: #0f172a !important; border: 1px solid #cbd5e1 !important;" class="h-10 px-5 rounded-full text-xs font-bold cursor-pointer"
+            onclick="document.getElementById('modalSisConcentrator').classList.remove('show');">Cerrar</button>
+          <button type="button" id="btnRunSisConcentrator" onclick="window.runWebSisConcentrator()"
+            style="background-color: #0f172a !important; color: #ffffff !important; border: none !important;"
+            class="h-10 px-6 rounded-full font-black text-xs shadow-md cursor-pointer flex items-center gap-2 transition-all">
+            <span class="material-symbols-rounded text-lg text-teal-400">bolt</span>
+            Compilar & Limpiar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ MODAL INTERACTIVO DRAG & DROP PARA ASIGNACIÓN VISUAL DE CLAVES SIS -->
+  <!-- ✅ MODAL INTERACTIVO DRAG & DROP PARA ASIGNACIÓN VISUAL DE CLAVES SIS -->
+  <div id="modalSisDragDropMapper"
+    class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-900/60 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible overscroll-contain"
+    aria-hidden="true">
+    <div class="w-full max-w-[1100px] bg-white border border-slate-200 rounded-[28px] overflow-hidden shadow-2xl flex flex-col"
+      style="height: 88vh;">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800" style="background-color: #0f172a !important; color: #ffffff !important;">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background-color: rgba(99, 102, 241, 0.2) !important; color: #818cf8 !important;">
+            <span class="material-symbols-rounded text-2xl" style="color: #818cf8 !important;">drag_indicator</span>
+          </div>
+          <div>
+            <h3 class="text-base font-black m-0 tracking-tight flex items-center gap-2" style="color: #ffffff !important;">
+              Asignación Visual & Drag & Drop de Claves SIS
+              <span id="dragDropYearBadge" class="px-2.5 py-0.5 rounded-full text-xs font-black" style="background-color: #6366f1 !important; color: #ffffff !important;">2025</span>
+            </h3>
+            <p class="text-xs m-0" style="color: #94a3b8 !important;">Arrastra las claves desde el panel de Claves Disponibles o usa la asignación por lote.</p>
+          </div>
+        </div>
+        <button type="button" style="background-color: #334155 !important; color: #ffffff !important; border: none !important;" class="w-8 h-8 flex items-center justify-center rounded-full transition-colors cursor-pointer"
+          onclick="window.closeModalAndUnlockBody('modalSisDragDropMapper');">
+          <span class="material-symbols-rounded text-lg text-white">close</span>
+        </button>
+      </div>
+
+      <!-- Navigation Step Header: Paso 1 vs Paso 2 -->
+      <div class="px-6 py-2 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
+        <div class="flex items-center gap-2" id="dragDropStepTabs">
+          <button type="button" id="btnStep1" onclick="window.switchDragDropStep(1)" style="background-color: #0f172a !important; color: #ffffff !important;" class="px-4 py-1.5 rounded-xl font-black text-xs cursor-pointer shadow-sm">
+            Paso 1: Mapeo por Biológico Madre
+          </button>
+          <button type="button" id="btnStep2" onclick="window.switchDragDropStep(2)" style="background-color: #e2e8f0 !important; color: #334155 !important;" class="px-4 py-1.5 rounded-xl font-bold text-xs cursor-pointer hover:bg-slate-300">
+            Paso 2: Asignación por Dosis / Esquema
+          </button>
+        </div>
+        <div class="text-[11px] font-bold text-slate-500" id="dragDropStepHint">
+          Asigna claves del catálogo federal a la Vacuna Madre (ej: Hexavalente, Neumococo).
+        </div>
+      </div>
+
+      <!-- Main Layout: Left Palette (Disponibles) | Right Targets (Biológicos) -->
+      <div class="flex-1 flex overflow-hidden bg-slate-50">
+        <!-- Panel Izquierdo: Claves Disponibles extraídas del Catálogo Federal -->
+        <div class="w-[340px] bg-white border-r border-slate-200 flex flex-col p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 m-0 flex items-center gap-1.5">
+              <span class="material-symbols-rounded text-base text-indigo-600">style</span>
+              Claves Disponibles
+            </h4>
+            <span id="dragDropAvailableCount" class="px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-extrabold text-[11px]">0</span>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <input type="text" id="dragDropSearchKey" placeholder="🔍 Filtrar clave..."
+              oninput="window.filterDragDropKeys(this.value)"
+              class="flex-1 h-9 px-3 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none">
+            <button type="button" onclick="window.toggleSelectAllAvailable()" class="h-9 px-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold text-[11px] cursor-pointer border-none" title="Seleccionar Todo">
+              Todo
+            </button>
+          </div>
+
+          <!-- Barra de Acciones Masivas para Selección Múltiple -->
+          <div id="batchActionToolbar" class="hidden p-2 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-between text-xs">
+            <span class="font-extrabold text-indigo-900" id="selectedCountLabel">0 selec.</span>
+            <button type="button" onclick="window.openBatchAssignModal()" style="background-color: #4f46e5 !important; color: #ffffff !important;" class="px-3 py-1 rounded-lg text-xs font-black cursor-pointer border-none flex items-center gap-1 shadow-sm">
+              <span class="material-symbols-rounded text-sm">double_arrow</span> Mover Lote
+            </button>
+          </div>
+
+          <!-- Drop zone contenedor de fichas arrastrables -->
+          <div id="dragDropAvailableContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 overscroll-contain">
+            <!-- Inyectado por JS -->
+          </div>
+        </div>
+
+        <!-- Panel Derecho: Vacunas & Dosis Destino -->
+        <div class="flex-1 p-6 overflow-y-auto space-y-4 overscroll-contain">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-xs font-black uppercase tracking-wider text-slate-700 m-0" id="rightPanelTitle">Estructura de Biológicos RDA</h4>
+            <div class="text-xs font-bold text-slate-500">Arrastra hacia la casilla correspondiente o usa selección por lote</div>
+          </div>
+
+          <div id="dragDropTargetsContainer" class="space-y-4">
+            <!-- Inyectado por JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-6 py-4 bg-white border-t border-slate-200 flex items-center justify-between">
+        <div class="text-xs font-bold text-slate-500">
+          <span class="text-teal-600 font-black">💡 Sugerencia:</span> Al terminar, presiona "Aplicar y Guardar" para registrar las reglas de este año en Supabase.
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button type="button" style="background-color: #e2e8f0 !important; color: #0f172a !important; border: 1px solid #cbd5e1 !important;" class="h-10 px-5 rounded-full text-xs font-bold cursor-pointer"
+            onclick="window.closeModalAndUnlockBody('modalSisDragDropMapper');">Cancelar</button>
+          <button type="button" onclick="window.saveDragDropMapperResult()" style="background-color: #4f46e5 !important; color: #ffffff !important; border: none !important;"
+            class="h-10 px-6 rounded-full font-black text-xs shadow-md cursor-pointer flex items-center gap-2 transition-all">
+            <span class="material-symbols-rounded text-lg text-white">save</span>
+            Aplicar y Guardar Mapeo
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ MODAL SELECCIÓN PERSONALIZADA PARA ASIGNACIÓN POR LOTE DE CLAVES -->
+  <div id="modalSisBatchAssign"
+    class="fixed inset-0 z-[2100] flex items-center justify-center p-4 bg-slate-900/70 opacity-0 invisible transition-all duration-200 [&.show]:opacity-100 [&.show]:visible overscroll-contain"
+    aria-hidden="true">
+    <div class="w-full max-w-[480px] bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-2xl flex flex-col">
+      <div class="flex items-center justify-between px-6 py-4 bg-slate-900 text-white">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-rounded text-indigo-400 text-xl">move_to_inbox</span>
+          <h3 class="text-sm font-black m-0 tracking-tight text-white">Asignar Lote de Claves</h3>
+        </div>
+        <button type="button" style="background-color: #334155 !important; color: #ffffff !important;" class="w-7 h-7 flex items-center justify-center rounded-full cursor-pointer border-none"
+          onclick="document.getElementById('modalSisBatchAssign').classList.remove('show');">
+          <span class="material-symbols-rounded text-sm text-white">close</span>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-2xl text-xs text-indigo-900 font-extrabold flex items-center gap-2">
+          <span class="material-symbols-rounded text-lg text-indigo-600">checklist</span>
+          <span id="batchAssignSummaryText">Has seleccionado 0 clave(s).</span>
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-xs font-black text-slate-700 uppercase tracking-wider">Selecciona el Biológico Destino:</label>
+          <select id="batchAssignBioSelect" class="w-full h-11 px-4 bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-800 outline-none cursor-pointer">
+            <!-- Inyectado por JS -->
+          </select>
+        </div>
+      </div>
+
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
+        <button type="button" style="background-color: #e2e8f0 !important; color: #0f172a !important;" class="h-9 px-4 rounded-xl text-xs font-bold cursor-pointer border-none"
+          onclick="document.getElementById('modalSisBatchAssign').classList.remove('show');">Cancelar</button>
+        <button type="button" onclick="window.confirmBatchAssign()" style="background-color: #4f46e5 !important; color: #ffffff !important;"
+          class="h-9 px-5 rounded-xl text-xs font-black shadow-md cursor-pointer border-none flex items-center gap-1.5 transition-all">
+          Confirmar Asignación
         </button>
       </div>
     </div>

@@ -10,10 +10,10 @@ const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','A
 // Definición de KPIs para cada uno de los 5 esquemas de vacunación
 const SCHEME_KPIS = {
     basico: [
-        { label: 'Menores de 1 Año', icon: 'child_care', bg: '#f0fdfa', fg: '#0d9488', key: 'menor1' },
-        { label: 'Niños de 1 Año', icon: 'face', bg: '#f0f9ff', fg: '#0284c7', key: 'uno' },
-        { label: 'Niños de 4 Años', icon: 'school', bg: '#f5f3ff', fg: '#7c3aed', key: 'cuatro' },
-        { label: 'Meta Poblacional', icon: 'groups', bg: '#fff7ed', fg: '#ea580c', key: 'pob' }
+        { label: 'Menores de 1 Año (<1)', icon: 'child_care', bg: '#f0fdfa', fg: '#0d9488', key: 'menor1' },
+        { label: 'Niños de 1 Año (1)', icon: 'face', bg: '#f0f9ff', fg: '#0284c7', key: 'uno' },
+        { label: 'Niños de 4 Años (4)', icon: 'school', bg: '#f5f3ff', fg: '#7c3aed', key: 'cuatro' },
+        { label: 'Desglose Poblacional Meta', icon: 'groups', bg: '#f8fafc', fg: '#475569', key: 'pob' }
     ],
     adultos: [
         { label: 'Hepatitis B', icon: 'vaccines', bg: '#f0fdfa', fg: '#0d9488', key: 'adol_hb' },
@@ -52,47 +52,47 @@ function initRDADashboard() {
         // Estilos dedicados para anular cualquier regla global e implementar un diseño Premium
         const style = document.createElement('style');
         style.innerHTML = `
-            #rdaFilterEsquema {
+            #rdaFilterAnio, #rdaFilterTemporalidad, #rdaFilterEsquema, #rdaFilterMunicipio, #rdaFilterUnidad {
                 display: inline-block !important;
-                width: 290px !important;
-                height: 42px !important;
-                padding: 0 40px 0 16px !important;
-                border-radius: 12px !important;
-                border: 1px solid #cbd5e1 !important;
+                width: auto !important;
+                max-width: max-content !important;
+                height: 44px !important;
+                min-height: 44px !important;
+                max-height: 44px !important;
+                padding: 0 36px 0 14px !important;
+                border-radius: 14px !important;
+                border: 1px solid rgba(203, 213, 225, 0.8) !important;
                 background-color: #ffffff !important;
                 color: #0f172a !important;
                 font-size: 13px !important;
                 font-weight: 700 !important;
                 outline: none !important;
                 cursor: pointer !important;
-                box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02) !important;
-                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), inset 0 -1.5px 0 rgba(15, 23, 42, 0.08) !important;
+                transition: all 0.2s ease !important;
                 -webkit-appearance: none !important;
                 appearance: none !important;
                 background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23475569'%3e%3cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3e%3c/svg%3e") !important;
                 background-repeat: no-repeat !important;
-                background-position: right 14px center !important;
-                background-size: 18px !important;
+                background-position: right 12px center !important;
+                background-size: 16px !important;
             }
-            #rdaFilterEsquema:hover {
+            #rdaFilterAnio:hover, #rdaFilterTemporalidad:hover, #rdaFilterEsquema:hover, #rdaFilterMunicipio:hover, #rdaFilterUnidad:hover {
                 border-color: #94a3b8 !important;
                 background-color: #f8fafc !important;
-                box-shadow: 0 3px 6px rgba(15, 23, 42, 0.06) !important;
             }
-            #rdaFilterEsquema:focus {
+            #rdaFilterAnio:focus, #rdaFilterTemporalidad:focus, #rdaFilterEsquema:focus, #rdaFilterMunicipio:focus, #rdaFilterUnidad:focus {
                 border-color: #0ea5e9 !important;
-                background-color: #ffffff !important;
-                box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.12) !important;
+                box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15) !important;
             }
             #rdaViewToggleContainer {
                 display: inline-flex;
                 align-items: center !important;
                 padding: 3px !important;
                 box-sizing: border-box !important;
-                height: 42px !important;
-                margin-left: 12px !important;
-                border-radius: 12px !important;
-                border: 1px solid #cbd5e1 !important;
+                height: 44px !important;
+                border-radius: 14px !important;
+                border: 1px solid rgba(203, 213, 225, 0.8) !important;
                 background: #f1f5f9 !important;
                 box-shadow: inset 0 1.5px 3px rgba(15, 23, 42, 0.05) !important;
                 transition: all 0.25s ease !important;
@@ -103,9 +103,9 @@ function initRDADashboard() {
             #rdaViewToggleContainer button {
                 box-sizing: border-box !important;
                 min-height: 0 !important;
-                height: 34px !important;
-                padding: 0 18px !important;
-                border-radius: 9px !important;
+                height: 36px !important;
+                padding: 0 16px !important;
+                border-radius: 11px !important;
                 border: 1px solid transparent !important;
                 font-family: inherit !important;
                 font-size: 12px !important;
@@ -132,40 +132,6 @@ function initRDADashboard() {
             #rdaViewToggleContainer button.inactive:hover {
                 color: #0f172a !important;
                 background: rgba(15, 23, 42, 0.02) !important;
-            }
-            #rdaFilterMunicipio, #rdaFilterUnidad {
-                display: inline-block;
-                width: auto !important;
-                min-width: 220px !important;
-                max-width: 280px !important;
-                height: 42px !important;
-                padding: 0 40px 0 16px !important;
-                border-radius: 12px !important;
-                border: 1px solid #cbd5e1 !important;
-                background-color: #ffffff !important;
-                color: #0f172a !important;
-                font-size: 13px !important;
-                font-weight: 700 !important;
-                outline: none !important;
-                cursor: pointer !important;
-                box-shadow: 0 2px 4px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02) !important;
-                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
-                -webkit-appearance: none !important;
-                appearance: none !important;
-                background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23475569'%3e%3cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3e%3c/svg%3e") !important;
-                background-repeat: no-repeat !important;
-                background-position: right 14px center !important;
-                background-size: 18px !important;
-            }
-            #rdaFilterMunicipio:hover, #rdaFilterUnidad:hover {
-                border-color: #94a3b8 !important;
-                background-color: #f8fafc !important;
-                box-shadow: 0 3px 6px rgba(15, 23, 42, 0.06) !important;
-            }
-            #rdaFilterMunicipio:focus, #rdaFilterUnidad:focus {
-                border-color: #0ea5e9 !important;
-                background-color: #ffffff !important;
-                box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.12) !important;
             }
             #rdaTableContainer {
                 overflow: auto !important;
@@ -229,6 +195,55 @@ function initRDADashboard() {
         `;
         document.head.appendChild(style);
 
+        // Selector de Año Base
+        const selAnio = document.createElement('select');
+        selAnio.id = 'rdaFilterAnio';
+        selAnio.innerHTML = `
+            <option value="2026" selected>Año 2026</option>
+            <option value="2025">Año 2025</option>
+            <option value="2027">Año 2027</option>
+        `;
+        selAnio.addEventListener('change', () => {
+            _rdaCache.anio = parseInt(selAnio.value, 10);
+            _rdaCache.unidades = null; // Invalidate cache for new year fetch
+            updateComparativeOptionLabel();
+            loadAndRender();
+        });
+        leftGroup.appendChild(selAnio);
+
+        // Selector de Temporalidad (Cierre Acumulado / Mes Específico / Trimestre)
+        const selTemp = document.createElement('select');
+        selTemp.id = 'rdaFilterTemporalidad';
+        selTemp.innerHTML = `
+            <option value="0" selected>⚡ Cierre Acumulado a la Fecha</option>
+            <optgroup label="Corte por Mes Específico">
+                <option value="1">Mes: Enero</option>
+                <option value="2">Mes: Febrero</option>
+                <option value="3">Mes: Marzo</option>
+                <option value="4">Mes: Abril</option>
+                <option value="5">Mes: Mayo</option>
+                <option value="6">Mes: Junio</option>
+                <option value="7">Mes: Julio</option>
+                <option value="8">Mes: Agosto</option>
+                <option value="9">Mes: Septiembre</option>
+                <option value="10">Mes: Octubre</option>
+                <option value="11">Mes: Noviembre</option>
+                <option value="12">Mes: Diciembre</option>
+            </optgroup>
+            <optgroup label="Corte por Trimestre">
+                <option value="T1">1er Trimestre (Ene - Mar)</option>
+                <option value="T2">2do Trimestre (Abr - Jun)</option>
+                <option value="T3">3er Trimestre (Jul - Sep)</option>
+                <option value="T4">4to Trimestre (Oct - Dic)</option>
+            </optgroup>
+        `;
+        selTemp.addEventListener('change', () => {
+            _rdaState.corteTemporal = selTemp.value;
+            _rdaCache.unidades = null; // Invalidate cache to fetch exact month cut
+            loadAndRender();
+        });
+        leftGroup.appendChild(selTemp);
+
         // Selector de Esquemas moderno y limpio
         const sel = document.createElement('select');
         sel.id = 'rdaFilterEsquema';
@@ -239,8 +254,22 @@ function initRDADashboard() {
             <option value="embarazadas">Esquema Embarazadas (Tdpa, VSR)</option>
             <option value="invernal">Temporada Invernal (Influenza, COVID)</option>
             <option value="adicionales">Biológicos Adicionales (Varicela, Hep A)</option>
+            <option value="comparativa_multianual" id="optComparativeDynamic">Comparativa Multianual (2025 vs 2026)</option>
             <option value="meta_logro_influenza">Evaluación Meta-Logro Influenza</option>
         `;
+        function updateComparativeOptionLabel() {
+            const opt = document.getElementById('optComparativeDynamic');
+            if (opt) {
+                const cur = parseInt(selAnio.value, 10);
+                let base = cur - 1;
+                let comp = cur;
+                if (cur <= 2025) {
+                    base = 2025;
+                    comp = 2026;
+                }
+                opt.textContent = `Comparativa Multianual (${base} vs ${comp})`;
+            }
+        }
         sel.addEventListener('change', () => {
             _rdaState.esquema = sel.value;
             renderDashboard();
@@ -380,6 +409,19 @@ async function fetchRDAData() {
     let maxMes = parseInt(maxMesRpc, 10);
     if (isNaN(maxMes) || maxMes < 1) maxMes = 1;
     if (maxMes > maxAllowedMes) maxMes = maxAllowedMes;
+
+    // Si hay un corte temporal específico seleccionado (Mes 1..12 o Trimestre T1..T4)
+    const corte = _rdaState.corteTemporal;
+    if (corte && corte !== '0') {
+        if (corte === 'T1') maxMes = 3;
+        else if (corte === 'T2') maxMes = 6;
+        else if (corte === 'T3') maxMes = 9;
+        else if (corte === 'T4') maxMes = 12;
+        else {
+            const m = parseInt(corte, 10);
+            if (!isNaN(m) && m >= 1 && m <= 12) maxMes = m;
+        }
+    }
 
     // 2. Consultar el stored procedure de Supabase (pre-agregación en BD)
     const { data: indicators, error: indError } = await window.supabase
@@ -557,6 +599,11 @@ function renderDashboard() {
         return;
     }
 
+    if (esquema === 'comparativa_multianual') {
+        renderComparativaMultianual(muniFilter, uniFilter);
+        return;
+    }
+
     let fUnits = unidades;
     if (muniFilter) fUnits = fUnits.filter(u => (u.municipio || '').toUpperCase().trim() === muniFilter.toUpperCase().trim());
     if (uniFilter) fUnits = fUnits.filter(u => u.clues === uniFilter);
@@ -583,9 +630,9 @@ function renderDashboard() {
 
     // Calcular agregaciones a nivel de filtro actual
     let agg = {
-        pob_menor_1: 0, pob_1_ano: 0, pob_4_anos: 0, pob_total: 0,
+        pob_menor_1: 0, pob_1_ano: 0, pob_4_anos: 0, pob_6_anos: 0, pob_total: 0,
         bcg_dosis: 0, hepb_0_7_dosis: 0, hexa_3_dosis: 0, rota_2_dosis: 0, neumo_2_dosis: 0,
-        hexa_ref_dosis: 0, neumo_ref_dosis: 0, srp_2_dosis: 0, dpt_4_dosis: 0,
+        hexa_ref_dosis: 0, neumo_ref_dosis: 0, srp_2_dosis: 0, dpt_4_dosis: 0, srp_6_dosis: 0,
         adol_hb: 0, adol_sr: 0, adol_vph: 0, adol_td: 0, adol_tdpa: 0,
         am_neumo13: 0, am_neumo20: 0, am_td: 0,
         emb_tdpa: 0, emb_vsr: 0,
@@ -601,6 +648,7 @@ function renderDashboard() {
         agg.pob_menor_1 += u.pob_menor_1 || 0;
         agg.pob_1_ano += u.pob_1_ano || 0;
         agg.pob_4_anos += u.pob_4_anos || 0;
+        agg.pob_6_anos += u.pob_6_anos || 0;
 
         agg.bcg_dosis += u.bcg_dosis || 0;
         agg.hepb_0_7_dosis += u.hepb_0_7_dosis || 0;
@@ -612,6 +660,7 @@ function renderDashboard() {
         agg.neumo_ref_dosis += u.neumo_ref_dosis || 0;
         agg.srp_2_dosis += u.srp_2_dosis || 0;
         agg.dpt_4_dosis += u.dpt_4_dosis || 0;
+        agg.srp_6_dosis += u.srp_6_dosis || 0;
 
         agg.adol_hb += u.adol_hb || 0;
         agg.adol_sr += u.adol_sr || 0;
@@ -642,20 +691,23 @@ function renderDashboard() {
         agg.srp_1_dosis += u.srp_1_dosis || 0;
     }
 
-    agg.pob_total = agg.pob_menor_1 + agg.pob_1_ano + agg.pob_4_anos;
+    agg.pob_total = (agg.pob_menor_1 || 0) + (agg.pob_1_ano || 0) + (agg.pob_4_anos || 0) + (_rdaCache.anio === 2025 ? (agg.pob_6_anos || 0) : 0);
 
     // Coberturas globales
     const factorMenor1 = (agg.pob_menor_1 * 0.0833) * maxMes;
     const factorUno = (agg.pob_1_ano * 0.0833) * maxMes;
     const factorCuatro = (agg.pob_4_anos * 0.0833) * maxMes;
+    const factorSeis = ((agg.pob_6_anos || agg.pob_4_anos) * 0.0833) * maxMes;
 
     const sumaDosisMenor1 = agg.bcg_dosis + agg.hepb_0_7_dosis + agg.hexa_3_dosis + agg.rota_2_dosis + agg.neumo_2_dosis;
     const sumaDosisUno = agg.hexa_ref_dosis + agg.neumo_ref_dosis + agg.srp_2_dosis;
     const sumaDosisCuatro = agg.dpt_4_dosis;
+    const sumaDosisSeis = agg.srp_6_dosis || 0;
 
     agg.cobertura_menor1 = factorMenor1 > 0 ? Math.round((((sumaDosisMenor1 / 4.0) / factorMenor1) * 100) * 10) / 10 : 0;
     agg.cobertura_uno = factorUno > 0 ? Math.round((((sumaDosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
     agg.cobertura_cuatro = factorCuatro > 0 ? Math.round(((sumaDosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
+    agg.cobertura_seis = factorSeis > 0 ? Math.round(((sumaDosisSeis / factorSeis) * 100) * 10) / 10 : 0;
 
     // Coberturas por Biológico individual (Fórmulas RDA Oficiales)
     agg.cobertura_bcg = factorMenor1 > 0 ? Math.round(((agg.bcg_dosis) / factorMenor1 * 100) * 10) / 10 : 0;
@@ -686,8 +738,10 @@ function renderDashboard() {
         renderDoughnut(agg, esquema);
     }
     renderBarChart(fUnits, muniFilter, esquema);
-    renderTable(fUnits, esquema);
+    renderTable(fUnits, esquema, agg);
 }
+
+
 
 // Constructor Dinámico de KPIs
 function renderKPIs(agg, esquema) {
@@ -695,29 +749,63 @@ function renderKPIs(agg, esquema) {
     if (!container) return;
     container.innerHTML = '';
 
-    const list = SCHEME_KPIS[esquema] || SCHEME_KPIS.basico;
+    let list = [...(SCHEME_KPIS[esquema] || SCHEME_KPIS.basico)];
+    if (esquema === 'basico' && _rdaCache.anio === 2025) {
+        // Insertar tarjeta de KPI Niños de 6 Años antes de la tarjeta de Población
+        list.splice(3, 0, { label: 'Niños de 6 Años (6)', icon: 'school', bg: '#fff1f2', fg: '#e11d48', key: 'seis' });
+    }
     
     list.forEach(k => {
         let valText = '';
         let subText = '';
         let valNum = 0;
-        
+        let isPobCard = (k.key === 'pob');
+        let cardBg = '#ffffff';
+        let valColor = '#0f172a';
+        let badgeHtml = '';
+
         if (esquema === 'basico') {
             if (k.key === 'menor1') {
                 valNum = agg.cobertura_menor1;
                 valText = `${valNum}%`;
-                subText = `${(agg.bcg_dosis + agg.hepb_0_7_dosis + agg.hexa_3_dosis + agg.rota_2_dosis + agg.neumo_2_dosis).toLocaleString('es-MX')} dosis`;
+                const sumDosis = agg.bcg_dosis + agg.hepb_0_7_dosis + agg.hexa_3_dosis + agg.rota_2_dosis + agg.neumo_2_dosis;
+                subText = `${sumDosis.toLocaleString('es-MX')} dosis | Pob: ${agg.pob_menor_1.toLocaleString('es-MX')}`;
             } else if (k.key === 'uno') {
                 valNum = agg.cobertura_uno;
                 valText = `${valNum}%`;
-                subText = `${(agg.hexa_ref_dosis + agg.neumo_ref_dosis + agg.srp_2_dosis).toLocaleString('es-MX')} dosis`;
+                const sumDosis = agg.hexa_ref_dosis + agg.neumo_ref_dosis + agg.srp_2_dosis;
+                subText = `${sumDosis.toLocaleString('es-MX')} dosis | Pob: ${agg.pob_1_ano.toLocaleString('es-MX')}`;
             } else if (k.key === 'cuatro') {
                 valNum = agg.cobertura_cuatro;
                 valText = `${valNum}%`;
-                subText = `${agg.dpt_4_dosis.toLocaleString('es-MX')} dosis`;
+                subText = `${agg.dpt_4_dosis.toLocaleString('es-MX')} dosis | Pob: ${agg.pob_4_anos.toLocaleString('es-MX')}`;
+            } else if (k.key === 'seis') {
+                valNum = agg.cobertura_seis;
+                valText = `${valNum}%`;
+                subText = `${(agg.srp_6_dosis || 0).toLocaleString('es-MX')} dosis | Pob: ${(agg.pob_6_anos || 0).toLocaleString('es-MX')}`;
             } else if (k.key === 'pob') {
                 valText = agg.pob_total.toLocaleString('es-MX');
                 subText = `${agg.total_unidades} unidades médicas`;
+            }
+
+            // Semaforización sobria y moderna (Health Analytics Standard)
+            if (!isPobCard) {
+                if (valNum >= 95) {
+                    valColor = '#0f766e'; // Teal / Verde Corporativo Profundo
+                    badgeHtml = `<span style="display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:6px; background:#f0fdf4; color:#166534; font-size:10px; font-weight:800; border:1px solid #bbf7d0;">
+                        <span class="material-symbols-rounded" style="font-size:12px;">check_circle</span> Meta Alcanzada
+                    </span>`;
+                } else if (valNum >= 75) {
+                    valColor = '#b45309'; // Ámbar / Mostaza sobrio
+                    badgeHtml = `<span style="display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:6px; background:#fffbeb; color:#92400e; font-size:10px; font-weight:800; border:1px solid #fef3c7;">
+                        <span class="material-symbols-rounded" style="font-size:12px;">warning</span> Avance Regular
+                    </span>`;
+                } else {
+                    valColor = '#be123c'; // Carmín / Rojo Institucional
+                    badgeHtml = `<span style="display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:6px; background:#fff1f2; color:#9f1239; font-size:10px; font-weight:800; border:1px solid #fecdd3;">
+                        <span class="material-symbols-rounded" style="font-size:12px;">error</span> Requiere Atencion
+                    </span>`;
+                }
             }
         } else {
             if (k.key === 'pob') {
@@ -729,23 +817,58 @@ function renderKPIs(agg, esquema) {
                 subText = 'dosis aplicadas';
             }
         }
-        
-        // Semaforización exclusiva para coberturas de esquema básico
-        let valColor = '#0f172a';
-        if (esquema === 'basico' && k.key !== 'pob') {
-            valColor = valNum >= 80 ? '#059669' : valNum >= 50 ? '#d97706' : '#dc2626';
-        }
 
         const card = document.createElement('div');
         card.className = 'rda-kpi-card';
-        card.innerHTML = `
-            <div class="rda-icon-box" style="background: ${k.bg}; color: ${k.fg};">
-                <span class="material-symbols-rounded premium-anim-icon">${k.icon}</span>
-            </div>
-            <div style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px;">${k.label}</div>
-            <div style="font-size: 36px; font-weight: 900; color: ${valColor}; letter-spacing: -0.04em; line-height: 1.1;">${valText}</div>
-            <div style="font-size: 13px; font-weight: 700; color: #64748b; margin-top: 8px;">${subText}</div>
-        `;
+        card.style.background = cardBg;
+
+        if (isPobCard && esquema === 'basico') {
+            const has6A = (_rdaCache.anio === 2025);
+            const gridCols = has6A ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)';
+            // Tarjeta especial para desglose de población meta por edad
+            card.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    <div class="rda-icon-box" style="background: ${k.bg}; color: ${k.fg}; width: 36px; height: 36px; border-radius: 10px;">
+                        <span class="material-symbols-rounded" style="font-size:20px;">groups</span>
+                    </div>
+                    <span style="font-size: 10px; font-weight: 800; color: #64748b; background: #f1f5f9; padding: 2px 8px; border-radius: 6px; border: 1px solid #e2e8f0;">0-8 Años</span>
+                </div>
+                <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Población Meta Total</div>
+                <div style="font-size: 26px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em; margin-bottom: 10px;">${valText} <span style="font-size: 12px; font-weight: 700; color: #94a3b8;">hab.</span></div>
+                
+                <div style="display: grid; grid-template-columns: ${gridCols}; gap: 4px; border-top: 1px solid #f1f5f9; padding-top: 8px; margin-top: 4px;">
+                    <div style="background: #f8fafc; padding: 4px 6px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0;">
+                        <div style="font-size: 9px; font-weight: 800; color: #0d9488;"><1 Año</div>
+                        <div style="font-size: 11px; font-weight: 900; color: #0f172a;">${agg.pob_menor_1.toLocaleString('es-MX')}</div>
+                    </div>
+                    <div style="background: #f8fafc; padding: 4px 6px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0;">
+                        <div style="font-size: 9px; font-weight: 800; color: #0284c7;">1 Año</div>
+                        <div style="font-size: 11px; font-weight: 900; color: #0f172a;">${agg.pob_1_ano.toLocaleString('es-MX')}</div>
+                    </div>
+                    <div style="background: #f8fafc; padding: 4px 6px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0;">
+                        <div style="font-size: 9px; font-weight: 800; color: #7c3aed;">4 Años</div>
+                        <div style="font-size: 11px; font-weight: 900; color: #0f172a;">${agg.pob_4_anos.toLocaleString('es-MX')}</div>
+                    </div>
+                    ${has6A ? `
+                    <div style="background: #f8fafc; padding: 4px 6px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0;">
+                        <div style="font-size: 9px; font-weight: 800; color: #e11d48;">6 Años</div>
+                        <div style="font-size: 11px; font-weight: 900; color: #0f172a;">${(agg.pob_6_anos || 0).toLocaleString('es-MX')}</div>
+                    </div>` : ''}
+                </div>
+            `;
+        } else {
+            card.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                    <div class="rda-icon-box" style="background: ${k.bg}; color: ${k.fg}; width: 36px; height: 36px; border-radius: 10px;">
+                        <span class="material-symbols-rounded" style="font-size:20px;">${k.icon}</span>
+                    </div>
+                    ${badgeHtml}
+                </div>
+                <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">${k.label}</div>
+                <div style="font-size: 32px; font-weight: 900; color: ${valColor}; letter-spacing: -0.04em; line-height: 1.1;">${valText}</div>
+                <div style="font-size: 12px; font-weight: 700; color: #64748b; margin-top: 8px;">${subText}</div>
+            `;
+        }
         container.appendChild(card);
     });
 }
@@ -1200,16 +1323,16 @@ function renderBarChart(fUnits, muniFilter, esquema) {
             if (titleElTotal) titleElTotal.textContent = muniFilter ? 'Avance Municipal Total' : 'Avance Jurisdiccional Total';
             
             let tAgg = {
-                pob_menor_1: 0, pob_1_ano: 0, pob_4_anos: 0, bcg_dosis: 0, hepb_0_7_dosis: 0, hexa_3_dosis: 0, rota_2_dosis: 0, neumo_2_dosis: 0,
-                hexa_ref_dosis: 0, neumo_ref_dosis: 0, srp_2_dosis: 0, dpt_4_dosis: 0, adol_hb: 0, adol_sr: 0, adol_vph: 0, adol_td: 0, adol_tdpa: 0,
+                pob_menor_1: 0, pob_1_ano: 0, pob_4_anos: 0, pob_6_anos: 0, bcg_dosis: 0, hepb_0_7_dosis: 0, hexa_3_dosis: 0, rota_2_dosis: 0, neumo_2_dosis: 0,
+                hexa_ref_dosis: 0, neumo_ref_dosis: 0, srp_2_dosis: 0, dpt_4_dosis: 0, srp_6_dosis: 0, adol_hb: 0, adol_sr: 0, adol_vph: 0, adol_td: 0, adol_tdpa: 0,
                 am_neumo13: 0, am_neumo20: 0, am_td: 0, emb_tdpa: 0, emb_vsr: 0, inv_influenza: 0, inv_covid: 0,
                 varicela: 0, hepatitis_a: 0,
                 hexa_1_dosis: 0, hexa_2_dosis: 0, neumo_1_dosis: 0, neumo_c1_dosis: 0, neumo_c2_dosis: 0, neumo_c3_dosis: 0, srp_1_dosis: 0
             };
             for (const u of fUnits) {
-                tAgg.pob_menor_1 += u.pob_menor_1 || 0; tAgg.pob_1_ano += u.pob_1_ano || 0; tAgg.pob_4_anos += u.pob_4_anos || 0;
+                tAgg.pob_menor_1 += u.pob_menor_1 || 0; tAgg.pob_1_ano += u.pob_1_ano || 0; tAgg.pob_4_anos += u.pob_4_anos || 0; tAgg.pob_6_anos += u.pob_6_anos || 0;
                 tAgg.bcg_dosis += u.bcg_dosis || 0; tAgg.hepb_0_7_dosis += u.hepb_0_7_dosis || 0; tAgg.hexa_3_dosis += u.hexa_3_dosis || 0; tAgg.rota_2_dosis += u.rota_2_dosis || 0; tAgg.neumo_2_dosis += u.neumo_2_dosis || 0;
-                tAgg.hexa_ref_dosis += u.hexa_ref_dosis || 0; tAgg.neumo_ref_dosis += u.neumo_ref_dosis || 0; tAgg.srp_2_dosis += u.srp_2_dosis || 0; tAgg.dpt_4_dosis += u.dpt_4_dosis || 0;
+                tAgg.hexa_ref_dosis += u.hexa_ref_dosis || 0; tAgg.neumo_ref_dosis += u.neumo_ref_dosis || 0; tAgg.srp_2_dosis += u.srp_2_dosis || 0; tAgg.dpt_4_dosis += u.dpt_4_dosis || 0; tAgg.srp_6_dosis += u.srp_6_dosis || 0;
                 tAgg.adol_hb += u.adol_hb || 0; tAgg.adol_sr += u.adol_sr || 0; tAgg.adol_vph += u.adol_vph || 0; tAgg.adol_td += u.adol_td || 0; tAgg.adol_tdpa += u.adol_tdpa || 0;
                 tAgg.am_neumo13 += u.am_neumo13 || 0; tAgg.am_neumo20 += u.am_neumo20 || 0; tAgg.am_td += u.am_td || 0;
                 tAgg.emb_tdpa += u.emb_tdpa || 0; tAgg.emb_vsr += u.emb_vsr || 0; tAgg.inv_influenza += u.inv_influenza || 0; tAgg.inv_covid += u.inv_covid || 0;
@@ -1231,9 +1354,12 @@ function renderBarChart(fUnits, muniFilter, esquema) {
             if (esquema === 'basico') {
                 if (_rdaState.vistaBasico === 'biologico') {
                     tLabels = ['BCG', 'HepB', 'Rota', 'Hexa <1A', 'Hexa 1A', 'Neumo <1A', 'Neumo 1A', 'SRP', 'DPT'];
+                    if (_rdaCache.anio === 2025) tLabels.push('SRP 6A');
+
                     const factorM1 = (tAgg.pob_menor_1 * 0.0833) * maxMes;
                     const factorUno = (tAgg.pob_1_ano * 0.0833) * maxMes;
                     const factorCuatro = (tAgg.pob_4_anos * 0.0833) * maxMes;
+                    const factorSeis = ((tAgg.pob_6_anos || tAgg.pob_4_anos) * 0.0833) * maxMes;
 
                     const appBCG = tAgg.bcg_dosis || 0;
                     const appHepB = tAgg.hepb_0_7_dosis || 0;
@@ -1244,6 +1370,7 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                     const appNeumo1A = (tAgg.neumo_ref_dosis||0) + (tAgg.neumo_c3_dosis||0);
                     const appSRP = (tAgg.srp_1_dosis||0) + (tAgg.srp_2_dosis||0);
                     const appDPT = tAgg.dpt_4_dosis || 0;
+                    const appSRP6 = tAgg.srp_6_dosis || 0;
 
                     const covBCG = factorM1 > 0 ? Math.round((appBCG / factorM1 * 100) * 10) / 10 : 0;
                     const covHepB = factorM1 > 0 ? Math.round((appHepB / factorM1 * 100) * 10) / 10 : 0;
@@ -1254,65 +1381,61 @@ function renderBarChart(fUnits, muniFilter, esquema) {
                     const covNeumo1A = factorUno > 0 ? Math.round((appNeumo1A / factorUno * 100) * 10) / 10 : 0;
                     const covSRP = factorUno > 0 ? Math.round((appSRP / factorUno * 100) * 10) / 10 : 0;
                     const covDPT = factorCuatro > 0 ? Math.round((appDPT / factorCuatro * 100) * 10) / 10 : 0;
+                    const covSRP6 = factorSeis > 0 ? Math.round((appSRP6 / factorSeis * 100) * 10) / 10 : 0;
+
+                    const appData = [appBCG, appHepB, appRota, appHexaM1, appHexa1A, appNeumoM1, appNeumo1A, appSRP, appDPT];
+                    const metaData = [
+                        Math.round(factorM1), Math.round(factorM1), Math.round(factorM1),
+                        Math.round(factorM1), Math.round(factorUno),
+                        Math.round(factorM1), Math.round(factorUno),
+                        Math.round(factorUno), Math.round(factorCuatro)
+                    ];
+                    const avanceData = [covBCG, covHepB, covRota, covHexaM1, covHexa1A, covNeumoM1, covNeumo1A, covSRP, covDPT];
+
+                    if (_rdaCache.anio === 2025) {
+                        appData.push(appSRP6);
+                        metaData.push(Math.round(factorSeis));
+                        avanceData.push(covSRP6);
+                    }
 
                     tDatasets = [
-                        {
-                            type: 'bar',
-                            label: 'Aplicaciones',
-                            data: [appBCG, appHepB, appRota, appHexaM1, appHexa1A, appNeumoM1, appNeumo1A, appSRP, appDPT],
-                            backgroundColor: '#e2e8f0',
-                            borderRadius: 4,
-                            barPercentage: 0.7,
-                            categoryPercentage: 0.8,
-                            yAxisID: 'y',
-                            order: 1
-                        },
-                        {
-                            type: 'bar',
-                            label: 'Meta',
-                            data: [
-                                Math.round(factorM1), Math.round(factorM1), Math.round(factorM1),
-                                Math.round(factorM1), Math.round(factorUno),
-                                Math.round(factorM1), Math.round(factorUno),
-                                Math.round(factorUno), Math.round(factorCuatro)
-                            ],
-                            backgroundColor: '#0f172a',
-                            borderRadius: 4,
-                            barPercentage: 0.7,
-                            categoryPercentage: 0.8,
-                            yAxisID: 'y',
-                            order: 1
-                        },
-                        {
-                            type: 'line',
-                            label: 'Avance',
-                            data: [covBCG, covHepB, covRota, covHexaM1, covHexa1A, covNeumoM1, covNeumo1A, covSRP, covDPT],
-                            borderColor: '#3b82f6',
-                            borderWidth: 4,
-                            tension: 0.4,
-                            fill: false,
-                            pointBackgroundColor: '#ffffff',
-                            pointBorderColor: '#3b82f6',
-                            pointBorderWidth: 2,
-                            pointRadius: 6,
-                            pointHoverRadius: 8,
-                            yAxisID: 'y1',
-                            order: 0
-                        }
+                        { type: 'bar', label: 'Aplicaciones', data: appData, backgroundColor: '#e2e8f0', borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.8, yAxisID: 'y', order: 1 },
+                        { type: 'bar', label: 'Meta', data: metaData, backgroundColor: '#0f172a', borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.8, yAxisID: 'y', order: 1 },
+                        { type: 'line', label: 'Avance', data: avanceData, borderColor: '#3b82f6', borderWidth: 4, tension: 0.4, fill: false, pointBackgroundColor: '#ffffff', pointBorderColor: '#3b82f6', pointBorderWidth: 2, pointRadius: 6, pointHoverRadius: 8, yAxisID: 'y1', order: 0 }
                     ];
                 } else {
                     tLabels = ['< 1 Año', '1 Año', '4 Años'];
-                    const factorM1 = (tAgg.pob_menor_1 * 0.0833) * maxMes; const factorUno = (tAgg.pob_1_ano * 0.0833) * maxMes; const factorCuatro = (tAgg.pob_4_anos * 0.0833) * maxMes;
+                    if (_rdaCache.anio === 2025) tLabels.push('6 Años');
+
+                    const factorM1 = (tAgg.pob_menor_1 * 0.0833) * maxMes; 
+                    const factorUno = (tAgg.pob_1_ano * 0.0833) * maxMes; 
+                    const factorCuatro = (tAgg.pob_4_anos * 0.0833) * maxMes;
+                    const factorSeis = ((tAgg.pob_6_anos || tAgg.pob_4_anos) * 0.0833) * maxMes;
+
                     const dosisM1 = tAgg.bcg_dosis + tAgg.hepb_0_7_dosis + tAgg.hexa_3_dosis + tAgg.rota_2_dosis + tAgg.neumo_2_dosis;
-                    const dosisUno = tAgg.hexa_ref_dosis + tAgg.neumo_ref_dosis + tAgg.srp_2_dosis; const dosisCuatro = tAgg.dpt_4_dosis;
+                    const dosisUno = tAgg.hexa_ref_dosis + tAgg.neumo_ref_dosis + tAgg.srp_2_dosis; 
+                    const dosisCuatro = tAgg.dpt_4_dosis;
+                    const dosisSeis = tAgg.srp_6_dosis || 0;
+
                     let covM1 = factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0;
                     let covUno = factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
                     let covCuatro = factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
+                    let covSeis = factorSeis > 0 ? Math.round(((dosisSeis / factorSeis) * 100) * 10) / 10 : 0;
                     
+                    const appData = [Math.round(dosisM1/4.0), Math.round(dosisUno/3.0), dosisCuatro];
+                    const metaData = [Math.round(factorM1), Math.round(factorUno), Math.round(factorCuatro)];
+                    const avanceData = [covM1, covUno, covCuatro];
+
+                    if (_rdaCache.anio === 2025) {
+                        appData.push(dosisSeis);
+                        metaData.push(Math.round(factorSeis));
+                        avanceData.push(covSeis);
+                    }
+
                     tDatasets = [
-                        { type: 'bar', label: 'Aplicaciones', data: [Math.round(dosisM1/4.0), Math.round(dosisUno/3.0), dosisCuatro], backgroundColor: '#e2e8f0', borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.8, yAxisID: 'y', order: 1 },
-                        { type: 'bar', label: 'Meta', data: [Math.round(factorM1), Math.round(factorUno), Math.round(factorCuatro)], backgroundColor: '#0f172a', borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.8, yAxisID: 'y', order: 1 },
-                        { type: 'line', label: 'Avance', data: [covM1, covUno, covCuatro], borderColor: '#3b82f6', borderWidth: 4, tension: 0.4, fill: false, pointBackgroundColor: '#ffffff', pointBorderColor: '#3b82f6', pointBorderWidth: 2, pointRadius: 6, pointHoverRadius: 8, yAxisID: 'y1', order: 0 }
+                        { type: 'bar', label: 'Aplicaciones', data: appData, backgroundColor: '#e2e8f0', borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.8, yAxisID: 'y', order: 1 },
+                        { type: 'bar', label: 'Meta', data: metaData, backgroundColor: '#0f172a', borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.8, yAxisID: 'y', order: 1 },
+                        { type: 'line', label: 'Avance', data: avanceData, borderColor: '#3b82f6', borderWidth: 4, tension: 0.4, fill: false, pointBackgroundColor: '#ffffff', pointBorderColor: '#3b82f6', pointBorderWidth: 2, pointRadius: 6, pointHoverRadius: 8, yAxisID: 'y1', order: 0 }
                     ];
                 }
                 tOptions.scales.y1 = { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#64748b', callback: v => v + '%' } };
@@ -1447,7 +1570,7 @@ function renderBarChart(fUnits, muniFilter, esquema) {
 }
 
 // Renderización de la Tabla de Datos con Cabecera Dinámica y Columna "Meta" Condicional
-function renderTable(fUnits, esquema) {
+function renderTable(fUnits, esquema, agg) {
     const table = document.getElementById('rdaDetailTable');
     const tbody = document.getElementById('rdaDetailTbody');
     const countEl = document.getElementById('rdaTableCount');
@@ -1470,8 +1593,14 @@ function renderTable(fUnits, esquema) {
                 { n: 'SRP', s: 'v8' },
                 { n: 'DPT', s: 'v9' }
             ];
+            if (_rdaCache.anio === 2025) {
+                vCols.push({ n: 'SRP 6A', s: 'v10' });
+            }
         } else {
             vCols = [{ n: '< 1 Año', s: 'v1' }, { n: '1 Año', s: 'v2' }, { n: '4 Años', s: 'v3' }];
+            if (_rdaCache.anio === 2025) {
+                vCols.push({ n: '6 Años', s: 'v4' });
+            }
         }
     } else if (esquema === 'adultos') {
         vCols = [
@@ -1490,19 +1619,21 @@ function renderTable(fUnits, esquema) {
 
     // "Meta" sólo es visible para el esquema "basico"
     const showMeta = (esquema === 'basico');
-    const headerColsHTML = `
-        <tr style="background: #f8fafc;">
-            <th style="padding: 16px 24px; text-align: left; font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="clues">CLUES ↕</th>
-            <th style="padding: 16px 24px; text-align: left; font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="nombre">Nombre ↕</th>
-            <th style="padding: 16px 24px; text-align: left; font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="municipio">Municipio ↕</th>
-            ${vCols.map(c => `<th style="padding: 16px 24px; text-align: center; font-size: 11px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="${c.s}">${c.n} ↕</th>`).join('')}
-            ${showMeta ? `<th style="padding: 16px 24px; text-align: center; font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="pob">Meta ↕</th>` : ''}
-            <th style="padding: 16px 24px; text-align: center; font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; border-bottom: 1px solid #f1f5f9; cursor: pointer;" data-sort="dosis">Total ↕</th>
-        </tr>
+    // Proporciones fijas de columnas
+    const numV = vCols.length;
+    const colGroupHTML = `
+        <colgroup>
+            <col style="width: 120px;">
+            <col style="width: 220px;">
+            <col style="width: 140px;">
+            ${vCols.map(() => `<col style="width: 100px;">`).join('')}
+            ${showMeta ? `<col style="width: 90px;">` : ''}
+            <col style="width: 90px;">
+        </colgroup>
     `;
 
     const thead = table.querySelector('thead');
-    thead.innerHTML = headerColsHTML;
+    thead.innerHTML = colGroupHTML + headerColsHTML;
 
     thead.querySelectorAll('th[data-sort]').forEach(th => {
         th.addEventListener('click', () => {
@@ -1526,6 +1657,7 @@ function renderTable(fUnits, esquema) {
             const factorM1 = (u.pob_menor_1 * 0.0833) * maxMes;
             const factorUno = (u.pob_1_ano * 0.0833) * maxMes;
             const factorCuatro = (u.pob_4_anos * 0.0833) * maxMes;
+            const factorSeis = ((u.pob_6_anos || u.pob_4_anos) * 0.0833) * maxMes;
 
             if (_rdaState.vistaBasico === 'biologico') {
                 res.v1 = factorM1 > 0 ? Math.round(((u.bcg_dosis) / factorM1 * 100) * 10) / 10 : 0;
@@ -1537,16 +1669,23 @@ function renderTable(fUnits, esquema) {
                 res.v7 = factorUno > 0 ? Math.round(((u.neumo_ref_dosis + u.neumo_c3_dosis) / factorUno * 100) * 10) / 10 : 0;
                 res.v8 = factorUno > 0 ? Math.round(((u.srp_1_dosis + u.srp_2_dosis) / factorUno * 100) * 10) / 10 : 0;
                 res.v9 = factorCuatro > 0 ? Math.round(((u.dpt_4_dosis) / factorCuatro * 100) * 10) / 10 : 0;
-                res.dosis = (u.bcg_dosis || 0) + (u.hepb_0_7_dosis || 0) + (u.hexa_1_dosis || 0) + (u.hexa_2_dosis || 0) + (u.hexa_3_dosis || 0) + (u.rota_2_dosis || 0) + (u.neumo_1_dosis || 0) + (u.neumo_2_dosis || 0) + (u.neumo_c1_dosis || 0) + (u.neumo_c2_dosis || 0) + (u.hexa_ref_dosis || 0) + (u.neumo_ref_dosis || 0) + (u.neumo_c3_dosis || 0) + (u.srp_1_dosis || 0) + (u.srp_2_dosis || 0) + (u.dpt_4_dosis || 0);
+                if (_rdaCache.anio === 2025) {
+                    res.v10 = factorSeis > 0 ? Math.round(((u.srp_6_dosis || 0) / factorSeis * 100) * 10) / 10 : 0;
+                }
+                res.dosis = (u.bcg_dosis || 0) + (u.hepb_0_7_dosis || 0) + (u.hexa_1_dosis || 0) + (u.hexa_2_dosis || 0) + (u.hexa_3_dosis || 0) + (u.rota_2_dosis || 0) + (u.neumo_1_dosis || 0) + (u.neumo_2_dosis || 0) + (u.neumo_c1_dosis || 0) + (u.neumo_c2_dosis || 0) + (u.hexa_ref_dosis || 0) + (u.neumo_ref_dosis || 0) + (u.neumo_c3_dosis || 0) + (u.srp_1_dosis || 0) + (u.srp_2_dosis || 0) + (u.dpt_4_dosis || 0) + (u.srp_6_dosis || 0);
             } else {
                 const dosisM1 = (u.bcg_dosis || 0) + (u.hepb_0_7_dosis || 0) + (u.hexa_3_dosis || 0) + (u.rota_2_dosis || 0) + (u.neumo_2_dosis || 0);
                 const dosisUno = (u.hexa_ref_dosis || 0) + (u.neumo_ref_dosis || 0) + (u.srp_2_dosis || 0);
                 const dosisCuatro = u.dpt_4_dosis || 0;
+                const dosisSeis = u.srp_6_dosis || 0;
 
                 res.v1 = factorM1 > 0 ? Math.round((((dosisM1 / 4.0) / factorM1) * 100) * 10) / 10 : 0;
                 res.v2 = factorUno > 0 ? Math.round((((dosisUno / 3.0) / factorUno) * 100) * 10) / 10 : 0;
                 res.v3 = factorCuatro > 0 ? Math.round(((dosisCuatro / factorCuatro) * 100) * 10) / 10 : 0;
-                res.dosis = dosisM1 + dosisUno + dosisCuatro;
+                if (_rdaCache.anio === 2025) {
+                    res.v4 = factorSeis > 0 ? Math.round(((dosisSeis / factorSeis) * 100) * 10) / 10 : 0;
+                }
+                res.dosis = dosisM1 + dosisUno + dosisCuatro + dosisSeis;
             }
         } else if (esquema === 'adultos') {
             res.v1 = u.adol_hb || 0;
@@ -1600,35 +1739,47 @@ function renderTable(fUnits, esquema) {
             let bg = '#e2e8f0';
             let fg = '#0f172a';
             const nameMap = {
-                'BCG': { bg: '#A5CBE3', fg: '#3A86B7' },
-                'HepB': { bg: '#E8B2B2', fg: '#C43D3D' },
-                'Hexavalente': { bg: '#CDE69A', fg: '#9ACD32' },
-                'Rotavirus': { bg: '#93BCCD', fg: '#264653' },
-                'Neumo 13': { bg: '#ACAFC8', fg: '#3D405B' },
-                'Neumo 20': { bg: '#ACAFC8', fg: '#3D405B' },
-                'SRP': { bg: '#F3B7CA', fg: '#B23A48' },
-                'DPT': { bg: '#F3E0AF', fg: '#E9C46A' },
-                'Influenza': { bg: '#F4CBBE', fg: '#C26750' },
-                'VPH': { bg: '#A4E6DE', fg: '#2A9D8F' },
-                'Td': { bg: '#C0C0C0', fg: '#5C5C5C' },
-                'Td Mayores': { bg: '#C0C0C0', fg: '#5C5C5C' },
-                'Tdpa': { bg: '#F3B9AB', fg: '#E76F51' },
-                'SR': { bg: '#C1B3D5', fg: '#7B5EA7' },
-                'Varicela': { bg: '#d1fae5', fg: '#059669' },
-                'VSR': { bg: '#EBD8CD', fg: '#A66B50' },
-                'COVID-19': { bg: '#BCBCBC', fg: '#4A4A4A' },
-                'HepA': { bg: '#e5e7eb', fg: '#4b5563' },
-                'Hepatitis A': { bg: '#e5e7eb', fg: '#4b5563' }
+                'BCG': { bg: '#e0f2fe', fg: '#0369a1' },
+                'HepB': { bg: '#f1f5f9', fg: '#334155' },
+                'Hexavalente': { bg: '#ecfdf5', fg: '#047857' },
+                'Rotavirus': { bg: '#f0fdfa', fg: '#0d9488' },
+                'Neumo 13': { bg: '#f5f3ff', fg: '#6d28d9' },
+                'Neumo 20': { bg: '#f5f3ff', fg: '#6d28d9' },
+                'SRP': { bg: '#fdf2f8', fg: '#be185d' },
+                'DPT': { bg: '#fff7ed', fg: '#c2410c' },
+                'Influenza': { bg: '#f0f9ff', fg: '#0284c7' },
+                'VPH': { bg: '#ccfbf1', fg: '#0f766e' },
+                'Td': { bg: '#f1f5f9', fg: '#475569' },
+                'Td Mayores': { bg: '#f1f5f9', fg: '#475569' },
+                'Tdpa': { bg: '#fff1f2', fg: '#be123c' },
+                'SR': { bg: '#fae8ff', fg: '#86198f' },
+                'Varicela': { bg: '#ecfdf5', fg: '#047857' },
+                'VSR': { bg: '#fff7ed', fg: '#c2410c' },
+                'COVID-19': { bg: '#f1f5f9', fg: '#334155' },
+                'HepA': { bg: '#f1f5f9', fg: '#475569' },
+                'Hepatitis A': { bg: '#f1f5f9', fg: '#475569' }
             };
             if (vName && nameMap[vName]) {
                 bg = nameMap[vName].bg;
                 fg = nameMap[vName].fg;
             }
-            return `<span style="display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;background:${bg};color:${fg}">${v.toLocaleString('es-MX')}</span>`;
+            return `<span style="display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:800;background:${bg};color:${fg};border:1px solid rgba(15,23,42,0.06);">${v.toLocaleString('es-MX')}</span>`;
         }
-        const bg = v >= 80 ? '#dcfce7' : v >= 50 ? '#fef3c7' : '#fee2e2';
-        const fg = v >= 80 ? '#166534' : v >= 50 ? '#92400e' : '#991b1b';
-        return `<span style="display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;background:${bg};color:${fg}">${v}%</span>`;
+
+        // Esquema sobrio para coberturas % (RDA Oficial)
+        let bg = '#f0fdf4';
+        let fg = '#166534';
+        let border = '#bbf7d0';
+
+        if (v >= 95) {
+            bg = '#f0fdf4'; fg = '#0f766e'; border = '#99f6e4';
+        } else if (v >= 75) {
+            bg = '#fffbeb'; fg = '#92400e'; border = '#fef3c7';
+        } else {
+            bg = '#fff1f2'; fg = '#9f1239'; border = '#fecdd3';
+        }
+
+        return `<span style="display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:800;background:${bg};color:${fg};border:1px solid ${border};">${v}%</span>`;
     };
 
     let html = '';
@@ -1647,10 +1798,38 @@ function renderTable(fUnits, esquema) {
             <td style="padding:16px 24px;font-size:11px;font-weight:800;color:#0f172a">${r.nombre}</td>
             <td style="padding:16px 24px;font-size:11px;color:#64748b;font-weight:600;">${r.municipio}</td>
             ${vCols.map(c => `<td style="padding:8px 12px;text-align:center">${badge(r[c.s], c.n)}</td>`).join('')}
-            ${showMeta ? `<td style="padding:16px 24px;text-align:center;font-size:11px;font-weight:800;color:#64748b">${r.pob.toLocaleString('es-MX')}</td>` : ''}
-            <td style="padding:16px 24px;text-align:center;font-size:11px;font-weight:800;color:#0f172a">${r.dosis.toLocaleString('es-MX')}</td>
+            ${showMeta ? `<td style="padding:16px 24px;text-align:center;font-size:11px;font-weight:800;color:#64748b">${(r.pob || 0).toLocaleString('es-MX')}</td>` : ''}
+            <td style="padding:16px 24px;text-align:center;font-size:11px;font-weight:800;color:#0f172a">${(r.dosis || 0).toLocaleString('es-MX')}</td>
         </tr>`;
     });
+
+    // Fila Destacada de TOTAL JURISDICCIONAL
+    if (rows.length > 0) {
+        const jurPob = rows.reduce((sum, r) => sum + (r.pob || 0), 0);
+        const jurDosis = rows.reduce((sum, r) => sum + (r.dosis || 0), 0);
+        
+        // Usar los porcentajes de cobertura globales calculados para la Jurisdicción en agg (no promedio simple de unidades)
+        const jurVCols = vCols.map(c => {
+            if (c.s === 'v1') return agg.cobertura_menor1;
+            if (c.s === 'v2') return agg.cobertura_uno;
+            if (c.s === 'v3') return agg.cobertura_cuatro;
+            if (c.s === 'v4' && _rdaCache.anio === 2025) return agg.cobertura_seis;
+            
+            const validRows = rows.filter(r => r[c.s] !== undefined && !isNaN(r[c.s]));
+            if (validRows.length === 0) return '—';
+            const sumVal = validRows.reduce((s, r) => s + r[c.s], 0);
+            return Math.round((sumVal / validRows.length) * 10) / 10;
+        });
+
+        html += `
+            <tr style="background-color:#f1f5f9; color:#0f172a; font-weight:900; border-top:2px solid #cbd5e1; border-bottom:2px solid #cbd5e1;">
+                <td colspan="3" style="padding:14px 24px; font-size:12px; uppercase tracking-wider; color:#0f172a; font-weight:900;">TOTAL JURISDICCIONAL (JURISDICCIÓN SANITARIA 1)</td>
+                ${vCols.map((c, idx) => `<td style="padding:12px 10px; text-align:center;">${badge(jurVCols[idx], c.n)}</td>`).join('')}
+                ${showMeta ? `<td style="padding:14px 24px; text-align:center; font-size:12px; font-weight:900; color:#0369a1;">${jurPob.toLocaleString('es-MX')}</td>` : ''}
+                <td style="padding:14px 24px; text-align:center; font-size:12px; font-weight:900; color:#0f766e;">${jurDosis.toLocaleString('es-MX')}</td>
+            </tr>
+        `;
+    }
 
     tbody.innerHTML = rows.length === 0
         ? `<tr><td colspan="${totalCols}" style="padding:40px;text-align:center;color:#94a3b8;font-weight:600;">Sin datos</td></tr>`
@@ -2573,22 +2752,121 @@ function renderMobileDashboard() {
 /**
  * Manejadores interactivos para el sistema de etiquetas (chips) del mapeador de SIS
  */
-window.handleSisTagKeydown = function(e, bio) {
+// Master Catálogo Oficial 2026 (Variables Federales SINBA-SIS)
+const MASTER_CATALOG_2026 = [
+    'VBC01','VBC02','BIO50','BIO03','VBC03','VAC06','VHB01','VHB02','VHB03','VHB04',
+    'VHB05','VHB06','VAC67','VAC68','VAC69','VAC70','VHX01','VHX02','VHX03','VHX04',
+    'VAC12','VAC13','VRV01','VRV02','VRV03','VRV04','VAC17','VAC18','VAC19','VNC01',
+    'VNC02','VNC03','VNC04','VCC01','VCC02','VCC03','VCC04','VCC05','VCC06','VCC07',
+    'VAC23','VTV01','VTV02','VTV03','VAC82','VAC91','VDV01','VDV02','VDV03','VDV04',
+    'VDV05','VDV06','VPH05','VPH06','VPH07','VPH08','VPH12','VPH13','VPH14','VAR02',
+    'VAR03','VHA01','VHA02','BIO88','VAC39','VAC40','VAC47','VAC48','VTD01','VTD02',
+    'VAC55','VAC56','VTT01','VTT02','VTT03','VTT04','VTT05','VTT06','VTT07','VTT08',
+    'VTT09','VTT10','VTT11','VTT12','VAC63','VDP01','VS001','VCV38','VCV39','VCV40',
+    'VCV28','VCV16','VCV20','VCV21',
+    // 225 Influenza BIE Keys
+    'BIE01','BIE28','BIE29','BIE30','BIE31','BIE04','BIE32','BIE33','BIE34','BIE35',
+    'BIE36','BIE37','BIE38','BIE39','BIE40','BIO96','BIO97','BIE09','BIE10','BIE41',
+    'BIE12','BIE13','BIE42','BIE15','BIE16','BIE43','BIE18','BIE19','BIE44','BIE48',
+    'BIE49','BIE50','BIE24','BIE25','BIE46','BIE51','BIE52','BIE53','BIE54','BIE55',
+    'BIE56','BIE57','BIE58','BIE59','BIE60','BIE61'
+];
+
+window.getValidKeysForYear = function() {
+    const valid = new Set();
+    // 1. Claves del catálogo maestro 2026
+    MASTER_CATALOG_2026.forEach(k => valid.add(k.toUpperCase()));
+    // 2. Claves extraídas del archivo cargado
+    _importedCatalogKeys.forEach(item => valid.add(item.key.toUpperCase()));
+    // 3. Claves oficiales conocidas del estándar federal
+    const defaultDict = window.DICT_RDA || {};
+    Object.values(defaultDict).forEach(arr => {
+        if (Array.isArray(arr)) arr.forEach(k => valid.add(k.toUpperCase()));
+    });
+    return valid;
+};
+
+// Obtener todas las claves que YA están asignadas en la vista por Biológico Madre
+window.getAllAssignedMotherKeys = function() {
+    const assigned = new Set();
+    const D = window.DICT_RDA || {};
+    
+    Object.keys(BIO_FAMILY_MAP).forEach(famKey => {
+        const fam = BIO_FAMILY_MAP[famKey];
+        fam.doses.forEach(doseKey => {
+            const keys = D[doseKey] || [];
+            keys.forEach(k => assigned.add(k.toUpperCase()));
+        });
+        if (_bioMotherKeys[famKey]) {
+            _bioMotherKeys[famKey].forEach(k => assigned.add(k.toUpperCase()));
+        }
+    });
+    return assigned;
+};
+
+window.handleMotherTagKeydown = function(e, famKey) {
     if (e.key === 'Enter' || e.key === ',') {
         e.preventDefault();
         const val = e.target.value.trim().toUpperCase().replace(/,/g, '');
-        if (val) {
-            const container = e.target.closest('.sis-tags-input-container');
-            const wrapper = container.querySelector('.sis-chips-wrapper');
-            const existing = Array.from(wrapper.querySelectorAll('.sis-chip')).map(c => c.dataset.val);
-            if (!existing.includes(val)) {
-                const chip = document.createElement('span');
-                chip.className = 'sis-chip';
-                chip.dataset.val = val;
-                chip.style.cssText = "display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; background: #e2e8f0; color: #1e293b; font-size: 11px; font-weight: 800; border: 1px solid #cbd5e1; transition: all 0.2s;";
-                chip.innerHTML = `${val} <span class="sis-chip-remove" style="cursor: pointer; font-size: 14px; font-weight: 900; color: #64748b; user-select: none; margin-left: 2px;" onclick="this.parentElement.remove();">&times;</span>`;
-                wrapper.appendChild(chip);
+        if (!val) return;
+
+        const validCatalogKeys = window.getValidKeysForYear();
+        if (!validCatalogKeys.has(val)) {
+            if (typeof showToast === 'function') showToast(`La clave '${val}' no existe en el catálogo federal oficial.`, false, 'bad');
+            e.target.value = '';
+            return;
+        }
+
+        if (!_bioMotherKeys[famKey]) _bioMotherKeys[famKey] = [];
+        if (!_bioMotherKeys[famKey].includes(val)) {
+            _bioMotherKeys[famKey].push(val);
+            window.renderSisMappingTable();
+        }
+        e.target.value = '';
+    }
+};
+
+window.handleMotherTagBlur = function(e, famKey) {
+    const val = e.target.value.trim().toUpperCase().replace(/,/g, '');
+    if (val) {
+        const validCatalogKeys = window.getValidKeysForYear();
+        if (validCatalogKeys.has(val)) {
+            if (!_bioMotherKeys[famKey]) _bioMotherKeys[famKey] = [];
+            if (!_bioMotherKeys[famKey].includes(val)) {
+                _bioMotherKeys[famKey].push(val);
+                window.renderSisMappingTable();
             }
+        }
+    }
+    e.target.value = '';
+};
+
+window.handleSisTagKeydown = function(e, doseKey) {
+    if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        const val = e.target.value.trim().toUpperCase().replace(/,/g, '');
+        if (!val) return;
+
+        // Validar herencia: La dosis solo puede recibir claves asignadas a su Biológico Madre
+        const parentFamKey = Object.keys(BIO_FAMILY_MAP).find(fam => BIO_FAMILY_MAP[fam].doses.includes(doseKey));
+        const motherKeys = parentFamKey ? (_bioMotherKeys[parentFamKey] || []) : [];
+
+        if (motherKeys.length > 0 && !motherKeys.includes(val)) {
+            if (typeof showToast === 'function') showToast(`La clave '${val}' no pertenece al Biológico Madre (${BIO_FAMILY_MAP[parentFamKey]?.label || parentFamKey}). Asígnala primero en el Paso 1.`, false, 'bad');
+            e.target.value = '';
+            return;
+        }
+
+        const container = e.target.closest('.sis-tags-input-container');
+        const wrapper = container.querySelector('.sis-chips-wrapper');
+        const existing = Array.from(wrapper.querySelectorAll('.sis-chip')).map(c => c.dataset.val);
+        if (!existing.includes(val)) {
+            const chip = document.createElement('span');
+            chip.className = 'sis-chip';
+            chip.dataset.val = val;
+            chip.style.cssText = "display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; background: #e2e8f0; color: #1e293b; font-size: 11px; font-weight: 800; border: 1px solid #cbd5e1; transition: all 0.2s;";
+            chip.innerHTML = `${val} <span class="sis-chip-remove" style="cursor: pointer; font-size: 14px; font-weight: 900; color: #64748b; user-select: none; margin-left: 2px;" onclick="this.parentElement.remove();">&times;</span>`;
+            wrapper.appendChild(chip);
         }
         e.target.value = '';
     } else if (e.key === 'Backspace' && e.target.value === '') {
@@ -2601,19 +2879,24 @@ window.handleSisTagKeydown = function(e, bio) {
     }
 };
 
-window.handleSisTagBlur = function(e, bio) {
+window.handleSisTagBlur = function(e, doseKey) {
     const val = e.target.value.trim().toUpperCase().replace(/,/g, '');
-    if (val) {
-        const container = e.target.closest('.sis-tags-input-container');
-        const wrapper = container.querySelector('.sis-chips-wrapper');
-        const existing = Array.from(wrapper.querySelectorAll('.sis-chip')).map(c => c.dataset.val);
-        if (!existing.includes(val)) {
-            const chip = document.createElement('span');
-            chip.className = 'sis-chip';
-            chip.dataset.val = val;
-            chip.style.cssText = "display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; background: #e2e8f0; color: #1e293b; font-size: 11px; font-weight: 800; border: 1px solid #cbd5e1; transition: all 0.2s;";
-            chip.innerHTML = `${val} <span class="sis-chip-remove" style="cursor: pointer; font-size: 14px; font-weight: 900; color: #64748b; user-select: none; margin-left: 2px;" onclick="this.parentElement.remove();">&times;</span>`;
-            wrapper.appendChild(chip);
+    if (val && !val.includes('@') && val.length < 20) {
+        const parentFamKey = Object.keys(BIO_FAMILY_MAP).find(fam => BIO_FAMILY_MAP[fam].doses.includes(doseKey));
+        const motherKeys = parentFamKey ? (_bioMotherKeys[parentFamKey] || []) : [];
+
+        if (motherKeys.length === 0 || motherKeys.includes(val)) {
+            const container = e.target.closest('.sis-tags-input-container');
+            const wrapper = container.querySelector('.sis-chips-wrapper');
+            const existing = Array.from(wrapper.querySelectorAll('.sis-chip')).map(c => c.dataset.val);
+            if (!existing.includes(val)) {
+                const chip = document.createElement('span');
+                chip.className = 'sis-chip';
+                chip.dataset.val = val;
+                chip.style.cssText = "display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; background: #e2e8f0; color: #1e293b; font-size: 11px; font-weight: 800; border: 1px solid #cbd5e1; transition: all 0.2s;";
+                chip.innerHTML = `${val} <span class="sis-chip-remove" style="cursor: pointer; font-size: 14px; font-weight: 900; color: #64748b; user-select: none; margin-left: 2px;" onclick="this.parentElement.remove();">&times;</span>`;
+                wrapper.appendChild(chip);
+            }
         }
     }
     e.target.value = '';
@@ -2625,100 +2908,170 @@ window.handleSisTagBlur = function(e, bio) {
 /**
  * Renderiza la tabla de mapeo de variables SIS en el panel Admin.
  */
+let _adminMappingViewMode = 'mother'; // 'mother' | 'dose'
+
+window.switchAdminMappingView = function(mode) {
+    _adminMappingViewMode = mode;
+    const btnMother = document.getElementById('btnViewMotherBio');
+    const btnDose = document.getElementById('btnViewDoseScheme');
+
+    if (mode === 'mother') {
+        if (btnMother) btnMother.style.cssText = 'background-color: #0f172a !important; color: #ffffff !important; font-weight: 900;';
+        if (btnDose) btnDose.style.cssText = 'background-color: transparent !important; color: #334155 !weight: 700;';
+    } else {
+        if (btnMother) btnMother.style.cssText = 'background-color: transparent !important; color: #334155 !important; font-weight: 700;';
+        if (btnDose) btnDose.style.cssText = 'background-color: #0f172a !important; color: #ffffff !important; font-weight: 900;';
+    }
+
+    window.renderSisMappingTable();
+};
+
 window.renderSisMappingTable = function(searchQuery = '') {
     const tbody = document.getElementById('sisMappingTbody');
     if (!tbody) return;
 
     const query = String(searchQuery || '').trim().toLowerCase();
     const D = window.DICT_RDA || {};
-    
-    // Metadata de mapeo humana con etiquetas descriptivas y grupos
+
+    if (_adminMappingViewMode === 'mother') {
+        // VISTA 1: POR BIOLÓGICO MADRE (Total de Dosis Aplicadas)
+        let html = '';
+        const allAssigned = window.getAllAssignedMotherKeys();
+        const validKeys = Array.from(window.getValidKeysForYear()).sort();
+
+        Object.keys(BIO_FAMILY_MAP).forEach(famKey => {
+            if (_currentSisMappingYear === 2025 && famKey === 'VSR') return;
+            if (_currentSisMappingYear !== 2025 && famKey === 'NEUMO_ADULTOS') return;
+
+            const fam = BIO_FAMILY_MAP[famKey];
+            if (query && !fam.label.toLowerCase().includes(query) && !famKey.toLowerCase().includes(query)) return;
+
+            // Recopilar todas las claves asociadas a las dosis de este biológico madre
+            const motherVarsSet = new Set();
+            fam.doses.forEach(doseKey => {
+                const keys = D[doseKey] || [];
+                keys.forEach(k => motherVarsSet.add(k));
+            });
+
+            // Si hay claves en _bioMotherKeys para esta familia, incluirlas también
+            if (_bioMotherKeys[famKey]) {
+                _bioMotherKeys[famKey].forEach(k => motherVarsSet.add(k));
+            }
+
+            const vars = Array.from(motherVarsSet);
+            // Disponibles para esta fila: Claves válidas que NO están asignadas a NINGÚN biológico madre aún (o asignadas a este mismo)
+            const availableForThisFam = validKeys.filter(k => !allAssigned.has(k) || vars.includes(k));
+
+            html += `
+                <tr class="hover:bg-slate-50/50">
+                    <td class="px-6 py-4 text-[12px] font-bold text-slate-800" style="width: 320px; vertical-align: middle;">
+                        <div class="font-black text-indigo-900 text-[13px] flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                            ${fam.label}
+                        </div>
+                        <div class="text-[10px] text-slate-400 font-bold mt-0.5">Biológico Madre (Total Dosis) <code class="text-slate-400/80 bg-slate-100 px-1 py-0.2 rounded text-[9px] ml-1 font-mono">${famKey}</code></div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="sis-tags-input-container" data-fam="${famKey}" 
+                             style="display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 16px; border-radius: 14px; border: 1px solid #cbd5e1; background: #ffffff; min-height: 48px; align-items: center;">
+                            <div class="sis-chips-wrapper" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                                ${vars.map(v => `
+                                    <span class="sis-chip" data-val="${v}" 
+                                          style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; background: #e0e7ff; color: #3730a3; font-size: 11px; font-weight: 800; border: 1px solid #c7d2fe; transition: all 0.2s;">
+                                        ${v}
+                                        <span class="sis-chip-remove" style="cursor: pointer; font-size: 14px; font-weight: 900; color: #6366f1; user-select: none; margin-left: 2px;" onclick="event.stopPropagation(); window.removeMotherVarChip('${famKey}', '${v}', this);">&times;</span>
+                                    </span>
+                                `).join('')}
+                            </div>
+                            <select onchange="window.selectMotherKeyFromList('${famKey}', this)"
+                                    style="height: 36px; min-height: 36px; max-height: 36px; border-radius: 14px; border: 1px solid rgba(203, 213, 225, 0.8); padding: 0 36px 0 16px; background-color: #f8fafc; color: #0f172a; font-size: 12px; font-weight: 800; appearance: none; -webkit-appearance: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"%23475569\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m6 9 6 6 6-6\"/></svg>'); background-repeat: no-repeat; background-position: right 12px center; cursor: pointer; outline: none; margin-left: auto;">
+                                <option value="">+ Seleccionar clave disponible...</option>
+                                ${availableForThisFam.filter(k => !vars.includes(k)).map(k => `<option value="${k}">${k}</option>`).join('')}
+                            </select>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html || `<tr><td colspan="2" class="p-6 text-center text-xs font-bold text-slate-400">No hay biológicos que coincidan.</td></tr>`;
+        return;
+    }
+
+    // VISTA 2: POR ESQUEMA / DOSIS RDA
     const metadata = {
-        BCG: { label: "BCG (Dosis Única)", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
-        HepB_0_7: { label: "Hepatitis B (Dosis Nacimiento)", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año (primeras horas)" },
-        Hexa_1: { label: "Hexavalente - 1ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
-        Hexa_2: { label: "Hexavalente - 2ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
-        Hexa_3: { label: "Hexavalente - 3ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
-        Hexa_Ref: { label: "Hexavalente - Refuerzo", group: "Esquema Básico (0-8 años)", desc: "Niños de 1 año" },
-        Rota_2: { label: "Rotavirus - 2ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
-        Neumo_1: { label: "Neumocócica Conjugada - 1ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
-        Neumo_2: { label: "Neumocócica Conjugada - 2ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
-        Neumo_Ref: { label: "Neumocócica Conjugada - Refuerzo", group: "Esquema Básico (0-8 años)", desc: "Niños de 1 año" },
-        Neumo_C1: { label: "Neumocócica Conjugada - Catch-up 1", group: "Esquema Básico (0-8 años)", desc: "Recuperación <1 año" },
-        Neumo_C2: { label: "Neumocócica Conjugada - Catch-up 2", group: "Esquema Básico (0-8 años)", desc: "Recuperación <1 año" },
-        Neumo_C3: { label: "Neumocócica Conjugada - Catch-up Refuerzo", group: "Esquema Básico (0-8 años)", desc: "Recuperación 1 año" },
-        SRP_1: { label: "SRP - 1ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Niños de 1 año" },
-        SRP_2: { label: "SRP - 2ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Niños de 1 año" },
-        DPT_4: { label: "DPT - 4ª Dosis / Refuerzo", group: "Esquema Básico (0-8 años)", desc: "Niños de 4 años" },
+        BCG: { label: "BCG", group: "Esquema Básico (0-8 años)", desc: "Dosis Única (<1 año)" },
+        HepB_0_7: { label: "Hepatitis B (Nacimiento)", group: "Esquema Básico (0-8 años)", desc: "0 a 7 días" },
+        Hexa_1: { label: "Hexavalente 1ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
+        Hexa_2: { label: "Hexavalente 2ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
+        Hexa_3: { label: "Hexavalente 3ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
+        Hexa_Ref: { label: "Hexavalente Refuerzo", group: "Esquema Básico (0-8 años)", desc: "Niños de 1 año" },
+        Rota_2: { label: "Rotavirus 2ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
+        Neumo_1: { label: "Neumocócica Conjugada 1ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
+        Neumo_2: { label: "Neumocócica Conjugada 2ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
+        Neumo_Ref: { label: "Neumocócica Conjugada Refuerzo", group: "Esquema Básico (0-8 años)", desc: "Niños de 1 año" },
+        SRP_1: { label: "SRP 1ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Niños de 1 año" },
+        SRP_2: { label: "SRP 2ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Niños de 18 meses / 6 años" },
+        DPT_4: { label: "DPT Refuerzo", group: "Esquema Básico (0-8 años)", desc: "Niños de 4 años" },
         VARICELA: { label: "Varicela", group: "Biológicos Adicionales", desc: "Dosis adicionales" },
         HEPATITIS_A: { label: "Hepatitis A", group: "Biológicos Adicionales", desc: "Dosis adicionales" },
-        ADOL_HB: { label: "Hepatitis B (Adolescentes y Adultos)", group: "Esquema Adolescentes y Adultos", desc: "Dosis para este grupo de edad" },
-        ADOL_SR: { label: "SR - Sarampión y Rubéola", group: "Esquema Adolescentes y Adultos", desc: "Dosis para este grupo de edad" },
-        ADOL_VPH: { label: "VPH - Virus del Papiloma Humano", group: "Esquema Adolescentes y Adultos", desc: "Dosis para adolescentes" },
-        ADOL_TD: { label: "Td - Tétanos y Difteria", group: "Esquema Adolescentes y Adultos", desc: "Dosis para este grupo de edad" },
-        ADOL_TDPA: { label: "Tdpa - Tétanos, Difteria, Tos Ferina", group: "Esquema Adolescentes y Adultos", desc: "Dosis para este grupo de edad" },
-        AM_NEUMO13: { label: "Neumocócica 13 Valente (Adultos Mayores)", group: "Esquema Adultos Mayores", desc: "Dosis para adultos mayores" },
-        AM_NEUMO20: { label: "Neumocócica 20 Valente (Adultos Mayores)", group: "Esquema Adultos Mayores", desc: "Dosis para adultos mayores" },
-        AM_TD: { label: "Td - Tétanos y Difteria (Adultos Mayores)", group: "Esquema Adultos Mayores", desc: "Dosis para este grupo de edad" },
-        EMB_TDPA: { label: "Tdpa (Embarazadas)", group: "Esquema Embarazadas", desc: "Dosis específicas para gestantes" },
-        EMB_VSR: { label: "VSR - Virus Sincicial Respiratorio", group: "Esquema Embarazadas", desc: "Dosis específicas para gestantes" },
-        INFLUENZA: { label: "Influenza Estacional", group: "Temporada Invernal", desc: "Todas las dosis aplicadas" },
-        COVID: { label: "COVID-19", group: "Temporada Invernal", desc: "Todas las dosis aplicadas" }
+        ADOL_HB: { label: "Hepatitis B (Adolescentes y Adultos)", group: "Esquema Adolescentes y Adultos", desc: "Dosis para este grupo" },
+        ADOL_SR: { label: "SR Doble Viral", group: "Esquema Adolescentes y Adultos", desc: "Dosis para este grupo" },
+        ADOL_VPH: { label: "VPH Virus Papiloma Humano", group: "Esquema Adolescentes y Adultos", desc: "Adolescentes 11-16 años" },
+        ADOL_TD: { label: "Td Tétanos y Difteria", group: "Esquema Adolescentes y Adultos", desc: "Adolescentes y Adultos" },
+        ADOL_TDPA: { label: "Tdpa Tétanos, Difteria, Tos Ferina", group: "Esquema Adolescentes y Adultos", desc: "Adolescentes" },
+        AM_NEUMO13: { label: "Neumocócica 13 Valente", group: "Esquema Adultos Mayores", desc: "Adultos mayores" },
+        AM_NEUMO20: { label: "Neumocócica 20 Valente", group: "Esquema Adultos Mayores", desc: "Adultos mayores" },
+        NEUMO_23: { label: "Neumocócica 23 Polisacárida", group: "Esquema Adultos Mayores", desc: "Adultos mayores" },
+        SRP_6: { label: "SRP Dosis 6 Años", group: "Esquema Básico (0-8 años)", desc: "Niños de 6 años" },
+        AM_TD: { label: "Td Tétanos y Difteria (Adultos Mayores)", group: "Esquema Adultos Mayores", desc: "Adultos mayores" },
+        EMB_TDPA: { label: "Tdpa Embarazadas", group: "Esquema Embarazadas", desc: "Gestantes" },
+        EMB_VSR: { label: "VSR Virus Sincicial Respiratorio", group: "Esquema Embarazadas", desc: "Gestantes" },
+        INFLUENZA: { label: "Influenza Estacional", group: "Temporada Invernal", desc: "Todas las dosis" },
+        COVID: { label: "COVID-19", group: "Temporada Invernal", desc: "Todas las dosis" }
     };
 
-    // Agrupar claves por grupo
     const groups = {};
-    Object.keys(D).forEach(key => {
-        const meta = metadata[key] || { label: key, group: "Otros Mapeos", desc: "" };
-        
-        // Filtrar por búsqueda
+    Object.keys(metadata).forEach(metaKey => {
+        if (_currentSisMappingYear === 2025 && (metaKey === 'AM_NEUMO20' || metaKey === 'EMB_VSR')) return;
+        if (_currentSisMappingYear !== 2025 && (metaKey === 'NEUMO_23' || metaKey === 'SRP_6')) return;
+
+        const meta = metadata[metaKey];
         const labelMatches = meta.label.toLowerCase().includes(query);
         const groupMatches = meta.group.toLowerCase().includes(query);
-        const keyMatches = key.toLowerCase().includes(query);
-        if (query && !labelMatches && !groupMatches && !keyMatches) {
-            return;
-        }
+        const keyMatches = metaKey.toLowerCase().includes(query);
+        if (query && !labelMatches && !groupMatches && !keyMatches) return;
 
         if (!groups[meta.group]) groups[meta.group] = [];
-        groups[meta.group].push({ key, label: meta.label, desc: meta.desc });
+        groups[meta.group].push({ key: metaKey, label: meta.label, desc: meta.desc });
     });
 
     let html = '';
     const sortedGroupNames = Object.keys(groups).sort();
-    
-    if (sortedGroupNames.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="2" class="px-6 py-8 text-center text-[13px] font-bold text-slate-400">
-                    No se encontraron biológicos que coincidan con tu búsqueda.
-                </td>
-            </tr>
-        `;
-        return;
-    }
-
     sortedGroupNames.forEach(groupName => {
-        // Renderizar fila de cabecera de grupo
         html += `
             <tr class="bg-slate-100/60 font-black text-slate-700">
-                <td colspan="2" class="px-6 py-2.5 text-[11px] uppercase tracking-wider border-y border-outline-variant/30 text-primary" style="background-color: var(--md-sys-color-surface-container-high);">
+                <td colspan="2" class="px-6 py-2.5 text-[11px] uppercase tracking-wider border-y border-slate-200 text-slate-700 bg-slate-100">
                     ${groupName}
                 </td>
             </tr>
         `;
-
         groups[groupName].forEach(item => {
             const vars = D[item.key] || [];
+            
+            // HERENCIA: En vista por dosis/esquema, solo se pueden seleccionar las claves asignadas a su Biológico Madre
+            const parentFamKey = Object.keys(BIO_FAMILY_MAP).find(fam => BIO_FAMILY_MAP[fam].doses.includes(item.key));
+            const inheritedMotherKeys = parentFamKey ? (_bioMotherKeys[parentFamKey] || []) : Array.from(window.getValidKeysForYear());
+
             html += `
                 <tr class="hover:bg-slate-50/50">
-                    <td class="px-6 py-4 text-[12px] font-bold text-slate-800" style="width: 300px; vertical-align: middle;">
-                        <div class="font-black text-primary text-[13px]">${item.label}</div>
+                    <td class="px-6 py-4 text-[12px] font-bold text-slate-800" style="width: 320px; vertical-align: middle;">
+                        <div class="font-black text-slate-900 text-[13px]">${item.label}</div>
                         <div class="text-[10px] text-slate-400 font-bold mt-0.5">${item.desc} <code class="text-slate-400/80 bg-slate-100 px-1 py-0.2 rounded text-[9px] ml-1 font-mono">${item.key}</code></div>
                     </td>
                     <td class="px-6 py-4">
                         <div class="sis-tags-input-container" data-bio="${item.key}" 
-                             style="display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 16px; border-radius: 14px; border: 1px solid #cbd5e1; background: #ffffff; min-height: 48px; align-items: center; cursor: text;"
-                             onclick="this.querySelector('input').focus();">
+                             style="display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 16px; border-radius: 14px; border: 1px solid #cbd5e1; background: #ffffff; min-height: 48px; align-items: center;">
                             <div class="sis-chips-wrapper" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
                                 ${vars.map(v => `
                                     <span class="sis-chip" data-val="${v}" 
@@ -2728,10 +3081,11 @@ window.renderSisMappingTable = function(searchQuery = '') {
                                     </span>
                                 `).join('')}
                             </div>
-                            <input type="text" placeholder="+ Agregar" class="sis-tag-input" 
-                                   style="flex: 1; min-width: 90px; border: none; outline: none; font-size: 13px; font-weight: 700; color: #0f172a; padding: 4px 0; background: transparent;" 
-                                   onkeydown="window.handleSisTagKeydown(event, '${item.key}')" 
-                                   onblur="window.handleSisTagBlur(event, '${item.key}')" />
+                            <select onchange="window.selectDoseKeyFromList('${item.key}', this)"
+                                    style="height: 36px; min-height: 36px; max-height: 36px; border-radius: 14px; border: 1px solid rgba(203, 213, 225, 0.8); padding: 0 36px 0 16px; background-color: #f8fafc; color: #0f172a; font-size: 12px; font-weight: 800; appearance: none; -webkit-appearance: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"%23475569\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m6 9 6 6 6-6\"/></svg>'); background-repeat: no-repeat; background-position: right 12px center; cursor: pointer; outline: none; margin-left: auto;">
+                                <option value="">+ Seleccionar clave heredada...</option>
+                                ${inheritedMotherKeys.filter(k => !vars.includes(k)).map(k => `<option value="${k}">${k}</option>`).join('')}
+                            </select>
                         </div>
                     </td>
                 </tr>
@@ -2742,35 +3096,273 @@ window.renderSisMappingTable = function(searchQuery = '') {
     tbody.innerHTML = html;
 };
 
+window.selectMotherKeyFromList = function(famKey, selectEl) {
+    const val = selectEl.value;
+    if (!val) return;
+
+    if (!_bioMotherKeys[famKey]) _bioMotherKeys[famKey] = [];
+    if (!_bioMotherKeys[famKey].includes(val)) {
+        _bioMotherKeys[famKey].push(val);
+        window.renderSisMappingTable();
+    }
+};
+
+window.selectDoseKeyFromList = function(doseKey, selectEl) {
+    const val = selectEl.value;
+    if (!val) return;
+
+    const container = selectEl.closest('.sis-tags-input-container');
+    const wrapper = container.querySelector('.sis-chips-wrapper');
+    const existing = Array.from(wrapper.querySelectorAll('.sis-chip')).map(c => c.dataset.val);
+    if (!existing.includes(val)) {
+        const chip = document.createElement('span');
+        chip.className = 'sis-chip';
+        chip.dataset.val = val;
+        chip.style.cssText = "display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; background: #e2e8f0; color: #1e293b; font-size: 11px; font-weight: 800; border: 1px solid #cbd5e1; transition: all 0.2s;";
+        chip.innerHTML = `${val} <span class="sis-chip-remove" style="cursor: pointer; font-size: 14px; font-weight: 900; color: #64748b; user-select: none; margin-left: 2px;" onclick="this.parentElement.remove();">&times;</span>`;
+        wrapper.appendChild(chip);
+    }
+    selectEl.value = '';
+};
+
+window.handleMotherTagKeydown = function(e, famKey) {
+    if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        const val = e.target.value.trim().toUpperCase().replace(/,/g, '');
+        if (val && !val.includes('@') && val.length < 20) {
+            if (!_bioMotherKeys[famKey]) _bioMotherKeys[famKey] = [];
+            if (!_bioMotherKeys[famKey].includes(val)) {
+                _bioMotherKeys[famKey].push(val);
+                window.renderSisMappingTable();
+            }
+        }
+        e.target.value = '';
+    }
+};
+
+window.handleMotherTagBlur = function(e, famKey) {
+    const val = e.target.value.trim().toUpperCase().replace(/,/g, '');
+    if (val && !val.includes('@') && val.length < 20) {
+        if (!_bioMotherKeys[famKey]) _bioMotherKeys[famKey] = [];
+        if (!_bioMotherKeys[famKey].includes(val)) {
+            _bioMotherKeys[famKey].push(val);
+            window.renderSisMappingTable();
+        }
+    }
+    e.target.value = '';
+};
+
+window.removeMotherVarChip = function(famKey, keyVal, spanEl) {
+    if (_bioMotherKeys[famKey]) {
+        _bioMotherKeys[famKey] = _bioMotherKeys[famKey].filter(k => k !== keyVal);
+    }
+    if (spanEl && spanEl.parentElement) spanEl.parentElement.remove();
+};
+
+let _currentSisMappingYear = 2026;
+
+window.switchSisMappingYear = async function(anio) {
+    _currentSisMappingYear = parseInt(anio, 10);
+    
+    // Actualizar estados visuales de las pestañas
+    const tabs = document.querySelectorAll('#sisMappingYearTabs button[data-anio]');
+    tabs.forEach(btn => {
+        const bAnio = parseInt(btn.dataset.anio, 10);
+        if (bAnio === _currentSisMappingYear) {
+            btn.style.cssText = 'background-color: #0f172a !important; color: #ffffff !important; border: 1px solid #0f172a !important;';
+        } else {
+            btn.style.cssText = 'background-color: #e2e8f0 !important; color: #0f172a !important; border: 1px solid #cbd5e1 !important;';
+        }
+    });
+
+    // Cargar mapeo del año seleccionado desde Supabase
+    if (typeof showOverlay === 'function') showOverlay(`Cargando plantilla SIS ${_currentSisMappingYear}...`, "Mapeador Admin");
+    try {
+        const { data, error } = await window.supabase
+            .from('sis_variables_mapeo')
+            .select('*')
+            .eq('anio', _currentSisMappingYear);
+
+        if (error) throw error;
+
+        const defaultDict = (typeof window.DICT_RDA === 'object' && window.DICT_RDA) ? window.DICT_RDA : {};
+        const yearMapping = {};
+        
+        // Cargar claves por defecto según la matriz oficial del sistema
+        Object.keys(defaultDict).forEach(k => {
+            yearMapping[k] = Array.isArray(defaultDict[k]) ? [...defaultDict[k]] : [];
+        });
+
+        if (_currentSisMappingYear === 2025) {
+            delete yearMapping.AM_NEUMO20;
+            delete yearMapping.EMB_VSR;
+            if (!yearMapping.SRP_6) yearMapping.SRP_6 = [];
+            if (!yearMapping.NEUMO_23) yearMapping.NEUMO_23 = [];
+        } else {
+            delete yearMapping.NEUMO_23;
+            delete yearMapping.SRP_6;
+            if (!yearMapping.AM_NEUMO20) yearMapping.AM_NEUMO20 = [];
+            if (!yearMapping.EMB_VSR) yearMapping.EMB_VSR = [];
+        }
+
+        // Si existen registros personalizados guardados en Supabase para este año, sobrescribir
+        if (data && data.length > 0) {
+            data.forEach(row => {
+                const bioStr = String(row.biologico || '').toUpperCase();
+                if (bioStr.startsWith('MOTHER_')) {
+                    const famKey = bioStr.replace('MOTHER_', '');
+                    if (Array.isArray(row.variables)) {
+                        _bioMotherKeys[famKey] = row.variables;
+                    }
+                } else {
+                    const targetKey = Object.keys(yearMapping).find(k => k.toUpperCase() === bioStr);
+                    if (targetKey && Array.isArray(row.variables) && row.variables.length > 0) {
+                        yearMapping[targetKey] = row.variables;
+                    }
+                }
+            });
+        }
+
+        // Si no había registos MOTHER_ en Supabase, auto-poblar _bioMotherKeys desde las dosis
+        Object.keys(BIO_FAMILY_MAP).forEach(famKey => {
+            if (!_bioMotherKeys[famKey] || _bioMotherKeys[famKey].length === 0) {
+                const motherSet = new Set();
+                BIO_FAMILY_MAP[famKey].doses.forEach(doseKey => {
+                    const keys = yearMapping[doseKey] || [];
+                    keys.forEach(k => motherSet.add(k));
+                });
+                _bioMotherKeys[famKey] = Array.from(motherSet);
+            }
+        });
+
+        // Resetear diccionario local y renderizar datos independientes del año seleccionado
+        window.updateRdaDictionary(yearMapping);
+        window.renderSisMappingTable();
+    } catch (err) {
+        console.error("[switchSisMappingYear] Error:", err);
+        if (typeof showToast === 'function') showToast("Error al cambiar año: " + err.message, false, 'bad');
+    } finally {
+        if (typeof hideOverlay === 'function') hideOverlay();
+    }
+};
+
+window.cloneSisMappingUi = async function() {
+    const sourceYear = prompt("Ingresa el AÑO ORIGEN desde el cual deseas clonar (ejemplo: 2026):", "2026");
+    if (!sourceYear) return;
+
+    const srcInt = parseInt(sourceYear, 10);
+    if (isNaN(srcInt) || srcInt === _currentSisMappingYear) {
+        if (typeof showToast === 'function') showToast("Año origen no válido o idéntico al año actual.", false, 'bad');
+        return;
+    }
+
+    if (typeof showOverlay === 'function') showOverlay(`Clonando mapeo de ${srcInt} a ${_currentSisMappingYear}...`, "Procesando");
+    try {
+        const { data: srcData, error: srcErr } = await window.supabase
+            .from('sis_variables_mapeo')
+            .select('*')
+            .eq('anio', srcInt);
+
+        if (srcErr) throw srcErr;
+        if (!srcData || srcData.length === 0) throw new Error(`No existen reglas de mapeo registradas para el año ${srcInt}.`);
+
+        const clonedRows = srcData.map(row => ({
+            biologico: row.biologico,
+            anio: _currentSisMappingYear,
+            variables: row.variables
+        }));
+
+        const { error: upsertErr } = await window.supabase
+            .from('sis_variables_mapeo')
+            .upsert(clonedRows, { onConflict: 'biologico,anio' });
+
+        if (upsertErr) throw upsertErr;
+
+        if (typeof showToast === 'function') showToast(`¡Plantilla ${srcInt} clonada con éxito hacia ${_currentSisMappingYear}!`, true, 'good');
+        window.switchSisMappingYear(_currentSisMappingYear);
+    } catch (err) {
+        console.error("[cloneSisMappingUi] Error:", err);
+        if (typeof showToast === 'function') showToast("Error al clonar: " + err.message, false, 'bad');
+    } finally {
+        if (typeof hideOverlay === 'function') hideOverlay();
+    }
+};
+
+window.addNewSisMappingYear = function() {
+    const newYearStr = prompt("Ingresa el NUEVO AÑO para configurar la plantilla SIS (ejemplo: 2027):", "2027");
+    if (!newYearStr) return;
+    const newYear = parseInt(newYearStr, 10);
+    if (isNaN(newYear) || newYear < 2020 || newYear > 2035) {
+        if (typeof showToast === 'function') showToast("Año no válido", false, 'bad');
+        return;
+    }
+
+    const tabsContainer = document.getElementById('sisMappingYearTabs');
+    if (tabsContainer) {
+        const existing = tabsContainer.querySelector(`button[data-anio="${newYear}"]`);
+        if (!existing) {
+            const addBtn = tabsContainer.querySelector('button[onclick*="addNewSisMappingYear"]');
+            const newBtn = document.createElement('button');
+            newBtn.type = 'button';
+            newBtn.dataset.anio = newYear;
+            newBtn.onclick = () => window.switchSisMappingYear(newYear);
+            newBtn.style.cssText = 'background-color: #e2e8f0 !important; color: #0f172a !important; border: 1px solid #cbd5e1 !important;';
+            newBtn.textContent = newYear;
+            tabsContainer.insertBefore(newBtn, addBtn);
+        }
+    }
+    window.switchSisMappingYear(newYear);
+};
+
 /**
- * Guarda los cambios realizados en el mapeo de variables SIS en la base de datos Supabase.
+ * Guarda los cambios realizados en el mapeo de variables SIS para el año activo.
  */
 window.saveSisMappingUi = async function() {
-    const containers = document.querySelectorAll('.sis-tags-input-container[data-bio]');
-    const mapping = {};
+    const rows = [];
+    const localDict = {};
 
-    containers.forEach(container => {
+    // 1. Guardar mapeos por Dosis / Esquema (DICT_RDA)
+    const doseContainers = document.querySelectorAll('.sis-tags-input-container[data-bio]');
+    doseContainers.forEach(container => {
         const bio = container.dataset.bio;
         const chips = container.querySelectorAll('.sis-chip');
         const val = Array.from(chips).map(c => c.dataset.val.trim().toUpperCase()).filter(Boolean);
-        mapping[bio] = val;
+        rows.push({
+            biologico: bio,
+            anio: _currentSisMappingYear,
+            variables: val
+        });
+        localDict[bio] = val;
+    });
+
+    // 2. Guardar mapeos por Biológico Madre (_bioMotherKeys)
+    Object.keys(BIO_FAMILY_MAP).forEach(famKey => {
+        const motherVars = _bioMotherKeys[famKey] || [];
+        rows.push({
+            biologico: `MOTHER_${famKey}`,
+            anio: _currentSisMappingYear,
+            variables: motherVars
+        });
     });
 
     if (typeof showOverlay === 'function') {
-        showOverlay("Guardando mapeo de variables SIS...", "Mapeador de Variables");
+        showOverlay(`Guardando mapeo SIS para el año ${_currentSisMappingYear}...`, "Mapeador Admin");
     }
 
     try {
-        const res = await apiCall("saveSisMapping", { mapping });
-        if (!res || !res.ok) throw new Error(res?.error || "Error en apiCall saveSisMapping");
+        const { error } = await window.supabase
+            .from('sis_variables_mapeo')
+            .upsert(rows, { onConflict: 'biologico,anio' });
 
-        // Actualizar localmente
+        if (error) throw error;
+
+        // Actualizar diccionario activo local
         if (typeof window.updateRdaDictionary === 'function') {
-            window.updateRdaDictionary(mapping);
+            window.updateRdaDictionary(localDict);
         }
 
         if (typeof showToast === 'function') {
-            showToast("¡Mapeo de variables SIS guardado con éxito!", true, 'good');
+            showToast(`¡Mapeo del año ${_currentSisMappingYear} guardado con éxito en Supabase!`, true, 'good');
         }
     } catch (e) {
         console.error("Error saving SIS mapping:", e);
@@ -2783,4 +3375,736 @@ window.saveSisMappingUi = async function() {
         }
     }
 };
+
+// ==============================================================================
+// IMPORTADOR DE CATÁLOGOS FEDERALES SIS Y ASIGNADOR VISUAL DRAG & DROP
+// ==============================================================================
+let _importedCatalogKeys = []; // [{ key: 'VAC69', desc: 'Hexavalente 3a Dosis' }]
+
+window.handleImportFederalKeyCatalog = async function(files) {
+    if (!files || !files.length) return;
+    const file = files[0];
+    
+    if (typeof showOverlay === 'function') showOverlay(`Analizando catálogo federal ${file.name}...`, "Catálogo SIS");
+    try {
+        let rows = [];
+        if (file.name.endsWith('.csv')) {
+            const text = await file.text();
+            const wb = XLSX.read(text, { type: 'string' });
+            rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+        } else {
+            const buf = await file.arrayBuffer();
+            const wb = XLSX.read(buf, { type: 'array' });
+            const sheetName = wb.SheetNames.find(s => s.toUpperCase().includes('SIS')) || wb.SheetNames[0];
+            rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 });
+        }
+
+        let keysMap = new Map();
+        let currentSectionHeader = '';
+
+        rows.forEach((row) => {
+            if (!Array.isArray(row)) return;
+
+            // Detectar encabezados de biológico en la primera columna (ej: "119 BCG", "121 Hepatitis B", "275 Hexavalente acelular", "125 Neumocócica Conjugada", "132 T d")
+            const firstCell = String(row[0] || '').trim();
+            if (/^\d{3}\s+/.test(firstCell) || /BCG|Hepatitis|Hexavalente|DPT|Rotavirus|Neumoc[oó]cica|Triple|Tdpa|Td|Varicela|COVID|Influenza/i.test(firstCell)) {
+                currentSectionHeader = firstCell.replace(/\r?\n|\r/g, ' ');
+            }
+
+            row.forEach((cell, cIdx) => {
+                const cellStr = String(cell || '').trim();
+                const match = cellStr.match(/\b([A-Z]{3}\d{2,3}|BIO\d{2})\b/g);
+                if (match) {
+                    match.forEach(k => {
+                        const cleanKey = k.toUpperCase();
+                        let desc = currentSectionHeader;
+
+                        if (cIdx > 0 && row[cIdx - 1]) {
+                            const prev = String(row[cIdx - 1]).trim();
+                            if (prev && prev !== cleanKey) desc = `${currentSectionHeader} - ${prev}`;
+                        }
+
+                        if (!keysMap.has(cleanKey)) {
+                            keysMap.set(cleanKey, desc || 'Clave oficial extraída del catálogo federal');
+                        }
+                    });
+                }
+            });
+        });
+
+        _importedCatalogKeys = Array.from(keysMap.entries()).map(([key, desc]) => ({ key, desc }));
+
+        // AUTO-MAPEO INTELIGENTE: Asociar automáticamente claves a Biológicos Madre según texto detectado
+        Object.keys(BIO_FAMILY_MAP).forEach(famKey => {
+            if (!_bioMotherKeys[famKey]) _bioMotherKeys[famKey] = [];
+        });
+
+        _importedCatalogKeys.forEach(item => {
+            const dUpper = item.desc.toUpperCase();
+            let targetFam = null;
+
+            if (dUpper.includes('BCG') || item.key.startsWith('VBC')) targetFam = 'BCG';
+            else if (dUpper.includes('HEXAVALENTE') || item.key.startsWith('VHX')) targetFam = 'HEXAVALENTE';
+            else if (dUpper.includes('ROTAVIRUS') || item.key.startsWith('VRV')) targetFam = 'ROTAVIRUS';
+            else if (dUpper.includes('HEPATITIS B') || item.key.startsWith('VHB')) targetFam = 'HEPATITIS_B';
+            else if (dUpper.includes('23') || dUpper.includes('POLISACARIDA') || item.key.startsWith('VNP')) targetFam = 'NEUMO_ADULTOS';
+            else if (dUpper.includes('NEUMOC') || item.key.startsWith('VNC') || item.key.startsWith('VCC')) targetFam = 'NEUMO_CONJ';
+            else if (dUpper.includes('TRIPLE') || dUpper.includes('SRP') || item.key.startsWith('VTV')) targetFam = 'SRP';
+            else if (dUpper.includes('DOBLE') || dUpper.includes('SR') || item.key.startsWith('VDV')) targetFam = 'SR';
+            else if (dUpper.includes('DPT') || item.key.startsWith('VDP') || item.key.startsWith('VPD')) targetFam = 'DPT';
+            else if (dUpper.includes('TDPA')) targetFam = 'TDPA';
+            else if (dUpper.includes('T D') || dUpper.includes('TD') || item.key.startsWith('VTD') || item.key.startsWith('VTT')) targetFam = 'TD';
+            else if (dUpper.includes('VPH') || item.key.startsWith('VPH')) targetFam = 'VPH';
+            else if (dUpper.includes('VARICELA') || item.key.startsWith('VAR')) targetFam = 'VARICELA';
+            else if (dUpper.includes('HEPATITIS A') || item.key.startsWith('VHA')) targetFam = 'HEPATITIS_A';
+            else if (dUpper.includes('INFLUENZA') || item.key.startsWith('BIE')) targetFam = 'INFLUENZA';
+            else if (dUpper.includes('COVID') || item.key.startsWith('VCV')) targetFam = 'COVID';
+            else if (dUpper.includes('VSR') || item.key.startsWith('VS')) targetFam = 'VSR';
+
+            if (targetFam && _bioMotherKeys[targetFam] && !_bioMotherKeys[targetFam].includes(item.key)) {
+                _bioMotherKeys[targetFam].push(item.key);
+            }
+        });
+        if (typeof hideOverlay === 'function') hideOverlay();
+
+        if (_importedCatalogKeys.length === 0) {
+            if (typeof showToast === 'function') showToast("No se detectaron claves SIS válidas en la plantilla.", false, 'bad');
+            return;
+        }
+
+        if (typeof showToast === 'function') {
+            showToast(`¡Se extrajeron ${_importedCatalogKeys.length} claves del catálogo federal!`, true, 'good');
+        }
+
+        // Abrir Modal de Drag & Drop Visual
+        window.openDragDropMapperModal();
+
+    } catch (err) {
+        console.error("Error al importar catálogo:", err);
+        if (typeof hideOverlay === 'function') hideOverlay();
+        if (typeof showToast === 'function') showToast("Error procesando archivo: " + err.message, false, 'bad');
+    }
+};
+
+// Estructura oficial de Biológicos Madre ordenada según el Catálogo Federal (CE-H) 2026
+const BIO_FAMILY_MAP = {
+    BCG: { label: "119 BCG", doses: ["BCG"] },
+    HEPATITIS_B: { label: "121 Hepatitis B", doses: ["HepB_0_7", "ADOL_HB"] },
+    HEXAVALENTE: { label: "275 Hexavalente acelular", doses: ["Hexa_1", "Hexa_2", "Hexa_3", "Hexa_Ref"] },
+    DPT: { label: "123 DPT", doses: ["DPT_4"] },
+    ROTAVIRUS: { label: "274 Rotavirus RV1", doses: ["Rota_2"] },
+    NEUMO_CONJ: { label: "125 Neumocócica Conjugada (13v)", doses: ["Neumo_1", "Neumo_2", "Neumo_Ref", "AM_NEUMO13"] },
+    NEUMO_20: { label: "354 Neumocócica Conjugada (20 valente)", doses: ["Neumo_C1", "Neumo_C2", "Neumo_C3", "AM_NEUMO20"] },
+    NEUMO_ADULTOS: { label: "126 Neumocócica Polisacárida (23)", doses: ["NEUMO_23"] },
+    SRP: { label: "127 Triple Viral (SRP)", doses: ["SRP_1", "SRP_2", "SRP_6"] },
+    SR: { label: "128 Doble Viral (SR)", doses: ["ADOL_SR"] },
+    VPH: { label: "129 VPHa", doses: ["ADOL_VPH"] },
+    VARICELA: { label: "131 Varicela*", doses: ["VARICELA"] },
+    HEPATITIS_A: { label: "122 Hepatitis A", doses: ["HEPATITIS_A"] },
+    TD: { label: "132 T d", doses: ["ADOL_TD", "AM_TD"] },
+    TDPA: { label: "133 Tdpa", doses: ["ADOL_TDPA", "EMB_TDPA"] },
+    INFLUENZA: { label: "225 Influenza Estacional", doses: ["INFLUENZA"] },
+    COVID: { label: "344 COVID-19", doses: ["COVID"] },
+    VSR: { label: "355 VSR", doses: ["EMB_VSR"] }
+};
+
+let _currentDragDropStep = 1; // 1 = Biológico Madre, 2 = Dosis / Esquema
+let _bioMotherKeys = {}; // Map { BIO_FAMILY: [keys] }
+let _selectedAvailableKeys = new Set(); // Selección múltiple para movimiento en lote
+
+window.getAssignedDragDropKeys = function() {
+    const assigned = new Set();
+    if (_currentDragDropStep === 1) {
+        Object.values(_bioMotherKeys).forEach(arr => arr.forEach(k => assigned.add(k)));
+    } else {
+        const targetBoxes = document.querySelectorAll('.drag-target-box .drop-zone-keys');
+        targetBoxes.forEach(box => {
+            const chips = box.querySelectorAll('span.inline-flex');
+            chips.forEach(c => {
+                const txt = c.childNodes[0]?.textContent?.trim();
+                if (txt) assigned.add(txt);
+            });
+        });
+    }
+    return assigned;
+};
+
+window.openSisDragDropMapperModal = function() {
+    window.openDragDropMapperModal();
+};
+
+window.openDragDropMapperModal = function() {
+    const modal = document.getElementById('modalSisDragDropMapper');
+    const yearBadge = document.getElementById('dragDropYearBadge');
+    if (yearBadge) yearBadge.textContent = _currentSisMappingYear;
+
+    // Inicializar o cargar Mapeo de Biológico Madre desde el diccionario activo de Supabase para este año
+    _bioMotherKeys = {};
+    Object.keys(BIO_FAMILY_MAP).forEach(famKey => {
+        _bioMotherKeys[famKey] = [];
+        BIO_FAMILY_MAP[famKey].doses.forEach(doseKey => {
+            const keysInDose = (window.DICT_RDA || {})[doseKey] || [];
+            keysInDose.forEach(k => {
+                if (!_bioMotherKeys[famKey].includes(k)) _bioMotherKeys[famKey].push(k);
+            });
+        });
+    });
+
+    _selectedAvailableKeys.clear();
+    window.switchDragDropStep(1);
+
+    if (modal) {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+};
+
+window.switchDragDropStep = function(step) {
+    _currentDragDropStep = step;
+    _selectedAvailableKeys.clear();
+
+    const btn1 = document.getElementById('btnStep1');
+    const btn2 = document.getElementById('btnStep2');
+    const hint = document.getElementById('dragDropStepHint');
+    const title = document.getElementById('rightPanelTitle');
+
+    if (step === 1) {
+        if (btn1) btn1.style.cssText = 'background-color: #0f172a !important; color: #ffffff !important; font-weight: 900;';
+        if (btn2) btn2.style.cssText = 'background-color: #e2e8f0 !important; color: #334155 !important; font-weight: 700;';
+        if (hint) hint.textContent = 'Paso 1: Asigna claves del catálogo federal al Biológico Madre (ej: Hexavalente, Neumococo).';
+        if (title) title.textContent = 'Catálogo de Biológicos Madre (Nivel 1)';
+        window.renderStep1Targets();
+    } else {
+        if (btn1) btn1.style.cssText = 'background-color: #e2e8f0 !important; color: #334155 !important; font-weight: 700;';
+        if (btn2) btn2.style.cssText = 'background-color: #0f172a !important; color: #ffffff !important; font-weight: 900;';
+        if (hint) hint.textContent = 'Paso 2: Distribuye las claves del Biológico Madre a las Dosis / Esquemas correspondientes.';
+        if (title) title.textContent = 'Estructura de Dosis y Esquemas RDA (Nivel 2)';
+        window.renderStep2Targets();
+    }
+
+    window.refreshDragDropAvailablePanel();
+};
+
+window.renderStep1Targets = function() {
+    const targetsContainer = document.getElementById('dragDropTargetsContainer');
+    if (!targetsContainer) return;
+
+    let html = '';
+    Object.keys(BIO_FAMILY_MAP).forEach(famKey => {
+        // Filtrar biológicos madre según reglas oficiales por año
+        if (_currentSisMappingYear === 2025 && (famKey === 'VSR')) return;
+        if (_currentSisMappingYear !== 2025 && (famKey === 'NEUMO_ADULTOS')) return;
+
+        const fam = BIO_FAMILY_MAP[famKey];
+        const assignedKeys = _bioMotherKeys[famKey] || [];
+        html += `
+            <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-2 drag-target-box" data-fam="${famKey}">
+                <div class="flex items-center justify-between">
+                    <div class="font-extrabold text-slate-900 text-xs flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                        ${fam.label}
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-400">Biológico Madre</span>
+                </div>
+
+                <div class="drop-zone-keys flex flex-wrap gap-1.5 p-2.5 bg-slate-50 border border-dashed border-slate-300 rounded-xl min-h-[48px] items-center"
+                     ondragover="event.preventDefault(); this.classList.add('bg-indigo-50','border-indigo-400');"
+                     ondragleave="this.classList.remove('bg-indigo-50','border-indigo-400');"
+                     ondrop="window.handleDropOnBio(event, '${famKey}')">
+                    ${assignedKeys.map(k => `
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-100 text-indigo-900 font-black text-xs border border-indigo-200 shadow-sm">
+                            ${k}
+                            <span onclick="window.removeMotherKeyChip('${famKey}', '${k}')" class="cursor-pointer text-indigo-400 hover:text-rose-600 font-bold">&times;</span>
+                        </span>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    });
+    targetsContainer.innerHTML = html;
+};
+
+window.renderStep2Targets = function() {
+    const targetsContainer = document.getElementById('dragDropTargetsContainer');
+    if (!targetsContainer) return;
+
+    const D = window.DICT_RDA || {};
+    let html = '';
+
+    Object.keys(D).forEach(doseKey => {
+        // Aislamiento estricto de biológicos por año oficial
+        if (_currentSisMappingYear === 2025) {
+            if (doseKey === 'AM_NEUMO20' || doseKey === 'EMB_VSR') return;
+        } else {
+            if (doseKey === 'NEUMO_23' || doseKey === 'SRP_6') return;
+        }
+
+        // Buscar qué familia madre posee esta dosis para asociarle sus claves
+        const parentFamKey = Object.keys(BIO_FAMILY_MAP).find(fam => BIO_FAMILY_MAP[fam].doses.includes(doseKey));
+        const motherKeys = parentFamKey ? (_bioMotherKeys[parentFamKey] || []) : [];
+
+        const currentKeys = D[doseKey] || [];
+        html += `
+            <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-2 drag-target-box" data-bio="${doseKey}" data-fam="${parentFamKey || ''}">
+                <div class="flex items-center justify-between">
+                    <div class="font-extrabold text-slate-800 text-xs flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-teal-500"></span>
+                        ${doseKey}
+                        ${parentFamKey ? `<span class="text-[10px] text-indigo-600 font-bold bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">${BIO_FAMILY_MAP[parentFamKey].label}</span>` : ''}
+                    </div>
+                    <span class="text-[10px] font-mono text-slate-400">Dosis / Esquema</span>
+                </div>
+
+                <div class="drop-zone-keys flex flex-wrap gap-1.5 p-2 bg-slate-50 border border-dashed border-slate-300 rounded-xl min-h-[44px] items-center"
+                     ondragover="event.preventDefault(); this.classList.add('bg-indigo-50','border-indigo-400');"
+                     ondragleave="this.classList.remove('bg-indigo-50','border-indigo-400');"
+                     ondrop="window.handleDropOnBio(event, '${doseKey}')">
+                    ${currentKeys.map(k => `
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-100 text-teal-900 font-black text-xs border border-teal-200">
+                            ${k}
+                            <span onclick="window.removeKeyChip(this)" class="cursor-pointer text-teal-500 hover:text-rose-600 font-bold">&times;</span>
+                        </span>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    });
+    targetsContainer.innerHTML = html;
+};
+
+window.refreshDragDropAvailablePanel = function() {
+    const searchVal = document.getElementById('dragDropSearchKey')?.value || '';
+    const q = String(searchVal).trim().toLowerCase();
+
+    let baseCatalog = _importedCatalogKeys;
+    if (!baseCatalog || baseCatalog.length === 0) {
+        baseCatalog = MASTER_CATALOG_2026.map(k => ({ key: k, section: 'Catálogo Federal 2026', desc: 'Variable Oficial SIS' }));
+    }
+
+    // En Paso 2, las disponibles son solo las claves asignadas en el Paso 1 a Biológicos Madre
+    if (_currentDragDropStep === 2) {
+        const motherKeysSet = new Set();
+        Object.values(_bioMotherKeys).forEach(arr => arr.forEach(k => motherKeysSet.add(k)));
+        baseCatalog = baseCatalog.filter(item => motherKeysSet.has(item.key));
+    }
+
+    const assigned = window.getAssignedDragDropKeys();
+    const unassigned = baseCatalog.filter(item => !assigned.has(item.key));
+
+    const availCount = document.getElementById('dragDropAvailableCount');
+    if (availCount) availCount.textContent = unassigned.length;
+
+    let displayList = unassigned;
+    if (q) {
+        displayList = unassigned.filter(k => k.key.toLowerCase().includes(q) || k.desc.toLowerCase().includes(q));
+    }
+
+    window.renderDragDropAvailableKeys(displayList);
+    window.updateBatchToolbar();
+};
+
+window.renderDragDropAvailableKeys = function(keysList) {
+    const availContainer = document.getElementById('dragDropAvailableContainer');
+    if (!availContainer) return;
+
+    if (keysList.length === 0) {
+        availContainer.innerHTML = `<div class="text-xs text-slate-400 text-center py-6 font-bold">No hay claves disponibles en este paso.</div>`;
+        return;
+    }
+
+    availContainer.innerHTML = keysList.map(item => {
+        const isChecked = _selectedAvailableKeys.has(item.key);
+        return `
+            <div draggable="true" 
+                 ondragstart="window.handleKeyDragStart(event, '${item.key}')"
+                 class="mb-3 p-3 bg-white hover:bg-indigo-50/60 border ${isChecked ? 'border-indigo-500 bg-indigo-50/40 ring-1 ring-indigo-400' : 'border-slate-200'} rounded-2xl cursor-grab active:cursor-grabbing transition-all flex items-center justify-between shadow-sm group">
+                <div class="flex items-center gap-3 flex-1 min-w-0 pr-2">
+                    <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="window.toggleKeySelection('${item.key}', this.checked)" class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer flex-shrink-0">
+                    <div class="truncate">
+                        <div class="font-extrabold text-xs text-slate-800 tracking-tight">${item.key}</div>
+                        <div class="text-[11px] text-slate-500 truncate mt-0.5">${item.desc}</div>
+                    </div>
+                </div>
+                <button type="button" title="Asignar clave" onclick="window.quickAddKeyPrompt('${item.key}')"
+                    style="background-color: #ffffff !important; color: #4f46e5 !important; border: 1px solid #cbd5e1 !important;"
+                    class="w-7 h-7 rounded-xl font-extrabold text-sm flex items-center justify-center hover:!bg-indigo-600 hover:!text-white hover:!border-indigo-600 transition-all cursor-pointer shadow-xs flex-shrink-0 ml-2">
+                    <span class="pointer-events-none">+</span>
+                </button>
+            </div>
+        `;
+    }).join('');
+};
+
+window.handleKeyDragStart = function(event, draggedKey) {
+    let keysToDrag = [];
+    if (_selectedAvailableKeys.has(draggedKey) && _selectedAvailableKeys.size > 1) {
+        keysToDrag = Array.from(_selectedAvailableKeys);
+    } else {
+        keysToDrag = [draggedKey];
+    }
+
+    event.dataTransfer.setData('text/plain', JSON.stringify(keysToDrag));
+
+    // Crear preview visual flotante para arrastrar en lote
+    const dragGhost = document.createElement('div');
+    dragGhost.className = 'fixed top-[-9999px] left-[-9999px] px-3 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-black shadow-2xl flex items-center gap-2 border border-indigo-400 z-[9999]';
+    dragGhost.innerHTML = `<span class="material-symbols-rounded text-sm">style</span> ${keysToDrag.length} clave(s) ${keysToDrag.length === 1 ? keysToDrag[0] : ''}`;
+    document.body.appendChild(dragGhost);
+    event.dataTransfer.setDragImage(dragGhost, 10, 10);
+    setTimeout(() => dragGhost.remove(), 100);
+};
+
+window.toggleKeySelection = function(key, isChecked) {
+    if (isChecked) _selectedAvailableKeys.add(key);
+    else _selectedAvailableKeys.delete(key);
+    window.updateBatchToolbar();
+    window.refreshDragDropAvailablePanel();
+};
+
+window.toggleSelectAllAvailable = function() {
+    const checkboxes = document.querySelectorAll('#dragDropAvailableContainer input[type="checkbox"]');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    checkboxes.forEach(cb => {
+        cb.checked = !allChecked;
+        const key = cb.closest('div[draggable]').querySelector('.font-extrabold').textContent.trim();
+        if (!allChecked) _selectedAvailableKeys.add(key);
+        else _selectedAvailableKeys.delete(key);
+    });
+    window.updateBatchToolbar();
+    window.refreshDragDropAvailablePanel();
+};
+
+window.updateBatchToolbar = function() {
+    const toolbar = document.getElementById('batchActionToolbar');
+    const label = document.getElementById('selectedCountLabel');
+    if (toolbar && label) {
+        if (_selectedAvailableKeys.size > 0) {
+            toolbar.classList.remove('hidden');
+            label.textContent = `${_selectedAvailableKeys.size} selec.`;
+        } else {
+            toolbar.classList.add('hidden');
+        }
+    }
+};
+
+window.filterDragDropKeys = function(query) {
+    window.refreshDragDropAvailablePanel();
+};
+
+window.handleDropOnBio = function(event, targetKey) {
+    event.preventDefault();
+    const dropZone = event.currentTarget;
+    dropZone.classList.remove('bg-indigo-50','border-indigo-400');
+    const dataStr = event.dataTransfer.getData('text/plain');
+    if (!dataStr) return;
+
+    let keys = [];
+    try {
+        keys = JSON.parse(dataStr);
+        if (!Array.isArray(keys)) keys = [dataStr];
+    } catch (e) {
+        keys = [dataStr];
+    }
+
+    keys.forEach(k => window.addKeyToTarget(targetKey, k));
+    _selectedAvailableKeys.clear();
+    window.updateBatchToolbar();
+    window.refreshDragDropAvailablePanel();
+};
+
+window.quickAddKeyPrompt = function(key) {
+    window.openBatchAssignModal([key]);
+};
+
+window.openBatchAssignModal = function(keyList = null) {
+    const keysToAssign = keyList || Array.from(_selectedAvailableKeys);
+    if (!keysToAssign || keysToAssign.length === 0) return;
+
+    const summary = document.getElementById('batchAssignSummaryText');
+    if (summary) summary.textContent = `Has seleccionado ${keysToAssign.length} clave(s): ${keysToAssign.join(', ')}`;
+
+    const select = document.getElementById('batchAssignBioSelect');
+    if (select) {
+        let options = '';
+        if (_currentDragDropStep === 1) {
+            Object.keys(BIO_FAMILY_MAP).forEach(famKey => {
+                options += `<option value="${famKey}">${BIO_FAMILY_MAP[famKey].label}</option>`;
+            });
+        } else {
+            const D = window.DICT_RDA || {};
+            Object.keys(D).forEach(doseKey => {
+                if (_currentSisMappingYear === 2025 && doseKey === 'AM_NEUMO20') return;
+                options += `<option value="${doseKey}">${doseKey}</option>`;
+            });
+        }
+        select.innerHTML = options;
+    }
+
+    // Guardar temporalmente el lote a mover
+    window._pendingBatchKeys = keysToAssign;
+    const modal = document.getElementById('modalSisBatchAssign');
+    if (modal) modal.classList.add('show');
+};
+
+window.confirmBatchAssign = function() {
+    const select = document.getElementById('batchAssignBioSelect');
+    if (!select) return;
+    const targetKey = select.value;
+    const keys = window._pendingBatchKeys || [];
+
+    keys.forEach(k => window.addKeyToTarget(targetKey, k));
+
+    _selectedAvailableKeys.clear();
+    document.getElementById('modalSisBatchAssign').classList.remove('show');
+    window.refreshDragDropAvailablePanel();
+};
+
+window.addKeyToTarget = function(targetKey, key) {
+    if (_currentDragDropStep === 1) {
+        if (!_bioMotherKeys[targetKey]) _bioMotherKeys[targetKey] = [];
+        if (!_bioMotherKeys[targetKey].includes(key)) {
+            _bioMotherKeys[targetKey].push(key);
+            window.renderStep1Targets();
+            window.refreshDragDropAvailablePanel();
+        }
+    } else {
+        const targetBox = document.querySelector(`.drag-target-box[data-bio="${targetKey}"] .drop-zone-keys`);
+        if (!targetBox) return;
+
+        const assigned = window.getAssignedDragDropKeys();
+        if (assigned.has(key)) return;
+
+        const chip = document.createElement('span');
+        chip.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-100 text-teal-900 font-black text-xs border border-teal-200';
+        chip.innerHTML = `${key} <span onclick="window.removeKeyChip(this)" class="cursor-pointer text-teal-500 hover:text-rose-600 font-bold">&times;</span>`;
+        targetBox.appendChild(chip);
+        window.refreshDragDropAvailablePanel();
+    }
+};
+
+window.removeMotherKeyChip = function(famKey, key) {
+    if (_bioMotherKeys[famKey]) {
+        _bioMotherKeys[famKey] = _bioMotherKeys[famKey].filter(k => k !== key);
+        window.renderStep1Targets();
+        window.refreshDragDropAvailablePanel();
+    }
+};
+
+window.removeKeyChip = function(spanEl) {
+    if (spanEl && spanEl.parentElement) {
+        spanEl.parentElement.remove();
+        window.refreshDragDropAvailablePanel();
+    }
+};
+
+window.saveDragDropMapperResult = async function() {
+    if (_currentDragDropStep === 1) {
+        if (typeof showToast === 'function') showToast("Paso 1 guardado. Ahora distribuye a Dosis/Esquemas en el Paso 2.", true, 'good');
+        window.switchDragDropStep(2);
+        return;
+    }
+
+    const targetBoxes = document.querySelectorAll('.drag-target-box[data-bio]');
+    const newMapping = {};
+
+    targetBoxes.forEach(box => {
+        const bioKey = box.dataset.bio;
+        const chips = box.querySelectorAll('.drop-zone-keys span.inline-flex');
+        const keys = Array.from(chips).map(c => c.childNodes[0]?.textContent?.trim()).filter(Boolean);
+        newMapping[bioKey] = keys;
+    });
+
+    // 1. Actualizar diccionario en memoria global
+    window.updateRdaDictionary(newMapping);
+
+    // 2. Cerrar modal Drag & Drop
+    document.getElementById('modalSisDragDropMapper').classList.remove('show');
+    document.body.style.overflow = '';
+
+    // 3. Renderizar tabla principal del Mapeador Admin
+    window.renderSisMappingTable();
+
+    // 4. Guardar inmediatamente en base de datos Supabase para el año activo
+    await window.saveSisMappingUi();
+};
+
+window.clearRegistrosSisTable = async function(anioFilter = null) {
+    const confirmMsg = anioFilter 
+        ? `¿Estás seguro de vaciar los registros del año ${anioFilter} en la base de datos registros_sis?`
+        : `⚠️ ¡ATENCIÓN! ¿Estás seguro de VACIA Y PURGAR COMPLETAMENTE la tabla 'registros_sis' de Supabase para comenzar desde cero?`;
+    
+    if (!confirm(confirmMsg)) return;
+
+    if (typeof showOverlay === 'function') showOverlay("Limpiando tabla registros_sis...", "Base de Datos");
+    try {
+        let query = window.supabase.from('registros_sis').delete();
+        if (anioFilter) {
+            query = query.eq('anio', anioFilter);
+        } else {
+            query = query.neq('mes', -1); // Borrar todos los registros
+        }
+
+        const { error } = await query;
+        if (error) throw error;
+
+        if (typeof showToast === 'function') showToast("¡Tabla registros_sis limpiada con éxito!", true, 'good');
+        if (typeof window.refreshRDADashboard === 'function') window.refreshRDADashboard();
+    } catch (err) {
+        console.error("Error purgando registros_sis:", err);
+        if (typeof showToast === 'function') showToast("Error al vaciar tabla: " + err.message, false, 'bad');
+    } finally {
+        if (typeof hideOverlay === 'function') hideOverlay();
+    }
+};
+
+window.closeModalAndUnlockBody = function(modalId) {
+    const el = document.getElementById(modalId);
+    if (el) el.classList.remove('show');
+    const openModals = document.querySelectorAll('div[id^="modal"].show, div[id^="modal"][class*="show"]');
+    if (!openModals || openModals.length <= 1) {
+        document.body.style.overflow = '';
+    }
+};
+
+// Panel Único de Comparativa Multianual (2025 vs 2026)
+async function renderComparativaMultianual(muniFilter, uniFilter) {
+    const container = document.getElementById('rdaDashboardContent');
+    if (!container) return;
+
+    if (typeof showOverlay === 'function') showOverlay("Cargando comparativa multianual 2025 vs 2026...", "Procesando");
+
+    try {
+        const maxMes = _rdaCache.maxMes || 12;
+        
+        // Fetch 2025 data
+        const { data: ind2025, error: err2025 } = await window.supabase.rpc('get_rda_indicators', { p_anio: 2025, p_max_mes: maxMes });
+        // Fetch 2026 data
+        const { data: ind2026, error: err2026 } = await window.supabase.rpc('get_rda_indicators', { p_anio: 2026, p_max_mes: maxMes });
+
+        if (err2025) throw err2025;
+        if (err2026) throw err2026;
+
+        let u2025 = ind2025 || [];
+        let u2026 = ind2026 || [];
+
+        if (muniFilter) {
+            u2025 = u2025.filter(u => (u.municipio || '').toUpperCase().trim() === muniFilter.toUpperCase().trim());
+            u2026 = u2026.filter(u => (u.municipio || '').toUpperCase().trim() === muniFilter.toUpperCase().trim());
+        }
+        if (uniFilter) {
+            u2025 = u2025.filter(u => u.clues === uniFilter);
+            u2026 = u2026.filter(u => u.clues === uniFilter);
+        }
+
+        const calcTotals = (arr, is2025 = false) => {
+            let res = {
+                pM1: 0, p1A: 0, p4A: 0, p6A: 0,
+                bcg: 0, hepb: 0, rota: 0, hexaM1: 0, hexa1A: 0, neumoM1: 0, neumo1A: 0, srp1: 0, srp2: 0, dpt: 0, srp6: 0
+            };
+            for (const u of arr) {
+                res.pM1 += u.pob_menor_1 || 0; res.p1A += u.pob_1_ano || 0; res.p4A += u.pob_4_anos || 0; res.p6A += u.pob_6_anos || 0;
+                res.bcg += u.bcg_dosis || 0; res.hepb += u.hepb_0_7_dosis || 0; res.rota += u.rota_2_dosis || 0;
+                res.hexaM1 += (u.hexa_1_dosis||0) + (u.hexa_2_dosis||0) + (u.hexa_3_dosis||0);
+                res.hexa1A += u.hexa_ref_dosis || 0;
+                res.neumoM1 += (u.neumo_1_dosis||0) + (u.neumo_2_dosis||0) + (u.neumo_c1_dosis||0) + (u.neumo_c2_dosis||0);
+                res.neumo1A += (u.neumo_ref_dosis||0) + (u.neumo_c3_dosis||0);
+                res.srp1 += u.srp_1_dosis || 0; res.srp2 += u.srp_2_dosis || 0; res.dpt += u.dpt_4_dosis || 0; res.srp6 += u.srp_6_dosis || 0;
+            }
+            const fM1 = (res.pM1 * 0.0833) * maxMes;
+            const f1A = (res.p1A * 0.0833) * maxMes;
+            const f4A = (res.p4A * 0.0833) * maxMes;
+            const f6A = ((res.p6A || res.p4A) * 0.0833) * maxMes;
+
+            const dosisM1 = res.bcg + res.hepb + res.hexaM1 + res.rota + res.neumoM1;
+            const dosis1A = res.hexa1A + res.neumo1A + res.srp2;
+            const dosis4A = res.dpt;
+            const dosis6A = res.srp6;
+
+            res.covM1 = fM1 > 0 ? Math.round((((dosisM1 / 4.0) / fM1) * 100) * 10) / 10 : 0;
+            res.cov1A = f1A > 0 ? Math.round((((dosis1A / 3.0) / f1A) * 100) * 10) / 10 : 0;
+            res.cov4A = f4A > 0 ? Math.round(((dosis4A / f4A) * 100) * 10) / 10 : 0;
+            res.cov6A = f6A > 0 ? Math.round(((dosis6A / f6A) * 100) * 10) / 10 : 0;
+
+            return res;
+        };
+
+        const t25 = calcTotals(u2025, true);
+        const t26 = calcTotals(u2026, false);
+
+        container.innerHTML = `
+            <div style="background: white; border-radius: 24px; padding: 32px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(15,23,42,0.04);">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; border-bottom: 2px solid #f1f5f9; padding-bottom: 16px;">
+                    <div>
+                        <h2 style="margin: 0; font-size: 20px; font-weight: 900; color: #0f172a;">📊 Comparativa Multianual (2025 vs 2026)</h2>
+                        <p style="margin: 4px 0 0 0; font-size: 13px; font-weight: 600; color: #64748b;">Análisis comparativo directo a Cierre: ${MONTH_NAMES[maxMes-1] || 'Final'}</p>
+                    </div>
+                    <span style="background: #0284c7; color: white; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 800;">Corte Evaluado: Mes 1 a ${maxMes}</span>
+                </div>
+
+                <!-- KPI CARDS COMPARISON -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 32px;">
+                    <div style="background: #f8fafc; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0;">
+                        <div style="font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase;">Menores de 1 Año (<1)</div>
+                        <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 8px;">
+                            <div><span style="font-size: 11px; color: #94a3b8; font-weight: 700;">2025:</span> <strong style="font-size: 22px; color: #0f172a;">${t25.covM1}%</strong></div>
+                            <div><span style="font-size: 11px; color: #0284c7; font-weight: 700;">2026:</span> <strong style="font-size: 22px; color: #0284c7;">${t26.covM1}%</strong></div>
+                        </div>
+                        <div style="font-size: 11px; font-weight: 700; color: ${t26.covM1 >= t25.covM1 ? '#166534' : '#9f1239'}; margin-top: 6px;">
+                            ${t26.covM1 >= t25.covM1 ? '▲' : '▼'} Dif: ${(t26.covM1 - t25.covM1).toFixed(1)}% pts
+                        </div>
+                    </div>
+
+                    <div style="background: #f8fafc; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0;">
+                        <div style="font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase;">Niños de 1 Año (1)</div>
+                        <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 8px;">
+                            <div><span style="font-size: 11px; color: #94a3b8; font-weight: 700;">2025:</span> <strong style="font-size: 22px; color: #0f172a;">${t25.cov1A}%</strong></div>
+                            <div><span style="font-size: 11px; color: #0284c7; font-weight: 700;">2026:</span> <strong style="font-size: 22px; color: #0284c7;">${t26.cov1A}%</strong></div>
+                        </div>
+                        <div style="font-size: 11px; font-weight: 700; color: ${t26.cov1A >= t25.cov1A ? '#166534' : '#9f1239'}; margin-top: 6px;">
+                            ${t26.cov1A >= t25.cov1A ? '▲' : '▼'} Dif: ${(t26.cov1A - t25.cov1A).toFixed(1)}% pts
+                        </div>
+                    </div>
+
+                    <div style="background: #f8fafc; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0;">
+                        <div style="font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase;">Niños de 4 Años (4)</div>
+                        <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 8px;">
+                            <div><span style="font-size: 11px; color: #94a3b8; font-weight: 700;">2025:</span> <strong style="font-size: 22px; color: #0f172a;">${t25.cov4A}%</strong></div>
+                            <div><span style="font-size: 11px; color: #0284c7; font-weight: 700;">2026:</span> <strong style="font-size: 22px; color: #0284c7;">${t26.cov4A}%</strong></div>
+                        </div>
+                        <div style="font-size: 11px; font-weight: 700; color: ${t26.cov4A >= t25.cov4A ? '#166534' : '#9f1239'}; margin-top: 6px;">
+                            ${t26.cov4A >= t25.cov4A ? '▲' : '▼'} Dif: ${(t26.cov4A - t25.cov4A).toFixed(1)}% pts
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ECHARTS COMPARATIVE HISTOGRAM -->
+                <div style="height: 380px; width: 100%;" id="chartComparativeMulti"></div>
+            </div>
+        `;
+
+        if (typeof echarts !== 'undefined') {
+            const chartDom = document.getElementById('chartComparativeMulti');
+            if (chartDom) {
+                const compChart = echarts.init(chartDom);
+                compChart.setOption({
+                    title: { text: 'Avance % de Cobertura por Grupo de Edad (2025 vs 2026)', left: 'center', textStyle: { fontSize: 14, fontWeight: '900', color: '#0f172a' } },
+                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                    legend: { bottom: 0 },
+                    grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+                    xAxis: { type: 'category', data: ['< 1 Año', '1 Año', '4 Años'] },
+                    yAxis: { type: 'value', axisLabel: { formatter: '{value}%' } },
+                    series: [
+                        { name: 'Año 2025', type: 'bar', data: [t25.covM1, t25.cov1A, t25.cov4A], itemStyle: { color: '#94a3b8', borderRadius: [6,6,0,0] } },
+                        { name: 'Año 2026', type: 'bar', data: [t26.covM1, t26.cov1A, t26.cov4A], itemStyle: { color: '#0284c7', borderRadius: [6,6,0,0] } }
+                    ]
+                });
+            }
+        }
+    } catch (e) {
+        console.error("Error cargando comparativa multianual:", e);
+        container.innerHTML = `<div style="padding: 32px; color: #ef4444; font-weight: 700;">Error al generar comparativa: ${e.message}</div>`;
+    } finally {
+        if (typeof hideOverlay === 'function') hideOverlay();
+    }
+}
 

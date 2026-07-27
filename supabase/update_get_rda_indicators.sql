@@ -171,9 +171,10 @@ BEGIN
             u.clues::VARCHAR as u_clues,
             u.nombre::VARCHAR as u_nombre,
             u.municipio::VARCHAR as u_municipio,
-            COALESCE(u.pob_menor_1, 0) as u_pob_menor_1,
-            COALESCE(u.pob_1_ano, 0) as u_pob_1_ano,
-            COALESCE(u.pob_4_anos, 0) as u_pob_4_anos,
+            COALESCE(pu.pob_menor_1, u.pob_menor_1, 0) as u_pob_menor_1,
+            COALESCE(pu.pob_1_ano, u.pob_1_ano, 0) as u_pob_1_ano,
+            COALESCE(pu.pob_4_anos, u.pob_4_anos, 0) as u_pob_4_anos,
+            COALESCE(pu.pob_6_anos, u.pob_6_anos, 0) as u_pob_6_anos,
             -- Básico Menor 1 Breakdown
             COALESCE(SUM(CASE WHEN r.variable_sis = ANY(v_bcg) THEN r.valor ELSE 0 END), 0)::INT as val_bcg,
             COALESCE(SUM(CASE WHEN r.variable_sis = ANY(v_hepb_0_7) THEN r.valor ELSE 0 END), 0)::INT as val_hepb,
@@ -221,8 +222,9 @@ BEGIN
             COALESCE(SUM(CASE WHEN r.variable_sis = ANY(v_hepatitis_a) THEN r.valor ELSE 0 END), 0)::INT as val_hepatitis_a
         FROM public.unidades_medicas u
         INNER JOIN public.unidades un ON un.clues = u.clues AND un.activo = 'SI'
+        LEFT JOIN public.poblacion_unidades pu ON pu.clues = u.clues AND pu.anio = p_anio
         LEFT JOIN public.registros_sis r ON r.clues = u.clues AND r.anio = p_anio AND r.mes <= p_max_mes
-        GROUP BY u.clues, u.nombre, u.municipio, u.pob_menor_1, u.pob_1_ano, u.pob_4_anos
+        GROUP BY u.clues, u.nombre, u.municipio, pu.pob_menor_1, pu.pob_1_ano, pu.pob_4_anos, pu.pob_6_anos, u.pob_menor_1, u.pob_1_ano, u.pob_4_anos, u.pob_6_anos
     )
     SELECT
         u_clues as clues,
@@ -231,6 +233,7 @@ BEGIN
         u_pob_menor_1 as pob_menor_1,
         u_pob_1_ano as pob_1_ano,
         u_pob_4_anos as pob_4_anos,
+        u_pob_6_anos as pob_6_anos,
         val_bcg as bcg_dosis,
         val_hepb as hepb_0_7_dosis,
         val_hexa as hexa_3_dosis,

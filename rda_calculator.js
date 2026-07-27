@@ -18,7 +18,6 @@ let DICT_RDA = {
     SRP_2:      ['VTV01'],
     DPT_4:      ['VAC12'],
 
-    // Variables individuales y combinadas para Cobertura por Biológico (0-8 años)
     Hexa_1:     ['VAC67'],
     Hexa_2:     ['VAC68'],
     Neumo_1:    ['VAC17'],

@@ -15186,7 +15186,9 @@ window.activateAdminSubPanel = function (panelId) {
     }, 150);
   }
   if (panelId === 'mapeador') {
-    if (typeof window.renderSisMappingTable === 'function') {
+    if (typeof window.switchSisMappingYear === 'function') {
+      window.switchSisMappingYear(window._currentSisMappingYear || 2026);
+    } else if (typeof window.renderSisMappingTable === 'function') {
       window.renderSisMappingTable();
     }
   }
@@ -22747,7 +22749,12 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("bcgAperturaOverlay").classList.remove("show");
   });
   document.getElementById("btnCancelBCGDir")?.addEventListener("click", () => {
-    document.getElementById("bcgDirectorioOverlay").classList.remove("show");
+    if (window.SirevaqModal && document.getElementById("bcgDirectorioDialog")) {
+      SirevaqModal.close("bcgDirectorioDialog");
+    } else {
+      const el = document.getElementById("bcgDirectorioOverlay") || document.getElementById("bcgDirectorioDialog");
+      if (el) el.classList.remove("show");
+    }
   });
 
   // Guardar apertura BCG
@@ -22919,8 +22926,13 @@ async function openBCGDirectorio() {
 
     renderBCGDirectorioList();
 
-    console.log("BCG: Mostrando modal bcgDirectorioOverlay (agregando clase show)");
-    document.getElementById("bcgDirectorioOverlay").classList.add("show");
+    console.log("BCG: Mostrando modal de directorio");
+    if (window.SirevaqModal && document.getElementById("bcgDirectorioDialog")) {
+      SirevaqModal.open("bcgDirectorioDialog");
+    } else {
+      const el = document.getElementById("bcgDirectorioOverlay") || document.getElementById("bcgDirectorioDialog");
+      if (el) el.classList.add("show");
+    }
   } catch (error) {
     console.error("Error al cargar directorio BCG:", error);
     showToast("Error al consultar el directorio: " + (error.message || error), false, "bad");
