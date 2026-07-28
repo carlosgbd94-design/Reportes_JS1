@@ -4466,6 +4466,70 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
             `;
         }
 
+        // Helpers para evaluación dinámica y renderizado de Cards KPI
+        const getPeriodoText = (m) => {
+            const monthsShort = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            const mVal = Math.min(Math.max(parseInt(m, 10) || 12, 1), 12);
+            const mName = monthsShort[mVal - 1];
+            let trimStr = '1er trimestre';
+            if (mVal >= 10) trimStr = '4to trimestre';
+            else if (mVal >= 7) trimStr = '3er trimestre';
+            else if (mVal >= 4) trimStr = '2do trimestre';
+            return mVal === 1 ? `Evaluado de Ene (${trimStr})` : `Evaluado de Ene-${mName} (${trimStr})`;
+        };
+
+        const renderKpiCard = (title, cov25, cov26) => {
+            const diff = Math.round((cov26 - cov25) * 10) / 10;
+            const isUp = diff >= 0;
+            const absDiff = Math.abs(diff);
+            const themeColor = isUp ? '#059669' : '#dc2626';
+            const themeBg = isUp ? '#ecfdf5' : '#fef2f2';
+            const themeBorder = isUp ? '#a7f3d0' : '#fecdd3';
+            const gradFill = isUp ? 'linear-gradient(90deg, #10b981, #059669)' : 'linear-gradient(90deg, #f43f5e, #dc2626)';
+
+            return `
+                <div style="background: #ffffff; border-radius: 20px; padding: 22px; border: 1px solid #e2e8f0; box-shadow: 0 4px 16px rgba(15,23,42,0.04); position: relative; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(15,23,42,0.08)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 16px rgba(15,23,42,0.04)';">
+                    <div style="font-size: 11.5px; font-weight: 900; color: #334155; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; justify-content: space-between;">
+                        <span>${title}</span>
+                        <span style="font-size: 10px; font-weight: 800; color: #64748b; background: #f1f5f9; padding: 2px 8px; border-radius: 6px;">COMPARATIVO</span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; align-items: baseline;">
+                        <!-- AÑO 2025 (Soft Slate) -->
+                        <div style="background: #f8fafc; padding: 10px 12px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            <span style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; display: block;">AÑO 2025</span>
+                            <div style="font-size: 21px; font-weight: 800; color: #475569; margin-top: 2px;">${cov25}%</div>
+                        </div>
+                        <!-- AÑO 2026 (Electric Vibrant Blue) -->
+                        <div style="background: #f0f9ff; padding: 10px 12px; border-radius: 12px; border: 1px solid #bae6fd;">
+                            <span style="font-size: 10px; font-weight: 900; color: #0284c7; text-transform: uppercase; letter-spacing: 0.04em; display: inline-flex; align-items: center; gap: 4px;">AÑO 2026 <span style="font-size: 9px;">⚡</span></span>
+                            <div style="font-size: 25px; font-weight: 900; color: #0369a1; margin-top: 2px;">${cov26}%</div>
+                        </div>
+                    </div>
+
+                    <!-- SEMAFORIZADO DINÁMICO ANIMADO -->
+                    <div style="margin-top: 14px; padding: 10px 12px; border-radius: 12px; background: ${themeBg}; border: 1px solid ${themeBorder}; display: flex; flex-direction: column; gap: 6px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <div style="width: 22px; height: 22px; border-radius: 50%; background: ${themeColor}; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 8px ${isUp ? 'rgba(16,185,129,0.4)' : 'rgba(220,38,38,0.4)'};">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                                        ${isUp ? '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>' : '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline>'}
+                                    </svg>
+                                </div>
+                                <span style="font-size: 12.5px; font-weight: 900; color: ${themeColor};">${isUp ? '+' : ''}${diff}% pts</span>
+                            </div>
+                            <span style="font-size: 9.5px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 6px; background: #ffffff; color: ${themeColor}; border: 1px solid ${themeBorder};">
+                                ${isUp ? 'AVANCE SUPERIOR' : 'DECREMENTO'}
+                            </span>
+                        </div>
+                        <div style="width: 100%; height: 5px; background: rgba(0,0,0,0.06); border-radius: 999px; overflow: hidden;">
+                            <div style="height: 100%; width: ${Math.min(100, Math.max(10, absDiff * 2.5))}%; background: ${gradFill}; border-radius: 999px; transition: width 0.8s ease;"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
         // Generar HTML Executive con paleta Slate Sobria y Alineación a la Izquierda estricta
         container.innerHTML = `
             <div style="background: #ffffff; border-radius: 24px; padding: 32px; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(15,23,42,0.04); font-family: Inter, system-ui, sans-serif;">
@@ -4475,7 +4539,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                     <div>
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <span style="background: #0f172a; color: white; padding: 5px 12px; border-radius: 8px; font-size: 11px; font-weight: 900; letter-spacing: 0.05em;">EXECUTIVE COMPARATIVE SUITE</span>
-                            <span style="font-size: 12px; font-weight: 800; color: #475569; background: #f1f5f9; padding: 5px 12px; border-radius: 8px;">Cierre Evaluado: 1 al ${maxMes2026} (${maxMesName})</span>
+                            <span style="font-size: 12px; font-weight: 800; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 5px 14px; border-radius: 8px; box-shadow: 0 2px 6px rgba(2,132,199,0.08);">${getPeriodoText(maxMes2026)}</span>
                         </div>
                         <h2 style="margin: 8px 0 0 0; font-size: 22px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em;">
                             Comparativa Multianual de Cobertura Vacunal (2025 vs 2026)
@@ -4486,68 +4550,9 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
 
                 <!-- CARDS DE DIAGNÓSTICO ESTRATÉGICO COMPARATIVO EN SOBRIO GRIS Y SLATE -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-bottom: 32px;">
-                    <!-- Menor 1 -->
-                    <div style="background: #f8fafc; border-radius: 18px; padding: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden; box-shadow: 0 4px 12px rgba(15,23,42,0.03); transition: transform 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                        <div style="font-size: 11px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">Menores de 1 Año (<1)</div>
-                        <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-top: 12px;">
-                            <div>
-                                <span style="font-size: 10.5px; font-weight: 900; color: #475569; text-transform: uppercase;">Año 2025</span>
-                                <div style="font-size: 22px; font-weight: 900; color: #475569;">${t25.covM1}%</div>
-                            </div>
-                            <div style="text-align: left;">
-                                <span style="font-size: 10.5px; font-weight: 900; color: #0f172a; text-transform: uppercase;">Año 2026</span>
-                                <div style="font-size: 26px; font-weight: 900; color: #0f172a;">${t26.covM1}%</div>
-                            </div>
-                        </div>
-                        <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                            <span style="font-size: 11.5px; font-weight: 900; color: ${t26.covM1 >= t25.covM1 ? '#15803d' : '#b91c1c'};">
-                                ${t26.covM1 >= t25.covM1 ? '▲ +'+(t26.covM1-t25.covM1).toFixed(1) : '▼ '+(t26.covM1-t25.covM1).toFixed(1)}% pts
-                            </span>
-                            ${getCompBadgeHtml(t25.covM1, t26.covM1)}
-                        </div>
-                    </div>
-
-                    <!-- 1 Año -->
-                    <div style="background: #f8fafc; border-radius: 18px; padding: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden; box-shadow: 0 4px 12px rgba(15,23,42,0.03); transition: transform 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                        <div style="font-size: 11px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">Niños de 1 Año (1)</div>
-                        <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-top: 12px;">
-                            <div>
-                                <span style="font-size: 10.5px; font-weight: 900; color: #475569; text-transform: uppercase;">Año 2025</span>
-                                <div style="font-size: 22px; font-weight: 900; color: #475569;">${t25.cov1A}%</div>
-                            </div>
-                            <div style="text-align: left;">
-                                <span style="font-size: 10.5px; font-weight: 900; color: #0f172a; text-transform: uppercase;">Año 2026</span>
-                                <div style="font-size: 26px; font-weight: 900; color: #0f172a;">${t26.cov1A}%</div>
-                            </div>
-                        </div>
-                        <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                            <span style="font-size: 11.5px; font-weight: 900; color: ${t26.cov1A >= t25.cov1A ? '#15803d' : '#b91c1c'};">
-                                ${t26.cov1A >= t25.cov1A ? '▲ +'+(t26.cov1A-t25.cov1A).toFixed(1) : '▼ '+(t26.cov1A-t25.cov1A).toFixed(1)}% pts
-                            </span>
-                            ${getCompBadgeHtml(t25.cov1A, t26.cov1A)}
-                        </div>
-                    </div>
-
-                    <!-- 4 Años -->
-                    <div style="background: #f8fafc; border-radius: 18px; padding: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden; box-shadow: 0 4px 12px rgba(15,23,42,0.03); transition: transform 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                        <div style="font-size: 11px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">Niños de 4 Años (4)</div>
-                        <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-top: 12px;">
-                            <div>
-                                <span style="font-size: 10.5px; font-weight: 900; color: #475569; text-transform: uppercase;">Año 2025</span>
-                                <div style="font-size: 22px; font-weight: 900; color: #475569;">${t25.cov4A}%</div>
-                            </div>
-                            <div style="text-align: left;">
-                                <span style="font-size: 10.5px; font-weight: 900; color: #0f172a; text-transform: uppercase;">Año 2026</span>
-                                <div style="font-size: 26px; font-weight: 900; color: #0f172a;">${t26.cov4A}%</div>
-                            </div>
-                        </div>
-                        <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                            <span style="font-size: 11.5px; font-weight: 900; color: ${t26.cov4A >= t25.cov4A ? '#15803d' : '#b91c1c'};">
-                                ${t26.cov4A >= t25.cov4A ? '▲ +'+(t26.cov4A-t25.cov4A).toFixed(1) : '▼ '+(t26.cov4A-t25.cov4A).toFixed(1)}% pts
-                            </span>
-                            ${getCompBadgeHtml(t25.cov4A, t26.cov4A)}
-                        </div>
-                    </div>
+                    ${renderKpiCard('Menores de 1 Año (<1)', t25.covM1, t26.covM1)}
+                    ${renderKpiCard('Niños de 1 Año (1)', t25.cov1A, t26.cov1A)}
+                    ${renderKpiCard('Niños de 4 Años (4)', t25.cov4A, t26.cov4A)}
                 </div>
 
                 <!-- HISTOGRAMA GRÁFICO DUAL EN TONOS PIZARRA SOBRIOS (SLATE) -->
@@ -4558,7 +4563,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                 <!-- TABLA 1: DESGLOSE POR MUNICIPIOS ALINEADA A LA IZQUIERDA -->
                 <div style="margin-bottom: 32px;">
                     <h3 style="margin: 0 0 16px 0; font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
-                        <span class="material-symbols-rounded" style="color: #0f172a; font-size: 20px;">location_on</span> Comportamiento por Municipio (Avance 2025 vs 2026 a Cierre Mes ${maxMes2026})
+                        <span class="material-symbols-rounded" style="color: #0f172a; font-size: 20px;">location_on</span> Comportamiento por Municipio (Avance 2025 vs 2026 | ${getPeriodoText(maxMes2026)})
                     </h3>
                     <div style="border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; background: #ffffff; box-shadow: 0 4px 20px rgba(15,23,42,0.03);">
                         <table style="width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 11.5px;">
@@ -4582,12 +4587,12 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                 </tr>
                                 <tr style="background: #f1f5f9; font-weight: 800; color: #64748b; border-bottom: 2px solid #e2e8f0;">
                                     <th style="padding: 8px 14px; text-align: left; border-right: 1px solid #e2e8f0;">JS1 QUERÉTARO</th>
-                                    <th style="padding: 8px 10px; text-align: left; color: #475569; font-weight: 900;">2025</th>
-                                    <th style="padding: 8px 10px; text-align: left; color: #0f172a; font-weight: 900; border-right: 1px solid #e2e8f0;">2026</th>
-                                    <th style="padding: 8px 10px; text-align: left; color: #475569; font-weight: 900;">2025</th>
-                                    <th style="padding: 8px 10px; text-align: left; color: #0f172a; font-weight: 900; border-right: 1px solid #e2e8f0;">2026</th>
-                                    <th style="padding: 8px 10px; text-align: left; color: #475569; font-weight: 900;">2025</th>
-                                    <th style="padding: 8px 10px; text-align: left; color: #0f172a; font-weight: 900; border-right: 1px solid #e2e8f0;">2026</th>
+                                    <th style="padding: 8px 10px; text-align: left; color: #64748b; font-weight: 800;">2025</th>
+                                    <th style="padding: 8px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #e2e8f0;">2026 ⚡</th>
+                                    <th style="padding: 8px 10px; text-align: left; color: #64748b; font-weight: 800;">2025</th>
+                                    <th style="padding: 8px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #e2e8f0;">2026 ⚡</th>
+                                    <th style="padding: 8px 10px; text-align: left; color: #64748b; font-weight: 800;">2025</th>
+                                    <th style="padding: 8px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #e2e8f0;">2026 ⚡</th>
                                     <th style="padding: 8px 12px; text-align: left;">ESTADO</th>
                                 </tr>
                             </thead>
@@ -4597,12 +4602,12 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                     return `
                                         <tr style="border-bottom: 1px solid #f1f5f9; font-weight: 700; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
                                             <td style="padding: 12px 14px; text-align: left; font-weight: 900; color: #0f172a; border-right: 1px solid #f1f5f9;">${m.nombre}</td>
-                                            <td style="padding: 12px 10px; text-align: left; color: #475569; font-weight: 900;">${m.t25.covM1}%</td>
-                                            <td style="padding: 12px 10px; text-align: left; color: #0f172a; font-weight: 900; border-right: 1px solid #f1f5f9;">${m.t26.covM1}%</td>
-                                            <td style="padding: 12px 10px; text-align: left; color: #475569; font-weight: 900;">${m.t25.cov1A}%</td>
-                                            <td style="padding: 12px 10px; text-align: left; color: #0f172a; font-weight: 900; border-right: 1px solid #f1f5f9;">${m.t26.cov1A}%</td>
-                                            <td style="padding: 12px 10px; text-align: left; color: #475569; font-weight: 900;">${m.t25.cov4A}%</td>
-                                            <td style="padding: 12px 10px; text-align: left; color: #0f172a; font-weight: 900; border-right: 1px solid #f1f5f9;">${m.t26.cov4A}%</td>
+                                            <td style="padding: 12px 10px; text-align: left; color: #64748b; font-weight: 800;">${m.t25.covM1}%</td>
+                                            <td style="padding: 12px 10px; text-align: left; color: #0284c7; font-weight: 900; background: rgba(240,249,255,0.4); border-right: 1px solid #f1f5f9;">${m.t26.covM1}%</td>
+                                            <td style="padding: 12px 10px; text-align: left; color: #64748b; font-weight: 800;">${m.t25.cov1A}%</td>
+                                            <td style="padding: 12px 10px; text-align: left; color: #0284c7; font-weight: 900; background: rgba(240,249,255,0.4); border-right: 1px solid #f1f5f9;">${m.t26.cov1A}%</td>
+                                            <td style="padding: 12px 10px; text-align: left; color: #64748b; font-weight: 800;">${m.t25.cov4A}%</td>
+                                            <td style="padding: 12px 10px; text-align: left; color: #0284c7; font-weight: 900; background: rgba(240,249,255,0.4); border-right: 1px solid #f1f5f9;">${m.t26.cov4A}%</td>
                                             <td style="padding: 10px 8px; text-align: left;">
                                                 <span style="display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 5px 12px; border-radius: 9999px; font-size: 10px; font-weight: 800; white-space: nowrap; max-width: 100%; box-sizing: border-box; background: ${isPositive ? '#f0fdf4' : '#fef2f2'}; color: ${isPositive ? '#166534' : '#b91c1c'}; border: 1px solid ${isPositive ? '#bbf7d0' : '#fecdd3'}; box-shadow: 0 2px 6px ${isPositive ? 'rgba(22,101,52,0.08)' : 'rgba(185,28,28,0.08)'};">
                                                     <span class="material-symbols-rounded" style="font-size:13px; font-weight:900;">${isPositive ? 'trending_up' : 'trending_down'}</span>
@@ -4614,12 +4619,12 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                 }).join('')}
                                 <tr style="background: #f8fafc; font-weight: 900; color: #0f172a; border-top: 2px solid #cbd5e1;">
                                     <td style="padding: 14px 14px; text-align: left; border-right: 1px solid #cbd5e1;">TOTAL JURISDICCIONAL</td>
-                                    <td style="padding: 14px 10px; text-align: left; color: #475569; font-weight: 900;">${t25.covM1}%</td>
-                                    <td style="padding: 14px 10px; text-align: left; color: #0f172a; font-weight: 900; border-right: 1px solid #cbd5e1;">${t26.covM1}%</td>
-                                    <td style="padding: 14px 10px; text-align: left; color: #475569; font-weight: 900;">${t25.cov1A}%</td>
-                                    <td style="padding: 14px 10px; text-align: left; color: #0f172a; font-weight: 900; border-right: 1px solid #cbd5e1;">${t26.cov1A}%</td>
-                                    <td style="padding: 14px 10px; text-align: left; color: #475569; font-weight: 900;">${t25.cov4A}%</td>
-                                    <td style="padding: 14px 10px; text-align: left; color: #0f172a; font-weight: 900; border-right: 1px solid #cbd5e1;">${t26.cov4A}%</td>
+                                    <td style="padding: 14px 10px; text-align: left; color: #64748b; font-weight: 800;">${t25.covM1}%</td>
+                                    <td style="padding: 14px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #cbd5e1;">${t26.covM1}%</td>
+                                    <td style="padding: 14px 10px; text-align: left; color: #64748b; font-weight: 800;">${t25.cov1A}%</td>
+                                    <td style="padding: 14px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #cbd5e1;">${t26.cov1A}%</td>
+                                    <td style="padding: 14px 10px; text-align: left; color: #64748b; font-weight: 800;">${t25.cov4A}%</td>
+                                    <td style="padding: 14px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #cbd5e1;">${t26.cov4A}%</td>
                                     <td style="padding: 12px 8px; text-align: left;">
                                         <span style="display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 5px 12px; border-radius: 9999px; font-size: 10px; font-weight: 800; white-space: nowrap; max-width: 100%; box-sizing: border-box; background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; box-shadow: 0 2px 6px rgba(51,65,85,0.08);">
                                             <span class="material-symbols-rounded" style="font-size:13px;">verified</span> JS1 CONSOLIDADO
@@ -4639,50 +4644,64 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                     <div style="border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; background: #ffffff; box-shadow: 0 4px 20px rgba(15,23,42,0.03);">
                         <table style="width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 11.5px;">
                             <colgroup>
-                                <col style="width: 24%;">
+                                <col style="width: 22%;">
                                 <col style="width: 14%;">
                                 <col style="width: 10%;">
                                 <col style="width: 10%;">
                                 <col style="width: 10%;">
                                 <col style="width: 10%;">
-                                <col style="width: 22%;">
+                                <col style="width: 24%;">
                             </colgroup>
                             <thead>
                                 <tr style="background: #f8fafc; font-weight: 900; color: #334155; border-bottom: 2px solid #e2e8f0;">
                                     <th style="padding: 12px 14px; text-align: left;">BIOLÓGICO Y ESQUEMA</th>
                                     <th style="padding: 12px 10px; text-align: left;">GRUPO POBLACIONAL</th>
-                                    <th style="padding: 12px 14px; text-align: left; color: #475569; font-weight: 900;">DOSIS 2025</th>
-                                    <th style="padding: 12px 14px; text-align: left; color: #0f172a; font-weight: 900;">DOSIS 2026</th>
-                                    <th style="padding: 12px 14px; text-align: left; color: #475569; font-weight: 900;">AVANCE 2025</th>
-                                    <th style="padding: 12px 14px; text-align: left; color: #0f172a; font-weight: 900;">AVANCE 2026</th>
+                                    <th style="padding: 12px 14px; text-align: left; color: #64748b; font-weight: 800;">DOSIS 2025</th>
+                                    <th style="padding: 12px 14px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff;">DOSIS 2026</th>
+                                    <th style="padding: 12px 14px; text-align: left; color: #64748b; font-weight: 800;">AVANCE 2025</th>
+                                    <th style="padding: 12px 14px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff;">AVANCE 2026</th>
                                     <th style="padding: 12px 10px; text-align: left;">COMPARATIVA (2026 VS 2025)</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${(() => {
-                                    const buildRow = (n, g, d25, d26, c25, c26, difStr, isUp, isSpecial = false) => `
+                                    const buildRow = (n, g, d25, d26, c25, c26, difStr, isUp, isSpecial = false) => {
+                                        const numVal = Math.abs(parseFloat(difStr) || 12);
+                                        const fillPct = Math.min(100, Math.max(12, numVal * 2.5));
+                                        const barColor = isUp ? 'linear-gradient(90deg, #10b981, #059669)' : 'linear-gradient(90deg, #f43f5e, #dc2626)';
+                                        return `
                                         <tr style="border-bottom: 1px solid #f1f5f9; font-weight: 700; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
                                             <td style="padding: 12px 14px; text-align: left; font-weight: 900; color: #0f172a;">${n}</td>
-                                            <td style="padding: 12px 10px; text-align: left; color: #475569; font-weight: 800;">${g}</td>
-                                            <td style="padding: 12px 14px; text-align: left; color: #475569; font-weight: 900;">${d25 ? d25.toLocaleString('es-MX') : '0'}</td>
-                                            <td style="padding: 12px 14px; text-align: left; color: #0f172a; font-weight: 900;">${d26 ? d26.toLocaleString('es-MX') : '0'}</td>
-                                            <td style="padding: 12px 14px; text-align: left; color: #475569; font-weight: 900;">${c25}</td>
-                                            <td style="padding: 12px 14px; text-align: left; color: #0f172a; font-weight: 900;">${c26}</td>
-                                            <td style="padding: 10px 8px; text-align: left;">
+                                            <td style="padding: 12px 10px; text-align: left; color: #64748b; font-weight: 800;">${g}</td>
+                                            <td style="padding: 12px 14px; text-align: left; color: #64748b; font-weight: 800;">${d25 ? d25.toLocaleString('es-MX') : '0'}</td>
+                                            <td style="padding: 12px 14px; text-align: left; color: #0284c7; font-weight: 900; background: rgba(240,249,255,0.4);">${d26 ? d26.toLocaleString('es-MX') : '0'}</td>
+                                            <td style="padding: 12px 14px; text-align: left; color: #64748b; font-weight: 800;">${c25}</td>
+                                            <td style="padding: 12px 14px; text-align: left; color: #0284c7; font-weight: 900; background: rgba(240,249,255,0.4);">${c26}</td>
+                                            <td style="padding: 10px 12px; text-align: left;">
                                                 ${isSpecial ? `
                                                     <span style="display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 5px 12px; border-radius: 9999px; font-size: 10px; font-weight: 800; white-space: nowrap; max-width: 100%; box-sizing: border-box; background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; box-shadow: 0 2px 6px rgba(51,65,85,0.08);">
                                                         <span class="material-symbols-rounded" style="font-size:13px;">new_releases</span>
                                                         ${difStr}
                                                     </span>
                                                 ` : `
-                                                    <span style="display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 5px 12px; border-radius: 9999px; font-size: 10px; font-weight: 800; white-space: nowrap; max-width: 100%; box-sizing: border-box; background: ${isUp ? '#f0fdf4' : '#fef2f2'}; color: ${isUp ? '#166534' : '#b91c1c'}; border: 1px solid ${isUp ? '#bbf7d0' : '#fecdd3'}; box-shadow: 0 2px 6px ${isUp ? 'rgba(22,101,52,0.08)' : 'rgba(185,28,28,0.08)'};">
-                                                        <span class="material-symbols-rounded" style="font-size:13px; font-weight:900;">${isUp ? 'trending_up' : 'trending_down'}</span>
-                                                        ${difStr}
-                                                    </span>
+                                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                                                            <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 900; color: ${isUp ? '#15803d' : '#b91c1c'};">
+                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+                                                                    ${isUp ? '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>' : '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline>'}
+                                                                </svg>
+                                                                ${difStr}
+                                                            </span>
+                                                        </div>
+                                                        <div style="width: 100%; height: 5px; background: #e2e8f0; border-radius: 999px; overflow: hidden;">
+                                                            <div style="height: 100%; width: ${fillPct}%; background: ${barColor}; border-radius: 999px;"></div>
+                                                        </div>
+                                                    </div>
                                                 `}
                                             </td>
                                         </tr>
                                     `;
+                                    };
 
                                     const sectionHeader = (title, iconName = 'bookmark') => `
                                         <tr style="background: #0f172a !important; color: #ffffff !important;">
