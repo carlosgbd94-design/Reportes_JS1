@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galería de Loadscreens Premium SIREVAQ - 10 Opciones Estandarizadas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <style>
+        :root {
+            --bg-primary: #090d16;
+            --card-bg: #0f172a;
+            --accent-blue: #0284c7;
+            --accent-sky: #38bdf8;
+            --accent-emerald: #10b981;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* BARRA SUPERIOR DE CONTROL DE GALERÍA */
+        .gallery-header {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 16px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .gallery-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .gallery-title h1 {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gallery-badge {
+            background: rgba(2, 132, 199, 0.15);
+            color: var(--accent-sky);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            font-size: 11px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 999px;
+            text-transform: uppercase;
+        }
+
+        .gallery-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .select-option {
+            background: #1e293b;
+            color: #ffffff;
+            border: 1px solid #334155;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .btn-action {
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            color: #ffffff;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(2, 132, 199, 0.4);
+        }
+
+        .btn-mode {
+            background: #1e293b;
+            color: #94a3b8;
+            border: 1px solid #334155;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .btn-mode.active {
+            background: #ffffff;
+            color: #0f172a;
+            border-color: #ffffff;
+        }
+
+        /* VISTA GENERAL EN REJILLA (SHOWCASE GRID) */
+        .grid-view-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+            gap: 32px;
+            padding: 40px 32px;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .grid-card-item {
+            background: #0f172a;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .grid-card-header {
+            padding: 14px 20px;
+            background: #1e293b;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .grid-card-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: #f8fafc;
+        }
+
+        .grid-card-body {
+            padding: 32px 24px;
+            min-height: 420px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%);
+        }
+
+        /* VISTA UNIFICADA FULLSCREEN / FOCO */
+        .focus-view-container {
+            display: none;
+            position: fixed;
+            inset: 65px 0 0 0;
+            background: radial-gradient(circle at 50% 50%, #0f172a 0%, #090d16 100%);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .focus-view-container.active {
+            display: flex;
+        }
+
+        /* CRÍTICO: REGLA DE OCULTAMIENTO STRICTO PARA EVITAR SOLAPAMIENTOS */
+        .loadscreen-box {
+            display: none !important;
+            width: 100%;
+        }
+
+        .loadscreen-box.active {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ==========================================================================
+           OPCIÓN 1: EXECUTIVE GLASSMORPHISM (Frosted Glass & Crisp Sky Accent)
+           ========================================================================== */
+        .ls-opt1-card {
+            background: #ffffff;
+            color: #0f172a;
+            width: 100%;
+            max-width: 440px;
+            border-radius: 28px;
+            padding: 36px 32px;
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ls-opt1-accent {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #0284c7, #38bdf8, #10b981);
+        }
+
+        @keyframes pulseLogo1 {
+            0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 4px 8px rgba(0,132,212,0.2)); }
+            50% { transform: translateY(-6px) scale(1.03); filter: drop-shadow(0 12px 20px rgba(0,132,212,0.35)); }
+        }
+
+        .ls-opt1-logo {
+            width: 82px;
+            height: auto;
+            animation: pulseLogo1 2s ease-in-out infinite;
+            margin-bottom: 16px;
+        }
+
+        /* ==========================================================================
+           OPCIÓN 2: MINIMALIST APPLE-STYLE LUXURY (Pure Clean & Micro Gauge Ring)
+           ========================================================================== */
+        .ls-opt2-card {
+            background: #ffffff;
+            color: #0f172a;
+            width: 100%;
+            max-width: 420px;
+            border-radius: 32px;
+            padding: 36px 28px;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .ls-opt2-circle-wrap {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ls-opt2-svg-ring {
+            transform: rotate(-90deg);
+            width: 100px;
+            height: 100px;
+        }
+
+        .ls-opt2-svg-bg {
+            stroke: #f1f5f9;
+            stroke-width: 8;
+        }
+
+        .ls-opt2-svg-bar {
+            stroke: #0284c7;
+            stroke-width: 8;
+            stroke-dasharray: 283;
+            stroke-dashoffset: 70;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.3s ease;
+        }
+
+        .ls-opt2-logo-inner {
+            position: absolute;
+            width: 48px;
+            height: auto;
+        }
+
+        /* ==========================================================================
+           OPCIÓN 3: DARK EXECUTIVE SUITE (Deep Slate Navy & Emerald Status Glow)
+           ========================================================================== */
+        .ls-opt3-card {
+            background: #0f172a;
+            color: #f8fafc;
+            width: 100%;
+            max-width: 430px;
+            border-radius: 24px;
+            padding: 36px 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(16, 185, 129, 0.1);
+            text-align: center;
+            position: relative;
+        }
+
+        .ls-opt3-glow {
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, rgba(2, 132, 199, 0.15) 50%, transparent 70%);
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            pointer-events: none;
+            filter: blur(20px);
+        }
+
+        /* ==========================================================================
+           OPCIÓN 4: DUAL ORBITING RINGS (Orbital Ring & Shimmer Card)
+           ========================================================================== */
+        .ls-opt4-card {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            color: #ffffff;
+            width: 100%;
+            max-width: 430px;
+            border-radius: 28px;
+            padding: 36px;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        .orbit-container {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            margin: 0 auto 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes orbitRotateCW {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes orbitRotateCCW {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(-360deg); }
+        }
+
+        .orbit-ring-outer {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 2px dashed rgba(56, 189, 248, 0.4);
+            animation: orbitRotateCW 12s linear infinite;
+        }
+
+        .orbit-ring-inner {
+            position: absolute;
+            inset: 8px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-top-color: var(--accent-emerald);
+            border-bottom-color: var(--accent-sky);
+            animation: orbitRotateCCW 4s linear infinite;
+        }
+
+        /* ==========================================================================
+           OPCIÓN 5: SPLIT DIAGNOSTIC DASHBOARD (Left Stats Sidebar + Gauge)
+           ========================================================================== */
+        .ls-opt5-card {
+            background: #ffffff;
+            color: #0f172a;
+            width: 100%;
+            max-width: 480px;
+            border-radius: 28px;
+            padding: 28px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .ls-opt5-left {
+            text-align: left;
+        }
+
+        .ls-opt5-right {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        /* ==========================================================================
+           OPCIÓN 6: NEUMORPHIC SOFT TOUCH (3D Bevel & Soft Medical Blue)
+           ========================================================================== */
+        .ls-opt6-card {
+            background: #e2e8f0;
+            color: #1e293b;
+            width: 100%;
+            max-width: 420px;
+            border-radius: 32px;
+            padding: 32px;
+            box-shadow: 16px 16px 40px #be2e8f0, -16px -16px 40px #ffffff;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.6);
+        }
+
+        .ls-opt6-logo-container {
+            width: 84px;
+            height: 84px;
+            margin: 0 auto 16px auto;
+            border-radius: 50%;
+            background: #e2e8f0;
+            box-shadow: inset 5px 5px 10px #c0c4cb, inset -5px -5px 10px #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ==========================================================================
+           OPCIÓN 7: GRADIENT MESH HORIZON (Fluid Aurora Glow & Translucent Card)
+           ========================================================================== */
+        .ls-opt7-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            color: #ffffff;
+            width: 100%;
+            max-width: 430px;
+            border-radius: 32px;
+            padding: 36px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        /* ==========================================================================
+           OPCIÓN 8: STEPPED PROCESS TIMELINE (4-Stage Animated Sequence)
+           ========================================================================== */
+        .ls-opt8-card {
+            background: #ffffff;
+            color: #0f172a;
+            width: 100%;
+            max-width: 440px;
+            border-radius: 28px;
+            padding: 32px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+            text-align: center;
+        }
+
+        .step-timeline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .step-timeline::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            right: 10%;
+            height: 3px;
+            background: #e2e8f0;
+            z-index: 1;
+            transform: translateY(-50%);
+        }
+
+        .step-node {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 3px solid #cbd5e1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 800;
+            color: #64748b;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .step-node.active {
+            border-color: #0284c7;
+            background: #0284c7;
+            color: #ffffff;
+            box-shadow: 0 0 12px rgba(2, 132, 199, 0.4);
+        }
+
+        .step-node.completed {
+            border-color: #10b981;
+            background: #10b981;
+            color: #ffffff;
+        }
+
+        /* ==========================================================================
+           OPCIÓN 9: LIQUID WAVE METER (Dynamic Fluid Rise)
+           ========================================================================== */
+        .ls-opt9-card {
+            background: #0f172a;
+            color: #ffffff;
+            width: 100%;
+            max-width: 420px;
+            border-radius: 28px;
+            padding: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .liquid-container {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 4px solid #0284c7;
+            margin: 0 auto 18px auto;
+            position: relative;
+            overflow: hidden;
+            background: #1e293b;
+            box-shadow: 0 0 20px rgba(2, 132, 199, 0.3);
+        }
+
+        .liquid-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 65%;
+            background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
+            transition: height 0.3s ease;
+        }
+
+        .liquid-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 900;
+            color: #ffffff;
+            z-index: 5;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* ==========================================================================
+           OPCIÓN 10: CORPORATE MONOLITHIC BANNER (Full Header Bar & Diagnostic Hub)
+           ========================================================================== */
+        .ls-opt10-card {
+            background: #ffffff;
+            color: #0f172a;
+            width: 100%;
+            max-width: 440px;
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 30px 70px rgba(0,0,0,0.4);
+            text-align: center;
+        }
+
+        /* BARRA DE PROGRESO BASE ESTÁNDAR */
+        .std-progress-bg {
+            background: #f1f5f9;
+            border-radius: 999px;
+            height: 12px;
+            width: 100%;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 12px;
+        }
+        .dark-progress-bg {
+            background: #1e293b;
+            border-radius: 999px;
+            height: 12px;
+            width: 100%;
+            overflow: hidden;
+            border: 1px solid #334155;
+            margin-bottom: 12px;
+        }
+
+        .std-progress-bar {
+            height: 100%;
+            width: 65%;
+            background: linear-gradient(90deg, #0284c7, #38bdf8);
+            border-radius: 999px;
+            transition: width 0.3s ease;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- BARRA DE CONTROL DE GALERÍA -->
+    <div class="gallery-header">
+        <div class="gallery-title">
+            <h1>SIREVAQ — Galería de Loadscreens Premium</h1>
+            <span class="gallery-badge">10 Diseños Independientes</span>
+        </div>
+        <div class="gallery-controls">
+            <button id="btnViewGrid" class="btn-mode active" onclick="switchView('grid')">
+                <span class="material-symbols-rounded" style="font-size: 15px; vertical-align: middle;">grid_view</span> Ver Rejilla
+            </button>
+            <button id="btnViewFocus" class="btn-mode" onclick="switchView('focus')">
+                <span class="material-symbols-rounded" style="font-size: 15px; vertical-align: middle;">center_focus_strong</span> Ver Foco Único
+            </button>
+
+            <select id="selectOption" class="select-option" onchange="changeFocusOption(this.value)">
+                <option value="1">Opción 1: Executive Glassmorphism (Vidrio & Azul Sky)</option>
+                <option value="2">Opción 2: Minimalist Apple Luxury (Limpio & Micro Ring)</option>
+                <option value="3">Opción 3: Dark Executive Suite (Pizarra & Resplandor Esmeralda)</option>
+                <option value="4">Opción 4: Dual Orbiting Rings (Anillos Orbitales 3D)</option>
+                <option value="5">Opción 5: Split Diagnostic Dashboard (Sidebar KPI + Gauge)</option>
+                <option value="6">Opción 6: Neumorphic Soft Touch (Relieve 3D Médico)</option>
+                <option value="7">Opción 7: Gradient Mesh Horizon (Aurora Fluida & Cristal)</option>
+                <option value="8">Opción 8: Stepped Process Timeline (Línea de Tiempo 4 Etapas)</option>
+                <option value="9">Opción 9: Liquid Wave Meter (Indicador de Ola Fluida)</option>
+                <option value="10">Opción 10: Corporate Monolithic (Banner Institucional SESEQ)</option>
+            </select>
+
+            <button class="btn-action" onclick="toggleSimulateProgress()">
+                <span class="material-symbols-rounded">play_arrow</span> Simular Progreso
+            </button>
+        </div>
+    </div>
+
+    <!-- VISTA 1: REJILLA DE EXHIBICIÓN (SHOWCASE GRID) -->
+    <div id="gridViewContainer" class="grid-view-container">
+        
+        <!-- ITEM 1 -->
+        <div class="grid-card-item">
+            <div class="grid-card-header">
+                <span class="grid-card-title">Opción 1: Executive Glassmorphism</span>
+                <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="focusOnOption(1)">Probar Foco</button>
+            </div>
+            <div class="grid-card-body">
+                <div class="ls-opt1-card">
+                    <div class="ls-opt1-accent"></div>
+                    <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" class="ls-opt1-logo" alt="Logo SIREVAQ">
+                    <div style="display: inline-block; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 11px; font-weight: 900; padding: 4px 12px; border-radius: 9999px; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;">
+                        EXPORTACIÓN MASIVA PDF
+                    </div>
+                    <h3 style="margin: 0 0 6px 0; font-size: 19px; font-weight: 900; color: #0f172a;">Generando Reporte (<span class="progress-val">65</span>%)</h3>
+                    <p style="margin: 0 0 20px 0; font-size: 12.5px; font-weight: 700; color: #475569;" class="status-msg">Procesando: Centro de Salud Querétaro...</p>
+                    <div class="std-progress-bg">
+                        <div class="std-progress-bar bar-fill" style="width: 65%;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: #64748b;">
+                        <span class="step-count">13 de 20 Unidades</span>
+                        <span style="color: #0284c7; font-weight: 900;" class="pct-text">65% COMPLETADO</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ITEM 2 -->
+        <div class="grid-card-item">
+            <div class="grid-card-header">
+                <span class="grid-card-title">Opción 2: Minimalist Apple Luxury</span>
+                <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="focusOnOption(2)">Probar Foco</button>
+            </div>
+            <div class="grid-card-body" style="background: #f8fafc;">
+                <div class="ls-opt2-card">
+                    <div class="ls-opt2-circle-wrap">
+                        <svg class="ls-opt2-svg-ring" viewBox="0 0 100 100">
+                            <circle class="ls-opt2-svg-bg" cx="50" cy="50" r="45" fill="none"></circle>
+                            <circle class="ls-opt2-svg-bar ring-fill" cx="50" cy="50" r="45" fill="none"></circle>
+                        </svg>
+                        <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" class="ls-opt2-logo-inner" alt="Logo">
+                    </div>
+                    <div style="font-size: 11px; font-weight: 900; color: #64748b; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px;">SISTEMA SIREVAQ</div>
+                    <h3 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 900; color: #0f172a;">Procesando Diagnóstico</h3>
+                    <p style="margin: 0 0 20px 0; font-size: 12.5px; font-weight: 600; color: #64748b;" class="status-msg">Generando indicadores de cobertura...</p>
+                    <div class="std-progress-bg">
+                        <div class="std-progress-bar bar-fill" style="width: 65%; background: #0f172a;"></div>
+                    </div>
+                    <div style="font-size: 11.5px; font-weight: 800; color: #0f172a;" class="pct-text">65% PROCESADO</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ITEM 3 -->
+        <div class="grid-card-item">
+            <div class="grid-card-header">
+                <span class="grid-card-title">Opción 3: Dark Executive Suite</span>
+                <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="focusOnOption(3)">Probar Foco</button>
+            </div>
+            <div class="grid-card-body">
+                <div class="ls-opt3-card">
+                    <div class="ls-opt3-glow"></div>
+                    <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" style="width: 76px; margin-bottom: 14px; position: relative; z-index: 2;" alt="Logo">
+                    <div style="display: inline-block; background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); font-size: 11px; font-weight: 900; padding: 4px 12px; border-radius: 9999px; margin-bottom: 12px;">EXECUTIVE SUITE</div>
+                    <h3 style="margin: 0 0 6px 0; font-size: 19px; font-weight: 900; color: #ffffff;">Actualizando Tablero (<span class="progress-val">65</span>%)</h3>
+                    <p style="margin: 0 0 18px 0; font-size: 12.5px; font-weight: 700; color: #94a3b8;" class="status-msg">Cargando base de datos Supabase...</p>
+                    <div class="dark-progress-bg">
+                        <div class="std-progress-bar bar-fill" style="width: 65%; background: linear-gradient(90deg, #10b981, #38bdf8);"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: #94a3b8;">
+                        <span class="step-count">Paso 3 de 4</span>
+                        <span style="color: #10b981; font-weight: 900;" class="pct-text">65% EJECUTADO</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ITEM 4 -->
+        <div class="grid-card-item">
+            <div class="grid-card-header">
+                <span class="grid-card-title">Opción 4: Dual Orbiting Rings</span>
+                <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="focusOnOption(4)">Probar Foco</button>
+            </div>
+            <div class="grid-card-body">
+                <div class="ls-opt4-card">
+                    <div class="orbit-container">
+                        <div class="orbit-ring-outer"></div>
+                        <div class="orbit-ring-inner"></div>
+                        <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" style="width: 46px; z-index: 5;" alt="Logo">
+                    </div>
+                    <h3 style="margin: 0 0 6px 0; font-size: 19px; font-weight: 900; color: #ffffff;">Sincronizando Métricas</h3>
+                    <p style="margin: 0 0 18px 0; font-size: 12.5px; font-weight: 600; color: #94a3b8;" class="status-msg">Calculando dosis aplicadas...</p>
+                    <div class="dark-progress-bg">
+                        <div class="std-progress-bar bar-fill" style="width: 65%; background: linear-gradient(90deg, #0284c7, #10b981);"></div>
+                    </div>
+                    <div style="font-size: 11.5px; font-weight: 900; color: #38bdf8;" class="pct-text">65% COMPLETADO</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ITEM 5 -->
+        <div class="grid-card-item">
+            <div class="grid-card-header">
+                <span class="grid-card-title">Opción 5: Split Diagnostic Dashboard</span>
+                <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="focusOnOption(5)">Probar Foco</button>
+            </div>
+            <div class="grid-card-body" style="background: #f1f5f9;">
+                <div class="ls-opt5-card">
+                    <div class="ls-opt5-left">
+                        <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" style="width: 65px; margin-bottom: 10px;" alt="Logo">
+                        <h3 style="margin: 0 0 4px 0; font-size: 17px; font-weight: 900; color: #0f172a;">Diagnóstico en Curso</h3>
+                        <p style="margin: 0 0 14px 0; font-size: 11.5px; font-weight: 700; color: #64748b;" class="status-msg">Consolidando registros de salud...</p>
+                        <div class="std-progress-bg">
+                            <div class="std-progress-bar bar-fill" style="width: 65%;"></div>
+                        </div>
+                        <div style="font-size: 10.5px; font-weight: 800; color: #64748b;" class="step-count">13 de 20 Procesados</div>
+                    </div>
+                    <div class="ls-opt5-right">
+                        <div style="font-size: 32px; font-weight: 900; color: #0284c7;" class="pct-text">65%</div>
+                        <div style="font-size: 9.5px; font-weight: 900; color: #64748b; letter-spacing: 0.05em;">PROGRESO GLOBAL</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ITEM 6 -->
+        <div class="grid-card-item">
+            <div class="grid-card-header">
+                <span class="grid-card-title">Opción 6: Neumorphic Soft Touch</span>
+                <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="focusOnOption(6)">Probar Foco</button>
+            </div>
+            <div class="grid-card-body" style="background: #e2e8f0;">
+                <div class="ls-opt6-card">
+                    <div class="ls-opt6-logo-container">
+                        <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" style="width: 48px;" alt="Logo">
+                    </div>
+                    <h3 style="margin: 0 0 6px 0; font-size: 19px; font-weight: 900; color: #1e293b;">Procesando Datos</h3>
+                    <p style="margin: 0 0 18px 0; font-size: 12.5px; font-weight: 700; color: #64748b;" class="status-msg">Generando informe ejecutivo...</p>
+                    <div style="background: #e2e8f0; height: 12px; border-radius: 999px; box-shadow: inset 3px 3px 6px #c0c4cb, inset -3px -3px 6px #ffffff; overflow: hidden; padding: 2px; margin-bottom: 12px;">
+                        <div class="bar-fill" style="width: 65%; height: 100%; background: #0284c7; border-radius: 999px;"></div>
+                    </div>
+                    <div style="font-size: 11.5px; font-weight: 900; color: #0284c7;" class="pct-text">65% COMPLETADO</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ITEM 7 -->
+        <div class="grid-card-item">
+            <div class="grid-card-header">
+                <span class="grid-card-title">Opción 7: Gradient Mesh Horizon</span>
+                <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="focusOnOption(7)">Probar Foco</button>
+            </div>
+            <div class="grid-card-body" style="background: radial-gradient(at 0% 0%, #0369a1 0px, transparent 50%), radial-gradient(at 100% 100%, #047857 0px, transparent 50%), #0f172a;">
+                <div class="ls-opt7-card">
+                    <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" style="width: 74px; margin-bottom: 14px;" alt="Logo">
+                    <h3 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 900; color: #ffffff;">Actualizando SIREVAQ</h3>
+                    <p style="margin: 0 0 18px 0; font-size: 12.5px; font-weight: 600; color: #cbd5e1;" class="status-msg">Verificando consistencia de datos...</p>
+                    <div class="dark-progress-bg">
+                        <div class="std-progress-bar bar-fill" style="width: 65%; background: linear-gradient(90deg, #38bdf8, #10b981);"></div>
+                    </div>
+                    <div style="font-size: 11.5px; font-weight: 900; color: #38bdf8;" class="pct-text">65% CUMPLIDO</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ITEM 8 -->
+        <div class="grid-card-item">
+            <div class="grid-card-header">
+                <span class="grid-card-title">Opción 8: Stepped Process Timeline</span>
+                <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="focusOnOption(8)">Probar Foco</button>
+            </div>
+            <div class="grid-card-body" style="background: #f8fafc;">
+                <div class="ls-opt8-card">
+                    <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" style="width: 65px; margin-bottom: 10px;" alt="Logo">
+                    <h3 style="margin: 0 0 4px 0; font-size: 19px; font-weight: 900; color: #0f172a;">Ejecución por Etapas</h3>
+                    <p style="margin: 0 0 14px 0; font-size: 11.5px; font-weight: 700; color: #64748b;" class="status-msg">Etapa 3: Ensamblando PDF...</p>
+
+                    <div class="step-timeline">
+                        <div class="step-node completed">1</div>
+                        <div class="step-node completed">2</div>
+                        <div class="step-node active">3</div>
+                        <div class="step-node">4</div>
+                    </div>
+
+                    <div class="std-progress-bg">
+                        <div class="std-progress-bar bar-fill" style="width: 65%;"></div>
+                    </div>
+                    <div style="font-size: 11.5px; font-weight: 900; color: #0284c7;" class="pct-text">65% PROGRESADO</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ITEM 9 -->
+        <div class="grid-card-item">
+            <div class="grid-card-header">
+                <span class="grid-card-title">Opción 9: Liquid Wave Meter</span>
+                <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="focusOnOption(9)">Probar Foco</button>
+            </div>
+            <div class="grid-card-body">
+                <div class="ls-opt9-card">
+                    <div class="liquid-container">
+                        <div class="liquid-fill wave-fill" style="height: 65%;"></div>
+                        <div class="liquid-text pct-text">65%</div>
+                    </div>
+                    <h3 style="margin: 0 0 6px 0; font-size: 19px; font-weight: 900; color: #ffffff;">Procesando Información</h3>
+                    <p style="margin: 0 0 14px 0; font-size: 12.5px; font-weight: 700; color: #94a3b8;" class="status-msg">Generando informe de vacunación...</p>
+                    <div style="font-size: 11px; font-weight: 800; color: #38bdf8;" class="step-count">Procesando 13 de 20</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ITEM 10 -->
+        <div class="grid-card-item">
+            <div class="grid-card-header">
+                <span class="grid-card-title">Opción 10: Corporate Monolithic</span>
+                <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="focusOnOption(10)">Probar Foco</button>
+            </div>
+            <div class="grid-card-body" style="background: #f8fafc; flex-direction: column;">
+                <div class="ls-opt10-card">
+                    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 16px;">
+                        <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/Seseq_vertical_2025.png" style="height: 28px;" alt="SESEQ">
+                        <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" style="height: 28px;" alt="SIREVAQ">
+                    </div>
+                    <h3 style="margin: 0 0 6px 0; font-size: 18px; font-weight: 900; color: #0f172a;">Exportación Institucional SESEQ</h3>
+                    <p style="margin: 0 0 18px 0; font-size: 12.5px; font-weight: 700; color: #475569;" class="status-msg">Generando paquete de resguardo oficial...</p>
+                    <div class="std-progress-bg">
+                        <div class="std-progress-bar bar-fill" style="width: 65%; background: #0f172a;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: #64748b;">
+                        <span class="step-count">13 de 20 Archivos</span>
+                        <span style="color: #0f172a; font-weight: 900;" class="pct-text">65% DE AVANCE</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- VISTA 2: VISTA UNIFICADA EN FOCO / FULLSCREEN -->
+    <div id="focusViewContainer" class="focus-view-container">
+
+        <!-- OPCIÓN 1 -->
+        <div id="focusOpt1" class="loadscreen-box ls-opt1 active">
+            <div class="ls-opt1-card">
+                <div class="ls-opt1-accent"></div>
+                <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" class="ls-opt1-logo" alt="Logo SIREVAQ">
+                <div style="display: inline-block; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 11px; font-weight: 900; padding: 4px 12px; border-radius: 9999px; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;">
+                    EXPORTACIÓN MASIVA PDF
+                </div>
+                <h3 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 900; color: #0f172a;">Generando Reporte (<span class="progress-val">65</span>%)</h3>
+                <p style="margin: 0 0 20px 0; font-size: 13px; font-weight: 700; color: #475569;" class="status-msg">Procesando: Centro de Salud Querétaro...</p>
+                <div class="std-progress-bg">
+                    <div class="std-progress-bar bar-fill" style="width: 65%;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 800; color: #64748b;">
+                    <span class="step-count">13 de 20 Unidades</span>
+                    <span style="color: #0284c7; font-weight: 900;" class="pct-text">65% COMPLETADO</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- OPCIÓN 2 -->
+        <div id="focusOpt2" class="loadscreen-box ls-opt2">
+            <div class="ls-opt2-card">
+                <div class="ls-opt2-circle-wrap">
+                    <svg class="ls-opt2-svg-ring" viewBox="0 0 100 100">
+                        <circle class="ls-opt2-svg-bg" cx="50" cy="50" r="45" fill="none"></circle>
+                        <circle class="ls-opt2-svg-bar ring-fill" cx="50" cy="50" r="45" fill="none"></circle>
+                    </svg>
+                    <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" class="ls-opt2-logo-inner" alt="Logo">
+                </div>
+                <div style="font-size: 11px; font-weight: 900; color: #64748b; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px;">SISTEMA SIREVAQ</div>
+                <h3 style="margin: 0 0 6px 0; font-size: 22px; font-weight: 900; color: #0f172a;">Procesando Diagnóstico</h3>
+                <p style="margin: 0 0 24px 0; font-size: 13px; font-weight: 600; color: #64748b;" class="status-msg">Generando indicadores de cobertura vacunal...</p>
+                <div class="std-progress-bg">
+                    <div class="std-progress-bar bar-fill" style="width: 65%; background: #0f172a;"></div>
+                </div>
+                <div style="font-size: 12px; font-weight: 800; color: #0f172a;" class="pct-text">65% PROCESADO</div>
+            </div>
+        </div>
+
+        <!-- OPCIÓN 3 -->
+        <div id="focusOpt3" class="loadscreen-box ls-opt3">
+            <div class="ls-opt3-card">
+                <div class="ls-opt3-glow"></div>
+                <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" style="width: 80px; margin-bottom: 16px; position: relative; z-index: 2;" alt="Logo">
+                <div style="display: inline-block; background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); font-size: 11px; font-weight: 900; padding: 4px 12px; border-radius: 9999px; margin-bottom: 14px;">EXECUTIVE SUITE</div>
+                <h3 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 900; color: #ffffff;">Actualizando Tablero (<span class="progress-val">65</span>%)</h3>
+                <p style="margin: 0 0 20px 0; font-size: 13px; font-weight: 700; color: #94a3b8;" class="status-msg">Cargando base de datos multianual Supabase...</p>
+                <div class="dark-progress-bg">
+                    <div class="std-progress-bar bar-fill" style="width: 65%; background: linear-gradient(90deg, #10b981, #38bdf8);"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 800; color: #94a3b8;">
+                    <span class="step-count">Paso 3 de 4</span>
+                    <span style="color: #10b981; font-weight: 900;" class="pct-text">65% EJECUTADO</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- OPCIÓN 4 -->
+        <div id="focusOpt4" class="loadscreen-box ls-opt4">
+            <div class="ls-opt4-card">
+                <div class="orbit-container">
+                    <div class="orbit-ring-outer"></div>
+                    <div class="orbit-ring-inner"></div>
+                    <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" style="width: 50px; z-index: 5;" alt="Logo">
+                </div>
+                <h3 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 900; color: #ffffff;">Sincronizando Métricas</h3>
+                <p style="margin: 0 0 20px 0; font-size: 13px; font-weight: 600; color: #94a3b8;" class="status-msg">Calculando dosis aplicadas y coberturas...</p>
+                <div class="dark-progress-bg">
+                    <div class="std-progress-bar bar-fill" style="width: 65%; background: linear-gradient(90deg, #0284c7, #10b981);"></div>
+                </div>
+                <div style="font-size: 12px; font-weight: 900; color: #38bdf8;" class="pct-text">65% COMPLETADO</div>
+            </div>
+        </div>
+
+        <!-- OPCIÓN 5 -->
+        <div id="focusOpt5" class="loadscreen-box ls-opt5">
+            <div class="ls-opt5-card">
+                <div class="ls-opt5-left">
+                    <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" style="width: 70px; margin-bottom: 12px;" alt="Logo">
+                    <h3 style="margin: 0 0 6px 0; font-size: 18px; font-weight: 900; color: #0f172a;">Diagnóstico en Curso</h3>
+                    <p style="margin: 0 0 16px 0; font-size: 12px; font-weight: 700; color: #64748b;" class="status-msg">Consolidando registros de salud...</p>
+                    <div class="std-progress-bg">
+                        <div class="std-progress-bar bar-fill" style="width: 65%;"></div>
+                    </div>
+                    <div style="font-size: 11px; font-weight: 800; color: #64748b;" class="step-count">13 de 20 Procesados</div>
+                </div>
+                <div class="ls-opt5-right">
+                    <div style="font-size: 36px; font-weight: 900; color: #0284c7;" class="pct-text">65%</div>
+                    <div style="font-size: 10px; font-weight: 900; color: #64748b; letter-spacing: 0.05em;">PROGRESO GLOBAL</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OPCIÓN 6 -->
+        <div id="focusOpt6" class="loadscreen-box ls-opt6">
+            <div class="ls-opt6-card">
+                <div class="ls-opt6-logo-container">
+                    <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" style="width: 55px;" alt="Logo">
+                </div>
+                <h3 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 900; color: #1e293b;">Procesando Datos</h3>
+                <p style="margin: 0 0 20px 0; font-size: 13px; font-weight: 700; color: #64748b;" class="status-msg">Generando informe ejecutivo...</p>
+                <div style="background: #e2e8f0; height: 14px; border-radius: 999px; box-shadow: inset 3px 3px 6px #c0c4cb, inset -3px -3px 6px #ffffff; overflow: hidden; padding: 2px; margin-bottom: 12px;">
+                    <div class="bar-fill" style="width: 65%; height: 100%; background: #0284c7; border-radius: 999px;"></div>
+                </div>
+                <div style="font-size: 12px; font-weight: 900; color: #0284c7;" class="pct-text">65% COMPLETADO</div>
+            </div>
+        </div>
+
+        <!-- OPCIÓN 7 -->
+        <div id="focusOpt7" class="loadscreen-box ls-opt7">
+            <div class="ls-opt7-card">
+                <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" style="width: 80px; margin-bottom: 16px;" alt="Logo">
+                <h3 style="margin: 0 0 6px 0; font-size: 22px; font-weight: 900; color: #ffffff;">Actualizando SIREVAQ</h3>
+                <p style="margin: 0 0 20px 0; font-size: 13px; font-weight: 600; color: #cbd5e1;" class="status-msg">Verificando consistencia de datos...</p>
+                <div class="dark-progress-bg">
+                    <div class="std-progress-bar bar-fill" style="width: 65%; background: linear-gradient(90deg, #38bdf8, #10b981);"></div>
+                </div>
+                <div style="font-size: 12px; font-weight: 900; color: #38bdf8;" class="pct-text">65% CUMPLIDO</div>
+            </div>
+        </div>
+
+        <!-- OPCIÓN 8 -->
+        <div id="focusOpt8" class="loadscreen-box ls-opt8">
+            <div class="ls-opt8-card">
+                <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" style="width: 70px; margin-bottom: 12px;" alt="Logo">
+                <h3 style="margin: 0 0 4px 0; font-size: 20px; font-weight: 900; color: #0f172a;">Ejecución por Etapas</h3>
+                <p style="margin: 0 0 16px 0; font-size: 12px; font-weight: 700; color: #64748b;" class="status-msg">Etapa 3: Ensamblando PDF...</p>
+
+                <div class="step-timeline">
+                    <div class="step-node completed">1</div>
+                    <div class="step-node completed">2</div>
+                    <div class="step-node active">3</div>
+                    <div class="step-node">4</div>
+                </div>
+
+                <div class="std-progress-bg">
+                    <div class="std-progress-bar bar-fill" style="width: 65%;"></div>
+                </div>
+                <div style="font-size: 12px; font-weight: 900; color: #0284c7;" class="pct-text">65% PROGRESADO</div>
+            </div>
+        </div>
+
+        <!-- OPCIÓN 9 -->
+        <div id="focusOpt9" class="loadscreen-box ls-opt9">
+            <div class="ls-opt9-card">
+                <div class="liquid-container">
+                    <div class="liquid-fill wave-fill" style="height: 65%;"></div>
+                    <div class="liquid-text pct-text">65%</div>
+                </div>
+                <h3 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 900; color: #ffffff;">Procesando Información</h3>
+                <p style="margin: 0 0 14px 0; font-size: 12.5px; font-weight: 700; color: #94a3b8;" class="status-msg">Generando informe de vacunación...</p>
+                <div style="font-size: 11px; font-weight: 800; color: #38bdf8;" class="step-count">Procesando 13 de 20</div>
+            </div>
+        </div>
+
+        <!-- OPCIÓN 10 -->
+        <div id="focusOpt10" class="loadscreen-box ls-opt10">
+            <div class="ls-opt10-card">
+                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 16px;">
+                    <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/Seseq_vertical_2025.png" style="height: 28px;" alt="SESEQ">
+                    <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" style="height: 28px;" alt="SIREVAQ">
+                </div>
+                <h3 style="margin: 0 0 6px 0; font-size: 18px; font-weight: 900; color: #0f172a;">Exportación Institucional SESEQ</h3>
+                <p style="margin: 0 0 18px 0; font-size: 12.5px; font-weight: 700; color: #475569;" class="status-msg">Generando paquete de resguardo oficial...</p>
+                <div class="std-progress-bg">
+                    <div class="std-progress-bar bar-fill" style="width: 65%; background: #0f172a;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: #64748b;">
+                    <span class="step-count">13 de 20 Archivos</span>
+                    <span style="color: #0f172a; font-weight: 900;" class="pct-text">65% DE AVANCE</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let currentOpt = 1;
+        let simInterval = null;
+        let currentPct = 65;
+
+        function switchView(viewMode) {
+            const grid = document.getElementById('gridViewContainer');
+            const focus = document.getElementById('focusViewContainer');
+            const btnG = document.getElementById('btnViewGrid');
+            const btnF = document.getElementById('btnViewFocus');
+
+            if (viewMode === 'grid') {
+                grid.style.display = 'grid';
+                focus.classList.remove('active');
+                btnG.classList.add('active');
+                btnF.classList.remove('active');
+            } else {
+                grid.style.display = 'none';
+                focus.classList.add('active');
+                btnF.classList.add('active');
+                btnG.classList.remove('active');
+            }
+        }
+
+        function focusOnOption(num) {
+            currentOpt = num;
+            document.getElementById('selectOption').value = num;
+            changeFocusOption(num);
+            switchView('focus');
+        }
+
+        function changeFocusOption(val) {
+            currentOpt = parseInt(val, 10);
+            document.querySelectorAll('#focusViewContainer .loadscreen-box').forEach(box => {
+                box.classList.remove('active');
+            });
+            const target = document.getElementById('focusOpt' + currentOpt);
+            if (target) target.classList.add('active');
+        }
+
+        function updateAllProgress(pct) {
+            currentPct = pct;
+            
+            // Actualizar textos de porcentaje
+            document.querySelectorAll('.progress-val').forEach(el => el.textContent = pct);
+            document.querySelectorAll('.pct-text').forEach(el => {
+                if (el.textContent.includes('PROCESADO')) el.textContent = `${pct}% PROCESADO`;
+                else if (el.textContent.includes('EJECUTADO')) el.textContent = `${pct}% EJECUTADO`;
+                else if (el.textContent.includes('COMPLETADO')) el.textContent = `${pct}% COMPLETADO`;
+                else if (el.textContent.includes('CUMPLIDO')) el.textContent = `${pct}% CUMPLIDO`;
+                else if (el.textContent.includes('PROGRESADO')) el.textContent = `${pct}% PROGRESADO`;
+                else if (el.textContent.includes('DE AVANCE')) el.textContent = `${pct}% DE AVANCE`;
+                else el.textContent = `${pct}%`;
+            });
+
+            // Actualizar barras
+            document.querySelectorAll('.bar-fill').forEach(bar => bar.style.width = `${pct}%`);
+            
+            // Actualizar anillo SVG (Opción 2)
+            document.querySelectorAll('.ring-fill').forEach(ring => {
+                const offset = 283 - (283 * pct / 100);
+                ring.style.strokeDashoffset = offset;
+            });
+
+            // Actualizar ola líquida (Opción 9)
+            document.querySelectorAll('.wave-fill').forEach(wave => {
+                wave.style.height = `${pct}%`;
+            });
+
+            // Actualizar nodos de timeline (Opción 8)
+            document.querySelectorAll('.step-timeline').forEach(timeline => {
+                const nodes = timeline.querySelectorAll('.step-node');
+                if (nodes.length === 4) {
+                    nodes[0].className = pct >= 25 ? 'step-node completed' : 'step-node';
+                    nodes[1].className = pct >= 50 ? 'step-node completed' : 'step-node';
+                    nodes[2].className = pct >= 75 ? 'step-node completed' : (pct >= 50 ? 'step-node active' : 'step-node');
+                    nodes[3].className = pct >= 100 ? 'step-node completed' : (pct >= 75 ? 'step-node active' : 'step-node');
+                }
+            });
+        }
+
+        function toggleSimulateProgress() {
+            if (simInterval) {
+                clearInterval(simInterval);
+                simInterval = null;
+                return;
+            }
+
+            let p = 0;
+            simInterval = setInterval(() => {
+                p += 2;
+                if (p > 100) p = 0;
+                updateAllProgress(p);
+            }, 80);
+        }
+    </script>
+</body>
+</html>
