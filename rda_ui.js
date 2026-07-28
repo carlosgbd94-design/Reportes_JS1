@@ -2649,9 +2649,6 @@ async function exportMasivoZIP(mode = 'pdf') {
             
             overlayElem.innerHTML = `
                 <div style="background: #ffffff; width: 92%; max-width: 480px; border-radius: 28px; padding: 36px 32px 30px 32px; box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255,255,255,0.15); text-align: center; position: relative; overflow: hidden; animation: fadeInOverlay 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;">
-                    <!-- ACCENT GRADIENT HEADER BAR (OPCIÓN 1) -->
-                    <div style="position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #0084d4 0%, #0284c7 45%, #38bdf8 75%, #10b981 100%);"></div>
-
                     <!-- CIRCULAR GAUGE RING WITH PULSING LOGO (OPCIÓN 2) -->
                     <div style="position: relative; width: 108px; height: 108px; margin: 0 auto 18px auto; display: flex; align-items: center; justify-content: center;">
                         <svg style="transform: rotate(-90deg); width: 108px; height: 108px;" viewBox="0 0 100 100">

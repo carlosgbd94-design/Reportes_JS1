@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SIREVAQ — Loadscreen Híbrida Oficial (Opción 1 + Opción 2)</title>
+    <title>SIREVAQ — Galería de Loadscreens & Híbrida Oficial (Sin Línea Superior)</title>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
     <style>
@@ -33,7 +33,7 @@
             overflow-x: hidden;
         }
 
-        /* BARRA SUPERIOR DE CONTROL */
+        /* BARRA SUPERIOR DE CONTROL DE GALERÍA */
         .gallery-header {
             background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(16px);
@@ -65,15 +65,14 @@
         }
 
         .gallery-badge {
-            background: linear-gradient(135deg, rgba(2, 132, 199, 0.2), rgba(16, 185, 129, 0.2));
+            background: rgba(2, 132, 199, 0.15);
             color: var(--accent-sky);
-            border: 1px solid rgba(56, 189, 248, 0.4);
+            border: 1px solid rgba(56, 189, 248, 0.3);
             font-size: 11px;
-            font-weight: 900;
-            padding: 4px 12px;
+            font-weight: 800;
+            padding: 4px 10px;
             border-radius: 999px;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
         }
 
         .gallery-controls {
@@ -83,83 +82,144 @@
             flex-wrap: wrap;
         }
 
+        .select-option {
+            background: #1e293b;
+            color: #ffffff;
+            border: 1px solid #334155;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            outline: none;
+            cursor: pointer;
+        }
+
         .btn-action {
             background: linear-gradient(135deg, #0284c7, #0369a1);
             color: #ffffff;
             border: none;
-            padding: 10px 22px;
+            padding: 8px 18px;
             border-radius: 12px;
             font-size: 13px;
             font-weight: 800;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
             transition: all 0.2s ease;
         }
 
         .btn-action:hover {
             transform: translateY(-1px);
-            box-shadow: 0 6px 18px rgba(2, 132, 199, 0.5);
+            box-shadow: 0 6px 16px rgba(2, 132, 199, 0.4);
         }
 
-        /* ÁREA DE DEMOSTRACIÓN PRINCIPAL */
-        .stage-container {
-            flex: 1;
+        .btn-mode {
+            background: #1e293b;
+            color: #94a3b8;
+            border: 1px solid #334155;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .btn-mode.active {
+            background: #ffffff;
+            color: #0f172a;
+            border-color: #ffffff;
+        }
+
+        /* VISTA GENERAL EN REJILLA */
+        .grid-view-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+            gap: 32px;
+            padding: 40px 32px;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .grid-card-item {
+            background: #0f172a;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
             display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px 20px;
-            background: radial-gradient(circle at 50% 50%, #0f172a 0%, #090d16 100%);
+            flex-direction: column;
             position: relative;
         }
 
-        /* ==========================================================================
-           LOADSCREEN HÍBRIDA OFICIAL (OPCIÓN 1 + OPCIÓN 2)
-           ========================================================================== */
-        .ls-hybrid-backdrop {
-            background: rgba(15, 23, 42, 0.82);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            width: 100%;
-            height: 100%;
+        .grid-card-header {
+            padding: 14px 20px;
+            background: #1e293b;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .grid-card-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: #f8fafc;
+        }
+
+        .grid-card-body {
+            padding: 32px 24px;
+            min-height: 420px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            position: relative;
+            background: radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%);
         }
 
+        /* VISTA UNIFICADA FULLSCREEN / FOCO */
+        .focus-view-container {
+            display: none;
+            position: fixed;
+            inset: 65px 0 0 0;
+            background: radial-gradient(circle at 50% 50%, #0f172a 0%, #090d16 100%);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .focus-view-container.active {
+            display: flex;
+        }
+
+        .loadscreen-box {
+            display: none !important;
+            width: 100%;
+        }
+
+        .loadscreen-box.active {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ==========================================================================
+           OPCIÓN HÍBRIDA OFICIAL (1 + 2 SIN LÍNEA SUPERIOR)
+           ========================================================================== */
         .ls-hybrid-card {
             background: #ffffff;
             color: #0f172a;
             width: 100%;
-            max-width: 480px;
+            max-width: 440px;
             border-radius: 28px;
-            padding: 38px 32px 32px 32px;
-            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.15);
+            padding: 36px 32px 32px 32px;
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.4);
             text-align: center;
             position: relative;
             overflow: hidden;
-            animation: hybridPopIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        @keyframes hybridPopIn {
-            0% { opacity: 0; transform: scale(0.96) translateY(12px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
-
-        /* BARRA SUPERIOR DE GRADIENTE DE ACENTO (DE OPCIÓN 1) */
-        .ls-hybrid-accent-bar {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 6px;
-            background: linear-gradient(90deg, #0084d4 0%, #0284c7 45%, #38bdf8 75%, #10b981 100%);
-        }
-
-        /* ANILLO SVG MICRO-GAUGE ALREDEDOR DEL LOGO (DE OPCIÓN 2) */
         .ls-hybrid-ring-wrapper {
             position: relative;
             width: 108px;
@@ -185,97 +245,40 @@
             stroke: #0284c7;
             stroke-width: 7;
             stroke-dasharray: 283;
-            stroke-dashoffset: 99; /* 65% */
+            stroke-dashoffset: 99;
             stroke-linecap: round;
             transition: stroke-dashoffset 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         @keyframes pulseHybridLogo {
-            0%, 100% { transform: scale(1); filter: drop-shadow(0 4px 8px rgba(0, 132, 212, 0.25)); }
-            50% { transform: scale(1.05); filter: filter: drop-shadow(0 8px 16px rgba(0, 132, 212, 0.4)); }
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 4px 8px rgba(0, 132, 212, 0.2)); }
+            50% { transform: scale(1.04); filter: drop-shadow(0 8px 16px rgba(0, 132, 212, 0.35)); }
         }
 
         .ls-hybrid-logo-inner {
             position: absolute;
             width: 52px;
             height: auto;
-            animation: pulseHybridLogo 2.2s ease-in-out infinite;
+            animation: pulseHybridLogo 2s ease-in-out infinite;
         }
 
-        /* BADGE PROCESO (OPCIÓN 1) */
-        .ls-hybrid-badge {
-            display: inline-block;
-            background: #e0f2fe;
-            color: #0369a1;
-            border: 1px solid #bae6fd;
-            font-size: 11px;
-            font-weight: 900;
-            padding: 4px 14px;
-            border-radius: 9999px;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            margin-bottom: 12px;
-            box-shadow: 0 2px 6px rgba(2, 132, 199, 0.08);
-        }
-
-        /* TÍTULO Y MENSAJE */
-        .ls-hybrid-title {
-            margin: 0 0 6px 0;
-            font-size: 21px;
-            font-weight: 900;
-            color: #0f172a;
-            letter-spacing: -0.02em;
-            line-height: 1.25;
-        }
-
-        .ls-hybrid-msg {
-            margin: 0 0 22px 0;
-            font-size: 13px;
-            font-weight: 700;
-            color: #475569;
-            min-height: 38px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            line-height: 1.45;
-        }
-
-        /* BARRA DE PROGRESO DE ALTA PRECISIÓN (OPCIÓN 1) */
-        .ls-hybrid-progress-bg {
+        /* BARRA DE PROGRESO BASE ESTÁNDAR */
+        .std-progress-bg {
             background: #f1f5f9;
-            border-radius: 9999px;
-            height: 13px;
+            border-radius: 999px;
+            height: 12px;
             width: 100%;
             overflow: hidden;
             border: 1px solid #e2e8f0;
-            position: relative;
             margin-bottom: 12px;
-            box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);
         }
 
-        .ls-hybrid-progress-bar {
-            background: linear-gradient(90deg, #0084d4 0%, #0284c7 50%, #38bdf8 100%);
+        .std-progress-bar {
             height: 100%;
             width: 65%;
-            border-radius: 9999px;
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
-        }
-
-        /* DETALLES DE PIE DE TARJETA */
-        .ls-hybrid-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 11.5px;
-            font-weight: 800;
-            color: #64748b;
-        }
-
-        .ls-hybrid-pct {
-            color: #0284c7;
-            font-weight: 900;
-            letter-spacing: 0.02em;
+            background: linear-gradient(90deg, #0284c7, #38bdf8);
+            border-radius: 999px;
+            transition: width 0.3s ease;
         }
 
     </style>
@@ -285,86 +288,160 @@
     <!-- BARRA DE CONTROL DE GALERÍA -->
     <div class="gallery-header">
         <div class="gallery-title">
-            <h1>SIREVAQ — Design System</h1>
-            <span class="gallery-badge">⭐ Loadscreen Híbrida Oficial (1 + 2)</span>
+            <h1>SIREVAQ — Galería de Loadscreens</h1>
+            <span class="gallery-badge">Opción Híbrida 1+2 (Sin Línea Superior)</span>
         </div>
         <div class="gallery-controls">
+            <button id="btnViewGrid" class="btn-mode active" onclick="switchView('grid')">
+                <span class="material-symbols-rounded" style="font-size: 15px; vertical-align: middle;">grid_view</span> Ver Rejilla
+            </button>
+            <button id="btnViewFocus" class="btn-mode" onclick="switchView('focus')">
+                <span class="material-symbols-rounded" style="font-size: 15px; vertical-align: middle;">center_focus_strong</span> Ver Foco Único
+            </button>
+
+            <select id="selectOption" class="select-option" onchange="changeFocusOption(this.value)">
+                <option value="0">⭐ HÍBRIDA OFICIAL 1+2 (Sin Línea Superior)</option>
+                <option value="1">Opción 1: Executive Glassmorphism</option>
+                <option value="2">Opción 2: Minimalist Apple Luxury</option>
+                <option value="3">Opción 3: Dark Executive Suite</option>
+            </select>
+
             <button class="btn-action" onclick="toggleSimulateProgress()">
-                <span class="material-symbols-rounded">play_arrow</span> Simular Progreso Dinámico (0% -> 100%)
+                <span class="material-symbols-rounded">play_arrow</span> Simular Progreso Dinámico
             </button>
         </div>
     </div>
 
-    <!-- ÁREA DE PREVISUALIZACIÓN -->
-    <div class="stage-container">
-        <div class="ls-hybrid-backdrop">
-            <div class="ls-hybrid-card">
-                <!-- ACCENT GRADIENT TOP BAR (OPCIÓN 1) -->
-                <div class="ls-hybrid-accent-bar"></div>
+    <!-- VISTA 1: REJILLA DE EXHIBICIÓN -->
+    <div id="gridViewContainer" class="grid-view-container">
+        
+        <!-- HÍBRIDA DESTACADA -->
+        <div class="grid-card-item" style="border: 2px solid #0284c7;">
+            <div class="grid-card-header" style="background: #0284c7; color: #ffffff;">
+                <span class="grid-card-title" style="color: #ffffff;">⭐ HÍBRIDA OFICIAL (Opción 1 + 2 Sin Línea Superior)</span>
+                <button class="btn-action" style="padding: 4px 10px; font-size: 11px; background: #ffffff; color: #0284c7;" onclick="focusOnOption(0)">Probar Foco</button>
+            </div>
+            <div class="grid-card-body" style="background: #f8fafc;">
+                <div class="ls-hybrid-card">
+                    <!-- CIRCULAR GAUGE RING WITH PULSING LOGO -->
+                    <div class="ls-hybrid-ring-wrapper">
+                        <svg class="ls-hybrid-svg" viewBox="0 0 100 100">
+                            <circle class="ls-hybrid-svg-bg" cx="50" cy="50" r="45" fill="none"></circle>
+                            <circle class="ls-hybrid-svg-bar ring-fill" cx="50" cy="50" r="45" fill="none"></circle>
+                        </svg>
+                        <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" class="ls-hybrid-logo-inner" alt="Logo SIREVAQ">
+                    </div>
 
-                <!-- CIRCULAR GAUGE RING WITH PULSING LOGO (OPCIÓN 2) -->
+                    <div style="display: inline-block; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 11px; font-weight: 900; padding: 4px 14px; border-radius: 9999px; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;">
+                        EXPORTACIÓN MASIVA PDF
+                    </div>
+
+                    <h3 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 900; color: #0f172a;">
+                        Generando Reporte (<span class="progress-val">65</span>%)
+                    </h3>
+                    <p style="margin: 0 0 20px 0; font-size: 12.5px; font-weight: 700; color: #475569;" class="status-msg">
+                        Procesando: Centro de Salud Querétaro...
+                    </p>
+
+                    <div class="std-progress-bg">
+                        <div class="std-progress-bar bar-fill" style="width: 65%;"></div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; color: #64748b;">
+                        <span class="step-count">13 de 20 Unidades</span>
+                        <span style="color: #0284c7; font-weight: 900;" class="pct-text">65% COMPLETADO</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- VISTA 2: VISTA UNIFICADA EN FOCO -->
+    <div id="focusViewContainer" class="focus-view-container">
+
+        <!-- HÍBRIDA -->
+        <div id="focusOpt0" class="loadscreen-box active">
+            <div class="ls-hybrid-card">
                 <div class="ls-hybrid-ring-wrapper">
                     <svg class="ls-hybrid-svg" viewBox="0 0 100 100">
                         <circle class="ls-hybrid-svg-bg" cx="50" cy="50" r="45" fill="none"></circle>
-                        <circle id="hybridGaugeRing" class="ls-hybrid-svg-bar" cx="50" cy="50" r="45" fill="none"></circle>
+                        <circle class="ls-hybrid-svg-bar ring-fill" cx="50" cy="50" r="45" fill="none"></circle>
                     </svg>
                     <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" class="ls-hybrid-logo-inner" alt="Logo SIREVAQ">
                 </div>
 
-                <!-- PROCESS BADGE (OPCIÓN 1) -->
-                <div id="hybridBadge" class="ls-hybrid-badge">
+                <div style="display: inline-block; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 11px; font-weight: 900; padding: 4px 14px; border-radius: 9999px; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;">
                     EXPORTACIÓN MASIVA PDF
                 </div>
 
-                <!-- TITLE & CURRENT SUBTITLE (COMBINADO 1 + 2) -->
-                <h3 id="hybridTitle" class="ls-hybrid-title">
-                    Generando Reportes (<span id="hybridPctVal">65</span>%)
+                <h3 style="margin: 0 0 6px 0; font-size: 20px; font-weight: 900; color: #0f172a;">
+                    Generando Reporte (<span class="progress-val">65</span>%)
                 </h3>
-                <p id="hybridMsg" class="ls-hybrid-msg">
-                    [13/20] Centro de Salud Querétaro — Unidades Médicas
+                <p style="margin: 0 0 20px 0; font-size: 13px; font-weight: 700; color: #475569;" class="status-msg">
+                    Procesando: Centro de Salud Querétaro...
                 </p>
 
-                <!-- HIGH PRECISION PROGRESS BAR (OPCIÓN 1) -->
-                <div class="ls-hybrid-progress-bg">
-                    <div id="hybridProgressBar" class="ls-hybrid-progress-bar" style="width: 65%;"></div>
+                <div class="std-progress-bg">
+                    <div class="std-progress-bar bar-fill" style="width: 65%;"></div>
                 </div>
 
-                <!-- FOOTER COUNTER & PCT STATUS -->
-                <div class="ls-hybrid-footer">
-                    <span id="hybridStepCount">13 de 20 Unidades</span>
-                    <span id="hybridPctText" class="ls-hybrid-pct">65% COMPLETADO</span>
+                <div style="display: flex; justify-content: space-between; font-size: 11.5px; font-weight: 800; color: #64748b;">
+                    <span class="step-count">13 de 20 Unidades</span>
+                    <span style="color: #0284c7; font-weight: 900;" class="pct-text">65% COMPLETADO</span>
                 </div>
             </div>
         </div>
+
     </div>
 
     <script>
+        let currentOpt = 0;
         let simInterval = null;
 
-        function updateProgress(pct) {
-            // Actualizar texto e identificadores
-            document.getElementById('hybridPctVal').textContent = pct;
-            document.getElementById('hybridPctText').textContent = `${pct}% COMPLETADO`;
-            document.getElementById('hybridTitle').textContent = `Generando Reportes (${pct}%)`;
+        function switchView(viewMode) {
+            const grid = document.getElementById('gridViewContainer');
+            const focus = document.getElementById('focusViewContainer');
+            const btnG = document.getElementById('btnViewGrid');
+            const btnF = document.getElementById('btnViewFocus');
 
-            // Actualizar barra horizontal (Opción 1)
-            document.getElementById('hybridProgressBar').style.width = `${pct}%`;
-
-            // Actualizar anillo SVG circular (Opción 2)
-            const ring = document.getElementById('hybridGaugeRing');
-            if (ring) {
-                const strokeDashoffset = 283 - (283 * pct / 100);
-                ring.style.strokeDashoffset = strokeDashoffset;
+            if (viewMode === 'grid') {
+                grid.style.display = 'grid';
+                focus.classList.remove('active');
+                btnG.classList.add('active');
+                btnF.classList.remove('active');
+            } else {
+                grid.style.display = 'none';
+                focus.classList.add('active');
+                btnF.classList.add('active');
+                btnG.classList.remove('active');
             }
+        }
 
-            // Cambiar mensaje dinámico según progreso
-            const msgEl = document.getElementById('hybridMsg');
-            const stepEl = document.getElementById('hybridStepCount');
-            const total = 20;
-            const current = Math.min(total, Math.ceil((pct / 100) * total));
-            
-            stepEl.textContent = `${current} de ${total} Unidades`;
-            msgEl.textContent = `[${current}/${total}] Procesando Unidad Médica de Salud...`;
+        function focusOnOption(num) {
+            currentOpt = num;
+            document.getElementById('selectOption').value = num;
+            changeFocusOption(num);
+            switchView('focus');
+        }
+
+        function changeFocusOption(val) {
+            currentOpt = parseInt(val, 10);
+            document.querySelectorAll('#focusViewContainer .loadscreen-box').forEach(box => {
+                box.classList.remove('active');
+            });
+            const target = document.getElementById('focusOpt' + currentOpt);
+            if (target) target.classList.add('active');
+        }
+
+        function updateAllProgress(pct) {
+            document.querySelectorAll('.progress-val').forEach(el => el.textContent = pct);
+            document.querySelectorAll('.pct-text').forEach(el => el.textContent = `${pct}% COMPLETADO`);
+            document.querySelectorAll('.bar-fill').forEach(bar => bar.style.width = `${pct}%`);
+            document.querySelectorAll('.ring-fill').forEach(ring => {
+                const offset = 283 - (283 * pct / 100);
+                ring.style.strokeDashoffset = offset;
+            });
         }
 
         function toggleSimulateProgress() {
@@ -378,7 +455,7 @@
             simInterval = setInterval(() => {
                 p += 2;
                 if (p > 100) p = 0;
-                updateProgress(p);
+                updateAllProgress(p);
             }, 70);
         }
     </script>
