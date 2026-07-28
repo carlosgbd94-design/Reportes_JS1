@@ -29,17 +29,17 @@ let DICT_RDA = {
     HEPATITIS_A: ['VHA01', 'VHA02', 'BIO88'],
 
     // ── ADOLESCENTES Y ADULTOS (Solo aplicaciones) ──
-    ADOL_HB:  ['VHB01','VHB02','VHB03','VHB04','VHB05','VHB06'],
-    ADOL_SR:  ['VDV01','VDV02','VDV03','VDV04','VDV05','VDV06'],
-    ADOL_VPH: ['VPH05','VPH06','VPH07','VPH08','VPH12','VPH13','VPH14'],
-    ADOL_TD:  ['VAC39','VAC40','VAC47','VAC48','VTD01','VTD02','VAC55','VAC56',
-               'VTT01','VTT02','VTT04','VTT05','VTT07','VTT08','VTT10','VTT11'],
+    ADOL_HB:   ['VHB01','VHB02','VHB03','VHB04','VHB05','VHB06'],
+    ADOL_SR:   ['VDV01','VDV02','VDV03','VDV04','VDV05','VDV06', 'VAC83'],
+    ADOL_VPH:  ['VPH05','VPH06','VPH07','VPH08','VPH12','VPH13','VPH14'],
+    ADOL_TD:   ['VAC39','VAC40','VAC47','VAC48','VTD01','VTD02','VAC55','VAC56',
+                'VTT01','VTT02','VTT04','VTT05','VTT07','VTT08','VTT10','VTT11'],
     ADOL_TDPA: ['VAC63'],
 
     // ── ADULTOS MAYORES (Solo aplicaciones) ──
-    AM_NEUMO13: ['VNC04'],
+    AM_NEUMO13: ['VNC04', 'VAC93', 'VAC94'],
     AM_NEUMO20: ['VCC07'],
-    AM_TD:      ['VTT03','VTT06','VTT09','VTT12'],
+    AM_TD:      ['VTT03','VTT06','VTT09','VTT12', 'VAC43', 'VAC46', 'VAC51', 'VAC54', 'VTD13', 'VTD16', 'VAC59', 'VAC62'],
 
     // ── EMBARAZADAS (Solo aplicaciones) ──
     EMB_TDPA: ['VAC63'],
