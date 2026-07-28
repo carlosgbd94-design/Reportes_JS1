@@ -4746,8 +4746,8 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                 const fontModern = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
                 
                 const subtextStr = (_rdaState.corteTemporal === '0' || !_rdaState.corteTemporal)
-                    ? `Evaluación Acumulada a la Fecha: Enero a ${maxMesName} (Mes 1 a ${maxMes})`
-                    : (maxMes === 12 ? 'Evaluación Total Anual Evaluada (Enero a Diciembre)' : `Evaluación Acumulada al Cierre de ${maxMesName} (Mes 1 a ${maxMes})`);
+                    ? `Evaluación Acumulada a la Fecha: Enero a ${maxMesName} (Mes 1 a ${maxMes2026})`
+                    : (maxMes2026 === 12 ? 'Evaluación Total Anual Evaluada (Enero a Diciembre)' : `Evaluación Acumulada al Cierre de ${maxMesName} (Mes 1 a ${maxMes2026})`);
 
                 const option = {
                     title: {
