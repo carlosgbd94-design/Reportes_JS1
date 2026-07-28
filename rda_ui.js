@@ -2380,21 +2380,35 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
         }
     });
 }
-async function exportIndividualPDF() {
-    const content = document.getElementById('rdaDashboardContent');
-    if (!content) return;
-    if (typeof showOverlay === 'function') showOverlay('Preparando reporte nativo...', 'Exportando');
+const _getComparativeFilename = (ext, muniVal, uniVal) => {
+    const m = muniVal || document.getElementById('rdaFilterMunicipio')?.value || '';
+    const u = uniVal || document.getElementById('rdaFilterUnidad')?.value || '';
+    if (u) {
+        const uObj = (_rdaCache.unidades || []).find(x => x.clues === u);
+        const uName = _safeName(uObj?.nombre || 'UNIDAD');
+        return `${uName}_${u}_COMPARATIVA_25-26_RDA.${ext}`;
+    } else if (m) {
+        return `${_safeName(m)}_COMPARATIVA_25-26_RDA.${ext}`;
+    } else {
+        return `JS1_QUERETARO_COMPARATIVA_25-26_RDA.${ext}`;
+    }
+};
 
+async function exportIndividualPDF() {
     const muni = document.getElementById('rdaFilterMunicipio')?.value || '';
     const uni = document.getElementById('rdaFilterUnidad')?.value || '';
     let fname = `Indicadores_RDA2026_${_tLabel()}_${_dateStr()}.pdf`;
 
-    if (uni) {
+    if (_rdaState.esquema === 'comparativa_multianual') {
+        fname = _getComparativeFilename('pdf', muni, uni);
+    } else if (uni) {
         const u = (_rdaCache.unidades||[]).find(x=>x.clues===uni);
         fname = `RDA_${uni}_${_safeName(u?.nombre)}_${_tLabel()}.pdf`;
     } else if (muni) {
         fname = `RDA_${_safeName(muni)}_${_tLabel()}.pdf`;
     }
+
+    if (typeof showOverlay === 'function') showOverlay('Generando reporte PDF vectorial...', 'Procesando Documento');
 
     try {
         await generarPDFRobusto('rdaDashboardContent', fname, false);
@@ -2454,7 +2468,9 @@ async function exportDashboardImagen(format = 'png') {
     const ext = format.toLowerCase() === 'jpeg' ? 'jpg' : 'png';
     let fname = `Indicadores_RDA2026_${_tLabel()}_${_dateStr()}.${ext}`;
 
-    if (uni) {
+    if (_rdaState.esquema === 'comparativa_multianual') {
+        fname = _getComparativeFilename(ext, muni, uni);
+    } else if (uni) {
         const u = (_rdaCache.unidades||[]).find(x=>x.clues===uni);
         fname = `RDA_${uni}_${_safeName(u?.nombre)}_${_tLabel()}.${ext}`;
     } else if (muni) {
@@ -2559,7 +2575,9 @@ async function exportMasivoZIP(mode = 'pdf') {
             await new Promise(resolve => setTimeout(resolve, 150));
 
             if (mode === 'png') {
-                const fname = `RDA_${u.clues}_${_safeName(u.nombre)}.png`;
+                const fname = _rdaState.esquema === 'comparativa_multianual' 
+                    ? `${_safeName(u.nombre)}_${u.clues}_COMPARATIVA_25-26_RDA.png`
+                    : `RDA_${u.clues}_${_safeName(u.nombre)}.png`;
                 if (typeof html2canvas !== 'undefined' && content) {
                     const canvas = await html2canvas(content, {
                         scale: 2.5,
@@ -2576,7 +2594,9 @@ async function exportMasivoZIP(mode = 'pdf') {
                     zip.file(fname, base64Data, { base64: true });
                 }
             } else {
-                const fname = `RDA_${u.clues}_${_safeName(u.nombre)}.pdf`;
+                const fname = _rdaState.esquema === 'comparativa_multianual' 
+                    ? `${_safeName(u.nombre)}_${u.clues}_COMPARATIVA_25-26_RDA.pdf`
+                    : `RDA_${u.clues}_${_safeName(u.nombre)}.pdf`;
                 const blob = await generarPDFRobusto('rdaDashboardContent', fname, true);
                 zip.file(fname, blob);
             }
@@ -4244,20 +4264,45 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
             }
         };
 
-        // Título dinámico
-        let activeScopeTitle = "Jurisdicción Sanitaria 1 (4 Municipios Totalizadores)";
+        // Título y ámbito dinámico con alta jerarquía visual executive
+        let scopeHtml = '';
         if (uniFilter) {
             const uM = (_rdaCache.unidades||[]).find(x => x.clues === uniFilter);
-            activeScopeTitle = `CLUES: ${uniFilter} - ${uM?.nombre || 'Unidad Médica'}`;
+            const mName = uM?.municipio || muniFilter || 'QUERÉTARO';
+            const uName = uM?.nombre || 'UNIDAD MÉDICA';
+            scopeHtml = `
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                    <span style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 11.5px; font-weight: 800; padding: 5px 12px; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-rounded" style="font-size: 16px;">location_city</span> MUNICIPIO: ${mName.toUpperCase()}
+                    </span>
+                    <span style="background: #0284c7; color: #ffffff; font-size: 11.5px; font-weight: 900; padding: 5px 14px; border-radius: 10px; box-shadow: 0 2px 6px rgba(2,132,199,0.25); display: inline-flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-rounded" style="font-size: 16px;">local_hospital</span> UNIDAD: ${uName.toUpperCase()} — ${uniFilter}
+                    </span>
+                </div>
+            `;
         } else if (muniFilter) {
-            activeScopeTitle = `Municipio: ${muniFilter.toUpperCase()}`;
+            scopeHtml = `
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+                    <span style="background: #0284c7; color: #ffffff; font-size: 11.5px; font-weight: 900; padding: 5px 14px; border-radius: 10px; box-shadow: 0 2px 6px rgba(2,132,199,0.25); display: inline-flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-rounded" style="font-size: 16px;">location_city</span> MUNICIPIO: ${muniFilter.toUpperCase()}
+                    </span>
+                </div>
+            `;
+        } else {
+            scopeHtml = `
+                <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+                    <span style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-size: 11.5px; font-weight: 800; padding: 5px 12px; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-rounded" style="font-size: 16px;">domain</span> JURISDICCIÓN SANITARIA 1 (QUERÉTARO)
+                    </span>
+                </div>
+            `;
         }
 
         // Generar HTML Executive
         container.innerHTML = `
-            <div style="background: #ffffff; border-radius: 24px; padding: 32px; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(15,23,42,0.04);">
+            <div style="background: #ffffff; border-radius: 24px; padding: 32px; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(15,23,42,0.04); font-family: Inter, system-ui, sans-serif;">
                 
-                <!-- HEADER CON CONTROL DE BOTONES Y EMBLEMA EXECUTIVE -->
+                <!-- HEADER EXECUTIVE -->
                 <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #f1f5f9;">
                     <div>
                         <div style="display: flex; align-items: center; gap: 10px;">
@@ -4267,9 +4312,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                         <h2 style="margin: 8px 0 0 0; font-size: 22px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em;">
                             Comparativa Multianual de Cobertura Vacunal (2025 vs 2026)
                         </h2>
-                        <p style="margin: 4px 0 0 0; font-size: 13px; font-weight: 700; color: #0284c7;">
-                            Filtro Activo: <strong id="rdaScopeLabel">${activeScopeTitle}</strong>
-                        </p>
+                        ${scopeHtml}
                     </div>
                 </div>
 
@@ -4339,68 +4382,79 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                     </div>
                 </div>
 
-                <!-- HISTOGRAMA GRÁFICO DUAL -->
-                <div style="background: #f8fafc; border-radius: 20px; padding: 24px; border: 1px solid #e2e8f0; margin-bottom: 32px;">
-                    <div id="chartComparativeMulti" style="width: 100%; height: 380px;"></div>
+                <!-- HISTOGRAMA GRÁFICO DUAL CON ESPACIAMIENTO OPTIMIZADO -->
+                <div style="background: #ffffff; border-radius: 20px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px rgba(15,23,42,0.03); margin-bottom: 32px;">
+                    <div id="chartComparativeMulti" style="width: 100%; height: 400px;"></div>
                 </div>
 
                 <!-- TABLA 1: DESGLOSE POR MUNICIPIOS DE LA JURISDICCIÓN SANITARIA 1 -->
                 <div style="margin-bottom: 32px;">
-                    <h3 style="margin: 0 0 16px 0; font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em;">
-                        📍 Comportamiento por Municipio (Avance 2025 vs 2026 a Cierre Mes ${maxMes})
+                    <h3 style="margin: 0 0 16px 0; font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-rounded" style="color: #0284c7;">location_on</span> Comportamiento por Municipio (Avance 2025 vs 2026 a Cierre Mes ${maxMes})
                     </h3>
-                    <div style="overflow-x: auto; border-radius: 16px; border: 1px solid #e2e8f0;">
-                        <table style="width: 100%; border-collapse: collapse; background: white; font-size: 12px;">
+                    <div style="border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; background: #ffffff; box-shadow: 0 4px 20px rgba(15,23,42,0.03);">
+                        <table style="width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 11.5px;">
+                            <colgroup>
+                                <col style="width: 25%;">
+                                <col style="width: 10.5%;">
+                                <col style="width: 10.5%;">
+                                <col style="width: 10.5%;">
+                                <col style="width: 10.5%;">
+                                <col style="width: 10.5%;">
+                                <col style="width: 10.5%;">
+                                <col style="width: 12%;">
+                            </colgroup>
                             <thead>
-                                <tr style="background: #f1f5f9; text-align: center; font-weight: 900; color: #475569;">
-                                    <th style="padding: 12px 16px; text-align: left;">MUNICIPIO</th>
-                                    <th style="padding: 12px 16px;" colspan="2">< 1 AÑO</th>
-                                    <th style="padding: 12px 16px;" colspan="2">1 AÑO</th>
-                                    <th style="padding: 12px 16px;" colspan="2">4 AÑOS</th>
-                                    <th style="padding: 12px 16px;">TENDENCIA GLOBAL</th>
+                                <tr style="background: #f8fafc; text-align: center; font-weight: 900; color: #334155; border-bottom: 1px solid #e2e8f0;">
+                                    <th style="padding: 12px 16px; text-align: left; border-right: 1px solid #f1f5f9;">MUNICIPIO</th>
+                                    <th style="padding: 12px 8px; border-right: 1px solid #f1f5f9;" colspan="2">< 1 AÑO</th>
+                                    <th style="padding: 12px 8px; border-right: 1px solid #f1f5f9;" colspan="2">1 AÑO</th>
+                                    <th style="padding: 12px 8px; border-right: 1px solid #f1f5f9;" colspan="2">4 AÑOS</th>
+                                    <th style="padding: 12px 12px;">TENDENCIA GLOBAL</th>
                                 </tr>
-                                <tr style="background: #f8fafc; text-align: center; font-weight: 800; color: #64748b; border-bottom: 2px solid #e2e8f0;">
-                                    <th style="padding: 8px 16px; text-align: left;">JS1 QUERÉTARO</th>
-                                    <th style="padding: 8px 12px; color: #64748b;">2025</th>
-                                    <th style="padding: 8px 12px; color: #0284c7;">2026</th>
-                                    <th style="padding: 8px 12px; color: #64748b;">2025</th>
-                                    <th style="padding: 8px 12px; color: #0284c7;">2026</th>
-                                    <th style="padding: 8px 12px; color: #64748b;">2025</th>
-                                    <th style="padding: 8px 12px; color: #0284c7;">2026</th>
-                                    <th style="padding: 8px 16px;">COMPORTAMIENTO</th>
+                                <tr style="background: #f1f5f9; text-align: center; font-weight: 800; color: #64748b; border-bottom: 2px solid #e2e8f0;">
+                                    <th style="padding: 8px 16px; text-align: left; border-right: 1px solid #e2e8f0;">JS1 QUERÉTARO</th>
+                                    <th style="padding: 8px 6px; color: #64748b;">2025</th>
+                                    <th style="padding: 8px 6px; color: #0284c7; border-right: 1px solid #e2e8f0;">2026</th>
+                                    <th style="padding: 8px 6px; color: #64748b;">2025</th>
+                                    <th style="padding: 8px 6px; color: #0284c7; border-right: 1px solid #e2e8f0;">2026</th>
+                                    <th style="padding: 8px 6px; color: #64748b;">2025</th>
+                                    <th style="padding: 8px 6px; color: #0284c7; border-right: 1px solid #e2e8f0;">2026</th>
+                                    <th style="padding: 8px 12px;">ESTADO</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${compMunis.map(m => {
                                     const isPositive = (m.t26.covM1 + m.t26.cov1A) >= (m.t25.covM1 + m.t25.cov1A);
                                     return `
-                                        <tr style="border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: 700;">
-                                            <td style="padding: 12px 16px; text-align: left; font-weight: 900; color: #0f172a;">${m.nombre}</td>
-                                            <td style="padding: 12px; color: #64748b;">${m.t25.covM1}%</td>
-                                            <td style="padding: 12px; color: #0284c7; font-weight: 900;">${m.t26.covM1}%</td>
-                                            <td style="padding: 12px; color: #64748b;">${m.t25.cov1A}%</td>
-                                            <td style="padding: 12px; color: #0284c7; font-weight: 900;">${m.t26.cov1A}%</td>
-                                            <td style="padding: 12px; color: #64748b;">${m.t25.cov4A}%</td>
-                                            <td style="padding: 12px; color: #0284c7; font-weight: 900;">${m.t26.cov4A}%</td>
-                                            <td style="padding: 12px 16px;">
-                                                <span style="display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 900; background: ${isPositive ? '#f0fdf4' : '#fff1f2'}; color: ${isPositive ? '#166534' : '#9f1239'}; border: 1px solid ${isPositive ? '#bbf7d0' : '#fecdd3'};">
-                                                    ${isPositive ? '▲ ASCENDENTE' : '▼ EN REVISIÓN'}
+                                        <tr style="border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: 700; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                                            <td style="padding: 12px 16px; text-align: left; font-weight: 900; color: #0f172a; border-right: 1px solid #f1f5f9;">${m.nombre}</td>
+                                            <td style="padding: 12px 6px; color: #64748b;">${m.t25.covM1}%</td>
+                                            <td style="padding: 12px 6px; color: #0284c7; font-weight: 900; border-right: 1px solid #f1f5f9;">${m.t26.covM1}%</td>
+                                            <td style="padding: 12px 6px; color: #64748b;">${m.t25.cov1A}%</td>
+                                            <td style="padding: 12px 6px; color: #0284c7; font-weight: 900; border-right: 1px solid #f1f5f9;">${m.t26.cov1A}%</td>
+                                            <td style="padding: 12px 6px; color: #64748b;">${m.t25.cov4A}%</td>
+                                            <td style="padding: 12px 6px; color: #0284c7; font-weight: 900; border-right: 1px solid #f1f5f9;">${m.t26.cov4A}%</td>
+                                            <td style="padding: 12px 12px;">
+                                                <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 9999px; font-size: 10.5px; font-weight: 800; background: ${isPositive ? '#f0fdf4' : '#fff1f2'}; color: ${isPositive ? '#166534' : '#9f1239'}; border: 1px solid ${isPositive ? '#bbf7d0' : '#fecdd3'};">
+                                                    <span class="material-symbols-rounded" style="font-size:13px; font-weight:900;">${isPositive ? 'trending_up' : 'trending_down'}</span>
+                                                    ${isPositive ? 'ASCENDENTE' : 'EN REVISIÓN'}
                                                 </span>
                                             </td>
                                         </tr>
                                     `;
                                 }).join('')}
-                                <tr style="background: #f1f5f9; text-align: center; font-weight: 900; color: #0f172a; border-top: 2px solid #cbd5e1;">
-                                    <td style="padding: 14px 16px; text-align: left;">TOTAL JURISDICCIONAL</td>
-                                    <td style="padding: 14px;">${t25.covM1}%</td>
-                                    <td style="padding: 14px; color: #0284c7;">${t26.covM1}%</td>
-                                    <td style="padding: 14px;">${t25.cov1A}%</td>
-                                    <td style="padding: 14px; color: #0284c7;">${t26.cov1A}%</td>
-                                    <td style="padding: 14px;">${t25.cov4A}%</td>
-                                    <td style="padding: 14px; color: #0284c7;">${t26.cov4A}%</td>
-                                    <td style="padding: 14px;">
-                                        <span style="display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 900; background: #e0f2fe; color: #0369a1;">
-                                            CONSOLIDADO JS1
+                                <tr style="background: #f8fafc; text-align: center; font-weight: 900; color: #0f172a; border-top: 2px solid #cbd5e1;">
+                                    <td style="padding: 14px 16px; text-align: left; border-right: 1px solid #cbd5e1;">TOTAL JURISDICCIONAL</td>
+                                    <td style="padding: 14px 6px;">${t25.covM1}%</td>
+                                    <td style="padding: 14px 6px; color: #0284c7; border-right: 1px solid #cbd5e1;">${t26.covM1}%</td>
+                                    <td style="padding: 14px 6px;">${t25.cov1A}%</td>
+                                    <td style="padding: 14px 6px; color: #0284c7; border-right: 1px solid #cbd5e1;">${t26.cov1A}%</td>
+                                    <td style="padding: 14px 6px;">${t25.cov4A}%</td>
+                                    <td style="padding: 14px 6px; color: #0284c7; border-right: 1px solid #cbd5e1;">${t26.cov4A}%</td>
+                                    <td style="padding: 14px 12px;">
+                                        <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 9999px; font-size: 10.5px; font-weight: 800; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
+                                            <span class="material-symbols-rounded" style="font-size:13px;">verified</span> JS1 CONSOLIDADO
                                         </span>
                                     </td>
                                 </tr>
@@ -4411,43 +4465,60 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
 
                 <!-- TABLA 2: MATRIZ DETALLADA POR BIOLÓGICO Y POBLACIÓN -->
                 <div>
-                    <h3 style="margin: 0 0 16px 0; font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em;">
-                        💉 Matriz Multianual por Biológico e Indicadores de Población
+                    <h3 style="margin: 0 0 16px 0; font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-rounded" style="color: #0284c7;">syringes</span> Matriz Multianual por Biológico e Indicadores de Población
                     </h3>
-                    <div style="overflow-x: auto; border-radius: 16px; border: 1px solid #e2e8f0;">
-                        <table style="width: 100%; border-collapse: collapse; background: white; font-size: 12px;">
+                    <div style="border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; background: #ffffff; box-shadow: 0 4px 20px rgba(15,23,42,0.03);">
+                        <table style="width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 11.5px;">
+                            <colgroup>
+                                <col style="width: 24%;">
+                                <col style="width: 14%;">
+                                <col style="width: 10%;">
+                                <col style="width: 10%;">
+                                <col style="width: 12%;">
+                                <col style="width: 12%;">
+                                <col style="width: 18%;">
+                            </colgroup>
                             <thead>
-                                <tr style="background: #f8fafc; font-weight: 900; color: #475569; border-bottom: 2px solid #e2e8f0;">
+                                <tr style="background: #f8fafc; font-weight: 900; color: #334155; border-bottom: 2px solid #e2e8f0;">
                                     <th style="padding: 12px 16px; text-align: left;">BIOLÓGICO Y ESQUEMA</th>
-                                    <th style="padding: 12px 16px; text-align: center;">GRUPO POBLACIONAL</th>
-                                    <th style="padding: 12px 16px; text-align: center;">DOSIS 2025</th>
-                                    <th style="padding: 12px 16px; text-align: center;">DOSIS 2026</th>
-                                    <th style="padding: 12px 16px; text-align: center;">COBERTURA / AVANCE 2025</th>
-                                    <th style="padding: 12px 16px; text-align: center;">COBERTURA / AVANCE 2026</th>
-                                    <th style="padding: 12px 16px; text-align: center;">COMPARATIVA MULTIANUAL (2026 VS 2025)</th>
+                                    <th style="padding: 12px 12px; text-align: center;">GRUPO POBLACIONAL</th>
+                                    <th style="padding: 12px 8px; text-align: center;">DOSIS 2025</th>
+                                    <th style="padding: 12px 8px; text-align: center;">DOSIS 2026</th>
+                                    <th style="padding: 12px 8px; text-align: center;">AVANCE 2025</th>
+                                    <th style="padding: 12px 8px; text-align: center;">AVANCE 2026</th>
+                                    <th style="padding: 12px 12px; text-align: center;">COMPARATIVA (2026 VS 2025)</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${(() => {
-                                    const buildRow = (n, g, d25, d26, c25, c26, difStr, isUp, isDosisMode = false) => `
-                                        <tr style="border-bottom: 1px solid #f1f5f9; font-weight: 700;">
+                                    const buildRow = (n, g, d25, d26, c25, c26, difStr, isUp, isSpecial = false) => `
+                                        <tr style="border-bottom: 1px solid #f1f5f9; font-weight: 700; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
                                             <td style="padding: 12px 16px; font-weight: 900; color: #0f172a;">${n}</td>
-                                            <td style="padding: 12px 16px; text-align: center; color: #64748b;">${g}</td>
-                                            <td style="padding: 12px 16px; text-align: center; color: #475569;">${d25 ? d25.toLocaleString('es-MX') : '0'}</td>
-                                            <td style="padding: 12px 16px; text-align: center; color: #0284c7; font-weight: 900;">${d26 ? d26.toLocaleString('es-MX') : '0'}</td>
-                                            <td style="padding: 12px 16px; text-align: center; color: #475569;">${c25}</td>
-                                            <td style="padding: 12px 16px; text-align: center; color: #0284c7; font-weight: 900;">${c26}</td>
-                                            <td style="padding: 12px 16px; text-align: center;">
-                                                <span style="display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 900; background: ${isUp ? '#f0fdf4' : '#fff1f2'}; color: ${isUp ? '#166534' : '#9f1239'}; border: 1px solid ${isUp ? '#bbf7d0' : '#fecdd3'};">
-                                                    ${isUp ? '▲' : '▼'} ${difStr}
-                                                </span>
+                                            <td style="padding: 12px 12px; text-align: center; color: #64748b;">${g}</td>
+                                            <td style="padding: 12px 8px; text-align: center; color: #475569;">${d25 ? d25.toLocaleString('es-MX') : '0'}</td>
+                                            <td style="padding: 12px 8px; text-align: center; color: #0284c7; font-weight: 900;">${d26 ? d26.toLocaleString('es-MX') : '0'}</td>
+                                            <td style="padding: 12px 8px; text-align: center; color: #475569;">${c25}</td>
+                                            <td style="padding: 12px 8px; text-align: center; color: #0284c7; font-weight: 900;">${c26}</td>
+                                            <td style="padding: 12px 12px; text-align: center;">
+                                                ${isSpecial ? `
+                                                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 9999px; font-size: 10.5px; font-weight: 800; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
+                                                        <span class="material-symbols-rounded" style="font-size:13px;">new_releases</span>
+                                                        ${difStr}
+                                                    </span>
+                                                ` : `
+                                                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 9999px; font-size: 10.5px; font-weight: 800; background: ${isUp ? '#f0fdf4' : '#fff1f2'}; color: ${isUp ? '#166534' : '#b91c1c'}; border: 1px solid ${isUp ? '#bbf7d0' : '#fecdd3'};">
+                                                        <span class="material-symbols-rounded" style="font-size:13px; font-weight:900;">${isUp ? 'trending_up' : 'trending_down'}</span>
+                                                        ${difStr}
+                                                    </span>
+                                                `}
                                             </td>
                                         </tr>
                                     `;
 
                                     const sectionHeader = (title) => `
-                                        <tr style="background: #f1f5f9; font-weight: 900; color: #1e293b; border-left: 4px solid #0284c7;">
-                                            <td colspan="7" style="padding: 10px 16px; text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px;">
+                                        <tr style="background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%); font-weight: 900; color: #ffffff;">
+                                            <td colspan="7" style="padding: 10px 16px; text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px;">
                                                 📌 ${title}
                                             </td>
                                         </tr>
@@ -4475,7 +4546,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                     html += buildRow('DPT (4 Años)', '4 Años', t25.appDPT, t26.appDPT, `${t25.covDPT}%`, `${t26.covDPT}%`, `${(t26.covDPT - t25.covDPT).toFixed(1)}% pts`, t26.covDPT >= t25.covDPT);
 
                                     // Adolescentes y Adultos
-                                    html += sectionHeader('ADOLESCENTES Y ADULTOS (SEGUIMIENTO POR DOSIS APLICADAS)');
+                                    html += sectionHeader('ADOLESCENTES Y ADULTOS (DOSIS APLICADAS)');
                                     let dAdolHb = calcDosisDiff(t25.adol_hb, t26.adol_hb);
                                     html += buildRow('Hepatitis B Adultos', 'Adolescentes/Adultos', t25.adol_hb, t26.adol_hb, `${t25.adol_hb.toLocaleString('es-MX')} Dosis`, `${t26.adol_hb.toLocaleString('es-MX')} Dosis`, dAdolHb.label, dAdolHb.isUp);
                                     let dAdolSr = calcDosisDiff(t25.adol_sr, t26.adol_sr);
@@ -4488,7 +4559,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                     html += buildRow('Tdpa Adultos', 'Adolescentes/Adultos', t25.adol_tdpa, t26.adol_tdpa, `${t25.adol_tdpa.toLocaleString('es-MX')} Dosis`, `${t26.adol_tdpa.toLocaleString('es-MX')} Dosis`, dAdolTdpa.label, dAdolTdpa.isUp);
 
                                     // Adultos Mayores
-                                    html += sectionHeader('ADULTOS MAYORES (SEGUIMIENTO POR DOSIS APLICADAS)');
+                                    html += sectionHeader('ADULTOS MAYORES (DOSIS APLICADAS)');
                                     let dAmN13 = calcDosisDiff(t25.am_neumo13, t26.am_neumo13);
                                     html += buildRow('Neumococo 13-valente', '60+ Años', t25.am_neumo13, t26.am_neumo13, `${t25.am_neumo13.toLocaleString('es-MX')} Dosis`, `${t26.am_neumo13.toLocaleString('es-MX')} Dosis`, dAmN13.label, dAmN13.isUp);
                                     let dAmN20 = calcDosisDiff(t25.am_neumo20, t26.am_neumo20);
@@ -4500,7 +4571,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                     html += sectionHeader('MUJERES EMBARAZADAS');
                                     let dEmbTdpa = calcDosisDiff(t25.emb_tdpa, t26.emb_tdpa);
                                     html += buildRow('Tdpa Embarazadas', 'Embarazadas', t25.emb_tdpa, t26.emb_tdpa, `${t25.emb_tdpa.toLocaleString('es-MX')} Dosis`, `${t26.emb_tdpa.toLocaleString('es-MX')} Dosis`, dEmbTdpa.label, dEmbTdpa.isUp);
-                                    html += buildRow('VSR Embarazadas', 'Embarazadas', 0, t26.emb_vsr, 'Sin Registro 2025', `${t26.emb_vsr.toLocaleString('es-MX')} Dosis`, `+${t26.emb_vsr.toLocaleString('es-MX')} Dosis (Estrategia 2026)`, true);
+                                    html += buildRow('VSR Embarazadas', 'Embarazadas', 0, t26.emb_vsr, 'Sin Registro 2025', `${t26.emb_vsr.toLocaleString('es-MX')} Dosis`, `+${t26.emb_vsr.toLocaleString('es-MX')} Dosis (Estrategia 2026)`, true, true);
 
                                     // Temporada Invernal
                                     html += sectionHeader('TEMPORADA INVERNAL');
@@ -4519,21 +4590,29 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
             </div>
         `;
 
-        // Renderizar Histograma ECharts Dual
+        // Renderizar Histograma ECharts Dual con espaciado limpio y subtexto dinámico
         setTimeout(() => {
             const chartDom = document.getElementById('chartComparativeMulti');
             if (chartDom && typeof echarts !== 'undefined') {
                 const myChart = echarts.init(chartDom);
+                const subtextStr = maxMes === 12 
+                    ? 'Evaluación Acumulada Anual (Cierre Enero - Diciembre)' 
+                    : `Evaluación Acumulada al Cierre de ${maxMesName} (Mes 1 a ${maxMes})`;
+
                 const option = {
                     title: {
                         text: 'Comparativa de Cobertura Vacunal por Grupo de Edad (2025 vs 2026)',
-                        subtext: `Consolidado Cierre Mes ${maxMes}`,
+                        subtext: subtextStr,
                         left: 'center',
-                        textStyle: { fontSize: 15, fontWeight: 'bold', color: '#0f172a' }
+                        top: 10,
+                        textStyle: { fontSize: 16, fontWeight: 'bold', color: '#0f172a' },
+                        subtextStyle: { fontSize: 11, fontWeight: 'bold', color: '#0284c7' }
                     },
                     tooltip: {
                         trigger: 'axis',
                         axisPointer: { type: 'shadow' },
+                        backgroundColor: '#0f172a',
+                        textStyle: { color: '#ffffff' },
                         formatter: function(params) {
                             let s = `<strong>${params[0].name}</strong><br/>`;
                             params.forEach(p => {
@@ -4542,32 +4621,40 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                             return s;
                         }
                     },
-                    legend: { data: ['Año 2025', 'Año 2026'], top: 35 },
-                    grid: { left: '4%', right: '4%', bottom: '10%', top: '22%', containLabel: true },
+                    legend: {
+                        data: ['Año 2025', 'Año 2026'],
+                        top: 55,
+                        left: 'center',
+                        textStyle: { fontWeight: 'bold', color: '#475569' }
+                    },
+                    grid: { left: '3%', right: '3%', bottom: '8%', top: 95, containLabel: true },
                     xAxis: {
                         type: 'category',
                         data: ['Menores de 1 Año (<1)', 'Niños de 1 Año (1)', 'Niños de 4 Años (4)'],
-                        axisLabel: { fontWeight: 'bold', color: '#475569' }
+                        axisLabel: { fontWeight: 'bold', color: '#334155', fontSize: 12 }
                     },
                     yAxis: {
                         type: 'value',
                         name: 'Cobertura (%)',
-                        axisLabel: { formatter: '{value}%' }
+                        axisLabel: { formatter: '{value}%', fontWeight: 'bold', color: '#64748b' },
+                        splitLine: { lineStyle: { type: 'dashed', color: '#e2e8f0' } }
                     },
                     series: [
                         {
                             name: 'Año 2025',
                             type: 'bar',
                             data: [t25.covM1, t25.cov1A, t25.cov4A],
-                            itemStyle: { color: '#94a3b8', borderRadius: [6, 6, 0, 0] },
-                            label: { show: true, position: 'top', formatter: '{c}%', fontWeight: 'bold' }
+                            itemStyle: { color: '#94a3b8', borderRadius: [8, 8, 0, 0] },
+                            barWidth: 38,
+                            label: { show: true, position: 'top', formatter: '{c}%', fontWeight: 'bold', fontSize: 12, color: '#475569' }
                         },
                         {
                             name: 'Año 2026',
                             type: 'bar',
                             data: [t26.covM1, t26.cov1A, t26.cov4A],
-                            itemStyle: { color: '#0284c7', borderRadius: [6, 6, 0, 0] },
-                            label: { show: true, position: 'top', formatter: '{c}%', fontWeight: 'bold' }
+                            itemStyle: { color: '#0284c7', borderRadius: [8, 8, 0, 0] },
+                            barWidth: 38,
+                            label: { show: true, position: 'top', formatter: '{c}%', fontWeight: 'bold', fontSize: 12, color: '#0284c7' }
                         }
                     ]
                 };
