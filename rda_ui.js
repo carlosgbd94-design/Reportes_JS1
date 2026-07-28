@@ -2648,17 +2648,21 @@ async function exportMasivoZIP(mode = 'pdf') {
             `;
             
             overlayElem.innerHTML = `
-                <div style="background: #ffffff; width: 92%; max-width: 480px; border-radius: 24px; padding: 32px 28px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255,255,255,0.1); text-align: center; position: relative; overflow: hidden;">
-                    <!-- ACCENT GRADIENT HEADER BAR -->
-                    <div style="position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #0084d4, #0284c7, #38bdf8);"></div>
+                <div style="background: #ffffff; width: 92%; max-width: 480px; border-radius: 28px; padding: 36px 32px 30px 32px; box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255,255,255,0.15); text-align: center; position: relative; overflow: hidden; animation: fadeInOverlay 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;">
+                    <!-- ACCENT GRADIENT HEADER BAR (OPCIÓN 1) -->
+                    <div style="position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #0084d4 0%, #0284c7 45%, #38bdf8 75%, #10b981 100%);"></div>
 
-                    <!-- ANIMATED OFFICIAL LOGO -->
-                    <div class="elastic-bounce-container" style="margin: 0 auto 14px auto; display: flex; align-items: center; justify-content: center;">
-                        <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" alt="Exportando SIREVAQ..." class="bounce-logo" style="width: 82px; height: auto;">
+                    <!-- CIRCULAR GAUGE RING WITH PULSING LOGO (OPCIÓN 2) -->
+                    <div style="position: relative; width: 108px; height: 108px; margin: 0 auto 18px auto; display: flex; align-items: center; justify-content: center;">
+                        <svg style="transform: rotate(-90deg); width: 108px; height: 108px;" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="#f1f5f9" stroke-width="7"></circle>
+                            <circle id="rdaOverlayRing" cx="50" cy="50" r="45" fill="none" stroke="#0284c7" stroke-width="7" stroke-dasharray="283" stroke-dashoffset="283" stroke-linecap="round" style="transition: stroke-dashoffset 0.3s cubic-bezier(0.4, 0, 0.2, 1);"></circle>
+                        </svg>
+                        <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" alt="Exportando SIREVAQ..." class="bounce-logo" style="position: absolute; width: 52px; height: auto;">
                     </div>
 
-                    <!-- BADGE -->
-                    <div style="display: inline-block; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 11px; font-weight: 900; padding: 4px 12px; border-radius: 9999px; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;" id="rdaOverlayBadge">
+                    <!-- BADGE (OPCIÓN 1) -->
+                    <div style="display: inline-block; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 11px; font-weight: 900; padding: 4px 14px; border-radius: 9999px; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(2,132,199,0.08);" id="rdaOverlayBadge">
                         EXPORTACIÓN MASIVA
                     </div>
 
@@ -2668,13 +2672,13 @@ async function exportMasivoZIP(mode = 'pdf') {
                     </h3>
 
                     <!-- SUBTITLE CURRENT UNIT NAME -->
-                    <p id="rdaOverlayMsg" style="margin: 0 0 20px 0; font-size: 13px; font-weight: 700; color: #475569; min-height: 38px; display: flex; align-items: center; justify-content: center; line-height: 1.4;">
+                    <p id="rdaOverlayMsg" style="margin: 0 0 20px 0; font-size: 13px; font-weight: 700; color: #475569; min-height: 38px; display: flex; align-items: center; justify-content: center; line-height: 1.45;">
                         Iniciando proceso...
                     </p>
 
-                    <!-- PROGRESS BAR CONTAINER -->
-                    <div style="background: #f1f5f9; border-radius: 9999px; height: 14px; width: 100%; overflow: hidden; border: 1px solid #e2e8f0; position: relative; margin-bottom: 12px;">
-                        <div id="rdaOverlayBar" style="background: linear-gradient(90deg, #0084d4 0%, #0284c7 50%, #38bdf8 100%); height: 100%; width: 0%; border-radius: 9999px; transition: width 0.25s ease-out; box-shadow: 0 2px 6px rgba(2,132,199,0.4);"></div>
+                    <!-- PROGRESS BAR CONTAINER (OPCIÓN 1) -->
+                    <div style="background: #f1f5f9; border-radius: 9999px; height: 13px; width: 100%; overflow: hidden; border: 1px solid #e2e8f0; position: relative; margin-bottom: 12px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.04);">
+                        <div id="rdaOverlayBar" style="background: linear-gradient(90deg, #0084d4 0%, #0284c7 50%, #38bdf8 100%); height: 100%; width: 0%; border-radius: 9999px; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 2px 8px rgba(2,132,199,0.4);"></div>
                     </div>
 
                     <!-- STEP COUNTER -->
@@ -2689,9 +2693,9 @@ async function exportMasivoZIP(mode = 'pdf') {
                 const style = document.createElement('style');
                 style.id = 'rdaExportOverlayStyles';
                 style.textContent = `
-                    @keyframes p9-bounce { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.04); } }
-                    .bounce-logo { animation: p9-bounce 1.5s infinite ease-in-out; }
-                    @keyframes fadeInOverlay { 0% { opacity: 0; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
+                    @keyframes p9-bounce { 0%, 100% { transform: scale(1); filter: drop-shadow(0 4px 8px rgba(0,132,212,0.2)); } 50% { transform: scale(1.05); filter: drop-shadow(0 8px 16px rgba(0,132,212,0.35)); } }
+                    .bounce-logo { animation: p9-bounce 2s infinite ease-in-out; }
+                    @keyframes fadeInOverlay { 0% { opacity: 0; transform: scale(0.96) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
                 `;
                 document.head.appendChild(style);
             }
@@ -2704,6 +2708,7 @@ async function exportMasivoZIP(mode = 'pdf') {
         const oBar = document.getElementById('rdaOverlayBar');
         const oCount = document.getElementById('rdaOverlayCount');
         const oPct = document.getElementById('rdaOverlayPct');
+        const oRing = document.getElementById('rdaOverlayRing');
 
         if (oBadge && modeStr) oBadge.textContent = modeStr.toUpperCase();
         if (oTitle) oTitle.textContent = `Exportando (${pct}%)`;
@@ -2711,6 +2716,10 @@ async function exportMasivoZIP(mode = 'pdf') {
         if (oBar) oBar.style.width = `${pct}%`;
         if (oCount) oCount.textContent = `${current} de ${total} Unidades`;
         if (oPct) oPct.textContent = `${pct}% COMPLETADO`;
+        if (oRing) {
+            const strokeDashoffset = 283 - (283 * pct / 100);
+            oRing.style.strokeDashoffset = strokeDashoffset;
+        }
     };
 
     const removeOverlayProgress = () => {
