@@ -2569,10 +2569,12 @@ async function exportMasivoZIP(mode = 'pdf') {
             if (typeof populateUnidadFilter === 'function') populateUnidadFilter();
             uniSelect.value = u.clues;
             
-            if (typeof renderDashboard === 'function') renderDashboard();
+            if (typeof renderDashboard === 'function') {
+                await renderDashboard();
+            }
 
-            // Esperar renderizado de ECharts
-            await new Promise(resolve => setTimeout(resolve, 150));
+            // Esperar renderizado completo de ECharts y elementos gráficos
+            await new Promise(resolve => setTimeout(resolve, 350));
 
             if (mode === 'png') {
                 const fname = _rdaState.esquema === 'comparativa_multianual' 
@@ -4252,15 +4254,15 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
             };
         });
 
-        // Semáforo comparativo basado estrictamente en el avance 2026 vs 2025
+        // Semáforo comparativo basado estrictamente en el avance 2026 vs 2025 con texto ejecutivo entendible
         const getCompBadgeHtml = (cov2025, cov2026) => {
             const diff = Math.round((cov2026 - cov2025) * 10) / 10;
             if (diff > 0) {
-                return `<span style="font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px; background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0;">AVANCE SUPERIOR</span>`;
-            } else if (diff >= -5) {
-                return `<span style="font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">DESEMPEÑO SIMILAR</span>`;
+                return `<span style="font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 9999px; background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;"><span class="material-symbols-rounded" style="font-size:13px; font-weight:900;">trending_up</span> AVANCE SUPERIOR A 2025</span>`;
+            } else if (diff >= -3) {
+                return `<span style="font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 9999px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;"><span class="material-symbols-rounded" style="font-size:13px; font-weight:900;">trending_flat</span> DESEMPEÑO SIMILAR</span>`;
             } else {
-                return `<span style="font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px; background: #fef2f2; color: #b91c1c; border: 1px solid #fecdd3;">BRECHA POR RECUPERAR</span>`;
+                return `<span style="font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 9999px; background: #fef2f2; color: #b91c1c; border: 1px solid #fecdd3; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;"><span class="material-symbols-rounded" style="font-size:13px; font-weight:900;">trending_down</span> AVANCE MENOR A 2025</span>`;
             }
         };
 
@@ -4316,23 +4318,23 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                     </div>
                 </div>
 
-                <!-- CARDS DE DIAGNÓSTICO ESTRATÉGICO COMPARATIVO -->
+                <!-- CARDS DE DIAGNÓSTICO ESTRATÉGICO COMPARATIVO CON ALTO CONTRASTE -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-bottom: 32px;">
                     <!-- Menor 1 -->
-                    <div style="background: #f8fafc; border-radius: 18px; padding: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden;">
-                        <div style="font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Menores de 1 Año (<1)</div>
+                    <div style="background: #f8fafc; border-radius: 18px; padding: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden; box-shadow: 0 2px 8px rgba(15,23,42,0.02);">
+                        <div style="font-size: 11px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">Menores de 1 Año (<1)</div>
                         <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-top: 12px;">
                             <div>
-                                <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Año 2025</span>
-                                <div style="font-size: 20px; font-weight: 900; color: #475569;">${t25.covM1}%</div>
+                                <span style="font-size: 10.5px; font-weight: 800; color: #475569; text-transform: uppercase;">Año 2025</span>
+                                <div style="font-size: 22px; font-weight: 900; color: #1e293b;">${t25.covM1}%</div>
                             </div>
                             <div style="text-align: right;">
-                                <span style="font-size: 10px; font-weight: 800; color: #0284c7; text-transform: uppercase;">Año 2026</span>
-                                <div style="font-size: 24px; font-weight: 900; color: #0284c7;">${t26.covM1}%</div>
+                                <span style="font-size: 10.5px; font-weight: 900; color: #0284c7; text-transform: uppercase;">Año 2026</span>
+                                <div style="font-size: 26px; font-weight: 900; color: #0284c7;">${t26.covM1}%</div>
                             </div>
                         </div>
-                        <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
-                            <span style="font-size: 11px; font-weight: 800; color: ${t26.covM1 >= t25.covM1 ? '#166534' : '#9f1239'};">
+                        <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                            <span style="font-size: 11.5px; font-weight: 900; color: ${t26.covM1 >= t25.covM1 ? '#166534' : '#b91c1c'};">
                                 ${t26.covM1 >= t25.covM1 ? '▲ +'+(t26.covM1-t25.covM1).toFixed(1) : '▼ '+(t26.covM1-t25.covM1).toFixed(1)}% pts
                             </span>
                             ${getCompBadgeHtml(t25.covM1, t26.covM1)}
@@ -4340,20 +4342,20 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                     </div>
 
                     <!-- 1 Año -->
-                    <div style="background: #f8fafc; border-radius: 18px; padding: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden;">
-                        <div style="font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Niños de 1 Año (1)</div>
+                    <div style="background: #f8fafc; border-radius: 18px; padding: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden; box-shadow: 0 2px 8px rgba(15,23,42,0.02);">
+                        <div style="font-size: 11px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">Niños de 1 Año (1)</div>
                         <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-top: 12px;">
                             <div>
-                                <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Año 2025</span>
-                                <div style="font-size: 20px; font-weight: 900; color: #475569;">${t25.cov1A}%</div>
+                                <span style="font-size: 10.5px; font-weight: 800; color: #475569; text-transform: uppercase;">Año 2025</span>
+                                <div style="font-size: 22px; font-weight: 900; color: #1e293b;">${t25.cov1A}%</div>
                             </div>
                             <div style="text-align: right;">
-                                <span style="font-size: 10px; font-weight: 800; color: #0284c7; text-transform: uppercase;">Año 2026</span>
-                                <div style="font-size: 24px; font-weight: 900; color: #0284c7;">${t26.cov1A}%</div>
+                                <span style="font-size: 10.5px; font-weight: 900; color: #0284c7; text-transform: uppercase;">Año 2026</span>
+                                <div style="font-size: 26px; font-weight: 900; color: #0284c7;">${t26.cov1A}%</div>
                             </div>
                         </div>
-                        <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
-                            <span style="font-size: 11px; font-weight: 800; color: ${t26.cov1A >= t25.cov1A ? '#166534' : '#9f1239'};">
+                        <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                            <span style="font-size: 11.5px; font-weight: 900; color: ${t26.cov1A >= t25.cov1A ? '#166534' : '#b91c1c'};">
                                 ${t26.cov1A >= t25.cov1A ? '▲ +'+(t26.cov1A-t25.cov1A).toFixed(1) : '▼ '+(t26.cov1A-t25.cov1A).toFixed(1)}% pts
                             </span>
                             ${getCompBadgeHtml(t25.cov1A, t26.cov1A)}
@@ -4361,20 +4363,20 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                     </div>
 
                     <!-- 4 Años -->
-                    <div style="background: #f8fafc; border-radius: 18px; padding: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden;">
-                        <div style="font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Niños de 4 Años (4)</div>
+                    <div style="background: #f8fafc; border-radius: 18px; padding: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden; box-shadow: 0 2px 8px rgba(15,23,42,0.02);">
+                        <div style="font-size: 11px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">Niños de 4 Años (4)</div>
                         <div style="display: flex; align-items: flex-end; justify-content: space-between; margin-top: 12px;">
                             <div>
-                                <span style="font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Año 2025</span>
-                                <div style="font-size: 20px; font-weight: 900; color: #475569;">${t25.cov4A}%</div>
+                                <span style="font-size: 10.5px; font-weight: 800; color: #475569; text-transform: uppercase;">Año 2025</span>
+                                <div style="font-size: 22px; font-weight: 900; color: #1e293b;">${t25.cov4A}%</div>
                             </div>
                             <div style="text-align: right;">
-                                <span style="font-size: 10px; font-weight: 800; color: #0284c7; text-transform: uppercase;">Año 2026</span>
-                                <div style="font-size: 24px; font-weight: 900; color: #0284c7;">${t26.cov4A}%</div>
+                                <span style="font-size: 10.5px; font-weight: 900; color: #0284c7; text-transform: uppercase;">Año 2026</span>
+                                <div style="font-size: 26px; font-weight: 900; color: #0284c7;">${t26.cov4A}%</div>
                             </div>
                         </div>
-                        <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
-                            <span style="font-size: 11px; font-weight: 800; color: ${t26.cov4A >= t25.cov4A ? '#166534' : '#9f1239'};">
+                        <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                            <span style="font-size: 11.5px; font-weight: 900; color: ${t26.cov4A >= t25.cov4A ? '#166534' : '#b91c1c'};">
                                 ${t26.cov4A >= t25.cov4A ? '▲ +'+(t26.cov4A-t25.cov4A).toFixed(1) : '▼ '+(t26.cov4A-t25.cov4A).toFixed(1)}% pts
                             </span>
                             ${getCompBadgeHtml(t25.cov4A, t26.cov4A)}
@@ -4495,10 +4497,10 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                     const buildRow = (n, g, d25, d26, c25, c26, difStr, isUp, isSpecial = false) => `
                                         <tr style="border-bottom: 1px solid #f1f5f9; font-weight: 700; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
                                             <td style="padding: 12px 14px; font-weight: 900; color: #0f172a;">${n}</td>
-                                            <td style="padding: 12px 8px; text-align: center; color: #64748b;">${g}</td>
-                                            <td style="padding: 12px 6px; text-align: center; color: #475569;">${d25 ? d25.toLocaleString('es-MX') : '0'}</td>
+                                            <td style="padding: 12px 8px; text-align: center; color: #475569;">${g}</td>
+                                            <td style="padding: 12px 6px; text-align: center; color: #1e293b; font-weight: 800;">${d25 ? d25.toLocaleString('es-MX') : '0'}</td>
                                             <td style="padding: 12px 6px; text-align: center; color: #0284c7; font-weight: 900;">${d26 ? d26.toLocaleString('es-MX') : '0'}</td>
-                                            <td style="padding: 12px 6px; text-align: center; color: #475569;">${c25}</td>
+                                            <td style="padding: 12px 6px; text-align: center; color: #1e293b; font-weight: 800;">${c25}</td>
                                             <td style="padding: 12px 6px; text-align: center; color: #0284c7; font-weight: 900;">${c26}</td>
                                             <td style="padding: 10px 8px; text-align: center;">
                                                 ${isSpecial ? `
@@ -4516,10 +4518,10 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                         </tr>
                                     `;
 
-                                    const sectionHeader = (title) => `
+                                    const sectionHeader = (title, iconName = 'bookmark') => `
                                         <tr style="background: #0f172a !important; color: #ffffff !important;">
-                                            <td colspan="7" style="padding: 10px 16px; font-weight: 900 !important; color: #ffffff !important; background: #0f172a !important; text-transform: uppercase; letter-spacing: 0.08em; font-size: 11.5px; border: none !important;">
-                                                📌 ${title}
+                                            <td colspan="7" style="padding: 10px 16px; font-weight: 900 !important; color: #ffffff !important; background: #0f172a !important; text-transform: uppercase; letter-spacing: 0.08em; font-size: 11.5px; border: none !important; text-align: left !important;">
+                                                <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: text-bottom; color: #38bdf8; margin-right: 6px;">${iconName}</span> ${title}
                                             </td>
                                         </tr>
                                     `;
@@ -4534,7 +4536,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                     let html = '';
                                     
                                     // Esquema Básico
-                                    html += sectionHeader('ESQUEMA BÁSICO (0-8 AÑOS)');
+                                    html += sectionHeader('ESQUEMA BÁSICO (0-8 AÑOS)', 'child_care');
                                     html += buildRow('BCG (Única)', '< 1 Año', t25.appBCG, t26.appBCG, `${t25.covBCG}%`, `${t26.covBCG}%`, `${(t26.covBCG - t25.covBCG).toFixed(1)}% pts`, t26.covBCG >= t25.covBCG);
                                     html += buildRow('Hepatitis B (0-7 días)', '< 1 Año', t25.appHepB, t26.appHepB, `${t25.covHepB}%`, `${t26.covHepB}%`, `${(t26.covHepB - t25.covHepB).toFixed(1)}% pts`, t26.covHepB >= t25.covHepB);
                                     html += buildRow('Rotavirus (2a Dosis)', '< 1 Año', t25.appRota, t26.appRota, `${t25.covRota}%`, `${t26.covRota}%`, `${(t26.covRota - t25.covRota).toFixed(1)}% pts`, t26.covRota >= t25.covRota);
@@ -4546,7 +4548,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                     html += buildRow('DPT (4 Años)', '4 Años', t25.appDPT, t26.appDPT, `${t25.covDPT}%`, `${t26.covDPT}%`, `${(t26.covDPT - t25.covDPT).toFixed(1)}% pts`, t26.covDPT >= t25.covDPT);
 
                                     // Adolescentes y Adultos
-                                    html += sectionHeader('ADOLESCENTES Y ADULTOS (DOSIS APLICADAS)');
+                                    html += sectionHeader('ADOLESCENTES Y ADULTOS (DOSIS APLICADAS)', 'groups');
                                     let dAdolHb = calcDosisDiff(t25.adol_hb, t26.adol_hb);
                                     html += buildRow('Hepatitis B Adultos', 'Adolescentes/Adultos', t25.adol_hb, t26.adol_hb, `${t25.adol_hb.toLocaleString('es-MX')} Dosis`, `${t26.adol_hb.toLocaleString('es-MX')} Dosis`, dAdolHb.label, dAdolHb.isUp);
                                     let dAdolSr = calcDosisDiff(t25.adol_sr, t26.adol_sr);
@@ -4559,7 +4561,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                     html += buildRow('Tdpa Adultos', 'Adolescentes/Adultos', t25.adol_tdpa, t26.adol_tdpa, `${t25.adol_tdpa.toLocaleString('es-MX')} Dosis`, `${t26.adol_tdpa.toLocaleString('es-MX')} Dosis`, dAdolTdpa.label, dAdolTdpa.isUp);
 
                                     // Adultos Mayores
-                                    html += sectionHeader('ADULTOS MAYORES (DOSIS APLICADAS)');
+                                    html += sectionHeader('ADULTOS MAYORES (DOSIS APLICADAS)', 'elderly');
                                     let dAmN13 = calcDosisDiff(t25.am_neumo13, t26.am_neumo13);
                                     html += buildRow('Neumococo 13-valente', '60+ Años', t25.am_neumo13, t26.am_neumo13, `${t25.am_neumo13.toLocaleString('es-MX')} Dosis`, `${t26.am_neumo13.toLocaleString('es-MX')} Dosis`, dAmN13.label, dAmN13.isUp);
                                     let dAmN20 = calcDosisDiff(t25.am_neumo20, t26.am_neumo20);
@@ -4568,13 +4570,13 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                     html += buildRow('Td Mayores', '60+ Años', t25.am_td, t26.am_td, `${t25.am_td.toLocaleString('es-MX')} Dosis`, `${t26.am_td.toLocaleString('es-MX')} Dosis`, dAmTd.label, dAmTd.isUp);
 
                                     // Embarazadas
-                                    html += sectionHeader('MUJERES EMBARAZADAS');
+                                    html += sectionHeader('MUJERES EMBARAZADAS', 'pregnant_woman');
                                     let dEmbTdpa = calcDosisDiff(t25.emb_tdpa, t26.emb_tdpa);
                                     html += buildRow('Tdpa Embarazadas', 'Embarazadas', t25.emb_tdpa, t26.emb_tdpa, `${t25.emb_tdpa.toLocaleString('es-MX')} Dosis`, `${t26.emb_tdpa.toLocaleString('es-MX')} Dosis`, dEmbTdpa.label, dEmbTdpa.isUp);
                                     html += buildRow('VSR Embarazadas', 'Embarazadas', 0, t26.emb_vsr, 'Sin Registro 2025', `${t26.emb_vsr.toLocaleString('es-MX')} Dosis`, `+${t26.emb_vsr.toLocaleString('es-MX')} Dosis (Estrategia 2026)`, true, true);
 
                                     // Temporada Invernal
-                                    html += sectionHeader('TEMPORADA INVERNAL');
+                                    html += sectionHeader('TEMPORADA INVERNAL', 'ac_unit');
                                     let dInvInf = calcDosisDiff(t25.inv_influenza, t26.inv_influenza);
                                     html += buildRow('Influenza Estacional', 'Población Blanco', t25.inv_influenza, t26.inv_influenza, `${t25.inv_influenza.toLocaleString('es-MX')} Dosis`, `${t26.inv_influenza.toLocaleString('es-MX')} Dosis`, dInvInf.label, dInvInf.isUp);
                                     let dInvCov = calcDosisDiff(t25.inv_covid, t26.inv_covid);
