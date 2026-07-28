@@ -4395,31 +4395,31 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                     <div style="border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; background: #ffffff; box-shadow: 0 4px 20px rgba(15,23,42,0.03);">
                         <table style="width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 11.5px;">
                             <colgroup>
-                                <col style="width: 25%;">
-                                <col style="width: 10.5%;">
-                                <col style="width: 10.5%;">
-                                <col style="width: 10.5%;">
-                                <col style="width: 10.5%;">
-                                <col style="width: 10.5%;">
-                                <col style="width: 10.5%;">
-                                <col style="width: 12%;">
+                                <col style="width: 20%;">
+                                <col style="width: 10%;">
+                                <col style="width: 10%;">
+                                <col style="width: 10%;">
+                                <col style="width: 10%;">
+                                <col style="width: 10%;">
+                                <col style="width: 10%;">
+                                <col style="width: 20%;">
                             </colgroup>
                             <thead>
                                 <tr style="background: #f8fafc; text-align: center; font-weight: 900; color: #334155; border-bottom: 1px solid #e2e8f0;">
-                                    <th style="padding: 12px 16px; text-align: left; border-right: 1px solid #f1f5f9;">MUNICIPIO</th>
-                                    <th style="padding: 12px 8px; border-right: 1px solid #f1f5f9;" colspan="2">< 1 AÑO</th>
-                                    <th style="padding: 12px 8px; border-right: 1px solid #f1f5f9;" colspan="2">1 AÑO</th>
-                                    <th style="padding: 12px 8px; border-right: 1px solid #f1f5f9;" colspan="2">4 AÑOS</th>
+                                    <th style="padding: 12px 12px; text-align: left; border-right: 1px solid #f1f5f9;">MUNICIPIO</th>
+                                    <th style="padding: 12px 6px; border-right: 1px solid #f1f5f9;" colspan="2">< 1 AÑO</th>
+                                    <th style="padding: 12px 6px; border-right: 1px solid #f1f5f9;" colspan="2">1 AÑO</th>
+                                    <th style="padding: 12px 6px; border-right: 1px solid #f1f5f9;" colspan="2">4 AÑOS</th>
                                     <th style="padding: 12px 12px;">TENDENCIA GLOBAL</th>
                                 </tr>
                                 <tr style="background: #f1f5f9; text-align: center; font-weight: 800; color: #64748b; border-bottom: 2px solid #e2e8f0;">
-                                    <th style="padding: 8px 16px; text-align: left; border-right: 1px solid #e2e8f0;">JS1 QUERÉTARO</th>
-                                    <th style="padding: 8px 6px; color: #64748b;">2025</th>
-                                    <th style="padding: 8px 6px; color: #0284c7; border-right: 1px solid #e2e8f0;">2026</th>
-                                    <th style="padding: 8px 6px; color: #64748b;">2025</th>
-                                    <th style="padding: 8px 6px; color: #0284c7; border-right: 1px solid #e2e8f0;">2026</th>
-                                    <th style="padding: 8px 6px; color: #64748b;">2025</th>
-                                    <th style="padding: 8px 6px; color: #0284c7; border-right: 1px solid #e2e8f0;">2026</th>
+                                    <th style="padding: 8px 12px; text-align: left; border-right: 1px solid #e2e8f0;">JS1 QUERÉTARO</th>
+                                    <th style="padding: 8px 4px; color: #64748b;">2025</th>
+                                    <th style="padding: 8px 4px; color: #0284c7; border-right: 1px solid #e2e8f0;">2026</th>
+                                    <th style="padding: 8px 4px; color: #64748b;">2025</th>
+                                    <th style="padding: 8px 4px; color: #0284c7; border-right: 1px solid #e2e8f0;">2026</th>
+                                    <th style="padding: 8px 4px; color: #64748b;">2025</th>
+                                    <th style="padding: 8px 4px; color: #0284c7; border-right: 1px solid #e2e8f0;">2026</th>
                                     <th style="padding: 8px 12px;">ESTADO</th>
                                 </tr>
                             </thead>
@@ -4428,15 +4428,15 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                     const isPositive = (m.t26.covM1 + m.t26.cov1A) >= (m.t25.covM1 + m.t25.cov1A);
                                     return `
                                         <tr style="border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: 700; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-                                            <td style="padding: 12px 16px; text-align: left; font-weight: 900; color: #0f172a; border-right: 1px solid #f1f5f9;">${m.nombre}</td>
-                                            <td style="padding: 12px 6px; color: #64748b;">${m.t25.covM1}%</td>
-                                            <td style="padding: 12px 6px; color: #0284c7; font-weight: 900; border-right: 1px solid #f1f5f9;">${m.t26.covM1}%</td>
-                                            <td style="padding: 12px 6px; color: #64748b;">${m.t25.cov1A}%</td>
-                                            <td style="padding: 12px 6px; color: #0284c7; font-weight: 900; border-right: 1px solid #f1f5f9;">${m.t26.cov1A}%</td>
-                                            <td style="padding: 12px 6px; color: #64748b;">${m.t25.cov4A}%</td>
-                                            <td style="padding: 12px 6px; color: #0284c7; font-weight: 900; border-right: 1px solid #f1f5f9;">${m.t26.cov4A}%</td>
-                                            <td style="padding: 12px 12px;">
-                                                <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 9999px; font-size: 10.5px; font-weight: 800; background: ${isPositive ? '#f0fdf4' : '#fff1f2'}; color: ${isPositive ? '#166534' : '#9f1239'}; border: 1px solid ${isPositive ? '#bbf7d0' : '#fecdd3'};">
+                                            <td style="padding: 12px 12px; text-align: left; font-weight: 900; color: #0f172a; border-right: 1px solid #f1f5f9;">${m.nombre}</td>
+                                            <td style="padding: 12px 4px; color: #64748b;">${m.t25.covM1}%</td>
+                                            <td style="padding: 12px 4px; color: #0284c7; font-weight: 900; border-right: 1px solid #f1f5f9;">${m.t26.covM1}%</td>
+                                            <td style="padding: 12px 4px; color: #64748b;">${m.t25.cov1A}%</td>
+                                            <td style="padding: 12px 4px; color: #0284c7; font-weight: 900; border-right: 1px solid #f1f5f9;">${m.t26.cov1A}%</td>
+                                            <td style="padding: 12px 4px; color: #64748b;">${m.t25.cov4A}%</td>
+                                            <td style="padding: 12px 4px; color: #0284c7; font-weight: 900; border-right: 1px solid #f1f5f9;">${m.t26.cov4A}%</td>
+                                            <td style="padding: 10px 8px; text-align: center;">
+                                                <span style="display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 4px 10px; border-radius: 9999px; font-size: 10px; font-weight: 800; white-space: nowrap; max-width: 100%; box-sizing: border-box; background: ${isPositive ? '#f0fdf4' : '#fff1f2'}; color: ${isPositive ? '#166534' : '#9f1239'}; border: 1px solid ${isPositive ? '#bbf7d0' : '#fecdd3'};">
                                                     <span class="material-symbols-rounded" style="font-size:13px; font-weight:900;">${isPositive ? 'trending_up' : 'trending_down'}</span>
                                                     ${isPositive ? 'ASCENDENTE' : 'EN REVISIÓN'}
                                                 </span>
@@ -4445,15 +4445,15 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                     `;
                                 }).join('')}
                                 <tr style="background: #f8fafc; text-align: center; font-weight: 900; color: #0f172a; border-top: 2px solid #cbd5e1;">
-                                    <td style="padding: 14px 16px; text-align: left; border-right: 1px solid #cbd5e1;">TOTAL JURISDICCIONAL</td>
-                                    <td style="padding: 14px 6px;">${t25.covM1}%</td>
-                                    <td style="padding: 14px 6px; color: #0284c7; border-right: 1px solid #cbd5e1;">${t26.covM1}%</td>
-                                    <td style="padding: 14px 6px;">${t25.cov1A}%</td>
-                                    <td style="padding: 14px 6px; color: #0284c7; border-right: 1px solid #cbd5e1;">${t26.cov1A}%</td>
-                                    <td style="padding: 14px 6px;">${t25.cov4A}%</td>
-                                    <td style="padding: 14px 6px; color: #0284c7; border-right: 1px solid #cbd5e1;">${t26.cov4A}%</td>
-                                    <td style="padding: 14px 12px;">
-                                        <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 9999px; font-size: 10.5px; font-weight: 800; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
+                                    <td style="padding: 14px 12px; text-align: left; border-right: 1px solid #cbd5e1;">TOTAL JURISDICCIONAL</td>
+                                    <td style="padding: 14px 4px;">${t25.covM1}%</td>
+                                    <td style="padding: 14px 4px; color: #0284c7; border-right: 1px solid #cbd5e1;">${t26.covM1}%</td>
+                                    <td style="padding: 14px 4px;">${t25.cov1A}%</td>
+                                    <td style="padding: 14px 4px; color: #0284c7; border-right: 1px solid #cbd5e1;">${t26.cov1A}%</td>
+                                    <td style="padding: 14px 4px;">${t25.cov4A}%</td>
+                                    <td style="padding: 14px 4px; color: #0284c7; border-right: 1px solid #cbd5e1;">${t26.cov4A}%</td>
+                                    <td style="padding: 12px 8px; text-align: center;">
+                                        <span style="display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 4px 10px; border-radius: 9999px; font-size: 10px; font-weight: 800; white-space: nowrap; max-width: 100%; box-sizing: border-box; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
                                             <span class="material-symbols-rounded" style="font-size:13px;">verified</span> JS1 CONSOLIDADO
                                         </span>
                                     </td>
@@ -4471,43 +4471,43 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                     <div style="border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; background: #ffffff; box-shadow: 0 4px 20px rgba(15,23,42,0.03);">
                         <table style="width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 11.5px;">
                             <colgroup>
-                                <col style="width: 24%;">
-                                <col style="width: 14%;">
+                                <col style="width: 23%;">
+                                <col style="width: 13%;">
+                                <col style="width: 9%;">
+                                <col style="width: 9%;">
                                 <col style="width: 10%;">
                                 <col style="width: 10%;">
-                                <col style="width: 12%;">
-                                <col style="width: 12%;">
-                                <col style="width: 18%;">
+                                <col style="width: 26%;">
                             </colgroup>
                             <thead>
                                 <tr style="background: #f8fafc; font-weight: 900; color: #334155; border-bottom: 2px solid #e2e8f0;">
-                                    <th style="padding: 12px 16px; text-align: left;">BIOLÓGICO Y ESQUEMA</th>
-                                    <th style="padding: 12px 12px; text-align: center;">GRUPO POBLACIONAL</th>
-                                    <th style="padding: 12px 8px; text-align: center;">DOSIS 2025</th>
-                                    <th style="padding: 12px 8px; text-align: center;">DOSIS 2026</th>
-                                    <th style="padding: 12px 8px; text-align: center;">AVANCE 2025</th>
-                                    <th style="padding: 12px 8px; text-align: center;">AVANCE 2026</th>
-                                    <th style="padding: 12px 12px; text-align: center;">COMPARATIVA (2026 VS 2025)</th>
+                                    <th style="padding: 12px 14px; text-align: left;">BIOLÓGICO Y ESQUEMA</th>
+                                    <th style="padding: 12px 8px; text-align: center;">GRUPO POBLACIONAL</th>
+                                    <th style="padding: 12px 6px; text-align: center;">DOSIS 2025</th>
+                                    <th style="padding: 12px 6px; text-align: center;">DOSIS 2026</th>
+                                    <th style="padding: 12px 6px; text-align: center;">AVANCE 2025</th>
+                                    <th style="padding: 12px 6px; text-align: center;">AVANCE 2026</th>
+                                    <th style="padding: 12px 10px; text-align: center;">COMPARATIVA (2026 VS 2025)</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${(() => {
                                     const buildRow = (n, g, d25, d26, c25, c26, difStr, isUp, isSpecial = false) => `
                                         <tr style="border-bottom: 1px solid #f1f5f9; font-weight: 700; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-                                            <td style="padding: 12px 16px; font-weight: 900; color: #0f172a;">${n}</td>
-                                            <td style="padding: 12px 12px; text-align: center; color: #64748b;">${g}</td>
-                                            <td style="padding: 12px 8px; text-align: center; color: #475569;">${d25 ? d25.toLocaleString('es-MX') : '0'}</td>
-                                            <td style="padding: 12px 8px; text-align: center; color: #0284c7; font-weight: 900;">${d26 ? d26.toLocaleString('es-MX') : '0'}</td>
-                                            <td style="padding: 12px 8px; text-align: center; color: #475569;">${c25}</td>
-                                            <td style="padding: 12px 8px; text-align: center; color: #0284c7; font-weight: 900;">${c26}</td>
-                                            <td style="padding: 12px 12px; text-align: center;">
+                                            <td style="padding: 12px 14px; font-weight: 900; color: #0f172a;">${n}</td>
+                                            <td style="padding: 12px 8px; text-align: center; color: #64748b;">${g}</td>
+                                            <td style="padding: 12px 6px; text-align: center; color: #475569;">${d25 ? d25.toLocaleString('es-MX') : '0'}</td>
+                                            <td style="padding: 12px 6px; text-align: center; color: #0284c7; font-weight: 900;">${d26 ? d26.toLocaleString('es-MX') : '0'}</td>
+                                            <td style="padding: 12px 6px; text-align: center; color: #475569;">${c25}</td>
+                                            <td style="padding: 12px 6px; text-align: center; color: #0284c7; font-weight: 900;">${c26}</td>
+                                            <td style="padding: 10px 8px; text-align: center;">
                                                 ${isSpecial ? `
-                                                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 9999px; font-size: 10.5px; font-weight: 800; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
+                                                    <span style="display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 4px 10px; border-radius: 9999px; font-size: 10px; font-weight: 800; white-space: nowrap; max-width: 100%; box-sizing: border-box; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
                                                         <span class="material-symbols-rounded" style="font-size:13px;">new_releases</span>
                                                         ${difStr}
                                                     </span>
                                                 ` : `
-                                                    <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 9999px; font-size: 10.5px; font-weight: 800; background: ${isUp ? '#f0fdf4' : '#fff1f2'}; color: ${isUp ? '#166534' : '#b91c1c'}; border: 1px solid ${isUp ? '#bbf7d0' : '#fecdd3'};">
+                                                    <span style="display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 4px 10px; border-radius: 9999px; font-size: 10px; font-weight: 800; white-space: nowrap; max-width: 100%; box-sizing: border-box; background: ${isUp ? '#f0fdf4' : '#fff1f2'}; color: ${isUp ? '#166534' : '#b91c1c'}; border: 1px solid ${isUp ? '#bbf7d0' : '#fecdd3'};">
                                                         <span class="material-symbols-rounded" style="font-size:13px; font-weight:900;">${isUp ? 'trending_up' : 'trending_down'}</span>
                                                         ${difStr}
                                                     </span>
@@ -4517,8 +4517,8 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                     `;
 
                                     const sectionHeader = (title) => `
-                                        <tr style="background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%); font-weight: 900; color: #ffffff;">
-                                            <td colspan="7" style="padding: 10px 16px; text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px;">
+                                        <tr style="background: #0f172a !important; color: #ffffff !important;">
+                                            <td colspan="7" style="padding: 10px 16px; font-weight: 900 !important; color: #ffffff !important; background: #0f172a !important; text-transform: uppercase; letter-spacing: 0.08em; font-size: 11.5px; border: none !important;">
                                                 📌 ${title}
                                             </td>
                                         </tr>
@@ -4590,14 +4590,16 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
             </div>
         `;
 
-        // Renderizar Histograma ECharts Dual con espaciado limpio y subtexto dinámico
+        // Renderizar Histograma ECharts Dual con espaciado limpio, tipografía moderna y gradientes SIREVAQ
         setTimeout(() => {
             const chartDom = document.getElementById('chartComparativeMulti');
             if (chartDom && typeof echarts !== 'undefined') {
-                const myChart = echarts.init(chartDom);
-                const subtextStr = maxMes === 12 
-                    ? 'Evaluación Acumulada Anual (Cierre Enero - Diciembre)' 
-                    : `Evaluación Acumulada al Cierre de ${maxMesName} (Mes 1 a ${maxMes})`;
+                const myChart = echarts.init(chartDom, null, { renderer: 'canvas' });
+                const fontModern = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
+                
+                const subtextStr = (_rdaState.corteTemporal === '0' || !_rdaState.corteTemporal)
+                    ? `Evaluación Acumulada a la Fecha: Enero a ${maxMesName} (Mes 1 a ${maxMes})`
+                    : (maxMes === 12 ? 'Evaluación Total Anual Evaluada (Enero a Diciembre)' : `Evaluación Acumulada al Cierre de ${maxMesName} (Mes 1 a ${maxMes})`);
 
                 const option = {
                     title: {
@@ -4605,16 +4607,16 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                         subtext: subtextStr,
                         left: 'center',
                         top: 10,
-                        textStyle: { fontSize: 16, fontWeight: 'bold', color: '#0f172a' },
-                        subtextStyle: { fontSize: 11, fontWeight: 'bold', color: '#0284c7' }
+                        textStyle: { fontFamily: fontModern, fontSize: 16, fontWeight: 800, color: '#0f172a' },
+                        subtextStyle: { fontFamily: fontModern, fontSize: 12, fontWeight: 700, color: '#0284c7' }
                     },
                     tooltip: {
                         trigger: 'axis',
                         axisPointer: { type: 'shadow' },
                         backgroundColor: '#0f172a',
-                        textStyle: { color: '#ffffff' },
+                        textStyle: { fontFamily: fontModern, color: '#ffffff', fontSize: 12 },
                         formatter: function(params) {
-                            let s = `<strong>${params[0].name}</strong><br/>`;
+                            let s = `<strong style="font-size:13px;">${params[0].name}</strong><br/>`;
                             params.forEach(p => {
                                 s += `${p.marker} ${p.seriesName}: <strong>${p.value}%</strong><br/>`;
                             });
@@ -4623,20 +4625,20 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                     },
                     legend: {
                         data: ['Año 2025', 'Año 2026'],
-                        top: 55,
+                        top: 58,
                         left: 'center',
-                        textStyle: { fontWeight: 'bold', color: '#475569' }
+                        textStyle: { fontFamily: fontModern, fontWeight: 700, color: '#475569', fontSize: 12 }
                     },
-                    grid: { left: '3%', right: '3%', bottom: '8%', top: 95, containLabel: true },
+                    grid: { left: '3%', right: '3%', bottom: '8%', top: 98, containLabel: true },
                     xAxis: {
                         type: 'category',
                         data: ['Menores de 1 Año (<1)', 'Niños de 1 Año (1)', 'Niños de 4 Años (4)'],
-                        axisLabel: { fontWeight: 'bold', color: '#334155', fontSize: 12 }
+                        axisLabel: { fontFamily: fontModern, fontWeight: 800, color: '#334155', fontSize: 12 }
                     },
                     yAxis: {
                         type: 'value',
                         name: 'Cobertura (%)',
-                        axisLabel: { formatter: '{value}%', fontWeight: 'bold', color: '#64748b' },
+                        axisLabel: { fontFamily: fontModern, formatter: '{value}%', fontWeight: 700, color: '#64748b', fontSize: 11 },
                         splitLine: { lineStyle: { type: 'dashed', color: '#e2e8f0' } }
                     },
                     series: [
@@ -4644,17 +4646,29 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                             name: 'Año 2025',
                             type: 'bar',
                             data: [t25.covM1, t25.cov1A, t25.cov4A],
-                            itemStyle: { color: '#94a3b8', borderRadius: [8, 8, 0, 0] },
+                            itemStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: '#94a3b8' },
+                                    { offset: 1, color: '#64748b' }
+                                ]),
+                                borderRadius: [8, 8, 0, 0]
+                            },
                             barWidth: 38,
-                            label: { show: true, position: 'top', formatter: '{c}%', fontWeight: 'bold', fontSize: 12, color: '#475569' }
+                            label: { show: true, position: 'top', formatter: '{c}%', fontFamily: fontModern, fontWeight: 800, fontSize: 12, color: '#475569' }
                         },
                         {
                             name: 'Año 2026',
                             type: 'bar',
                             data: [t26.covM1, t26.cov1A, t26.cov4A],
-                            itemStyle: { color: '#0284c7', borderRadius: [8, 8, 0, 0] },
+                            itemStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: '#0084d4' },
+                                    { offset: 1, color: '#0284c7' }
+                                ]),
+                                borderRadius: [8, 8, 0, 0]
+                            },
                             barWidth: 38,
-                            label: { show: true, position: 'top', formatter: '{c}%', fontWeight: 'bold', fontSize: 12, color: '#0284c7' }
+                            label: { show: true, position: 'top', formatter: '{c}%', fontFamily: fontModern, fontWeight: 800, fontSize: 12, color: '#0284c7' }
                         }
                     ]
                 };
