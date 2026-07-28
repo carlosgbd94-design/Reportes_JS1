@@ -1995,14 +1995,23 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
                     currentY += 82;
                 }
 
-                // Extracción e Inyección de Tablas Comparativas del DOM
+                // Extracción e Inyección de Tablas Comparativas del DOM con sanitización de iconos
+                const cleanCellText = (str) => {
+                    if (!str) return '';
+                    return str
+                        .replace(/\b(child_care|groups|elderly|pregnant_woman|ac_unit|new_releases|location_city|local_hospital|domain|bookmark|vaccines|location_on|trending_up|trending_down|verified)\b/gi, '')
+                        .replace(/[↕\n\r]/g, ' ')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                };
+
                 const tables = Array.from(container.querySelectorAll('table'));
                 tables.forEach((tbl, tIdx) => {
                     const headers = Array.from(tbl.querySelectorAll('thead tr')).map(tr => {
-                        return Array.from(tr.querySelectorAll('th')).map(th => th.innerText.replace(/[↕\n\r]/g, '').trim());
+                        return Array.from(tr.querySelectorAll('th')).map(th => cleanCellText(th.innerText));
                     });
                     const rows = Array.from(tbl.querySelectorAll('tbody tr')).map(tr => {
-                        return Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim());
+                        return Array.from(tr.querySelectorAll('td')).map(td => cleanCellText(td.innerText));
                     });
 
                     if (currentY > 160) {
@@ -2734,8 +2743,16 @@ async function exportMasivoZIP(mode = 'pdf') {
                 await renderDashboard();
             }
 
-            // Esperar renderizado completo de ECharts y elementos gráficos
-            await new Promise(resolve => setTimeout(resolve, 600));
+            // Para evitar que el navegador congele o ralentice el proceso en pestañas en segundo plano (background throttling)
+            if (document.hidden) {
+                await new Promise(r => {
+                    const channel = new MessageChannel();
+                    channel.port1.onmessage = r;
+                    channel.port2.postMessage(null);
+                });
+            } else {
+                await new Promise(resolve => setTimeout(resolve, mode === 'png' ? 350 : 50));
+            }
 
             if (mode === 'png') {
                 const fname = _rdaState.esquema === 'comparativa_multianual' 
