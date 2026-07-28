@@ -4618,7 +4618,8 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                     <div id="chartComparativeMulti" style="width: 100%; height: 400px;"></div>
                 </div>
 
-                <!-- TABLA 1: DESGLOSE POR MUNICIPIOS ALINEADA A LA IZQUIERDA -->
+                <!-- TABLA 1: DESGLOSE POR MUNICIPIOS (Solo se despliega en el Concentrado Jurisdiccional) -->
+                ${(!muniFilter && !uniFilter) ? `
                 <div style="margin-bottom: 32px;">
                     <h3 style="margin: 0 0 16px 0; font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
                         <span class="material-symbols-rounded" style="color: #0f172a; font-size: 20px;">location_on</span> Comportamiento por Municipio (Avance 2025 vs 2026 | ${getPeriodoText(maxMes2026)})
@@ -4635,23 +4636,23 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                 <col style="width: 9%;">
                                 <col style="width: 24%;">
                             </colgroup>
-                            <thead>
+                            <thead style="position: sticky; top: 0; z-index: 20; background: #f8fafc;">
                                 <tr style="background: #f8fafc; font-weight: 900; color: #334155; border-bottom: 1px solid #e2e8f0;">
-                                    <th style="padding: 12px 14px; text-align: left; border-right: 1px solid #f1f5f9;">MUNICIPIO</th>
-                                    <th style="padding: 12px 10px; text-align: left; border-right: 1px solid #f1f5f9;" colspan="2">< 1 AÑO</th>
-                                    <th style="padding: 12px 10px; text-align: left; border-right: 1px solid #f1f5f9;" colspan="2">1 AÑO</th>
-                                    <th style="padding: 12px 10px; text-align: left; border-right: 1px solid #f1f5f9;" colspan="2">4 AÑOS</th>
-                                    <th style="padding: 12px 12px; text-align: left;">TENDENCIA GLOBAL</th>
+                                    <th style="padding: 12px 14px; text-align: left; border-right: 1px solid #f1f5f9; position: sticky; top: 0; background: #f8fafc; z-index: 20;">MUNICIPIO</th>
+                                    <th style="padding: 12px 10px; text-align: left; border-right: 1px solid #f1f5f9; position: sticky; top: 0; background: #f8fafc; z-index: 20;" colspan="2">< 1 AÑO</th>
+                                    <th style="padding: 12px 10px; text-align: left; border-right: 1px solid #f1f5f9; position: sticky; top: 0; background: #f8fafc; z-index: 20;" colspan="2">1 AÑO</th>
+                                    <th style="padding: 12px 10px; text-align: left; border-right: 1px solid #f1f5f9; position: sticky; top: 0; background: #f8fafc; z-index: 20;" colspan="2">4 AÑOS</th>
+                                    <th style="padding: 12px 12px; text-align: left; position: sticky; top: 0; background: #f8fafc; z-index: 20;">TENDENCIA GLOBAL</th>
                                 </tr>
                                 <tr style="background: #f1f5f9; font-weight: 800; color: #64748b; border-bottom: 2px solid #e2e8f0;">
-                                    <th style="padding: 8px 14px; text-align: left; border-right: 1px solid #e2e8f0;">JS1 QUERÉTARO</th>
-                                    <th style="padding: 8px 10px; text-align: left; color: #64748b; font-weight: 800;">2025</th>
-                                    <th style="padding: 8px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #e2e8f0;">2026 ⚡</th>
-                                    <th style="padding: 8px 10px; text-align: left; color: #64748b; font-weight: 800;">2025</th>
-                                    <th style="padding: 8px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #e2e8f0;">2026 ⚡</th>
-                                    <th style="padding: 8px 10px; text-align: left; color: #64748b; font-weight: 800;">2025</th>
-                                    <th style="padding: 8px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #e2e8f0;">2026 ⚡</th>
-                                    <th style="padding: 8px 12px; text-align: left;">ESTADO</th>
+                                    <th style="padding: 8px 14px; text-align: left; border-right: 1px solid #e2e8f0; position: sticky; top: 37px; background: #f1f5f9; z-index: 20;">JS1 QUERÉTARO</th>
+                                    <th style="padding: 8px 10px; text-align: left; color: #64748b; font-weight: 800; position: sticky; top: 37px; background: #f1f5f9; z-index: 20;">2025</th>
+                                    <th style="padding: 8px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #e2e8f0; position: sticky; top: 37px; z-index: 20;">2026 ⚡</th>
+                                    <th style="padding: 8px 10px; text-align: left; color: #64748b; font-weight: 800; position: sticky; top: 37px; background: #f1f5f9; z-index: 20;">2025</th>
+                                    <th style="padding: 8px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #e2e8f0; position: sticky; top: 37px; z-index: 20;">2026 ⚡</th>
+                                    <th style="padding: 8px 10px; text-align: left; color: #64748b; font-weight: 800; position: sticky; top: 37px; background: #f1f5f9; z-index: 20;">2025</th>
+                                    <th style="padding: 8px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #e2e8f0; position: sticky; top: 37px; z-index: 20;">2026 ⚡</th>
+                                    <th style="padding: 8px 12px; text-align: left; position: sticky; top: 37px; background: #f1f5f9; z-index: 20;">ESTADO</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -4693,13 +4694,14 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                         </table>
                     </div>
                 </div>
+                ` : ''}
 
                 <!-- TABLA 2: MATRIZ DETALLADA POR BIOLÓGICO Y POBLACIÓN ALINEADA A LA IZQUIERDA -->
                 <div>
                     <h3 style="margin: 0 0 16px 0; font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
                         <span class="material-symbols-rounded" style="color: #0f172a; font-size: 20px;">vaccines</span> Matriz Multianual por Biológico e Indicadores de Población
                     </h3>
-                    <div style="border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; background: #ffffff; box-shadow: 0 4px 20px rgba(15,23,42,0.03);">
+                    <div style="border-radius: 20px; border: 1px solid #e2e8f0; overflow: visible; background: #ffffff; box-shadow: 0 4px 20px rgba(15,23,42,0.03);">
                         <table style="width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 11.5px;">
                             <colgroup>
                                 <col style="width: 22%;">
@@ -4710,15 +4712,15 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                 <col style="width: 10%;">
                                 <col style="width: 24%;">
                             </colgroup>
-                            <thead>
+                            <thead style="position: sticky; top: 0; z-index: 25; background: #f8fafc;">
                                 <tr style="background: #f8fafc; font-weight: 900; color: #334155; border-bottom: 2px solid #e2e8f0;">
-                                    <th style="padding: 12px 14px; text-align: left;">BIOLÓGICO Y ESQUEMA</th>
-                                    <th style="padding: 12px 10px; text-align: left;">GRUPO POBLACIONAL</th>
-                                    <th style="padding: 12px 14px; text-align: left; color: #64748b; font-weight: 800;">DOSIS 2025</th>
-                                    <th style="padding: 12px 14px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff;">DOSIS 2026</th>
-                                    <th style="padding: 12px 14px; text-align: left; color: #64748b; font-weight: 800;">AVANCE 2025</th>
-                                    <th style="padding: 12px 14px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff;">AVANCE 2026</th>
-                                    <th style="padding: 12px 10px; text-align: left;">COMPARATIVA (2026 VS 2025)</th>
+                                    <th style="padding: 12px 14px; text-align: left; position: sticky; top: 0; background: #f8fafc; z-index: 25; box-shadow: 0 2px 4px rgba(15,23,42,0.04);">BIOLÓGICO Y ESQUEMA</th>
+                                    <th style="padding: 12px 10px; text-align: left; position: sticky; top: 0; background: #f8fafc; z-index: 25; box-shadow: 0 2px 4px rgba(15,23,42,0.04);">GRUPO POBLACIONAL</th>
+                                    <th style="padding: 12px 14px; text-align: left; color: #64748b; font-weight: 800; position: sticky; top: 0; background: #f8fafc; z-index: 25; box-shadow: 0 2px 4px rgba(15,23,42,0.04);">DOSIS 2025</th>
+                                    <th style="padding: 12px 14px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; position: sticky; top: 0; z-index: 25; box-shadow: 0 2px 4px rgba(15,23,42,0.04);">DOSIS 2026</th>
+                                    <th style="padding: 12px 14px; text-align: left; color: #64748b; font-weight: 800; position: sticky; top: 0; background: #f8fafc; z-index: 25; box-shadow: 0 2px 4px rgba(15,23,42,0.04);">AVANCE 2025</th>
+                                    <th style="padding: 12px 14px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; position: sticky; top: 0; z-index: 25; box-shadow: 0 2px 4px rgba(15,23,42,0.04);">AVANCE 2026</th>
+                                    <th style="padding: 12px 10px; text-align: left; position: sticky; top: 0; background: #f8fafc; z-index: 25; box-shadow: 0 2px 4px rgba(15,23,42,0.04);">COMPARATIVA (2026 VS 2025)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -4762,9 +4764,9 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                     };
 
                                     const sectionHeader = (title, iconName = 'bookmark') => `
-                                        <tr style="background: #0f172a !important; color: #ffffff !important;">
+                                        <tr style="position: sticky; top: 41px; z-index: 15; background: #0f172a !important; color: #ffffff !important; box-shadow: 0 2px 6px rgba(15,23,42,0.15);">
                                             <td colspan="7" style="padding: 11px 16px; font-weight: 900 !important; color: #ffffff !important; background: #0f172a !important; text-transform: uppercase; letter-spacing: 0.08em; font-size: 11.5px; border: none !important; text-align: left !important;">
-                                                <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: text-bottom; color: #94a3b8; margin-right: 6px;">${iconName}</span> ${title}
+                                                <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: text-bottom; color: #38bdf8; margin-right: 6px;">${iconName}</span> ${title}
                                             </td>
                                         </tr>
                                     `;
