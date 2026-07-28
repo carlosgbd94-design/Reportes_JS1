@@ -89,42 +89,42 @@ DECLARE
     v_hepatitis_a text[];
 BEGIN
     -- 1. Cargar los mapeos desde la base de datos (con fallbacks estáticos si no existen registros)
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_bcg FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('BCG')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_hepb_0_7 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('HEPB_0_7', 'HEPATITIS B')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_hexa_3 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('HEXA_3', 'HEXAVALENTE')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_rota_2 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('ROTA_2', 'ROTAVIRUS')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_neumo_2 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('NEUMO_2', 'NEUMOCÓCICA 13')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_hexa_ref FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('HEXA_REF')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_neumo_ref FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('NEUMO_REF')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_srp_2 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('SRP_2', 'SRP')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_dpt_4 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('DPT_4', 'DPT')) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_bcg FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('BCG') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_hepb_0_7 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('HEPB_0_7', 'HEPATITIS B') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_hexa_3 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('HEXA_3', 'HEXAVALENTE') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_rota_2 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('ROTA_2', 'ROTAVIRUS') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_neumo_2 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('NEUMO_2', 'NEUMOCÓCICA 13') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_hexa_ref FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('HEXA_REF') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_neumo_ref FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('NEUMO_REF') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_srp_2 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('SRP_2', 'SRP') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_dpt_4 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('DPT_4', 'DPT') AND (anio = p_anio OR anio IS NULL)) x;
     
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_adol_hb FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('ADOL_HB')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_adol_sr FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('ADOL_SR', 'SR')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_adol_vph FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('ADOL_VPH', 'VPH')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_adol_td FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('ADOL_TD', 'TD')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_adol_tdpa FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('ADOL_TDPA', 'TDPA')) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_adol_hb FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('ADOL_HB') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_adol_sr FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('ADOL_SR', 'SR') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_adol_vph FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('ADOL_VPH', 'VPH') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_adol_td FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('ADOL_TD', 'TD') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_adol_tdpa FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('ADOL_TDPA', 'TDPA') AND (anio = p_anio OR anio IS NULL)) x;
     
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_am_neumo13 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('AM_NEUMO13')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_am_neumo20 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('AM_NEUMO20', 'NEUMOCÓCICA 20')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_am_td FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('AM_TD')) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_am_neumo13 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('AM_NEUMO13') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_am_neumo20 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('AM_NEUMO20', 'NEUMOCÓCICA 20') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_am_td FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('AM_TD') AND (anio = p_anio OR anio IS NULL)) x;
     
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_emb_tdpa FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('EMB_TDPA')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_emb_vsr FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('EMB_VSR', 'VSR')) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_emb_tdpa FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('EMB_TDPA') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_emb_vsr FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('EMB_VSR', 'VSR') AND (anio = p_anio OR anio IS NULL)) x;
     
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_influenza FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('INFLUENZA')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_covid FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('COVID', 'COVID-19')) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_influenza FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('INFLUENZA') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_covid FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('COVID', 'COVID-19') AND (anio = p_anio OR anio IS NULL)) x;
     
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_hexa_1 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('HEXA_1')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_hexa_2 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('HEXA_2')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_neumo_1 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('NEUMO_1')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_neumo_c1 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('NEUMO_C1')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_neumo_c2 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('NEUMO_C2')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_neumo_c3 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('NEUMO_C3')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_srp_1 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('SRP_1')) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_hexa_1 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('HEXA_1') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_hexa_2 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('HEXA_2') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_neumo_1 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('NEUMO_1') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_neumo_c1 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('NEUMO_C1') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_neumo_c2 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('NEUMO_C2') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_neumo_c3 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('NEUMO_C3') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_srp_1 FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('SRP_1') AND (anio = p_anio OR anio IS NULL)) x;
     
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_varicela FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('VARICELA')) x;
-    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_hepatitis_a FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('HEPATITIS_A', 'HEPATITIS A')) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_varicela FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('VARICELA') AND (anio = p_anio OR anio IS NULL)) x;
+    SELECT COALESCE(array_agg(val), ARRAY[]::text[]) INTO v_hepatitis_a FROM (SELECT jsonb_array_elements_text(variables) val FROM public.sis_variables_mapeo WHERE UPPER(biologico) IN ('HEPATITIS_A', 'HEPATITIS A') AND (anio = p_anio OR anio IS NULL)) x;
 
     -- 2. Fallbacks estáticos por si los arrays resultan vacíos (sin registros en sis_variables_mapeo)
     IF cardinality(v_bcg) = 0 THEN v_bcg := ARRAY['VBC01', 'VBC02', 'BIO50']; END IF;
@@ -149,14 +149,14 @@ BEGIN
     IF cardinality(v_hepatitis_a) = 0 THEN v_hepatitis_a := ARRAY['VHA01', 'VHA02', 'BIO88']; END IF;
 
     IF cardinality(v_adol_hb) = 0 THEN v_adol_hb := ARRAY['VHB01','VHB02','VHB03','VHB04','VHB05','VHB06']; END IF;
-    IF cardinality(v_adol_sr) = 0 THEN v_adol_sr := ARRAY['VDV01','VDV02','VDV03','VDV04','VDV05','VDV06']; END IF;
+    IF cardinality(v_adol_sr) = 0 THEN v_adol_sr := ARRAY['VAC83','VDV01','VDV02','VDV03','VDV04','VDV05','VDV06']; END IF;
     IF cardinality(v_adol_vph) = 0 THEN v_adol_vph := ARRAY['VPH05','VPH06','VPH07','VPH08','VPH12','VPH13','VPH14']; END IF;
-    IF cardinality(v_adol_td) = 0 THEN v_adol_td := ARRAY['VAC39','VAC40','VAC47','VAC48','VTD01','VTD02','VAC55','VAC56','VTT01','VTT02','VTT04','VTT05','VTT07','VTT08','VTT10','VTT11']; END IF;
+    IF cardinality(v_adol_td) = 0 THEN v_adol_td := ARRAY['VAC39','VAC40','VAC47','VAC48','VTD01','VTD02','VAC55','VAC56','VTD03','VTD19','VTD05','VTD21','VTD07','VTD23','VTD09','VTD25','VTD11','VTD27','VTD14','VTD29','VTD31','VTD32','VTD34','VTD35','VTD20','VTD22','VTD24','VTD26','VTD28','VTD30','VTD33','VTD36','VTT01','VTT02','VTT04','VTT05','VTT07','VTT08','VTT10','VTT11']; END IF;
     IF cardinality(v_adol_tdpa) = 0 THEN v_adol_tdpa := ARRAY['VAC63']; END IF;
 
-    IF cardinality(v_am_neumo13) = 0 THEN v_am_neumo13 := ARRAY['VNC04']; END IF;
+    IF cardinality(v_am_neumo13) = 0 THEN v_am_neumo13 := ARRAY['VNC04','VAC93','VAC94']; END IF;
     IF cardinality(v_am_neumo20) = 0 THEN v_am_neumo20 := ARRAY['VCC07']; END IF;
-    IF cardinality(v_am_td) = 0 THEN v_am_td := ARRAY['VTT03','VTT06','VTT09','VTT12']; END IF;
+    IF cardinality(v_am_td) = 0 THEN v_am_td := ARRAY['VTT03','VTT06','VTT09','VTT12','VAC43','VAC46','VAC51','VAC54','VTD13','VTD16','VAC59','VAC62']; END IF;
 
     IF cardinality(v_emb_tdpa) = 0 THEN v_emb_tdpa := ARRAY['VAC63']; END IF;
     IF cardinality(v_emb_vsr) = 0 THEN v_emb_vsr := ARRAY['VS001']; END IF;
@@ -174,7 +174,7 @@ BEGIN
             COALESCE(pu.pob_menor_1, u.pob_menor_1, 0) as u_pob_menor_1,
             COALESCE(pu.pob_1_ano, u.pob_1_ano, 0) as u_pob_1_ano,
             COALESCE(pu.pob_4_anos, u.pob_4_anos, 0) as u_pob_4_anos,
-            COALESCE(pu.pob_6_anos, u.pob_6_anos, 0) as u_pob_6_anos,
+            COALESCE(pu.pob_6_anos, 0) as u_pob_6_anos,
             -- Básico Menor 1 Breakdown
             COALESCE(SUM(CASE WHEN r.variable_sis = ANY(v_bcg) THEN r.valor ELSE 0 END), 0)::INT as val_bcg,
             COALESCE(SUM(CASE WHEN r.variable_sis = ANY(v_hepb_0_7) THEN r.valor ELSE 0 END), 0)::INT as val_hepb,
@@ -222,9 +222,9 @@ BEGIN
             COALESCE(SUM(CASE WHEN r.variable_sis = ANY(v_hepatitis_a) THEN r.valor ELSE 0 END), 0)::INT as val_hepatitis_a
         FROM public.unidades_medicas u
         INNER JOIN public.unidades un ON un.clues = u.clues AND un.activo = 'SI'
-        LEFT JOIN public.poblacion_unidades pu ON pu.clues = u.clues AND pu.anio = p_anio
+        LEFT JOIN public.poblaciones_anuales pu ON pu.clues = u.clues AND pu.anio = p_anio
         LEFT JOIN public.registros_sis r ON r.clues = u.clues AND r.anio = p_anio AND r.mes <= p_max_mes
-        GROUP BY u.clues, u.nombre, u.municipio, pu.pob_menor_1, pu.pob_1_ano, pu.pob_4_anos, pu.pob_6_anos, u.pob_menor_1, u.pob_1_ano, u.pob_4_anos, u.pob_6_anos
+        GROUP BY u.clues, u.nombre, u.municipio, pu.pob_menor_1, pu.pob_1_ano, pu.pob_4_anos, pu.pob_6_anos, u.pob_menor_1, u.pob_1_ano, u.pob_4_anos
     )
     SELECT
         u_clues as clues,
