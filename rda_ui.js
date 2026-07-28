@@ -566,7 +566,7 @@ function populateUnidadFilter() {
 }
 
 // Renderización Principal del Tablero
-function renderDashboard() {
+async function renderDashboard() {
     const { unidades, maxMes } = _rdaCache;
     if (!unidades) return;
 
@@ -626,7 +626,7 @@ function renderDashboard() {
     }
 
     if (esquema === 'comparativa_multianual') {
-        renderComparativaMultianual(muniFilter, uniFilter);
+        await renderComparativaMultianual(muniFilter, uniFilter);
         return;
     }
 
@@ -2659,7 +2659,7 @@ async function exportMasivoZIP(mode = 'pdf') {
             }
 
             // Esperar renderizado completo de ECharts y elementos gráficos
-            await new Promise(resolve => setTimeout(resolve, 350));
+            await new Promise(resolve => setTimeout(resolve, 600));
 
             if (mode === 'png') {
                 const fname = _rdaState.esquema === 'comparativa_multianual' 
@@ -4219,7 +4219,9 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
     const container = document.getElementById('rdaDashboardContent');
     if (!container) return;
 
-    if (typeof showOverlay === 'function') showOverlay("Generando Suite de Diagnóstico Multianual (2025 vs 2026)...", "Análisis Avanzado");
+    if (!window._isBatchExporting && typeof showOverlay === 'function') {
+        showOverlay("Generando Suite de Diagnóstico Multianual (2025 vs 2026)...", "Análisis Avanzado");
+    }
 
     try {
         const valTemp = String((_rdaState && _rdaState.corteTemporal) || '0');
@@ -4794,8 +4796,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                             name: 'Año 2025',
                             type: 'bar',
                             data: [t25.covM1, t25.cov1A, t25.cov4A],
-                            showBackground: true,
-                            backgroundStyle: { color: 'rgba(241, 245, 249, 0.7)', borderRadius: 8 },
+                            showBackground: false,
                             itemStyle: {
                                 color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                                     { offset: 0, color: '#94a3b8' },
@@ -4814,8 +4815,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                             name: 'Año 2026',
                             type: 'bar',
                             data: [t26.covM1, t26.cov1A, t26.cov4A],
-                            showBackground: true,
-                            backgroundStyle: { color: 'rgba(241, 245, 249, 0.7)', borderRadius: 8 },
+                            showBackground: false,
                             itemStyle: {
                                 color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                                     { offset: 0, color: '#334155' },
