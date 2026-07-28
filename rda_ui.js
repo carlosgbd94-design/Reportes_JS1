@@ -4222,8 +4222,18 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
     if (typeof showOverlay === 'function') showOverlay("Generando Suite de Diagnóstico Multianual (2025 vs 2026)...", "Análisis Avanzado");
 
     try {
-        const isTotalAnual = (_rdaState && (_rdaState.corteTemporal === '0' || _rdaState.corteTemporal === 0));
-        const maxMes2026 = _rdaCache.maxMes || 12;
+        const valTemp = String((_rdaState && _rdaState.corteTemporal) || '0');
+        const isTotalAnual = (valTemp === '0');
+        let maxMes2026 = _rdaCache.maxMes || 12;
+
+        if (valTemp === 'T1') maxMes2026 = 3;
+        else if (valTemp === 'T2') maxMes2026 = 6;
+        else if (valTemp === 'T3') maxMes2026 = 9;
+        else if (valTemp === 'T4') maxMes2026 = 12;
+        else if (!isNaN(parseInt(valTemp, 10)) && parseInt(valTemp, 10) > 0) {
+            maxMes2026 = parseInt(valTemp, 10);
+        }
+
         const maxMes2025 = isTotalAnual ? 12 : maxMes2026;
         const maxMesName = MONTH_NAMES[maxMes2026 - 1] || 'FINAL';
         
@@ -4308,8 +4318,8 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
             u2026 = u2026.filter(u => u.clues === uniFilter);
         }
 
-        // Función totalizadora segura
-        const calcTotals = (arr) => {
+        // Función totalizadora segura con evaluación de meses específica por año
+        const calcTotals = (arr, evalMes = maxMes2026) => {
             let r = {
                 pM1: 0, p1A: 0, p4A: 0, p6A: 0,
                 bcg: 0, hepb: 0, rota: 0, hexaM1: 0, hexa1A: 0, neumoM1: 0, neumo1A: 0, srp1: 0, srp2: 0, dpt: 0, srp6: 0,
@@ -4343,10 +4353,10 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                 r.inv_influenza += u.inv_influenza || 0;
                 r.inv_covid += u.inv_covid || 0;
             }
-            const fM1 = (r.pM1 * 0.0833) * maxMes;
-            const f1A = (r.p1A * 0.0833) * maxMes;
-            const f4A = (r.p4A * 0.0833) * maxMes;
-            const f6A = ((r.p6A || r.p4A) * 0.0833) * maxMes;
+            const fM1 = (r.pM1 * 0.0833) * evalMes;
+            const f1A = (r.p1A * 0.0833) * evalMes;
+            const f4A = (r.p4A * 0.0833) * evalMes;
+            const f6A = ((r.p6A || r.p4A) * 0.0833) * evalMes;
 
             const dosisM1 = r.bcg + r.hepb + r.hexaM1 + r.rota + r.neumoM1;
             const dosis1A = r.hexa1A + r.neumo1A + r.srp2;
@@ -4375,8 +4385,8 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
             return r;
         };
 
-        const t25 = calcTotals(u2025);
-        const t26 = calcTotals(u2026);
+        const t25 = calcTotals(u2025, maxMes2025);
+        const t26 = calcTotals(u2026, maxMes2026);
 
         // Agrupación de Municipios de la JS1 con comparación segura
         const munisJS1 = ['CORREGIDORA', 'HUIMILPAN', 'EL MARQUÉS', 'QUERÉTARO'];
@@ -4385,8 +4395,8 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
             const arr26 = raw2026.filter(u => matchMuni(u.municipio, m));
             return {
                 nombre: m,
-                t25: calcTotals(arr25),
-                t26: calcTotals(arr26)
+                t25: calcTotals(arr25, maxMes2025),
+                t26: calcTotals(arr26, maxMes2026)
             };
         });
 
@@ -4445,7 +4455,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                     <div>
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <span style="background: #0f172a; color: white; padding: 5px 12px; border-radius: 8px; font-size: 11px; font-weight: 900; letter-spacing: 0.05em;">EXECUTIVE COMPARATIVE SUITE</span>
-                            <span style="font-size: 12px; font-weight: 800; color: #475569; background: #f1f5f9; padding: 5px 12px; border-radius: 8px;">Cierre Evaluado: 1 al ${maxMes} (${maxMesName})</span>
+                            <span style="font-size: 12px; font-weight: 800; color: #475569; background: #f1f5f9; padding: 5px 12px; border-radius: 8px;">Cierre Evaluado: 1 al ${maxMes2026} (${maxMesName})</span>
                         </div>
                         <h2 style="margin: 8px 0 0 0; font-size: 22px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em;">
                             Comparativa Multianual de Cobertura Vacunal (2025 vs 2026)
@@ -4528,7 +4538,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                 <!-- TABLA 1: DESGLOSE POR MUNICIPIOS ALINEADA A LA IZQUIERDA -->
                 <div style="margin-bottom: 32px;">
                     <h3 style="margin: 0 0 16px 0; font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
-                        <span class="material-symbols-rounded" style="color: #0f172a; font-size: 20px;">location_on</span> Comportamiento por Municipio (Avance 2025 vs 2026 a Cierre Mes ${maxMes})
+                        <span class="material-symbols-rounded" style="color: #0f172a; font-size: 20px;">location_on</span> Comportamiento por Municipio (Avance 2025 vs 2026 a Cierre Mes ${maxMes2026})
                     </h3>
                     <div style="border-radius: 20px; border: 1px solid #e2e8f0; overflow: hidden; background: #ffffff; box-shadow: 0 4px 20px rgba(15,23,42,0.03);">
                         <table style="width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 11.5px;">
