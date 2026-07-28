@@ -2406,6 +2406,39 @@ async function exportIndividualPDF() {
     }
 }
 
+const _prepareClonedDocForHDImage = (clonedDoc, contentEl) => {
+    const clonedContent = clonedDoc.getElementById('rdaDashboardContent');
+    if (clonedContent) {
+        clonedContent.style.overflow = 'visible';
+        clonedContent.style.maxHeight = 'none';
+        clonedContent.style.height = 'auto';
+        clonedContent.style.width = '1280px';
+        clonedContent.style.boxSizing = 'border-box';
+        clonedContent.style.padding = '32px';
+        clonedContent.style.background = '#ffffff';
+    }
+
+    const origCanvases = contentEl.querySelectorAll('canvas');
+    const clonedCanvases = clonedDoc.querySelectorAll('canvas');
+    origCanvases.forEach((origCanvas, idx) => {
+        if (clonedCanvases[idx]) {
+            try {
+                const img = clonedDoc.createElement('img');
+                img.src = origCanvas.toDataURL('image/png');
+                img.style.cssText = origCanvas.style.cssText;
+                img.className = origCanvas.className;
+                img.style.maxWidth = '100%';
+                img.style.height = 'auto';
+                if (clonedCanvases[idx].parentNode) {
+                    clonedCanvases[idx].parentNode.replaceChild(img, clonedCanvases[idx]);
+                }
+            } catch (e) {
+                console.warn('[RDA HD PNG Export] Error copiando canvas:', e);
+            }
+        }
+    });
+};
+
 async function exportDashboardImagen(format = 'png') {
     const content = document.getElementById('rdaDashboardContent');
     if (!content) return;
@@ -2434,16 +2467,11 @@ async function exportDashboardImagen(format = 'png') {
             scale: 2.5,
             useCORS: true,
             allowTaint: true,
-            backgroundColor: '#f8fafc',
+            backgroundColor: '#ffffff',
             scrollX: 0,
             scrollY: 0,
             onclone: (clonedDoc) => {
-                const clonedContent = clonedDoc.getElementById('rdaDashboardContent');
-                if (clonedContent) {
-                    clonedContent.style.overflow = 'visible';
-                    clonedContent.style.maxHeight = 'none';
-                    clonedContent.style.height = 'auto';
-                }
+                _prepareClonedDocForHDImage(clonedDoc, content);
             }
         });
 
@@ -2519,7 +2547,7 @@ async function exportMasivoZIP(mode = 'pdf') {
 
         for (let i = 0; i < targets.length; i++) {
             const u = targets[i];
-            setOverlayProgress(i + 1, targets.length, `[${u.clues}] ${u.nombre||u.clues}`, mode === 'png' ? 'Capturando Imagen PNG' : 'Generando Reporte PDF');
+            setOverlayProgress(i + 1, targets.length, `[${u.clues}] ${u.nombre||u.clues}`, mode === 'png' ? 'Capturando Imagen PNG HD' : 'Generando Reporte PDF');
 
             muniSelect.value = u.municipio ? u.municipio.toUpperCase() : '';
             if (typeof populateUnidadFilter === 'function') populateUnidadFilter();
@@ -2537,16 +2565,11 @@ async function exportMasivoZIP(mode = 'pdf') {
                         scale: 2.5,
                         useCORS: true,
                         allowTaint: true,
-                        backgroundColor: '#f8fafc',
+                        backgroundColor: '#ffffff',
                         scrollX: 0,
                         scrollY: 0,
                         onclone: (clonedDoc) => {
-                            const clonedContent = clonedDoc.getElementById('rdaDashboardContent');
-                            if (clonedContent) {
-                                clonedContent.style.overflow = 'visible';
-                                clonedContent.style.maxHeight = 'none';
-                                clonedContent.style.height = 'auto';
-                            }
+                            _prepareClonedDocForHDImage(clonedDoc, content);
                         }
                     });
                     const base64Data = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, "");
