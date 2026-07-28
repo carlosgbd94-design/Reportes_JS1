@@ -2568,9 +2568,9 @@ async function exportMasivoZIP(mode = 'pdf') {
                     <!-- ACCENT GRADIENT HEADER BAR -->
                     <div style="position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #0084d4, #0284c7, #38bdf8);"></div>
 
-                    <!-- SPINNER ANIMATED ICON -->
-                    <div style="margin: 0 auto 18px auto; width: 64px; height: 64px; border-radius: 50%; background: #e0f2fe; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(2,132,199,0.2);">
-                        <span class="material-symbols-rounded" style="font-size: 34px; color: #0284c7; animation: spinRotate 1.2s infinite linear;">sync</span>
+                    <!-- ANIMATED OFFICIAL LOGO -->
+                    <div class="elastic-bounce-container" style="margin: 0 auto 14px auto; display: flex; align-items: center; justify-content: center;">
+                        <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png" alt="Exportando SIREVAQ..." class="bounce-logo" style="width: 82px; height: auto;">
                     </div>
 
                     <!-- BADGE -->
@@ -2605,7 +2605,8 @@ async function exportMasivoZIP(mode = 'pdf') {
                 const style = document.createElement('style');
                 style.id = 'rdaExportOverlayStyles';
                 style.textContent = `
-                    @keyframes spinRotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                    @keyframes p9-bounce { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.04); } }
+                    .bounce-logo { animation: p9-bounce 1.5s infinite ease-in-out; }
                     @keyframes fadeInOverlay { 0% { opacity: 0; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
                 `;
                 document.head.appendChild(style);
