@@ -4222,12 +4222,14 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
     if (typeof showOverlay === 'function') showOverlay("Generando Suite de Diagnóstico Multianual (2025 vs 2026)...", "Análisis Avanzado");
 
     try {
-        const maxMes = _rdaCache.maxMes || 12;
-        const maxMesName = MONTH_NAMES[maxMes - 1] || 'FINAL';
+        const isTotalAnual = (_rdaState && (_rdaState.corteTemporal === '0' || _rdaState.corteTemporal === 0));
+        const maxMes2026 = _rdaCache.maxMes || 12;
+        const maxMes2025 = isTotalAnual ? 12 : maxMes2026;
+        const maxMesName = MONTH_NAMES[maxMes2026 - 1] || 'FINAL';
         
-        // Consultar agregaciones 2025 y 2026 simultáneamente
-        const { data: ind2025, error: err2025 } = await window.supabase.rpc('get_rda_indicators', { p_anio: 2025, p_max_mes: maxMes });
-        const { data: ind2026, error: err2026 } = await window.supabase.rpc('get_rda_indicators', { p_anio: 2026, p_max_mes: maxMes });
+        // Consultar agregaciones 2025 (12 meses o corte homólogo) y 2026 simultáneamente
+        const { data: ind2025, error: err2025 } = await window.supabase.rpc('get_rda_indicators', { p_anio: 2025, p_max_mes: maxMes2025 });
+        const { data: ind2026, error: err2026 } = await window.supabase.rpc('get_rda_indicators', { p_anio: 2026, p_max_mes: maxMes2026 });
 
         if (err2025) throw err2025;
         if (err2026) throw err2026;
@@ -4239,41 +4241,41 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
         if (raw2025.length > 0) {
             try {
                 const keysTdComplete = [
-                    'VAC39','VAC40','VAC47','VAC48','VTD01','VTD02','VAC55','VAC56',
-                    'VTD03','VTD19','VTD05','VTD21','VTD07','VTD23','VTD09','VTD25',
-                    'VTD11','VTD27','VTD14','VTD29','VTD31','VTD32','VTD34','VTD35',
-                    'VTD20','VTD22','VTD24','VTD26','VTD28','VTD30','VTD33','VTD36',
-                    'VTT01','VTT02','VTT04','VTT05','VTT07','VTT08','VTT10','VTT11'
+                    'VAC39','VAC40','VAC43','VAC46','VAC47','VAC48','VAC51','VAC54','VAC55','VAC56','VAC59','VAC62',
+                    'VTD01','VTD02','VTD03','VTD05','VTD07','VTD09','VTD11','VTD13','VTD14','VTD16','VTD19','VTD20',
+                    'VTD21','VTD22','VTD23','VTD24','VTD25','VTD26','VTD27','VTD28','VTD29','VTD30','VTD31','VTD32',
+                    'VTD33','VTD34','VTD35','VTD36','VTT01','VTT02','VTT03','VTT04','VTT05','VTT06','VTT07','VTT08',
+                    'VTT09','VTT10','VTT11','VTT12'
                 ];
                 const keysNeumoAm = ['VAC93','VAC94','VNC04'];
                 const keysSrAdol = ['VAC83','VDV01','VDV02','VDV03','VDV04','VDV05','VDV06'];
-                const keysTdAm = ['VTT03','VTT06','VTT09','VTT12','VAC43','VAC46','VAC51','VAC54','VTD13','VTD16','VAC59','VAC62'];
-                const allKeysQuery = [...new Set([...keysTdComplete, ...keysNeumoAm, ...keysSrAdol, ...keysTdAm])];
+                const allKeysQuery = [...new Set([...keysTdComplete, ...keysNeumoAm, ...keysSrAdol])];
 
                 const { data: rawSis2025 } = await window.supabase
                     .from('registros_sis')
                     .select('clues, variable_sis, valor')
                     .eq('anio', 2025)
-                    .lte('mes', maxMes)
+                    .lte('mes', maxMes2025)
                     .in('variable_sis', allKeysQuery);
                 
                 if (rawSis2025 && rawSis2025.length > 0) {
                     const sisByClues = {};
                     rawSis2025.forEach(r => {
-                        if (!sisByClues[r.clues]) sisByClues[r.clues] = { neumo13: 0, tdAm: 0, tdAdol: 0, sr: 0 };
+                        if (!sisByClues[r.clues]) sisByClues[r.clues] = { neumo13: 0, tdTotal: 0, sr: 0 };
                         const v = (r.variable_sis || '').toUpperCase().trim();
                         const val = Number(r.valor) || 0;
                         if (keysNeumoAm.includes(v)) sisByClues[r.clues].neumo13 += val;
-                        if (keysTdAm.includes(v)) sisByClues[r.clues].tdAm += val;
-                        if (keysTdComplete.includes(v)) sisByClues[r.clues].tdAdol += val;
+                        if (keysTdComplete.includes(v)) sisByClues[r.clues].tdTotal += val;
                         if (keysSrAdol.includes(v)) sisByClues[r.clues].sr += val;
                     });
 
                     raw2025.forEach(u => {
                         if (sisByClues[u.clues]) {
                             if (sisByClues[u.clues].neumo13 > 0) u.am_neumo13 = sisByClues[u.clues].neumo13;
-                            if (sisByClues[u.clues].tdAm > 0) u.am_td = sisByClues[u.clues].tdAm;
-                            if (sisByClues[u.clues].tdAdol > 0) u.adol_td = sisByClues[u.clues].tdAdol;
+                            if (sisByClues[u.clues].tdTotal > 0) {
+                                if (!u.am_td || u.am_td < sisByClues[u.clues].tdTotal) u.am_td = sisByClues[u.clues].tdTotal;
+                                if (!u.adol_td || u.adol_td < sisByClues[u.clues].tdTotal) u.adol_td = sisByClues[u.clues].tdTotal;
+                            }
                             if (sisByClues[u.clues].sr > 0) u.adol_sr = sisByClues[u.clues].sr;
                         }
                     });
