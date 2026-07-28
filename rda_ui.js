@@ -139,6 +139,10 @@ function initRDADashboard() {
                 position: relative !important;
                 border-radius: 0 0 24px 24px !important;
             }
+            #rdaDetailTable {
+                table-layout: fixed !important;
+                width: 100% !important;
+            }
             #rdaDetailTable thead tr th {
                 position: sticky !important;
                 top: 0 !important;
@@ -153,21 +157,32 @@ function initRDADashboard() {
                 left: 0 !important;
                 z-index: 12 !important;
                 background-color: var(--md-sys-color-surface) !important;
-                width: 140px !important;
-                min-width: 140px !important;
-                max-width: 140px !important;
+                width: 130px !important;
+                min-width: 130px !important;
+                max-width: 130px !important;
                 box-shadow: 1px 0 0 var(--md-sys-color-surface-variant) !important;
                 color: var(--md-sys-color-on-surface) !important;
+                box-sizing: border-box !important;
             }
             #rdaDetailTable th:nth-child(2),
             #rdaDetailTable td:nth-child(2) {
                 position: sticky !important;
-                left: 140px !important;
+                left: 130px !important;
                 z-index: 12 !important;
                 background-color: var(--md-sys-color-surface) !important;
-                min-width: 200px !important;
+                width: 220px !important;
+                min-width: 220px !important;
+                max-width: 220px !important;
                 box-shadow: 2px 0 5px rgba(15, 23, 42, 0.04) !important;
                 color: var(--md-sys-color-on-surface) !important;
+                box-sizing: border-box !important;
+            }
+            #rdaDetailTable th:nth-child(3),
+            #rdaDetailTable td:nth-child(3) {
+                width: 150px !important;
+                min-width: 150px !important;
+                max-width: 150px !important;
+                box-sizing: border-box !important;
             }
             #rdaDetailTable th:nth-child(1),
             #rdaDetailTable th:nth-child(2) {
@@ -1629,12 +1644,12 @@ function renderTable(fUnits, esquema, agg) {
     const numV = vCols.length;
     const colGroupHTML = `
         <colgroup>
-            <col style="width: 120px;">
+            <col style="width: 130px;">
             <col style="width: 220px;">
-            <col style="width: 140px;">
-            ${vCols.map(() => `<col style="width: 100px;">`).join('')}
-            ${showMeta ? `<col style="width: 90px;">` : ''}
-            <col style="width: 90px;">
+            <col style="width: 150px;">
+            ${vCols.map(() => `<col style="width: 110px;">`).join('')}
+            ${showMeta ? `<col style="width: 95px;">` : ''}
+            <col style="width: 95px;">
         </colgroup>
     `;
 
@@ -1649,8 +1664,10 @@ function renderTable(fUnits, esquema, agg) {
         </tr>
     `;
 
+    table.querySelectorAll('colgroup').forEach(cg => cg.remove());
+    table.insertAdjacentHTML('afterbegin', colGroupHTML);
     const thead = table.querySelector('thead');
-    thead.innerHTML = colGroupHTML + headerColsHTML;
+    thead.innerHTML = headerColsHTML;
 
     thead.querySelectorAll('th[data-sort]').forEach(th => {
         th.addEventListener('click', () => {
@@ -1780,7 +1797,7 @@ function renderTable(fUnits, esquema, agg) {
                 bg = nameMap[vName].bg;
                 fg = nameMap[vName].fg;
             }
-            return `<span style="display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:800;background:${bg};color:${fg};border:1px solid rgba(15,23,42,0.06);">${v.toLocaleString('es-MX')}</span>`;
+            return `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:62px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;background:${bg};color:${fg};border:1px solid rgba(15,23,42,0.06);box-sizing:border-box;">${v.toLocaleString('es-MX')}</span>`;
         }
 
         // Esquema sobrio para coberturas % (RDA Oficial)
@@ -1796,7 +1813,7 @@ function renderTable(fUnits, esquema, agg) {
             bg = '#fff1f2'; fg = '#9f1239'; border = '#fecdd3';
         }
 
-        return `<span style="display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:800;background:${bg};color:${fg};border:1px solid ${border};">${v}%</span>`;
+        return `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:64px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;background:${bg};color:${fg};border:1px solid ${border};box-sizing:border-box;">${v}%</span>`;
     };
 
     let html = '';
