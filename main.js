@@ -662,6 +662,7 @@ function showOverlay(msg = "Cargando…", title = "Procesando") {
 }
 
 function hideOverlay() {
+  if (window._isBatchExporting) return;
   overlay.classList.remove("show");
 }
 

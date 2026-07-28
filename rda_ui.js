@@ -1876,32 +1876,87 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             // 2. Extraer estructura y datos de la tabla real
             const tablaOriginal = document.querySelector('#rdaDetailTable');
             if (!tablaOriginal && _rdaState.esquema === 'comparativa_multianual') {
-                const content = document.getElementById('rdaDashboardContent');
-                if (!content) return reject("Contenido comparativo no encontrado.");
-                if (typeof html2canvas === 'undefined') return reject("Librería de captura no disponible.");
+                const container = document.getElementById('rdaDashboardContent');
+                if (!container) return reject("Contenido comparativo no encontrado.");
                 
-                const canvas = await html2canvas(content, {
-                    scale: 2,
-                    useCORS: true,
-                    allowTaint: true,
-                    backgroundColor: '#ffffff'
-                });
-                const imgData = canvas.toDataURL('image/png');
                 const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'letter' });
-                const imgWidth = 279.4;
-                const pageHeight = 215.9;
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                let heightLeft = imgHeight;
-                let position = 0;
+                const marginX = 15;
+                let currentY = 18;
 
-                doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-                heightLeft -= pageHeight;
+                // Encabezado Corporativo
+                doc.setFillColor(15, 23, 42); doc.rect(0, 0, 279.4, 6, 'F');
+                doc.setFillColor(2, 132, 199); doc.rect(0, 6, 279.4, 1.5, 'F');
 
-                while (heightLeft >= 10) {
-                    position = heightLeft - imgHeight;
-                    doc.addPage();
-                    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-                    heightLeft -= pageHeight;
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(8); doc.setTextColor(2, 132, 199);
+                doc.text("SUITE EXECUTIVE DE DIAGNÓSTICO COMPARATIVO", marginX, currentY + 2);
+
+                doc.setFontSize(20); doc.setTextColor(15, 23, 42);
+                doc.text("Comparativa Multianual de Cobertura Vacunal (2025 vs 2026)", marginX, currentY + 10);
+
+                const activeScope = document.getElementById('rdaScopeLabel')?.textContent || muni;
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(9); doc.setTextColor(100, 116, 139);
+                doc.text(`Filtro: ${activeScope}  |  Cierre Mes: ${maxMesLabel.toUpperCase()}`, marginX, currentY + 16);
+
+                currentY = 44;
+
+                // Captura del Histograma ECharts Comparativo
+                const chartDom = document.getElementById('chartComparativeMulti');
+                let chartImgBase64 = '';
+                if (chartDom && typeof echarts !== 'undefined') {
+                    const chartInst = echarts.getInstanceByDom(chartDom);
+                    if (chartInst) {
+                        chartImgBase64 = chartInst.getDataURL({ type: 'png', backgroundColor: '#ffffff', pixelRatio: 2 });
+                    }
+                }
+
+                if (chartImgBase64) {
+                    doc.setFillColor(248, 250, 252); doc.setDrawColor(226, 232, 240);
+                    doc.roundedRect(marginX, currentY, 249.4, 75, 4, 4, 'FD');
+                    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(100, 116, 139);
+                    doc.text("HISTOGRAMA DE COBERTURA (2025 vs 2026)", marginX + 6, currentY + 7);
+                    doc.addImage(chartImgBase64, 'PNG', marginX + 6, currentY + 10, 237.4, 60, undefined, 'FAST');
+                    currentY += 82;
+                }
+
+                // Extracción e Inyección de Tablas Comparativas del DOM
+                const tables = Array.from(container.querySelectorAll('table'));
+                tables.forEach((tbl, tIdx) => {
+                    const headers = Array.from(tbl.querySelectorAll('thead tr')).map(tr => {
+                        return Array.from(tr.querySelectorAll('th')).map(th => th.innerText.replace(/[↕\n\r]/g, '').trim());
+                    });
+                    const rows = Array.from(tbl.querySelectorAll('tbody tr')).map(tr => {
+                        return Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim());
+                    });
+
+                    if (currentY > 160) {
+                        doc.addPage();
+                        currentY = 20;
+                    }
+
+                    if (headers.length > 0 && rows.length > 0) {
+                        doc.autoTable({
+                            head: headers,
+                            body: rows,
+                            startY: currentY,
+                            margin: { left: marginX, right: marginX },
+                            theme: 'grid',
+                            styles: { fontSize: 7.5, font: 'helvetica', valign: 'middle', halign: 'center' },
+                            headStyles: { fillColor: [241, 245, 249], textColor: [51, 65, 85], fontStyle: 'bold', halign: 'center' },
+                            columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } }
+                        });
+                        currentY = doc.lastAutoTable.finalY + 10;
+                    }
+                });
+
+                // Numeración de páginas
+                const totalPages = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i);
+                    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(148, 163, 184);
+                    doc.text(`REPORTE GENERADO EL ${new Date().toLocaleString('es-MX')} — INTELIGENCIA OPERATIVA JS1`, marginX, 208);
+                    doc.text(`Página ${i} de ${totalPages}`, 264.4, 208, { align: 'right' });
                 }
 
                 if (devolverBlob) {
@@ -2437,16 +2492,19 @@ async function exportMasivoZIP(mode = 'pdf') {
         if (!confirm(`Vas a generar ${targets.length} ${tipoStr}. El proceso se ejecutará de forma masiva. ¿Continuar?`)) return;
     }
 
+    window._isBatchExporting = true;
     const labelProceso = mode === 'png' ? 'ZIP Imágenes PNG HD' : 'ZIP PDFs';
-    const setOverlayText = (msg, title) => {
+    const setOverlayProgress = (current, total, name, modeStr) => {
+        const pct = Math.round((current / total) * 100);
         const oTitle = document.getElementById('overlayTitle');
         const oMsg = document.getElementById('overlayMsg');
         const o = document.getElementById('overlay');
-        if (oTitle) oTitle.textContent = title;
-        if (oMsg) oMsg.textContent = msg;
+        if (oTitle) oTitle.textContent = `${modeStr} (${current}/${total} - ${pct}%)`;
+        if (oMsg) oMsg.textContent = `${name || 'Unidad Médica'}`;
         if (o && !o.classList.contains('show')) o.classList.add('show');
     };
-    setOverlayText('Iniciando proceso masivo...', labelProceso);
+
+    setOverlayProgress(0, targets.length, 'Iniciando proceso masivo...', labelProceso);
 
     // Desactivar temporalmente animaciones para mayor velocidad y sincronía
     let originalChartAnim = null;
@@ -2461,8 +2519,7 @@ async function exportMasivoZIP(mode = 'pdf') {
 
         for (let i = 0; i < targets.length; i++) {
             const u = targets[i];
-            const pct = Math.round(((i + 1) / targets.length) * 100);
-            setOverlayText(`${pct}%: ${(u.nombre||u.clues).substring(0,25)}`, mode === 'png' ? 'Capturando imagen HD...' : 'Generando reporte PDF...');
+            setOverlayProgress(i + 1, targets.length, `[${u.clues}] ${u.nombre||u.clues}`, mode === 'png' ? 'Capturando Imagen PNG' : 'Generando Reporte PDF');
 
             muniSelect.value = u.municipio ? u.municipio.toUpperCase() : '';
             if (typeof populateUnidadFilter === 'function') populateUnidadFilter();
@@ -2502,7 +2559,7 @@ async function exportMasivoZIP(mode = 'pdf') {
             }
         }
 
-        if (typeof showOverlay === 'function') showOverlay('Finalizando compresión...', 'ZIP');
+        setOverlayProgress(targets.length, targets.length, 'Comprimiendo archivo ZIP...', 'Finalizando');
         const zipBlob = await zip.generateAsync({ type: 'blob' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(zipBlob);
@@ -2517,6 +2574,7 @@ async function exportMasivoZIP(mode = 'pdf') {
         console.error('[RDA ZIP]', e);
         if (typeof showToast === 'function') showToast('Error en exportación masiva', false, 'bad');
     } finally {
+        window._isBatchExporting = false;
         if (originalChartAnim !== null && typeof Chart !== 'undefined') {
             Chart.defaults.animation = originalChartAnim;
         }
@@ -4046,13 +4104,23 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
         let raw2025 = ind2025 || [];
         let raw2026 = ind2026 || [];
 
+        // Normalizador universal de municipios para evitar pérdidas por tildes o variaciones de nombre
+        const _normMuni = (s) => (s || '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        const matchMuni = (uMuni, targetMuni) => {
+            const uNorm = _normMuni(uMuni);
+            const tNorm = _normMuni(targetMuni);
+            if (tNorm.includes('MARQUES') && uNorm.includes('MARQUES')) return true;
+            if (tNorm.includes('QUERETARO') && uNorm.includes('QUERETARO')) return true;
+            return uNorm === tNorm;
+        };
+
         // Filtrado dinámico
         let u2025 = raw2025;
         let u2026 = raw2026;
 
         if (muniFilter) {
-            u2025 = u2025.filter(u => (u.municipio || '').toUpperCase().trim() === muniFilter.toUpperCase().trim());
-            u2026 = u2026.filter(u => (u.municipio || '').toUpperCase().trim() === muniFilter.toUpperCase().trim());
+            u2025 = u2025.filter(u => matchMuni(u.municipio, muniFilter));
+            u2026 = u2026.filter(u => matchMuni(u.municipio, muniFilter));
         }
         if (uniFilter) {
             u2025 = u2025.filter(u => u.clues === uniFilter);
@@ -4129,11 +4197,11 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
         const t25 = calcTotals(u2025);
         const t26 = calcTotals(u2026);
 
-        // Agrupación de Municipios de la JS1
+        // Agrupación de Municipios de la JS1 con comparación segura
         const munisJS1 = ['CORREGIDORA', 'HUIMILPAN', 'EL MARQUÉS', 'QUERÉTARO'];
         const compMunis = munisJS1.map(m => {
-            const arr25 = raw2025.filter(u => (u.municipio || '').toUpperCase().trim() === m);
-            const arr26 = raw2026.filter(u => (u.municipio || '').toUpperCase().trim() === m);
+            const arr25 = raw2025.filter(u => matchMuni(u.municipio, m));
+            const arr26 = raw2026.filter(u => matchMuni(u.municipio, m));
             return {
                 nombre: m,
                 t25: calcTotals(arr25),
@@ -4141,14 +4209,15 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
             };
         });
 
-        // Helper para semaforización basada estrictamente en Año 2026
-        const getStatusBadgeHtml = (cov2026) => {
-            if (cov2026 >= 90) {
-                return `<span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: #dcfce7; color: #15803d;">META LOGRADA</span>`;
-            } else if (cov2026 >= 70) {
-                return `<span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1;">EN SEGUIMIENTO</span>`;
+        // Semáforo comparativo basado estrictamente en el avance 2026 vs 2025
+        const getCompBadgeHtml = (cov2025, cov2026) => {
+            const diff = Math.round((cov2026 - cov2025) * 10) / 10;
+            if (diff > 0) {
+                return `<span style="font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px; background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0;">AVANCE SUPERIOR</span>`;
+            } else if (diff >= -5) {
+                return `<span style="font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">DESEMPEÑO SIMILAR</span>`;
             } else {
-                return `<span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: #fef2f2; color: #b91c1c;">REQUIERE REFORZAR</span>`;
+                return `<span style="font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 6px; background: #fef2f2; color: #b91c1c; border: 1px solid #fecdd3;">BRECHA POR RECUPERAR</span>`;
             }
         };
 
@@ -4176,12 +4245,12 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                             Comparativa Multianual de Cobertura Vacunal (2025 vs 2026)
                         </h2>
                         <p style="margin: 4px 0 0 0; font-size: 13px; font-weight: 700; color: #0284c7;">
-                            Filtro Activo: <strong>${activeScopeTitle}</strong>
+                            Filtro Activo: <strong id="rdaScopeLabel">${activeScopeTitle}</strong>
                         </p>
                     </div>
                 </div>
 
-                <!-- CARDS DE DIAGNÓSTICO ESTRATÉGICO -->
+                <!-- CARDS DE DIAGNÓSTICO ESTRATÉGICO COMPARATIVO -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; margin-bottom: 32px;">
                     <!-- Menor 1 -->
                     <div style="background: #f8fafc; border-radius: 18px; padding: 20px; border: 1px solid #e2e8f0; position: relative; overflow: hidden;">
@@ -4200,7 +4269,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                             <span style="font-size: 11px; font-weight: 800; color: ${t26.covM1 >= t25.covM1 ? '#166534' : '#9f1239'};">
                                 ${t26.covM1 >= t25.covM1 ? '▲ +'+(t26.covM1-t25.covM1).toFixed(1) : '▼ '+(t26.covM1-t25.covM1).toFixed(1)}% pts
                             </span>
-                            ${getStatusBadgeHtml(t26.covM1)}
+                            ${getCompBadgeHtml(t25.covM1, t26.covM1)}
                         </div>
                     </div>
 
@@ -4221,7 +4290,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                             <span style="font-size: 11px; font-weight: 800; color: ${t26.cov1A >= t25.cov1A ? '#166534' : '#9f1239'};">
                                 ${t26.cov1A >= t25.cov1A ? '▲ +'+(t26.cov1A-t25.cov1A).toFixed(1) : '▼ '+(t26.cov1A-t25.cov1A).toFixed(1)}% pts
                             </span>
-                            ${getStatusBadgeHtml(t26.cov1A)}
+                            ${getCompBadgeHtml(t25.cov1A, t26.cov1A)}
                         </div>
                     </div>
 
@@ -4242,7 +4311,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                             <span style="font-size: 11px; font-weight: 800; color: ${t26.cov4A >= t25.cov4A ? '#166534' : '#9f1239'};">
                                 ${t26.cov4A >= t25.cov4A ? '▲ +'+(t26.cov4A-t25.cov4A).toFixed(1) : '▼ '+(t26.cov4A-t25.cov4A).toFixed(1)}% pts
                             </span>
-                            ${getStatusBadgeHtml(t26.cov4A)}
+                            ${getCompBadgeHtml(t25.cov4A, t26.cov4A)}
                         </div>
                     </div>
                 </div>
@@ -4326,69 +4395,99 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                         <table style="width: 100%; border-collapse: collapse; background: white; font-size: 12px;">
                             <thead>
                                 <tr style="background: #f8fafc; font-weight: 900; color: #475569; border-bottom: 2px solid #e2e8f0;">
-                                    <th style="padding: 12px 16px; text-align: left;">BIOLÓGICO / DOSIS</th>
-                                    <th style="padding: 12px 16px; text-align: center;">GRUPO EDAD</th>
+                                    <th style="padding: 12px 16px; text-align: left;">BIOLÓGICO Y ESQUEMA</th>
+                                    <th style="padding: 12px 16px; text-align: center;">GRUPO POBLACIONAL</th>
                                     <th style="padding: 12px 16px; text-align: center;">DOSIS 2025</th>
                                     <th style="padding: 12px 16px; text-align: center;">DOSIS 2026</th>
-                                    <th style="padding: 12px 16px; text-align: center;">COV / REND 2025</th>
-                                    <th style="padding: 12px 16px; text-align: center;">COV / REND 2026</th>
-                                    <th style="padding: 12px 16px; text-align: center;">VARIACIÓN</th>
+                                    <th style="padding: 12px 16px; text-align: center;">COBERTURA / AVANCE 2025</th>
+                                    <th style="padding: 12px 16px; text-align: center;">COBERTURA / AVANCE 2026</th>
+                                    <th style="padding: 12px 16px; text-align: center;">COMPARATIVA MULTIANUAL (2026 VS 2025)</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                ${[
-                                    { section: 'ESQUEMA BÁSICO (0-8 AÑOS)' },
-                                    { n: 'BCG (Única)', g: '< 1 Año', d25: t25.appBCG, d26: t26.appBCG, c25: `${t25.covBCG}%`, c26: `${t26.covBCG}%`, dif: `${(t26.covBCG - t25.covBCG).toFixed(1)}% pts`, isUp: t26.covBCG >= t25.covBCG },
-                                    { n: 'Hepatitis B (0-7 días)', g: '< 1 Año', d25: t25.appHepB, d26: t26.appHepB, c25: `${t25.covHepB}%`, c26: `${t26.covHepB}%`, dif: `${(t26.covHepB - t25.covHepB).toFixed(1)}% pts`, isUp: t26.covHepB >= t25.covHepB },
-                                    { n: 'Rotavirus (2a Dosis)', g: '< 1 Año', d25: t25.appRota, d26: t26.appRota, c25: `${t25.covRota}%`, c26: `${t26.covRota}%`, dif: `${(t26.covRota - t25.covRota).toFixed(1)}% pts`, isUp: t26.covRota >= t25.covRota },
-                                    { n: 'Hexavalente (3a Dosis)', g: '< 1 Año', d25: t25.appHexaM1, d26: t26.appHexaM1, c25: `${t25.covHexaM1}%`, c26: `${t26.covHexaM1}%`, dif: `${(t26.covHexaM1 - t25.covHexaM1).toFixed(1)}% pts`, isUp: t26.covHexaM1 >= t25.covHexaM1 },
-                                    { n: 'Hexavalente (Refuerzo)', g: '1 Año', d25: t25.appHexa1A, d26: t26.appHexa1A, c25: `${t25.covHexa1A}%`, c26: `${t26.covHexa1A}%`, dif: `${(t26.covHexa1A - t25.covHexa1A).toFixed(1)}% pts`, isUp: t26.covHexa1A >= t25.covHexa1A },
-                                    { n: 'Neumococo (2a Dosis)', g: '< 1 Año', d25: t25.appNeumoM1, d26: t26.appNeumoM1, c25: `${t25.covNeumoM1}%`, c26: `${t26.covNeumoM1}%`, dif: `${(t26.covNeumoM1 - t25.covNeumoM1).toFixed(1)}% pts`, isUp: t26.covNeumoM1 >= t25.covNeumoM1 },
-                                    { n: 'Neumococo (Refuerzo)', g: '1 Año', d25: t25.appNeumo1A, d26: t26.appNeumo1A, c25: `${t25.covNeumo1A}%`, c26: `${t26.covNeumo1A}%`, dif: `${(t26.covNeumo1A - t25.covNeumo1A).toFixed(1)}% pts`, isUp: t26.covNeumo1A >= t25.covNeumo1A },
-                                    { n: 'SRP (Dosis Completa)', g: '1 Año', d25: t25.appSRP, d26: t26.appSRP, c25: `${t25.covSRP}%`, c26: `${t26.covSRP}%`, dif: `${(t26.covSRP - t25.covSRP).toFixed(1)}% pts`, isUp: t26.covSRP >= t25.covSRP },
-                                    { n: 'DPT (4 Años)', g: '4 Años', d25: t25.appDPT, d26: t26.appDPT, c25: `${t25.covDPT}%`, c26: `${t26.covDPT}%`, dif: `${(t26.covDPT - t25.covDPT).toFixed(1)}% pts`, isUp: t26.covDPT >= t25.covDPT },
-                                    
-                                    { section: 'ADOLESCENTES Y ADULTOS' },
-                                    { n: 'Hepatitis B Adultos', g: 'Adolescentes/Adultos', d25: t25.adol_hb, d26: t26.adol_hb, c25: 'N/D', c26: 'N/D', dif: `${t26.adol_hb >= t25.adol_hb ? '+' : ''}${t26.adol_hb - t25.adol_hb} dosis`, isUp: t26.adol_hb >= t25.adol_hb },
-                                    { n: 'SR (Sarampión-Rubéola)', g: 'Adolescentes/Adultos', d25: t25.adol_sr, d26: t26.adol_sr, c25: 'N/D', c26: 'N/D', dif: `${t26.adol_sr >= t25.adol_sr ? '+' : ''}${t26.adol_sr - t25.adol_sr} dosis`, isUp: t26.adol_sr >= t25.adol_sr },
-                                    { n: 'VPH (Virus Papiloma)', g: 'Adolescentes', d25: t25.adol_vph, d26: t26.adol_vph, c25: 'N/D', c26: 'N/D', dif: `${t26.adol_vph >= t25.adol_vph ? '+' : ''}${t26.adol_vph - t25.adol_vph} dosis`, isUp: t26.adol_vph >= t25.adol_vph },
-                                    { n: 'Td (Tétanos-Difteria)', g: 'Adolescentes/Adultos', d25: t25.adol_td, d26: t26.adol_td, c25: 'N/D', c26: 'N/D', dif: `${t26.adol_td >= t25.adol_td ? '+' : ''}${t26.adol_td - t25.adol_td} dosis`, isUp: t26.adol_td >= t25.adol_td },
-                                    { n: 'Tdpa Adultos', g: 'Adolescentes/Adultos', d25: t25.adol_tdpa, d26: t26.adol_tdpa, c25: 'N/D', c26: 'N/D', dif: `${t26.adol_tdpa >= t25.adol_tdpa ? '+' : ''}${t26.adol_tdpa - t25.adol_tdpa} dosis`, isUp: t26.adol_tdpa >= t25.adol_tdpa },
-
-                                    { section: 'ADULTOS MAYORES' },
-                                    { n: 'Neumococo 13-valente', g: '60+ Años', d25: t25.am_neumo13, d26: t26.am_neumo13, c25: 'N/D', c26: 'N/D', dif: `${t26.am_neumo13 >= t25.am_neumo13 ? '+' : ''}${t26.am_neumo13 - t25.am_neumo13} dosis`, isUp: t26.am_neumo13 >= t25.am_neumo13 },
-                                    { n: 'Neumococo 20-valente', g: '60+ Años', d25: t25.am_neumo20, d26: t26.am_neumo20, c25: 'N/D', c26: 'N/D', dif: `${t26.am_neumo20 >= t25.am_neumo20 ? '+' : ''}${t26.am_neumo20 - t25.am_neumo20} dosis`, isUp: t26.am_neumo20 >= t25.am_neumo20 },
-                                    { n: 'Td Mayores', g: '60+ Años', d25: t25.am_td, d26: t26.am_td, c25: 'N/D', c26: 'N/D', dif: `${t26.am_td >= t25.am_td ? '+' : ''}${t26.am_td - t25.am_td} dosis`, isUp: t26.am_td >= t25.am_td },
-
-                                    { section: 'EMBARAZADAS' },
-                                    { n: 'Tdpa Embarazadas', g: 'Embarazadas', d25: t25.emb_tdpa, d26: t26.emb_tdpa, c25: 'N/D', c26: 'N/D', dif: `${t26.emb_tdpa >= t25.emb_tdpa ? '+' : ''}${t26.emb_tdpa - t25.emb_tdpa} dosis`, isUp: t26.emb_tdpa >= t25.emb_tdpa },
-                                    { n: 'VSR Embarazadas', g: 'Embarazadas', d25: 0, d26: t26.emb_vsr, c25: 'N/A (No Implementado)', c26: 'En Aplicación 2026', dif: `+${t26.emb_vsr} dosis (Nuevo 2026)`, isUp: true },
-
-                                    { section: 'TEMPORADA INVERNAL' },
-                                    { n: 'Influenza', g: 'Población General', d25: t25.inv_influenza, d26: t26.inv_influenza, c25: 'N/D', c26: 'N/D', dif: `${t26.inv_influenza >= t25.inv_influenza ? '+' : ''}${t26.inv_influenza - t25.inv_influenza} dosis`, isUp: t26.inv_influenza >= t25.inv_influenza },
-                                    { n: 'COVID-19', g: 'Población General', d25: t25.inv_covid, d26: t26.inv_covid, c25: 'N/D', c26: 'N/D', dif: `${t26.inv_covid >= t25.inv_covid ? '+' : ''}${t26.inv_covid - t25.inv_covid} dosis`, isUp: t26.inv_covid >= t25.inv_covid }
-                                ].map(b => {
-                                    if (b.section) {
-                                        return `
-                                            <tr style="background: #f1f5f9; font-weight: 900; color: #334155; text-transform: uppercase;">
-                                                <td colspan="7" style="padding: 8px 16px; letter-spacing: 0.05em; font-size: 11px;">📌 ${b.section}</td>
-                                            </tr>
-                                        `;
-                                    }
-                                    return `
+                                ${(() => {
+                                    const buildRow = (n, g, d25, d26, c25, c26, difStr, isUp, isDosisMode = false) => `
                                         <tr style="border-bottom: 1px solid #f1f5f9; font-weight: 700;">
-                                            <td style="padding: 10px 16px; color: #0f172a; font-weight: 900;">${b.n}</td>
-                                            <td style="padding: 10px 16px; text-align: center; color: #64748b;">${b.g}</td>
-                                            <td style="padding: 10px 16px; text-align: center; color: #64748b;">${b.d25 ? b.d25.toLocaleString('es-MX') : '0'}</td>
-                                            <td style="padding: 10px 16px; text-align: center; color: #0284c7; font-weight: 900;">${b.d26 ? b.d26.toLocaleString('es-MX') : '0'}</td>
-                                            <td style="padding: 10px 16px; text-align: center; color: #64748b;">${b.c25}</td>
-                                            <td style="padding: 10px 16px; text-align: center; color: #0284c7; font-weight: 900;">${b.c26}</td>
-                                            <td style="padding: 10px 16px; text-align: center; font-weight: 900; color: ${b.isUp ? '#166534' : '#9f1239'};">
-                                                ${b.isUp ? '▲ ' : '▼ '}${b.dif}
+                                            <td style="padding: 12px 16px; font-weight: 900; color: #0f172a;">${n}</td>
+                                            <td style="padding: 12px 16px; text-align: center; color: #64748b;">${g}</td>
+                                            <td style="padding: 12px 16px; text-align: center; color: #475569;">${d25 ? d25.toLocaleString('es-MX') : '0'}</td>
+                                            <td style="padding: 12px 16px; text-align: center; color: #0284c7; font-weight: 900;">${d26 ? d26.toLocaleString('es-MX') : '0'}</td>
+                                            <td style="padding: 12px 16px; text-align: center; color: #475569;">${c25}</td>
+                                            <td style="padding: 12px 16px; text-align: center; color: #0284c7; font-weight: 900;">${c26}</td>
+                                            <td style="padding: 12px 16px; text-align: center;">
+                                                <span style="display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 900; background: ${isUp ? '#f0fdf4' : '#fff1f2'}; color: ${isUp ? '#166534' : '#9f1239'}; border: 1px solid ${isUp ? '#bbf7d0' : '#fecdd3'};">
+                                                    ${isUp ? '▲' : '▼'} ${difStr}
+                                                </span>
                                             </td>
                                         </tr>
                                     `;
-                                }).join('')}
+
+                                    const sectionHeader = (title) => `
+                                        <tr style="background: #f1f5f9; font-weight: 900; color: #1e293b; border-left: 4px solid #0284c7;">
+                                            <td colspan="7" style="padding: 10px 16px; text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px;">
+                                                📌 ${title}
+                                            </td>
+                                        </tr>
+                                    `;
+
+                                    const calcDosisDiff = (d25, d26) => {
+                                        const diff = d26 - d25;
+                                        const pct = d25 > 0 ? Math.round(((diff / d25) * 100) * 10) / 10 : 0;
+                                        const label = diff >= 0 ? `+${diff.toLocaleString('es-MX')} Dosis (+${pct}%)` : `${diff.toLocaleString('es-MX')} Dosis (${pct}%)`;
+                                        return { label, isUp: diff >= 0 };
+                                    };
+
+                                    let html = '';
+                                    
+                                    // Esquema Básico
+                                    html += sectionHeader('ESQUEMA BÁSICO (0-8 AÑOS)');
+                                    html += buildRow('BCG (Única)', '< 1 Año', t25.appBCG, t26.appBCG, `${t25.covBCG}%`, `${t26.covBCG}%`, `${(t26.covBCG - t25.covBCG).toFixed(1)}% pts`, t26.covBCG >= t25.covBCG);
+                                    html += buildRow('Hepatitis B (0-7 días)', '< 1 Año', t25.appHepB, t26.appHepB, `${t25.covHepB}%`, `${t26.covHepB}%`, `${(t26.covHepB - t25.covHepB).toFixed(1)}% pts`, t26.covHepB >= t25.covHepB);
+                                    html += buildRow('Rotavirus (2a Dosis)', '< 1 Año', t25.appRota, t26.appRota, `${t25.covRota}%`, `${t26.covRota}%`, `${(t26.covRota - t25.covRota).toFixed(1)}% pts`, t26.covRota >= t25.covRota);
+                                    html += buildRow('Hexavalente (3a Dosis)', '< 1 Año', t25.appHexaM1, t26.appHexaM1, `${t25.covHexaM1}%`, `${t26.covHexaM1}%`, `${(t26.covHexaM1 - t25.covHexaM1).toFixed(1)}% pts`, t26.covHexaM1 >= t25.covHexaM1);
+                                    html += buildRow('Hexavalente (Refuerzo)', '1 Año', t25.appHexa1A, t26.appHexa1A, `${t25.covHexa1A}%`, `${t26.covHexa1A}%`, `${(t26.covHexa1A - t25.covHexa1A).toFixed(1)}% pts`, t26.covHexa1A >= t25.covHexa1A);
+                                    html += buildRow('Neumococo (2a Dosis)', '< 1 Año', t25.appNeumoM1, t26.appNeumoM1, `${t25.covNeumoM1}%`, `${t26.covNeumoM1}%`, `${(t26.covNeumoM1 - t25.covNeumoM1).toFixed(1)}% pts`, t26.covNeumoM1 >= t25.covNeumoM1);
+                                    html += buildRow('Neumococo (Refuerzo)', '1 Año', t25.appNeumo1A, t26.appNeumo1A, `${t25.covNeumo1A}%`, `${t26.covNeumo1A}%`, `${(t26.covNeumo1A - t25.covNeumo1A).toFixed(1)}% pts`, t26.covNeumo1A >= t25.covNeumo1A);
+                                    html += buildRow('SRP (Dosis Completa)', '1 Año', t25.appSRP, t26.appSRP, `${t25.covSRP}%`, `${t26.covSRP}%`, `${(t26.covSRP - t25.covSRP).toFixed(1)}% pts`, t26.covSRP >= t25.covSRP);
+                                    html += buildRow('DPT (4 Años)', '4 Años', t25.appDPT, t26.appDPT, `${t25.covDPT}%`, `${t26.covDPT}%`, `${(t26.covDPT - t25.covDPT).toFixed(1)}% pts`, t26.covDPT >= t25.covDPT);
+
+                                    // Adolescentes y Adultos
+                                    html += sectionHeader('ADOLESCENTES Y ADULTOS (SEGUIMIENTO POR DOSIS APLICADAS)');
+                                    let dAdolHb = calcDosisDiff(t25.adol_hb, t26.adol_hb);
+                                    html += buildRow('Hepatitis B Adultos', 'Adolescentes/Adultos', t25.adol_hb, t26.adol_hb, `${t25.adol_hb.toLocaleString('es-MX')} Dosis`, `${t26.adol_hb.toLocaleString('es-MX')} Dosis`, dAdolHb.label, dAdolHb.isUp);
+                                    let dAdolSr = calcDosisDiff(t25.adol_sr, t26.adol_sr);
+                                    html += buildRow('SR (Sarampión-Rubéola)', 'Adolescentes/Adultos', t25.adol_sr, t26.adol_sr, `${t25.adol_sr.toLocaleString('es-MX')} Dosis`, `${t26.adol_sr.toLocaleString('es-MX')} Dosis`, dAdolSr.label, dAdolSr.isUp);
+                                    let dAdolVph = calcDosisDiff(t25.adol_vph, t26.adol_vph);
+                                    html += buildRow('VPH (Virus Papiloma)', 'Adolescentes', t25.adol_vph, t26.adol_vph, `${t25.adol_vph.toLocaleString('es-MX')} Dosis`, `${t26.adol_vph.toLocaleString('es-MX')} Dosis`, dAdolVph.label, dAdolVph.isUp);
+                                    let dAdolTd = calcDosisDiff(t25.adol_td, t26.adol_td);
+                                    html += buildRow('Td (Tétanos-Difteria)', 'Adolescentes/Adultos', t25.adol_td, t26.adol_td, `${t25.adol_td.toLocaleString('es-MX')} Dosis`, `${t26.adol_td.toLocaleString('es-MX')} Dosis`, dAdolTd.label, dAdolTd.isUp);
+                                    let dAdolTdpa = calcDosisDiff(t25.adol_tdpa, t26.adol_tdpa);
+                                    html += buildRow('Tdpa Adultos', 'Adolescentes/Adultos', t25.adol_tdpa, t26.adol_tdpa, `${t25.adol_tdpa.toLocaleString('es-MX')} Dosis`, `${t26.adol_tdpa.toLocaleString('es-MX')} Dosis`, dAdolTdpa.label, dAdolTdpa.isUp);
+
+                                    // Adultos Mayores
+                                    html += sectionHeader('ADULTOS MAYORES (SEGUIMIENTO POR DOSIS APLICADAS)');
+                                    let dAmN13 = calcDosisDiff(t25.am_neumo13, t26.am_neumo13);
+                                    html += buildRow('Neumococo 13-valente', '60+ Años', t25.am_neumo13, t26.am_neumo13, `${t25.am_neumo13.toLocaleString('es-MX')} Dosis`, `${t26.am_neumo13.toLocaleString('es-MX')} Dosis`, dAmN13.label, dAmN13.isUp);
+                                    let dAmN20 = calcDosisDiff(t25.am_neumo20, t26.am_neumo20);
+                                    html += buildRow('Neumococo 20-valente', '60+ Años', t25.am_neumo20, t26.am_neumo20, `${t25.am_neumo20.toLocaleString('es-MX')} Dosis`, `${t26.am_neumo20.toLocaleString('es-MX')} Dosis`, dAmN20.label, dAmN20.isUp);
+                                    let dAmTd = calcDosisDiff(t25.am_td, t26.am_td);
+                                    html += buildRow('Td Mayores', '60+ Años', t25.am_td, t26.am_td, `${t25.am_td.toLocaleString('es-MX')} Dosis`, `${t26.am_td.toLocaleString('es-MX')} Dosis`, dAmTd.label, dAmTd.isUp);
+
+                                    // Embarazadas
+                                    html += sectionHeader('MUJERES EMBARAZADAS');
+                                    let dEmbTdpa = calcDosisDiff(t25.emb_tdpa, t26.emb_tdpa);
+                                    html += buildRow('Tdpa Embarazadas', 'Embarazadas', t25.emb_tdpa, t26.emb_tdpa, `${t25.emb_tdpa.toLocaleString('es-MX')} Dosis`, `${t26.emb_tdpa.toLocaleString('es-MX')} Dosis`, dEmbTdpa.label, dEmbTdpa.isUp);
+                                    html += buildRow('VSR Embarazadas', 'Embarazadas', 0, t26.emb_vsr, 'Sin Registro 2025', `${t26.emb_vsr.toLocaleString('es-MX')} Dosis`, `+${t26.emb_vsr.toLocaleString('es-MX')} Dosis (Estrategia 2026)`, true);
+
+                                    // Temporada Invernal
+                                    html += sectionHeader('TEMPORADA INVERNAL');
+                                    let dInvInf = calcDosisDiff(t25.inv_influenza, t26.inv_influenza);
+                                    html += buildRow('Influenza Estacional', 'Población Blanco', t25.inv_influenza, t26.inv_influenza, `${t25.inv_influenza.toLocaleString('es-MX')} Dosis`, `${t26.inv_influenza.toLocaleString('es-MX')} Dosis`, dInvInf.label, dInvInf.isUp);
+                                    let dInvCov = calcDosisDiff(t25.inv_covid, t26.inv_covid);
+                                    html += buildRow('COVID-19', 'Población Blanco', t25.inv_covid, t26.inv_covid, `${t25.inv_covid.toLocaleString('es-MX')} Dosis`, `${t26.inv_covid.toLocaleString('es-MX')} Dosis`, dInvCov.label, dInvCov.isUp);
+
+                                    return html;
+                                })()}
                             </tbody>
                         </table>
                     </div>
@@ -4397,26 +4496,62 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
             </div>
         `;
 
-        // Renderizar ECharts Histogram Dual
-        if (typeof echarts !== 'undefined') {
+        // Renderizar Histograma ECharts Dual
+        setTimeout(() => {
             const chartDom = document.getElementById('chartComparativeMulti');
-            if (chartDom) {
-                const compChart = echarts.init(chartDom);
-                compChart.setOption({
-                    title: { text: 'Avance % de Cobertura por Grupo de Edad (2025 vs 2026)', left: 'left', textStyle: { fontSize: 15, fontWeight: '900', color: '#0f172a' } },
-                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, backgroundColor: '#0f172a', textStyle: { color: '#ffffff', fontFamily: 'Inter' } },
-                    legend: { right: 10, textStyle: { fontFamily: 'Inter', fontWeight: 'bold', color: '#64748b' } },
-                    grid: { left: '2%', right: '2%', bottom: '10%', top: '18%', containLabel: true },
-                    xAxis: { type: 'category', data: ['< 1 Año', '1 Año', '4 Años'], axisLabel: { fontWeight: 'bold', color: '#0f172a' } },
-                    yAxis: { type: 'value', axisLabel: { formatter: '{value}%', color: '#64748b' }, splitLine: { lineStyle: { type: 'dashed', color: '#e2e8f0' } } },
+            if (chartDom && typeof echarts !== 'undefined') {
+                const myChart = echarts.init(chartDom);
+                const option = {
+                    title: {
+                        text: 'Comparativa de Cobertura Vacunal por Grupo de Edad (2025 vs 2026)',
+                        subtext: `Consolidado Cierre Mes ${maxMes}`,
+                        left: 'center',
+                        textStyle: { fontSize: 15, fontWeight: 'bold', color: '#0f172a' }
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: { type: 'shadow' },
+                        formatter: function(params) {
+                            let s = `<strong>${params[0].name}</strong><br/>`;
+                            params.forEach(p => {
+                                s += `${p.marker} ${p.seriesName}: <strong>${p.value}%</strong><br/>`;
+                            });
+                            return s;
+                        }
+                    },
+                    legend: { data: ['Año 2025', 'Año 2026'], top: 35 },
+                    grid: { left: '4%', right: '4%', bottom: '10%', top: '22%', containLabel: true },
+                    xAxis: {
+                        type: 'category',
+                        data: ['Menores de 1 Año (<1)', 'Niños de 1 Año (1)', 'Niños de 4 Años (4)'],
+                        axisLabel: { fontWeight: 'bold', color: '#475569' }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        name: 'Cobertura (%)',
+                        axisLabel: { formatter: '{value}%' }
+                    },
                     series: [
-                        { name: 'Año 2025', type: 'bar', data: [t25.covM1, t25.cov1A, t25.cov4A], itemStyle: { color: '#94a3b8', borderRadius: [6,6,0,0] }, barWidth: 32 },
-                        { name: 'Año 2026', type: 'bar', data: [t26.covM1, t26.cov1A, t26.cov4A], itemStyle: { color: '#0284c7', borderRadius: [6,6,0,0] }, barWidth: 32 }
+                        {
+                            name: 'Año 2025',
+                            type: 'bar',
+                            data: [t25.covM1, t25.cov1A, t25.cov4A],
+                            itemStyle: { color: '#94a3b8', borderRadius: [6, 6, 0, 0] },
+                            label: { show: true, position: 'top', formatter: '{c}%', fontWeight: 'bold' }
+                        },
+                        {
+                            name: 'Año 2026',
+                            type: 'bar',
+                            data: [t26.covM1, t26.cov1A, t26.cov4A],
+                            itemStyle: { color: '#0284c7', borderRadius: [6, 6, 0, 0] },
+                            label: { show: true, position: 'top', formatter: '{c}%', fontWeight: 'bold' }
+                        }
                     ]
-                });
-                window.addEventListener('resize', () => compChart.resize());
+                };
+                myChart.setOption(option);
+                window.addEventListener('resize', () => myChart.resize());
             }
-        }
+        }, 100);
 
     } catch (e) {
         console.error("Error cargando comparativa multianual executive:", e);
