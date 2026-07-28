@@ -2538,14 +2538,99 @@ async function exportMasivoZIP(mode = 'pdf') {
 
     window._isBatchExporting = true;
     const labelProceso = mode === 'png' ? 'ZIP Imágenes PNG HD' : 'ZIP PDFs';
+    
     const setOverlayProgress = (current, total, name, modeStr) => {
-        const pct = Math.round((current / total) * 100);
-        const oTitle = document.getElementById('overlayTitle');
-        const oMsg = document.getElementById('overlayMsg');
-        const o = document.getElementById('overlay');
-        if (oTitle) oTitle.textContent = `${modeStr} (${current}/${total} - ${pct}%)`;
-        if (oMsg) oMsg.textContent = `${name || 'Unidad Médica'}`;
-        if (o && !o.classList.contains('show')) o.classList.add('show');
+        const pct = total > 0 ? Math.min(100, Math.round((current / total) * 100)) : 0;
+        let overlayElem = document.getElementById('rdaExportOverlay');
+        
+        if (!overlayElem) {
+            overlayElem = document.createElement('div');
+            overlayElem.id = 'rdaExportOverlay';
+            overlayElem.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(15, 23, 42, 0.82);
+                backdrop-filter: blur(14px);
+                -webkit-backdrop-filter: blur(14px);
+                z-index: 999999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+                animation: fadeInOverlay 0.25s ease-out forwards;
+            `;
+            
+            overlayElem.innerHTML = `
+                <div style="background: #ffffff; width: 92%; max-width: 480px; border-radius: 24px; padding: 32px 28px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255,255,255,0.1); text-align: center; position: relative; overflow: hidden;">
+                    <!-- ACCENT GRADIENT HEADER BAR -->
+                    <div style="position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, #0084d4, #0284c7, #38bdf8);"></div>
+
+                    <!-- SPINNER ANIMATED ICON -->
+                    <div style="margin: 0 auto 18px auto; width: 64px; height: 64px; border-radius: 50%; background: #e0f2fe; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(2,132,199,0.2);">
+                        <span class="material-symbols-rounded" style="font-size: 34px; color: #0284c7; animation: spinRotate 1.2s infinite linear;">sync</span>
+                    </div>
+
+                    <!-- BADGE -->
+                    <div style="display: inline-block; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; font-size: 11px; font-weight: 900; padding: 4px 12px; border-radius: 9999px; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;" id="rdaOverlayBadge">
+                        EXPORTACIÓN MASIVA
+                    </div>
+
+                    <!-- TITLE & PERCENTAGE -->
+                    <h3 id="rdaOverlayTitle" style="margin: 0 0 6px 0; font-size: 20px; font-weight: 900; color: #0f172a; letter-spacing: -0.02em;">
+                        Generando Exportación (0%)
+                    </h3>
+
+                    <!-- SUBTITLE CURRENT UNIT NAME -->
+                    <p id="rdaOverlayMsg" style="margin: 0 0 20px 0; font-size: 13px; font-weight: 700; color: #475569; min-height: 38px; display: flex; align-items: center; justify-content: center; line-height: 1.4;">
+                        Iniciando proceso...
+                    </p>
+
+                    <!-- PROGRESS BAR CONTAINER -->
+                    <div style="background: #f1f5f9; border-radius: 9999px; height: 14px; width: 100%; overflow: hidden; border: 1px solid #e2e8f0; position: relative; margin-bottom: 12px;">
+                        <div id="rdaOverlayBar" style="background: linear-gradient(90deg, #0084d4 0%, #0284c7 50%, #38bdf8 100%); height: 100%; width: 0%; border-radius: 9999px; transition: width 0.25s ease-out; box-shadow: 0 2px 6px rgba(2,132,199,0.4);"></div>
+                    </div>
+
+                    <!-- STEP COUNTER -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; font-weight: 800; color: #64748b;">
+                        <span id="rdaOverlayCount">0 de 0 Unidades</span>
+                        <span id="rdaOverlayPct" style="color: #0284c7; font-weight: 900;">0% COMPLETADO</span>
+                    </div>
+                </div>
+            `;
+            
+            if (!document.getElementById('rdaExportOverlayStyles')) {
+                const style = document.createElement('style');
+                style.id = 'rdaExportOverlayStyles';
+                style.textContent = `
+                    @keyframes spinRotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                    @keyframes fadeInOverlay { 0% { opacity: 0; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
+                `;
+                document.head.appendChild(style);
+            }
+            document.body.appendChild(overlayElem);
+        }
+
+        const oBadge = document.getElementById('rdaOverlayBadge');
+        const oTitle = document.getElementById('rdaOverlayTitle');
+        const oMsg = document.getElementById('rdaOverlayMsg');
+        const oBar = document.getElementById('rdaOverlayBar');
+        const oCount = document.getElementById('rdaOverlayCount');
+        const oPct = document.getElementById('rdaOverlayPct');
+
+        if (oBadge && modeStr) oBadge.textContent = modeStr.toUpperCase();
+        if (oTitle) oTitle.textContent = `Exportando (${pct}%)`;
+        if (oMsg) oMsg.textContent = name || 'Preparando archivos...';
+        if (oBar) oBar.style.width = `${pct}%`;
+        if (oCount) oCount.textContent = `${current} de ${total} Unidades`;
+        if (oPct) oPct.textContent = `${pct}% COMPLETADO`;
+    };
+
+    const removeOverlayProgress = () => {
+        const o = document.getElementById('rdaExportOverlay');
+        if (o) o.remove();
     };
 
     setOverlayProgress(0, targets.length, 'Iniciando proceso masivo...', labelProceso);
@@ -2604,7 +2689,7 @@ async function exportMasivoZIP(mode = 'pdf') {
             }
         }
 
-        setOverlayProgress(targets.length, targets.length, 'Comprimiendo archivo ZIP...', 'Finalizando');
+        setOverlayProgress(targets.length, targets.length, 'Comprimiendo archivo ZIP final...', 'Finalizando');
         const zipBlob = await zip.generateAsync({ type: 'blob' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(zipBlob);
@@ -2629,6 +2714,7 @@ async function exportMasivoZIP(mode = 'pdf') {
         uniSelect.value = originalUni;
         if (typeof renderDashboard === 'function') renderDashboard();
 
+        removeOverlayProgress();
         if (typeof hideOverlay === 'function') hideOverlay();
     }
 }
