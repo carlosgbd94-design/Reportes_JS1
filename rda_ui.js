@@ -210,12 +210,12 @@ function initRDADashboard() {
         `;
         document.head.appendChild(style);
 
-        // Selector de Año Base
+        // Selector de Año Base (Ordenado Cronológicamente)
         const selAnio = document.createElement('select');
         selAnio.id = 'rdaFilterAnio';
         selAnio.innerHTML = `
-            <option value="2026" selected>Año 2026</option>
             <option value="2025">Año 2025</option>
+            <option value="2026" selected>Año 2026</option>
             <option value="2027">Año 2027</option>
         `;
         selAnio.addEventListener('change', () => {
@@ -259,6 +259,62 @@ function initRDADashboard() {
         });
         leftGroup.appendChild(selTemp);
 
+        // Actualizador dinámico del selector de temporalidad según esquema seleccionado
+        window.updateTemporalidadOptions = function() {
+            const isComp = (_rdaState.esquema === 'comparativa_multianual');
+            const maxAvailable = _rdaCache.maxMes || 6;
+            let curValue = selTemp.value || '0';
+
+            if (isComp) {
+                const monthsShort = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                const mName = monthsShort[Math.min(maxAvailable, 12) - 1];
+
+                if (curValue !== '0' && curValue !== 'T1' && curValue !== 'T2' && curValue !== 'T3' && curValue !== 'T4') {
+                    curValue = '0';
+                    _rdaState.corteTemporal = '0';
+                }
+
+                const t1Disabled = maxAvailable < 3 ? 'disabled' : '';
+                const t2Disabled = maxAvailable < 6 ? 'disabled' : '';
+                const t3Disabled = maxAvailable < 9 ? 'disabled' : '';
+                const t4Disabled = maxAvailable < 12 ? 'disabled' : '';
+
+                selTemp.innerHTML = `
+                    <option value="0" ${curValue === '0' ? 'selected' : ''}>⚡ Cierre Acumulado (${mName})</option>
+                    <optgroup label="Corte Comparativo por Trimestre">
+                        <option value="T1" ${curValue === 'T1' ? 'selected' : ''} ${t1Disabled}>1er Trimestre (Ene - Mar)</option>
+                        <option value="T2" ${curValue === 'T2' ? 'selected' : ''} ${t2Disabled}>2do Trimestre (Abr - Jun)</option>
+                        <option value="T3" ${curValue === 'T3' ? 'selected' : ''} ${t3Disabled}>3er Trimestre (Jul - Sep) ${maxAvailable < 9 ? '🔒 Próximo' : ''}</option>
+                        <option value="T4" ${curValue === 'T4' ? 'selected' : ''} ${t4Disabled}>4to Trimestre (Oct - Dic) ${maxAvailable < 12 ? '🔒 Próximo' : ''}</option>
+                    </optgroup>
+                `;
+            } else {
+                selTemp.innerHTML = `
+                    <option value="0" ${curValue === '0' ? 'selected' : ''}>⚡ Cierre Acumulado a la Fecha</option>
+                    <optgroup label="Corte por Mes Específico">
+                        <option value="1" ${curValue === '1' ? 'selected' : ''}>Mes: Enero</option>
+                        <option value="2" ${curValue === '2' ? 'selected' : ''}>Mes: Febrero</option>
+                        <option value="3" ${curValue === '3' ? 'selected' : ''}>Mes: Marzo</option>
+                        <option value="4" ${curValue === '4' ? 'selected' : ''}>Mes: Abril</option>
+                        <option value="5" ${curValue === '5' ? 'selected' : ''}>Mes: Mayo</option>
+                        <option value="6" ${curValue === '6' ? 'selected' : ''}>Mes: Junio</option>
+                        <option value="7" ${curValue === '7' ? 'selected' : ''}>Mes: Julio</option>
+                        <option value="8" ${curValue === '8' ? 'selected' : ''}>Mes: Agosto</option>
+                        <option value="9" ${curValue === '9' ? 'selected' : ''}>Mes: Septiembre</option>
+                        <option value="10" ${curValue === '10' ? 'selected' : ''}>Mes: Octubre</option>
+                        <option value="11" ${curValue === '11' ? 'selected' : ''}>Mes: Noviembre</option>
+                        <option value="12" ${curValue === '12' ? 'selected' : ''}>Mes: Diciembre</option>
+                    </optgroup>
+                    <optgroup label="Corte por Trimestre">
+                        <option value="T1" ${curValue === 'T1' ? 'selected' : ''}>1er Trimestre (Ene - Mar)</option>
+                        <option value="T2" ${curValue === 'T2' ? 'selected' : ''}>2do Trimestre (Abr - Jun)</option>
+                        <option value="T3" ${curValue === 'T3' ? 'selected' : ''}>3er Trimestre (Jul - Sep)</option>
+                        <option value="T4" ${curValue === 'T4' ? 'selected' : ''}>4to Trimestre (Oct - Dic)</option>
+                    </optgroup>
+                `;
+            }
+        };
+
         // Selector de Esquemas moderno y limpio
         const sel = document.createElement('select');
         sel.id = 'rdaFilterEsquema';
@@ -287,6 +343,7 @@ function initRDADashboard() {
         }
         sel.addEventListener('change', () => {
             _rdaState.esquema = sel.value;
+            if (window.updateTemporalidadOptions) window.updateTemporalidadOptions();
             renderDashboard();
         });
 
@@ -582,6 +639,7 @@ function populateUnidadFilter() {
 
 // Renderización Principal del Tablero
 async function renderDashboard() {
+    if (window.updateTemporalidadOptions) window.updateTemporalidadOptions();
     const { unidades, maxMes } = _rdaCache;
     if (!unidades) return;
 
