@@ -830,7 +830,7 @@ function renderKPIs(agg, esquema) {
 
         if (isPobCard && esquema === 'basico') {
             const has6A = (_rdaCache.anio === 2025);
-            const gridCols = has6A ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)';
+            const gridCols = has6A ? 'repeat(4, minmax(0, 1fr))' : 'repeat(3, minmax(0, 1fr))';
             // Tarjeta especial para desglose de población meta por edad
             card.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
@@ -842,23 +842,23 @@ function renderKPIs(agg, esquema) {
                 <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Población Meta Total</div>
                 <div style="font-size: 26px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em; margin-bottom: 10px;">${valText} <span style="font-size: 12px; font-weight: 700; color: #94a3b8;">hab.</span></div>
                 
-                <div style="display: grid; grid-template-columns: ${gridCols}; gap: 4px; border-top: 1px solid #f1f5f9; padding-top: 8px; margin-top: 4px;">
-                    <div style="background: #f8fafc; padding: 4px 6px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0;">
-                        <div style="font-size: 9px; font-weight: 800; color: #0d9488;"><1 Año</div>
-                        <div style="font-size: 11px; font-weight: 900; color: #0f172a;">${agg.pob_menor_1.toLocaleString('es-MX')}</div>
+                <div style="display: grid; grid-template-columns: ${gridCols}; gap: 3px; border-top: 1px solid #f1f5f9; padding-top: 8px; margin-top: 4px;">
+                    <div style="background: #f8fafc; padding: 4px 2px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0; min-width: 0; box-sizing: border-box;">
+                        <div style="font-size: 8.5px; font-weight: 800; color: #0d9488; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><1 Año</div>
+                        <div style="font-size: 10px; font-weight: 900; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${agg.pob_menor_1.toLocaleString('es-MX')}</div>
                     </div>
-                    <div style="background: #f8fafc; padding: 4px 6px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0;">
-                        <div style="font-size: 9px; font-weight: 800; color: #0284c7;">1 Año</div>
-                        <div style="font-size: 11px; font-weight: 900; color: #0f172a;">${agg.pob_1_ano.toLocaleString('es-MX')}</div>
+                    <div style="background: #f8fafc; padding: 4px 2px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0; min-width: 0; box-sizing: border-box;">
+                        <div style="font-size: 8.5px; font-weight: 800; color: #0284c7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">1 Año</div>
+                        <div style="font-size: 10px; font-weight: 900; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${agg.pob_1_ano.toLocaleString('es-MX')}</div>
                     </div>
-                    <div style="background: #f8fafc; padding: 4px 6px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0;">
-                        <div style="font-size: 9px; font-weight: 800; color: #7c3aed;">4 Años</div>
-                        <div style="font-size: 11px; font-weight: 900; color: #0f172a;">${agg.pob_4_anos.toLocaleString('es-MX')}</div>
+                    <div style="background: #f8fafc; padding: 4px 2px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0; min-width: 0; box-sizing: border-box;">
+                        <div style="font-size: 8.5px; font-weight: 800; color: #7c3aed; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">4 Años</div>
+                        <div style="font-size: 10px; font-weight: 900; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${agg.pob_4_anos.toLocaleString('es-MX')}</div>
                     </div>
                     ${has6A ? `
-                    <div style="background: #f8fafc; padding: 4px 6px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0;">
-                        <div style="font-size: 9px; font-weight: 800; color: #e11d48;">6 Años</div>
-                        <div style="font-size: 11px; font-weight: 900; color: #0f172a;">${(agg.pob_6_anos || 0).toLocaleString('es-MX')}</div>
+                    <div style="background: #f8fafc; padding: 4px 2px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0; min-width: 0; box-sizing: border-box;">
+                        <div style="font-size: 8.5px; font-weight: 800; color: #e11d48; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">6 Años</div>
+                        <div style="font-size: 10px; font-weight: 900; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${(agg.pob_6_anos || 0).toLocaleString('es-MX')}</div>
                     </div>` : ''}
                 </div>
             `;
@@ -1638,6 +1638,17 @@ function renderTable(fUnits, esquema, agg) {
         </colgroup>
     `;
 
+    const headerColsHTML = `
+        <tr style="background: #f8fafc; color: #475569; font-weight: 800; border-bottom: 2px solid #e2e8f0;">
+            <th style="padding: 12px; text-align: left;" data-sort="clues">CLUES</th>
+            <th style="padding: 12px; text-align: left;" data-sort="nombre">UNIDAD MÉDICA</th>
+            <th style="padding: 12px; text-align: left;" data-sort="municipio">MUNICIPIO</th>
+            ${vCols.map(c => `<th style="padding: 12px; text-align: center;" data-sort="${c.s}">${c.n}</th>`).join('')}
+            ${showMeta ? `<th style="padding: 12px; text-align: center;" data-sort="meta">META</th>` : ''}
+            <th style="padding: 12px; text-align: center;" data-sort="total">TOTAL</th>
+        </tr>
+    `;
+
     const thead = table.querySelector('thead');
     thead.innerHTML = colGroupHTML + headerColsHTML;
 
@@ -1864,6 +1875,42 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
             
             // 2. Extraer estructura y datos de la tabla real
             const tablaOriginal = document.querySelector('#rdaDetailTable');
+            if (!tablaOriginal && _rdaState.esquema === 'comparativa_multianual') {
+                const content = document.getElementById('rdaDashboardContent');
+                if (!content) return reject("Contenido comparativo no encontrado.");
+                if (typeof html2canvas === 'undefined') return reject("Librería de captura no disponible.");
+                
+                const canvas = await html2canvas(content, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff'
+                });
+                const imgData = canvas.toDataURL('image/png');
+                const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'letter' });
+                const imgWidth = 279.4;
+                const pageHeight = 215.9;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+                heightLeft -= pageHeight;
+
+                while (heightLeft >= 10) {
+                    position = heightLeft - imgHeight;
+                    doc.addPage();
+                    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+                    heightLeft -= pageHeight;
+                }
+
+                if (devolverBlob) {
+                    return resolve(doc.output('blob'));
+                } else {
+                    doc.save(nombreArchivo);
+                    return resolve(true);
+                }
+            }
             if (!tablaOriginal) return reject("Tabla de datos no encontrada.");
 
             const tableHeaders = Array.from(tablaOriginal.querySelectorAll('thead th'))
@@ -2391,7 +2438,15 @@ async function exportMasivoZIP(mode = 'pdf') {
     }
 
     const labelProceso = mode === 'png' ? 'ZIP Imágenes PNG HD' : 'ZIP PDFs';
-    if (typeof showOverlay === 'function') showOverlay('Iniciando proceso masivo...', labelProceso);
+    const setOverlayText = (msg, title) => {
+        const oTitle = document.getElementById('overlayTitle');
+        const oMsg = document.getElementById('overlayMsg');
+        const o = document.getElementById('overlay');
+        if (oTitle) oTitle.textContent = title;
+        if (oMsg) oMsg.textContent = msg;
+        if (o && !o.classList.contains('show')) o.classList.add('show');
+    };
+    setOverlayText('Iniciando proceso masivo...', labelProceso);
 
     // Desactivar temporalmente animaciones para mayor velocidad y sincronía
     let originalChartAnim = null;
@@ -2407,9 +2462,7 @@ async function exportMasivoZIP(mode = 'pdf') {
         for (let i = 0; i < targets.length; i++) {
             const u = targets[i];
             const pct = Math.round(((i + 1) / targets.length) * 100);
-            if (typeof showOverlay === 'function') {
-                showOverlay(`${pct}%: ${(u.nombre||u.clues).substring(0,25)}`, mode === 'png' ? 'Capturando imagen HD...' : 'Generando reporte PDF...');
-            }
+            setOverlayText(`${pct}%: ${(u.nombre||u.clues).substring(0,25)}`, mode === 'png' ? 'Capturando imagen HD...' : 'Generando reporte PDF...');
 
             muniSelect.value = u.municipio ? u.municipio.toUpperCase() : '';
             if (typeof populateUnidadFilter === 'function') populateUnidadFilter();
@@ -4010,7 +4063,11 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
         const calcTotals = (arr) => {
             let r = {
                 pM1: 0, p1A: 0, p4A: 0, p6A: 0,
-                bcg: 0, hepb: 0, rota: 0, hexaM1: 0, hexa1A: 0, neumoM1: 0, neumo1A: 0, srp1: 0, srp2: 0, dpt: 0, srp6: 0
+                bcg: 0, hepb: 0, rota: 0, hexaM1: 0, hexa1A: 0, neumoM1: 0, neumo1A: 0, srp1: 0, srp2: 0, dpt: 0, srp6: 0,
+                adol_hb: 0, adol_sr: 0, adol_vph: 0, adol_td: 0, adol_tdpa: 0,
+                am_neumo13: 0, am_neumo20: 0, am_td: 0,
+                emb_tdpa: 0, emb_vsr: 0,
+                inv_influenza: 0, inv_covid: 0
             };
             for (const u of arr) {
                 r.pM1 += u.pob_menor_1 || 0; r.p1A += u.pob_1_ano || 0; r.p4A += u.pob_4_anos || 0; r.p6A += u.pob_6_anos || 0;
@@ -4020,6 +4077,22 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                 r.neumoM1 += (u.neumo_1_dosis||0) + (u.neumo_2_dosis||0) + (u.neumo_c1_dosis||0) + (u.neumo_c2_dosis||0);
                 r.neumo1A += (u.neumo_ref_dosis||0) + (u.neumo_c3_dosis||0);
                 r.srp1 += u.srp_1_dosis || 0; r.srp2 += u.srp_2_dosis || 0; r.dpt += u.dpt_4_dosis || 0; r.srp6 += u.srp_6_dosis || 0;
+
+                r.adol_hb += u.adol_hb || 0;
+                r.adol_sr += u.adol_sr || 0;
+                r.adol_vph += u.adol_vph || 0;
+                r.adol_td += u.adol_td || 0;
+                r.adol_tdpa += u.adol_tdpa || 0;
+
+                r.am_neumo13 += u.am_neumo13 || 0;
+                r.am_neumo20 += u.am_neumo20 || 0;
+                r.am_td += u.am_td || 0;
+
+                r.emb_tdpa += u.emb_tdpa || 0;
+                r.emb_vsr += u.emb_vsr || 0;
+
+                r.inv_influenza += u.inv_influenza || 0;
+                r.inv_covid += u.inv_covid || 0;
             }
             const fM1 = (r.pM1 * 0.0833) * maxMes;
             const f1A = (r.p1A * 0.0833) * maxMes;
@@ -4067,6 +4140,17 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                 t26: calcTotals(arr26)
             };
         });
+
+        // Helper para semaforización basada estrictamente en Año 2026
+        const getStatusBadgeHtml = (cov2026) => {
+            if (cov2026 >= 90) {
+                return `<span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: #dcfce7; color: #15803d;">META LOGRADA</span>`;
+            } else if (cov2026 >= 70) {
+                return `<span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: #e0f2fe; color: #0369a1;">EN SEGUIMIENTO</span>`;
+            } else {
+                return `<span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: #fef2f2; color: #b91c1c;">REQUIERE REFORZAR</span>`;
+            }
+        };
 
         // Título dinámico
         let activeScopeTitle = "Jurisdicción Sanitaria 1 (4 Municipios Totalizadores)";
@@ -4116,9 +4200,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                             <span style="font-size: 11px; font-weight: 800; color: ${t26.covM1 >= t25.covM1 ? '#166534' : '#9f1239'};">
                                 ${t26.covM1 >= t25.covM1 ? '▲ +'+(t26.covM1-t25.covM1).toFixed(1) : '▼ '+(t26.covM1-t25.covM1).toFixed(1)}% pts
                             </span>
-                            <span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: ${t26.covM1 >= 95 ? '#dcfce7' : '#fef2f2'}; color: ${t26.covM1 >= 95 ? '#15803d' : '#b91c1c'};">
-                                ${t26.covM1 >= 95 ? 'META LOGRADA' : 'EN DESARROLLO'}
-                            </span>
+                            ${getStatusBadgeHtml(t26.covM1)}
                         </div>
                     </div>
 
@@ -4139,9 +4221,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                             <span style="font-size: 11px; font-weight: 800; color: ${t26.cov1A >= t25.cov1A ? '#166534' : '#9f1239'};">
                                 ${t26.cov1A >= t25.cov1A ? '▲ +'+(t26.cov1A-t25.cov1A).toFixed(1) : '▼ '+(t26.cov1A-t25.cov1A).toFixed(1)}% pts
                             </span>
-                            <span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: ${t26.cov1A >= 95 ? '#dcfce7' : '#fef2f2'}; color: ${t26.cov1A >= 95 ? '#15803d' : '#b91c1c'};">
-                                ${t26.cov1A >= 95 ? 'META LOGRADA' : 'REQUIERE REFORZAR'}
-                            </span>
+                            ${getStatusBadgeHtml(t26.cov1A)}
                         </div>
                     </div>
 
@@ -4162,9 +4242,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                             <span style="font-size: 11px; font-weight: 800; color: ${t26.cov4A >= t25.cov4A ? '#166534' : '#9f1239'};">
                                 ${t26.cov4A >= t25.cov4A ? '▲ +'+(t26.cov4A-t25.cov4A).toFixed(1) : '▼ '+(t26.cov4A-t25.cov4A).toFixed(1)}% pts
                             </span>
-                            <span style="font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: ${t26.cov4A >= 95 ? '#dcfce7' : '#fef2f2'}; color: ${t26.cov4A >= 95 ? '#15803d' : '#b91c1c'};">
-                                ${t26.cov4A >= 95 ? 'META LOGRADA' : 'EN SEGUIMIENTO'}
-                            </span>
+                            ${getStatusBadgeHtml(t26.cov4A)}
                         </div>
                     </div>
                 </div>
@@ -4202,8 +4280,6 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                             </thead>
                             <tbody>
                                 ${compMunis.map(m => {
-                                    const difM1 = (m.t26.covM1 - m.t25.covM1).toFixed(1);
-                                    const dif1A = (m.t26.cov1A - m.t25.cov1A).toFixed(1);
                                     const isPositive = (m.t26.covM1 + m.t26.cov1A) >= (m.t25.covM1 + m.t25.cov1A);
                                     return `
                                         <tr style="border-bottom: 1px solid #f1f5f9; text-align: center; font-weight: 700;">
@@ -4241,10 +4317,10 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                     </div>
                 </div>
 
-                <!-- TABLA 2: MATRIZ DETALLADA POR BIOLÓGICO -->
+                <!-- TABLA 2: MATRIZ DETALLADA POR BIOLÓGICO Y POBLACIÓN -->
                 <div>
                     <h3 style="margin: 0 0 16px 0; font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em;">
-                        💉 Matriz de Comparativa por Biológico Individual (Dosis y Cobertura)
+                        💉 Matriz Multianual por Biológico e Indicadores de Población
                     </h3>
                     <div style="overflow-x: auto; border-radius: 16px; border: 1px solid #e2e8f0;">
                         <table style="width: 100%; border-collapse: collapse; background: white; font-size: 12px;">
@@ -4254,35 +4330,61 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                     <th style="padding: 12px 16px; text-align: center;">GRUPO EDAD</th>
                                     <th style="padding: 12px 16px; text-align: center;">DOSIS 2025</th>
                                     <th style="padding: 12px 16px; text-align: center;">DOSIS 2026</th>
-                                    <th style="padding: 12px 16px; text-align: center;">COV 2025</th>
-                                    <th style="padding: 12px 16px; text-align: center;">COV 2026</th>
-                                    <th style="padding: 12px 16px; text-align: center;">VARIACIÓN % PTS</th>
+                                    <th style="padding: 12px 16px; text-align: center;">COV / REND 2025</th>
+                                    <th style="padding: 12px 16px; text-align: center;">COV / REND 2026</th>
+                                    <th style="padding: 12px 16px; text-align: center;">VARIACIÓN</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 ${[
-                                    { n: 'BCG (Única)', g: '< 1 Año', d25: t25.appBCG, d26: t26.appBCG, c25: t25.covBCG, c26: t26.covBCG },
-                                    { n: 'Hepatitis B (0-7 días)', g: '< 1 Año', d25: t25.appHepB, d26: t26.appHepB, c25: t25.covHepB, c26: t26.covHepB },
-                                    { n: 'Rotavirus (2a Dosis)', g: '< 1 Año', d25: t25.appRota, d26: t26.appRota, c25: t25.covRota, c26: t26.covRota },
-                                    { n: 'Hexavalente (3a Dosis)', g: '< 1 Año', d25: t25.appHexaM1, d26: t26.appHexaM1, c25: t25.covHexaM1, c26: t26.covHexaM1 },
-                                    { n: 'Hexavalente (Refuerzo)', g: '1 Año', d25: t25.appHexa1A, d26: t26.appHexa1A, c25: t25.covHexa1A, c26: t26.covHexa1A },
-                                    { n: 'Neumococo (2a Dosis)', g: '< 1 Año', d25: t25.appNeumoM1, d26: t26.appNeumoM1, c25: t25.covNeumoM1, c26: t26.covNeumoM1 },
-                                    { n: 'Neumococo (Refuerzo)', g: '1 Año', d25: t25.appNeumo1A, d26: t26.appNeumo1A, c25: t25.covNeumo1A, c26: t26.covNeumo1A },
-                                    { n: 'SRP (Dosis Completa)', g: '1 Año', d25: t25.appSRP, d26: t26.appSRP, c25: t25.covSRP, c26: t26.covSRP },
-                                    { n: 'DPT (4 Años)', g: '4 Años', d25: t25.appDPT, d26: t26.appDPT, c25: t25.covDPT, c26: t26.covDPT }
+                                    { section: 'ESQUEMA BÁSICO (0-8 AÑOS)' },
+                                    { n: 'BCG (Única)', g: '< 1 Año', d25: t25.appBCG, d26: t26.appBCG, c25: `${t25.covBCG}%`, c26: `${t26.covBCG}%`, dif: `${(t26.covBCG - t25.covBCG).toFixed(1)}% pts`, isUp: t26.covBCG >= t25.covBCG },
+                                    { n: 'Hepatitis B (0-7 días)', g: '< 1 Año', d25: t25.appHepB, d26: t26.appHepB, c25: `${t25.covHepB}%`, c26: `${t26.covHepB}%`, dif: `${(t26.covHepB - t25.covHepB).toFixed(1)}% pts`, isUp: t26.covHepB >= t25.covHepB },
+                                    { n: 'Rotavirus (2a Dosis)', g: '< 1 Año', d25: t25.appRota, d26: t26.appRota, c25: `${t25.covRota}%`, c26: `${t26.covRota}%`, dif: `${(t26.covRota - t25.covRota).toFixed(1)}% pts`, isUp: t26.covRota >= t25.covRota },
+                                    { n: 'Hexavalente (3a Dosis)', g: '< 1 Año', d25: t25.appHexaM1, d26: t26.appHexaM1, c25: `${t25.covHexaM1}%`, c26: `${t26.covHexaM1}%`, dif: `${(t26.covHexaM1 - t25.covHexaM1).toFixed(1)}% pts`, isUp: t26.covHexaM1 >= t25.covHexaM1 },
+                                    { n: 'Hexavalente (Refuerzo)', g: '1 Año', d25: t25.appHexa1A, d26: t26.appHexa1A, c25: `${t25.covHexa1A}%`, c26: `${t26.covHexa1A}%`, dif: `${(t26.covHexa1A - t25.covHexa1A).toFixed(1)}% pts`, isUp: t26.covHexa1A >= t25.covHexa1A },
+                                    { n: 'Neumococo (2a Dosis)', g: '< 1 Año', d25: t25.appNeumoM1, d26: t26.appNeumoM1, c25: `${t25.covNeumoM1}%`, c26: `${t26.covNeumoM1}%`, dif: `${(t26.covNeumoM1 - t25.covNeumoM1).toFixed(1)}% pts`, isUp: t26.covNeumoM1 >= t25.covNeumoM1 },
+                                    { n: 'Neumococo (Refuerzo)', g: '1 Año', d25: t25.appNeumo1A, d26: t26.appNeumo1A, c25: `${t25.covNeumo1A}%`, c26: `${t26.covNeumo1A}%`, dif: `${(t26.covNeumo1A - t25.covNeumo1A).toFixed(1)}% pts`, isUp: t26.covNeumo1A >= t25.covNeumo1A },
+                                    { n: 'SRP (Dosis Completa)', g: '1 Año', d25: t25.appSRP, d26: t26.appSRP, c25: `${t25.covSRP}%`, c26: `${t26.covSRP}%`, dif: `${(t26.covSRP - t25.covSRP).toFixed(1)}% pts`, isUp: t26.covSRP >= t25.covSRP },
+                                    { n: 'DPT (4 Años)', g: '4 Años', d25: t25.appDPT, d26: t26.appDPT, c25: `${t25.covDPT}%`, c26: `${t26.covDPT}%`, dif: `${(t26.covDPT - t25.covDPT).toFixed(1)}% pts`, isUp: t26.covDPT >= t25.covDPT },
+                                    
+                                    { section: 'ADOLESCENTES Y ADULTOS' },
+                                    { n: 'Hepatitis B Adultos', g: 'Adolescentes/Adultos', d25: t25.adol_hb, d26: t26.adol_hb, c25: 'N/D', c26: 'N/D', dif: `${t26.adol_hb >= t25.adol_hb ? '+' : ''}${t26.adol_hb - t25.adol_hb} dosis`, isUp: t26.adol_hb >= t25.adol_hb },
+                                    { n: 'SR (Sarampión-Rubéola)', g: 'Adolescentes/Adultos', d25: t25.adol_sr, d26: t26.adol_sr, c25: 'N/D', c26: 'N/D', dif: `${t26.adol_sr >= t25.adol_sr ? '+' : ''}${t26.adol_sr - t25.adol_sr} dosis`, isUp: t26.adol_sr >= t25.adol_sr },
+                                    { n: 'VPH (Virus Papiloma)', g: 'Adolescentes', d25: t25.adol_vph, d26: t26.adol_vph, c25: 'N/D', c26: 'N/D', dif: `${t26.adol_vph >= t25.adol_vph ? '+' : ''}${t26.adol_vph - t25.adol_vph} dosis`, isUp: t26.adol_vph >= t25.adol_vph },
+                                    { n: 'Td (Tétanos-Difteria)', g: 'Adolescentes/Adultos', d25: t25.adol_td, d26: t26.adol_td, c25: 'N/D', c26: 'N/D', dif: `${t26.adol_td >= t25.adol_td ? '+' : ''}${t26.adol_td - t25.adol_td} dosis`, isUp: t26.adol_td >= t25.adol_td },
+                                    { n: 'Tdpa Adultos', g: 'Adolescentes/Adultos', d25: t25.adol_tdpa, d26: t26.adol_tdpa, c25: 'N/D', c26: 'N/D', dif: `${t26.adol_tdpa >= t25.adol_tdpa ? '+' : ''}${t26.adol_tdpa - t25.adol_tdpa} dosis`, isUp: t26.adol_tdpa >= t25.adol_tdpa },
+
+                                    { section: 'ADULTOS MAYORES' },
+                                    { n: 'Neumococo 13-valente', g: '60+ Años', d25: t25.am_neumo13, d26: t26.am_neumo13, c25: 'N/D', c26: 'N/D', dif: `${t26.am_neumo13 >= t25.am_neumo13 ? '+' : ''}${t26.am_neumo13 - t25.am_neumo13} dosis`, isUp: t26.am_neumo13 >= t25.am_neumo13 },
+                                    { n: 'Neumococo 20-valente', g: '60+ Años', d25: t25.am_neumo20, d26: t26.am_neumo20, c25: 'N/D', c26: 'N/D', dif: `${t26.am_neumo20 >= t25.am_neumo20 ? '+' : ''}${t26.am_neumo20 - t25.am_neumo20} dosis`, isUp: t26.am_neumo20 >= t25.am_neumo20 },
+                                    { n: 'Td Mayores', g: '60+ Años', d25: t25.am_td, d26: t26.am_td, c25: 'N/D', c26: 'N/D', dif: `${t26.am_td >= t25.am_td ? '+' : ''}${t26.am_td - t25.am_td} dosis`, isUp: t26.am_td >= t25.am_td },
+
+                                    { section: 'EMBARAZADAS' },
+                                    { n: 'Tdpa Embarazadas', g: 'Embarazadas', d25: t25.emb_tdpa, d26: t26.emb_tdpa, c25: 'N/D', c26: 'N/D', dif: `${t26.emb_tdpa >= t25.emb_tdpa ? '+' : ''}${t26.emb_tdpa - t25.emb_tdpa} dosis`, isUp: t26.emb_tdpa >= t25.emb_tdpa },
+                                    { n: 'VSR Embarazadas', g: 'Embarazadas', d25: 0, d26: t26.emb_vsr, c25: 'N/A (No Implementado)', c26: 'En Aplicación 2026', dif: `+${t26.emb_vsr} dosis (Nuevo 2026)`, isUp: true },
+
+                                    { section: 'TEMPORADA INVERNAL' },
+                                    { n: 'Influenza', g: 'Población General', d25: t25.inv_influenza, d26: t26.inv_influenza, c25: 'N/D', c26: 'N/D', dif: `${t26.inv_influenza >= t25.inv_influenza ? '+' : ''}${t26.inv_influenza - t25.inv_influenza} dosis`, isUp: t26.inv_influenza >= t25.inv_influenza },
+                                    { n: 'COVID-19', g: 'Población General', d25: t25.inv_covid, d26: t26.inv_covid, c25: 'N/D', c26: 'N/D', dif: `${t26.inv_covid >= t25.inv_covid ? '+' : ''}${t26.inv_covid - t25.inv_covid} dosis`, isUp: t26.inv_covid >= t25.inv_covid }
                                 ].map(b => {
-                                    const dif = (b.c26 - b.c25).toFixed(1);
-                                    const isUp = b.c26 >= b.c25;
+                                    if (b.section) {
+                                        return `
+                                            <tr style="background: #f1f5f9; font-weight: 900; color: #334155; text-transform: uppercase;">
+                                                <td colspan="7" style="padding: 8px 16px; letter-spacing: 0.05em; font-size: 11px;">📌 ${b.section}</td>
+                                            </tr>
+                                        `;
+                                    }
                                     return `
                                         <tr style="border-bottom: 1px solid #f1f5f9; font-weight: 700;">
                                             <td style="padding: 10px 16px; color: #0f172a; font-weight: 900;">${b.n}</td>
                                             <td style="padding: 10px 16px; text-align: center; color: #64748b;">${b.g}</td>
-                                            <td style="padding: 10px 16px; text-align: center; color: #64748b;">${b.d25.toLocaleString('es-MX')}</td>
-                                            <td style="padding: 10px 16px; text-align: center; color: #0284c7; font-weight: 900;">${b.d26.toLocaleString('es-MX')}</td>
-                                            <td style="padding: 10px 16px; text-align: center; color: #64748b;">${b.c25}%</td>
-                                            <td style="padding: 10px 16px; text-align: center; color: #0284c7; font-weight: 900;">${b.c26}%</td>
-                                            <td style="padding: 10px 16px; text-align: center; font-weight: 900; color: ${isUp ? '#166534' : '#9f1239'};">
-                                                ${isUp ? '▲ +'+dif : '▼ '+dif}% pts
+                                            <td style="padding: 10px 16px; text-align: center; color: #64748b;">${b.d25 ? b.d25.toLocaleString('es-MX') : '0'}</td>
+                                            <td style="padding: 10px 16px; text-align: center; color: #0284c7; font-weight: 900;">${b.d26 ? b.d26.toLocaleString('es-MX') : '0'}</td>
+                                            <td style="padding: 10px 16px; text-align: center; color: #64748b;">${b.c25}</td>
+                                            <td style="padding: 10px 16px; text-align: center; color: #0284c7; font-weight: 900;">${b.c26}</td>
+                                            <td style="padding: 10px 16px; text-align: center; font-weight: 900; color: ${b.isUp ? '#166534' : '#9f1239'};">
+                                                ${b.isUp ? '▲ ' : '▼ '}${b.dif}
                                             </td>
                                         </tr>
                                     `;
