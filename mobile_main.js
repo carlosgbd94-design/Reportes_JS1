@@ -2410,6 +2410,16 @@
                     supabaseClient.from('existencia_detalle').delete().eq('clues', cluesFilter).eq('fecha', dataObject.fecha_captura)
                 ]);
 
+                // Consultar reporte previo para validar transiciones
+                const { data: prevReport } = await supabaseClient
+                    .from('biologicos_existencia')
+                    .select('*')
+                    .eq('clues', cluesFilter)
+                    .lt('fecha', dataObject.fecha_captura)
+                    .order('fecha', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
                 // Create summaryRecord for biologicos_existencia
                 const summaryRecord = {
                     id: btoa(cluesFilter + ":" + dataObject.fecha_captura + ":" + Date.now()),
@@ -2425,53 +2435,51 @@
                 const BIOS = ["bcg", "hepatitis_b", "hexavalente", "dpt", "rotavirus", "neumococica_13", "neumococica_20", "srp", "sr", "vph", "varicela", "hepatitis_a", "td", "tdpa", "covid_19", "influenza", "vsr"];
                 BIOS.forEach(b => summaryRecord[b] = 0);
 
-                 const detailRecords = items.map(it => {
-                    const bioKey = (it.biologico || '').toLowerCase()
-                        .normalize("NFD")
-                        .replace(/[\u0300-\u036f]/g, "")
-                        .replace(/[^a-z0-9\s_]/g, "")
-                        .trim()
-                        .replace(/[\s_]+/g, "_");
+                // Purgar renglones fantasma en 0 si ya hay una partida con stock activo para el mismo lote
+                const activeLotsWithStockMobile = new Set();
+                items.forEach(it => {
+                    const lKey = `${String(it.biologico || '').trim().toUpperCase()}:${String(it.lote || '').trim().toUpperCase()}`;
+                    if (Number(it.cantidad || 0) > 0) {
+                        activeLotsWithStockMobile.add(lKey);
+                    }
+                });
 
-                    let finalKey = bioKey;
-                    if (bioKey.includes("neumo")) {
-                        finalKey = bioKey.includes("20") ? "neumococica_20" : "neumococica_13";
-                    } else if (bioKey.includes("hepatitis") && bioKey.includes("b")) {
-                        finalKey = "hepatitis_b";
-                    } else if (bioKey.includes("hepatitis") && bioKey.includes("a")) {
-                        finalKey = "hepatitis_a";
-                    } else if (bioKey.includes("covid")) {
-                        finalKey = "covid_19";
-                    } else if (bioKey.includes("hexa")) {
-                        finalKey = "hexavalente";
-                    } else if (bioKey.includes("rotav")) {
-                        finalKey = "rotavirus";
-                    } else if (bioKey.includes("varic")) {
-                        finalKey = "varicela";
-                    } else if (bioKey.includes("influ")) {
-                        finalKey = "influenza";
+                const detailRecords = [];
+                items.forEach(it => {
+                    const lKey = `${String(it.biologico || '').trim().toUpperCase()}:${String(it.lote || '').trim().toUpperCase()}`;
+                    const qty = Number(it.cantidad || 0);
+
+                    if (qty === 0 && activeLotsWithStockMobile.has(lKey)) {
+                        console.log(`[Mobile Capture] Purgando renglón fantasma en 0 para lote ${lKey} pues cuenta con stock activo.`);
+                        return;
                     }
 
+                    const bioMeta = (typeof window.getBioMetadata === 'function')
+                        ? window.getBioMetadata(it.biologico)
+                        : { key: (it.biologico || '').toLowerCase(), label: String(it.biologico || '').toUpperCase() };
+
+                    const finalKey = bioMeta.key;
                     if (BIOS.includes(finalKey)) {
-                        summaryRecord[finalKey] += Number(it.cantidad || 0);
+                        summaryRecord[finalKey] += qty;
                     }
-                    return {
+
+                    detailRecords.push({
                         fecha: dataObject.fecha_captura,
                         clues: cluesFilter,
                         unidad: currentProfile.unidad || "UNIDAD",
                         municipio: muniFilter,
-                        biologico: it.biologico,
+                        biologico: bioMeta.label || it.biologico,
                         lote: it.lote,
                         caducidad: it.caducidad,
                         fecha_recepcion: it.recepcion,
-                        cantidad: Number(it.cantidad || 0),
+                        cantidad: qty,
                         capturado_por: nombreSR.toUpperCase(),
                         tipo: it.tipo || "REQUISICION"
-                    };
+                    });
                 });
 
                 // Insert into both tables (sequential guard to prevent orphan summary records)
-                if (items.length > 0) {
+                if (detailRecords.length > 0) {
                     const resDetail = await supabaseClient.from('existencia_detalle').insert(detailRecords);
                     if (resDetail.error) throw resDetail.error;
                 }
@@ -2479,71 +2487,134 @@
                 const resSummary = await supabaseClient.from('biologicos_existencia').insert(summaryRecord);
                 if (resSummary.error) throw resSummary.error;
 
-                // --- Generar Alerta de Desabasto en Móvil ---
-                const missingBios = BIOS.filter(b => summaryRecord[b] === 0);
-                if (missingBios.length > 0) {
-                    try {
-                        const BIOS_MAP_MOBILE = {
-                            "bcg": "BCG", "hepatitis_b": "HEPATITIS B", "hexavalente": "HEXAVALENTE",
-                            "dpt": "DPT", "rotavirus": "ROTAVIRUS", "neumococica_13": "NEUMOCÓCICA 13",
-                            "neumococica_20": "NEUMOCÓCICA 20", "srp": "SRP", "sr": "SR",
-                            "vph": "VPH", "varicela": "VARICELA", "hepatitis_a": "HEPATITIS A",
-                            "td": "TD", "tdpa": "TDPA", "covid_19": "COVID-19", "influenza": "INFLUENZA", "vsr": "VSR"
-                        };
-                        const missingNames = missingBios.map(b => BIOS_MAP_MOBILE[b] || b.toUpperCase());
-                        const notifId = 'NOTIF:DESABASTO:' + btoa(cluesFilter + ":" + dataObject.fecha_captura + ":" + Date.now());
-                        const desabastoRecord = {
-                            id: notifId,
-                            type: 'ALERTA_DESABASTO',
-                            created_ts: new Date().toISOString(),
-                            created_date: dataObject.fecha_captura,
-                            from_usuario: currentProfile.usuario || 'SISTEMA',
-                            from_rol: currentProfile.rol || 'SR',
-                            target_scope: 'MUNICIPIO',
-                            target_municipio: muniFilter,
-                            title: '🚨 Desabasto detectado',
-                            message: `La unidad ${currentProfile.unidad || cluesFilter} capturó sin existencias de: ${missingNames.join(', ')}.`,
-                            status: 'UNREAD',
-                            meta_json: JSON.stringify({
-                                clues: cluesFilter,
-                                unidad: currentProfile.unidad || cluesFilter,
-                                municipio: muniFilter,
-                                missing: missingNames,
-                                status: 'activa'
-                            })
-                        };
-                        await supabaseClient.from('notificaciones').insert(desabastoRecord);
-                        
-                        // Fan-out a supervisores municipales y admins
-                        const { data: activeUsers } = await supabaseClient.from('usuarios_legacy').select('usuario, rol, municipios_allowed').eq('activo', 'SI');
-                        const recipients = new Set();
-                        (activeUsers || []).forEach(u => {
-                            const r = String(u.rol || '').toUpperCase();
-                            if (r === 'ADMIN' || r === 'JURISDICCIONAL' || r === 'VISUALIZADOR_JURISDICCIONAL') {
-                                recipients.add(u.usuario);
-                            } else if (r === 'MUNICIPAL') {
-                                let allowed = u.municipios_allowed;
-                                if (typeof allowed === 'string') { try { allowed = JSON.parse(allowed); } catch (e) { allowed = [allowed]; } }
-                                const normAllowed = (Array.isArray(allowed) ? allowed : []).map(m => String(m).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
-                                const normMuni = String(muniFilter).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                                if (normAllowed.includes("*") || normAllowed.includes(normMuni)) {
-                                    recipients.add(u.usuario);
+                // --- Auto-Resolución y Desduplicación Inteligente de Alertas (Móvil) ---
+                try {
+                    const { data: activeNotifs } = await supabaseClient
+                        .from('notificaciones')
+                        .select('id, meta_json')
+                        .eq('type', 'ALERTA_DESABASTO');
+
+                    if (activeNotifs && activeNotifs.length > 0) {
+                        for (const n of activeNotifs) {
+                            try {
+                                const meta = typeof n.meta_json === 'string' ? JSON.parse(n.meta_json) : (n.meta_json || {});
+                                if (meta.clues === cluesFilter && meta.status === 'activa' && Array.isArray(meta.missing)) {
+                                    const remainingMissing = meta.missing.filter(bName => {
+                                        const bKey = (typeof window.normalizeBioKey === 'function') ? window.normalizeBioKey(bName) : bName.toLowerCase();
+                                        return Number(summaryRecord[bKey] || 0) === 0;
+                                    });
+
+                                    if (remainingMissing.length === 0) {
+                                        meta.status = 'resuelta';
+                                        meta.resolved_ts = new Date().toISOString();
+                                        await supabaseClient
+                                            .from('notificaciones')
+                                            .update({
+                                                meta_json: JSON.stringify(meta),
+                                                status: 'READ'
+                                            })
+                                            .eq('id', n.id);
+                                        console.log(`[Mobile Capture] Alerta de desabasto ${n.id} marcada automáticamente como RESUELTA`);
+                                    }
                                 }
-                            }
-                        });
-                        recipients.delete(currentProfile.usuario);
-                        const recipientList = Array.from(recipients).filter(Boolean);
-                        if (recipientList.length > 0) {
-                            const fanoutRows = recipientList.map(u => ({
-                                notificacion_id: notifId,
-                                usuario: u,
-                                status: 'UNREAD',
-                                deleted: false
-                            }));
-                            await supabaseClient.from('notificaciones_perfil').upsert(fanoutRows, { onConflict: 'notificacion_id,usuario', ignoreDuplicates: true });
+                            } catch (eJ) {}
                         }
-                    } catch (eNotif) {
-                        console.warn("[Mobile] Error creando alerta de desabasto:", eNotif);
+                    }
+                } catch (eAutoR) {
+                    console.warn('[Mobile Capture] Aviso en auto-resolución de alertas:', eAutoR);
+                }
+
+                // --- Generar Alerta de Desabasto en Móvil (solo Esquema Básico) ---
+                const missingBios = BIOS.filter(b => {
+                    const isEsquema = (typeof window.isBioEsquemaBasico === 'function') ? window.isBioEsquemaBasico(b) : true;
+                    if (!isEsquema) return false;
+                    if (summaryRecord[b] !== 0) return false;
+
+                    const bioMeta = (typeof window.getBioMetadata === 'function') ? window.getBioMetadata(b) : {};
+                    if (bioMeta.requiresPriorHistory || b === "neumococica_20" || b === "neumococica_13") {
+                        const hadStock = prevReport ? Number(prevReport[b] || 0) > 0 : false;
+                        if (!hadStock) return false;
+                    }
+                    return true;
+                });
+
+                if (missingBios.length > 0) {
+                    // Desduplicación: Verificar si ya existe una alerta activa para esta unidad hoy
+                    let hasActiveAlertToday = false;
+                    try {
+                        const { data: existingAlerts } = await supabaseClient
+                            .from('notificaciones')
+                            .select('id, created_date, meta_json')
+                            .eq('type', 'ALERTA_DESABASTO')
+                            .eq('created_date', dataObject.fecha_captura);
+
+                        (existingAlerts || []).forEach(n => {
+                            try {
+                                const meta = typeof n.meta_json === 'string' ? JSON.parse(n.meta_json) : (n.meta_json || {});
+                                if (meta.clues === cluesFilter && meta.status === 'activa') {
+                                    hasActiveAlertToday = true;
+                                }
+                            } catch (e) {}
+                        });
+                    } catch (eChk) {}
+
+                    if (!hasActiveAlertToday) {
+                        try {
+                            const missingNames = missingBios.map(b => (typeof window.getBioMetadata === 'function') ? window.getBioMetadata(b).label : b.toUpperCase());
+                            const notifId = 'NOTIF:DESABASTO:' + btoa(cluesFilter + ":" + dataObject.fecha_captura + ":" + Date.now());
+                            const desabastoRecord = {
+                                id: notifId,
+                                type: 'ALERTA_DESABASTO',
+                                created_ts: new Date().toISOString(),
+                                created_date: dataObject.fecha_captura,
+                                from_usuario: currentProfile.usuario || 'SISTEMA',
+                                from_rol: currentProfile.rol || 'SR',
+                                target_scope: 'MUNICIPIO',
+                                target_municipio: muniFilter,
+                                title: '🚨 Desabasto detectado',
+                                message: `La unidad ${currentProfile.unidad || cluesFilter} capturó sin existencias de: ${missingNames.join(', ')}.`,
+                                status: 'UNREAD',
+                                meta_json: JSON.stringify({
+                                    clues: cluesFilter,
+                                    unidad: currentProfile.unidad || cluesFilter,
+                                    municipio: muniFilter,
+                                    missing: missingNames,
+                                    status: 'activa'
+                                })
+                            };
+                            await supabaseClient.from('notificaciones').insert(desabastoRecord);
+                        
+                            // Fan-out a supervisores municipales y admins
+                            const { data: activeUsers } = await supabaseClient.from('usuarios_legacy').select('usuario, rol, municipios_allowed').eq('activo', 'SI');
+                            const recipients = new Set();
+                            (activeUsers || []).forEach(u => {
+                                const r = String(u.rol || '').toUpperCase();
+                                if (r === 'ADMIN' || r === 'JURISDICCIONAL' || r === 'VISUALIZADOR_JURISDICCIONAL') {
+                                    recipients.add(u.usuario);
+                                } else if (r === 'MUNICIPAL') {
+                                    let allowed = u.municipios_allowed;
+                                    if (typeof allowed === 'string') { try { allowed = JSON.parse(allowed); } catch (e) { allowed = [allowed]; } }
+                                    const normAllowed = (Array.isArray(allowed) ? allowed : []).map(m => String(m).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+                                    const normMuni = String(muniFilter).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                                    if (normAllowed.includes("*") || normAllowed.includes(normMuni)) {
+                                        recipients.add(u.usuario);
+                                    }
+                                }
+                            });
+                            recipients.delete(currentProfile.usuario);
+                            const recipientList = Array.from(recipients).filter(Boolean);
+                            if (recipientList.length > 0) {
+                                const fanoutRows = recipientList.map(u => ({
+                                    notificacion_id: notifId,
+                                    usuario: u,
+                                    status: 'UNREAD',
+                                    deleted: false
+                                }));
+                                await supabaseClient.from('notificaciones_perfil').upsert(fanoutRows, { onConflict: 'notificacion_id,usuario', ignoreDuplicates: true });
+                            }
+                        } catch (eNotif) {
+                            console.warn("[Mobile] Error creando alerta de desabasto:", eNotif);
+                        }
                     }
                 }
 

@@ -276,7 +276,11 @@ class RDAParser {
     }
 
     static async processData(data) {
-        if (typeof showOverlay === 'function') showOverlay("Procesando datos...", "Analizando");
+        if (typeof showProgressOverlay === 'function') {
+            showProgressOverlay("Procesando datos...", "Analizando", "CARGA DE ARCHIVO");
+        } else if (typeof showOverlay === 'function') {
+            showOverlay("Procesando datos...", "Analizando");
+        }
 
         // 1. Parsear y filtrar datos
         const cleanData = [];
@@ -362,7 +366,9 @@ class RDAParser {
         const total = registros.length;
         try {
             // 1. Sincronizar unidades médicas (en lotes de 100)
-            if (typeof showOverlay === 'function') {
+            if (typeof showProgressOverlay === 'function') {
+                showProgressOverlay("Sincronizando catálogo de unidades médicas...", "Sincronizando", "CARGA DE ARCHIVO");
+            } else if (typeof showOverlay === 'function') {
                 showOverlay("Sincronizando catálogo de unidades médicas...", "Sincronizando");
             }
             const unitChunks = this.chunkArray(unidades, 100);
@@ -374,7 +380,9 @@ class RDAParser {
             }
 
             // 2. Limpiar registros previos de los meses Y año en el CSV
-            if (typeof showOverlay === 'function') {
+            if (typeof showProgressOverlay === 'function') {
+                showProgressOverlay("Limpiando registros del año y meses correspondientes...", "Sincronizando", "CARGA DE ARCHIVO");
+            } else if (typeof showOverlay === 'function') {
                 showOverlay("Limpiando registros del año y meses correspondientes...", "Sincronizando");
             }
 
@@ -401,10 +409,18 @@ class RDAParser {
                 const start = i * batchSize + 1;
                 const end = Math.min((i + 1) * batchSize, total);
                 
-                if (typeof showOverlay === 'function') {
+                if (typeof updateOverlayProgress === 'function') {
+                    updateOverlayProgress(
+                        end,
+                        total,
+                        `Enviando lote ${i + 1} de ${totalBatches}: registros ${start.toLocaleString('es-MX')} a ${end.toLocaleString('es-MX')}`,
+                        "Carga Masiva SIS",
+                        "SINCRONIZACIÓN SUPABASE"
+                    );
+                } else if (typeof showOverlay === 'function') {
                     showOverlay(
                         `Enviando lote ${i + 1} de ${totalBatches} (${start.toLocaleString('es-MX')} a ${end.toLocaleString('es-MX')} de ${total.toLocaleString('es-MX')} registros)...`,
-                        "Sincronizando"
+                        "Carga Masiva SIS"
                     );
                 }
 

@@ -1938,6 +1938,9 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
     return new Promise(async (resolve, reject) => {
         try {
             console.log("[RDA PDF] Iniciando exportación nativa vectorial premium con patrón corporativo...");
+            if (typeof updateOverlayProgress === 'function') {
+                updateOverlayProgress(30, 100, "Construyendo plantilla vectorial y encabezados...", "Procesando Documento", "EXPORTACIÓN PDF");
+            }
             
             const jsPDF = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : window.jsPDF;
             if (!jsPDF) { throw new Error("La librería jsPDF no está cargada en el DOM."); }
@@ -2492,15 +2495,24 @@ async function exportIndividualPDF() {
         fname = `RDA_${_safeName(muni)}_${_tLabel()}.pdf`;
     }
 
-    if (typeof showOverlay === 'function') showOverlay('Generando reporte PDF vectorial...', 'Procesando Documento');
+    if (typeof updateOverlayProgress === 'function') {
+        updateOverlayProgress(15, 100, 'Inicializando documento PDF vectorial...', 'Procesando Documento', 'EXPORTACIÓN PDF');
+    } else if (typeof showProgressOverlay === 'function') {
+        showProgressOverlay('Generando reporte PDF vectorial...', 'Procesando Documento', 'EXPORTACIÓN PDF');
+    }
 
     try {
         await generarPDFRobusto('rdaDashboardContent', fname, false);
+        if (typeof updateOverlayProgress === 'function') {
+            updateOverlayProgress(100, 100, 'Reporte PDF generado exitosamente', 'Procesando Documento', 'EXPORTACIÓN PDF');
+        }
         if (typeof showToast === 'function') showToast('Reporte generado exitosamente', true, 'good');
     } catch (e) {
         if (typeof showToast === 'function') showToast('Error al generar PDF', false, 'bad');
     } finally {
-        if (typeof hideOverlay === 'function') hideOverlay();
+        setTimeout(() => {
+            if (typeof hideOverlay === 'function') hideOverlay();
+        }, 400);
     }
 }
 
@@ -2545,7 +2557,11 @@ async function exportDashboardImagen(format = 'png') {
         return;
     }
 
-    if (typeof showOverlay === 'function') showOverlay('Generando imagen de alta calidad...', 'Captura HD');
+    if (typeof updateOverlayProgress === 'function') {
+        updateOverlayProgress(10, 100, 'Inicializando captura HD...', 'Captura HD', 'EXPORTACIÓN IMAGEN');
+    } else if (typeof showProgressOverlay === 'function') {
+        showProgressOverlay('Generando imagen de alta calidad...', 'Captura HD', 'EXPORTACIÓN IMAGEN');
+    }
 
     const muni = document.getElementById('rdaFilterMunicipio')?.value || '';
     const uni = document.getElementById('rdaFilterUnidad')?.value || '';
@@ -2562,6 +2578,10 @@ async function exportDashboardImagen(format = 'png') {
     }
 
     try {
+        if (typeof updateOverlayProgress === 'function') {
+            updateOverlayProgress(35, 100, 'Preparando lienzo de alta resolución (2.5x HD)...', 'Captura HD', 'EXPORTACIÓN IMAGEN');
+        }
+
         // Captura completa en 1 sola pieza continua con resolución 2.5x HD (Retina Quality)
         const canvas = await html2canvas(content, {
             scale: 2.5,
@@ -2571,9 +2591,16 @@ async function exportDashboardImagen(format = 'png') {
             scrollX: 0,
             scrollY: 0,
             onclone: (clonedDoc) => {
+                if (typeof updateOverlayProgress === 'function') {
+                    updateOverlayProgress(65, 100, 'Renderizando elementos y gráficos HD...', 'Captura HD', 'EXPORTACIÓN IMAGEN');
+                }
                 _prepareClonedDocForHDImage(clonedDoc, content);
             }
         });
+
+        if (typeof updateOverlayProgress === 'function') {
+            updateOverlayProgress(90, 100, 'Generando archivo final de imagen...', 'Captura HD', 'EXPORTACIÓN IMAGEN');
+        }
 
         const mimeType = format.toLowerCase() === 'jpeg' ? 'image/jpeg' : 'image/png';
         const imgData = canvas.toDataURL(mimeType, 0.95);
@@ -2585,12 +2612,18 @@ async function exportDashboardImagen(format = 'png') {
         link.click();
         document.body.removeChild(link);
 
+        if (typeof updateOverlayProgress === 'function') {
+            updateOverlayProgress(100, 100, 'Imagen exportada en Alta Calidad', 'Captura HD', 'EXPORTACIÓN IMAGEN');
+        }
+
         if (typeof showToast === 'function') showToast(`Imagen ${format.toUpperCase()} exportada en Alta Calidad`, true, 'good');
     } catch (e) {
         console.error('[RDA Export Image Error]', e);
         if (typeof showToast === 'function') showToast('Error al exportar imagen', false, 'bad');
     } finally {
-        if (typeof hideOverlay === 'function') hideOverlay();
+        setTimeout(() => {
+            if (typeof hideOverlay === 'function') hideOverlay();
+        }, 450);
     }
 }
 
@@ -3732,7 +3765,11 @@ window.handleImportFederalKeyCatalog = async function(files) {
     if (!files || !files.length) return;
     const file = files[0];
     
-    if (typeof showOverlay === 'function') showOverlay(`Analizando catálogo federal ${file.name}...`, "Catálogo SIS");
+    if (typeof showProgressOverlay === 'function') {
+        showProgressOverlay(`Analizando catálogo federal ${file.name}...`, "Catálogo SIS", "CARGA DE ARCHIVO");
+    } else if (typeof showOverlay === 'function') {
+        showOverlay(`Analizando catálogo federal ${file.name}...`, "Catálogo SIS");
+    }
     try {
         let rows = [];
         if (file.name.endsWith('.csv')) {
@@ -4319,7 +4356,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
     if (!container) return;
 
     if (!window._isBatchExporting && typeof showOverlay === 'function') {
-        showOverlay("Generando Suite de Diagnóstico Multianual (2025 vs 2026)...", "Análisis Avanzado");
+        showOverlay("Cargando Diagnóstico Multianual (2025 vs 2026)...", "Análisis Avanzado");
     }
 
     try {
@@ -4724,7 +4761,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                     <h3 style="margin: 0 0 16px 0; font-size: 15px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 8px;">
                         <span class="material-symbols-rounded" style="color: #0f172a; font-size: 20px;">vaccines</span> Matriz Multianual por Biológico e Indicadores de Población
                     </h3>
-                    <div style="border-radius: 20px; border: 1px solid #e2e8f0; overflow: visible; background: #ffffff; box-shadow: 0 4px 20px rgba(15,23,42,0.03);">
+                    <div style="border-radius: 20px; border: 1px solid #e2e8f0; overflow-y: auto; max-height: 520px; background: #ffffff; box-shadow: 0 4px 20px rgba(15,23,42,0.03);">
                         <table style="width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; font-size: 11.5px;">
                             <colgroup>
                                 <col style="width: 22%;">
@@ -4787,7 +4824,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                     };
 
                                     const sectionHeader = (title, iconName = 'bookmark') => `
-                                        <tr style="position: sticky; top: 41px; z-index: 15; background: #0f172a !important; color: #ffffff !important; box-shadow: 0 2px 6px rgba(15,23,42,0.15);">
+                                        <tr style="background: #0f172a !important; color: #ffffff !important;">
                                             <td colspan="7" style="padding: 11px 16px; font-weight: 900 !important; color: #ffffff !important; background: #0f172a !important; text-transform: uppercase; letter-spacing: 0.08em; font-size: 11.5px; border: none !important; text-align: left !important;">
                                                 <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: text-bottom; color: #38bdf8; margin-right: 6px;">${iconName}</span> ${title}
                                             </td>

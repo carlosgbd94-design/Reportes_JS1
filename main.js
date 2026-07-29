@@ -351,6 +351,66 @@ const LIVE_STATE = AppState;
 const APP_STATE = AppState;
 
 /**
+ * 💉 SIREVAQ_CATALOG: Catálogo Único Centralizado de Biológicos (Single Source of Truth)
+ */
+window.SIREVAQ_CATALOG = {
+  "bcg":            { key: "bcg", label: "BCG", isEsquemaBasico: true, requiresPriorHistory: false, dosesPerVial: 10, color: "#3B82F6" },
+  "hepatitis_b":    { key: "hepatitis_b", label: "HEPATITIS B", isEsquemaBasico: true, requiresPriorHistory: false, dosesPerVial: 10, color: "#2563EB" },
+  "hexavalente":    { key: "hexavalente", label: "HEXAVALENTE", isEsquemaBasico: true, requiresPriorHistory: false, dosesPerVial: 1, color: "#059669" },
+  "dpt":            { key: "dpt", label: "DPT", isEsquemaBasico: true, requiresPriorHistory: false, dosesPerVial: 10, color: "#D97706" },
+  "rotavirus":      { key: "rotavirus", label: "ROTAVIRUS", isEsquemaBasico: true, requiresPriorHistory: false, dosesPerVial: 1, color: "#7C3AED" },
+  "neumococica_13": { key: "neumococica_13", label: "NEUMOCÓCICA 13", isEsquemaBasico: true, requiresPriorHistory: true, dosesPerVial: 1, color: "#3D405B" },
+  "neumococica_20": { key: "neumococica_20", label: "NEUMOCÓCICA 20", isEsquemaBasico: true, requiresPriorHistory: true, dosesPerVial: 1, color: "#4B5563" },
+  "srp":            { key: "srp", label: "SRP", isEsquemaBasico: true, requiresPriorHistory: false, dosesPerVial: 1, color: "#DC2626" },
+  "sr":             { key: "sr", label: "SR", isEsquemaBasico: true, requiresPriorHistory: false, dosesPerVial: 10, color: "#EA580C" },
+  "vph":            { key: "vph", label: "VPH", isEsquemaBasico: false, requiresPriorHistory: false, dosesPerVial: 1, color: "#DB2777" },
+  "varicela":       { key: "varicela", label: "VARICELA", isEsquemaBasico: false, requiresPriorHistory: false, dosesPerVial: 1, color: "#9333EA" },
+  "hepatitis_a":    { key: "hepatitis_a", label: "HEPATITIS A", isEsquemaBasico: true, requiresPriorHistory: false, dosesPerVial: 1, color: "#0284C7" },
+  "td":             { key: "td", label: "TD", isEsquemaBasico: true, requiresPriorHistory: false, dosesPerVial: 10, color: "#65A30D" },
+  "tdpa":           { key: "tdpa", label: "TDPA", isEsquemaBasico: true, requiresPriorHistory: false, dosesPerVial: 1, color: "#16A34A" },
+  "covid_19":       { key: "covid_19", label: "COVID-19", isEsquemaBasico: false, requiresPriorHistory: false, dosesPerVial: 6, color: "#0891B2" },
+  "influenza":      { key: "influenza", label: "INFLUENZA", isEsquemaBasico: false, requiresPriorHistory: false, dosesPerVial: 10, color: "#CA8A04" },
+  "vsr":            { key: "vsr", label: "VSR", isEsquemaBasico: true, requiresPriorHistory: false, dosesPerVial: 1, color: "#4F46E5" }
+};
+
+window.normalizeBioKey = function(str) {
+  if (!str) return "";
+  const raw = String(str).toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+
+  if (raw.includes("neumo")) return raw.includes("20") ? "neumococica_20" : "neumococica_13";
+  if (raw.includes("hepatitisb")) return "hepatitis_b";
+  if (raw.includes("hepatitisa")) return "hepatitis_a";
+  if (raw.includes("hexavalente") || raw.includes("hexa")) return "hexavalente";
+  if (raw.includes("rotavirus") || raw.includes("rotav")) return "rotavirus";
+  if (raw.includes("varic")) return "varicela";
+  if (raw.includes("influ")) return "influenza";
+  if (raw.includes("covid")) return "covid_19";
+  if (raw.includes("tdpa")) return "tdpa";
+  if (raw === "td" || raw.includes("td")) return "td";
+  if (raw.includes("vsr")) return "vsr";
+  if (raw.includes("srp")) return "srp";
+  if (raw === "sr" || raw.includes("sr")) return "sr";
+  if (raw.includes("vph")) return "vph";
+  if (raw.includes("dpt")) return "dpt";
+  if (raw.includes("bcg")) return "bcg";
+
+  return raw;
+};
+
+window.getBioMetadata = function(str) {
+  const key = window.normalizeBioKey(str);
+  return window.SIREVAQ_CATALOG[key] || { key: key, label: String(str || '').toUpperCase().trim(), isEsquemaBasico: false, requiresPriorHistory: false, dosesPerVial: 10, color: "#64748B" };
+};
+
+window.isBioEsquemaBasico = function(str) {
+  const meta = window.getBioMetadata(str);
+  return Boolean(meta && meta.isEsquemaBasico);
+};
+
+/**
  * Catálogo de Biológicos Prioritarios para Alertas de Desabasto
  * priority: 1 (Crítica), 2 (Advertencia)
  */
@@ -656,14 +716,71 @@ const overlayTitle = $("overlayTitle");
 let TOAST_TIMER = null;
 
 function showOverlay(msg = "Cargando…", title = "Procesando") {
-  if (overlayTitle) overlayTitle.textContent = title;
-  if (overlayMsg) overlayMsg.textContent = msg;
-  overlay.classList.add("show");
+  const oTitle = $("overlayTitle");
+  const oMsg = $("overlayMsg");
+  const mainOverlay = $("overlay");
+  if (oTitle) oTitle.textContent = title;
+  if (oMsg) oMsg.textContent = msg;
+  if (mainOverlay) mainOverlay.classList.add("show");
+}
+
+function showProgressOverlay(msg = "Cargando…", title = "Procesando", badge = "EXPORTACIONES Y CARGAS") {
+  const pTitle = $("progressOverlayTitle");
+  const pMsg = $("progressOverlayMsg");
+  if (pTitle) pTitle.textContent = title;
+  if (pMsg) pMsg.textContent = msg;
+  const bEl = $("globalOverlayBadge");
+  if (bEl && badge) bEl.textContent = badge.toUpperCase();
+  
+  const rEl = $("globalOverlayRing");
+  if (rEl) rEl.style.strokeDashoffset = 283;
+  const barEl = $("globalOverlayBar");
+  if (barEl) barEl.style.width = "0%";
+  const countEl = $("globalOverlayCount");
+  if (countEl) countEl.textContent = "Por favor espera...";
+  const pctEl = $("globalOverlayPct");
+  if (pctEl) pctEl.textContent = "EN PROCESO";
+
+  const pOverlay = $("progressOverlay") || $("overlay");
+  if (pOverlay) pOverlay.classList.add("show");
+}
+
+function updateOverlayProgress(current, total, detailMsg = "", title = "Procesando", badge = "EXPORTACIONES Y CARGAS") {
+  const pct = total > 0 ? Math.min(100, Math.round((current / total) * 100)) : 0;
+  const pTitle = $("progressOverlayTitle") || $("overlayTitle");
+  const pMsg = $("progressOverlayMsg") || $("overlayMsg");
+  
+  if (pTitle) pTitle.textContent = `${title} (${pct}%)`;
+  if (detailMsg && pMsg) pMsg.textContent = detailMsg;
+  
+  const bEl = $("globalOverlayBadge");
+  if (bEl && badge) bEl.textContent = badge.toUpperCase();
+
+  const rEl = $("globalOverlayRing");
+  if (rEl) {
+    const strokeDashoffset = 283 - (283 * pct / 100);
+    rEl.style.strokeDashoffset = strokeDashoffset;
+  }
+
+  const barEl = $("globalOverlayBar");
+  if (barEl) barEl.style.width = `${pct}%`;
+
+  const countEl = $("globalOverlayCount");
+  if (countEl) countEl.textContent = total > 0 ? `${current} de ${total} Procesados` : `${current} Registros`;
+
+  const pctEl = $("globalOverlayPct");
+  if (pctEl) pctEl.textContent = `${pct}% COMPLETADO`;
+
+  const pOverlay = $("progressOverlay") || $("overlay");
+  if (pOverlay) pOverlay.classList.add("show");
 }
 
 function hideOverlay() {
   if (window._isBatchExporting) return;
-  overlay.classList.remove("show");
+  const mainOverlay = $("overlay");
+  if (mainOverlay) mainOverlay.classList.remove("show");
+  const pOverlay = $("progressOverlay");
+  if (pOverlay) pOverlay.classList.remove("show");
 }
 
 /* MD3 Ripple Effect - Modernized with high-precision positioning */
@@ -5079,35 +5196,32 @@ async function supabaseRequest(action = "", payload, options = {}) {
         BIOS.forEach(b => summaryRecord[b] = 0);
 
         // 3. Preparar Detalle (Long Table - EXISTENCIA_DETALLE)
-        const detailRecords = items.map(it => {
-          const bioKey = (it.biologico || '').toLowerCase()
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^a-z0-9\s_]/g, "")
-            .trim()
-            .replace(/[\s_]+/g, "_");
+        // 3. Preparar Detalle (Long Table - EXISTENCIA_DETALLE) con purgado inteligente de renglones fantasma en 0
+        // Si hay una partida en 0 del lote X pero también existe una partida >0 del mismo lote X, ignorar el renglón en 0
+        const activeLotsWithStock = new Set();
+        items.forEach(it => {
+          const lKey = `${String(it.biologico || '').trim().toUpperCase()}:${String(it.lote || '').trim().toUpperCase()}`;
+          if (Number(it.cantidad || 0) > 0) {
+            activeLotsWithStock.add(lKey);
+          }
+        });
 
-          let finalKey = bioKey;
-          if (bioKey.includes("neumo")) {
-            finalKey = bioKey.includes("20") ? "neumococica_20" : "neumococica_13";
-          } else if (bioKey.includes("hepatitis") && bioKey.includes("b")) {
-            finalKey = "hepatitis_b";
-          } else if (bioKey.includes("hepatitis") && bioKey.includes("a")) {
-            finalKey = "hepatitis_a";
-          } else if (bioKey.includes("covid")) {
-            finalKey = "covid_19";
-          } else if (bioKey.includes("hexa")) {
-            finalKey = "hexavalente";
-          } else if (bioKey.includes("rotav")) {
-            finalKey = "rotavirus";
-          } else if (bioKey.includes("varic")) {
-            finalKey = "varicela";
-          } else if (bioKey.includes("influ")) {
-            finalKey = "influenza";
+        const detailRecords = [];
+        items.forEach(it => {
+          const lKey = `${String(it.biologico || '').trim().toUpperCase()}:${String(it.lote || '').trim().toUpperCase()}`;
+          const qty = Number(it.cantidad || 0);
+
+          // Purgar renglón fantasma en 0 si ya hay una partida con stock activo para el mismo lote
+          if (qty === 0 && activeLotsWithStock.has(lKey)) {
+            console.log(`[Capture Logic] Purgando renglón fantasma en 0 para lote ${lKey} pues cuenta con stock activo.`);
+            return;
           }
 
+          const bioMeta = window.getBioMetadata(it.biologico);
+          const finalKey = bioMeta.key;
+
           if (BIOS.includes(finalKey)) {
-            summaryRecord[finalKey] += Number(it.cantidad || 0);
+            summaryRecord[finalKey] += qty;
           }
 
           // Lookup automático de caducidad si viene vacío
@@ -5117,19 +5231,19 @@ async function supabaseRequest(action = "", payload, options = {}) {
             finalCad = loteMap[lookupKey] || "";
           }
 
-          return {
+          detailRecords.push({
             fecha,
             clues,
             unidad,
             municipio,
-            biologico: it.biologico,
+            biologico: bioMeta.label || it.biologico,
             lote: it.lote,
             caducidad: mmmaaToIsoDate(finalCad), // CONVERSIÓN A ISO PARA DB
             fecha_recepcion: it.fecha_recepcion,
-            cantidad: Number(it.cantidad || 0),
+            cantidad: qty,
             capturado_por: nombreResp,
             tipo: it.tipo || "REQUISICION"
-          };
+          });
         });
 
         // ============================================================
@@ -5147,71 +5261,27 @@ async function supabaseRequest(action = "", payload, options = {}) {
           .limit(1)
           .maybeSingle();
 
-        const BIOS_MAP = {
-          "bcg": "BCG",
-          "hepatitis_b": "HEPATITIS B",
-          "hexavalente": "HEXAVALENTE",
-          "dpt": "DPT",
-          "rotavirus": "ROTAVIRUS",
-          "neumococica_13": "NEUMOCÓCICA 13",
-          "neumococica_20": "NEUMOCÓCICA 20",
-          "srp": "SRP",
-          "sr": "SR",
-          "vph": "VPH",
-          "varicela": "VARICELA",
-          "hepatitis_a": "HEPATITIS A",
-          "td": "TD",
-          "tdpa": "TDPA",
-          "covid_19": "COVID-19",
-          "influenza": "INFLUENZA",
-          "vsr": "VSR"
-        };
-
         const desabastoTransicion = [];
-        Object.keys(BIOS_MAP).forEach(bioKey => {
+        BIOS.forEach(bioKey => {
           const currentQty = Number(summaryRecord[bioKey] || 0);
           const hadStock = prevReport ? Number(prevReport[bioKey] || 0) > 0 : false;
           if (currentQty === 0 && hadStock) {
-            desabastoTransicion.push(BIOS_MAP[bioKey]);
+            const label = window.getBioMetadata(bioKey).label;
+            desabastoTransicion.push(label);
           }
         });
 
         // Agrupación por clave estándar para la detección de ceros explícitos
         const bioTotalsCapture = {};
         detailRecords.forEach(r => {
-          const rawKey = (r.biologico || '').toLowerCase()
-            .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
-            .replace(/[^a-z0-9\s_]/g, "")
-            .trim()
-            .replace(/[\s_]+/g, "_");
-
-          let stdKey = rawKey;
-          if (rawKey.includes("neumo")) {
-            stdKey = rawKey.includes("20") ? "neumococica_20" : "neumococica_13";
-          } else if (rawKey.includes("hepatitis") && rawKey.includes("b")) {
-            stdKey = "hepatitis_b";
-          } else if (rawKey.includes("hepatitis") && rawKey.includes("a")) {
-            stdKey = "hepatitis_a";
-          } else if (rawKey.includes("covid")) {
-            stdKey = "covid_19";
-          } else if (rawKey.includes("hexa")) {
-            stdKey = "hexavalente";
-          } else if (rawKey.includes("rotav")) {
-            stdKey = "rotavirus";
-          } else if (rawKey.includes("varic")) {
-            stdKey = "varicela";
-          } else if (rawKey.includes("influ")) {
-            stdKey = "influenza";
-          }
-
+          const stdKey = window.normalizeBioKey(r.biologico);
           if (stdKey) {
             bioTotalsCapture[stdKey] = (bioTotalsCapture[stdKey] || 0) + Number(r.cantidad || 0);
           }
         });
 
         const explicitZerosKeys = Object.keys(bioTotalsCapture).filter(k => BIOS.includes(k) && bioTotalsCapture[k] === 0);
-        const explicitZerosOrig = explicitZerosKeys.map(k => BIOS_MAP[k] || k.toUpperCase().replace(/_/g, " "));
+        const explicitZerosOrig = explicitZerosKeys.map(k => window.getBioMetadata(k).label);
 
         // Unión de transiciones (de >0 a 0) y ceros explícitos capturados
         const finalMissing = Array.from(new Set([...desabastoTransicion, ...explicitZerosOrig]));
@@ -5246,43 +5316,121 @@ async function supabaseRequest(action = "", payload, options = {}) {
 
         console.log("[Capture Logic] SR Guardado correctamente.");
 
-        // --- Generar Alerta de Desabasto (si hay biológicos en cero) ---
-        if (finalMissing.length > 0) {
-          const notifId = 'NOTIF:DESABASTO:' + btoa(clues + ":" + fecha + ":" + Date.now());
+        // --- Auto-Resolución y Desduplicación Inteligente de Alertas ---
+        // 1. Auto-resolver alertas previas si las vacunas que estaban en desabasto ahora tienen existencia (>0)
+        try {
+          const { data: activeNotifs } = await supabase
+            .from('notificaciones')
+            .select('id, meta_json')
+            .eq('type', 'ALERTA_DESABASTO');
 
-          const desabastoRecord = {
-            id: notifId,
-            type: 'ALERTA_DESABASTO',
-            created_ts: new Date().toISOString(),
-            created_date: todayYmdLocal(),
-            from_usuario: 'SISTEMA',
-            from_rol: 'SYS',
-            target_scope: 'MUNICIPIO',
-            target_municipio: finalMuni,
-            title: '🚨 Desabasto detectado',
-            message: `La unidad ${unidad} capturó sin existencias de: ${finalMissing.join(', ')}.`,
-            status: 'UNREAD',
-            meta_json: JSON.stringify({
-              clues: clues,
-              unidad: unidad,
-              municipio: finalMuni,
-              missing: finalMissing,
-              status: 'activa'
-            })
-          };
+          if (activeNotifs && activeNotifs.length > 0) {
+            for (const n of activeNotifs) {
+              try {
+                const meta = typeof n.meta_json === 'string' ? JSON.parse(n.meta_json) : (n.meta_json || {});
+                if (meta.clues === clues && meta.status === 'activa' && Array.isArray(meta.missing)) {
+                  // Verificar si TODAS las vacunas de la alerta previa ya fueron surtidas
+                  const remainingMissing = meta.missing.filter(bName => {
+                    const bKey = window.normalizeBioKey(bName);
+                    return Number(summaryRecord[bKey] || 0) === 0;
+                  });
 
-          try {
-            const { error: desabInsertErr } = await supabase.from('notificaciones').insert(desabastoRecord);
-            if (desabInsertErr) {
-              console.warn('[Notif Desabasto] INSERT bloqueado por RLS — la notificación se generará vía Trigger:', desabInsertErr.message);
-            } else {
-              // Fan-out: crear copias individuales para cada destinatario
-              const desabastoRecipients = await resolveNotificationRecipients(desabastoRecord);
-              await fanOutNotification(desabastoRecord.id, desabastoRecipients);
-              console.log(`[Capture Logic] Alerta de desabasto generada para: ${finalMissing.join(', ')} → ${desabastoRecipients.length} destinatarios`);
+                  if (remainingMissing.length === 0) {
+                    // El desabasto fue completamente resuelto
+                    meta.status = 'resuelta';
+                    meta.resolved_ts = new Date().toISOString();
+                    await supabase
+                      .from('notificaciones')
+                      .update({
+                        meta_json: JSON.stringify(meta),
+                        status: 'READ'
+                      })
+                      .eq('id', n.id);
+                    console.log(`[Capture Logic] Alerta de desabasto ${n.id} marcada automáticamente como RESUELTA para CLUES ${clues}`);
+                  }
+                }
+              } catch (eJson) {}
             }
-          } catch (desabErr) {
-            console.warn('[Notif Desabasto] Error al crear alerta (no bloquea la captura):', desabErr);
+          }
+        } catch (eAutoResolve) {
+          console.warn('[Capture Logic] Aviso en auto-resolución de alertas:', eAutoResolve);
+        }
+
+        // --- Generar Alerta de Desabasto (solo para biológicos del Esquema Básico) ---
+        const finalMissingEsquemaBasico = finalMissing.filter(bioName => {
+          const bioMeta = window.getBioMetadata(bioName);
+          if (!bioMeta.isEsquemaBasico) return false;
+
+          // Regla especial para vacunas con historia previa obligatoria (ej: NEUMOCÓCICA 20 / 13)
+          if (bioMeta.requiresPriorHistory) {
+            const hadStock = prevReport ? Number(prevReport[bioMeta.key] || 0) > 0 : false;
+            if (!hadStock) {
+              return false; // Nunca ha tenido surtimiento/existencia previa en la unidad
+            }
+          }
+
+          return true;
+        });
+
+        if (finalMissingEsquemaBasico.length > 0) {
+          // Desduplicación: Verificar si ya existe una alerta activa para esta unidad en el mismo día/semana
+          let hasActiveAlertToday = false;
+          try {
+            const { data: existingAlerts } = await supabase
+              .from('notificaciones')
+              .select('id, created_date, meta_json')
+              .eq('type', 'ALERTA_DESABASTO')
+              .eq('created_date', todayYmdLocal());
+
+            (existingAlerts || []).forEach(n => {
+              try {
+                const meta = typeof n.meta_json === 'string' ? JSON.parse(n.meta_json) : (n.meta_json || {});
+                if (meta.clues === clues && meta.status === 'activa') {
+                  hasActiveAlertToday = true;
+                }
+              } catch (e) {}
+            });
+          } catch (eChk) {}
+
+          if (!hasActiveAlertToday) {
+            const notifId = 'NOTIF:DESABASTO:' + btoa(clues + ":" + fecha + ":" + Date.now());
+
+            const desabastoRecord = {
+              id: notifId,
+              type: 'ALERTA_DESABASTO',
+              created_ts: new Date().toISOString(),
+              created_date: todayYmdLocal(),
+              from_usuario: 'SISTEMA',
+              from_rol: 'SYS',
+              target_scope: 'MUNICIPIO',
+              target_municipio: finalMuni,
+              title: '🚨 Desabasto detectado',
+              message: `La unidad ${unidad} capturó sin existencias de: ${finalMissingEsquemaBasico.join(', ')}.`,
+              status: 'UNREAD',
+              meta_json: JSON.stringify({
+                clues: clues,
+                unidad: unidad,
+                municipio: finalMuni,
+                missing: finalMissingEsquemaBasico,
+                status: 'activa'
+              })
+            };
+
+            try {
+              const { error: desabInsertErr } = await supabase.from('notificaciones').insert(desabastoRecord);
+              if (desabInsertErr) {
+                console.warn('[Notif Desabasto] INSERT bloqueado por RLS — la notificación se generará vía Trigger:', desabInsertErr.message);
+              } else {
+                // Fan-out: crear copias individuales para cada destinatario
+                const desabastoRecipients = await resolveNotificationRecipients(desabastoRecord);
+                await fanOutNotification(desabastoRecord.id, desabastoRecipients);
+                console.log(`[Capture Logic] Alerta de desabasto generada para: ${finalMissingEsquemaBasico.join(', ')} → ${desabastoRecipients.length} destinatarios`);
+              }
+            } catch (desabErr) {
+              console.warn('[Notif Desabasto] Error al crear alerta (no bloquea la captura):', desabErr);
+            }
+          } else {
+            console.log(`[Capture Logic] Alerta de desabasto omitida por desduplicación (ya existe alerta activa hoy para ${clues}).`);
           }
         }
 
@@ -5543,15 +5691,67 @@ async function supabaseRequest(action = "", payload, options = {}) {
           }
         });
 
-        items.sort((a, b) => new Date(b.created_ts || 0) - new Date(a.created_ts || 0));
-        const unreadCount = items.filter(n => String(n.status).toUpperCase() !== 'READ').length;
+        // Smart Grouping / Digest para Notificaciones Municipales:
+        // Si el usuario es de rol MUNICIPAL, agrupar múltiples alertas de desabasto del mismo municipio y mismo día en 1 solo Digest
+        let finalItems = items;
+        if (userRole === 'MUNICIPAL') {
+          const desabastoByMuniDate = new Map();
+          const nonDesabastoItems = [];
 
-        console.log(`[Notif] Lista final maestra: ${items.length} items, ${unreadCount} no leídas`);
+          items.forEach(n => {
+            const isDesab = n.type === 'ALERTA_DESABASTO';
+            if (isDesab) {
+              const meta = typeof n.meta_json === 'string' ? JSON.parse(n.meta_json || '{}') : (n.meta_json || {});
+              const key = `${meta.municipio || n.target_municipio || 'MUNI'}:${n.created_date || n.created_ts?.slice(0, 10)}`;
+              if (!desabastoByMuniDate.has(key)) {
+                desabastoByMuniDate.set(key, []);
+              }
+              desabastoByMuniDate.get(key).push({ notif: n, meta: meta });
+            } else {
+              nonDesabastoItems.push(n);
+            }
+          });
+
+          const digestItems = [];
+          desabastoByMuniDate.forEach((group, key) => {
+            if (group.length === 1) {
+              digestItems.push(group[0].notif);
+            } else {
+              // Crear tarjeta acumulativa Digest
+              const activeCount = group.filter(g => g.meta.status === 'activa').length;
+              const unitsSet = new Set(group.map(g => g.meta.unidad || g.meta.clues).filter(Boolean));
+              const first = group[0].notif;
+              const firstMeta = group[0].meta;
+
+              digestItems.push(Object.assign({}, first, {
+                id: `DIGEST:${key}:${Date.now()}`,
+                title: `🚨 ${unitsSet.size} Unidades con Desabasto`,
+                message: `Resumen municipal: ${unitsSet.size} unidades de ${firstMeta.municipio || 'su municipio'} han reportado desabasto en Esquema Básico.`,
+                is_digest: true,
+                digest_count: group.length,
+                digest_units: Array.from(unitsSet),
+                meta_json: JSON.stringify(Object.assign({}, firstMeta, {
+                  is_digest: true,
+                  units_count: unitsSet.size,
+                  units_list: Array.from(unitsSet),
+                  status: activeCount > 0 ? 'activa' : 'resuelta'
+                }))
+              }));
+            }
+          });
+
+          finalItems = [...nonDesabastoItems, ...digestItems];
+        }
+
+        finalItems.sort((a, b) => new Date(b.created_ts || 0) - new Date(a.created_ts || 0));
+        const unreadCount = finalItems.filter(n => String(n.status).toUpperCase() !== 'READ').length;
+
+        console.log(`[Notif] Lista final maestra: ${finalItems.length} items (${items.length} sin agrupar), ${unreadCount} no leídas`);
 
         return {
           ok: true,
           data: {
-            items: items,
+            items: finalItems,
             unread: unreadCount
           }
         };
@@ -19746,22 +19946,35 @@ function getPermanenciaStatusHelper(recepcionIso) {
 function highlightZeroRows(items) {
   const tbody = $("liveViewTbody");
   if (!tbody) return;
+
+  // Función helper interna para normalizar biológico (ej: "NEUMOCÓCICA 13" vs "NEUMOCOCICA 13")
+  const normBioName = (str) => {
+    return String(str || '')
+      .toUpperCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
   const bioTotals = {};
   items.forEach(r => {
-    const bioName = (r.biologico || '').trim().toUpperCase();
-    if (bioName) {
-      bioTotals[bioName] = (bioTotals[bioName] || 0) + Number(r.cantidad || 0);
+    const rawName = (r.biologico || '').trim();
+    const key = normBioName(rawName);
+    if (key) {
+      bioTotals[key] = (bioTotals[key] || 0) + Number(r.cantidad || 0);
     }
   });
 
-  const biosConCeroTotal = Object.keys(bioTotals).filter(name => bioTotals[name] === 0);
+  // Solo se considera en cero si la suma TOTAL acumulada de TODOS los lotes de ese biológico es 0
+  const biosConCeroTotalKeys = Object.keys(bioTotals).filter(key => bioTotals[key] === 0);
 
   const zeroAlertEl = $("liveViewZeroAlert");
   if (zeroAlertEl) {
-    if (biosConCeroTotal.length > 0) {
-      const pillsHtml = biosConCeroTotal.map(name => {
-        const origItem = items.find(r => (r.biologico || '').trim().toUpperCase() === name);
-        const displayName = origItem ? (origItem.biologico || '').trim() : name;
+    if (biosConCeroTotalKeys.length > 0) {
+      const pillsHtml = biosConCeroTotalKeys.map(key => {
+        const origItem = items.find(r => normBioName(r.biologico) === key);
+        const displayName = origItem ? (origItem.biologico || '').trim() : key;
         return `<span style="display:inline-flex; align-items:center; gap:4px; background:#fff; border:1.5px solid #fecdd3; color:#be123c; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:800; white-space:nowrap;">
           <span class="material-symbols-rounded" style="font-size:14px; color:#f43f5e;">inventory_2</span>
           ${escapeHtml(displayName || '—')}
@@ -19774,7 +19987,7 @@ function highlightZeroRows(items) {
             <span class="material-symbols-rounded" style="font-size:24px; color:#f43f5e;">warning</span>
             <div>
               <div style="font-size:12px; font-weight:900; color:#be123c; text-transform:uppercase; letter-spacing:0.05em;">Vacunas sin existencia</div>
-              <div style="font-size:11px; color:#e11d48; font-weight:600;">Esta unidad capturó con ${biosConCeroTotal.length} biológico${biosConCeroTotal.length > 1 ? 's' : ''} en cero</div>
+              <div style="font-size:11px; color:#e11d48; font-weight:600;">Esta unidad capturó con ${biosConCeroTotalKeys.length} biológico${biosConCeroTotalKeys.length > 1 ? 's' : ''} en cero</div>
             </div>
           </div>
           <div style="display:flex; flex-wrap:wrap; gap:6px; flex:1;">
@@ -19788,13 +20001,13 @@ function highlightZeroRows(items) {
     }
   }
 
-  if (biosConCeroTotal.length > 0) {
+  if (biosConCeroTotalKeys.length > 0) {
     Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
       const cells = tr.querySelectorAll('td');
       if (cells.length > 0) {
-        const bioText = cells[0].textContent.trim().toUpperCase();
+        const bioKey = normBioName(cells[0].textContent);
         const countBadge = tr.querySelector('.live-view-count-badge');
-        if (countBadge && (countBadge.textContent.trim() === '0') && bioTotals[bioText] === 0) {
+        if (countBadge && (countBadge.textContent.trim() === '0') && bioTotals[bioKey] === 0) {
           tr.style.background = '#fff5f5';
           countBadge.style.background = '#ffe4e6';
           countBadge.style.color = '#be123c';
@@ -19863,7 +20076,29 @@ window.renderLiveViewTableContent = function() {
         tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">No hay registros detallados para esta fecha.</td></tr>';
         renderLiveCharts("SR", null, null);
       } else {
-        const items = res.data;
+        // Purgado inteligente en lectura para capturas pasadas:
+        // Si la base de datos contiene partidas pasadas en 0 del lote X pero también partidas con stock > 0 del mismo lote X, omitir las partidas en 0.
+        const activeLotsWithStockView = new Set();
+        (res.data || []).forEach(r => {
+          const bioKey = window.normalizeBioKey ? window.normalizeBioKey(r.biologico) : String(r.biologico || '').toLowerCase().trim();
+          const loteKey = String(r.lote || '').trim().toUpperCase();
+          const lKey = `${bioKey}:${loteKey}`;
+          if (Number(r.cantidad || 0) > 0) {
+            activeLotsWithStockView.add(lKey);
+          }
+        });
+
+        const items = (res.data || []).filter(r => {
+          const bioKey = window.normalizeBioKey ? window.normalizeBioKey(r.biologico) : String(r.biologico || '').toLowerCase().trim();
+          const loteKey = String(r.lote || '').trim().toUpperCase();
+          const lKey = `${bioKey}:${loteKey}`;
+          const qty = Number(r.cantidad || 0);
+          if (qty === 0 && activeLotsWithStockView.has(lKey)) {
+            return false; // Descartar renglón fantasma histórico en 0
+          }
+          return true;
+        });
+
         let semStats = { pronto: 0, normal: 0, lejana: 0 };
         let cadStats = { m3: 0, m6: 0, m12: 0, more: 0 };
 
