@@ -8715,17 +8715,17 @@ async function hydrateSessionUi(user, status, opts = {}) {
   exposeAppFns();
   assertCriticalFns();
 
-  // Cargar el mapeo de variables SIS dinámico desde Supabase
+  // Cargar los mapeos de variables SIS dinámicos de 2025 y 2026 desde Supabase
   try {
-    const mappingRes = await apiCall("getSisMapping");
-    if (mappingRes && mappingRes.ok && mappingRes.data) {
-      console.log("[hydrateSessionUi] Mapeo dinámico cargado:", mappingRes.data);
-      if (typeof window.updateRdaDictionary === 'function') {
-        window.updateRdaDictionary(mappingRes.data);
-      }
+    if (typeof window.loadRdaMappingFromDatabase === 'function') {
+      await Promise.all([
+        window.loadRdaMappingFromDatabase(2025),
+        window.loadRdaMappingFromDatabase(2026)
+      ]);
+      console.log("[hydrateSessionUi] Mapeos dinámicos SIS 2025 y 2026 cargados exitosamente de Supabase.");
     }
   } catch (err) {
-    console.error("[hydrateSessionUi] Error al cargar mapeo dinámico:", err);
+    console.error("[hydrateSessionUi] Error al cargar mapeos dinámicos SIS:", err);
   }
 
   const {

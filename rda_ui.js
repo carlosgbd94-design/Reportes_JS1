@@ -3133,6 +3133,23 @@ function renderMobileDashboard() {
  * Manejadores interactivos para el sistema de etiquetas (chips) del mapeador de SIS
  */
 // Master Catálogo Oficial 2026 (Variables Federales SINBA-SIS)
+const MASTER_CATALOG_2025 = [
+    'VBC01','VBC02','BIO50','BIO03','VBC03','VAC06','VHB01','VHB02','VHB03','VHB04',
+    'VHB05','VHB06','VAC67','VAC68','VAC69','VAC70','VHX01','VHX02','VHX03','VHX04',
+    'VAC12','VAC13','VRV01','VRV02','VRV03','VRV04','VAC17','VAC18','VAC19','VNC01',
+    'VNC02','VNC03','VAC93','VAC94','VNP01','VAC23','VTV01','VAC81','VTV02','VTV03',
+    'VAC82','VAC91','VAC83','VPH05','VPH06','VPH07','VPH08','VAC84','VAC85','VAC92',
+    'VPH09','VPH10','VPH11','VAC36','VAR01','VAC38','VAC87','BIO88','VAC39','VAC40',
+    'VAC47','VAC48','VTD01','VTD02','VAC55','VAC56','VTT01','VTT02','VTT03','VTT04',
+    'VTT05','VTT06','VTT07','VTT08','VTT09','VTT10','VTT11','VTT12','VAC63','VDP01',
+    'VCV38','VCV39','VCV40','VCV28','VCV16','VCV20','VCV21',
+    'BIE01','BIE28','BIE29','BIE30','BIE31','BIE04','BIE32','BIE33','BIE34','BIE35',
+    'BIE36','BIE37','BIE38','BIE39','BIE40','BIO96','BIO97','BIE09','BIE10','BIE41',
+    'BIE12','BIE13','BIE42','BIE15','BIE16','BIE43','BIE18','BIE19','BIE44','BIE48',
+    'BIE49','BIE50','BIE24','BIE25','BIE46','BIE51','BIE52','BIE53','BIE54','BIE55',
+    'BIE56','BIE57','BIE58','BIE59','BIE60','BIE61'
+];
+
 const MASTER_CATALOG_2026 = [
     'VBC01','VBC02','BIO50','BIO03','VBC03','VAC06','VHB01','VHB02','VHB03','VHB04',
     'VHB05','VHB06','VAC67','VAC68','VAC69','VAC70','VHX01','VHX02','VHX03','VHX04',
@@ -3144,7 +3161,6 @@ const MASTER_CATALOG_2026 = [
     'VAC55','VAC56','VTT01','VTT02','VTT03','VTT04','VTT05','VTT06','VTT07','VTT08',
     'VTT09','VTT10','VTT11','VTT12','VAC63','VDP01','VS001','VCV38','VCV39','VCV40',
     'VCV28','VCV16','VCV20','VCV21',
-    // 225 Influenza BIE Keys
     'BIE01','BIE28','BIE29','BIE30','BIE31','BIE04','BIE32','BIE33','BIE34','BIE35',
     'BIE36','BIE37','BIE38','BIE39','BIE40','BIO96','BIO97','BIE09','BIE10','BIE41',
     'BIE12','BIE13','BIE42','BIE15','BIE16','BIE43','BIE18','BIE19','BIE44','BIE48',
@@ -3154,11 +3170,9 @@ const MASTER_CATALOG_2026 = [
 
 window.getValidKeysForYear = function() {
     const valid = new Set();
-    // 1. Claves del catálogo maestro 2026
-    MASTER_CATALOG_2026.forEach(k => valid.add(k.toUpperCase()));
-    // 2. Claves extraídas del archivo cargado
+    const activeCatalog = (_currentSisMappingYear === 2025) ? MASTER_CATALOG_2025 : MASTER_CATALOG_2026;
+    activeCatalog.forEach(k => valid.add(k.toUpperCase()));
     _importedCatalogKeys.forEach(item => valid.add(item.key.toUpperCase()));
-    // 3. Claves oficiales conocidas del estándar federal
     const defaultDict = window.DICT_RDA || {};
     Object.values(defaultDict).forEach(arr => {
         if (Array.isArray(arr)) arr.forEach(k => valid.add(k.toUpperCase()));
@@ -3320,7 +3334,7 @@ window.renderSisMappingTable = function(searchQuery = '') {
         const validKeys = Array.from(window.getValidKeysForYear()).sort();
 
         Object.keys(BIO_FAMILY_MAP).forEach(famKey => {
-            if (_currentSisMappingYear === 2025 && famKey === 'VSR') return;
+            if (_currentSisMappingYear === 2025 && (famKey === 'VSR' || famKey === 'NEUMO_20')) return;
             if (_currentSisMappingYear !== 2025 && famKey === 'NEUMO_ADULTOS') return;
 
             const fam = BIO_FAMILY_MAP[famKey];
@@ -3387,9 +3401,12 @@ window.renderSisMappingTable = function(searchQuery = '') {
         Hexa_3: { label: "Hexavalente 3ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
         Hexa_Ref: { label: "Hexavalente Refuerzo", group: "Esquema Básico (0-8 años)", desc: "Niños de 1 año" },
         Rota_2: { label: "Rotavirus 2ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
-        Neumo_1: { label: "Neumocócica Conjugada 1ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
-        Neumo_2: { label: "Neumocócica Conjugada 2ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año" },
-        Neumo_Ref: { label: "Neumocócica Conjugada Refuerzo", group: "Esquema Básico (0-8 años)", desc: "Niños de 1 año" },
+        Neumo_1: { label: "Neumocócica Conjugada (13v) 1ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año (13v)" },
+        Neumo_2: { label: "Neumocócica Conjugada (13v) 2ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año (13v)" },
+        Neumo_Ref: { label: "Neumocócica Conjugada (13v) Refuerzo", group: "Esquema Básico (0-8 años)", desc: "Niños de 1 año (13v)" },
+        Neumo_C1: { label: "Neumocócica 20v 1ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año (20v)" },
+        Neumo_C2: { label: "Neumocócica 20v 2ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Menores de 1 año (20v)" },
+        Neumo_C3: { label: "Neumocócica 20v Refuerzo/3ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Niños de 1 año (20v)" },
         SRP_1: { label: "SRP 1ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Niños de 1 año" },
         SRP_2: { label: "SRP 2ª Dosis", group: "Esquema Básico (0-8 años)", desc: "Niños de 18 meses / 6 años" },
         DPT_4: { label: "DPT Refuerzo", group: "Esquema Básico (0-8 años)", desc: "Niños de 4 años" },
@@ -3413,7 +3430,7 @@ window.renderSisMappingTable = function(searchQuery = '') {
 
     const groups = {};
     Object.keys(metadata).forEach(metaKey => {
-        if (_currentSisMappingYear === 2025 && (metaKey === 'AM_NEUMO20' || metaKey === 'EMB_VSR')) return;
+        if (_currentSisMappingYear === 2025 && (metaKey === 'AM_NEUMO20' || metaKey === 'EMB_VSR' || metaKey === 'Neumo_C1' || metaKey === 'Neumo_C2' || metaKey === 'Neumo_C3')) return;
         if (_currentSisMappingYear !== 2025 && (metaKey === 'NEUMO_23' || metaKey === 'SRP_6')) return;
 
         const meta = metadata[metaKey];
@@ -3457,7 +3474,7 @@ window.renderSisMappingTable = function(searchQuery = '') {
                                     <span class="sis-chip" data-val="${v}" 
                                           style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; background: #e2e8f0; color: #1e293b; font-size: 11px; font-weight: 800; border: 1px solid #cbd5e1; transition: all 0.2s;">
                                         ${v}
-                                        <span class="sis-chip-remove" style="cursor: pointer; font-size: 14px; font-weight: 900; color: #64748b; user-select: none; margin-left: 2px;" onclick="event.stopPropagation(); this.parentElement.remove();">&times;</span>
+                                        <span class="sis-chip-remove" style="cursor: pointer; font-size: 14px; font-weight: 900; color: #64748b; user-select: none; margin-left: 2px;" onclick="event.stopPropagation(); window.removeDoseKeyChip('${item.key}', '${v}');">&times;</span>
                                     </span>
                                 `).join('')}
                             </div>
@@ -3491,18 +3508,32 @@ window.selectDoseKeyFromList = function(doseKey, selectEl) {
     const val = selectEl.value;
     if (!val) return;
 
-    const container = selectEl.closest('.sis-tags-input-container');
-    const wrapper = container.querySelector('.sis-chips-wrapper');
-    const existing = Array.from(wrapper.querySelectorAll('.sis-chip')).map(c => c.dataset.val);
-    if (!existing.includes(val)) {
-        const chip = document.createElement('span');
-        chip.className = 'sis-chip';
-        chip.dataset.val = val;
-        chip.style.cssText = "display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; background: #e2e8f0; color: #1e293b; font-size: 11px; font-weight: 800; border: 1px solid #cbd5e1; transition: all 0.2s;";
-        chip.innerHTML = `${val} <span class="sis-chip-remove" style="cursor: pointer; font-size: 14px; font-weight: 900; color: #64748b; user-select: none; margin-left: 2px;" onclick="this.parentElement.remove();">&times;</span>`;
-        wrapper.appendChild(chip);
+    if (!window.DICT_RDA) window.DICT_RDA = {};
+    if (!Array.isArray(window.DICT_RDA[doseKey])) window.DICT_RDA[doseKey] = [];
+
+    if (!window.DICT_RDA[doseKey].includes(val)) {
+        window.DICT_RDA[doseKey].push(val);
     }
-    selectEl.value = '';
+
+    // Asegurar que la clave también esté en el Biológico Madre correspondiente
+    const parentFamKey = Object.keys(BIO_FAMILY_MAP).find(fam => BIO_FAMILY_MAP[fam].doses.includes(doseKey));
+    if (parentFamKey) {
+        if (!_bioMotherKeys[parentFamKey]) _bioMotherKeys[parentFamKey] = [];
+        if (!_bioMotherKeys[parentFamKey].includes(val)) {
+            _bioMotherKeys[parentFamKey].push(val);
+        }
+    }
+
+    // Re-renderizar la tabla para actualizar visuales y opciones del selector
+    window.renderSisMappingTable();
+};
+
+window.removeDoseKeyChip = function(doseKey, keyVal) {
+    if (window.DICT_RDA && Array.isArray(window.DICT_RDA[doseKey])) {
+        window.DICT_RDA[doseKey] = window.DICT_RDA[doseKey].filter(k => k !== keyVal);
+    }
+    // Re-renderizar la tabla para liberar la clave en los selectores desplegables
+    window.renderSisMappingTable();
 };
 
 window.handleMotherTagKeydown = function(e, famKey) {
@@ -3540,9 +3571,15 @@ window.removeMotherVarChip = function(famKey, keyVal, spanEl) {
 };
 
 let _currentSisMappingYear = 2026;
+let _bioMotherKeysPerYear = { 2025: {}, 2026: {} };
+let _bioMotherKeys = {}; // Referencia al objeto del año activo
 
 window.switchSisMappingYear = async function(anio) {
-    _currentSisMappingYear = parseInt(anio, 10);
+    _currentSisMappingYear = parseInt(anio, 10) || 2026;
+    if (!_bioMotherKeysPerYear[_currentSisMappingYear]) {
+        _bioMotherKeysPerYear[_currentSisMappingYear] = {};
+    }
+    _bioMotherKeys = _bioMotherKeysPerYear[_currentSisMappingYear];
     
     // Actualizar estados visuales de las pestañas
     const tabs = document.querySelectorAll('#sisMappingYearTabs button[data-anio]');
@@ -3565,25 +3602,12 @@ window.switchSisMappingYear = async function(anio) {
 
         if (error) throw error;
 
-        const defaultDict = (typeof window.DICT_RDA === 'object' && window.DICT_RDA) ? window.DICT_RDA : {};
-        const yearMapping = {};
-        
-        // Cargar claves por defecto según la matriz oficial del sistema
-        Object.keys(defaultDict).forEach(k => {
-            yearMapping[k] = Array.isArray(defaultDict[k]) ? [...defaultDict[k]] : [];
-        });
+        const baseDefault = _currentSisMappingYear === 2025 ? (window.DEFAULT_DICT_2025 || {}) : (window.DEFAULT_DICT_2026 || {});
+        const yearMapping = JSON.parse(JSON.stringify(baseDefault));
 
-        if (_currentSisMappingYear === 2025) {
-            delete yearMapping.AM_NEUMO20;
-            delete yearMapping.EMB_VSR;
-            if (!yearMapping.SRP_6) yearMapping.SRP_6 = [];
-            if (!yearMapping.NEUMO_23) yearMapping.NEUMO_23 = [];
-        } else {
-            delete yearMapping.NEUMO_23;
-            delete yearMapping.SRP_6;
-            if (!yearMapping.AM_NEUMO20) yearMapping.AM_NEUMO20 = [];
-            if (!yearMapping.EMB_VSR) yearMapping.EMB_VSR = [];
-        }
+        // Resetear mother keys para este año antes de poblar de BD
+        _bioMotherKeysPerYear[_currentSisMappingYear] = {};
+        _bioMotherKeys = _bioMotherKeysPerYear[_currentSisMappingYear];
 
         // Si existen registros personalizados guardados en Supabase para este año, sobrescribir
         if (data && data.length > 0) {
@@ -3596,26 +3620,51 @@ window.switchSisMappingYear = async function(anio) {
                     }
                 } else {
                     const targetKey = Object.keys(yearMapping).find(k => k.toUpperCase() === bioStr);
-                    if (targetKey && Array.isArray(row.variables) && row.variables.length > 0) {
-                        yearMapping[targetKey] = row.variables;
+                    if (targetKey && Array.isArray(row.variables)) {
+                        yearMapping[targetKey] = [...row.variables];
+                    } else if (!targetKey && Array.isArray(row.variables)) {
+                        yearMapping[bioStr] = [...row.variables];
                     }
                 }
             });
         }
 
-        // Si no había registos MOTHER_ en Supabase, auto-poblar _bioMotherKeys desde las dosis
+        // AUTO-MIGRACIÓN: Corregir claves incorrectas guardadas en versiones anteriores
+        if (_currentSisMappingYear === 2025) {
+            // NEUMO_23 en 2025: clave real = VNP01 (VNC04 pertenece a AM_NEUMO13 en 2026)
+            if (yearMapping.NEUMO_23 && yearMapping.NEUMO_23.includes('VNC04')) {
+                yearMapping.NEUMO_23 = [...new Set(
+                    yearMapping.NEUMO_23.map(k => k === 'VNC04' ? 'VNP01' : k)
+                )];
+                console.info('[SIS Mapper] Auto-migración 2025: VNC04 → VNP01 en NEUMO_23');
+            }
+        }
+
+        // Si no había registros MOTHER_ en Supabase para alguna familia, auto-poblar _bioMotherKeys desde las dosis
         Object.keys(BIO_FAMILY_MAP).forEach(famKey => {
+            if (_currentSisMappingYear === 2025 && (famKey === 'VSR' || famKey === 'NEUMO_20')) return;
+            if (_currentSisMappingYear !== 2025 && famKey === 'NEUMO_ADULTOS') return;
+
             if (!_bioMotherKeys[famKey] || _bioMotherKeys[famKey].length === 0) {
                 const motherSet = new Set();
                 BIO_FAMILY_MAP[famKey].doses.forEach(doseKey => {
                     const keys = yearMapping[doseKey] || [];
-                    keys.forEach(k => motherSet.add(k));
+                    keys.forEach(k => {
+                        if (_currentSisMappingYear === 2025 && (k.startsWith('VCC') || k === 'VS001')) return;
+                        motherSet.add(k);
+                    });
                 });
                 _bioMotherKeys[famKey] = Array.from(motherSet);
             }
+            if (_currentSisMappingYear === 2025 && Array.isArray(_bioMotherKeys[famKey])) {
+                _bioMotherKeys[famKey] = _bioMotherKeys[famKey].filter(k => !k.startsWith('VCC') && k !== 'VS001');
+            }
         });
 
-        // Resetear diccionario local y renderizar datos independientes del año seleccionado
+        // Actualizar diccionario activo local para este año
+        if (typeof window.DICT_RDA_BY_YEAR === 'object') {
+            window.DICT_RDA_BY_YEAR[_currentSisMappingYear] = yearMapping;
+        }
         window.updateRdaDictionary(yearMapping);
         window.renderSisMappingTable();
     } catch (err) {
@@ -3699,24 +3748,37 @@ window.addNewSisMappingYear = function() {
  */
 window.saveSisMappingUi = async function() {
     const rows = [];
-    const localDict = {};
+    const localDict = window.DICT_RDA || {};
 
-    // 1. Guardar mapeos por Dosis / Esquema (DICT_RDA)
+    // 1. Sincronizar desde chips visibles si existen en el DOM
     const doseContainers = document.querySelectorAll('.sis-tags-input-container[data-bio]');
-    doseContainers.forEach(container => {
-        const bio = container.dataset.bio;
-        const chips = container.querySelectorAll('.sis-chip');
-        const val = Array.from(chips).map(c => c.dataset.val.trim().toUpperCase()).filter(Boolean);
-        rows.push({
-            biologico: bio,
-            anio: _currentSisMappingYear,
-            variables: val
+    if (doseContainers && doseContainers.length > 0) {
+        doseContainers.forEach(container => {
+            const bio = container.dataset.bio;
+            const chips = container.querySelectorAll('.sis-chip');
+            const val = Array.from(chips).map(c => c.dataset.val.trim().toUpperCase()).filter(Boolean);
+            localDict[bio] = val;
         });
-        localDict[bio] = val;
+    }
+
+    // 2. Guardar mapeos por Dosis / Esquema (DICT_RDA)
+    Object.keys(localDict).forEach(doseKey => {
+        // Ignorar biológicos no pertenecientes al año activo
+        if (_currentSisMappingYear === 2025 && (doseKey === 'AM_NEUMO20' || doseKey === 'EMB_VSR')) return;
+        if (_currentSisMappingYear !== 2025 && (doseKey === 'NEUMO_23' || doseKey === 'SRP_6')) return;
+
+        rows.push({
+            biologico: doseKey,
+            anio: _currentSisMappingYear,
+            variables: localDict[doseKey] || []
+        });
     });
 
-    // 2. Guardar mapeos por Biológico Madre (_bioMotherKeys)
+    // 3. Guardar mapeos por Biológico Madre (_bioMotherKeys)
     Object.keys(BIO_FAMILY_MAP).forEach(famKey => {
+        if (_currentSisMappingYear === 2025 && (famKey === 'VSR' || famKey === 'NEUMO_20')) return;
+        if (_currentSisMappingYear !== 2025 && famKey === 'NEUMO_ADULTOS') return;
+
         const motherVars = _bioMotherKeys[famKey] || [];
         rows.push({
             biologico: `MOTHER_${famKey}`,
@@ -3736,9 +3798,15 @@ window.saveSisMappingUi = async function() {
 
         if (error) throw error;
 
-        // Actualizar diccionario activo local
+        // Actualizar diccionarios locales por año
+        if (typeof window.DICT_RDA_BY_YEAR === 'object') {
+            window.DICT_RDA_BY_YEAR[_currentSisMappingYear] = localDict;
+        }
         if (typeof window.updateRdaDictionary === 'function') {
             window.updateRdaDictionary(localDict);
+        }
+        if (typeof window.loadRdaMappingFromDatabase === 'function') {
+            await window.loadRdaMappingFromDatabase(_currentSisMappingYear);
         }
 
         if (typeof showToast === 'function') {
@@ -3827,6 +3895,9 @@ window.handleImportFederalKeyCatalog = async function(files) {
             const dUpper = item.desc.toUpperCase();
             let targetFam = null;
 
+            if (_currentSisMappingYear === 2025 && (item.key.startsWith('VCC') || item.key === 'VS001')) {
+                return; // Ignorar claves exclusivas de 2026 en el año 2025
+            }
             if (dUpper.includes('BCG') || item.key.startsWith('VBC')) targetFam = 'BCG';
             else if (dUpper.includes('HEXAVALENTE') || item.key.startsWith('VHX')) targetFam = 'HEXAVALENTE';
             else if (dUpper.includes('ROTAVIRUS') || item.key.startsWith('VRV')) targetFam = 'ROTAVIRUS';
@@ -3882,10 +3953,10 @@ const BIO_FAMILY_MAP = {
     NEUMO_ADULTOS: { label: "126 Neumocócica Polisacárida (23)", doses: ["NEUMO_23"] },
     SRP: { label: "127 Triple Viral (SRP)", doses: ["SRP_1", "SRP_2", "SRP_6"] },
     SR: { label: "128 Doble Viral (SR)", doses: ["ADOL_SR"] },
-    VPH: { label: "129 VPHa", doses: ["ADOL_VPH"] },
+    VPH: { label: "129 VPH", doses: ["ADOL_VPH"] },
     VARICELA: { label: "131 Varicela*", doses: ["VARICELA"] },
     HEPATITIS_A: { label: "122 Hepatitis A", doses: ["HEPATITIS_A"] },
-    TD: { label: "132 T d", doses: ["ADOL_TD", "AM_TD"] },
+    TD: { label: "132 Td", doses: ["ADOL_TD", "AM_TD"] },
     TDPA: { label: "133 Tdpa", doses: ["ADOL_TDPA", "EMB_TDPA"] },
     INFLUENZA: { label: "225 Influenza Estacional", doses: ["INFLUENZA"] },
     COVID: { label: "344 COVID-19", doses: ["COVID"] },
@@ -3893,7 +3964,7 @@ const BIO_FAMILY_MAP = {
 };
 
 let _currentDragDropStep = 1; // 1 = Biológico Madre, 2 = Dosis / Esquema
-let _bioMotherKeys = {}; // Map { BIO_FAMILY: [keys] }
+// _bioMotherKeys ya está declarado al inicio del módulo
 let _selectedAvailableKeys = new Set(); // Selección múltiple para movimiento en lote
 
 window.getAssignedDragDropKeys = function() {
@@ -3922,16 +3993,30 @@ window.openDragDropMapperModal = function() {
     const yearBadge = document.getElementById('dragDropYearBadge');
     if (yearBadge) yearBadge.textContent = _currentSisMappingYear;
 
-    // Inicializar o cargar Mapeo de Biológico Madre desde el diccionario activo de Supabase para este año
-    _bioMotherKeys = {};
+    // Usar la referencia aislada por año del mapeo activo
+    if (!_bioMotherKeysPerYear[_currentSisMappingYear]) {
+        _bioMotherKeysPerYear[_currentSisMappingYear] = {};
+    }
+    _bioMotherKeys = _bioMotherKeysPerYear[_currentSisMappingYear];
+
     Object.keys(BIO_FAMILY_MAP).forEach(famKey => {
-        _bioMotherKeys[famKey] = [];
+        if (_currentSisMappingYear === 2025 && (famKey === 'VSR' || famKey === 'NEUMO_20')) return;
+        if (_currentSisMappingYear !== 2025 && famKey === 'NEUMO_ADULTOS') return;
+
+        if (!_bioMotherKeys[famKey]) _bioMotherKeys[famKey] = [];
         BIO_FAMILY_MAP[famKey].doses.forEach(doseKey => {
             const keysInDose = (window.DICT_RDA || {})[doseKey] || [];
             keysInDose.forEach(k => {
+                // Filtrar claves no pertenecientes a 2025 (VCC, VS001)
+                if (_currentSisMappingYear === 2025 && (k.startsWith('VCC') || k === 'VS001')) return;
                 if (!_bioMotherKeys[famKey].includes(k)) _bioMotherKeys[famKey].push(k);
             });
         });
+
+        // Limpiar también cualquier clave no válida restante en _bioMotherKeys si es 2025
+        if (_currentSisMappingYear === 2025 && Array.isArray(_bioMotherKeys[famKey])) {
+            _bioMotherKeys[famKey] = _bioMotherKeys[famKey].filter(k => !k.startsWith('VCC') && k !== 'VS001');
+        }
     });
 
     _selectedAvailableKeys.clear();
@@ -3975,9 +4060,9 @@ window.renderStep1Targets = function() {
 
     let html = '';
     Object.keys(BIO_FAMILY_MAP).forEach(famKey => {
-        // Filtrar biológicos madre según reglas oficiales por año
-        if (_currentSisMappingYear === 2025 && (famKey === 'VSR')) return;
-        if (_currentSisMappingYear !== 2025 && (famKey === 'NEUMO_ADULTOS')) return;
+        // Filtrar biológicos según reglas oficiales por año
+        if (_currentSisMappingYear === 2025 && (famKey === 'VSR' || famKey === 'NEUMO_20')) return;
+        if (_currentSisMappingYear !== 2025 && famKey === 'NEUMO_ADULTOS') return;
 
         const fam = BIO_FAMILY_MAP[famKey];
         const assignedKeys = _bioMotherKeys[famKey] || [];
@@ -4062,7 +4147,8 @@ window.refreshDragDropAvailablePanel = function() {
 
     let baseCatalog = _importedCatalogKeys;
     if (!baseCatalog || baseCatalog.length === 0) {
-        baseCatalog = MASTER_CATALOG_2026.map(k => ({ key: k, section: 'Catálogo Federal 2026', desc: 'Variable Oficial SIS' }));
+        const activeCat = (_currentSisMappingYear === 2025) ? MASTER_CATALOG_2025 : MASTER_CATALOG_2026;
+        baseCatalog = activeCat.map(k => ({ key: k, section: `Catálogo Federal ${_currentSisMappingYear}`, desc: 'Variable Oficial SIS' }));
     }
 
     // En Paso 2, las disponibles son solo las claves asignadas en el Paso 1 a Biológicos Madre
@@ -4395,9 +4481,10 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                     'VTD33','VTD34','VTD35','VTD36','VTT01','VTT02','VTT03','VTT04','VTT05','VTT06','VTT07','VTT08',
                     'VTT09','VTT10','VTT11','VTT12'
                 ];
-                const keysNeumoAm = ['VAC93','VAC94','VNC04'];
+                const keysNeumoAm   = ['VAC93', 'VAC94', 'VNC04']; // AM_NEUMO13 (Neumo 13 Conjugada - Adultos Mayores)
+                const keysNeumo23   = ['VNP01'];                     // NEUMO_23 (Neumo 23 Polisacárida - 2025)
                 const keysSrAdol = ['VAC83','VDV01','VDV02','VDV03','VDV04','VDV05','VDV06'];
-                const allKeysQuery = [...new Set([...keysTdComplete, ...keysNeumoAm, ...keysSrAdol])];
+                const allKeysQuery = [...new Set([...keysTdComplete, ...keysNeumoAm, ...keysNeumo23, ...keysSrAdol])];
 
                 const { data: rawSis2025 } = await window.supabase
                     .from('registros_sis')
@@ -4409,19 +4496,21 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                 if (rawSis2025 && rawSis2025.length > 0) {
                     const sisByClues = {};
                     rawSis2025.forEach(r => {
-                        if (!sisByClues[r.clues]) sisByClues[r.clues] = { neumo13: 0, tdTotal: 0, sr: 0 };
+                        if (!sisByClues[r.clues]) sisByClues[r.clues] = { neumo13: 0, neumo23: 0, tdTotal: 0, sr: 0 };
                         const v = (r.variable_sis || '').toUpperCase().trim();
                         const val = Number(r.valor) || 0;
-                        if (keysNeumoAm.includes(v)) sisByClues[r.clues].neumo13 += val;
+                        if (keysNeumoAm.includes(v))   sisByClues[r.clues].neumo13 += val;
+                        if (keysNeumo23.includes(v))   sisByClues[r.clues].neumo23 += val;
                         if (keysTdComplete.includes(v)) sisByClues[r.clues].tdTotal += val;
-                        if (keysSrAdol.includes(v)) sisByClues[r.clues].sr += val;
+                        if (keysSrAdol.includes(v))    sisByClues[r.clues].sr += val;
                     });
 
                     raw2025.forEach(u => {
                         if (sisByClues[u.clues]) {
                             if (sisByClues[u.clues].neumo13 > 0) u.am_neumo13 = sisByClues[u.clues].neumo13;
+                            if (sisByClues[u.clues].neumo23 > 0) u.neumo_23   = sisByClues[u.clues].neumo23;
                             if (sisByClues[u.clues].tdTotal > 0) {
-                                if (!u.am_td || u.am_td < sisByClues[u.clues].tdTotal) u.am_td = sisByClues[u.clues].tdTotal;
+                                if (!u.am_td   || u.am_td   < sisByClues[u.clues].tdTotal) u.am_td   = sisByClues[u.clues].tdTotal;
                                 if (!u.adol_td || u.adol_td < sisByClues[u.clues].tdTotal) u.adol_td = sisByClues[u.clues].tdTotal;
                             }
                             if (sisByClues[u.clues].sr > 0) u.adol_sr = sisByClues[u.clues].sr;

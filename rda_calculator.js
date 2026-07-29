@@ -6,9 +6,8 @@
 // ══════════════════════════════════════════════════════════════
 // DICCIONARIO COMPLETO DE VARIABLES SIS
 // ══════════════════════════════════════════════════════════════
-let DICT_RDA = {
-    // ── ESQUEMA BÁSICO 0-8 AÑOS (Fórmula Federal RDA) ──
-    BCG:        ['VBC01', 'VBC02', 'BIO50'],
+const DEFAULT_DICT_2026 = {
+    BCG:        ['VBC01', 'VBC02', 'BIO50', 'BIO03', 'VBC03'],
     HepB_0_7:   ['VAC06'],
     Hexa_3:     ['VAC69'],
     Rota_2:     ['VRV02'],
@@ -28,9 +27,8 @@ let DICT_RDA = {
     VARICELA:   ['VAR02', 'VAR03'],
     HEPATITIS_A: ['VHA01', 'VHA02', 'BIO88'],
 
-    // ── ADOLESCENTES Y ADULTOS (Solo aplicaciones) ──
     ADOL_HB:   ['VHB01','VHB02','VHB03','VHB04','VHB05','VHB06'],
-    ADOL_SR:   ['VDV01','VDV02','VDV03','VDV04','VDV05','VDV06', 'VAC83'],
+    ADOL_SR:   ['VDV01','VDV02','VDV03','VDV04','VDV05','VDV06'],
     ADOL_VPH:  ['VPH05','VPH06','VPH07','VPH08','VPH12','VPH13','VPH14'],
     ADOL_TD:   ['VAC39','VAC40','VAC47','VAC48','VTD01','VTD02','VAC55','VAC56',
                 'VTD03','VTD19','VTD05','VTD21','VTD07','VTD23','VTD09','VTD25',
@@ -39,16 +37,13 @@ let DICT_RDA = {
                 'VTT01','VTT02','VTT04','VTT05','VTT07','VTT08','VTT10','VTT11'],
     ADOL_TDPA: ['VAC63'],
 
-    // ── ADULTOS MAYORES (Solo aplicaciones) ──
-    AM_NEUMO13: ['VNC04', 'VAC93', 'VAC94'],
+    AM_NEUMO13: ['VNC04'],
     AM_NEUMO20: ['VCC07'],
     AM_TD:      ['VTT03','VTT06','VTT09','VTT12', 'VAC43', 'VAC46', 'VAC51', 'VAC54', 'VTD13', 'VTD16', 'VAC59', 'VAC62'],
 
-    // ── EMBARAZADAS (Solo aplicaciones) ──
     EMB_TDPA: ['VAC63'],
     EMB_VSR:  ['VS001'],
  
-    // ── TEMPORADA INVERNAL (Solo aplicaciones) ──
     INFLUENZA: [
         'BIE01','BIE28','BIE29','BIE30','BIE31','BIE04','BIE32','BIE33',
         'BIE34','BIE35','BIE36','BIE37','BIE38','BIE39','BIE40','BIO96',
@@ -60,16 +55,87 @@ let DICT_RDA = {
     COVID: ['VCV38','VCV39','VCV40','VCV28','VCV16','VCV20','VCV21']
 };
 
+const DEFAULT_DICT_2025 = {
+    ...DEFAULT_DICT_2026,
+    // 2025 exact XLSX keys:
+    SRP_6:       ['VAC81'],
+    NEUMO_23:    ['VNP01'],
+    AM_NEUMO13:  ['VAC93', 'VAC94'],
+    ADOL_SR:     ['VAC83'],
+    VARICELA:    ['VAC36', 'VAR01', 'VAC38'],
+    HEPATITIS_A: ['VAC87', 'BIO88'],
+    ADOL_VPH:    ['VPH05','VPH06','VPH07','VPH08','VAC84','VAC85','VAC92','VPH09','VPH10','VPH11']
+};
+// Biológicos que NO existían en 2025
+delete DEFAULT_DICT_2025.AM_NEUMO20;
+delete DEFAULT_DICT_2025.EMB_VSR;
+delete DEFAULT_DICT_2025.Neumo_C1;
+delete DEFAULT_DICT_2025.Neumo_C2;
+delete DEFAULT_DICT_2025.Neumo_C3;
+
+let DICT_RDA_BY_YEAR = {
+    2025: JSON.parse(JSON.stringify(DEFAULT_DICT_2025)),
+    2026: JSON.parse(JSON.stringify(DEFAULT_DICT_2026))
+};
+
+let DICT_RDA = DICT_RDA_BY_YEAR[2026];
+
 // Set rápido para filtrado en parser
 let ALL_RDA_VARIABLES = Object.values(DICT_RDA).flat();
 let ALL_RDA_SET = new Set(ALL_RDA_VARIABLES);
 
 /**
+ * Carga dinámicamente los mapeos desde Supabase para el año indicado.
+ */
+async function loadRdaMappingFromDatabase(anio = 2026) {
+    const yr = parseInt(anio, 10) || 2026;
+    try {
+        if (window.supabase && typeof window.supabase.from === 'function') {
+            const { data, error } = await window.supabase
+                .from('sis_variables_mapeo')
+                .select('*')
+                .eq('anio', yr);
+
+            if (!error && data && data.length > 0) {
+                const baseDict = yr === 2025 ? JSON.parse(JSON.stringify(DEFAULT_DICT_2025)) : JSON.parse(JSON.stringify(DEFAULT_DICT_2026));
+                data.forEach(row => {
+                    const bioStr = String(row.biologico || '').toUpperCase();
+                    if (!bioStr.startsWith('MOTHER_')) {
+                        const targetKey = Object.keys(baseDict).find(k => k.toUpperCase() === bioStr);
+                        if (targetKey && Array.isArray(row.variables)) {
+                            baseDict[targetKey] = row.variables;
+                        } else if (!targetKey && Array.isArray(row.variables)) {
+                            baseDict[bioStr] = row.variables;
+                        }
+                    }
+                });
+                // AUTO-MIGRACIÓN: corregir claves obsoletas de versiones anteriores
+                if (yr === 2025 && baseDict.NEUMO_23 && baseDict.NEUMO_23.includes('VNC04')) {
+                    baseDict.NEUMO_23 = [...new Set(baseDict.NEUMO_23.map(k => k === 'VNC04' ? 'VNP01' : k))];
+                }
+                DICT_RDA_BY_YEAR[yr] = baseDict;
+            }
+        }
+    } catch (e) {
+        console.warn(`[loadRdaMappingFromDatabase] Error cargando mapeo para ${yr}:`, e);
+    }
+    
+    // Actualizar DICT_RDA activo
+    updateRdaDictionary(DICT_RDA_BY_YEAR[yr]);
+    return DICT_RDA_BY_YEAR[yr];
+}
+
+/**
  * Actualiza dinámicamente el diccionario de variables del SIS (DICT_RDA)
  * y recalcula ALL_RDA_VARIABLES y ALL_RDA_SET.
+ * IMPORTANTE: Reemplaza la referencia completa de DICT_RDA sin mutar el objeto
+ * compartido del año anterior, preservando el aislamiento por año.
  */
 function updateRdaDictionary(newMapping) {
     if (!newMapping || typeof newMapping !== 'object') return;
+    // Reemplazar el contenido del objeto activo limpiando claves huérfanas
+    const keysToRemove = Object.keys(DICT_RDA).filter(k => !(k in newMapping));
+    keysToRemove.forEach(k => delete DICT_RDA[k]);
     for (const key in newMapping) {
         if (Array.isArray(newMapping[key])) {
             DICT_RDA[key] = newMapping[key];
@@ -78,13 +144,19 @@ function updateRdaDictionary(newMapping) {
     // Reconstruir variables auxiliares
     ALL_RDA_VARIABLES = Object.values(DICT_RDA).flat();
     ALL_RDA_SET = new Set(ALL_RDA_VARIABLES);
-    
-    // Sincronizar en window si es necesario
+
+    // Sincronizar en window
     window.ALL_RDA_VARIABLES = ALL_RDA_VARIABLES;
     window.ALL_RDA_SET = ALL_RDA_SET;
+    window.DICT_RDA = DICT_RDA;
+    window.DICT_RDA_BY_YEAR = DICT_RDA_BY_YEAR;
 }
 
 window.updateRdaDictionary = updateRdaDictionary;
+window.loadRdaMappingFromDatabase = loadRdaMappingFromDatabase;
+window.DEFAULT_DICT_2025 = DEFAULT_DICT_2025;
+window.DEFAULT_DICT_2026 = DEFAULT_DICT_2026;
+window.DICT_RDA_BY_YEAR = DICT_RDA_BY_YEAR;
 
 // ══════════════════════════════════════════════════════════════
 // CLASE PRINCIPAL
@@ -93,6 +165,7 @@ class RDA2026Calculator {
 
     /** Suma dosis de variables dentro de registros hasta maxMes */
     static sumVariables(registros, varList, maxMes) {
+        if (!Array.isArray(varList) || varList.length === 0) return 0;
         let sum = 0;
         for (let i = 0; i < registros.length; i++) {
             const r = registros[i];
@@ -149,14 +222,24 @@ class RDA2026Calculator {
 
     static coberturaBiolNeumoMenor1(registros, pobMenor1, meses) {
         const factor = this.factorPoblacional(pobMenor1, meses);
-        const total = this.sumVariables(registros, [...DICT_RDA.Neumo_1, ...DICT_RDA.Neumo_2, ...DICT_RDA.Neumo_C1, ...DICT_RDA.Neumo_C2], meses);
+        // Neumo_C1/C2 sólo existen en 2026 (Neumocócica 20v); fallback a [] en 2025
+        const total = this.sumVariables(registros, [
+            ...(DICT_RDA.Neumo_1  || []),
+            ...(DICT_RDA.Neumo_2  || []),
+            ...(DICT_RDA.Neumo_C1 || []),
+            ...(DICT_RDA.Neumo_C2 || [])
+        ], meses);
         const cob = (total / factor) * 100;
         return isFinite(cob) ? Math.round(cob * 10) / 10 : 0;
     }
 
     static coberturaBiolNeumo1Ano(registros, pob1Ano, meses) {
         const factor = this.factorPoblacional(pob1Ano, meses);
-        const total = this.sumVariables(registros, [...DICT_RDA.Neumo_Ref, ...DICT_RDA.Neumo_C3], meses);
+        // Neumo_C3 sólo existe en 2026; fallback a [] en 2025
+        const total = this.sumVariables(registros, [
+            ...(DICT_RDA.Neumo_Ref || []),
+            ...(DICT_RDA.Neumo_C3  || [])
+        ], meses);
         const cob = (total / factor) * 100;
         return isFinite(cob) ? Math.round(cob * 10) / 10 : 0;
     }
@@ -246,9 +329,19 @@ class RDA2026Calculator {
         const p4A = unidad.pob_4_anos || 0;
 
         // Dosis totals for each age group (raw sums used by table)
-        const dosisMenor1 = this.sumVariables(regs, [...DICT_RDA.BCG,...DICT_RDA.HepB_0_7,...DICT_RDA.Hexa_3,...DICT_RDA.Rota_2,...DICT_RDA.Neumo_2], meses);
-        const dosisUno    = this.sumVariables(regs, [...DICT_RDA.Hexa_Ref,...DICT_RDA.Neumo_Ref,...DICT_RDA.SRP_2], meses);
-        const dosisCuatro = this.sumVariables(regs, DICT_RDA.DPT_4, meses);
+        const dosisMenor1 = this.sumVariables(regs, [
+            ...(DICT_RDA.BCG       || []),
+            ...(DICT_RDA.HepB_0_7  || []),
+            ...(DICT_RDA.Hexa_3    || []),
+            ...(DICT_RDA.Rota_2    || []),
+            ...(DICT_RDA.Neumo_2   || [])
+        ], meses);
+        const dosisUno    = this.sumVariables(regs, [
+            ...(DICT_RDA.Hexa_Ref  || []),
+            ...(DICT_RDA.Neumo_Ref || []),
+            ...(DICT_RDA.SRP_2     || [])
+        ], meses);
+        const dosisCuatro = this.sumVariables(regs, DICT_RDA.DPT_4 || [], meses);
 
         return {
             clues: unidad.clues,
@@ -289,9 +382,19 @@ class RDA2026Calculator {
         }
 
         // Dosis totals for municipality
-        const dosisMenor1 = this.sumVariables(regsMuni, [...DICT_RDA.BCG,...DICT_RDA.HepB_0_7,...DICT_RDA.Hexa_3,...DICT_RDA.Rota_2,...DICT_RDA.Neumo_2], meses);
-        const dosisUno    = this.sumVariables(regsMuni, [...DICT_RDA.Hexa_Ref,...DICT_RDA.Neumo_Ref,...DICT_RDA.SRP_2], meses);
-        const dosisCuatro = this.sumVariables(regsMuni, DICT_RDA.DPT_4, meses);
+        const dosisMenor1 = this.sumVariables(regsMuni, [
+            ...(DICT_RDA.BCG       || []),
+            ...(DICT_RDA.HepB_0_7  || []),
+            ...(DICT_RDA.Hexa_3    || []),
+            ...(DICT_RDA.Rota_2    || []),
+            ...(DICT_RDA.Neumo_2   || [])
+        ], meses);
+        const dosisUno    = this.sumVariables(regsMuni, [
+            ...(DICT_RDA.Hexa_Ref  || []),
+            ...(DICT_RDA.Neumo_Ref || []),
+            ...(DICT_RDA.SRP_2     || [])
+        ], meses);
+        const dosisCuatro = this.sumVariables(regsMuni, DICT_RDA.DPT_4 || [], meses);
 
         return {
             municipio, totalUnidades: uMuni.length,
@@ -323,9 +426,19 @@ class RDA2026Calculator {
             p4A += (u.pob_4_anos || 0);
         }
         // Dosis totals for global
-        const dosisMenor1 = this.sumVariables(todosRegistros, [...DICT_RDA.BCG,...DICT_RDA.HepB_0_7,...DICT_RDA.Hexa_3,...DICT_RDA.Rota_2,...DICT_RDA.Neumo_2], meses);
-        const dosisUno    = this.sumVariables(todosRegistros, [...DICT_RDA.Hexa_Ref,...DICT_RDA.Neumo_Ref,...DICT_RDA.SRP_2], meses);
-        const dosisCuatro = this.sumVariables(todosRegistros, DICT_RDA.DPT_4, meses);
+        const dosisMenor1 = this.sumVariables(todosRegistros, [
+            ...(DICT_RDA.BCG       || []),
+            ...(DICT_RDA.HepB_0_7  || []),
+            ...(DICT_RDA.Hexa_3    || []),
+            ...(DICT_RDA.Rota_2    || []),
+            ...(DICT_RDA.Neumo_2   || [])
+        ], meses);
+        const dosisUno    = this.sumVariables(todosRegistros, [
+            ...(DICT_RDA.Hexa_Ref  || []),
+            ...(DICT_RDA.Neumo_Ref || []),
+            ...(DICT_RDA.SRP_2     || [])
+        ], meses);
+        const dosisCuatro = this.sumVariables(todosRegistros, DICT_RDA.DPT_4 || [], meses);
 
         return {
             totalUnidades: unidades.length,
