@@ -1856,10 +1856,10 @@ function renderTable(fUnits, esquema, agg) {
                 bg = nameMap[vName].bg;
                 fg = nameMap[vName].fg;
             }
-            return `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:62px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;background:${bg};color:${fg};border:1px solid rgba(15,23,42,0.06);box-sizing:border-box;">${v.toLocaleString('es-MX')}</span>`;
+        return `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:62px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;background:${bg};color:${fg};border:1px solid rgba(15,23,42,0.06);box-sizing:border-box;">${v.toLocaleString('es-MX')}</span>`;
         }
 
-        // Esquema sobrio para coberturas % (RDA Oficial)
+        // Esquema sobrio para coberturas % (RDA Oficial — Esquema Básico)
         let bg = '#f0fdf4';
         let fg = '#166534';
         let border = '#bbf7d0';
@@ -1966,17 +1966,19 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
                 doc.setFillColor(15, 23, 42); doc.rect(0, 0, 279.4, 6, 'F');
                 doc.setFillColor(2, 132, 199); doc.rect(0, 6, 279.4, 1.5, 'F');
 
+                const activeScopeVal = document.getElementById('rdaFilterMunicipio')?.value || '';
+                const scopeDisplay = activeScopeVal ? `MUNICIPIO: ${activeScopeVal.toUpperCase()}` : (document.getElementById('rdaScopeLabel')?.textContent || 'JURISDICCIÓN SANITARIA 1');
+
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(8); doc.setTextColor(2, 132, 199);
-                doc.text("SUITE EXECUTIVE DE DIAGNÓSTICO COMPARATIVO", marginX, currentY + 2);
+                doc.text("SECRETARÍA DE SALUD DEL ESTADO DE QUERÉTARO — JURISDICCIÓN SANITARIA NO. 1", marginX, currentY + 2);
 
-                doc.setFontSize(20); doc.setTextColor(15, 23, 42);
+                doc.setFontSize(18); doc.setTextColor(15, 23, 42);
                 doc.text("Comparativa Multianual de Cobertura Vacunal (2025 vs 2026)", marginX, currentY + 10);
 
-                const activeScope = document.getElementById('rdaScopeLabel')?.textContent || muni;
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(9); doc.setTextColor(100, 116, 139);
-                doc.text(`Filtro: ${activeScope}  |  Cierre Mes: ${maxMesLabel.toUpperCase()}`, marginX, currentY + 16);
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(9.5); doc.setTextColor(2, 132, 199);
+                doc.text(`ÁMBITO DE EVALUACIÓN: ${scopeDisplay}   |   CIERRE MES: ${maxMesLabel.toUpperCase()}`, marginX, currentY + 16);
 
                 currentY = 44;
 
@@ -2181,8 +2183,13 @@ async function generarPDFRobusto(elementoOrigenId, nombreArchivo, devolverBlob =
                 textStartX = marginX + logoW + 8;
             }
             
+            const muniFilterVal = document.getElementById('rdaFilterMunicipio')?.value || '';
+            const muniScopeStr = muniFilterVal ? `MUNICIPIO: ${muniFilterVal.toUpperCase()}` : (muni && muni !== 'JURISDICCIÓN SANITARIA 1' ? `MUNICIPIO: ${muni.toUpperCase()}` : 'JURISDICCIÓN SANITARIA 1');
+            
             let headerTitle = isSingleUnit ? tableRowsRaw[0][1] : "Indicadores Analíticos RDA";
-            let headerSubtitle = isSingleUnit ? `${tableRowsRaw[0][0]}  |  ${tableRowsRaw[0][2].toUpperCase()}  |  ${esquemaTexto.toUpperCase()}` : `${esquemaTexto.toUpperCase()}  |  ${muni.toUpperCase()}`;
+            let headerSubtitle = isSingleUnit 
+                ? `UNIDAD: ${tableRowsRaw[0][0]}  |  MUNICIPIO: ${(tableRowsRaw[0][2]||'').toUpperCase()}  |  ${esquemaTexto.toUpperCase()}` 
+                : `${esquemaTexto.toUpperCase()}  |  ${muniScopeStr}`;
 
             if (isSingleUnit) {
                 doc.setFont('helvetica', 'bold');
@@ -2528,33 +2535,149 @@ const _prepareClonedDocForHDImage = (clonedDoc, contentEl) => {
         clonedContent.style.padding = '32px';
         clonedContent.style.background = '#ffffff';
 
-        // Desbloquear todos los contenedores con scroll interno, max-heights y posiciones sticky en la captura HD
-        const allElements = clonedContent.querySelectorAll('*');
-        const defaultView = clonedDoc.defaultView || window;
-        allElements.forEach(el => {
-            const computed = defaultView.getComputedStyle(el);
-            const isChartContainer = (el.id && el.id.toLowerCase().includes('chart')) || 
-                                     (el.className && typeof el.className === 'string' && el.className.toLowerCase().includes('chart'));
+        // Desactivar animaciones, pseudo-elementos de brillo, y centrar chips via CSS puro en el clon
+        const exportFixStyle = clonedDoc.createElement('style');
+        exportFixStyle.textContent = `
+            /* === Eliminar brillos / glare en tarjetas === */
+            .rda-kpi-card::after, .rda-kpi-card::before,
+            .rda-kpi-card:hover::after, .rda-kpi-card:hover::before,
+            [class*="kpi"]::after, [class*="kpi"]::before,
+            [class*="card"]::after, [class*="card"]::before,
+            .podium-gold-chip::before, .podium-diamond-chip::before,
+            .podium-silver-chip::after, .podium-steel-chip::before {
+                display: none !important;
+                content: none !important;
+                background: none !important;
+                opacity: 0 !important;
+                visibility: hidden !important;
+                animation: none !important;
+            }
+            /* === Detener todas las animaciones === */
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+            /* === Centrado vertical perfecto para CHIPS y BADGES === */
+            #rdaExportHeader [style*="border-radius"],
+            #rdaScopeLabel, #rdaCierreLabel,
+            [id*="Label"], [id*="Chip"], [id*="Badge"], [id*="badge"],
+            [class*="chip"], [class*="badge"], [class*="pill"],
+            .meta-alcanzada, [class*="meta-"], [class*="estatus"],
+            td span[style*="border-radius"], td div[style*="border-radius"] {
+                line-height: 1 !important;
+            }
+        `;
+        clonedDoc.head.appendChild(exportFixStyle);
 
-            // 1. Quitar scroll / overflow recortado
-            if (computed.overflowY !== 'visible' || computed.overflowX !== 'visible') {
+        // Prepend Membrete Institucional Oficial de Exportación si no existe
+        if (!clonedContent.querySelector('#rdaExportHeader')) {
+            const muni = document.getElementById('rdaFilterMunicipio')?.value || '';
+            const uni = document.getElementById('rdaFilterUnidad')?.value || '';
+            const esquema = _rdaState?.esquema || 'basico';
+
+            const esquemaLabelMap = {
+                basico: 'Esquema Básico (0-8 años)',
+                adultos: 'Adolescentes y Adultos',
+                mayores: 'Adultos Mayores',
+                embarazadas: 'Embarazadas',
+                invernal: 'Temporada Invernal',
+                comparativa_multianual: 'Comparativa Multianual (2025 vs 2026)',
+                meta_logro_influenza: 'Cobertura e Indicadores de Influenza y COVID-19'
+            };
+            const esquemaLabel = esquemaLabelMap[esquema] || 'Indicadores de Salud';
+            const maxMesName = MONTH_NAMES[(_rdaCache.maxMes || 12) - 1] || 'Final';
+            const fechaStr = new Date().toLocaleString('es-MX', { dateStyle: 'long', timeStyle: 'short' });
+
+            let scopeBadgeHtml = '';
+            if (uni) {
+                const uObj = (_rdaCache.unidades || []).find(x => x.clues === uni);
+                const mName = muni ? muni.toUpperCase() : (uObj?.municipio || '').toUpperCase();
+                const uName = uObj?.nombre ? uObj.nombre.toUpperCase() : uni;
+                scopeBadgeHtml = `
+                    <div style="display: inline-flex; align-items: center; justify-content: center; padding: 6px 18px; border-radius: 10px; background: #0284c7; color: #ffffff; font-size: 13px; font-weight: 900; box-shadow: 0 4px 12px rgba(2,132,199,0.25); box-sizing: border-box; white-space: nowrap; vertical-align: middle; line-height: 1;">📍 MUNICIPIO: ${mName}</div>
+                    <div style="display: inline-flex; align-items: center; justify-content: center; padding: 6px 16px; border-radius: 10px; background: rgba(255,255,255,0.15); color: #ffffff; font-size: 12.5px; font-weight: 800; border: 1px solid rgba(255,255,255,0.2); box-sizing: border-box; white-space: nowrap; vertical-align: middle; line-height: 1;">🏥 UNIDAD: ${uName} (${uni})</div>
+                `;
+            } else if (muni) {
+                scopeBadgeHtml = `
+                    <div style="display: inline-flex; align-items: center; justify-content: center; padding: 6px 20px; border-radius: 12px; background: #0f172a; color: #ffffff; font-size: 13.5px; font-weight: 900; box-shadow: 0 4px 14px rgba(15,23,42,0.3); border: 1px solid rgba(255,255,255,0.2); box-sizing: border-box; white-space: nowrap; vertical-align: middle; line-height: 1;">🏙️ MUNICIPIO: ${muni.toUpperCase()}</div>
+                `;
+            } else {
+                scopeBadgeHtml = `
+                    <div style="display: inline-flex; align-items: center; justify-content: center; padding: 6px 18px; border-radius: 10px; background: rgba(255,255,255,0.12); color: #f8fafc; font-size: 13px; font-weight: 800; border: 1px solid rgba(255,255,255,0.2); box-sizing: border-box; white-space: nowrap; vertical-align: middle; line-height: 1;">🏛️ ÁMBITO: JURISDICCIÓN SANITARIA NO. 1 (4 MUNICIPIOS)</div>
+                `;
+            }
+
+            const headerDiv = clonedDoc.createElement('div');
+            headerDiv.id = 'rdaExportHeader';
+            headerDiv.style.cssText = `
+                width: 100%;
+                margin-bottom: 28px;
+                padding: 24px 30px;
+                background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+                border-radius: 18px;
+                color: #ffffff;
+                font-family: Inter, system-ui, -apple-system, sans-serif;
+                box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.2);
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            `;
+            headerDiv.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.15); padding-bottom: 14px;">
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <div style="display: inline-flex; align-items: center; justify-content: center; padding: 5px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255, 255, 255, 0.1); font-weight: 900; font-size: 13px; letter-spacing: 0.08em; color: #38bdf8; box-sizing: border-box; white-space: nowrap; vertical-align: middle; line-height: 1;">SESEQ / JS1</div>
+                        <div>
+                            <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; line-height: 1.2;">
+                                SECRETARÍA DE SALUD DEL ESTADO DE QUERÉTARO — JURISDICCIÓN SANITARIA NO. 1
+                            </div>
+                            <div style="font-size: 19px; font-weight: 900; letter-spacing: -0.02em; color: #ffffff; margin-top: 3px; line-height: 1.2;">
+                                EVALUACIÓN DE INDICADORES DE COBERTURA VACUNAL 2026
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align: right; font-size: 11px; color: #94a3b8; font-weight: 700; line-height: 1.2;">
+                        <div>FECHA Y HORA DE EMISIÓN</div>
+                        <div style="font-size: 12.5px; color: #ffffff; font-weight: 800; margin-top: 3px; line-height: 1.2;">${fechaStr}</div>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        ${scopeBadgeHtml}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="display: inline-flex; align-items: center; justify-content: center; padding: 6px 16px; border-radius: 9999px; background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 12px; font-weight: 800; box-sizing: border-box; white-space: nowrap; vertical-align: middle; line-height: 1;">${esquemaLabel.toUpperCase()}</div>
+                        <div style="display: inline-flex; align-items: center; justify-content: center; padding: 6px 16px; border-radius: 9999px; background: rgba(255, 255, 255, 0.1); color: #f1f5f9; border: 1px solid rgba(255, 255, 255, 0.2); font-size: 12px; font-weight: 800; box-sizing: border-box; white-space: nowrap; vertical-align: middle; line-height: 1;">CIERRE: ${maxMesName.toUpperCase()}</div>
+                    </div>
+                </div>
+            `;
+            clonedContent.insertBefore(headerDiv, clonedContent.firstChild);
+        }
+
+        // === PASO 1: Eliminar scroll y max-height en contenedores de tabla/panel (NO en gráficas) ===
+        // SOLO se toca overflow/max-height en elementos con overflow:hidden/auto/scroll Y sin canvas/svg internos
+        // NUNCA se aplica height:auto — eso destruye los contenedores de Chart.js
+        const allElements = clonedContent.querySelectorAll('*');
+        allElements.forEach(el => {
+            const tag = el.tagName;
+            if (tag === 'CANVAS' || tag === 'SVG' || tag === 'IMG' || tag === 'SCRIPT' || tag === 'STYLE') return;
+
+            // Proteger elementos que contienen canvas/svg (contenedores de gráficas)
+            if (el.querySelector('canvas, svg')) return;
+
+            const inlineSt = el.getAttribute('style') || '';
+            // Solo quitar overflow en elementos que claramente lo tengan como scroll/hidden en inline style
+            if (inlineSt.includes('overflow') && !inlineSt.includes('overflow: visible')) {
                 el.style.setProperty('overflow', 'visible', 'important');
                 el.style.setProperty('overflow-x', 'visible', 'important');
                 el.style.setProperty('overflow-y', 'visible', 'important');
             }
-
-            // 2. Desbloquear max-height solo en elementos que no sean contenedores de gráficos
-            if (computed.maxHeight !== 'none' && !isChartContainer) {
+            if (inlineSt.includes('max-height')) {
                 el.style.setProperty('max-height', 'none', 'important');
             }
 
-            // 3. Respetar estrictamente la altura de gráficos para evitar que colapsen a 0px y se encimen las tablas
-            if (computed.maxHeight !== 'none' && !isChartContainer && !el.querySelector('canvas, svg, img')) {
-                el.style.setProperty('height', 'auto', 'important');
-            }
-
-            // 4. Desactivar sticky en el clon de exportación para que los encabezados se rendericen en su posición natural
-            if (computed.position === 'sticky') {
+            // Desactivar sticky en el clon
+            if (inlineSt.includes('sticky') || el.style.position === 'sticky') {
                 el.style.setProperty('position', 'relative', 'important');
                 el.style.setProperty('top', 'auto', 'important');
                 el.style.setProperty('left', 'auto', 'important');
@@ -2563,6 +2686,64 @@ const _prepareClonedDocForHDImage = (clonedDoc, contentEl) => {
             // Resetear scroll interno
             el.scrollTop = 0;
             el.scrollLeft = 0;
+        });
+
+        // === PASO 2: Sticky via getComputedStyle en el iframe ===
+        const defaultView = clonedDoc.defaultView || window;
+        clonedContent.querySelectorAll('*').forEach(el => {
+            try {
+                const cs = defaultView.getComputedStyle(el);
+                if (cs.position === 'sticky') {
+                    el.style.setProperty('position', 'relative', 'important');
+                    el.style.setProperty('top', 'auto', 'important');
+                }
+                // También quitar overflow oculto en contenedores sin gráficas detectados via computedStyle
+                if ((cs.overflow === 'hidden' || cs.overflowY === 'hidden' || cs.overflowX === 'hidden') && !el.querySelector('canvas, svg')) {
+                    el.style.setProperty('overflow', 'visible', 'important');
+                }
+            } catch(e) {}
+        });
+
+        // === PASO 3: Centrado de texto en chips/badges ===
+        const chipSelectors = [
+            '#rdaScopeLabel', '#rdaCierreLabel', '#rdaTableCount',
+            '[id*="Label"]', '[id*="Chip"]', '[id*="Badge"]', '[id*="badge"]',
+            '[class*="chip"]', '[class*="badge"]', '[class*="pill"]',
+            '.meta-alcanzada', '[class*="meta-"]'
+        ];
+
+        const centerChipText = (clonedEl) => {
+            clonedEl.style.setProperty('display', 'inline-flex', 'important');
+            clonedEl.style.setProperty('align-items', 'center', 'important');
+            clonedEl.style.setProperty('justify-content', 'center', 'important');
+            clonedEl.style.setProperty('height', 'auto', 'important');
+            clonedEl.style.setProperty('line-height', '1', 'important');
+            clonedEl.style.setProperty('padding-top', '4px', 'important');
+            clonedEl.style.setProperty('padding-bottom', '5px', 'important');
+            clonedEl.style.setProperty('text-align', 'center', 'important');
+            clonedEl.style.setProperty('white-space', 'nowrap', 'important');
+            clonedEl.style.setProperty('box-sizing', 'border-box', 'important');
+            clonedEl.style.setProperty('vertical-align', 'middle', 'important');
+        };
+
+        // Chips con ID conocido
+        chipSelectors.forEach(sel => {
+            clonedContent.querySelectorAll(sel).forEach(clonedEl => {
+                centerChipText(clonedEl);
+            });
+        });
+
+        // Chips de porcentaje/cobertura en celdas de tabla (span con border-radius inline)
+        clonedContent.querySelectorAll('td span[style*="border-radius"], td div[style*="border-radius"]').forEach(clonedEl => {
+            centerChipText(clonedEl);
+        });
+
+        // Chips del #rdaExportHeader
+        clonedContent.querySelectorAll('#rdaExportHeader span[style], #rdaExportHeader div[style]').forEach(clonedEl => {
+            const inSt = clonedEl.getAttribute('style') || '';
+            if (inSt.includes('border-radius') || inSt.includes('padding')) {
+                centerChipText(clonedEl);
+            }
         });
     }
 
