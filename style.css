@@ -12483,3 +12483,231 @@ input[type="number"] {
 }
 
 /* action-icon-btn styles moved to end of index.html for cascade priority */
+
+/* ==========================================
+   ESTILOS PANEL DE CONTROL & ACUSE PINOL
+   ========================================== */
+#pinolFiltroEstatus,
+#pinolFechaEntregaInput {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  box-sizing: border-box !important;
+  border-radius: 14px !important;
+  padding: 0 36px 0 16px !important;
+  background-color: #ffffff !important;
+  border: 1px solid rgba(203, 213, 225, 0.8) !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), inset 0 -1.5px 0 rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.02) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  transition: all 0.2s ease !important;
+}
+
+#pinolFiltroEstatus {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 16px 16px !important;
+}
+
+#pinolFechaEntregaInput {
+  padding: 0 16px !important;
+}
+
+#pinolFiltroEstatus:focus,
+#pinolFechaEntregaInput:focus {
+  outline: none !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15), inset 0 -1.5px 0 rgba(15, 23, 42, 0.08) !important;
+}
+
+/* ------------------------------------------
+   REGLAS DE IMPRESIÓN IMPRIMIBLE DE ACUSE PINOL
+   ------------------------------------------ */
+@media print {
+  html, body {
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  body > *:not(#pinolPrintContainer) {
+    display: none !important;
+  }
+
+  #pinolPrintContainer {
+    display: block !important;
+    visibility: visible !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    z-index: 9999999 !important;
+  }
+
+  #pinolPrintContainer * {
+    visibility: visible !important;
+  }
+
+  @page {
+    size: letter portrait;
+    margin: 10mm;
+  }
+}
+
+.pinol-acuse-page {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  color: #0f172a;
+  background: #ffffff;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 10px;
+}
+
+.pinol-acuse-block {
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 20px;
+  background: #ffffff;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.pinol-acuse-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2px solid #0f172a;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+}
+
+.pinol-acuse-title {
+  font-size: 16px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.pinol-acuse-tag {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #f1f5f9;
+  border: 1px solid #94a3b8;
+  color: #1e293b;
+}
+
+.pinol-acuse-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 16px;
+  margin-bottom: 14px;
+  font-size: 12px;
+}
+
+.pinol-acuse-grid-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.pinol-acuse-grid-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.pinol-acuse-grid-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.pinol-acuse-body {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #334155;
+  margin-bottom: 14px;
+  text-align: justify;
+}
+
+.pinol-acuse-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+  font-size: 11px;
+}
+
+.pinol-acuse-table th {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  padding: 6px 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #0f172a;
+  text-align: left;
+}
+
+.pinol-acuse-table td {
+  border: 1px solid #cbd5e1;
+  padding: 6px 10px;
+  color: #1e293b;
+}
+
+.pinol-acuse-signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-top: 24px;
+  text-align: center;
+}
+
+.pinol-acuse-sig-box {
+  border-top: 1px solid #0f172a;
+  padding-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pinol-acuse-sig-role {
+  font-size: 10px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.pinol-acuse-cut-line {
+  margin: 18px 0;
+  border-top: 2px dashed #94a3b8;
+  position: relative;
+  text-align: center;
+}
+
+.pinol-acuse-cut-badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  padding: 0 10px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #64748b;
+}
+

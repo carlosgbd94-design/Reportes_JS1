@@ -2971,6 +2971,7 @@ window.resolveDesabastoFlow = resolveDesabastoFlow;
 window.markNotificationReadFlow = markNotificationReadFlow;
 window.goToPinolPanelFlow = goToPinolPanelFlow;
 window.confirmPinolReceiptFlow = confirmPinolReceiptFlow;
+window.imprimirAcusePinol = imprimirAcusePinol;
 window.deleteNotificationFlow = deleteNotificationFlow;
 window.clearAllNotificationsFlow = clearAllNotificationsFlow;
 window.markVisibleNotificationsReadFlow = markVisibleNotificationsReadFlow;
@@ -3226,7 +3227,11 @@ function bindPinolEntregaModalEvents() {
   });
 
   $("btnConfirmarEntregaPinol")?.addEventListener("click", () => {
-    confirmPinolDeliveredFromModal();
+    confirmPinolDeliveredFromModal(false);
+  });
+
+  $("btnConfirmarEImprimirPinol")?.addEventListener("click", () => {
+    confirmPinolDeliveredFromModal(true);
   });
 
   $("pinolEntregaModal")?.addEventListener("click", (e) => {
@@ -7448,14 +7453,18 @@ async function supabaseRequest(action = "", payload, options = {}) {
       }
 
       case "markpinoldelivered": {
+        const updateObj = {
+          estatus: 'ENTREGADO',
+          entregado_por: payload.entregado_por || USER?.usuario || 'L.E. LIZBETH URIBE PANTOJA',
+          timestamp_entrega: new Date().toISOString(),
+          fecha_entrega: payload.fecha_entrega || todayYmdLocal()
+        };
+        if (payload.solicitud_botellas) {
+          updateObj.solicitud_botellas = Number(payload.solicitud_botellas);
+        }
         const { error: updateError } = await supabase
           .from('pinol_solicitudes')
-          .update({
-            estatus: 'ENTREGADO',
-            entregado_por: USER.usuario,
-            timestamp_entrega: new Date().toISOString(),
-            fecha_entrega: todayYmdLocal()
-          })
+          .update(updateObj)
           .eq('id', payload.id);
 
         if (updateError) throw updateError;
@@ -12365,6 +12374,7 @@ async function reloadTodayState(force = false) {
       applyCaptureLockState(); // Refrescar los botones y el estado locked
     } else {
       window.PREFILL_SNAPSHOT = null;
+      window.PREFILL_GAP_INFO = null;
     }
   } catch (e) {
     console.error("reloadTodayState error:", e);
@@ -12372,6 +12382,7 @@ async function reloadTodayState(force = false) {
 }
 
 window.PREFILL_SNAPSHOT = null;
+window.PREFILL_GAP_INFO = null;
 
 function openPrefillNotice(dateStr) {
   return new Promise((resolve) => {
@@ -12382,7 +12393,10 @@ function openPrefillNotice(dateStr) {
     }
     const msgEl = $("prefillNoticeMsg");
     if (msgEl) {
-      if (dateStr && dateStr !== "undefined") {
+      if (window.PREFILL_GAP_INFO && window.PREFILL_GAP_INFO.diffDays >= 9) {
+        const gap = window.PREFILL_GAP_INFO;
+        msgEl.innerHTML = `⚠️ <b>Atención:</b> Se detectó que la unidad <b>no realizó captura la semana pasada</b> (última captura registrada el <b style='color: #0284c7;'>${dateStr}</b> hace ${gap.diffDays} días).<br><br>Hemos precargado esa información previa para que revises y edites tus existencias actuales y te pongas al corriente.`;
+      } else if (dateStr && dateStr !== "undefined") {
         msgEl.innerHTML = "Hemos precargado tu última captura del día <b style='color: #0284c7;'>" + dateStr + "</b> para ahorrarte tiempo.";
       } else {
         msgEl.innerHTML = "Hemos precargado tu última captura de biológicos para ahorrarte tiempo.";
@@ -12411,12 +12425,20 @@ function closePrefillNotice() {
   if (overlay) overlay.classList.remove("show");
 }
 
-function openPrefillConfirm() {
+function openPrefillConfirm(options = {}) {
   return new Promise((resolve) => {
     let overlay = $("prefillConfirmOverlay");
     if (!overlay) return resolve(true);
     if (overlay.parentNode !== document.body) {
       document.body.appendChild(overlay);
+    }
+    const titleEl = $("prefillConfirmTitle");
+    const msgEl = $("prefillConfirmMsg");
+    if (titleEl) {
+      titleEl.textContent = options.title || "Guardado sin modificaciones";
+    }
+    if (msgEl) {
+      msgEl.innerHTML = options.msg || `Estás guardando la existencia sin modificación alguna respecto a la captura anterior.<br><br><strong style="color: var(--md-sys-color-on-surface);">¿Deseas continuar?</strong>`;
     }
     overlay.onclick = (e) => {
       if (e.target === overlay) {
@@ -12462,13 +12484,25 @@ async function execPrefillSemanal(todayStr) {
       const lastDate = lastReports[0].fecha;
       const t1 = new Date(lastDate).getTime();
       const t2 = new Date(todayStr).getTime();
-      const diffDays = (t2 - t1) / (1000 * 3600 * 24);
+      const diffDays = Math.round((t2 - t1) / (1000 * 3600 * 24));
 
       if (diffDays > 1) {
         const oldReport = await getTodayReports(lastDate, true);
         if (oldReport && oldReport.sr) {
           window.PREFILL_SNAPSHOT = JSON.stringify(oldReport.sr.items || []);
           oldReport.sr.fecha_prefill = lastDate;
+
+          const missedWeeks = Math.max(1, Math.floor(diffDays / 7));
+          if (diffDays >= 9) {
+            window.PREFILL_GAP_INFO = {
+              diffDays,
+              missedWeeks,
+              lastDate
+            };
+          } else {
+            window.PREFILL_GAP_INFO = null;
+          }
+
           return oldReport.sr;
         }
       }
@@ -12476,6 +12510,7 @@ async function execPrefillSemanal(todayStr) {
   } catch (err) {
     console.error("execPrefillSemanal error:", err);
   }
+  window.PREFILL_GAP_INFO = null;
   return null;
 }
 
@@ -14187,7 +14222,15 @@ async function performSaveSR() {
       })));
 
       if (currentSnapshot === prevSnapshot) {
-        const confirmed = await openPrefillConfirm();
+        let confirmOpts = {};
+        if (window.PREFILL_GAP_INFO && window.PREFILL_GAP_INFO.diffDays >= 9) {
+          const gap = window.PREFILL_GAP_INFO;
+          confirmOpts = {
+            title: "Guardado tras omisión de captura",
+            msg: `Detectamos un salto de <b>${gap.missedWeeks} semana(s)</b> desde tu última captura del <b>${gap.lastDate}</b> (hace ${gap.diffDays} días).<br><br>Estás guardando las existencias para la semana actual sin cambios respecto a esa fecha previa.<br><br><strong style="color: var(--md-sys-color-on-surface);">¿Deseas continuar?</strong>`
+          };
+        }
+        const confirmed = await openPrefillConfirm(confirmOpts);
         if (!confirmed) {
           return; // Cancels save
         }
@@ -16542,28 +16585,47 @@ async function listPinol(force = false) {
   return result;
 }
 
+function formatFechaMemorandumText(dateStr) {
+  if (!dateStr) dateStr = new Date().toISOString();
+  const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T12:00:00');
+  if (isNaN(d)) return "____ DE ____________ DE 2026";
+  const meses = ["ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO", "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"];
+  return `${d.getDate()} DE ${meses[d.getMonth()]} DE ${d.getFullYear()}`;
+}
+
 function openPinolEntregaModal(item) {
   PINOL_ENTREGA_CTX = item || null;
 
-  $("pinolEntregaMetaMunicipio").textContent = item?.municipio || "—";
-  $("pinolEntregaMetaClues").textContent = item?.clues || "—";
-  $("pinolEntregaMetaUnidad").textContent = item?.unidad || "—";
-  $("pinolEntregaComentario").value = "";
+  if ($("pinolEntregaMetaMunicipio")) $("pinolEntregaMetaMunicipio").textContent = item?.municipio || "—";
+  if ($("pinolEntregaMetaClues")) $("pinolEntregaMetaClues").textContent = item?.clues || "—";
+  if ($("pinolEntregaMetaUnidad")) $("pinolEntregaMetaUnidad").textContent = item?.unidad || "—";
+  if ($("pinolEntregaComentario")) $("pinolEntregaComentario").value = "";
+
+  const todayStr = typeof todayYmdLocal === "function" ? todayYmdLocal() : new Date().toISOString().split('T')[0];
+  if ($("pinolFechaEntregaInput")) {
+    $("pinolFechaEntregaInput").value = item?.fecha_entrega || todayStr;
+  }
+  if ($("pinolCantidadEntregar")) {
+    $("pinolCantidadEntregar").value = item?.solicitud_botellas || item?.cantidad || 4;
+  }
+  if ($("pinolEntregadoPorInput")) {
+    $("pinolEntregadoPorInput").value = item?.entregado_por || "L.E. LIZBETH URIBE PANTOJA";
+  }
 
   $("pinolEntregaModal")?.classList.add("show");
 
   setTimeout(() => {
-    $("pinolEntregaComentario")?.focus();
-  }, 30);
+    $("pinolFechaEntregaInput")?.focus();
+  }, 50);
 }
 
 function closePinolEntregaModal() {
   PINOL_ENTREGA_CTX = null;
-  $("pinolEntregaComentario").value = "";
+  if ($("pinolEntregaComentario")) $("pinolEntregaComentario").value = "";
   $("pinolEntregaModal")?.classList.remove("show");
 }
 
-async function confirmPinolDeliveredFromModal() {
+async function confirmPinolDeliveredFromModal(andPrint = false) {
   const item = PINOL_ENTREGA_CTX;
   if (!item?.id) {
     showToast("No se encontró la solicitud de pinol", false);
@@ -16571,22 +16633,43 @@ async function confirmPinolDeliveredFromModal() {
     return;
   }
 
+  const defaultDate = typeof todayYmdLocal === "function" ? todayYmdLocal() : new Date().toISOString().split('T')[0];
+  const fechaEntrega = $("pinolFechaEntregaInput")?.value || defaultDate;
+  const cantidad = Number($("pinolCantidadEntregar")?.value || item.solicitud_botellas || 4);
+  const entregadoPor = String($("pinolEntregadoPorInput")?.value || "L.E. LIZBETH URIBE PANTOJA").trim();
   const comentario = String($("pinolEntregaComentario")?.value || "").trim();
 
-  closePinolEntregaModal();
-  showOverlay("Marcando solicitud como entregada…", "Pinol");
+  item.fecha_entrega = fechaEntrega;
+  item.solicitud_botellas = cantidad;
+  item.entregado_por = entregadoPor;
 
-  await markPinolDelivered(item.id, comentario);
+  closePinolEntregaModal();
+  showOverlay("Guardando entrega de solicitud…", "Pinol");
+
+  await markPinolDelivered(item.id, comentario, { fechaEntrega, cantidad, entregadoPor });
+
+  if (andPrint) {
+    setTimeout(() => {
+      imprimirAcusePinol(item);
+    }, 300);
+  }
 }
 
-async function markPinolDelivered(id, comentario = "") {
+async function markPinolDelivered(id, comentario = "", extraData = null) {
   try {
-    const r = await apiCall({
+    const payload = {
       action: "markPinolDelivered",
       token: TOKEN,
       id,
       comentario_notificacion: String(comentario || "").trim()
-    });
+    };
+    if (extraData) {
+      if (extraData.fechaEntrega) payload.fecha_entrega = extraData.fechaEntrega;
+      if (extraData.cantidad) payload.solicitud_botellas = extraData.cantidad;
+      if (extraData.entregadoPor) payload.entregado_por = extraData.entregadoPor;
+    }
+
+    const r = await apiCall(payload);
 
     if (!r || !r.ok) {
       showToast((r && r.error) ? r.error : "No se pudo marcar como entregada", false);
@@ -16594,7 +16677,6 @@ async function markPinolDelivered(id, comentario = "") {
     }
 
     showToast("Solicitud marcada como entregada");
-
 
     await refreshAfterMutation({
       touchPinol: true
@@ -16606,6 +16688,340 @@ async function markPinolDelivered(id, comentario = "") {
     showToast("Error al marcar solicitud como entregada", false);
   } finally {
     hideOverlay();
+  }
+}
+
+function imprimirAcusePinol(solicitudOrId) {
+  let item = null;
+  if (typeof solicitudOrId === "object" && solicitudOrId !== null) {
+    item = solicitudOrId;
+  } else if (window._pinolCache && Array.isArray(window._pinolCache)) {
+    item = window._pinolCache.find(x => String(x.id) === String(solicitudOrId));
+  }
+
+  if (!item) {
+    showToast("No se encontró la información de la solicitud para el acuse", false);
+    return;
+  }
+
+  const defaultDate = typeof todayYmdLocal === "function" ? todayYmdLocal() : new Date().toISOString().split('T')[0];
+  const fechaTexto = formatFechaMemorandumText(item.fecha_entrega || item.timestamp_entrega || defaultDate);
+  const municipio = (item.municipio || "—").toUpperCase();
+  const clues = (item.clues || "—").toUpperCase();
+  const unidad = (item.unidad || "UNIDAD DE SALUD").toUpperCase();
+  const cantidad = item.solicitud_botellas || item.cantidad || 4;
+  const entregadoPor = (item.entregado_por || "L.E. LIZBETH URIBE PANTOJA").toUpperCase();
+
+  const logos = window.PINOL_LOGOS || {};
+  const logo1 = logos.logo1 || "";
+  const logo2 = logos.logo2 || "";
+  const logo5 = logos.logo5 || "";
+
+  const renderPage = (tipoCopia, isLastPage) => `
+    <div class="memo-page" style="${isLastPage ? '' : 'page-break-after: always;'}">
+      <!-- ENCABEZADO CON LOGOS OFICIALES -->
+      <div class="memo-header-logos">
+        <div class="logo-left">
+          ${logo1 ? `<img src="${logo1}" style="height: 52px; width: auto; display: block;" />` : ''}
+        </div>
+        <div class="logo-right">
+          ${logo2 ? `<img src="${logo2}" style="height: 60px; width: auto; display: block;" />` : ''}
+        </div>
+      </div>
+
+      <div class="memo-badge-container">
+        <span class="memo-copy-badge">${tipoCopia}</span>
+      </div>
+
+      <div class="memo-title">M E M O R Á N D U M</div>
+
+      <!-- METADATA ENCABEZADO -->
+      <table class="memo-meta">
+        <tr>
+          <td class="meta-label" style="width: 14%;">A:</td>
+          <td class="meta-val" style="width: 46%;">
+            A QUIEN CORRESPONDA<br>
+            <span style="font-size: 11px; font-weight: 600; color: #334155;">UNIDAD DE SALUD: ${unidad}</span>
+          </td>
+          <td class="meta-label" style="width: 14%;">FECHA:</td>
+          <td class="meta-val" style="width: 26%;">${fechaTexto}</td>
+        </tr>
+        <tr>
+          <td class="meta-label">DE:</td>
+          <td class="meta-val" colspan="3">
+            <strong>MTRA. LIZBETH URIBE PANTOJA</strong><br>
+            <span style="font-size: 11px; font-weight: 600; color: #334155;">ENCARGADA DEL PROGRAMA DE VACUNACIÓN UNIVERSAL DE LA JURISDICCIÓN NO. 1</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="meta-label">REFERENCIA:</td>
+          <td class="meta-val" colspan="3">CLUES: ${clues} &nbsp;|&nbsp; MUNICIPIO: ${municipio}</td>
+        </tr>
+        <tr>
+          <td class="meta-label">ASUNTO:</td>
+          <td class="meta-val" colspan="3"><strong>ENTREGA DE PINOL</strong></td>
+        </tr>
+      </table>
+
+      <hr class="memo-divider">
+
+      <!-- CUERPO DE TEXTO -->
+      <div class="memo-body-text">
+        Por medio del presente, se hace entrega del siguiente insumo, para su uso exclusivo de refrigeradores del programa de vacunación universal y refrigeradores de farmacia, puntualizando que el insumo cubre la necesidad con base en el número de refrigeradores para que por favor se haga el uso responsable y adecuado:
+      </div>
+
+      <!-- TABLA DE INSUMOS -->
+      <table class="memo-table">
+        <thead>
+          <tr>
+            <th style="width: 28%;">TIPO</th>
+            <th style="width: 14%;">MARCA</th>
+            <th style="width: 14%; text-align: center;">CANTIDAD</th>
+            <th style="width: 44%;">DESCRIPCIÓN</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Limpiador líquido con aceite de pino 828 ml</td>
+            <td style="font-weight: 800;">PINOL</td>
+            <td style="text-align: center; font-weight: 900; font-size: 13px;">${cantidad} PZAS.</td>
+            <td>Multilimpiador desinfectante con aroma a pino, que elimina el 99.9% de virus y bacterias</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- SECCIÓN DE FIRMAS Y SELLO -->
+      <div class="memo-signatures-grid">
+        <div class="sig-col">
+          <div style="height: 100px;"></div>
+          <div class="sig-line"></div>
+          <div class="sig-name">ENTREGA</div>
+          <div class="sig-person">MTRA. LIZBETH URIBE PANTOJA</div>
+          <div class="sig-title">RESPONSABLE DEL PROGRAMA DE VACUNACIÓN</div>
+        </div>
+
+        <div class="sig-col">
+          <!-- RECUADRO DEDICADO PARA SELLO FÍSICO Y FIRMA -->
+          <div class="sello-box">
+            <span class="sello-text">[ FIRMA Y SELLO OFICIAL DE RECIBIDO ]</span>
+          </div>
+          <div class="sig-line"></div>
+          <div class="sig-name">RECIBE</div>
+          <div class="sig-title">RESPONSABLE DE MEDICINA PREVENTIVA EN LA UNIDAD DE SALUD</div>
+        </div>
+      </div>
+
+      <!-- PIE DE PÁGINA OFICIAL -->
+      <div class="memo-footer-bar">
+        <div class="footer-info">
+          <strong>Oficinas de la Jurisdicción Sanitaria 1 • Departamento de vacunas</strong><br>
+          Circuito Moisés Solana S/N, col. Vista Alegre, C.P. 76070, Querétaro, Qro.<br>
+          Oficina Tel: (442) 213 61 70 ext. 12300
+        </div>
+        <div class="footer-logo-box">
+          ${logo5 ? `<img src="${logo5}" style="height: 38px; width: auto;" />` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+
+  const htmlDoc = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Memorandum_Pinol_${clues}</title>
+  <style>
+    @page {
+      size: letter portrait;
+      margin: 12mm 15mm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body {
+      font-family: 'Arial Nova', 'Segoe UI', Arial, Helvetica, sans-serif;
+      color: #000000;
+      background: #ffffff !important;
+      margin: 0;
+      padding: 0;
+    }
+    .memo-page {
+      width: 100%;
+      min-height: 98vh;
+      padding: 10px 5px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+    .memo-header-logos {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .memo-badge-container {
+      text-align: right;
+      margin-bottom: 6px;
+    }
+    .memo-copy-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border: 1px solid #000000;
+      background: #f1f5f9;
+      color: #000000;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .memo-title {
+      font-size: 17px;
+      font-weight: 900;
+      text-align: center;
+      letter-spacing: 0.25em;
+      margin-bottom: 18px;
+      color: #000000;
+    }
+    .memo-meta {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+      font-size: 11.5px;
+      line-height: 1.4;
+    }
+    .memo-meta td {
+      padding: 4px 6px;
+      vertical-align: top;
+    }
+    .meta-label {
+      font-weight: 900;
+      color: #000000;
+    }
+    .meta-val {
+      color: #000000;
+    }
+    .memo-divider {
+      border: none;
+      border-top: 2px solid #000000;
+      margin: 10px 0 16px;
+    }
+    .memo-body-text {
+      font-size: 12px;
+      line-height: 1.5;
+      color: #000000;
+      text-align: justify;
+      margin-bottom: 18px;
+    }
+    .memo-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+      font-size: 11px;
+    }
+    .memo-table th, .memo-table td {
+      border: 1px solid #000000;
+      padding: 8px 10px;
+    }
+    .memo-table th {
+      background: #f1f5f9;
+      font-weight: 900;
+      text-transform: uppercase;
+      text-align: left;
+    }
+    .memo-signatures-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-top: 45px;
+      margin-bottom: 25px;
+    }
+    .sig-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .sello-box {
+      width: 100%;
+      height: 100px;
+      border: 1px dashed #64748b;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+      background: #fafafa;
+    }
+    .sello-text {
+      font-size: 9px;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 0.05em;
+    }
+    .sig-line {
+      width: 90%;
+      border-top: 1.5px solid #000000;
+      margin-bottom: 6px;
+    }
+    .sig-name {
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: #000000;
+    }
+    .sig-person {
+      font-size: 11px;
+      font-weight: 700;
+      color: #000000;
+      margin-top: 2px;
+    }
+    .sig-title {
+      font-size: 9.5px;
+      font-weight: 700;
+      color: #334155;
+      text-transform: uppercase;
+      margin-top: 3px;
+    }
+    .memo-footer-bar {
+      border-top: 1.5px solid #000000;
+      padding-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-top: auto;
+    }
+    .footer-info {
+      font-size: 9.5px;
+      line-height: 1.35;
+      color: #334155;
+    }
+  </style>
+</head>
+<body>
+  ${renderPage("ORIGINAL - UNIDAD DE SALUD", false)}
+  ${renderPage("COPIA / ACUSE - ARCHIVO PROGRAMA DE VACUNACIÓN", true)}
+
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+      }, 300);
+    };
+  </script>
+</body>
+</html>`;
+
+  const printWin = window.open("", "_blank", "width=900,height=1100");
+  if (printWin) {
+    printWin.document.open();
+    printWin.document.write(htmlDoc);
+    printWin.document.close();
+  } else {
+    showToast("Por favor permite las ventanas emergentes (popups) para abrir el acuse", false);
   }
 }
 
@@ -16933,8 +17349,12 @@ async function refreshPinol() {
 
       let actionContent = "";
       if (estatus === "PENDIENTE") {
-        actionContent += `<button class="miniBtn btnPinolDeliver" data-id="${escapeAttr(x?.id || "")}">
-      <span class="material-symbols-rounded">local_shipping</span> Entregar
+        actionContent += `<button class="miniBtn btnPinolDeliver" data-id="${escapeAttr(x?.id || "")}" title="Surtir / Configurar Entrega">
+      <span class="material-symbols-rounded">local_shipping</span> Surtir
+    </button>`;
+      } else {
+        actionContent += `<button class="miniBtn ghostBtn" onclick="imprimirAcusePinol('${escapeAttr(x?.id || "")}')" title="Imprimir Acuse de Entrega" style="color: #166534; font-weight: 700;">
+      <span class="material-symbols-rounded">print</span> Acuse
     </button>`;
       }
 

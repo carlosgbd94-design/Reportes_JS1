@@ -240,8 +240,9 @@
   <script src="offline_db.js?v=2026.1" defer></script>
   <script src="stock_predictor.js?v=2026.1" defer></script>
   <script src="export_manager.js?v=2026.1" defer></script>
-  <!-- Assets para PDF -->
+  <!-- Assets para PDF y Pinol -->
   <script src="pdf_assets.js" defer></script>
+  <script src="pinol_assets.js" defer></script>
   <!-- Archivo Principal -->
   <script src="main.js?v=2026.65" defer></script>
   <!-- Influenza Meta-Logro Module -->
@@ -4696,7 +4697,7 @@
                   style="width: 28px; min-width: 28px; height: 24px; display: flex; align-items: center; justify-content: flex-start; flex-shrink: 0;">
                   <span class="material-symbols-rounded" style="color: #059669; font-size: 20px;">photo_library</span>
                 </div>
-                <span style="white-space: nowrap; flex: 1;">Imagen JPEG (Alta Calidad)</span>
+                <span style="white-space: nowrap; flex: 1;">Imagen JPEG (Buena Calidad)</span>
               </button>
               <button class="rda-export-opt" data-export="masivo_pdf"
                 data-role-gate="ADMIN,JURISDICCIONAL,VISUALIZADOR_JURISDICCIONAL,MUNICIPAL,CARAVANAS"
@@ -4714,7 +4715,16 @@
                   style="width: 28px; min-width: 28px; height: 24px; display: flex; align-items: center; justify-content: flex-start; flex-shrink: 0;">
                   <span class="material-symbols-rounded" style="color: #d97706; font-size: 20px;">collections</span>
                 </div>
-                <span style="white-space: nowrap; flex: 1;">ZIP Masivo (Imágenes PNG)</span>
+                <span style="white-space: nowrap; flex: 1;">ZIP Masivo (PNG)</span>
+              </button>
+              <button class="rda-export-opt" data-export="masivo_jpeg"
+                data-role-gate="ADMIN,JURISDICCIONAL,VISUALIZADOR_JURISDICCIONAL,MUNICIPAL,CARAVANAS"
+                style="width: 100%; padding: 12px 14px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer; display: flex; align-items: center; border-radius: 8px; box-sizing: border-box;">
+                <div
+                  style="width: 28px; min-width: 28px; height: 24px; display: flex; align-items: center; justify-content: flex-start; flex-shrink: 0;">
+                  <span class="material-symbols-rounded" style="color: #059669; font-size: 20px;">photo_library</span>
+                </div>
+                <span style="white-space: nowrap; flex: 1;">ZIP Masivo (JPEG)</span>
               </button>
             </div>
           </div>
@@ -5122,8 +5132,8 @@
     class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
     aria-hidden="true">
     <div
-      class="w-full max-w-[600px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100 flex flex-col">
-      <div class="modalHead">
+      class="w-full max-w-[620px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100 flex flex-col">
+      <div class="modalHead" style="padding: 24px 28px 16px; border-b: 1px solid rgba(226, 232, 240, 0.6);">
         <div class="modalEyebrow" style="
               background: #dcfce7;
               color: #166534;
@@ -5136,92 +5146,142 @@
               font-size: 11px;
               text-transform: uppercase;
               letter-spacing: 0.05em;
-              margin-bottom: 12px;
+              margin-bottom: 8px;
             ">
           <span class="material-symbols-rounded" style="font-size:18px;">inventory_2</span>
-          Gestión de Insumos
+          Gestión de Insumos • Acuse Oficial
         </div>
-        <div class="modalTitle" style="font-weight:900; margin-bottom:8px;">Confirmar entrega de pinol</div>
-        <div class="modalSub" style="color:var(--md-sys-color-on-surface-variant); line-height:1.5;">
-          Ingresa un comentario opcional para la unidad antes de notificar la entrega oficial del insumo.
+        <div class="modalTitle" style="font-weight:900; font-size: 20px; color: #0f172a; margin-bottom:4px;">Confirmar Entrega y Generar Memorándum</div>
+        <div class="modalSub" style="color:#64748b; font-size: 13px; line-height:1.5;">
+          Confirma la fecha física de entrega y los datos para generar el acuse impreso en 2 copias.
         </div>
       </div>
 
-      <div class="modalBody" style="padding-top:20px;">
+      <div class="modalBody" style="padding: 20px 28px;">
         <div class="pinolModalMeta" style="
               display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+              grid-template-columns: repeat(3, 1fr);
               gap: 12px;
-              margin-bottom: 24px;
+              margin-bottom: 20px;
             ">
           <div class="fieldCard"
-            style="background: var(--md-surface-container-low); border: 1px solid var(--md-outline-variant); padding: 12px;">
-            <label style="margin:0 0 4px; font-size:10px; color:var(--md-sys-color-primary);">MUNICIPIO</label>
+            style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px 14px; border-radius: 14px;">
+            <label style="margin:0 0 2px; font-size:10px; font-weight:800; color:#64748b; text-transform:uppercase;">MUNICIPIO</label>
             <div id="pinolEntregaMetaMunicipio"
-              style="font-weight:900; font-size:14px; color:var(--md-sys-color-on-surface);">—</div>
+              style="font-weight:800; font-size:13px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">—</div>
           </div>
           <div class="fieldCard"
-            style="background: var(--md-surface-container-low); border: 1px solid var(--md-outline-variant); padding: 12px;">
-            <label style="margin:0 0 4px; font-size:10px; color:var(--md-sys-color-primary);">CLUES</label>
+            style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px 14px; border-radius: 14px;">
+            <label style="margin:0 0 2px; font-size:10px; font-weight:800; color:#64748b; text-transform:uppercase;">CLUES</label>
             <div id="pinolEntregaMetaClues"
-              style="font-weight:900; font-size:14px; color:var(--md-sys-color-on-surface);">—</div>
+              style="font-weight:800; font-size:13px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">—</div>
           </div>
           <div class="fieldCard"
-            style="background: var(--md-surface-container-low); border: 1px solid var(--md-outline-variant); padding: 12px;">
-            <label style="margin:0 0 4px; font-size:10px; color:var(--md-sys-color-primary);">UNIDAD</label>
+            style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px 14px; border-radius: 14px;">
+            <label style="margin:0 0 2px; font-size:10px; font-weight:800; color:#64748b; text-transform:uppercase;">UNIDAD DE SALUD</label>
             <div id="pinolEntregaMetaUnidad"
-              style="font-weight:900; font-size:14px; color:var(--md-sys-color-on-surface);">—</div>
+              style="font-weight:800; font-size:13px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">—</div>
           </div>
         </div>
 
-        <div style="margin-bottom: 20px;">
-          <label
-            style="color:var(--md-sys-color-primary); font-weight:800; font-size:12px; margin-bottom:10px; display:block;">
-            COMENTARIO PARA LA UNIDAD (OPCIONAL)
+        <!-- Campos de Fecha y Entrega -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div>
+            <label style="color:#0f172a; font-weight:800; font-size:12px; margin-bottom:6px; display:block;">
+              FECHA DE ENTREGA FÍSICA
+            </label>
+            <input type="date" id="pinolFechaEntregaInput" style="width: 100%; height: 44px; border-radius: 14px !important;" />
+          </div>
+          <div>
+            <label style="color:#0f172a; font-weight:800; font-size:12px; margin-bottom:6px; display:block;">
+              CANTIDAD A ENTREGAR (PZAS)
+            </label>
+            <input type="number" id="pinolCantidadEntregar" min="1" step="1" value="4"
+              style="width: 100%; height: 44px; border-radius: 14px !important; border: 1px solid rgba(203, 213, 225, 0.8); padding: 0 16px; font-weight:700; box-shadow: 0 1px 3px rgba(15,23,42,0.06);" />
+          </div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="color:#0f172a; font-weight:800; font-size:12px; margin-bottom:6px; display:block;">
+            RESPONSABLE QUE ENTREGA EL INSUMO
           </label>
-          <textarea id="pinolEntregaComentario" placeholder="Ej: Se entregó material completo. Favor de resguardar."
+          <input type="text" id="pinolEntregadoPorInput" value="L.E. LIZBETH URIBE PANTOJA" placeholder="Nombre y cargo..."
+            style="width: 100%; height: 44px; border-radius: 14px !important; border: 1px solid rgba(203, 213, 225, 0.8); padding: 0 16px; font-weight:700; box-shadow: 0 1px 3px rgba(15,23,42,0.06);" />
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="color:#0f172a; font-weight:800; font-size:12px; margin-bottom:6px; display:block;">
+            COMENTARIO / OBSERVACIÓN PARA LA UNIDAD (OPCIONAL)
+          </label>
+          <textarea id="pinolEntregaComentario" placeholder="Ej: Se entregó material completo con base en número de refrigeradores."
             style="
-                min-height: 100px;
-                background: var(--md-surface-container-highest);
-                border: 1.5px solid var(--md-outline-variant);
-                border-radius: 16px;
-                padding: 14px;
-                font-size: 15px;
+                min-height: 70px;
+                background: #f8fafc;
+                border: 1px solid rgba(203, 213, 225, 0.8);
+                border-radius: 14px;
+                padding: 12px;
+                font-size: 13px;
                 width: 100%;
                 resize: none;
+                font-weight: 600;
+                box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
               "></textarea>
         </div>
 
         <div class="modalNote"
-          style="font-size:12px; color:var(--md-sys-color-secondary); margin-top:16px; background:var(--md-surface-container-low); padding:10px; border-radius:12px; border-left:4px solid #166534;">
-          Este mensaje se enviará como notificación inmediata a la unidad seleccionada.
+          style="font-size:11px; font-weight:600; color:#15803d; background:#f0fdf4; padding:10px 14px; border-radius:12px; border-left:4px solid #166534; display:flex; items-center; gap:8px;">
+          <span class="material-symbols-rounded" style="font-size:18px;">print</span>
+          Al confirmar se generará el Memorándum de Acuse oficial listo para imprimir en 2 copias (Original y Copia).
         </div>
 
-        <div class="modalFooter" style="margin-top:32px; display:flex; justify-content:flex-end; gap:12px;">
+        <div class="modalFooter" style="margin-top:24px; display:flex; justify-content:flex-end; gap:12px; flex-wrap:wrap;">
           <button class="ghostBtn" id="btnCancelarEntregaPinol" type="button"
-            style="font-weight:700; border:none; background:transparent;">
-            <span class="material-symbols-rounded">close</span> Cancelar
+            style="font-weight:700; border:none; background:transparent; cursor:pointer; color:#64748b;">
+            Cancelar
           </button>
 
           <button class="btn" id="btnConfirmarEntregaPinol" type="button" style="
+                background: #f1f5f9;
+                color: #334155;
+                padding: 10px 20px;
+                border: 1px solid #cbd5e1;
+                border-radius: 14px;
+                font-weight: 800;
+                font-size: 13px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+              ">
+            <span class="material-symbols-rounded" style="font-size:18px;">check</span>
+            Solo guardar entrega
+          </button>
+
+          <button class="btn" id="btnConfirmarEImprimirPinol" type="button" style="
                 background: linear-gradient(135deg, #166534 0%, #15803d 100%);
-                color: var(--md-sys-color-surface);
-                padding: 12px 28px;
+                color: #ffffff;
+                padding: 10px 24px;
                 border: none;
                 border-radius: 14px;
                 font-weight: 800;
+                font-size: 13px;
+                cursor: pointer;
                 box-shadow: 0 4px 12px rgba(22, 101, 52, 0.25);
                 display: flex;
                 align-items: center;
                 gap: 8px;
               ">
-            <span class="material-symbols-rounded">check_circle</span>
-            Confirmar entrega y notificar
+            <span class="material-symbols-rounded" style="font-size:18px;">print</span>
+            Guardar e Imprimir Acuse
           </button>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- ✅ CONTENEDOR INVISIBLE/IMPRIMIBLE DEL ACUSE OFICIAL DE PINOL -->
+  <div id="pinolPrintContainer" style="display:none;"></div>
+
 
   <!-- ✅ MODAL UPLOAD CSV (SIS) -->
   <div id="modalUploadCSV"
@@ -7962,9 +8022,9 @@
           <span class="material-symbols-rounded text-base">warning</span>
           Validación preventiva
         </div>
-        <div class="text-[20px] font-extrabold text-primary tracking-tight mb-2">Guardado sin modificaciones
+        <div class="text-[20px] font-extrabold text-primary tracking-tight mb-2" id="prefillConfirmTitle">Guardado sin modificaciones
         </div>
-        <div class="text-[13px] font-medium text-surface-onVariant/80 leading-relaxed">
+        <div class="text-[13px] font-medium text-surface-onVariant/80 leading-relaxed" id="prefillConfirmMsg">
           Estás guardando la existencia sin modificación alguna respecto a la captura anterior.<br><br><strong
             style="color: var(--md-sys-color-on-surface);">¿Deseas continuar?</strong>
         </div>

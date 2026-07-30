@@ -399,6 +399,7 @@ function initRDADashboard() {
             else if (type === 'png' || type === 'jpeg') exportDashboardImagen(type);
             else if (type === 'masivo_pdf') exportMasivoZIP('pdf');
             else if (type === 'masivo_img') exportMasivoZIP('png');
+            else if (type === 'masivo_jpeg') exportMasivoZIP('jpeg');
         });
     });
 
@@ -2526,6 +2527,43 @@ const _prepareClonedDocForHDImage = (clonedDoc, contentEl) => {
         clonedContent.style.boxSizing = 'border-box';
         clonedContent.style.padding = '32px';
         clonedContent.style.background = '#ffffff';
+
+        // Desbloquear todos los contenedores con scroll interno, max-heights y posiciones sticky en la captura HD
+        const allElements = clonedContent.querySelectorAll('*');
+        const defaultView = clonedDoc.defaultView || window;
+        allElements.forEach(el => {
+            const computed = defaultView.getComputedStyle(el);
+            const isChartContainer = (el.id && el.id.toLowerCase().includes('chart')) || 
+                                     (el.className && typeof el.className === 'string' && el.className.toLowerCase().includes('chart'));
+
+            // 1. Quitar scroll / overflow recortado
+            if (computed.overflowY !== 'visible' || computed.overflowX !== 'visible') {
+                el.style.setProperty('overflow', 'visible', 'important');
+                el.style.setProperty('overflow-x', 'visible', 'important');
+                el.style.setProperty('overflow-y', 'visible', 'important');
+            }
+
+            // 2. Desbloquear max-height solo en elementos que no sean contenedores de gráficos
+            if (computed.maxHeight !== 'none' && !isChartContainer) {
+                el.style.setProperty('max-height', 'none', 'important');
+            }
+
+            // 3. Respetar estrictamente la altura de gráficos para evitar que colapsen a 0px y se encimen las tablas
+            if (computed.maxHeight !== 'none' && !isChartContainer && !el.querySelector('canvas, svg, img')) {
+                el.style.setProperty('height', 'auto', 'important');
+            }
+
+            // 4. Desactivar sticky en el clon de exportación para que los encabezados se rendericen en su posición natural
+            if (computed.position === 'sticky') {
+                el.style.setProperty('position', 'relative', 'important');
+                el.style.setProperty('top', 'auto', 'important');
+                el.style.setProperty('left', 'auto', 'important');
+            }
+
+            // Resetear scroll interno
+            el.scrollTop = 0;
+            el.scrollLeft = 0;
+        });
     }
 
     const origCanvases = contentEl.querySelectorAll('canvas');
@@ -2537,8 +2575,11 @@ const _prepareClonedDocForHDImage = (clonedDoc, contentEl) => {
                 img.src = origCanvas.toDataURL('image/png');
                 img.style.cssText = origCanvas.style.cssText;
                 img.className = origCanvas.className;
+                const w = origCanvas.offsetWidth || origCanvas.width;
+                const h = origCanvas.offsetHeight || origCanvas.height;
+                if (w) img.style.width = w + 'px';
+                if (h) img.style.height = h + 'px';
                 img.style.maxWidth = '100%';
-                img.style.height = 'auto';
                 if (clonedCanvases[idx].parentNode) {
                     clonedCanvases[idx].parentNode.replaceChild(img, clonedCanvases[idx]);
                 }
@@ -2616,7 +2657,10 @@ async function exportDashboardImagen(format = 'png') {
             updateOverlayProgress(100, 100, 'Imagen exportada en Alta Calidad', 'Captura HD', 'EXPORTACIÓN IMAGEN');
         }
 
-        if (typeof showToast === 'function') showToast(`Imagen ${format.toUpperCase()} exportada en Alta Calidad`, true, 'good');
+        if (typeof showToast === 'function') {
+            const labelCalidad = format.toLowerCase() === 'jpeg' ? 'JPEG (Buena Calidad)' : 'PNG (Alta Calidad)';
+            showToast(`Imagen ${labelCalidad} exportada exitosamente`, true, 'good');
+        }
     } catch (e) {
         console.error('[RDA Export Image Error]', e);
         if (typeof showToast === 'function') showToast('Error al exportar imagen', false, 'bad');
@@ -2648,13 +2692,16 @@ async function exportMasivoZIP(mode = 'pdf') {
         targets = targets.filter(u => (u.municipio||'').toUpperCase().trim() === originalMuni.toUpperCase().trim());
     }
 
+    const isImg = mode === 'png' || mode === 'jpeg' || mode === 'jpg';
+    const isJpeg = mode === 'jpeg' || mode === 'jpg';
+
     if (targets.length > 50) {
-        const tipoStr = mode === 'png' ? 'imágenes PNG de alta resolución' : 'reportes vectoriales PDF';
+        const tipoStr = isJpeg ? 'imágenes JPEG de alta calidad' : (mode === 'png' ? 'imágenes PNG de alta resolución' : 'reportes vectoriales PDF');
         if (!confirm(`Vas a generar ${targets.length} ${tipoStr}. El proceso se ejecutará de forma masiva. ¿Continuar?`)) return;
     }
 
     window._isBatchExporting = true;
-    const labelProceso = mode === 'png' ? 'ZIP Imágenes PNG HD' : 'ZIP PDFs';
+    const labelProceso = isJpeg ? 'ZIP Imágenes JPEG' : (mode === 'png' ? 'ZIP Imágenes PNG HD' : 'ZIP PDFs');
     
     const setOverlayProgress = (current, total, name, modeStr) => {
         const pct = total > 0 ? Math.min(100, Math.round((current / total) * 100)) : 0;
@@ -2772,7 +2819,8 @@ async function exportMasivoZIP(mode = 'pdf') {
 
         for (let i = 0; i < targets.length; i++) {
             const u = targets[i];
-            setOverlayProgress(i + 1, targets.length, `[${u.clues}] ${u.nombre||u.clues}`, mode === 'png' ? 'Capturando Imagen PNG HD' : 'Generando Reporte PDF');
+            const statusMsg = isJpeg ? 'Capturando Imagen JPEG' : (mode === 'png' ? 'Capturando Imagen PNG HD' : 'Generando Reporte PDF');
+            setOverlayProgress(i + 1, targets.length, `[${u.clues}] ${u.nombre||u.clues}`, statusMsg);
 
             muniSelect.value = u.municipio ? u.municipio.toUpperCase() : '';
             if (typeof populateUnidadFilter === 'function') populateUnidadFilter();
@@ -2790,13 +2838,14 @@ async function exportMasivoZIP(mode = 'pdf') {
                     channel.port2.postMessage(null);
                 });
             } else {
-                await new Promise(resolve => setTimeout(resolve, mode === 'png' ? 350 : 50));
+                await new Promise(resolve => setTimeout(resolve, isImg ? 350 : 50));
             }
 
-            if (mode === 'png') {
+            if (isImg) {
+                const ext = isJpeg ? 'jpg' : 'png';
                 const fname = _rdaState.esquema === 'comparativa_multianual' 
-                    ? `${_safeName(u.nombre)}_${u.clues}_COMPARATIVA_25-26_RDA.png`
-                    : `RDA_${u.clues}_${_safeName(u.nombre)}.png`;
+                    ? `${_safeName(u.nombre)}_${u.clues}_COMPARATIVA_25-26_RDA.${ext}`
+                    : `RDA_${u.clues}_${_safeName(u.nombre)}.${ext}`;
                 if (typeof html2canvas !== 'undefined' && content) {
                     const canvas = await html2canvas(content, {
                         scale: 2.5,
@@ -2809,7 +2858,9 @@ async function exportMasivoZIP(mode = 'pdf') {
                             _prepareClonedDocForHDImage(clonedDoc, content);
                         }
                     });
-                    const base64Data = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, "");
+                    const mimeType = isJpeg ? 'image/jpeg' : 'image/png';
+                    const dataUrl = isJpeg ? canvas.toDataURL(mimeType, 0.92) : canvas.toDataURL(mimeType);
+                    const base64Data = dataUrl.replace(new RegExp(`^data:${mimeType.replace('/', '\\/')};base64,`), "");
                     zip.file(fname, base64Data, { base64: true });
                 }
             } else {
@@ -2825,7 +2876,7 @@ async function exportMasivoZIP(mode = 'pdf') {
         const zipBlob = await zip.generateAsync({ type: 'blob' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(zipBlob);
-        const tagMode = mode === 'png' ? 'PNG_HD' : 'PDF';
+        const tagMode = isJpeg ? 'JPEG' : (mode === 'png' ? 'PNG_HD' : 'PDF');
         link.download = `Indicadores_RDA2026_${tagMode}_${_safeName(originalMuni) || 'JS1'}_${_dateStr()}.zip`;
         link.click();
         URL.revokeObjectURL(link.href);
@@ -4817,8 +4868,10 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                             <td style="padding: 12px 10px; text-align: left; color: #64748b; font-weight: 800;">${m.t25.cov4A}%</td>
                                             <td style="padding: 12px 10px; text-align: left; color: #0284c7; font-weight: 900; background: rgba(240,249,255,0.4); border-right: 1px solid #f1f5f9;">${m.t26.cov4A}%</td>
                                             <td style="padding: 10px 8px; text-align: left;">
-                                                <span style="display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 5px 12px; border-radius: 9999px; font-size: 10px; font-weight: 800; white-space: nowrap; max-width: 100%; box-sizing: border-box; background: ${isPositive ? '#f0fdf4' : '#fef2f2'}; color: ${isPositive ? '#166534' : '#b91c1c'}; border: 1px solid ${isPositive ? '#bbf7d0' : '#fecdd3'}; box-shadow: 0 2px 6px ${isPositive ? 'rgba(22,101,52,0.08)' : 'rgba(185,28,28,0.08)'};">
-                                                    <span class="material-symbols-rounded" style="font-size:13px; font-weight:900;">${isPositive ? 'trending_up' : 'trending_down'}</span>
+                                                <span style="display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 5px 12px; border-radius: 9999px; font-size: 10px; font-weight: 800; white-space: nowrap; max-width: 100%; box-sizing: border-box; background: ${isPositive ? '#f0fdf4' : '#fef2f2'}; color: ${isPositive ? '#166534' : '#b91c1c'}; border: 1px solid ${isPositive ? '#bbf7d0' : '#fecdd3'}; box-shadow: 0 2px 6px ${isPositive ? 'rgba(22,101,52,0.08)' : 'rgba(185,28,28,0.08)'};">
+                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                                                        ${isPositive ? '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>' : '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline>'}
+                                                    </svg>
                                                     ${isPositive ? 'ASCENDENTE' : 'EN REVISIÓN'}
                                                 </span>
                                             </td>
@@ -4834,8 +4887,11 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                     <td style="padding: 14px 10px; text-align: left; color: #64748b; font-weight: 800;">${t25.cov4A}%</td>
                                     <td style="padding: 14px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #cbd5e1;">${t26.cov4A}%</td>
                                     <td style="padding: 12px 8px; text-align: left;">
-                                        <span style="display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 5px 12px; border-radius: 9999px; font-size: 10px; font-weight: 800; white-space: nowrap; max-width: 100%; box-sizing: border-box; background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; box-shadow: 0 2px 6px rgba(51,65,85,0.08);">
-                                            <span class="material-symbols-rounded" style="font-size:13px;">verified</span> JS1 CONSOLIDADO
+                                        <span style="display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 5px 12px; border-radius: 9999px; font-size: 10px; font-weight: 800; white-space: nowrap; max-width: 100%; box-sizing: border-box; background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; box-shadow: 0 2px 6px rgba(51,65,85,0.08);">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                            </svg> JS1 CONSOLIDADO
                                         </span>
                                     </td>
                                 </tr>
@@ -4888,8 +4944,10 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                             <td style="padding: 12px 14px; text-align: left; color: #0284c7; font-weight: 900; background: rgba(240,249,255,0.4);">${c26}</td>
                                             <td style="padding: 10px 12px; text-align: left;">
                                                 ${isSpecial ? `
-                                                    <span style="display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 5px 12px; border-radius: 9999px; font-size: 10px; font-weight: 800; white-space: nowrap; max-width: 100%; box-sizing: border-box; background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; box-shadow: 0 2px 6px rgba(51,65,85,0.08);">
-                                                        <span class="material-symbols-rounded" style="font-size:13px;">new_releases</span>
+                                                    <span style="display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 4px 12px; border-radius: 9999px; font-size: 10px; font-weight: 800; white-space: nowrap; max-width: 100%; box-sizing: border-box; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; box-shadow: 0 2px 6px rgba(2,132,199,0.1);">
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+                                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                                                        </svg>
                                                         ${difStr}
                                                     </span>
                                                 ` : `
