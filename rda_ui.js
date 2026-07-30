@@ -1829,50 +1829,31 @@ function renderTable(fUnits, esquema, agg) {
     
     const badge = (v, vName) => {
         if (esquema !== 'basico') {
-            let bg = '#e2e8f0';
-            let fg = '#0f172a';
-            const nameMap = {
-                'BCG': { bg: '#e0f2fe', fg: '#0369a1' },
-                'HepB': { bg: '#f1f5f9', fg: '#334155' },
-                'Hexavalente': { bg: '#ecfdf5', fg: '#047857' },
-                'Rotavirus': { bg: '#f0fdfa', fg: '#0d9488' },
-                'Neumo 13': { bg: '#f5f3ff', fg: '#6d28d9' },
-                'Neumo 20': { bg: '#f5f3ff', fg: '#6d28d9' },
-                'SRP': { bg: '#fdf2f8', fg: '#be185d' },
-                'DPT': { bg: '#fff7ed', fg: '#c2410c' },
-                'Influenza': { bg: '#f0f9ff', fg: '#0284c7' },
-                'VPH': { bg: '#ccfbf1', fg: '#0f766e' },
-                'Td': { bg: '#f1f5f9', fg: '#475569' },
-                'Td Mayores': { bg: '#f1f5f9', fg: '#475569' },
-                'Tdpa': { bg: '#fff1f2', fg: '#be123c' },
-                'SR': { bg: '#fae8ff', fg: '#86198f' },
-                'Varicela': { bg: '#ecfdf5', fg: '#047857' },
-                'VSR': { bg: '#fff7ed', fg: '#c2410c' },
-                'COVID-19': { bg: '#f1f5f9', fg: '#334155' },
-                'HepA': { bg: '#f1f5f9', fg: '#475569' },
-                'Hepatitis A': { bg: '#f1f5f9', fg: '#475569' }
-            };
-            if (vName && nameMap[vName]) {
-                bg = nameMap[vName].bg;
-                fg = nameMap[vName].fg;
-            }
-        return `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:62px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;background:${bg};color:${fg};border:1px solid rgba(15,23,42,0.06);box-sizing:border-box;">${v.toLocaleString('es-MX')}</span>`;
+            return `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <div style="font-size: 12.5px; font-weight: 900; color: #0f172a; line-height: 1.2;">${v ? v.toLocaleString('es-MX') : '0'}</div>
+                    <div style="font-size: 9px; font-weight: 800; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.1; margin-top: 1px;">DOSIS</div>
+                </div>
+            `;
         }
 
-        // Esquema sobrio para coberturas % (RDA Oficial — Esquema Básico)
-        let bg = '#f0fdf4';
-        let fg = '#166534';
-        let border = '#bbf7d0';
-
-        if (v >= 95) {
-            bg = '#f0fdf4'; fg = '#0f766e'; border = '#99f6e4';
-        } else if (v >= 75) {
-            bg = '#fffbeb'; fg = '#92400e'; border = '#fef3c7';
-        } else {
-            bg = '#fff1f2'; fg = '#9f1239'; border = '#fecdd3';
+        const pct = typeof v === 'number' ? v : (parseFloat(v) || 0);
+        let statusText = 'ÓPTIMO';
+        let statusColor = '#15803d';
+        if (pct < 80) {
+            statusText = 'CRÍTICO';
+            statusColor = '#dc2626';
+        } else if (pct < 95) {
+            statusText = 'REGULAR';
+            statusColor = '#d97706';
         }
 
-        return `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:64px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:800;background:${bg};color:${fg};border:1px solid ${border};box-sizing:border-box;">${v}%</span>`;
+        return `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div style="font-size: 13px; font-weight: 900; color: #0f172a; line-height: 1.2;">${pct}%</div>
+                <div style="font-size: 9px; font-weight: 800; color: ${statusColor}; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.1; margin-top: 1px;">${statusText}</div>
+            </div>
+        `;
     };
 
     let html = '';
@@ -2588,23 +2569,14 @@ const _prepareClonedDocForHDImage = (clonedDoc, contentEl) => {
             const maxMesName = MONTH_NAMES[(_rdaCache.maxMes || 12) - 1] || 'Final';
             const fechaStr = new Date().toLocaleString('es-MX', { dateStyle: 'long', timeStyle: 'short' });
 
-            let scopeBadgeHtml = '';
+            let scopeText = 'JURISDICCIÓN SANITARIA NO. 1 (4 MUNICIPIOS)';
             if (uni) {
                 const uObj = (_rdaCache.unidades || []).find(x => x.clues === uni);
                 const mName = muni ? muni.toUpperCase() : (uObj?.municipio || '').toUpperCase();
                 const uName = uObj?.nombre ? uObj.nombre.toUpperCase() : uni;
-                scopeBadgeHtml = `
-                    <div style="display: inline-flex; align-items: center; justify-content: center; padding: 6px 18px; border-radius: 10px; background: #0284c7; color: #ffffff; font-size: 13px; font-weight: 900; box-shadow: 0 4px 12px rgba(2,132,199,0.25); box-sizing: border-box; white-space: nowrap; vertical-align: middle; line-height: 1;">📍 MUNICIPIO: ${mName}</div>
-                    <div style="display: inline-flex; align-items: center; justify-content: center; padding: 6px 16px; border-radius: 10px; background: rgba(255,255,255,0.15); color: #ffffff; font-size: 12.5px; font-weight: 800; border: 1px solid rgba(255,255,255,0.2); box-sizing: border-box; white-space: nowrap; vertical-align: middle; line-height: 1;">🏥 UNIDAD: ${uName} (${uni})</div>
-                `;
+                scopeText = `${mName} — ${uName} (${uni})`;
             } else if (muni) {
-                scopeBadgeHtml = `
-                    <div style="display: inline-flex; align-items: center; justify-content: center; padding: 6px 20px; border-radius: 12px; background: #0f172a; color: #ffffff; font-size: 13.5px; font-weight: 900; box-shadow: 0 4px 14px rgba(15,23,42,0.3); border: 1px solid rgba(255,255,255,0.2); box-sizing: border-box; white-space: nowrap; vertical-align: middle; line-height: 1;">🏙️ MUNICIPIO: ${muni.toUpperCase()}</div>
-                `;
-            } else {
-                scopeBadgeHtml = `
-                    <div style="display: inline-flex; align-items: center; justify-content: center; padding: 6px 18px; border-radius: 10px; background: rgba(255,255,255,0.12); color: #f8fafc; font-size: 13px; font-weight: 800; border: 1px solid rgba(255,255,255,0.2); box-sizing: border-box; white-space: nowrap; vertical-align: middle; line-height: 1;">🏛️ ÁMBITO: JURISDICCIÓN SANITARIA NO. 1 (4 MUNICIPIOS)</div>
-                `;
+                scopeText = `MUNICIPIO: ${muni.toUpperCase()}`;
             }
 
             const headerDiv = clonedDoc.createElement('div');
@@ -2612,42 +2584,47 @@ const _prepareClonedDocForHDImage = (clonedDoc, contentEl) => {
             headerDiv.style.cssText = `
                 width: 100%;
                 margin-bottom: 28px;
-                padding: 24px 30px;
+                padding: 22px 28px;
                 background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-                border-radius: 18px;
+                border-radius: 16px;
                 color: #ffffff;
                 font-family: Inter, system-ui, -apple-system, sans-serif;
                 box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.2);
                 box-sizing: border-box;
                 display: flex;
-                flex-direction: column;
-                gap: 16px;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                gap: 24px;
             `;
             headerDiv.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.15); padding-bottom: 14px;">
-                    <div style="display: flex; align-items: center; gap: 16px;">
-                        <div style="display: inline-flex; align-items: center; justify-content: center; padding: 5px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255, 255, 255, 0.1); font-weight: 900; font-size: 13px; letter-spacing: 0.08em; color: #38bdf8; box-sizing: border-box; white-space: nowrap; vertical-align: middle; line-height: 1;">SESEQ / JS1</div>
-                        <div>
-                            <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; line-height: 1.2;">
-                                SECRETARÍA DE SALUD DEL ESTADO DE QUERÉTARO — JURISDICCIÓN SANITARIA NO. 1
-                            </div>
-                            <div style="font-size: 19px; font-weight: 900; letter-spacing: -0.02em; color: #ffffff; margin-top: 3px; line-height: 1.2;">
-                                EVALUACIÓN DE INDICADORES DE COBERTURA VACUNAL 2026
-                            </div>
-                        </div>
+                <div style="border-left: 4px solid #38bdf8; padding-left: 18px; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; line-height: 1.2;">
+                        SECRETARÍA DE SALUD DEL ESTADO DE QUERÉTARO — JURISDICCIÓN SANITARIA NO. 1
                     </div>
-                    <div style="text-align: right; font-size: 11px; color: #94a3b8; font-weight: 700; line-height: 1.2;">
-                        <div>FECHA Y HORA DE EMISIÓN</div>
-                        <div style="font-size: 12.5px; color: #ffffff; font-weight: 800; margin-top: 3px; line-height: 1.2;">${fechaStr}</div>
+                    <div style="font-size: 19px; font-weight: 900; letter-spacing: -0.02em; color: #ffffff; line-height: 1.2;">
+                        EVALUACIÓN DE INDICADORES DE COBERTURA VACUNAL 2026
+                    </div>
+                    <div style="font-size: 11.5px; color: #94a3b8; font-weight: 600; margin-top: 2px;">
+                        FECHA Y HORA DE EMISIÓN: <span style="color: #f1f5f9; font-weight: 700;">${fechaStr}</span>
                     </div>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                        ${scopeBadgeHtml}
+                <div style="display: grid; grid-template-columns: repeat(2, minmax(130px, auto)); gap: 10px 24px; background: rgba(30, 41, 59, 0.7); padding: 14px 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.12); box-sizing: border-box;">
+                    <div>
+                        <div style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Ámbito / Filtro</div>
+                        <div style="font-size: 12.5px; font-weight: 800; color: #ffffff; margin-top: 2px;">${scopeText}</div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="display: inline-flex; align-items: center; justify-content: center; padding: 6px 16px; border-radius: 9999px; background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 12px; font-weight: 800; box-sizing: border-box; white-space: nowrap; vertical-align: middle; line-height: 1;">${esquemaLabel.toUpperCase()}</div>
-                        <div style="display: inline-flex; align-items: center; justify-content: center; padding: 6px 16px; border-radius: 9999px; background: rgba(255, 255, 255, 0.1); color: #f1f5f9; border: 1px solid rgba(255, 255, 255, 0.2); font-size: 12px; font-weight: 800; box-sizing: border-box; white-space: nowrap; vertical-align: middle; line-height: 1;">CIERRE: ${maxMesName.toUpperCase()}</div>
+                    <div>
+                        <div style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Esquema Evaluado</div>
+                        <div style="font-size: 12.5px; font-weight: 800; color: #38bdf8; margin-top: 2px;">${esquemaLabel.toUpperCase()}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Cierre Información</div>
+                        <div style="font-size: 12.5px; font-weight: 800; color: #ffffff; margin-top: 2px;">CIERRE ${maxMesName.toUpperCase()}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 10px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Estado Reporte</div>
+                        <div style="font-size: 12.5px; font-weight: 800; color: #34d399; margin-top: 2px;">CONSOLIDADO JS1</div>
                     </div>
                 </div>
             `;
@@ -4859,15 +4836,51 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
             };
         });
 
-        // Semáforo comparativo dinámico animado con estilo slate tenue elegante
+        // Función helper para renderizar celdas con Opción 8 (Cifra + Estado en subtexto sin chips)
+        const renderOption8Coverage = (pctVal, isPrimary2026 = false) => {
+            const pct = typeof pctVal === 'number' ? pctVal : (parseFloat(pctVal) || 0);
+            let statusLabel = 'ÓPTIMO';
+            let statusColor = '#15803d';
+            if (pct < 80) {
+                statusLabel = 'CRÍTICO';
+                statusColor = '#dc2626';
+            } else if (pct < 95) {
+                statusLabel = 'REGULAR';
+                statusColor = '#d97706';
+            }
+            const mainColor = isPrimary2026 ? '#0284c7' : '#0f172a';
+            return `
+                <div style="display: flex; flex-direction: column; align-items: flex-start; justify-content: center;">
+                    <div style="font-size: 13px; font-weight: 900; color: ${mainColor}; line-height: 1.2;">${pct}%</div>
+                    <div style="font-size: 9px; font-weight: 800; color: ${statusColor}; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.1; margin-top: 1px;">${statusLabel}</div>
+                </div>
+            `;
+        };
+
+        // Semáforo comparativo dinámico sin chips (Opción 8: Cifra + Subtexto)
         const getCompBadgeHtml = (cov2025, cov2026) => {
             const diff = Math.round((cov2026 - cov2025) * 10) / 10;
             if (diff > 0) {
-                return `<span class="chip-animated-up" style="font-size: 10px; font-weight: 800; padding: 5px 12px; border-radius: 9999px; background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; box-shadow: 0 2px 6px rgba(22,101,52,0.08); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;"><span class="material-symbols-rounded" style="font-size:14px; font-weight:900;">trending_up</span> AVANCE SUPERIOR A 2025</span>`;
+                return `
+                    <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                        <div style="font-size: 12.5px; font-weight: 900; color: #15803d; line-height: 1.2;">▲ +${diff}%</div>
+                        <div style="font-size: 9px; font-weight: 800; color: #166534; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.1; margin-top: 1px;">AVANCE SUPERIOR</div>
+                    </div>
+                `;
             } else if (diff >= -3) {
-                return `<span class="chip-animated-flat" style="font-size: 10px; font-weight: 800; padding: 5px 12px; border-radius: 9999px; background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; box-shadow: 0 2px 6px rgba(51,65,85,0.08); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;"><span class="material-symbols-rounded" style="font-size:14px; font-weight:900;">trending_flat</span> DESEMPEÑO SIMILAR</span>`;
+                return `
+                    <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                        <div style="font-size: 12.5px; font-weight: 900; color: #334155; line-height: 1.2;">● ${diff}%</div>
+                        <div style="font-size: 9px; font-weight: 800; color: #475569; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.1; margin-top: 1px;">DESEMPEÑO SIMILAR</div>
+                    </div>
+                `;
             } else {
-                return `<span class="chip-animated-down" style="font-size: 10px; font-weight: 800; padding: 5px 12px; border-radius: 9999px; background: #fef2f2; color: #b91c1c; border: 1px solid #fecdd3; box-shadow: 0 2px 6px rgba(185,28,28,0.08); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;"><span class="material-symbols-rounded" style="font-size:14px; font-weight:900;">trending_down</span> AVANCE MENOR A 2025</span>`;
+                return `
+                    <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                        <div style="font-size: 12.5px; font-weight: 900; color: #b91c1c; line-height: 1.2;">▼ ${diff}%</div>
+                        <div style="font-size: 9px; font-weight: 800; color: #dc2626; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.1; margin-top: 1px;">AVANCE MENOR</div>
+                    </div>
+                `;
             }
         };
 
@@ -5042,38 +5055,38 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                     return `
                                         <tr style="border-bottom: 1px solid #f1f5f9; font-weight: 700; transition: background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
                                             <td style="padding: 12px 14px; text-align: left; font-weight: 900; color: #0f172a; border-right: 1px solid #f1f5f9;">${m.nombre}</td>
-                                            <td style="padding: 12px 10px; text-align: left; color: #64748b; font-weight: 800;">${m.t25.covM1}%</td>
-                                            <td style="padding: 12px 10px; text-align: left; color: #0284c7; font-weight: 900; background: rgba(240,249,255,0.4); border-right: 1px solid #f1f5f9;">${m.t26.covM1}%</td>
-                                            <td style="padding: 12px 10px; text-align: left; color: #64748b; font-weight: 800;">${m.t25.cov1A}%</td>
-                                            <td style="padding: 12px 10px; text-align: left; color: #0284c7; font-weight: 900; background: rgba(240,249,255,0.4); border-right: 1px solid #f1f5f9;">${m.t26.cov1A}%</td>
-                                            <td style="padding: 12px 10px; text-align: left; color: #64748b; font-weight: 800;">${m.t25.cov4A}%</td>
-                                            <td style="padding: 12px 10px; text-align: left; color: #0284c7; font-weight: 900; background: rgba(240,249,255,0.4); border-right: 1px solid #f1f5f9;">${m.t26.cov4A}%</td>
+                                            <td style="padding: 10px 10px; text-align: left; color: #64748b; font-weight: 800;">${renderOption8Coverage(m.t25.covM1, false)}</td>
+                                            <td style="padding: 10px 10px; text-align: left; color: #0284c7; font-weight: 900; background: rgba(240,249,255,0.4); border-right: 1px solid #f1f5f9;">${renderOption8Coverage(m.t26.covM1, true)}</td>
+                                            <td style="padding: 10px 10px; text-align: left; color: #64748b; font-weight: 800;">${renderOption8Coverage(m.t25.cov1A, false)}</td>
+                                            <td style="padding: 10px 10px; text-align: left; color: #0284c7; font-weight: 900; background: rgba(240,249,255,0.4); border-right: 1px solid #f1f5f9;">${renderOption8Coverage(m.t26.cov1A, true)}</td>
+                                            <td style="padding: 10px 10px; text-align: left; color: #64748b; font-weight: 800;">${renderOption8Coverage(m.t25.cov4A, false)}</td>
+                                            <td style="padding: 10px 10px; text-align: left; color: #0284c7; font-weight: 900; background: rgba(240,249,255,0.4); border-right: 1px solid #f1f5f9;">${renderOption8Coverage(m.t26.cov4A, true)}</td>
                                             <td style="padding: 10px 8px; text-align: left;">
-                                                <span style="display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 5px 12px; border-radius: 9999px; font-size: 10px; font-weight: 800; white-space: nowrap; max-width: 100%; box-sizing: border-box; background: ${isPositive ? '#f0fdf4' : '#fef2f2'}; color: ${isPositive ? '#166534' : '#b91c1c'}; border: 1px solid ${isPositive ? '#bbf7d0' : '#fecdd3'}; box-shadow: 0 2px 6px ${isPositive ? 'rgba(22,101,52,0.08)' : 'rgba(185,28,28,0.08)'};">
-                                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-                                                        ${isPositive ? '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>' : '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline>'}
-                                                    </svg>
-                                                    ${isPositive ? 'ASCENDENTE' : 'EN REVISIÓN'}
-                                                </span>
+                                                <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                                                    <div style="font-size: 12.5px; font-weight: 900; color: ${isPositive ? '#15803d' : '#b91c1c'}; line-height: 1.2;">
+                                                        ${isPositive ? '▲ ASCENDENTE' : '▼ EN REVISIÓN'}
+                                                    </div>
+                                                    <div style="font-size: 9px; font-weight: 800; color: ${isPositive ? '#166534' : '#dc2626'}; letter-spacing: 0.05em; line-height: 1.1; margin-top: 1px;">
+                                                        ${isPositive ? 'CUMPLIMIENTO ÓPTIMO' : 'BAJO SEGUIMIENTO'}
+                                                    </div>
+                                                </div>
                                             </td>
                                         </tr>
                                     `;
                                 }).join('')}
                                 <tr style="background: #f8fafc; font-weight: 900; color: #0f172a; border-top: 2px solid #cbd5e1;">
                                     <td style="padding: 14px 14px; text-align: left; border-right: 1px solid #cbd5e1;">TOTAL JURISDICCIONAL</td>
-                                    <td style="padding: 14px 10px; text-align: left; color: #64748b; font-weight: 800;">${t25.covM1}%</td>
-                                    <td style="padding: 14px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #cbd5e1;">${t26.covM1}%</td>
-                                    <td style="padding: 14px 10px; text-align: left; color: #64748b; font-weight: 800;">${t25.cov1A}%</td>
-                                    <td style="padding: 14px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #cbd5e1;">${t26.cov1A}%</td>
-                                    <td style="padding: 14px 10px; text-align: left; color: #64748b; font-weight: 800;">${t25.cov4A}%</td>
-                                    <td style="padding: 14px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #cbd5e1;">${t26.cov4A}%</td>
+                                    <td style="padding: 10px 10px; text-align: left; color: #64748b; font-weight: 800;">${renderOption8Coverage(t25.covM1, false)}</td>
+                                    <td style="padding: 10px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #cbd5e1;">${renderOption8Coverage(t26.covM1, true)}</td>
+                                    <td style="padding: 10px 10px; text-align: left; color: #64748b; font-weight: 800;">${renderOption8Coverage(t25.cov1A, false)}</td>
+                                    <td style="padding: 10px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #cbd5e1;">${renderOption8Coverage(t26.cov1A, true)}</td>
+                                    <td style="padding: 10px 10px; text-align: left; color: #64748b; font-weight: 800;">${renderOption8Coverage(t25.cov4A, false)}</td>
+                                    <td style="padding: 10px 10px; text-align: left; color: #0284c7; font-weight: 900; background: #f0f9ff; border-right: 1px solid #cbd5e1;">${renderOption8Coverage(t26.cov4A, true)}</td>
                                     <td style="padding: 12px 8px; text-align: left;">
-                                        <span style="display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 5px 12px; border-radius: 9999px; font-size: 10px; font-weight: 800; white-space: nowrap; max-width: 100%; box-sizing: border-box; background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; box-shadow: 0 2px 6px rgba(51,65,85,0.08);">
-                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                                            </svg> JS1 CONSOLIDADO
-                                        </span>
+                                        <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                                            <div style="font-size: 12.5px; font-weight: 900; color: #0284c7; line-height: 1.2;">✓ CONSOLIDADO</div>
+                                            <div style="font-size: 9px; font-weight: 800; color: #64748b; letter-spacing: 0.05em; line-height: 1.1; margin-top: 1px;">JURISDICCIÓN SANITARIA 1</div>
+                                        </div>
                                     </td>
                                 </tr>
                             </tbody>
@@ -5125,24 +5138,17 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                                             <td style="padding: 12px 14px; text-align: left; color: #0284c7; font-weight: 900; background: rgba(240,249,255,0.4);">${c26}</td>
                                             <td style="padding: 10px 12px; text-align: left;">
                                                 ${isSpecial ? `
-                                                    <span style="display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 4px 12px; border-radius: 9999px; font-size: 10px; font-weight: 800; white-space: nowrap; max-width: 100%; box-sizing: border-box; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; box-shadow: 0 2px 6px rgba(2,132,199,0.1);">
-                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-                                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
-                                                        </svg>
-                                                        ${difStr}
-                                                    </span>
+                                                    <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                                                        <div style="font-size: 12.5px; font-weight: 900; color: #0369a1; line-height: 1.2;">${difStr}</div>
+                                                        <div style="font-size: 9px; font-weight: 800; color: #0284c7; letter-spacing: 0.05em; line-height: 1.1; margin-top: 1px;">DOSIS APLICADAS</div>
+                                                    </div>
                                                 ` : `
-                                                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                                                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-                                                            <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 900; color: ${isUp ? '#15803d' : '#b91c1c'};">
-                                                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
-                                                                    ${isUp ? '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>' : '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline>'}
-                                                                </svg>
-                                                                ${difStr}
-                                                            </span>
+                                                    <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                                                        <div style="font-size: 12.5px; font-weight: 900; color: ${isUp ? '#15803d' : '#b91c1c'}; line-height: 1.2;">
+                                                            ${isUp ? '▲' : '▼'} ${difStr}
                                                         </div>
-                                                        <div style="width: 100%; height: 5px; background: #e2e8f0; border-radius: 999px; overflow: hidden;">
-                                                            <div style="height: 100%; width: ${fillPct}%; background: ${barColor}; border-radius: 999px;"></div>
+                                                        <div style="font-size: 9px; font-weight: 800; color: ${isUp ? '#166534' : '#991b1b'}; letter-spacing: 0.05em; line-height: 1.1; margin-top: 1px;">
+                                                            ${isUp ? 'AVANCE SUPERIOR' : 'AVANCE MENOR'}
                                                         </div>
                                                     </div>
                                                 `}
