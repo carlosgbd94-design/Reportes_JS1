@@ -2972,6 +2972,10 @@ window.markNotificationReadFlow = markNotificationReadFlow;
 window.goToPinolPanelFlow = goToPinolPanelFlow;
 window.confirmPinolReceiptFlow = confirmPinolReceiptFlow;
 window.imprimirAcusePinol = imprimirAcusePinol;
+window.openPinolUnitDrawer = openPinolUnitDrawer;
+window.closePinolDrawer = closePinolDrawer;
+window.closePinolBatchModal = closePinolBatchModal;
+window.imprimirGuiaEmbarquePinol = imprimirGuiaEmbarquePinol;
 window.deleteNotificationFlow = deleteNotificationFlow;
 window.clearAllNotificationsFlow = clearAllNotificationsFlow;
 window.markVisibleNotificationsReadFlow = markVisibleNotificationsReadFlow;
@@ -17215,208 +17219,523 @@ async function refreshPinol() {
       }
     );
 
-    const tbody = $("pinolTbody");
-    const filtroSel = $("pinolFiltroEstatus");
-    const totalEl = $("pinolTotal");
-    const pendientesEl = $("pinolPendientes");
-    const entregadasEl = $("pinolEntregadas");
-    const recibidasEl = $("pinolRecibidas");
-    const alertMsgEl = $("pinolAlertMsg");
+    window._pinolRawItems = Array.isArray(items) ? items : [];
+    window._pinolSelectedIds = window._pinolSelectedIds || new Set();
 
-    if (!tbody) throw new Error("No existe #pinolTbody");
-
-    const filtro = filtroSel
-      ? String(filtroSel.value || "TODOS").toUpperCase()
-      : "TODOS";
-
-    const safeItems = Array.isArray(items) ? items : [];
-
-    const total = safeItems.length;
-    const pendientes = safeItems.filter(x => String(x?.estatus_visual || x?.estatus || "PENDIENTE").toUpperCase() === "PENDIENTE");
-    const entregadas = safeItems.filter(x => String(x?.estatus_visual || x?.estatus || "").toUpperCase() === "ENTREGADO");
-    const recibidas = safeItems.filter(x => String(x?.estatus_visual || x?.estatus || "").toUpperCase() === "RECIBIDO");
-
-    updatePinolTabBadge(safeItems);
-
-    if (totalEl) animateCounter("pinolTotal", parseInt(totalEl.textContent) || 0, total);
-    if (pendientesEl) animateCounter("pinolPendientes", parseInt(pendientesEl.textContent) || 0, pendientes.length);
-    if (entregadasEl) animateCounter("pinolEntregadas", parseInt(entregadasEl.textContent) || 0, entregadas.length);
-    if (recibidasEl) animateCounter("pinolRecibidas", parseInt(recibidasEl.textContent) || 0, recibidas.length);
-
-    // Semáforo automático
-    if ($("kpiCardPinolPendientes")) {
-      $("kpiCardPinolPendientes").className = "kpiCard " + (pendientes.length > 0 ? "warn" : "ok");
+    // Poblar selector de Municipio si no está poblado o requiere refresco
+    const munSelect = $("pinolFiltroMunicipio");
+    if (munSelect) {
+      const curVal = munSelect.value || "TODOS";
+      const muns = Array.from(new Set(window._pinolRawItems.map(x => x?.municipio).filter(Boolean))).sort();
+      munSelect.innerHTML = `<option value="TODOS">Todos los Municipios (${muns.length})</option>` +
+        muns.map(m => `<option value="${escapeAttr(m)}">${escapeHtml(m)}</option>`).join("");
+      munSelect.value = curVal;
     }
 
-    if (alertMsgEl) {
-      alertMsgEl.className = "pinolBannerAlert " + (pendientes.length > 0 ? "warn" : "ok");
-      const atendidasPorMunicipio = entregadas.length + recibidas.length;
-      alertMsgEl.innerHTML = pendientes.length > 0
-        ? `<div style="display:flex; align-items:center; gap:14px;">
-             <div style="background:#ef4444; color:#fff; border-radius:14px; min-width:40px; height:40px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow: 0 4px 12px rgba(239,68,68,0.4);">
-               <span class="material-symbols-rounded" style="font-size: 26px; animation: pinolWarningRotate 1.2s infinite alternate ease-in-out;">warning</span>
-             </div>
-             <div>
-               <div style="font-size: 14px; font-weight: 900; letter-spacing: -0.01em; color: #991b1b;">⚠️ SOLICITUDES PENDIENTES POR ATENDER</div>
-               <div style="font-size: 13px; font-weight: 700; opacity: 0.9; margin-top: 2px;">Hay <b>${pendientes.length}</b> unidad(es) esperando entrega de insumo por el perfil municipal.</div>
-             </div>
-           </div>`
-        : `<div style="display:flex; align-items:center; gap:14px;">
-             <div style="background:#10b981; color:#fff; border-radius:14px; min-width:40px; height:40px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow: 0 4px 12px rgba(16,185,129,0.35);">
-               <span class="material-symbols-rounded" style="font-size: 26px;">task_alt</span>
-             </div>
-             <div>
-               <div style="font-size: 14px; font-weight: 900; letter-spacing: -0.01em; color: #065f46;">✅ SOLICITUDES AL DÍA POR EL MUNICIPIO</div>
-               <div style="font-size: 12.5px; font-weight: 700; opacity: 0.9; margin-top: 2px;">
-                 El municipio ha surtido <b>${atendidasPorMunicipio}</b> de <b>${total}</b> solicitudes. 
-                 <span style="font-weight:600; opacity: 0.85;">(${recibidas.length} con acuse de recibido por la unidad, ${entregadas.length} en tránsito sin acuse).</span>
-               </div>
-             </div>
-           </div>`;
-    }
-
-    let filtered = safeItems.slice();
-
-    if (filtro === "PENDIENTE") {
-      filtered = filtered.filter(x => String(x?.estatus_visual || x?.estatus || "PENDIENTE").toUpperCase() === "PENDIENTE");
-    } else if (filtro === "ENTREGADO") {
-      filtered = filtered.filter(x => String(x?.estatus_visual || x?.estatus || "").toUpperCase() === "ENTREGADO");
-    } else if (filtro === "RECIBIDO") {
-      filtered = filtered.filter(x => String(x?.estatus_visual || x?.estatus || "").toUpperCase() === "RECIBIDO");
-    }
-
-    filtered.sort((a, b) => {
-      const ea = String(a?.estatus_visual || a?.estatus || "PENDIENTE").toUpperCase();
-      const eb = String(b?.estatus_visual || b?.estatus || "PENDIENTE").toUpperCase();
-
-      const order = {
-        "PENDIENTE": 1,
-        "ENTREGADO": 2,
-        "RECIBIDO": 3
-      };
-
-      const oa = order[ea] || 99;
-      const ob = order[eb] || 99;
-
-      if (oa !== ob) return oa - ob;
-
-      return String(b?.fecha_solicitud || "").localeCompare(String(a?.fecha_solicitud || ""), "es");
-    });
-
-    if (!filtered.length) {
-      tbody.innerHTML = `<tr><td colspan="12" class="muted">Sin solicitudes para ese filtro</td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = filtered.map(x => {
-      const estatus = String(x?.estatus_visual || x?.estatus || "").toUpperCase();
-
-      let estatusHtml = `
-  <span class="crystalStatus warn">
-    <span class="material-symbols-rounded">schedule</span>
-    <span>Pendiente</span>
-  </span>
-`;
-
-      if (estatus === "ENTREGADO") {
-        estatusHtml = `
-    <span class="crystalStatus info">
-      <span class="material-symbols-rounded">local_shipping</span>
-      <span>Entregado</span>
-    </span>
-  `;
-      }
-
-      if (estatus === "RECIBIDO") {
-        estatusHtml = `
-    <span class="crystalStatus ok">
-      <span class="material-symbols-rounded">task_alt</span>
-      <span>Recibido</span>
-    </span>
-  `;
-      }
-      const obsText = String(x?.observaciones || "").trim();
-      const obsHtml = obsText ? `<button type="button" class="ghostBtn" onclick="showPinolObsModal('${escapeHtml(escapeAttr(obsText))}', event)" title="Ver observación" style="margin: 0 auto; display: flex;"><span class="material-symbols-rounded">chat</span></button>` : `<span class="muted text-center block">—</span>`;
-
-      const fechaSoliFormateada = formatPinolDate(x?.fecha_solicitud);
-      const fechaEntrega = x?.fecha_entrega || x?.timestamp_entrega || "";
-      const fechaEntregaFormateada = formatPinolDate(fechaEntrega);
-
-      let deleteHtml = "";
-      if (USER && USER.rol === "ADMIN") {
-        deleteHtml = `<button class="miniBtn ghostBtn btnPinolDelete" data-id="${escapeAttr(x?.id || "")}" style="color:#ef4444;" title="Eliminar"><span class="material-symbols-rounded">delete</span></button>`;
-      }
-
-      let actionContent = "";
-      if (estatus === "PENDIENTE") {
-        actionContent += `<button class="miniBtn btnPinolDeliver" data-id="${escapeAttr(x?.id || "")}" title="Surtir / Configurar Entrega">
-      <span class="material-symbols-rounded">local_shipping</span> Surtir
-    </button>`;
-      } else {
-        actionContent += `<button class="miniBtn ghostBtn" onclick="imprimirAcusePinol('${escapeAttr(x?.id || "")}')" title="Imprimir Acuse de Entrega" style="color: #166534; font-weight: 700;">
-      <span class="material-symbols-rounded">print</span> Acuse
-    </button>`;
-      }
-
-      if (deleteHtml) {
-        actionContent += deleteHtml;
-      }
-
-      if (!actionContent) {
-        actionContent = `<span class="muted block text-center">—</span>`;
-      }
-
-      return `
-        <tr>
-          <td>${escapeHtml(fechaSoliFormateada)}</td>
-          <td>${escapeHtml(x?.municipio || "")}</td>
-          <td>${escapeHtml(x?.clues || "")}</td>
-          <td>${escapeHtml(x?.unidad || "")}</td>
-          <td class="text-center">${Number(x?.existencia_actual_botellas || 0)}</td>
-          <td class="text-center">${Number(x?.solicitud_botellas || 0)}</td>
-          <td>${obsHtml}</td>
-          <td>${escapeHtml(fechaEntregaFormateada)}</td>
-          <td>${estatusHtml}</td>
-          <td>
-            <div class="flex items-center justify-center gap-2">
-              ${actionContent}
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join("");
-
-
-    document.querySelectorAll(".btnPinolDeliver").forEach(btn => {
-      btn.onclick = () => {
-        const id = btn.getAttribute("data-id");
-        if (!id) return;
-
-        const item = Array.isArray(items)
-          ? items.find(x => String(x?.id || "") === String(id))
-          : null;
-
-        if (!item) {
-          showToast("No se encontró la solicitud seleccionada", false);
-          return;
-        }
-
-        openPinolEntregaModal(item);
-      };
-    });
-
-    document.querySelectorAll(".btnPinolDelete").forEach(btn => {
-      btn.onclick = () => {
-        const id = btn.getAttribute("data-id");
-        if (id) deletePinolRow(id);
-      };
-    });
-
+    renderPinolCommandCenter();
   } catch (e) {
     console.error("refreshPinol error:", e);
     showToast("No se pudo cargar PINOL", false);
   } finally {
     hideOverlay();
+  }
+}
+
+function renderPinolCommandCenter() {
+  const safeItems = window._pinolRawItems || [];
+  const tbody = $("pinolTbody");
+  
+  let rawBusqueda = String($("pinolBusquedaInput")?.value || "").trim();
+  if (rawBusqueda.includes("@") || rawBusqueda.includes("pruebas.com")) {
+    if ($("pinolBusquedaInput")) $("pinolBusquedaInput").value = "";
+    rawBusqueda = "";
+  }
+  const busqueda = rawBusqueda.toLowerCase();
+  const filtroMun = String($("pinolFiltroMunicipio")?.value || "TODOS").toUpperCase();
+  const filtroEst = String($("pinolFiltroEstatus")?.value || "TODOS").toUpperCase();
+
+  const total = safeItems.length;
+  const pendientes = safeItems.filter(x => String(x?.estatus_visual || x?.estatus || "PENDIENTE").toUpperCase() === "PENDIENTE");
+  const criticos = safeItems.filter(x => Number(x?.existencia_actual_botellas || 0) === 0 && String(x?.estatus_visual || x?.estatus || "PENDIENTE").toUpperCase() === "PENDIENTE");
+  const entregadas = safeItems.filter(x => String(x?.estatus_visual || x?.estatus || "").toUpperCase() === "ENTREGADO");
+  const recibidas = safeItems.filter(x => String(x?.estatus_visual || x?.estatus || "").toUpperCase() === "RECIBIDO");
+
+  // Litros totales de ruta (pendientes de entregar, máximo 4 botellas por unidad)
+  const botellasRuta = pendientes.reduce((acc, x) => acc + Math.min(Number(x?.solicitud_botellas || 4), 4), 0);
+  const litrosRuta = (botellasRuta * 0.828).toFixed(1);
+
+  if ($("pinolTotal")) animateCounter("pinolTotal", parseInt($("pinolTotal").textContent) || 0, total);
+  if ($("pinolPendientes")) animateCounter("pinolPendientes", parseInt($("pinolPendientes").textContent) || 0, pendientes.length);
+  if ($("pinolCriticos")) animateCounter("pinolCriticos", parseInt($("pinolCriticos").textContent) || 0, criticos.length);
+  if ($("pinolLitrosRuta")) $("pinolLitrosRuta").textContent = `${litrosRuta} L (${botellasRuta} bot)`;
+  if ($("pinolEntregadas")) animateCounter("pinolEntregadas", parseInt($("pinolEntregadas").textContent) || 0, entregadas.length);
+  if ($("pinolRecibidas")) animateCounter("pinolRecibidas", parseInt($("pinolRecibidas").textContent) || 0, recibidas.length);
+
+  // Semáforo Banner Alert
+  const alertMsgEl = $("pinolAlertMsg");
+  if (alertMsgEl) {
+    alertMsgEl.className = "pinolBannerAlert " + (criticos.length > 0 ? "warn" : pendientes.length > 0 ? "warn" : "ok");
+    const atendidasPorMunicipio = entregadas.length + recibidas.length;
+    alertMsgEl.innerHTML = criticos.length > 0
+      ? `<div style="display:flex; align-items:center; gap:14px;">
+           <div style="background:#ef4444; color:#fff; border-radius:14px; min-width:40px; height:40px; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow: 0 4px 12px rgba(239,68,68,0.4);">
+             <span class="material-symbols-rounded" style="font-size: 26px; animation: pinolWarningRotate 1.2s infinite alternate ease-in-out;">warning</span>
+           </div>
+           <div>
+             <div style="font-size: 14px; font-weight: 900; letter-spacing: -0.01em; color: #991b1b;">⚠️ ${criticos.length} UNIDADES EN STOCK CRÍTICO (0 EXISTENCIAS)</div>
+             <div style="font-size: 13px; font-weight: 700; opacity: 0.9; margin-top: 2px;">Atención prioritaria requerida para desinfección de red de frío. Hay <b>${pendientes.length}</b> solicitudes pendientes en total (${litrosRuta} Litros).</div>
+           </div>
+         </div>`
+      : pendientes.length > 0
+        ? `<div style="display:flex; align-items:center; gap:14px;">
+             <div style="background:#f59e0b; color:#fff; border-radius:14px; min-width:40px; height:40px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+               <span class="material-symbols-rounded" style="font-size: 26px;">local_shipping</span>
+             </div>
+             <div>
+               <div style="font-size: 14px; font-weight: 900; color: #92400e;">🚚 SOLICITUDES EN ESPERA DE DESPACHO</div>
+               <div style="font-size: 13px; font-weight: 700; opacity: 0.9; margin-top: 2px;">Hay <b>${pendientes.length}</b> unidades listas para surtir en ruta municipal (${litrosRuta} Litros en total).</div>
+             </div>
+           </div>`
+        : `<div style="display:flex; align-items:center; gap:14px;">
+             <div style="background:#10b981; color:#fff; border-radius:14px; min-width:40px; height:40px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+               <span class="material-symbols-rounded" style="font-size: 26px;">task_alt</span>
+             </div>
+             <div>
+               <div style="font-size: 14px; font-weight: 900; color: #065f46;">✅ RUTA DE PINOL® AL DÍA</div>
+               <div style="font-size: 12.5px; font-weight: 700; opacity: 0.9; margin-top: 2px;">Se han surtido <b>${atendidasPorMunicipio}</b> de <b>${total}</b> solicitudes acumuladas.</div>
+             </div>
+           </div>`;
+  }
+
+  // Filtrado
+  let filtered = safeItems.filter(x => {
+    const est = String(x?.estatus_visual || x?.estatus || "PENDIENTE").toUpperCase();
+    const mun = String(x?.municipio || "").toUpperCase();
+    const txt = (String(x?.unidad || "") + " " + String(x?.clues || "") + " " + String(x?.municipio || "")).toLowerCase();
+
+    if (filtroMun !== "TODOS" && mun !== filtroMun) return false;
+    if (filtroEst !== "TODOS" && est !== filtroEst) return false;
+    if (busqueda && !txt.includes(busqueda)) return false;
+
+    return true;
+  });
+
+  // Ordenamiento inteligente: 0 existencias pendiente primero, luego fecha descendente
+  filtered.sort((a, b) => {
+    const estA = String(a?.estatus_visual || a?.estatus || "PENDIENTE").toUpperCase();
+    const estB = String(b?.estatus_visual || b?.estatus || "PENDIENTE").toUpperCase();
+
+    const existA = Number(a?.existencia_actual_botellas || 0);
+    const existB = Number(b?.existencia_actual_botellas || 0);
+
+    if (estA === "PENDIENTE" && estB === "PENDIENTE") {
+      if (existA === 0 && existB > 0) return -1;
+      if (existA > 0 && existB === 0) return 1;
+    }
+
+    const order = { "PENDIENTE": 1, "ENTREGADO": 2, "RECIBIDO": 3 };
+    const oA = order[estA] || 99;
+    const oB = order[estB] || 99;
+    if (oA !== oB) return oA - oB;
+
+    return String(b?.fecha_solicitud || "").localeCompare(String(a?.fecha_solicitud || ""), "es");
+  });
+
+  if (!tbody) return;
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-slate-400 font-semibold">No se encontraron solicitudes con los filtros aplicados.</td></tr>`;
+    updatePinolBatchButton();
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(x => {
+    const id = String(x?.id || "");
+    const estatus = String(x?.estatus_visual || x?.estatus || "").toUpperCase();
+    const existencia = Number(x?.existencia_actual_botellas || 0);
+    const solicitado = Math.min(Number(x?.solicitud_botellas || 4), 4);
+    const isChecked = window._pinolSelectedIds.has(id);
+    const isCritical = existencia === 0 && estatus === "PENDIENTE";
+
+    let stockBadge = `<div style="display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 5px !important; font-size: 13px !important; font-weight: 800 !important; color: #166534 !important;"><span class="material-symbols-rounded" style="font-size: 16px !important; color: #166534 !important;">check_circle</span><span>${existencia} Bot.</span></div>`;
+    if (existencia === 0) {
+      stockBadge = `<div style="display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 5px !important; font-size: 13px !important; font-weight: 800 !important; color: #dc2626 !important;"><span class="material-symbols-rounded" style="font-size: 16px !important; color: #dc2626 !important;">warning</span><span>0 Bot <span style="font-size: 11px !important; font-weight: 700 !important; color: #ef4444 !important;">(Crítico)</span></span></div>`;
+    } else if (existencia <= 2) {
+      stockBadge = `<div style="display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 5px !important; font-size: 13px !important; font-weight: 800 !important; color: #d97706 !important;"><span class="material-symbols-rounded" style="font-size: 16px !important; color: #d97706 !important;">error</span><span>${existencia} Bot.</span></div>`;
+    }
+
+    let estatusHtml = `<span class="crystalStatus warn"><span class="material-symbols-rounded">schedule</span><span>Pendiente</span></span>`;
+    if (estatus === "ENTREGADO") {
+      estatusHtml = `<span class="crystalStatus info"><span class="material-symbols-rounded">local_shipping</span><span>En Tránsito</span></span>`;
+    } else if (estatus === "RECIBIDO") {
+      estatusHtml = `<span class="crystalStatus ok"><span class="material-symbols-rounded">task_alt</span><span>Recibido</span></span>`;
+    }
+
+    const obsText = String(x?.observaciones || "").trim();
+    const obsHtml = obsText
+      ? `<button type="button" class="ghostBtn" onclick="showPinolObsModal('${escapeHtml(escapeAttr(obsText))}', event)" title="Ver observación" style="margin: 0 auto; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 10px; background: rgba(2, 132, 199, 0.12); color: #0284c7; border: none; cursor: pointer;"><span class="material-symbols-rounded" style="font-size: 18px;">chat</span></button>`
+      : `<span style="color: #cbd5e1; text-align: center; display: block;">—</span>`;
+
+    const fechaSoliFormateada = formatPinolDate(x?.fecha_solicitud);
+    const fechaEntregaFormateada = formatPinolDate(x?.fecha_entrega || x?.timestamp_entrega || "");
+
+    let actionContent = "";
+    if (estatus === "PENDIENTE") {
+      actionContent += `<button type="button" class="pn-pure-btn pn-pure-surtir btnPinolDeliver" data-id="${escapeAttr(id)}" title="Surtir Insumos"><span class="material-symbols-rounded">local_shipping</span></button>`;
+    } else {
+      actionContent += `<button type="button" class="pn-pure-btn pn-pure-acuse" onclick="imprimirAcusePinol('${escapeAttr(id)}')" title="Imprimir Acuse"><span class="material-symbols-rounded">print</span></button>`;
+    }
+
+    actionContent += `<button type="button" class="pn-pure-btn pn-pure-history" onclick="openPinolUnitDrawer('${escapeAttr(id)}')" title="Ficha de Trazabilidad"><span class="material-symbols-rounded">history</span></button>`;
+
+    if (USER && USER.rol === "ADMIN") {
+      actionContent += `<button type="button" class="pn-pure-btn pn-pure-delete btnPinolDelete" data-id="${escapeAttr(id)}" title="Eliminar"><span class="material-symbols-rounded">delete</span></button>`;
+    }
+
+    return `
+      <tr class="${isCritical ? 'pinol-row-critical' : ''}">
+        <td class="text-center" style="vertical-align: middle !important;">
+          ${estatus === 'PENDIENTE' ? `<input type="checkbox" class="pinol-row-checkbox w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer" data-id="${escapeAttr(id)}" ${isChecked ? 'checked' : ''} />` : '—'}
+        </td>
+        <td class="font-bold text-slate-700" style="vertical-align: middle !important;">${escapeHtml(fechaSoliFormateada)}</td>
+        <td class="font-bold text-slate-900" style="vertical-align: middle !important;">${escapeHtml(x?.municipio || "")}</td>
+        <td style="vertical-align: middle !important;">
+          <div class="font-black text-slate-900 cursor-pointer hover:text-primary transition-colors flex items-center gap-1.5" onclick="openPinolUnitDrawer('${escapeAttr(id)}')">
+            ${escapeHtml(x?.unidad || "")}
+            <span class="material-symbols-rounded text-[15px] text-slate-400">info</span>
+          </div>
+          <div class="text-[11px] font-mono font-bold text-slate-400">${escapeHtml(x?.clues || "")}</div>
+        </td>
+        <td class="text-center" style="vertical-align: middle !important;">${stockBadge}</td>
+        <td class="text-center font-black text-slate-900" style="vertical-align: middle !important;">${solicitado} pzas <span class="text-[10px] text-slate-400 font-normal">(${(solicitado * 0.828).toFixed(1)}L)</span></td>
+        <td class="text-center" style="vertical-align: middle !important;">${obsHtml}</td>
+        <td class="text-xs font-semibold text-slate-600" style="vertical-align: middle !important;">${escapeHtml(fechaEntregaFormateada || "—")}</td>
+        <td style="vertical-align: middle !important;">${estatusHtml}</td>
+        <td class="pn-actions-cell" style="padding: 4px 6px !important; text-align: center !important; width: 90px !important; vertical-align: middle !important;">
+          <div class="pn-btn-group" style="display: inline-flex !important; flex-direction: row !important; align-items: center !important; justify-content: center !important; gap: 6px !important; margin: 0 auto !important; padding: 0 !important; background: transparent !important; border: none !important; vertical-align: middle !important;">
+            ${actionContent}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  bindPinolTableEvents(filtered);
+  updatePinolBatchButton();
+}
+
+function bindPinolTableEvents(items) {
+  // Checkbox individual
+  document.querySelectorAll(".pinol-row-checkbox").forEach(cb => {
+    cb.onchange = (e) => {
+      const id = cb.getAttribute("data-id");
+      if (!id) return;
+      if (e.target.checked) {
+        window._pinolSelectedIds.add(id);
+      } else {
+        window._pinolSelectedIds.delete(id);
+      }
+      updatePinolBatchButton();
+    };
+  });
+
+  // Botones surtir individual
+  document.querySelectorAll(".btnPinolDeliver").forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.getAttribute("data-id");
+      const item = (window._pinolRawItems || []).find(x => String(x?.id) === String(id));
+      if (item) openPinolEntregaModal(item);
+    };
+  });
+
+  // Botones eliminar individual
+  document.querySelectorAll(".btnPinolDelete").forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.getAttribute("data-id");
+      if (id) deletePinolRow(id);
+    };
+  });
+}
+
+function updatePinolBatchButton() {
+  const count = window._pinolSelectedIds ? window._pinolSelectedIds.size : 0;
+  const countEl = $("pinolSelectedCount");
+  const btn = $("btnPinolBatchDispatch");
+
+  if (countEl) countEl.textContent = count;
+  if (btn) {
+    btn.disabled = count === 0;
+    if (count > 0) {
+      btn.style.setProperty("background", "#059669", "important");
+      btn.style.setProperty("color", "#ffffff", "important");
+      btn.style.setProperty("cursor", "pointer", "important");
+      btn.style.setProperty("opacity", "1", "important");
+      btn.style.setProperty("box-shadow", "0 2px 6px rgba(5,150,105,0.3)", "important");
+    } else {
+      btn.style.setProperty("background", "#e2e8f0", "important");
+      btn.style.setProperty("color", "#94a3b8", "important");
+      btn.style.setProperty("cursor", "not-allowed", "important");
+      btn.style.setProperty("opacity", "0.7", "important");
+      btn.style.setProperty("box-shadow", "none", "important");
+    }
+  }
+}
+
+// Handler Select All Checkbox
+if ($("pinolSelectAll")) {
+  $("pinolSelectAll").onchange = (e) => {
+    const isChecked = e.target.checked;
+    const checkboxes = document.querySelectorAll(".pinol-row-checkbox");
+    checkboxes.forEach(cb => {
+      cb.checked = isChecked;
+      const id = cb.getAttribute("data-id");
+      if (id) {
+        if (isChecked) window._pinolSelectedIds.add(id);
+        else window._pinolSelectedIds.delete(id);
+      }
+    });
+    updatePinolBatchButton();
+  };
+}
+
+// Filter listeners
+$("pinolBusquedaInput")?.addEventListener("input", () => renderPinolCommandCenter());
+$("pinolFiltroMunicipio")?.addEventListener("change", () => renderPinolCommandCenter());
+$("pinolFiltroEstatus")?.addEventListener("change", () => renderPinolCommandCenter());
+
+// Batch Modal Handlers
+$("btnPinolBatchDispatch")?.addEventListener("click", () => openPinolBatchModal());
+$("btnPinolPrintGuia")?.addEventListener("click", () => {
+  const selectedItems = (window._pinolRawItems || []).filter(x => window._pinolSelectedIds.has(String(x.id)));
+  const itemsToPrint = selectedItems.length > 0 ? selectedItems : (window._pinolRawItems || []).filter(x => String(x.estatus || "PENDIENTE").toUpperCase() === "PENDIENTE");
+  if (!itemsToPrint.length) {
+    showToast("No hay solicitudes para generar la Guía de Ruta", false);
+    return;
+  }
+  imprimirGuiaEmbarquePinol(itemsToPrint);
+});
+
+function openPinolBatchModal() {
+  const selectedItems = (window._pinolRawItems || []).filter(x => window._pinolSelectedIds.has(String(x.id)));
+  if (!selectedItems.length) return;
+
+  const count = selectedItems.length;
+  const totalBotellas = selectedItems.reduce((acc, x) => acc + Math.min(Number(x?.solicitud_botellas || 4), 4), 0);
+  const totalLitros = (totalBotellas * 0.828).toFixed(1);
+
+  if ($("pinolBatchCountSummary")) $("pinolBatchCountSummary").textContent = `${count} Unidad(es)`;
+  if ($("pinolBatchLitersSummary")) $("pinolBatchLitersSummary").textContent = `${totalLitros} Litros (${totalBotellas} botellas)`;
+  if ($("pinolBatchFechaInput")) $("pinolBatchFechaInput").value = typeof todayYmdLocal === "function" ? todayYmdLocal() : new Date().toISOString().split('T')[0];
+
+  const modal = $("pinolBatchModal");
+  if (modal) {
+    modal.classList.add("show");
+    modal.removeAttribute("aria-hidden");
+  }
+}
+
+function closePinolBatchModal() {
+  const modal = $("pinolBatchModal");
+  if (modal) {
+    modal.classList.remove("show");
+    modal.setAttribute("aria-hidden", "true");
+  }
+}
+
+$("btnConfirmarBatchPinol")?.addEventListener("click", async () => {
+  const selectedItems = (window._pinolRawItems || []).filter(x => window._pinolSelectedIds.has(String(x.id)));
+  if (!selectedItems.length) return;
+
+  const fechaEntrega = $("pinolBatchFechaInput")?.value || todayYmdLocal();
+  const cantidadPiezas = parseInt($("pinolBatchCantidadInput")?.value) || 4;
+  const entregadoPor = ($("pinolBatchEntregadoPor")?.value || "L.E. LIZBETH URIBE PANTOJA").trim();
+  const comentario = ($("pinolBatchComentario")?.value || "").trim();
+
+  try {
+    showOverlay("Procesando surtido masivo de insumos...");
+    const ids = selectedItems.map(x => x.id);
+
+    const updatePayload = {
+      estatus: 'ENTREGADO',
+      fecha_entrega: fechaEntrega,
+      timestamp_entrega: new Date().toISOString(),
+      entregado_por: entregadoPor,
+      comentario_entrega: comentario,
+      cantidad_entregada: Math.min(cantidadPiezas, 4)
+    };
+
+    const { error } = await window.supabase
+      .from('pinol_solicitudes')
+      .update(updatePayload)
+      .in('id', ids);
+
+    if (error) throw error;
+
+    showToast(`✅ ${ids.length} solicitudes surtidas correctamente`, true, "good");
+    window._pinolSelectedIds.clear();
+    closePinolBatchModal();
+    invalidatePinolCache();
+    await refreshPinol();
+
+    // Ofrecer impresión de la Guía de Ruta
+    imprimirGuiaEmbarquePinol(selectedItems);
+  } catch (err) {
+    console.error("Error en surtido masivo:", err);
+    showToast("Error al procesar surtido masivo", false, "bad");
+  } finally {
+    hideOverlay();
+  }
+});
+
+// Drawer Trazabilidad Handlers
+function openPinolUnitDrawer(idOrClues) {
+  if (!idOrClues) return;
+  const raw = window._pinolRawItems || [];
+  const searchVal = String(idOrClues).trim().toUpperCase();
+
+  let sample = raw.find(x => String(x.id).toUpperCase() === searchVal || String(x.clues || "").toUpperCase() === searchVal || String(x.unidad || "").toUpperCase() === searchVal);
+  if (!sample) {
+    showToast("No se encontró información para la unidad seleccionada", false);
+    return;
+  }
+
+  const clues = sample.clues || "";
+  const unit = sample.unidad || "";
+  const items = raw.filter(x => (clues && String(x.clues).toUpperCase() === String(clues).toUpperCase()) || (unit && String(x.unidad).toUpperCase() === String(unit).toUpperCase()));
+
+  if ($("pinolDrawerUnidad")) $("pinolDrawerUnidad").textContent = sample.unidad || "Unidad de Salud";
+  if ($("pinolDrawerClues")) $("pinolDrawerClues").textContent = sample.clues || clues || "—";
+
+  const content = $("pinolDrawerContent");
+  if (content) {
+    content.innerHTML = `
+      <div class="mb-6 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+        <div class="text-xs font-bold text-slate-500 uppercase">Municipio</div>
+        <div class="text-sm font-black text-slate-900">${escapeHtml(sample.municipio || "—")}</div>
+        <div class="text-xs font-bold text-slate-500 uppercase mt-2">Existencia Actual Reportada</div>
+        <div class="text-lg font-black ${Number(sample.existencia_actual_botellas || 0) === 0 ? 'text-rose-600' : 'text-emerald-600'}">${Number(sample.existencia_actual_botellas || 0)} Botella(s)</div>
+      </div>
+
+      <div class="text-xs font-black text-slate-900 uppercase tracking-wider mb-3">Historial de Solicitudes y Acuses (${items.length})</div>
+      <div class="space-y-4">
+        ${items.map(it => `
+          <div class="p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <div class="text-xs font-extrabold text-slate-800">Solicitud: ${escapeHtml(formatPinolDate(it.fecha_solicitud))}</div>
+                <div class="text-[11px] font-semibold text-slate-500">Solicitó: ${Number(it.solicitud_botellas || 4)} pza(s) (${(Number(it.solicitud_botellas || 4) * 0.828).toFixed(1)} L)</div>
+              </div>
+              <span class="text-xs font-bold px-2.5 py-1 rounded-full ${it.estatus === 'RECIBIDO' ? 'bg-emerald-100 text-emerald-800' : it.estatus === 'ENTREGADO' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}">
+                ${escapeHtml(it.estatus || 'PENDIENTE')}
+              </span>
+            </div>
+            ${it.fecha_entrega ? `<div class="text-xs font-bold text-emerald-700 mt-2">🚚 Entregado el: ${escapeHtml(formatPinolDate(it.fecha_entrega))} por ${escapeHtml(it.entregado_por || '—')}</div>` : ''}
+            ${it.observaciones ? `<div class="text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-200 mt-2 text-slate-700"><b>Obs:</b> ${escapeHtml(it.observaciones)}</div>` : ''}
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  const drawer = $("pinolDrawer");
+  const backdrop = $("pinolDrawerBackdrop");
+  if (drawer) drawer.classList.add("open");
+  if (backdrop) backdrop.classList.add("open");
+}
+
+function closePinolDrawer() {
+  $("pinolDrawer")?.classList.remove("open");
+  $("pinolDrawerBackdrop")?.classList.remove("open");
+}
+
+// Impresión de Guía de Embarque Colectiva
+function imprimirGuiaEmbarquePinol(items) {
+  const container = $("pinolPrintContainer");
+  if (!container) return;
+
+  const defaultDate = typeof todayYmdLocal === "function" ? todayYmdLocal() : new Date().toISOString().split('T')[0];
+  const fechaTexto = formatFechaMemorandumText(defaultDate);
+
+  const logos = window.PINOL_LOGOS || {};
+  const logo1 = logos.logo1 || "";
+  const logo2 = logos.logo2 || "";
+
+  const totalUnidades = items.length;
+  const totalBotellas = items.reduce((acc, x) => acc + Math.min(Number(x?.solicitud_botellas || 4), 4), 0);
+  const totalLitros = (totalBotellas * 0.828).toFixed(2);
+  const municipio = (items[0]?.municipio || "MULTIPLE").toUpperCase();
+
+  container.innerHTML = `
+    <div style="padding: 30px; font-family: system-ui, -apple-system, sans-serif; color: #0f172a; background: #fff;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-b: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px;">
+        <div>${logo1 ? `<img src="${logo1}" style="height: 50px;" />` : ''}</div>
+        <div style="text-align: center;">
+          <h2 style="margin: 0; font-size: 16px; font-weight: 900; color: #0f172a; text-transform: uppercase;">Servicios de Salud del Estado de Querétaro</h2>
+          <h3 style="margin: 2px 0 0; font-size: 13px; font-weight: 800; color: #166534; text-transform: uppercase;">GUÍA DE DESPACHO Y RUTA DE ENTREGA MUNICIPAL</h3>
+          <div style="font-size: 11px; font-weight: 700; color: #64748b;">INSUMOS DE DESINFECCIÓN DE RED DE FRÍO (PINOL® 828 mL)</div>
+        </div>
+        <div>${logo2 ? `<img src="${logo2}" style="height: 55px;" />` : ''}</div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px 16px; border-radius: 12px; margin-bottom: 20px; font-size: 12px; font-weight: 700;">
+        <div><b>MUNICIPIO:</b> ${municipio}</div>
+        <div><b>FECHA RUTA:</b> ${fechaTexto}</div>
+        <div><b>UNIDADES EN RUTA:</b> ${totalUnidades}</div>
+        <div><b>VOLUMEN CARGA:</b> ${totalLitros} L (${totalBotellas} bot)</div>
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 30px;">
+        <thead>
+          <tr style="background: #1e293b; color: #fff; text-transform: uppercase; font-weight: 800;">
+            <th style="padding: 8px; border: 1px solid #0f172a; text-align: center; width: 30px;">#</th>
+            <th style="padding: 8px; border: 1px solid #0f172a; text-align: left; width: 110px;">CLUES</th>
+            <th style="padding: 8px; border: 1px solid #0f172a; text-align: left;">UNIDAD DE SALUD</th>
+            <th style="padding: 8px; border: 1px solid #0f172a; text-align: center; width: 70px;">EXIST.</th>
+            <th style="padding: 8px; border: 1px solid #0f172a; text-align: center; width: 70px;">BOTELLAS</th>
+            <th style="padding: 8px; border: 1px solid #0f172a; text-align: center; width: 70px;">LITROS</th>
+            <th style="padding: 8px; border: 1px solid #0f172a; text-align: center; width: 160px;">FIRMA DE RECIBIDO</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map((x, idx) => {
+            const bot = Math.min(Number(x?.solicitud_botellas || 4), 4);
+            return `
+              <tr>
+                <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: 800;">${idx + 1}</td>
+                <td style="padding: 8px; border: 1px solid #cbd5e1; font-family: monospace; font-weight: 700;">${escapeHtml(x?.clues || "")}</td>
+                <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: 800;">${escapeHtml(x?.unidad || "")}</td>
+                <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: 700;">${Number(x?.existencia_actual_botellas || 0)}</td>
+                <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: 900; color: #166534;">${bot} pz</td>
+                <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: center; font-weight: 700;">${(bot * 0.828).toFixed(1)} L</td>
+                <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: center;"></td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; text-align: center; font-size: 11px; font-weight: 700;">
+        <div style="border-top: 1px solid #0f172a; padding-top: 6px;">
+          <div>ENTREGÓ / RESPONSABLE DE TRANSPORTE</div>
+          <div style="font-size: 10px; color: #64748b; margin-top: 2px;">FIRMA Y FECHA DE SALIDA</div>
+        </div>
+        <div style="border-top: 1px solid #0f172a; padding-top: 6px;">
+          <div>V.B. COORDINACIÓN MUNICIPAL DE VACUNACIÓN</div>
+          <div style="font-size: 10px; color: #64748b; margin-top: 2px;">SELLO Y AUTORIZACIÓN DE DESPACHO</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const w = window.open("", "_blank");
+  if (w) {
+    w.document.write(`<html><head><title>Guía de Ruta Pinol - ${municipio}</title></head><body>${container.innerHTML}</body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(() => {
+      w.print();
+      w.close();
+    }, 400);
   }
 }
 

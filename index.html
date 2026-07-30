@@ -66,9 +66,84 @@
 
   <!-- Estilos -->
   <link rel="stylesheet" href="tailwind_compiled.css">
-  <link rel="stylesheet" href="style.css?v=2026.56" type="text/css">
+  <link rel="stylesheet" href="style.css?v=2026.69" type="text/css">
 
   <style>
+    /* BOTONES DE ACCIÓN: PUROS ÍCONOS ELEGANTES 3D VERTICALMENTE ALINEADOS AL CENTRO */
+    #pinolTbody td {
+      vertical-align: middle !important;
+    }
+
+    button.pn-pure-btn {
+      all: unset !important;
+      box-sizing: border-box !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 28px !important;
+      height: 28px !important;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      cursor: pointer !important;
+      padding: 0 !important;
+      margin: 0 2px !important;
+      outline: none !important;
+      vertical-align: middle !important;
+    }
+
+    button.pn-pure-btn span.material-symbols-rounded {
+      font-size: 20px !important;
+      line-height: 1 !important;
+      display: inline-block !important;
+      -webkit-font-smoothing: antialiased !important;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease, color 0.2s ease !important;
+    }
+
+    /* 1. SURTIR (Verde Esmeralda Elegante) */
+    button.pn-pure-surtir span.material-symbols-rounded {
+      color: #059669 !important;
+      filter: drop-shadow(0 1.5px 1.5px rgba(5, 150, 105, 0.25)) drop-shadow(0 1px 0 #047857) !important;
+    }
+    button.pn-pure-surtir:hover span.material-symbols-rounded {
+      transform: translateY(-2px) scale(1.18) !important;
+      color: #10b981 !important;
+      filter: drop-shadow(0 4px 6px rgba(5, 150, 105, 0.35)) drop-shadow(0 1px 0 #047857) !important;
+    }
+
+    /* 2. HISTORIAL / TRAZABILIDAD (Azul Elegante) */
+    button.pn-pure-history span.material-symbols-rounded {
+      color: #2563eb !important;
+      filter: drop-shadow(0 1.5px 1.5px rgba(37, 99, 235, 0.25)) drop-shadow(0 1px 0 #1d4ed8) !important;
+    }
+    button.pn-pure-history:hover span.material-symbols-rounded {
+      transform: translateY(-2px) scale(1.18) !important;
+      color: #3b82f6 !important;
+      filter: drop-shadow(0 4px 6px rgba(37, 99, 235, 0.35)) drop-shadow(0 1px 0 #1d4ed8) !important;
+    }
+
+    /* 3. ACUSE (Verde Bosque Elegante) */
+    button.pn-pure-acuse span.material-symbols-rounded {
+      color: #166534 !important;
+      filter: drop-shadow(0 1.5px 1.5px rgba(22, 101, 52, 0.25)) drop-shadow(0 1px 0 #14532d) !important;
+    }
+    button.pn-pure-acuse:hover span.material-symbols-rounded {
+      transform: translateY(-2px) scale(1.18) !important;
+      color: #22c55e !important;
+      filter: drop-shadow(0 4px 6px rgba(22, 101, 52, 0.35)) drop-shadow(0 1px 0 #14532d) !important;
+    }
+
+    /* 4. ELIMINAR (Rojo Carmesí Elegante) */
+    button.pn-pure-delete span.material-symbols-rounded {
+      color: #dc2626 !important;
+      filter: drop-shadow(0 1.5px 1.5px rgba(220, 38, 38, 0.25)) drop-shadow(0 1px 0 #991b1b) !important;
+    }
+    button.pn-pure-delete:hover span.material-symbols-rounded {
+      transform: translateY(-2px) scale(1.18) !important;
+      color: #ef4444 !important;
+      filter: drop-shadow(0 4px 6px rgba(220, 38, 38, 0.35)) drop-shadow(0 1px 0 #991b1b) !important;
+    }
+
     /* Premium Switch Styling inline to bypass SW cache issues */
     .premium-switch {
       position: relative;
@@ -3328,31 +3403,41 @@
         class="bg-surface rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8 overflow-hidden"
         id="panelPINOLADMIN" data-role-gate="ADMIN,MUNICIPAL" style="display:none">
         <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-6">
-          <h3 class="text-lg font-extrabold text-primary m-0 tracking-tight">Solicitudes de pinol</h3>
-          <button class="premium-refresh-btn has-text" id="btnRefreshPinol" title="Actualizar solicitudes">
-            <span class="material-symbols-rounded">refresh</span> Actualizar
-          </button>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-black">
+              <span class="material-symbols-rounded">sanitizer</span>
+            </div>
+            <div>
+              <h3 class="text-xl font-black text-primary m-0 tracking-tight">Centro de Gestión Logística de Pinol®</h3>
+              <p class="text-xs text-slate-500 font-medium m-0">Insumos de desinfección y limpieza de red de frío (máx. 4 botellas por unidad)</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="premium-refresh-btn has-text" id="btnRefreshPinol" title="Actualizar solicitudes">
+              <span class="material-symbols-rounded">refresh</span> Actualizar
+            </button>
+          </div>
         </div>
 
         <div class="hint">
           🧴 <b>Multilimpiador desinfectante Pinol®</b> CONT. NET. 828 mL.<br>
-          Uso exclusivo para limpieza de refrigeradores de vacunas y área de farmacia.<br><br>
-          Consulta solicitudes de las unidades y marca como entregadas cuando corresponda.
+          Uso exclusivo para desinfección y limpieza de refrigeradores de vacunas y área de farmacia (Límite: 1 a 4 botellas por unidad).
         </div>
 
         <!-- Banner de Alerta Pinol Destacado -->
         <div id="pinolAlertMsg" class="pinolBannerAlert" style="margin-top:16px; margin-bottom: 16px;">—</div>
 
-        <div class="dashboardKpis">
-          <div class="kpiCard info">
+        <!-- KPIs LOGÍSTICOS EXPANDIDOS (Command Center en 1 Sola Fila Horizontal) -->
+        <div class="dashboardKpis" style="display: grid !important; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important; gap: 12px !important; margin-bottom: 20px !important; width: 100% !important;">
+          <div class="kpiCard info" style="margin: 0 !important;">
             <div class="kpiHeader">
-              <div class="kpiCardLabel">Total solicitudes</div>
+              <div class="kpiCardLabel">Total Solicitudes</div>
               <div class="kpiIcon"><span class="material-symbols-rounded">description</span></div>
             </div>
             <div class="kpiCardValue" id="pinolTotal">0</div>
           </div>
 
-          <div class="kpiCard info" id="kpiCardPinolPendientes">
+          <div class="kpiCard info" id="kpiCardPinolPendientes" style="margin: 0 !important;">
             <div class="kpiHeader">
               <div class="kpiCardLabel">Pendientes</div>
               <div class="kpiIcon"><span class="material-symbols-rounded">hourglass_empty</span></div>
@@ -3360,57 +3445,106 @@
             <div class="kpiCardValue" id="pinolPendientes">0</div>
           </div>
 
-          <div class="kpiCard warn">
+          <div class="kpiCard warn" id="kpiCardPinolCriticos" style="margin: 0 !important;">
             <div class="kpiHeader">
-              <div class="kpiCardLabel">Entregadas sin acuse</div>
+              <div class="kpiCardLabel">Stock Crítico (0 Exist.)</div>
+              <div class="kpiIcon"><span class="material-symbols-rounded">warning</span></div>
+            </div>
+            <div class="kpiCardValue text-rose-600 font-black" id="pinolCriticos">0</div>
+          </div>
+
+          <div class="kpiCard info" id="kpiCardPinolLitros" style="margin: 0 !important;">
+            <div class="kpiHeader">
+              <div class="kpiCardLabel">Volumen Ruta (Lts)</div>
               <div class="kpiIcon"><span class="material-symbols-rounded">local_shipping</span></div>
+            </div>
+            <div class="kpiCardValue" id="pinolLitrosRuta">0.0 L</div>
+          </div>
+
+          <div class="kpiCard warn" style="margin: 0 !important;">
+            <div class="kpiHeader">
+              <div class="kpiCardLabel">En Tránsito</div>
+              <div class="kpiIcon"><span class="material-symbols-rounded">departure_board</span></div>
             </div>
             <div class="kpiCardValue" id="pinolEntregadas">0</div>
           </div>
 
-          <div class="kpiCard ok">
+          <div class="kpiCard ok" style="margin: 0 !important;">
             <div class="kpiHeader">
-              <div class="kpiCardLabel">Recibidas</div>
+              <div class="kpiCardLabel">Recibidas con Acuse</div>
               <div class="kpiIcon"><span class="material-symbols-rounded">task_alt</span></div>
             </div>
             <div class="kpiCardValue" id="pinolRecibidas">0</div>
           </div>
         </div>
 
-        <div class="row" style="margin-top:10px">
-          <div>
-            <label for="pinolFiltroEstatus">Filtrar por estatus</label>
-            <select id="pinolFiltroEstatus">
-              <option value="TODOS">Todos</option>
-              <option value="PENDIENTE">Pendientes</option>
-              <option value="ENTREGADO">Entregadas</option>
-              <option value="RECIBIDO">Recibidas</option>
-            </select>
+        <!-- SMART TOOLBAR HORIZONTAL SIN CASCADA -->
+        <div style="background: #f8fafc; padding: 14px 18px; border-radius: 20px; border: 1px solid #e2e8f0; margin-bottom: 20px; display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; gap: 12px !important; flex-wrap: nowrap !important; width: 100% !important; box-sizing: border-box !important;">
+          <!-- Lado Izquierdo: Buscador y Filtros alineados horizontalmente -->
+          <div style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 10px !important; flex: 1 !important; min-width: 0 !important;">
+            <!-- Búsqueda rápida con icono correctamente espaciado sin encimarse -->
+            <div style="position: relative !important; flex: 1 !important; max-width: 320px !important; min-width: 180px !important;">
+              <span class="material-symbols-rounded" style="position: absolute !important; left: 12px !important; top: 50% !important; transform: translateY(-50%) !important; color: #94a3b8 !important; font-size: 20px !important; pointer-events: none !important;">search</span>
+              <input type="text" id="pinolBusquedaInput" placeholder="Buscar por unidad, CLUES..." autocomplete="off" name="pinol_search_filter_query_no_autofill"
+                style="width: 100% !important; height: 44px !important; border-radius: 14px !important; border: 1px solid #cbd5e1 !important; background: #ffffff !important; padding-left: 42px !important; padding-right: 12px !important; font-size: 13px !important; font-weight: 600 !important; color: #0f172a !important; box-shadow: 0 1px 3px rgba(15,23,42,0.06) !important; outline: none !important;" />
+            </div>
+
+            <!-- Filtro Municipio Píldora -->
+            <div style="flex-shrink: 0 !important;">
+              <select id="pinolFiltroMunicipio" style="height: 44px !important; border-radius: 14px !important; border: 1px solid #cbd5e1 !important; background: #ffffff !important; padding: 0 36px 0 14px !important; font-size: 12px !important; font-weight: 700 !important; color: #334155 !important; box-shadow: 0 1px 3px rgba(15,23,42,0.06) !important;">
+                <option value="TODOS">Todos los Municipios</option>
+              </select>
+            </div>
+
+            <!-- Filtro Estatus Píldora -->
+            <div style="flex-shrink: 0 !important;">
+              <select id="pinolFiltroEstatus" style="height: 44px !important; border-radius: 14px !important; border: 1px solid #cbd5e1 !important; background: #ffffff !important; padding: 0 36px 0 14px !important; font-size: 12px !important; font-weight: 700 !important; color: #334155 !important; box-shadow: 0 1px 3px rgba(15,23,42,0.06) !important;">
+                <option value="TODOS">Todos los Estatus</option>
+                <option value="PENDIENTE">Pendientes</option>
+                <option value="ENTREGADO">En Tránsito (Entregadas)</option>
+                <option value="RECIBIDO">Recibidas con Acuse</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Lado Derecho: Botones con Fondos Sólidos No Transparentes -->
+          <div style="display: flex !important; flex-direction: row !important; align-items: center !important; gap: 10px !important; flex-shrink: 0 !important;">
+            <button type="button" id="btnPinolBatchDispatch" disabled
+              style="height: 44px !important; padding: 0 18px !important; background: #e2e8f0 !important; color: #94a3b8 !important; font-size: 12px !important; font-weight: 800 !important; border-radius: 14px !important; border: none !important; cursor: not-allowed !important; display: inline-flex !important; align-items: center !important; gap: 8px !important; transition: all 0.2s ease !important;">
+              <span class="material-symbols-rounded" style="font-size: 18px !important;">local_shipping</span>
+              <span>Surtir Seleccionadas (<span id="pinolSelectedCount">0</span>)</span>
+            </button>
+            <button type="button" id="btnPinolPrintGuia"
+              style="height: 44px !important; padding: 0 16px !important; background: #0f172a !important; color: #ffffff !important; font-size: 12px !important; font-weight: 800 !important; border-radius: 14px !important; border: none !important; cursor: pointer !important; display: inline-flex !important; align-items: center !important; gap: 8px !important; box-shadow: 0 2px 6px rgba(15,23,42,0.25) !important;">
+              <span class="material-symbols-rounded" style="font-size: 18px !important; color: #ffffff !important;">print</span>
+              <span>Guía de Ruta</span>
+            </button>
           </div>
         </div>
 
-        <div
-          class="tableWrap pinolTableDesktop mt-6 overflow-x-auto w-full rounded-2xl border border-outline-variant/30 shadow-sm relative z-0">
+        <!-- TABLA EJECUTIVA OPTIMIZADA CON DISTRIBUCIÓN PROPORCIONAL DE ANCHOS -->
+        <div class="tableWrap pinolTableDesktop overflow-x-auto w-full rounded-2xl border border-outline-variant/30 shadow-sm relative z-0">
           <table class="w-full text-left border-collapse">
             <thead>
-              <tr
-                class="bg-surface-variant text-surface-onVariant uppercase tracking-[0.05em] font-extrabold text-xs border-b border-outline-variant/30">
-                <th class="p-4">Fecha</th>
-                <th class="p-4">Municipio</th>
-                <th class="p-4">CLUES</th>
-                <th class="p-4">Unidad</th>
-                <th class="p-4 text-center">Exist. (Bot.)</th>
-                <th class="p-4 text-center">Solicitó (828 mL)</th>
-                <th class="p-4 text-center">Observaciones</th>
-                <th class="p-4">Entrega</th>
-                <th class="p-4">Estatus</th>
-                <th class="p-4 text-center">Acción</th>
+              <tr class="bg-surface-variant text-surface-onVariant uppercase tracking-[0.05em] font-extrabold text-xs border-b border-outline-variant/30">
+                <th class="p-4 text-center" style="width: 40px !important;">
+                  <input type="checkbox" id="pinolSelectAll" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer" title="Seleccionar todos" />
+                </th>
+                <th class="p-4" style="width: 105px !important;">Fecha</th>
+                <th class="p-4" style="width: 120px !important;">Municipio</th>
+                <th class="p-4">Unidad de Salud / CLUES</th>
+                <th class="p-4 text-center" style="width: 130px !important;">Exist. Actual</th>
+                <th class="p-4 text-center" style="width: 95px !important;">Solicitado</th>
+                <th class="p-4 text-center" style="width: 60px !important;">Obs.</th>
+                <th class="p-4" style="width: 110px !important;">Detalle Entrega</th>
+                <th class="p-4" style="width: 110px !important;">Estatus</th>
+                <th class="p-4 text-center" style="width: 90px !important;">Acciones</th>
               </tr>
             </thead>
             <tbody id="pinolTbody"
               class="bg-surface text-[13px] font-medium [&>tr>td]:p-4 [&>tr>td]:whitespace-nowrap [&>tr]:border-b [&>tr]:border-outline-variant/20">
               <tr>
-                <td colspan="12" class="p-6 text-center text-surface-onVariant/60">Sin datos</td>
+                <td colspan="10" class="p-6 text-center text-surface-onVariant/60">Sin datos</td>
               </tr>
             </tbody>
           </table>
@@ -5281,6 +5415,82 @@
 
   <!-- ✅ CONTENEDOR INVISIBLE/IMPRIMIBLE DEL ACUSE OFICIAL DE PINOL -->
   <div id="pinolPrintContainer" style="display:none;"></div>
+
+  <!-- ✅ MODAL SURTIDO MASIVO DE PINOL -->
+  <div id="pinolBatchModal" class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible">
+    <div class="w-full max-w-[620px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100 flex flex-col">
+      <div class="modalHead p-6 border-b border-slate-200">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-xl font-extrabold text-xs uppercase tracking-wider mb-2">
+          <span class="material-symbols-rounded text-[18px]">local_shipping</span> Despacho Colectivo de Insumos
+        </div>
+        <h3 class="text-xl font-black text-slate-900 m-0">Surtido Masivo de Solicitudes</h3>
+        <p class="text-xs text-slate-500 font-medium m-0 mt-1">Marca en lote como entregadas las unidades seleccionadas y genera la Guía de Ruta</p>
+      </div>
+
+      <div class="modalBody p-6 flex-1 overflow-y-auto">
+        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-4 flex items-center justify-between">
+          <div>
+            <div class="text-xs font-bold text-slate-500 uppercase">Solicitudes Seleccionadas</div>
+            <div class="text-lg font-black text-emerald-700" id="pinolBatchCountSummary">0 Unidades</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs font-bold text-slate-500 uppercase">Volumen Total Ruta</div>
+            <div class="text-lg font-black text-slate-900" id="pinolBatchLitersSummary">0.0 Litros (0 botellas)</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-xs font-extrabold text-slate-800 mb-1">FECHA DE SALIDA / ENTREGA</label>
+            <input type="date" id="pinolBatchFechaInput" class="w-full h-[44px] border border-slate-300 rounded-xl px-4 font-bold text-slate-800" style="height: 44px; border-radius: 14px !important;" />
+          </div>
+          <div>
+            <label class="block text-xs font-extrabold text-slate-800 mb-1">CANTIDAD POR UNIDAD (PZAS)</label>
+            <input type="number" id="pinolBatchCantidadInput" min="1" max="4" value="4" class="w-full h-[44px] border border-slate-300 rounded-xl px-4 font-bold text-slate-800" style="height: 44px; border-radius: 14px !important;" />
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-xs font-extrabold text-slate-800 mb-1">RESPONSABLE DE ENTREGA / REPARTIDOR</label>
+          <input type="text" id="pinolBatchEntregadoPor" value="L.E. LIZBETH URIBE PANTOJA" class="w-full h-[44px] border border-slate-300 rounded-xl px-4 font-bold text-slate-800" style="height: 44px; border-radius: 14px !important;" />
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-xs font-extrabold text-slate-800 mb-1">OBSERVACIÓN DE RUTA / VEHÍCULO (OPCIONAL)</label>
+          <textarea id="pinolBatchComentario" placeholder="Ej: Ruta municipal de entrega en hielera de transporte..." class="w-full h-20 p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 resize-none"></textarea>
+        </div>
+
+        <div class="p-3 bg-emerald-50 border-l-4 border-emerald-600 rounded-r-xl text-xs font-semibold text-emerald-800">
+          ⚠️ Norma Institucional: Se asignará hasta un máximo de 4 botellas (828 mL c/u) por unidad de salud.
+        </div>
+      </div>
+
+      <div class="modalFooter p-6 border-t border-slate-200 flex justify-end gap-3">
+        <button type="button" onclick="closePinolBatchModal()" class="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700">Cancelar</button>
+        <button type="button" id="btnConfirmarBatchPinol" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-2">
+          <span class="material-symbols-rounded text-[18px]">check_circle</span> Confirmar Surtido Masivo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ DRAWER LATERAL DE TRAZABILIDAD PINOL -->
+  <div id="pinolDrawerBackdrop" onclick="closePinolDrawer()" class="fixed inset-0 z-[2400] bg-slate-900/40 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+  <div id="pinolDrawer" class="fixed inset-y-0 right-0 z-[2500] w-full max-w-[460px] bg-white shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col border-l border-slate-200">
+    <div class="p-6 bg-slate-900 text-white flex justify-between items-center">
+      <div>
+        <div class="text-[10px] font-black uppercase text-emerald-400 tracking-wider">Historial & Trazabilidad</div>
+        <h4 class="text-lg font-black m-0" id="pinolDrawerUnidad">Unidad de Salud</h4>
+        <div class="text-xs text-slate-400 font-mono mt-0.5" id="pinolDrawerClues">CLUES</div>
+      </div>
+      <button type="button" onclick="closePinolDrawer()" class="text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-800">
+        <span class="material-symbols-rounded">close</span>
+      </button>
+    </div>
+    <div class="p-6 flex-1 overflow-y-auto" id="pinolDrawerContent">
+      <div class="text-center py-8 text-slate-400 font-medium text-xs">Cargando historial de entregas...</div>
+    </div>
+  </div>
 
 
   <!-- ✅ MODAL UPLOAD CSV (SIS) -->
