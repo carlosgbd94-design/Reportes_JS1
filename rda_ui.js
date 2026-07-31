@@ -868,23 +868,28 @@ function renderKPIs(agg, esquema) {
                 subText = `${agg.total_unidades} unidades médicas`;
             }
 
-            // Semaforización sobria y moderna (Health Analytics Standard)
+            // Opción 8 Premium: Cifra grande + Estado en Subtexto + Barra de avance fluida sin chips
+            let statusLabel = 'ÓPTIMO (META ALCANZADA)';
+            let statusColor = '#15803d';
+            let barGrad = 'linear-gradient(90deg, #10b981 0%, #059669 100%)';
+            let barShadow = '0 0 10px rgba(16, 185, 129, 0.3)';
+
             if (!isPobCard) {
                 if (valNum >= 95) {
-                    valColor = '#0f766e'; // Teal / Verde Corporativo Profundo
-                    badgeHtml = `<span style="display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:6px; background:#f0fdf4; color:#166534; font-size:10px; font-weight:800; border:1px solid #bbf7d0;">
-                        <span class="material-symbols-rounded" style="font-size:12px;">check_circle</span> Meta Alcanzada
-                    </span>`;
+                    statusLabel = 'ÓPTIMO (META ALCANZADA)';
+                    statusColor = '#15803d';
+                    barGrad = 'linear-gradient(90deg, #10b981 0%, #059669 100%)';
+                    barShadow = '0 0 10px rgba(16, 185, 129, 0.3)';
                 } else if (valNum >= 75) {
-                    valColor = '#b45309'; // Ámbar / Mostaza sobrio
-                    badgeHtml = `<span style="display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:6px; background:#fffbeb; color:#92400e; font-size:10px; font-weight:800; border:1px solid #fef3c7;">
-                        <span class="material-symbols-rounded" style="font-size:12px;">warning</span> Avance Regular
-                    </span>`;
+                    statusLabel = 'REGULAR (AVANCE MEDIO)';
+                    statusColor = '#d97706';
+                    barGrad = 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)';
+                    barShadow = '0 0 10px rgba(245, 158, 11, 0.3)';
                 } else {
-                    valColor = '#be123c'; // Carmín / Rojo Institucional
-                    badgeHtml = `<span style="display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:6px; background:#fff1f2; color:#9f1239; font-size:10px; font-weight:800; border:1px solid #fecdd3;">
-                        <span class="material-symbols-rounded" style="font-size:12px;">error</span> Requiere Atencion
-                    </span>`;
+                    statusLabel = 'CRÍTICO (REQUIERE ATENCIÓN)';
+                    statusColor = '#dc2626';
+                    barGrad = 'linear-gradient(90deg, #f43f5e 0%, #e11d48 100%)';
+                    barShadow = '0 0 10px rgba(244, 63, 94, 0.3)';
                 }
             }
         } else {
@@ -905,48 +910,76 @@ function renderKPIs(agg, esquema) {
         if (isPobCard && esquema === 'basico') {
             const has6A = (_rdaCache.anio === 2025);
             const gridCols = has6A ? 'repeat(4, minmax(0, 1fr))' : 'repeat(3, minmax(0, 1fr))';
-            // Tarjeta especial para desglose de población meta por edad
+            const pM1 = agg.pob_menor_1 || 0;
+            const p1A = agg.pob_1_ano || 0;
+            const p4A = agg.pob_4_anos || 0;
+            const p6A = agg.pob_6_anos || 0;
+            const pTot = agg.pob_total || (pM1 + p1A + p4A + p6A) || 1;
+            const pctM1 = Math.round((pM1 / pTot) * 100);
+            const pct1A = Math.round((p1A / pTot) * 100);
+            const pct4A = Math.round((p4A / pTot) * 100);
+            const pct6A = has6A ? Math.round((p6A / pTot) * 100) : 0;
+
             card.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                    <div class="rda-icon-box" style="background: ${k.bg}; color: ${k.fg}; width: 36px; height: 36px; border-radius: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                    <div class="rda-icon-box" style="background: ${k.bg}; color: ${k.fg}; width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
                         <span class="material-symbols-rounded" style="font-size:20px;">groups</span>
                     </div>
-                    <span style="font-size: 10px; font-weight: 800; color: #64748b; background: #f1f5f9; padding: 2px 8px; border-radius: 6px; border: 1px solid #e2e8f0;">0-8 Años</span>
+                    <div style="font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.2;">Población Meta Total</div>
                 </div>
-                <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Población Meta Total</div>
-                <div style="font-size: 26px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em; margin-bottom: 10px;">${valText} <span style="font-size: 12px; font-weight: 700; color: #94a3b8;">hab.</span></div>
+                <div style="font-size: 28px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em; line-height: 1.1;">${valText} <span style="font-size: 12px; font-weight: 700; color: #94a3b8;">hab.</span></div>
+                <div style="font-size: 9.5px; font-weight: 900; color: #64748b; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 2px;">JURISDICCIÓN SANITARIA NO. 1 (0-8 AÑOS)</div>
                 
-                <div style="display: grid; grid-template-columns: ${gridCols}; gap: 3px; border-top: 1px solid #f1f5f9; padding-top: 8px; margin-top: 4px;">
-                    <div style="background: #f8fafc; padding: 4px 2px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0; min-width: 0; box-sizing: border-box;">
+                <!-- BARRA MULTI-SEGMENTO DE PROPORCIÓN DE POBLACIÓN -->
+                <div style="margin: 10px 0 8px 0;">
+                    <div style="width: 100%; height: 7px; background: rgba(15, 23, 42, 0.06); border-radius: 999px; overflow: hidden; display: flex; gap: 2px;">
+                        <div style="height: 100%; width: ${pctM1}%; background: #0d9488;" title="<1 Año: ${pctM1}%"></div>
+                        <div style="height: 100%; width: ${pct1A}%; background: #0284c7;" title="1 Año: ${pct1A}%"></div>
+                        <div style="height: 100%; width: ${pct4A}%; background: #7c3aed;" title="4 Años: ${pct4A}%"></div>
+                        ${has6A ? `<div style="height: 100%; width: ${pct6A}%; background: #e11d48;" title="6 Años: ${pct6A}%"></div>` : ''}
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: ${gridCols}; gap: 4px; border-top: 1px solid #f1f5f9; padding-top: 8px; margin-top: 4px;">
+                    <div style="background: #f8fafc; padding: 5px 3px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0; min-width: 0; box-sizing: border-box;">
                         <div style="font-size: 8.5px; font-weight: 800; color: #0d9488; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><1 Año</div>
-                        <div style="font-size: 10px; font-weight: 900; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${agg.pob_menor_1.toLocaleString('es-MX')}</div>
+                        <div style="font-size: 10.5px; font-weight: 900; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${agg.pob_menor_1.toLocaleString('es-MX')}</div>
                     </div>
-                    <div style="background: #f8fafc; padding: 4px 2px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0; min-width: 0; box-sizing: border-box;">
+                    <div style="background: #f8fafc; padding: 5px 3px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0; min-width: 0; box-sizing: border-box;">
                         <div style="font-size: 8.5px; font-weight: 800; color: #0284c7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">1 Año</div>
-                        <div style="font-size: 10px; font-weight: 900; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${agg.pob_1_ano.toLocaleString('es-MX')}</div>
+                        <div style="font-size: 10.5px; font-weight: 900; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${agg.pob_1_ano.toLocaleString('es-MX')}</div>
                     </div>
-                    <div style="background: #f8fafc; padding: 4px 2px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0; min-width: 0; box-sizing: border-box;">
+                    <div style="background: #f8fafc; padding: 5px 3px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0; min-width: 0; box-sizing: border-box;">
                         <div style="font-size: 8.5px; font-weight: 800; color: #7c3aed; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">4 Años</div>
-                        <div style="font-size: 10px; font-weight: 900; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${agg.pob_4_anos.toLocaleString('es-MX')}</div>
+                        <div style="font-size: 10.5px; font-weight: 900; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${agg.pob_4_anos.toLocaleString('es-MX')}</div>
                     </div>
                     ${has6A ? `
-                    <div style="background: #f8fafc; padding: 4px 2px; border-radius: 6px; text-align: center; border: 1px solid #e2e8f0; min-width: 0; box-sizing: border-box;">
+                    <div style="background: #f8fafc; padding: 5px 3px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0; min-width: 0; box-sizing: border-box;">
                         <div style="font-size: 8.5px; font-weight: 800; color: #e11d48; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">6 Años</div>
-                        <div style="font-size: 10px; font-weight: 900; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${(agg.pob_6_anos || 0).toLocaleString('es-MX')}</div>
+                        <div style="font-size: 10.5px; font-weight: 900; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${(agg.pob_6_anos || 0).toLocaleString('es-MX')}</div>
                     </div>` : ''}
                 </div>
             `;
         } else {
+            const barPct = Math.min(100, Math.max(8, valNum));
             card.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                    <div class="rda-icon-box" style="background: ${k.bg}; color: ${k.fg}; width: 36px; height: 36px; border-radius: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                    <div class="rda-icon-box" style="background: ${k.bg}; color: ${k.fg}; width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
                         <span class="material-symbols-rounded" style="font-size:20px;">${k.icon}</span>
                     </div>
-                    ${badgeHtml}
+                    <div style="font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.2;">${k.label}</div>
                 </div>
-                <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">${k.label}</div>
-                <div style="font-size: 32px; font-weight: 900; color: ${valColor}; letter-spacing: -0.04em; line-height: 1.1;">${valText}</div>
-                <div style="font-size: 12px; font-weight: 700; color: #64748b; margin-top: 8px;">${subText}</div>
+                <div style="font-size: 28px; font-weight: 900; color: #0f172a; letter-spacing: -0.03em; line-height: 1.1;">${valText}</div>
+                <div style="font-size: 9.5px; font-weight: 900; color: ${statusColor}; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 2px;">${statusLabel}</div>
+                
+                <!-- BARRA DE AVANCE MODERNA PREMIUM -->
+                <div style="margin: 10px 0 8px 0;">
+                    <div style="width: 100%; height: 7px; background: rgba(15, 23, 42, 0.06); border-radius: 999px; overflow: hidden; position: relative;">
+                        <div style="height: 100%; width: ${barPct}%; background: ${barGrad}; box-shadow: ${barShadow}; border-radius: 999px; transition: width 0.8s ease;"></div>
+                    </div>
+                </div>
+
+                <div style="font-size: 11.5px; font-weight: 600; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 8px; margin-top: 4px;">${subText}</div>
             `;
         }
         container.appendChild(card);
