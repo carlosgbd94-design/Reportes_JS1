@@ -844,6 +844,11 @@ function renderKPIs(agg, esquema) {
         let valColor = '#0f172a';
         let badgeHtml = '';
 
+        let statusLabel = 'DOSIS APLICADAS';
+        let statusColor = '#64748b';
+        let barGrad = 'linear-gradient(90deg, #0284c7 0%, #0369a1 100%)';
+        let barShadow = '0 0 10px rgba(2, 132, 199, 0.3)';
+
         if (esquema === 'basico') {
             if (k.key === 'menor1') {
                 valNum = agg.cobertura_menor1;
@@ -868,12 +873,6 @@ function renderKPIs(agg, esquema) {
                 subText = `${agg.total_unidades} unidades médicas`;
             }
 
-            // Opción 8 Premium: Cifra grande + Estado en Subtexto + Barra de avance fluida sin chips
-            let statusLabel = 'ÓPTIMO (META ALCANZADA)';
-            let statusColor = '#15803d';
-            let barGrad = 'linear-gradient(90deg, #10b981 0%, #059669 100%)';
-            let barShadow = '0 0 10px rgba(16, 185, 129, 0.3)';
-
             if (!isPobCard) {
                 if (valNum >= 95) {
                     statusLabel = 'ÓPTIMO (META ALCANZADA)';
@@ -891,15 +890,24 @@ function renderKPIs(agg, esquema) {
                     barGrad = 'linear-gradient(90deg, #f43f5e 0%, #e11d48 100%)';
                     barShadow = '0 0 10px rgba(244, 63, 94, 0.3)';
                 }
+            } else {
+                statusLabel = 'JURISDICCIÓN SANITARIA NO. 1 (0-8 AÑOS)';
+                statusColor = '#64748b';
             }
         } else {
             if (k.key === 'pob') {
                 valText = agg.total_unidades.toLocaleString('es-MX');
                 subText = 'unidades médicas';
+                statusLabel = 'UNIDADES MÉDICAS ACTIVAS';
+                statusColor = '#64748b';
             } else {
                 valNum = agg[k.key] || 0;
                 valText = valNum.toLocaleString('es-MX');
-                subText = 'dosis aplicadas';
+                subText = 'dosis aplicadas en el periodo';
+                statusLabel = 'DOSIS APLICADAS';
+                statusColor = '#0284c7';
+                barGrad = 'linear-gradient(90deg, #0284c7 0%, #0369a1 100%)';
+                barShadow = '0 0 10px rgba(2, 132, 199, 0.3)';
             }
         }
 
