@@ -2208,12 +2208,29 @@ window.openNotifDetailModal = function(id, title, message, date, sender, scope, 
   const modal = document.getElementById('modalNotifDetail');
   if (!modal) return;
   
+  let notif = null;
+  if (id && Array.isArray(LIVE_STATE?.notifications)) {
+    notif = LIVE_STATE.notifications.find(n => String(n.id) === String(id));
+  }
+
+  if (notif) {
+    title = title || notif.title || 'Comunicado';
+    message = message || notif.message || '';
+    date = date || (typeof formatNotifDate === 'function' ? formatNotifDate(notif.created_ts) : notif.created_ts) || '';
+    sender = sender || notif.from_usuario || 'ADMINISTRADOR';
+    scope = scope || notif.target_scope || notif.scope || 'GLOBAL';
+    type = type || notif.type || 'INFO';
+  }
+  
   document.getElementById('notifDetailModalTitle').textContent = title || 'Comunicado';
   document.getElementById('notifDetailModalMessage').textContent = message || '';
   document.getElementById('notifDetailModalDate').textContent = date || '';
-  document.getElementById('notifDetailModalScope').textContent = (scope || 'COMUNICADO INSTITUCIONAL').toUpperCase();
-  document.getElementById('notifDetailModalSender').innerHTML = `<span class="material-symbols-rounded text-base text-sky-600">account_circle</span><span>Emitido por: <strong>${escapeHtml(sender || 'Administración')}</strong></span>`;
-  document.getElementById('notifDetailModalType').textContent = (type || 'INFO').toUpperCase();
+  const scopeEl = document.getElementById('notifDetailModalScope');
+  if (scopeEl) scopeEl.textContent = (scope || 'COMUNICADO INSTITUCIONAL').toUpperCase();
+  const senderEl = document.getElementById('notifDetailModalSender');
+  if (senderEl) senderEl.innerHTML = `<span class="material-symbols-rounded text-base text-sky-600">account_circle</span><span>Emitido por: <strong>${escapeHtml(sender || 'Administración')}</strong></span>`;
+  const typeEl = document.getElementById('notifDetailModalType');
+  if (typeEl) typeEl.textContent = (type || 'INFO').toUpperCase();
 
   const readBtn = document.getElementById('notifDetailModalReadBtn');
   if (readBtn) {
@@ -2318,7 +2335,7 @@ function buildNotificationsHtml(items = []) {
             </div>
             
             <div class="notifCompactActions">
-              <button type="button" class="notifIconPureBtn notifIconPureBtn-info" title="Ver comunicado completo" onclick="openNotifDetailModal('${escapeAttr(item.id || "")}', '${escapeAttr(item.title || "")}', '${escapeAttr(item.message || "")}', '${escapeAttr(formatNotifDate(item.created_ts))}', '${escapeAttr(item.from_usuario || "ADMINISTRADOR")}', '${escapeAttr(item.target_scope || item.scope || "GLOBAL")}', '${escapeAttr(item.type || "INFO")}')"><span class="material-symbols-rounded">visibility</span></button>
+              <button type="button" class="notifIconPureBtn notifIconPureBtn-info" title="Ver comunicado completo" onclick="openNotifDetailModal('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">visibility</span></button>
               ${isDesabastoActive
         ? `<button type="button" class="notifIconPureBtn notifIconPureBtn-success" title="Marcar como Verificado" onclick="resolveDesabastoFlow('${escapeAttr(item.id || "")}')"><span class="material-symbols-rounded">check_circle</span></button>`
         : ``
@@ -2339,7 +2356,7 @@ function buildNotificationsHtml(items = []) {
             </div>
           </div>
           
-          <div class="notifBody snippet" style="cursor:pointer;" onclick="openNotifDetailModal('${escapeAttr(item.id || "")}', '${escapeAttr(item.title || "")}', '${escapeAttr(item.message || "")}', '${escapeAttr(formatNotifDate(item.created_ts))}', '${escapeAttr(item.from_usuario || "ADMINISTRADOR")}', '${escapeAttr(item.target_scope || item.scope || "GLOBAL")}', '${escapeAttr(item.type || "INFO")}')">
+          <div class="notifBody snippet" style="cursor:pointer;" onclick="openNotifDetailModal('${escapeAttr(item.id || "")}')">
             ${formatNotifBody(item.title, item.message, item.from_usuario)}
             ${(isDesabastoActive && meta?.missing?.length) ? `<div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:4px;">${meta.missing.map(v => `<span style="background:var(--md-sys-color-error-container); color:var(--md-sys-color-on-error-container); padding:2px 6px; border-radius:6px; font-size:9px; font-weight:700;">${v}</span>`).join("")}</div>` : ''}
           </div>
