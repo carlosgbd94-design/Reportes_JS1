@@ -12618,19 +12618,22 @@ function renderCaptureSummary(data) {
   const fecha = data?.fecha || "";
   const tipo = data?.tipo || "SR";
 
-  // Título Dinámico Premium
+  // Título y Subtítulo Dinámico Premium (Formato Imagen 2 e Imagen 3)
   const titleEl = document.getElementById("captureSummaryTitle");
+  const subTitleEl = document.getElementById("captureSummarySubTitle");
   if (titleEl) {
-    const tipoTxt = tipo === "CONS" ? "Consumibles" : (tipo === "BIO" ? "Pedido de biológico" : (tipo === "INF" ? "Meta-Logro Influenza" : "Existencia de biológicos"));
-    let t = `Resumen de captura de ${tipoTxt}`;
+    const tipoTxt = tipo === "CONS" ? "Consumibles" : (tipo === "BIO" ? "Pedido de biológico" : (tipo === "INF" ? "Meta-Logro Influenza" : "Existencia de Biológicos"));
+    titleEl.innerHTML = `Resumen de Captura de<br>${tipoTxt}`;
+    
+    let sub = "Consulta qué unidades ya capturaron y cuáles faltan hoy";
     if ((tipo === "SR" || tipo === "CONS" || tipo === "INF") && data.fIniStr && data.fFinStr) {
-      t += ` (Semana del ${formatAppDate(data.fIniStr)} al ${formatAppDate(data.fFinStr)})`;
+      sub = `Semana del ${formatAppDate(data.fIniStr)} al ${formatAppDate(data.fFinStr)}`;
     } else if (tipo === "BIO" && fecha) {
       const dateObj = new Date(`${fecha}T12:00:00`);
       const monthName = dateObj.toLocaleString('es-MX', { month: 'long' });
-      t += ` (${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${dateObj.getFullYear()})`;
+      sub = `Pedido de ${monthName.charAt(0).toUpperCase() + monthName.slice(1)} ${dateObj.getFullYear()}`;
     }
-    titleEl.textContent = t;
+    if (subTitleEl) subTitleEl.textContent = sub;
   }
 
   // Lógica de Selector de Pedidos Extraordinarios
@@ -12748,11 +12751,27 @@ function renderCaptureSummary(data) {
     }
   }
 
+  // Actualizar indicadores de avance y conteo limpio
+  const total = data?.total_unidades || 0;
+  const capCount = data?.total_capturadas || 0;
+  const falCount = data?.total_faltantes || 0;
+  const pct = total > 0 ? ((capCount / total) * 100).toFixed(1) : "0";
+
+  const pctEl = $("sumPorcentaje");
+  if (pctEl) pctEl.textContent = `${pct}%`;
+  const barEl = $("sumProgressBar");
+  if (barEl) barEl.style.width = `${pct}%`;
+
+  const capLabel = $("capturadasCountLabel");
+  if (capLabel) capLabel.textContent = `(${capCount})`;
+  const falLabel = $("faltantesCountLabel");
+  if (falLabel) falLabel.textContent = `(${falCount})`;
+
   function renderCapturadasOnly(list) {
     const tbodyCap = $("capturadasTbody");
     if (!list.length) {
       const msg = "No hay capturas registradas";
-      tbodyCap.innerHTML = `<tr><td colspan="5" class="muted">${msg}</td></tr>`;
+      tbodyCap.innerHTML = `<tr><td colspan="4" class="muted text-center py-4">${msg}</td></tr>`;
       return;
     }
     const sortedList = [...list].sort((a, b) => {
@@ -12773,47 +12792,44 @@ function renderCaptureSummary(data) {
       return cluesA.localeCompare(cluesB);
     });
     tbodyCap.innerHTML = sortedList.map(r => {
-      // Determinar estado visual: verde (OK), azul (sin pedido BIO), ámbar (editado/con ceros SR), violeta (Influenza)
-      let iconColor = '#22c55e'; // Verde: capturado normal
-      let iconTitle = r.editado === 'SI' || r.editado_por ? `Editado por ${r.editado_por || 'JURISDICCIÓN'}` : 'Capturado';
+      let svgIcon = '<svg style="width:18px; height:18px; display:block;" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>';
+      let iconHint = r.editado === 'SI' || r.editado_por ? `Editado por ${r.editado_por || 'JURISDICCIÓN'}` : 'Capturado al día';
       let extraTag = '';
 
       if (r.editado === 'SI' || r.editado_por) {
-        iconColor = '#8b5cf6'; // Violeta Orquídea: Pedido Editado (Diferente del Ámbar de pendiente)
-        iconTitle = `Pedido Editado por ${r.editado_por || 'JURISDICCIÓN'}`;
+        svgIcon = '<svg style="width:18px; height:18px; display:block;" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z"/></svg>';
+        iconHint = `Pedido Editado por ${r.editado_por || 'JURISDICCIÓN'}`;
         extraTag = `<span class="opacity-90 font-black uppercase text-[10px] tracking-tighter" style="background:#f5f3ff; color:#6d28d9; border:1px solid #ddd6fe; padding:2px 8px; border-radius:12px; margin-left:6px; display:inline-flex; align-items:center; gap:3px;">✍️ EDITADO POR ${escapeHtml(r.editado_por || 'JURISDICCIÓN')}</span>`;
       } else if (r.sin_pedido) {
-        iconColor = '#3b82f6'; // Azul: sin pedido biológico
-        iconTitle = 'Sin pedido de biológico (Solo Existencias)';
+        svgIcon = '<svg style="width:18px; height:18px; display:block;" viewBox="0 0 24 24" fill="none"><path stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 8L12 3L3 8v8l9 5l9-5V8z"/><path stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 3v18M3 8l9 5l9-5"/><path d="M4.5 4.5L19.5 19.5" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round"/><path d="M4.5 4.5L19.5 19.5" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round"/></svg>';
+        iconHint = 'Sin pedido de biológico (Solo Existencias)';
       } else if (r.tiene_ceros) {
-        iconColor = '#f43f5e'; // Carmesí/Rosa: capturó con algún biológico en cero
-        iconTitle = 'Capturó con algún biológico sin existencia';
-        extraTag = '';
-      } else if (tipo === "INF" && typeof r.influenza_dosis === 'number') {
-        iconColor = '#8b5cf6'; // Violeta
-        iconTitle = `Capturado: ${r.influenza_dosis} dosis de influenza`;
-        extraTag = `<span class="opacity-60 font-black uppercase text-[10px] tracking-tighter" style="background:#f5f3ff; color:#7c3aed; padding:2px 6px; border-radius:6px">${r.influenza_dosis} DOSIS</span>`;
+        svgIcon = '<svg style="width:18px; height:18px; display:block;" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3a9 9 0 100 18 9 9 0 000-18z"/></svg>';
+        iconHint = 'Capturó con algún biológico sin existencia';
       }
 
       const tipoPedidoTag = r.tipo_pedido
-        ? `<span class="opacity-60 font-black uppercase text-[10px] tracking-tighter" style="background:#f1f5f9; padding:2px 6px; border-radius:6px">${r.tipo_pedido}</span>`
+        ? `<span class="opacity-60 font-black uppercase text-[10px] tracking-tighter ml-1" style="background:#f1f5f9; padding:2px 6px; border-radius:6px">${r.tipo_pedido}</span>`
         : '';
 
+      const rowBg = r.tiene_ceros ? '#fff1f2' : (r.editado === 'SI' ? '#faf5ff' : '#ffffff');
       return `
-        <tr${r.tiene_ceros ? ' style="background: #fff5f5;"' : ''}>
-          <td data-label="Municipio">${escapeHtml(r.municipio || '')}</td>
-          <td data-label="CLUES">${escapeHtml(r.clues || '')}</td>
-          <td data-label="Unidad">${escapeHtml(r.unidad || '')}</td>
-          <td data-label="Estatus">
-            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%">
-              <div style="display:flex; align-items:center; gap:8px">
-                <span class="material-symbols-rounded" style="color: ${iconColor}; font-size: 24px; vertical-align: middle;" title="${iconTitle}">check_circle</span>
-                ${tipoPedidoTag}${extraTag}
-              </div>
-              <button class="live-view-btn-v2" onclick="openLiveView('${r.clues}','${escapeHtml(r.unidad)}','${escapeHtml(r.municipio)}')" title="Ver inventario en vivo">
-                 <span class="material-symbols-rounded">visibility</span>
-              </button>
+        <tr style="background:${rowBg}; box-shadow:0 1px 4px rgba(15,23,42,0.06); border:1px solid #e2e8f0;">
+          <td data-label="Municipio / CLUES" style="padding:12px 14px; vertical-align:middle; background:${rowBg}; border-top-left-radius:14px; border-bottom-left-radius:14px;">
+            <div style="font-weight:800; color:#0f172a; font-size:12px; line-height:1.3;">${escapeHtml(r.municipio || '')}</div>
+            <div style="font-family:monospace; font-size:10px; color:#94a3b8; margin-top:2px;">${escapeHtml(r.clues || '')}</div>
+          </td>
+          <td data-label="Unidad" style="padding:12px 14px; font-weight:700; color:#1e293b; font-size:12px; vertical-align:middle; background:${rowBg};">${escapeHtml(r.unidad || '')}</td>
+          <td data-label="Estatus" style="padding:12px 14px; text-align:center; vertical-align:middle; width:70px; background:${rowBg};">
+            <div style="display:flex; align-items:center; justify-content:center;" data-hint="${iconHint}">
+              ${svgIcon}
+              ${tipoPedidoTag}${extraTag}
             </div>
+          </td>
+          <td data-label="Live View" style="padding:12px 14px; text-align:center; vertical-align:middle; width:80px; background:${rowBg}; border-top-right-radius:14px; border-bottom-right-radius:14px;">
+            <button style="display:inline-flex; align-items:center; justify-content:center; background:transparent; border:none; cursor:pointer; color:#6366f1; padding:4px; border-radius:8px; transition:opacity 0.2s, transform 0.2s;" onclick="openLiveView('${r.clues}','${escapeHtml(r.unidad)}','${escapeHtml(r.municipio)}')" data-hint="Inspeccionar inventario en vivo" onmouseover="this.style.opacity='0.7'; this.style.transform='scale(1.15)'" onmouseout="this.style.opacity='1'; this.style.transform='scale(1)'">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12c.074-.154 1.02-2.316 3.195-4.475C7.407 5.352 10.372 4 12 4c1.628 0 4.593 1.352 6.769 3.525 2.175 2.159 3.12 4.32 3.195 4.475a.75.75 0 010 .707c-.074.154-1.02 2.316-3.195 4.475C16.593 19.348 13.628 20.7 12 20.7c-1.628 0-4.593-1.352-6.769-3.525C3.056 15.016 2.11 12.855 2.036 12.707a.75.75 0 010-.707z"/><circle cx="12" cy="12" r="3.2"/></svg>
+            </button>
           </td>
         </tr>
       `;
@@ -12824,7 +12840,7 @@ function renderCaptureSummary(data) {
     const tbodyFal = $("faltantesTbody");
     if (!list.length) {
       const msg = "No hay pendientes";
-      tbodyFal.innerHTML = `<tr><td colspan="4" class="muted">${msg}</td></tr>`;
+      tbodyFal.innerHTML = `<tr><td colspan="3" class="muted text-center py-4">${msg}</td></tr>`;
       return;
     }
     const sortedList = [...list].sort((a, b) => {
@@ -12845,12 +12861,16 @@ function renderCaptureSummary(data) {
       return cluesA.localeCompare(cluesB);
     });
     tbodyFal.innerHTML = sortedList.map(r => `
-        <tr>
-          <td data-label="Municipio">${escapeHtml(r.municipio || "")}</td>
-          <td data-label="CLUES">${escapeHtml(r.clues || "")}</td>
-          <td data-label="Unidad">${escapeHtml(r.unidad || "")}</td>
-          <td data-label="Estatus" style="text-align: center;">
-            <span class="material-symbols-rounded" style="color: var(--warn); font-size: 24px; vertical-align: middle;" title="Pendiente">pending</span>
+        <tr style="background:#ffffff; box-shadow:0 1px 4px rgba(15,23,42,0.06); border:1px solid #e2e8f0;">
+          <td data-label="Municipio / CLUES" style="padding:12px 14px; vertical-align:middle; background:#ffffff; border-top-left-radius:14px; border-bottom-left-radius:14px;">
+            <div style="font-weight:800; color:#0f172a; font-size:12px; line-height:1.3;">${escapeHtml(r.municipio || "")}</div>
+            <div style="font-family:monospace; font-size:10px; color:#94a3b8; margin-top:2px;">${escapeHtml(r.clues || "")}</div>
+          </td>
+          <td data-label="Unidad" style="padding:12px 14px; font-weight:700; color:#1e293b; font-size:12px; vertical-align:middle; background:#ffffff;">${escapeHtml(r.unidad || "")}</td>
+          <td data-label="Estatus" style="padding:12px 14px; text-align:center; vertical-align:middle; width:70px; background:#ffffff; border-top-right-radius:14px; border-bottom-right-radius:14px;">
+            <span style="display:inline-flex; align-items:center; justify-content:center; color:#f59e0b;" data-hint="Pendiente por capturar hoy">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </span>
           </td>
         </tr>
       `).join("");

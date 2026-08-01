@@ -2256,213 +2256,159 @@
 
       <!-- RESUMEN DE CAPTURA -->
       <div id="panelCaptureSummary"
-        data-role-gate="ADMIN,JURISDICCIONAL,VISUALIZADOR_JURISDICCIONAL,MUNICIPAL,CARAVANAS" style="display:none"
-        class="bg-surface rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8">
-        <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-4">
-          <h3 id="captureSummaryTitle"
-            class="text-[17px] font-extrabold text-primary tracking-tight m-0 bg-primary-container/40 px-6 py-2.5 rounded-2xl border border-primary/10">
-            Resumen de captura de existencia de biológicos de hoy</h3>
-          <button class="premium-refresh-btn has-text" id="btnRefreshCaptureSummary" title="Actualizar resumen">
-            <span class="material-symbols-rounded">refresh</span>
-            <span class="hidden sm:inline">Actualizar</span>
-          </button>
-        </div>
+        data-role-gate="ADMIN,JURISDICCIONAL,VISUALIZADOR_JURISDICCIONAL,MUNICIPAL,CARAVANAS"
+        style="display:none; background-color:#ffffff !important; border-radius:24px !important; border:1px solid #e2e8f0; box-shadow:0 4px 20px rgba(15,23,42,0.06); margin-bottom:32px; overflow:hidden !important;">
 
-        <div class="text-[12px] opacity-70 font-medium mb-4">
-          Consulta qué unidades ya capturaron y cuáles faltan, por fecha y por tipo de reporte.
-        </div>
+        <!-- ═══ HEADER: Ecualizador + Título (Fila 1) / Controles en 1 sola fila ═══ -->
+        <div style="padding:18px 24px; background:#ffffff; border-bottom:1px solid #f1f5f9; border-radius:24px 24px 0 0; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
 
-        <div class="flex flex-col md:flex-row items-end gap-5 mt-4">
-          <div class="flex-1 w-full md:max-w-[300px]">
-            <label for="summaryTipo"
-              class="text-[11px] font-black text-primary/50 uppercase tracking-widest block mb-2 ml-1">Tipo de
-              consulta</label>
-            <select id="summaryTipo" class="w-full">
+          <!-- Izquierda: Ecualizador + Título + Subtítulo -->
+          <div style="display:flex; align-items:center; gap:14px; min-width:0;">
+            <!-- Ecualizador Animado -->
+            <div style="width:38px; height:38px; flex-shrink:0; display:flex; align-items:flex-end; justify-content:center; gap:4px; padding:7px 8px; background:rgba(239,246,255,0.8); border-radius:12px; border:1px solid rgba(219,234,254,0.8);" title="Métricas de captura en vivo">
+              <span style="width:4px; background:#2563eb; border-radius:2px;" class="eq-bar-anim-1"></span>
+              <span style="width:4px; background:#2563eb; border-radius:2px;" class="eq-bar-anim-2"></span>
+              <span style="width:4px; background:#2563eb; border-radius:2px;" class="eq-bar-anim-3"></span>
+            </div>
+            <!-- Título + Subtítulo -->
+            <div style="min-width:0;">
+              <h3 id="captureSummaryTitle" style="margin:0; font-size:1rem; font-weight:900; color:#0f172a; line-height:1.2; letter-spacing:-0.01em;">Resumen de Captura de Existencia de Biológicos</h3>
+              <p id="captureSummarySubTitle" style="margin:3px 0 0; font-size:11.5px; color:#94a3b8; font-weight:600;">Semana del 27-JUL-2026 al 02-AGO-2026</p>
+            </div>
+          </div>
+
+          <!-- Derecha: Todos los Controles Distribuidos Cómodamente -->
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end; flex:1;">
+            <!-- Dropdown tipo ampliado -->
+            <select id="summaryTipo" class="src-pill-input" style="min-width:240px; width:260px !important; flex:0 1 auto;">
               <option value="SR">Existencia de biológicos</option>
               <option value="CONS">Consumibles</option>
               <option value="BIO">Pedido de biológico</option>
             </select>
-          </div>
-
-          <div class="flex-1 w-full md:max-w-[280px]">
-            <label for="summaryFecha"
-              class="text-[11px] font-black text-primary/50 uppercase tracking-widest block mb-2 ml-1">Fecha a
-              consultar</label>
-            <input type="date" id="summaryFecha"
-              class="w-full bg-white border border-slate-100 rounded-full px-4 text-xs font-extrabold text-slate-700 outline-none shadow-sm"
-              style="min-height:34px; height:34px;">
-          </div>
-        </div>
-
-        <div class="dashboardKpis">
-          <div class="kpiCard info">
-            <div class="kpiHeader">
-              <div class="kpiCardLabel">Fecha del reporte</div>
-              <div class="kpiIcon"><span class="material-symbols-rounded">calendar_today</span></div>
-            </div>
-            <div class="kpiCardValue" id="sumFecha">—</div>
-          </div>
-          <div class="kpiCard info">
-            <div class="kpiHeader">
-              <div class="kpiCardLabel">Total unidades</div>
-              <div class="kpiIcon"><span class="material-symbols-rounded">inventory_2</span></div>
-            </div>
-            <div class="kpiCardValue" id="sumTotal">0</div>
-          </div>
-          <div class="kpiCard ok" id="kpiCardCapturadas">
-            <div class="kpiHeader">
-              <div class="kpiCardLabel">Capturadas</div>
-              <div class="kpiIcon"><span class="material-symbols-rounded">check_circle</span></div>
-            </div>
-            <div class="kpiCardValue" id="sumCapturadas">0</div>
-          </div>
-          <div class="kpiCard warn" id="kpiCardFaltantes">
-            <div class="kpiHeader">
-              <div class="kpiCardLabel">Faltantes</div>
-              <div class="kpiIcon"><span class="material-symbols-rounded">pending</span></div>
-            </div>
-            <div class="kpiCardValue" id="sumFaltantes">0</div>
-          </div>
-        </div>
-
-        <div class="captureSummaryGrid">
-          <div>
-            <div class="sectionHeader">
-              <div class="sectionTitleWrap"
-                style="display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 12px; width: 100%;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span class="material-symbols-rounded" style="color: #22c55e; font-size: 20px;">check_circle</span>
-                  <h3
-                    style="font-size: 13px; font-weight: 800; color: var(--md-sys-color-on-surface); margin: 0; font-family: inherit;">
-                    Unidades que ya capturaron</h3>
-                </div>
-                <!-- Nomenclatura dinámica para Pedido de Biológico (Solo Existencias) - Enseguida del título -->
-                <div id="legendBioSinPedido" style="display: none; align-items: center; gap: 6px; margin-left: 4px;">
-                  <span class="material-symbols-rounded" style="color: #3b82f6; font-size: 20px;">check_circle</span>
-                  <span
-                    style="font-size: 13px; font-weight: 800; color: var(--md-sys-color-on-surface); font-family: inherit;">Sin
-                    pedido de
-                    biológico</span>
-                </div>
-                <!-- Nomenclatura dinámica para Existencias con Biológicos en Cero -->
-                <div id="legendBioConCeros" style="display: none; align-items: center; gap: 6px; margin-left: 4px;">
-                  <span class="material-symbols-rounded" style="color: #f43f5e; font-size: 20px;">check_circle</span>
-                  <span style="font-size: 13px; font-weight: 800; color: #be123c; font-family: inherit;">Capturó con
-                    algún biológico sin existencia</span>
-                </div>
-                <!-- Nomenclatura dinámica para Pedido Editado (Violeta Orquídea - Distinto de Ámbar) -->
-                <div id="legendBioEditado" style="display: none; align-items: center; gap: 6px; margin-left: 4px;">
-                  <span class="material-symbols-rounded" style="color: #8b5cf6; font-size: 20px;">edit_note</span>
-                  <span style="font-size: 13px; font-weight: 800; color: #6d28d9; font-family: inherit;">Pedido
-                    editado</span>
-                </div>
+            <!-- Fecha -->
+            <input type="date" id="summaryFecha" class="src-pill-input" style="width:145px !important;">
+            <!-- Barra de Avance -->
+            <div style="display:flex; align-items:center; gap:10px; height:44px; padding:0 14px; background:#fff; border-radius:14px; border:1px solid rgba(203, 213, 225, 0.8); box-shadow:0 1px 3px rgba(15,23,42,0.04); white-space:nowrap;">
+              <span style="font-size:10px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em;">AVANCE</span>
+              <span id="sumPorcentaje" style="font-size:14px; font-weight:900; color:#0f172a;">0%</span>
+              <div style="width:80px; height:9px; background:#f1f5f9; border-radius:99px; overflow:hidden;">
+                <div id="sumProgressBar" style="height:100%; background:#10b981; border-radius:99px; transition:width 0.5s ease; width:0%;"></div>
               </div>
+              <span style="font-size:12px; font-weight:700; color:#64748b;">(<span id="sumCapturadas">0</span>/<span id="sumTotal">0</span>)</span>
             </div>
+            <!-- Botón Actualizar -->
+            <button id="btnRefreshCaptureSummary"
+              style="display:inline-flex; align-items:center; gap:6px; height:44px; padding:0 16px; border-radius:14px; border:1px solid rgba(203, 213, 225, 0.8); background:#fff; color:#334155; font-weight:700; font-size:12px; cursor:pointer; white-space:nowrap; box-shadow:0 1px 3px rgba(15,23,42,0.04);"
+              title="Actualizar resumen"
+              onmouseover="this.style.background='#f8fafc';"
+              onmouseout="this.style.background='#fff';">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
+              Actualizar
+            </button>
+            <span id="sumFecha" style="display:none;">—</span>
+            <span id="sumFaltantes" style="display:none;">0</span>
+          </div>
 
-            <div class="tableWrap captureTableDesktop">
-              <table class="summaryTable">
-                <thead>
+        </div>
+
+        <!-- ═══ LEYENDAS ═══ -->
+        <div style="padding:12px 24px; background:#ffffff; border-bottom:1px solid #f1f5f9; display:flex; flex-wrap:wrap; align-items:center; gap:8px 24px;">
+          <div style="display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; color:#1e293b;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+            Unidades que ya capturaron
+          </div>
+          <div id="legendBioConCeros" style="display:none; align-items:center; gap:5px; font-size:12px; font-weight:700; color:#be123c;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3a9 9 0 100 18 9 9 0 000-18z"/></svg>
+            Capturó sin existencia
+          </div>
+          <div id="legendBioSinPedido" style="display:none; align-items:center; gap:5px; font-size:12px; font-weight:700; color:#1d4ed8;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 8L12 3L3 8v8l9 5l9-5V8z"/>
+              <path stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 3v18M3 8l9 5l9-5"/>
+              <path d="M4.5 4.5L19.5 19.5" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+              <path d="M4.5 4.5L19.5 19.5" stroke="#2563eb" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Sin pedido de biológico
+          </div>
+          <div id="legendBioEditado" style="display:none; align-items:center; gap:5px; font-size:12px; font-weight:700; color:#7c3aed;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487z"/></svg>
+            Pedido editado
+          </div>
+          <div style="display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; color:#92400e;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Faltantes por capturar
+          </div>
+        </div>
+
+        <!-- ═══ GRID 2 COLUMNAS: TABLAS SIDE-BY-SIDE ═══ -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; align-items:start; gap:20px; padding:20px 24px; background:#ffffff !important; border-radius:0 0 24px 24px;">
+
+          <!-- Columna 1: CAPTURADAS -->
+          <div style="padding:16px; background:#ffffff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 1px 3px rgba(15,23,42,0.04);">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+              <h4 style="margin:0; font-size:11px; font-weight:800; color:#1e293b; text-transform:uppercase; letter-spacing:0.07em;">
+                UNIDADES CAPTURADAS <span id="capturadasCountLabel" style="color:#64748b; font-weight:700;"></span>
+              </h4>
+            </div>
+            <!-- Scroll Container -->
+            <div class="src-custom-scroll" style="height:380px; overflow-x:hidden; overflow-y:auto; position:relative; background:#ffffff; padding:0 4px;">
+              <table style="width:100%; border-collapse:separate !important; border-spacing:0 8px !important; font-size:12px; background:#ffffff;">
+                <thead style="position:sticky; top:0; background:#f8fafc; z-index:5;">
                   <tr>
-                    <th>Municipio</th>
-                    <th>CLUES</th>
-                    <th>Unidad</th>
-                    <th style="text-align: center;">Estatus</th>
+                    <th style="padding:9px 12px; font-weight:700; color:#64748b; text-align:left; background:#f8fafc; border-top-left-radius:10px; border-bottom-left-radius:10px;">Municipio / CLUES</th>
+                    <th style="padding:9px 12px; font-weight:700; color:#64748b; text-align:left; background:#f8fafc;">Unidad de Salud</th>
+                    <th style="padding:9px 12px; font-weight:700; color:#64748b; text-align:center; width:70px; background:#f8fafc;">Estatus</th>
+                    <th style="padding:9px 12px; font-weight:700; color:#64748b; text-align:center; width:80px; background:#f8fafc; border-top-right-radius:10px; border-bottom-right-radius:10px;">Live View</th>
                   </tr>
                 </thead>
-                <tbody id="capturadasTbody">
-                  <tr>
-                    <td colspan="5" class="muted">Sin datos</td>
-                  </tr>
+                <tbody id="capturadasTbody" style="color:#334155;">
+                  <tr><td colspan="4" class="muted">Sin datos</td></tr>
                 </tbody>
               </table>
             </div>
-
           </div>
 
-          <div>
-            <div class="sectionHeader"
-              style="border-left-color: var(--warn); display: flex; justify-content: space-between; align-items: center;">
-              <div class="sectionTitleWrap" style="display: flex; align-items: center; gap: 8px;">
-                <span class="material-symbols-rounded" style="color: var(--warn); font-size: 20px;">pending</span>
-                <h3
-                  style="font-size: 13px; font-weight: 800; color: var(--md-sys-color-on-surface); margin: 0; font-family: inherit;">
-                  Faltantes por capturar</h3>
-              </div>
+          <!-- Columna 2: FALTANTES -->
+          <div style="padding:16px; background:#ffffff; border-radius:16px; border:1px solid #e2e8f0; box-shadow:0 1px 3px rgba(15,23,42,0.04);">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+              <h4 style="margin:0; font-size:11px; font-weight:800; color:#1e293b; text-transform:uppercase; letter-spacing:0.07em;">
+                FALTANTES POR CAPTURAR <span id="faltantesCountLabel" style="color:#64748b; font-weight:700;"></span>
+              </h4>
+              <!-- Botón WhatsApp -->
               <button onclick="generateWhatsAppTemplate()" title="Copiar plantilla para WhatsApp"
                 class="whatsapp-copy-btn"
-                style="background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; outline: none; position: relative; width: 34px; height: 34px; border-radius: 50%;">
-                <style>
-                  .whatsapp-copy-btn {
-                    overflow: hidden;
-                    transition: background-color 0.2s;
-                  }
-
-                  .whatsapp-copy-btn:hover {
-                    background-color: #25D36615;
-                  }
-
-                  .whatsapp-copy-btn .icon-wa,
-                  .whatsapp-copy-btn .icon-copy {
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    position: absolute;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                  }
-
-                  .whatsapp-copy-btn .icon-copy {
-                    opacity: 0;
-                    transform: scale(0.5) rotate(-45deg);
-                    color: #25D366;
-                    font-size: 20px;
-                  }
-
-                  .whatsapp-copy-btn:hover .icon-wa {
-                    opacity: 0;
-                    transform: scale(0.5) rotate(45deg);
-                  }
-
-                  .whatsapp-copy-btn:hover .icon-copy {
-                    opacity: 1;
-                    transform: scale(1) rotate(0deg);
-                  }
-                </style>
-                <span class="icon-wa">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="#25D366">
-                    <path
-                      d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
-                  </svg>
+                style="background:transparent; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:4px; outline:none; position:relative; width:32px; height:32px; border-radius:50%; overflow:hidden; transition:background-color 0.2s;"
+                onmouseover="this.style.backgroundColor='#25D36615';"
+                onmouseout="this.style.backgroundColor='transparent';">
+                <span class="icon-wa" style="position:absolute; display:flex; align-items:center; justify-content:center; transition:all 0.3s cubic-bezier(0.4,0,0.2,1);">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
                 </span>
-                <span class="material-symbols-rounded icon-copy">content_copy</span>
+                <span class="material-symbols-rounded icon-copy" style="position:absolute; display:flex; align-items:center; justify-content:center; opacity:0; transform:scale(0.5) rotate(-45deg); color:#25D366; font-size:18px; transition:all 0.3s cubic-bezier(0.4,0,0.2,1);">content_copy</span>
               </button>
             </div>
-
-            <div class="tableWrap captureTableDesktop">
-              <table class="summaryTable">
-                <thead>
+            <!-- Scroll Container -->
+            <div class="src-custom-scroll" style="height:380px; overflow-x:hidden; overflow-y:auto; position:relative; background:#ffffff; padding:0 4px;">
+              <table style="width:100%; border-collapse:separate !important; border-spacing:0 8px !important; font-size:12px; background:#ffffff;">
+                <thead style="position:sticky; top:0; background:#f8fafc; z-index:5;">
                   <tr>
-                    <th>Municipio</th>
-                    <th>CLUES</th>
-                    <th>Unidad</th>
-                    <th style="text-align: center;">Estatus</th>
+                    <th style="padding:9px 12px; font-weight:700; color:#64748b; text-align:left; background:#f8fafc; border-top-left-radius:10px; border-bottom-left-radius:10px;">Municipio / CLUES</th>
+                    <th style="padding:9px 12px; font-weight:700; color:#64748b; text-align:left; background:#f8fafc;">Unidad de Salud</th>
+                    <th style="padding:9px 12px; font-weight:700; color:#64748b; text-align:center; width:70px; background:#f8fafc; border-top-right-radius:10px; border-bottom-right-radius:10px;">Estatus</th>
                   </tr>
                 </thead>
-                <tbody id="faltantesTbody">
-                  <tr>
-                    <td colspan="4" class="muted">Sin datos</td>
-                  </tr>
+                <tbody id="faltantesTbody" style="color:#334155;">
+                  <tr><td colspan="3" class="muted">Sin datos</td></tr>
                 </tbody>
               </table>
             </div>
-
           </div>
-        </div>
 
-        <span id="capturadasCount" style="display: none !important;">0</span>
-        <span id="faltantesCount" style="display: none !important;">0</span>
+        </div><!-- /grid -->
 
-      </div>
+        <span id="capturadasCount" style="display:none;">0</span>
+        <span id="faltantesCount" style="display:none;">0</span>
 
+      </div><!-- /panelCaptureSummary -->
       <!-- MÉTRICAS HISTÓRICAS -> LIGAS DE EXCELENCIA -->
 
       <div id="panelHISTORY" data-role-gate="ADMIN,JURISDICCIONAL,VISUALIZADOR_JURISDICCIONAL,MUNICIPAL,CARAVANAS"

@@ -3117,31 +3117,137 @@ tr:hover td {
 #panelCaptureSummary {
   width: 100%;
   min-width: 0;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  border-radius: 24px !important;
+  overflow: hidden !important;
+  background-color: #ffffff !important;
 }
 
-#panelCaptureSummary .sectionTitle,
-#panelCaptureSummary .hint,
-#panelCaptureSummary .kpiRow,
-#panelCaptureSummary .captureSummaryGrid {
-  min-width: 0;
+/* Reglas Estricta AGENTS.md para Dropdowns y Fechas */
+#panelCaptureSummary .src-pill-input {
+  min-height: 44px !important;
+  max-height: 44px !important;
+  height: 44px !important;
+  box-sizing: border-box !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(203, 213, 225, 0.9) !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), inset 0 -1.5px 0 rgba(15, 23, 42, 0.06) !important;
+  background-color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  color: #1e293b !important;
+  font-family: inherit !important;
 }
 
-#panelCaptureSummary .sectionHeader {
-  height: 64px !important;
-  min-height: 64px !important;
-  max-height: 64px !important;
-  box-sizing: border-box;
-  overflow: hidden;
+#panelCaptureSummary select.src-pill-input {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  padding: 0 36px 0 16px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2.2' stroke='%3C%2364748b' class='w-5 h-5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5' /%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 16px !important;
 }
 
-#panelCaptureSummary table {
-  min-width: 100%;
+#panelCaptureSummary input[type="date"].src-pill-input {
+  padding: 0 16px !important;
 }
 
-#panelCaptureSummary .tableWrap {
-  margin-top: 16px;
+/* Tooltips Hints */
+#panelCaptureSummary [data-hint] {
+  position: relative;
+  overflow: visible;
+}
+#panelCaptureSummary [data-hint]::before {
+  content: attr(data-hint);
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 6px;
+  background-color: #1e293b;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+  z-index: 9999;
+  transform: translateY(-4px) scale(0.95);
+}
+#panelCaptureSummary [data-hint]:hover::before {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Indicadores Estáticos */
+#panelCaptureSummary .ico-naked-static {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  vertical-align: middle;
+}
+
+/* Botones Interactivos (Animación 5 Precision Focus) */
+#panelCaptureSummary .btn-action-focus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  cursor: pointer;
+  opacity: 0.88;
+  transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.25s ease;
+  vertical-align: middle;
+}
+#panelCaptureSummary .btn-action-focus:hover {
+  opacity: 1;
+  transform: scale(1.22);
+  filter: drop-shadow(0 2px 5px rgba(37, 99, 235, 0.3));
+}
+
+/* Animación de Ecualizador — necesitan altura base y display:block para ser visibles */
+#panelCaptureSummary .eq-bar-anim-1,
+#panelCaptureSummary .eq-bar-anim-2,
+#panelCaptureSummary .eq-bar-anim-3 {
+  display: block;
+  height: 10px; /* altura base */
+  min-height: 4px;
+  flex-shrink: 0;
+  border-radius: 3px;
+}
+#panelCaptureSummary .eq-bar-anim-1 { animation: eqAnim1 1.4s ease-in-out infinite alternate; }
+#panelCaptureSummary .eq-bar-anim-2 { animation: eqAnim2 1.1s ease-in-out infinite alternate 0.2s; }
+#panelCaptureSummary .eq-bar-anim-3 { animation: eqAnim3 1.5s ease-in-out infinite alternate 0.4s; }
+
+@keyframes eqAnim1 { 0% { height: 5px; } 100% { height: 20px; } }
+@keyframes eqAnim2 { 0% { height: 22px; } 100% { height: 7px; } }
+@keyframes eqAnim3 { 0% { height: 9px; } 100% { height: 18px; } }
+
+/* Scroll personalizado para paneles de tablas */
+.src-custom-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.5) transparent;
+}
+.src-custom-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.src-custom-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.src-custom-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.5);
+  border-radius: 99px;
+}
+.src-custom-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(100, 116, 139, 0.7);
 }
 
 
