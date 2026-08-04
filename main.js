@@ -7718,7 +7718,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
         if (!rows || !rows.length) return { ok: true };
         const { error } = await supabase
           .from('influenza_metas')
-          .upsert(rows);
+          .upsert(rows, { onConflict: 'anio_campana,municipio,clues' });
         if (error) throw error;
         return { ok: true };
       }
@@ -7797,22 +7797,28 @@ async function supabaseRequest(action = "", payload, options = {}) {
       }
 
       case "saveinfluenza_distribucion": {
-        const { clues, municipio, cantidad_frascos, fecha_entrega, numero_entrega, entregado_por, lote, fecha_caducidad } = payload;
-        const record = {
-          clues,
-          municipio,
-          cantidad_frascos: Number(cantidad_frascos || 0),
-          fecha_entrega,
-          numero_entrega: Number(numero_entrega || 1),
-          entregado_por: String(entregado_por || USER?.usuario || "").toUpperCase(),
-          lote: lote || null,
-          fecha_caducidad: fecha_caducidad || null
-        };
+        const { rows } = payload;
+        const buildRecord = (d) => ({
+          clues: d.clues,
+          municipio: d.municipio,
+          cantidad_frascos: Number(d.cantidad_frascos || 0),
+          fecha_entrega: d.fecha_entrega,
+          numero_entrega: Number(d.numero_entrega || 1),
+          entregado_por: String(d.entregado_por || USER?.usuario || "").toUpperCase(),
+          lote: d.lote || null,
+          fecha_caducidad: d.fecha_caducidad || null
+        });
+
+        // Acepta un lote de entregas (payload.rows) o una sola (compatibilidad hacia atrás).
+        // Al mandarlas todas en un único insert, Postgres las trata como una sola transacción:
+        // o se guardan todas, o ninguna — ya no queda un lote a medias si falla una fila.
+        const records = Array.isArray(rows) && rows.length ? rows.map(buildRecord) : [buildRecord(payload)];
+
         const { error } = await supabase
           .from('influenza_distribucion_frascos')
-          .insert(record);
+          .insert(records);
         if (error) throw error;
-        return { ok: true };
+        return { ok: true, count: records.length };
       }
 
       case "getinfluenza_config": {
@@ -22304,23 +22310,38 @@ function syncCommandHub() {
       };
     } else {
       hubSave.onclick = async () => {
-        if (!navigator.onLine && window.OfflineDB) {
-          // INTERCEPCIÓN MODO OFFLINE AUTOMÁTICA
-          let payload = {};
-          let actionType = 'INSERT_INFLUENZA_DIARIO';
-          
-          if (captureTab === "INFLUENZA") {
-            const inputs = document.querySelectorAll(".tbody-inputs input[type='number']");
-            const valores = {};
-            inputs.forEach(inp => { if (inp.value) valores[inp.id || inp.name] = inp.value; });
-            payload = { fecha: document.getElementById("influenza_semana")?.value, valores: valores, clues: USER?.clues };
+        if (!navigator.onLine && window.OfflineDB && captureTab === "INFLUENZA") {
+          // INTERCEPCIÓN MODO OFFLINE AUTOMÁTICA (solo Influenza soporta guardado sin conexión)
+          const isSinMov = document.getElementById("chkSinMovimientoINF")?.checked || false;
+          const valores = {};
+          if (typeof INFLUENZA_RUBROS !== "undefined") {
+            INFLUENZA_RUBROS.forEach(rb => {
+              const input = document.getElementById(`input_inf_${rb.id}`);
+              valores[rb.id] = isSinMov ? 0 : (input ? (parseInt(input.value) || 0) : 0);
+            });
           }
+          const payload = {
+            clues: USER?.clues,
+            unidad: USER?.unidad,
+            municipio: USER?.municipio,
+            fecha: document.getElementById("influenza_semana")?.value,
+            anio_campana: document.getElementById("influenza_campana")?.value,
+            valores: valores,
+            capturado_por: document.getElementById("nombreINFLUENZA")?.value?.trim() || String(USER?.usuario || ""),
+            editado_por: "UNIDAD",
+            sin_movimiento: isSinMov
+          };
 
-          const saved = await window.OfflineDB.saveOfflineRecord(actionType, payload);
+          const saved = await window.OfflineDB.saveOfflineRecord('UPSERT_INFLUENZA_CAPTURA', payload);
           if (saved) {
             showToast("🟡 Captura guardada localmente (Modo sin conexión). Se sincronizará al volver la red.", true, "warning");
             return;
           }
+        }
+
+        if (!navigator.onLine && captureTab !== "INFLUENZA") {
+          showToast("Sin conexión a internet: este tipo de captura no se puede guardar sin conexión.", false, "warn");
+          return;
         }
 
         if (captureTab === "SR") await performSaveSR();

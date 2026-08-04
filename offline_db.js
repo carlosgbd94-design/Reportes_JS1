@@ -58,7 +58,7 @@
         const store = tx.objectStore(STORE_PENDING);
 
         const record = {
-          actionType: actionType, // ej: 'INSERT_INFLUENZA_DIARIO', 'UPSERT_EXISTENCIA'
+          actionType: actionType, // ej: 'UPSERT_INFLUENZA_CAPTURA', 'UPSERT_EXISTENCIA'
           payload: payload,
           meta: meta,
           timestamp: new Date().toISOString(),
@@ -166,10 +166,10 @@
 
     const { actionType, payload } = record;
 
-    if (actionType === 'INSERT_INFLUENZA_DIARIO') {
+    if (actionType === 'UPSERT_INFLUENZA_CAPTURA') {
       const { data, error } = await supabaseClient
-        .from('influenza_diario')
-        .insert(payload);
+        .from('influenza_capturas')
+        .upsert(payload, { onConflict: 'clues,fecha' });
       if (error) {
         console.error('[OfflineDB Sync Error]', error);
         return false;
@@ -178,9 +178,23 @@
     }
 
     if (actionType === 'UPSERT_EXISTENCIA') {
+      // NOTA: ningún flujo de captura llama hoy a saveOfflineRecord('UPSERT_EXISTENCIA', ...) —
+      // el guardado online real de SR/existencia (performSaveSR en main.js) hace un
+      // borrado+inserción dual contra 'biologicos_existencia' Y 'existencia_detalle', comparando
+      // contra el reporte anterior para detectar desabasto; esa lógica no se puede replicar aquí
+      // sin conexión. 'biologicos_existencia' no tiene restricción única en (clues, fecha) —solo
+      // PK en 'id'— por eso aquí se replica el mismo patrón borrado+inserción que usa el guardado
+      // online, en vez de un upsert que fallaría por falta de esa restricción.
+      if (payload && payload.clues && payload.fecha) {
+        await supabaseClient
+          .from('biologicos_existencia')
+          .delete()
+          .eq('clues', payload.clues)
+          .eq('fecha', payload.fecha);
+      }
       const { data, error } = await supabaseClient
-        .from('existencia_biologicos')
-        .upsert(payload);
+        .from('biologicos_existencia')
+        .insert(payload);
       if (error) {
         console.error('[OfflineDB Sync Error]', error);
         return false;

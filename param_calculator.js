@@ -25,7 +25,7 @@ const OFFICIAL_BIO_ORDER = [
     "HEXAVALENTE",
     "DPT",
     "ROTAVIRUS",
-    "NEUMOCÓCICA 13",
+    "NEUMOCOCICA 13", // Sin acento: coincide con el valor real guardado en biologicos_params.biologico
     "SRP",
     "SR",
     "VPH",
@@ -35,6 +35,13 @@ const OFFICIAL_BIO_ORDER = [
     "TDPA",
     "INFLUENZA"
 ];
+
+// Lista de variables SIS de Influenza: fuente única en influenza_module.js (window.INFLUENZA_SIS_MAPPING),
+// que carga antes que este archivo. Se deriva aquí para no mantener una copia hardcodeada duplicada.
+if (!window.INFLUENZA_SIS_MAPPING) {
+    console.error("[param_calculator] window.INFLUENZA_SIS_MAPPING no está definido — revisa que influenza_module.js cargue antes que param_calculator.js en index.html");
+}
+const INFLUENZA_SIS_VARS = window.INFLUENZA_SIS_MAPPING ? Object.values(window.INFLUENZA_SIS_MAPPING) : [];
 
 // Mapeo de variables SIS por vacuna para la Calculadora Admin
 const BIO_SIS_MAPPING = {
@@ -53,14 +60,7 @@ const BIO_SIS_MAPPING = {
     "TD": ['VAC39', 'VAC40', 'VAC47', 'VAC48', 'VTD01', 'VTD02', 'VAC55', 'VAC56', 'VTT01', 'VTT02', 'VTT03', 'VTT04', 'VTT05', 'VTT06', 'VTT07', 'VTT08', 'VTT09', 'VTT10', 'VTT11', 'VTT12'],
     "TDPA": ['VAC63', 'VDP01'],
     "TDPa": ['VAC63', 'VDP01'],
-    "INFLUENZA": [
-        'BIE01','BIE28','BIE29','BIE30','BIE31','BIE04','BIE32','BIE33',
-        'BIE34','BIE35','BIE36','BIE37','BIE38','BIE39','BIE40','BIO96',
-        'BIO97','BIE09','BIE10','BIE41','BIE12','BIE13','BIE42','BIE15',
-        'BIE16','BIE43','BIE18','BIE19','BIE44','BIE48','BIE49','BIE50',
-        'BIE24','BIE25','BIE46','BIE51','BIE52','BIE53','BIE54','BIE55',
-        'BIE56','BIE57','BIE58','BIE59','BIE60','BIE61'
-    ]
+    "INFLUENZA": INFLUENZA_SIS_VARS
 };
 
 // Cantidad de dosis estándar por frasco para cada biológico
@@ -165,12 +165,30 @@ window.spmLoadAllData = async function() {
 
         window._spmUnitsList = unitsData || [];
 
-        // Cargar parámetros existentes en biologicos_params
-        const { data: paramsData, error: errParams } = await window.supabase
-            .from('biologicos_params')
-            .select('*');
-            
-        if (errParams) throw errParams;
+        // Cargar parámetros existentes en biologicos_params (paginado: Supabase corta las
+        // consultas sin .range() en ~1000 filas por defecto, y esta tabla ya tiene más de eso —
+        // sin paginar, las unidades cuyas filas caían después del corte se veían vacías/en cero
+        // en el panel aunque sus datos sí existieran en la base).
+        let paramsData = [];
+        let pFrom = 0;
+        const pStep = 1000;
+        let pHasMore = true;
+        while (pHasMore) {
+            const { data: pChunk, error: errParams } = await window.supabase
+                .from('biologicos_params')
+                .select('*')
+                .range(pFrom, pFrom + pStep - 1);
+
+            if (errParams) throw errParams;
+
+            if (pChunk && pChunk.length > 0) {
+                paramsData = paramsData.concat(pChunk);
+                pFrom += pStep;
+                if (pChunk.length < pStep) pHasMore = false;
+            } else {
+                pHasMore = false;
+            }
+        }
 
         // Mapear parámetros por clave `${clues}|${biologico}`
         window._spmParamsMap = {};

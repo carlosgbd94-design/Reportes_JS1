@@ -6,6 +6,15 @@
 // ══════════════════════════════════════════════════════════════
 // DICCIONARIO COMPLETO DE VARIABLES SIS
 // ══════════════════════════════════════════════════════════════
+// Lista de variables SIS de Influenza: fuente única en influenza_module.js (window.INFLUENZA_SIS_MAPPING),
+// que carga antes que este archivo. Se deriva aquí para no mantener una copia hardcodeada duplicada.
+// (Nota: DICT_RDA.INFLUENZA se sobreescribe en tiempo real desde la tabla sis_variables_mapeo vía
+// loadRdaMappingFromDatabase() — esto solo evita que el valor inicial/respaldo diverja del resto.)
+if (!window.INFLUENZA_SIS_MAPPING) {
+    console.error("[rda_calculator] window.INFLUENZA_SIS_MAPPING no está definido — revisa que influenza_module.js cargue antes que rda_calculator.js en index.html");
+}
+const INFLUENZA_SIS_VARS_RDA = window.INFLUENZA_SIS_MAPPING ? Object.values(window.INFLUENZA_SIS_MAPPING) : [];
+
 const DEFAULT_DICT_2026 = {
     BCG:        ['VBC01', 'VBC02', 'BIO50', 'BIO03', 'VBC03'],
     HepB_0_7:   ['VAC06'],
@@ -44,14 +53,7 @@ const DEFAULT_DICT_2026 = {
     EMB_TDPA: ['VAC63'],
     EMB_VSR:  ['VS001'],
  
-    INFLUENZA: [
-        'BIE01','BIE28','BIE29','BIE30','BIE31','BIE04','BIE32','BIE33',
-        'BIE34','BIE35','BIE36','BIE37','BIE38','BIE39','BIE40','BIO96',
-        'BIO97','BIE09','BIE10','BIE41','BIE12','BIE13','BIE42','BIE15',
-        'BIE16','BIE43','BIE18','BIE19','BIE44','BIE48','BIE49','BIE50',
-        'BIE24','BIE25','BIE46','BIE51','BIE52','BIE53','BIE54','BIE55',
-        'BIE56','BIE57','BIE58','BIE59','BIE60','BIE61'
-    ],
+    INFLUENZA: INFLUENZA_SIS_VARS_RDA,
     COVID: ['VCV38','VCV39','VCV40','VCV28','VCV16','VCV20','VCV21']
 };
 

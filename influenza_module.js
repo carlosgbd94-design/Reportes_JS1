@@ -48,6 +48,29 @@ const INFLUENZA_RUBROS = [
   { id: "r46", categoria: "Población de riesgo de 5 a 59 años", grupo: "Otros grupos", edad: "20 a 59 años" }
 ];
 
+// Fuente única de verdad: mapeo rubro (r1..r46) -> variable SIS de Influenza.
+// influenza_module.js carga primero (ver orden de <script defer> en index.html), así que
+// param_calculator.js (BIO_SIS_MAPPING.INFLUENZA) y rda_calculator.js (DEFAULT_DICT_2026.INFLUENZA)
+// derivan su lista de aquí (Object.values(window.INFLUENZA_SIS_MAPPING)) en vez de mantener
+// cada uno su propia copia hardcodeada — si necesitas agregar/quitar una variable, cámbiala
+// solo aquí.
+window.INFLUENZA_SIS_MAPPING = {
+  "r1": "BIE01", "r2": "BIE28", "r3": "BIE29", "r4": "BIE30", "r5": "BIE31",
+  "r6": "BIE04", "r7": "BIE32", "r8": "BIE33", "r9": "BIE34", "r10": "BIE35",
+  "r11": "BIE36", "r12": "BIE37", "r13": "BIE38", "r14": "BIE39", "r15": "BIE40",
+  "r16": "BIO96", "r17": "BIO97",
+  "r18": "BIE09", "r19": "BIE10", "r20": "BIE41",
+  "r21": "BIE12", "r22": "BIE13", "r23": "BIE42",
+  "r24": "BIE15", "r25": "BIE16", "r26": "BIE43",
+  "r27": "BIE18", "r28": "BIE19", "r29": "BIE44",
+  "r30": "BIE48", "r31": "BIE49", "r32": "BIE50",
+  "r33": "BIE24", "r34": "BIE25", "r35": "BIE46",
+  "r36": "BIE51", "r37": "BIE52", "r38": "BIE53",
+  "r39": "BIE54", "r40": "BIE55",
+  "r41": "BIE56", "r42": "BIE57", "r43": "BIE58",
+  "r44": "BIE59", "r45": "BIE60", "r46": "BIE61"
+};
+
 // ISO Week Helper
 function getISOWeek(date) {
   const tempDate = new Date(date.valueOf());
@@ -482,6 +505,10 @@ function updateInfluenzaSinMovimientoUI() {
   // Bloquear selectores principales (Semana y Campaña)
   const isSinMovActive = chkINF.checked;
   const weekBtn = document.getElementById("influenza_semana_btn");
+  // El dropdown "premium" custom fue desactivado (createPremiumCustomDropdown es un no-op en
+  // main.js); el selector real es el <select id="influenza_campana"> nativo, así que se
+  // bloquea directamente en vez de buscar un wrapper que ya no se genera.
+  const campSelect = document.getElementById("influenza_campana");
 
   if (isSinMovActive) {
     if (weekBtn) {
@@ -489,13 +516,10 @@ function updateInfluenzaSinMovimientoUI() {
       weekBtn.style.opacity = "0.55";
       weekBtn.style.pointerEvents = "none";
     }
-    // We do NOT disable the raw campSelect so that its custom wrapper remains visible.
-    // Instead we only disable the custom wrapper button trigger.
-    const campWrapperBtn = document.querySelector("#influenza_campana_custom_wrapper > button");
-    if (campWrapperBtn) {
-      campWrapperBtn.disabled = true;
-      campWrapperBtn.style.opacity = "0.55";
-      campWrapperBtn.style.pointerEvents = "none";
+    if (campSelect) {
+      campSelect.disabled = true;
+      campSelect.style.opacity = "0.55";
+      campSelect.style.pointerEvents = "none";
     }
   } else {
     if (weekBtn) {
@@ -503,11 +527,10 @@ function updateInfluenzaSinMovimientoUI() {
       weekBtn.style.opacity = "";
       weekBtn.style.pointerEvents = "";
     }
-    const campWrapperBtn = document.querySelector("#influenza_campana_custom_wrapper > button");
-    if (campWrapperBtn) {
-      campWrapperBtn.disabled = false;
-      campWrapperBtn.style.opacity = "";
-      campWrapperBtn.style.pointerEvents = "";
+    if (campSelect) {
+      campSelect.disabled = false;
+      campSelect.style.opacity = "";
+      campSelect.style.pointerEvents = "";
     }
   }
 }
@@ -1338,12 +1361,12 @@ async function populateInfluenzaAdminFilters() {
   }
 
   // Municipios
-  let munis = ["QUERETARO", "CORREGIDORA", "EL MARQUES", "HUIMILPAN"];
+  let munis = ["QUERETARO", "CORREGIDORA", "MARQUES", "HUIMILPAN"];
   if (role === "MUNICIPAL") {
     munis = munis.filter(m => allowedMunis.includes(m.toUpperCase()));
   }
 
-  muniSelect.innerHTML = munis.map(m => `<option value="${m}">${m}</option>`).join("");
+  muniSelect.innerHTML = munis.map(m => `<option value="${m}">${m === "MARQUES" ? "EL MARQUÉS" : m}</option>`).join("");
   muniSelect.removeEventListener("change", updateCluesFilterAndRender);
   muniSelect.addEventListener("change", updateCluesFilterAndRender);
 
@@ -2895,23 +2918,6 @@ async function runConciliacionProcess(clues, mesAnio) {
     }
   });
 
-  const INFLUENZA_SIS_MAPPING = {
-    "r1": "BIE01", "r2": "BIE28", "r3": "BIE29", "r4": "BIE30", "r5": "BIE31",
-    "r6": "BIE04", "r7": "BIE32", "r8": "BIE33", "r9": "BIE34", "r10": "BIE35",
-    "r11": "BIE36", "r12": "BIE37", "r13": "BIE38", "r14": "BIE39", "r15": "BIE40",
-    "r16": "BIO96", "r17": "BIO97",
-    "r18": "BIE09", "r19": "BIE10", "r20": "BIE41",
-    "r21": "BIE12", "r22": "BIE13", "r23": "BIE42",
-    "r24": "BIE15", "r25": "BIE16", "r26": "BIE43",
-    "r27": "BIE18", "r28": "BIE19", "r29": "BIE44",
-    "r30": "BIE48", "r31": "BIE49", "r32": "BIE50",
-    "r33": "BIE24", "r34": "BIE25", "r35": "BIE46",
-    "r36": "BIE51", "r37": "BIE52", "r38": "BIE53",
-    "r39": "BIE54", "r40": "BIE55",
-    "r41": "BIE56", "r42": "BIE57", "r43": "BIE58",
-    "r44": "BIE59", "r45": "BIE60", "r46": "BIE61"
-  };
-
   _conciliacionLastResult = [];
   let totalLocal = 0;
   let totalSis = 0;
@@ -2919,7 +2925,7 @@ async function runConciliacionProcess(clues, mesAnio) {
   let discrepanciasCount = 0;
 
   INFLUENZA_RUBROS.forEach(rb => {
-    const sisVar = INFLUENZA_SIS_MAPPING[rb.id];
+    const sisVar = window.INFLUENZA_SIS_MAPPING[rb.id];
     const sisRec = sisRecords.find(r => r.variable_sis === sisVar);
     const sisVal = sisRec ? Number(sisRec.valor || 0) : 0;
     const localVal = localValues[rb.id];
@@ -3522,7 +3528,7 @@ async function exportConcentradoSimpleExcel() {
   
   if (role === "ADMIN" || role === "JURISDICCIONAL") {
     if (scope === "muni_4") {
-      const munis = ["QUERETARO", "CORREGIDORA", "EL MARQUES", "HUIMILPAN"];
+      const munis = ["QUERETARO", "CORREGIDORA", "MARQUES", "HUIMILPAN"];
       for (const m of munis) {
         await generateConcentradoSimpleFile(m, "municipio");
       }
@@ -3625,7 +3631,7 @@ async function exportConcentradoDetalladoUnidadesExcel() {
   
   if (role === "ADMIN" || role === "JURISDICCIONAL") {
     if (scope === "muni_4") {
-      const munis = ["QUERETARO", "CORREGIDORA", "EL MARQUES", "HUIMILPAN"];
+      const munis = ["QUERETARO", "CORREGIDORA", "MARQUES", "HUIMILPAN"];
       for (const m of munis) {
         await generateConcentradoDetalladoFile(m, "municipio");
       }
@@ -3679,7 +3685,7 @@ async function generateConcentradoDetalladoFile(muniName, type = "municipio") {
     } else {
       // Jurisdiccional consolidado en un solo archivo:
       // Agrupar unidades por municipio, ordenadas por CLUES
-      const munis = ["CORREGIDORA", "HUIMILPAN", "EL MARQUES", "QUERETARO"];
+      const munis = ["CORREGIDORA", "HUIMILPAN", "MARQUES", "QUERETARO"];
       
       munis.forEach(m => {
         const unitsMuni = _allUnidades.filter(u => u.municipio.toUpperCase() === m.toUpperCase());
@@ -3877,7 +3883,7 @@ function renderMetasConfigurationGrid() {
       const metas = {
         "QUERETARO": 0,
         "CORREGIDORA": 0,
-        "EL MARQUES": 0,
+        "MARQUES": 0,
         "HUIMILPAN": 0
       };
 
@@ -3890,7 +3896,7 @@ function renderMetasConfigurationGrid() {
         }
       });
 
-      const totalJ = Number(metas["QUERETARO"] || 0) + Number(metas["CORREGIDORA"] || 0) + Number(metas["EL MARQUES"] || 0) + Number(metas["HUIMILPAN"] || 0);
+      const totalJ = Number(metas["QUERETARO"] || 0) + Number(metas["CORREGIDORA"] || 0) + Number(metas["MARQUES"] || 0) + Number(metas["HUIMILPAN"] || 0);
 
       const row = document.createElement("tr");
       row.className = "border-b border-slate-100 hover:bg-slate-50";
@@ -3899,7 +3905,7 @@ function renderMetasConfigurationGrid() {
         <td class="p-3 align-middle"><div style="width: 150px; min-width: 150px; max-width: 150px; word-break: break-word; white-space: normal; line-height: 1.25; font-size: 12px; color: #475569;">${rb.edad}</div></td>
         <td class="p-3 text-center"><input type="number" min="0" class="meta-input w-20 text-center font-bold bg-slate-50 border border-slate-300 rounded-xl px-2 py-1 focus:border-violet-500 outline-none" data-rb="${rb.id}" data-muni="QUERETARO" value="${metas["QUERETARO"]}"></td>
         <td class="p-3 text-center"><input type="number" min="0" class="meta-input w-20 text-center font-bold bg-slate-50 border border-slate-300 rounded-xl px-2 py-1 focus:border-violet-500 outline-none" data-rb="${rb.id}" data-muni="CORREGIDORA" value="${metas["CORREGIDORA"]}"></td>
-        <td class="p-3 text-center"><input type="number" min="0" class="meta-input w-20 text-center font-bold bg-slate-50 border border-slate-300 rounded-xl px-2 py-1 focus:border-violet-500 outline-none" data-rb="${rb.id}" data-muni="EL MARQUES" value="${metas["EL MARQUES"]}"></td>
+        <td class="p-3 text-center"><input type="number" min="0" class="meta-input w-20 text-center font-bold bg-slate-50 border border-slate-300 rounded-xl px-2 py-1 focus:border-violet-500 outline-none" data-rb="${rb.id}" data-muni="MARQUES" value="${metas["MARQUES"]}"></td>
         <td class="p-3 text-center"><input type="number" min="0" class="meta-input w-20 text-center font-bold bg-slate-50 border border-slate-300 rounded-xl px-2 py-1 focus:border-violet-500 outline-none" data-rb="${rb.id}" data-muni="HUIMILPAN" value="${metas["HUIMILPAN"]}"></td>
         <td class="p-3 text-center font-bold text-slate-800 text-xs align-middle" id="total_j_${rb.id}">${totalJ}</td>
       `;
@@ -3991,7 +3997,7 @@ async function saveInfluenzaMetasConfig() {
 
   if (!isMuni) {
     // Guardar para los 4 municipios
-    const munis = ["QUERETARO", "CORREGIDORA", "EL MARQUES", "HUIMILPAN"];
+    const munis = ["QUERETARO", "CORREGIDORA", "MARQUES", "HUIMILPAN"];
     munis.forEach(m => {
       const metasObj = {};
       INFLUENZA_RUBROS.forEach(rb => {
@@ -4147,7 +4153,7 @@ function renderFrascosDistribution() {
     if (historyContainer) historyContainer.style.setProperty("display", "none", "important");
     if (adminMuniTableContainer) adminMuniTableContainer.style.setProperty("display", "flex", "important");
 
-    const munis = ["QUERETARO", "CORREGIDORA", "EL MARQUES", "HUIMILPAN"];
+    const munis = ["QUERETARO", "CORREGIDORA", "MARQUES", "HUIMILPAN"];
     const tbodyMuni = document.getElementById("adminFrascosMunicipalTbody");
     tbodyMuni.innerHTML = "";
 
@@ -4336,10 +4342,8 @@ async function saveFrascosDelivery() {
     eventTitle: "Influenza",
     eventMsg: "Distribución de frascos registrada en lote",
     action: async () => {
-      // Guardar todos los registros
-      for (const delivery of deliveriesToSave) {
-        await AppService.call("saveinfluenza_distribucion", delivery);
-      }
+      // Guardar todos los registros en un solo insert (atómico: o se guardan todos, o ninguno)
+      const res = await AppService.call("saveinfluenza_distribucion", { rows: deliveriesToSave });
 
       // Limpiar inputs
       units.forEach(u => {
@@ -4351,7 +4355,7 @@ async function saveFrascosDelivery() {
 
       await loadInfluenzaAdminData();
       renderFrascosDistribution();
-      return { ok: true };
+      return res;
     }
   });
 }
@@ -4363,6 +4367,11 @@ async function renderInfluenzaIndicatorsDashboard(muniFilter, uniFilter) {
   const container = document.getElementById("rdaDashboardContent");
   if (!container) return;
 
+  // Determinar la campaña activa dinámicamente (nunca hardcoded, cambia cada temporada)
+  const resConfig = await AppService.call("getinfluenza_config");
+  const activeCampaignName = resConfig?.data?.nombre
+    || `Campaña Influenza ${deriveCampaignName(_campaignConfig.fecha_inicio, _campaignConfig.fecha_fin)}`;
+
   // Título e info de cierre
   const scopeEl = document.getElementById("rdaScopeLabel");
   if (scopeEl) {
@@ -4373,7 +4382,7 @@ async function renderInfluenzaIndicatorsDashboard(muniFilter, uniFilter) {
 
   const cierreEl = document.getElementById("rdaCierreLabel");
   if (cierreEl) {
-    cierreEl.textContent = `Meta-Logro Influenza | Campaña: 2025-2026`;
+    cierreEl.textContent = `Meta-Logro Influenza | ${activeCampaignName}`;
   }
 
   // 1. Obtener la lista de CLUES a evaluar
@@ -4389,8 +4398,8 @@ async function renderInfluenzaIndicatorsDashboard(muniFilter, uniFilter) {
 
   // 2. Fetch metas y capturas de la campaña
   const [resMetas, resCapturas] = await Promise.all([
-    AppService.call("getinfluenza_metas", { anio_campana: "2025-2026" }),
-    AppService.call("getinfluenza_capturas", { anio_campana: "2025-2026" })
+    AppService.call("getinfluenza_metas", { anio_campana: activeCampaignName }),
+    AppService.call("getinfluenza_capturas", { anio_campana: activeCampaignName })
   ]);
 
   const metasData = resMetas.data || [];
