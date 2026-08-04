@@ -7187,6 +7187,7 @@ input, textarea, select, [contenteditable] {
 .nav-tab.active[onclick*="'LOTES'"] .material-symbols-rounded { color: #f59e0b; }        /* Amber */
 .nav-tab.active[onclick*="'NOTIFICATIONS'"] .material-symbols-rounded { color: #8b5cf6; } /* Violet */
 .nav-tab.active[onclick*="'SECURITY'"] .material-symbols-rounded { color: #6366f1; }      /* Indigo */
+.nav-tab.active[onclick*="'PARAMS'"] .material-symbols-rounded { color: #14b8a6; }        /* Teal */
 
 /* Colores para Subpaneles de Administración */
 .nav-tab.active[onclick*="'aperturas'"] .material-symbols-rounded { color: #10b981; }      /* Emerald */
@@ -7390,6 +7391,7 @@ input, textarea, select, [contenteditable] {
 .nav-tab.active[onclick*="'LOTES'"] .material-symbols-rounded { color: #f59e0b; }        /* Amber */
 .nav-tab.active[onclick*="'NOTIFICATIONS'"] .material-symbols-rounded { color: #8b5cf6; } /* Violet */
 .nav-tab.active[onclick*="'SECURITY'"] .material-symbols-rounded { color: #6366f1; }      /* Indigo */
+.nav-tab.active[onclick*="'PARAMS'"] .material-symbols-rounded { color: #14b8a6; }        /* Teal */
 
 /* Colores para Perfil Unidad (Captura) */
 .nav-tab.active[onclick*="'SR'"] .material-symbols-rounded { color: #0284c7; }   /* Blue (Biológicos) */

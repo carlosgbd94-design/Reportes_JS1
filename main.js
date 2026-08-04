@@ -36,25 +36,32 @@ window.showConfirmDialog = function(title, message) {
             return;
         }
 
-        titleEl.textContent = title;
+        const titleTextEl = document.getElementById('genericConfirmTitleText') || titleEl;
+        titleTextEl.textContent = title;
         msgEl.textContent = message;
         overlay.classList.add('show');
         overlay.style.display = 'flex';
-        overlay.style.opacity = '1';
-        overlay.style.pointerEvents = 'auto';
+
+        const onKeyDown = (e) => {
+            if (e.key === 'Escape') cleanup(false);
+        };
 
         const cleanup = (val) => {
             overlay.classList.remove('show');
             overlay.style.display = 'none';
-            overlay.style.opacity = '';
-            overlay.style.pointerEvents = '';
             btnAccept.onclick = null;
             btnCancel.onclick = null;
+            overlay.onclick = null;
+            document.removeEventListener('keydown', onKeyDown);
             resolve(val);
         };
 
         btnAccept.onclick = () => cleanup(true);
         btnCancel.onclick = () => cleanup(false);
+        overlay.onclick = (e) => {
+            if (e.target === overlay) cleanup(false);
+        };
+        document.addEventListener('keydown', onKeyDown);
     });
 };
 
@@ -2937,7 +2944,7 @@ async function deleteNotificationFlow(id) {
       return;
     }
 
-    const ok = window.confirm("¿Deseas eliminar esta notificación?");
+    const ok = await window.showConfirmDialog("Eliminar Notificación", "¿Deseas eliminar esta notificación?");
     if (!ok) return;
 
     showOverlay("Eliminando notificación…", "Notificaciones");
@@ -2961,7 +2968,7 @@ async function deleteNotificationFlow(id) {
 
 async function clearAllNotificationsFlow() {
   try {
-    const ok = window.confirm("¿Deseas vaciar tu buzón personal de notificaciones?");
+    const ok = await window.showConfirmDialog("Vaciar Buzón", "¿Deseas vaciar tu buzón personal de notificaciones?");
     if (!ok) return;
 
     showOverlay("Limpiando tu buzón…", "Notificaciones");
@@ -13693,7 +13700,7 @@ window.activateOpsTab = function (tab) {
   // Sync AppState.mainTab to prevent async summary panel leaks
   if (tab === "NOTIFICATIONS") {
     AppState.mainTab = "NOTIFS";
-  } else if (tab === "SECURITY") {
+  } else if (tab === "SECURITY" || tab === "PARAMS") {
     AppState.mainTab = "ADMIN";
   } else {
     AppState.mainTab = "CAP";
@@ -13715,7 +13722,8 @@ window.activateOpsTab = function (tab) {
       "INFLUENZA": "tabOPS_INFLUENZA",
       "LOTES": "tabLOTES",
       "NOTIFICATIONS": "tabOPS_NOTIFS",
-      "SECURITY": "tabOPS_ADMIN"
+      "SECURITY": "tabOPS_ADMIN",
+      "PARAMS": "tabOPS_PARAMS"
     };
     const targetId = buttonIds[tab];
     if (targetId) {
@@ -13737,7 +13745,8 @@ window.activateOpsTab = function (tab) {
     "INFLUENZA": "panelINFLUENZAADMIN",
     "LOTES": "panelLOTES",
     "NOTIFICATIONS": "panelNOTIFS",
-    "SECURITY": "panelADMIN"
+    "SECURITY": "panelADMIN",
+    "PARAMS": "panelADMIN"
   };
 
   const isMobileRda = tab === "RDA" && (document.body.classList.contains("touch-ui") || window.innerWidth < 768);
@@ -13830,6 +13839,9 @@ window.activateOpsTab = function (tab) {
   }
   if (tab === "SECURITY") {
     if (typeof activateAdminSubPanel === 'function') activateAdminSubPanel("aperturas");
+  }
+  if (tab === "PARAMS") {
+    if (typeof activateAdminSubPanel === 'function') activateAdminSubPanel("parametros");
   }
   if (tab === "NOTIFICATIONS") {
     if (AppState.rol !== "UNIDAD" && typeof initNotificationCenter === 'function') {
@@ -15480,15 +15492,13 @@ window.activateAdminSubPanel = function (panelId) {
   if (panelId === 'capacitaciones') {
     loadCapacitacionesAdmin();
   }
+  if (panelId === 'parametros') {
+    if (typeof window.initConsoleParametros === 'function') {
+      window.initConsoleParametros();
+    }
+  }
   if (panelId === 'campanas') {
     loadCampanasAdmin();
-  }
-  if (panelId === 'parametros') {
-    setTimeout(() => {
-      if (typeof syncTabGroupIndicator === 'function') {
-        syncTabGroupIndicator('#paramCalcTabContainer');
-      }
-    }, 150);
   }
 };
 
@@ -24361,17 +24371,17 @@ function convertAllSelectsToPremium() {
 window.createPremiumCustomDropdown = createPremiumCustomDropdown;
 window.convertAllSelectsToPremium = convertAllSelectsToPremium;
 
-window.createPremiumCustomDropdown = createPremiumCustomDropdown;
+window.createPremiumCustomDropdown = createPremiumCustomDropdown;
 window.convertAllSelectsToPremium = convertAllSelectsToPremium;
-
-
 
-window.createPremiumCustomDropdown = createPremiumCustomDropdown;
-window.convertAllSelectsToPremium = convertAllSelectsToPremium;
+
+
+window.createPremiumCustomDropdown = createPremiumCustomDropdown;
+window.convertAllSelectsToPremium = convertAllSelectsToPremium;
 
 window.addEventListener("load", () => {
   setTimeout(() => {
-    convertAllSelectsToPremium();
+    convertAllSelectsToPremium();
   }, 300);
 
   // Observador de mutaciones para convertir dinámicamente cualquier select o input de fecha nuevo.
@@ -24387,7 +24397,7 @@ window.addEventListener("load", () => {
       }
     });
 
-    let hasNewSelects = false;
+    let hasNewSelects = false;
 
     mutations.forEach(mutation => {
       mutation.addedNodes.forEach(node => {

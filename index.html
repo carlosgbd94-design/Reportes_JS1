@@ -280,6 +280,39 @@
       font-size: 11px !important;
     }
 
+    /* 📌 Standardized Pill Input Style for Native Dropdowns & Date Inputs */
+    .src-pill-input {
+      min-height: 44px !important;
+      max-height: 44px !important;
+      height: 44px !important;
+      border-radius: 14px !important;
+      border: 1px solid rgba(203, 213, 225, 0.8) !important;
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+      font-size: 13px !important;
+      font-weight: 700 !important;
+      padding: 0 36px 0 16px !important;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), inset 0 -1.5px 0 rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.02) !important;
+      outline: none !important;
+      cursor: pointer !important;
+      box-sizing: border-box !important;
+      -webkit-appearance: none !important;
+      appearance: none !important;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23475569'%3e%3cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3e%3c/svg%3e") !important;
+      background-repeat: no-repeat !important;
+      background-position: right 12px center !important;
+      background-size: 16px !important;
+      transition: all 0.2s ease !important;
+    }
+    .src-pill-input:hover {
+      border-color: #94a3b8 !important;
+      background-color: #f8fafc !important;
+    }
+    .src-pill-input:focus {
+      border-color: #0ea5e9 !important;
+      box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15) !important;
+    }
+
     /* Force hide number input spinners on desktop bypassing service worker cache */
     input[type="number"]::-webkit-outer-spin-button,
     input[type="number"]::-webkit-inner-spin-button {
@@ -1984,6 +2017,12 @@
             <span>Avisos</span>
           </button>
 
+          <button class="nav-tab" id="tabOPS_PARAMS" data-role-gate="JURISDICCIONAL,MUNICIPAL"
+            onclick="activateOpsTab('PARAMS')">
+            <span class="material-symbols-rounded">tune</span>
+            <span>Parámetros</span>
+          </button>
+
           <button class="nav-tab" id="tabOPS_ADMIN" data-role-gate="ADMIN" onclick="activateOpsTab('SECURITY')">
             <span class="material-symbols-rounded">admin_panel_settings</span>
             <span>Seguridad</span>
@@ -3652,7 +3691,7 @@
       </div>
 
       <!-- ADMIN (MODULAR REFACTOR) -->
-      <div id="panelADMIN" data-role-gate="ADMIN" style="display:none"
+      <div id="panelADMIN" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL" style="display:none"
         class="bg-surface rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8">
         <!-- Header del Panel -->
         <div
@@ -3669,46 +3708,46 @@
             </div>
           </div>
 
-          <div id="panelAdminSecurityTabs" class="contain-layout">
+          <div id="panelAdminSecurityTabs" data-role-gate="ADMIN" class="contain-layout">
             <div class="nav-container">
               <div id="adminTabIndicator" class="nav-indicator nav-indicator-premium"></div>
 
-              <button class="nav-tab active" id="tabAdminAperturas" onclick="activateAdminSubPanel('aperturas')">
+              <button class="nav-tab active" id="tabAdminAperturas" data-role-gate="ADMIN" onclick="activateAdminSubPanel('aperturas')">
                 <span class="material-symbols-rounded">event_available</span>
                 <span>Aperturas</span>
               </button>
 
-              <button class="nav-tab" id="tabAdminCatalogo" onclick="activateAdminSubPanel('catalogo')">
+              <button class="nav-tab" id="tabAdminCatalogo" data-role-gate="ADMIN" onclick="activateAdminSubPanel('catalogo')">
                 <span class="material-symbols-rounded">inventory_2</span>
                 <span>Catálogo</span>
               </button>
 
-              <button class="nav-tab" id="tabAdminSeguridad" onclick="activateAdminSubPanel('seguridad')">
+              <button class="nav-tab" id="tabAdminSeguridad" data-role-gate="ADMIN" onclick="activateAdminSubPanel('seguridad')">
                 <span class="material-symbols-rounded">verified_user</span>
                 <span>Seguridad</span>
               </button>
 
-              <button class="nav-tab" id="tabAdminUsuariosActivos" onclick="activateAdminSubPanel('usuarios_activos')">
+              <button class="nav-tab" id="tabAdminUsuariosActivos" data-role-gate="ADMIN" onclick="activateAdminSubPanel('usuarios_activos')">
                 <span class="material-symbols-rounded">sensors</span>
                 <span>En Línea</span>
               </button>
 
-              <button class="nav-tab" id="tabAdminParametros" onclick="activateAdminSubPanel('parametros')">
+              <button class="nav-tab" id="tabAdminParametros" data-role-gate="ADMIN,JURISDICCIONAL,MUNICIPAL" onclick="activateAdminSubPanel('parametros')">
                 <span class="material-symbols-rounded">tune</span>
                 <span>Parámetros</span>
               </button>
 
-              <button class="nav-tab" id="tabAdminMapeador" onclick="activateAdminSubPanel('mapeador')">
+              <button class="nav-tab" id="tabAdminMapeador" data-role-gate="ADMIN" onclick="activateAdminSubPanel('mapeador')">
                 <span class="material-symbols-rounded">account_tree</span>
                 <span>Mapeador SIS</span>
               </button>
 
-              <button class="nav-tab" id="tabAdminCapacitaciones" onclick="activateAdminSubPanel('capacitaciones')">
+              <button class="nav-tab" id="tabAdminCapacitaciones" data-role-gate="ADMIN" onclick="activateAdminSubPanel('capacitaciones')">
                 <span class="material-symbols-rounded">school</span>
                 <span>Capacitaciones</span>
               </button>
 
-              <button class="nav-tab" id="tabAdminCampanas" onclick="activateAdminSubPanel('campanas')">
+              <button class="nav-tab" id="tabAdminCampanas" data-role-gate="ADMIN" onclick="activateAdminSubPanel('campanas')">
                 <span class="material-symbols-rounded">campaign</span>
                 <span>Campañas</span>
               </button>
@@ -3716,7 +3755,7 @@
           </div>
 
           <div class="flex items-center gap-3">
-            <button class="premium-refresh-btn" id="btnRefreshUsers" title="Actualizar datos">
+            <button class="premium-refresh-btn" id="btnRefreshUsers" data-role-gate="ADMIN" title="Actualizar datos">
               <span class="material-symbols-rounded">refresh</span>
             </button>
           </div>
@@ -4112,332 +4151,489 @@
           </div>
         </div>
 
-        <!-- SUB-PANEL 5: PARÁMETROS (Cálculo Min/Max/Avg) -->
+        <!-- SUB-PANEL 5: PARÁMETROS DE UNIDADES DE SALUD (Consola Split-View Aislada) -->
         <div id="adminSection_parametros"
           class="admin-sub-panel hide animate-in fade-in slide-in-from-bottom-4 duration-500" style="display:none;">
-          <div class="bg-surface/50 rounded-[32px] overflow-hidden border border-outline-variant/30 shadow-sm">
-            <!-- Header -->
-            <div
-              class="p-6 bg-primary/5 border-b border-outline-variant/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div class="flex items-center gap-3">
-                <span class="material-symbols-rounded text-primary text-[24px]">calculate</span>
-                <div>
-                  <h4 class="text-[14px] font-black text-primary m-0 uppercase tracking-widest">Calculadora de
-                    Parámetros</h4>
-                  <p class="text-[11px] font-medium text-primary/50 m-0 mt-0.5">Calcula Min / Max / Promedio de Frascos
-                    a partir de productividad SIS y define esquemas de temporalidad</p>
-                </div>
+          
+          <!-- Estilos Aislados Exclusivos para Módulo de Parámetros (Cero Colisiones) -->
+          <style>
+            .spm-console-wrapper {
+              font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+              display: flex;
+              flex-direction: column;
+              gap: 16px;
+              width: 100%;
+              box-sizing: border-box;
+            }
+
+            .spm-console-wrapper input[type="number"]::-webkit-outer-spin-button,
+            .spm-console-wrapper input[type="number"]::-webkit-inner-spin-button {
+              -webkit-appearance: none !important;
+              margin: 0 !important;
+            }
+            .spm-console-wrapper input[type="number"] {
+              -moz-appearance: textfield !important;
+            }
+
+            .spm-header-bar {
+              background: #ffffff !important;
+              border-radius: 16px !important;
+              padding: 16px 20px !important;
+              border: 1px solid #e2e8f0 !important;
+              display: flex !important;
+              justify-content: space-between !important;
+              align-items: center !important;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.02) !important;
+              flex-wrap: wrap !important;
+              gap: 16px !important;
+            }
+
+            .spm-title-block h3 {
+              margin: 0 !important;
+              font-size: 18px !important;
+              font-weight: 800 !important;
+              color: #0f172a !important;
+            }
+            .spm-title-block span {
+              font-size: 12px !important;
+              color: #64748b !important;
+              font-weight: 500 !important;
+            }
+
+            .spm-actions-block {
+              display: flex !important;
+              gap: 12px !important;
+              align-items: center !important;
+            }
+
+            .spm-pill-select-custom {
+              appearance: none !important;
+              -webkit-appearance: none !important;
+              height: 44px !important;
+              min-height: 44px !important;
+              max-height: 44px !important;
+              box-sizing: border-box !important;
+              border-radius: 14px !important;
+              border: 1px solid rgba(203, 213, 225, 0.8) !important;
+              box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), inset 0 -1.5px 0 rgba(15, 23, 42, 0.08) !important;
+              font-family: 'Plus Jakarta Sans', sans-serif !important;
+              font-size: 13.5px !important;
+              font-weight: 600 !important;
+              color: #0f172a !important;
+              background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") no-repeat right 12px center / 16px !important;
+              padding: 0 36px 0 16px !important;
+              outline: none !important;
+            }
+
+            .spm-btn-icon-custom {
+              width: 44px !important;
+              height: 44px !important;
+              min-width: 44px !important;
+              border-radius: 14px !important;
+              background: #ffffff !important;
+              color: #334155 !important;
+              border: 1px solid #cbd5e1 !important;
+              cursor: pointer !important;
+              box-shadow: 0 2px 5px rgba(0,0,0,0.04) !important;
+              display: inline-flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              transition: all 0.2s ease !important;
+              padding: 0 !important;
+            }
+            .spm-btn-icon-custom:hover {
+              border-color: #2563eb !important;
+              color: #2563eb !important;
+              background: #f8fafc !important;
+            }
+            .spm-btn-icon-primary-custom {
+              background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+              color: white !important;
+              border: none !important;
+              box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+            }
+            .spm-btn-icon-primary-custom:hover {
+              background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+              color: white !important;
+            }
+
+            .spm-btn-icon-custom svg {
+              width: 20px !important;
+              height: 20px !important;
+              stroke: currentColor !important;
+              fill: none !important;
+              stroke-width: 2.2 !important;
+              stroke-linecap: round !important;
+              stroke-linejoin: round !important;
+            }
+
+            .spm-workspace-split {
+              display: grid !important;
+              grid-template-columns: 340px 1fr !important;
+              gap: 16px !important;
+              min-height: 580px !important;
+              height: calc(100vh - 210px) !important;
+              max-height: 750px !important;
+            }
+
+            .spm-sidebar-box {
+              background: #ffffff !important;
+              border-radius: 16px !important;
+              border: 1px solid #e2e8f0 !important;
+              display: flex !important;
+              flex-direction: column !important;
+              overflow: hidden !important;
+            }
+
+            .spm-sidebar-top {
+              padding: 14px 16px !important;
+              background: #f8fafc !important;
+              border-bottom: 1px solid #e2e8f0 !important;
+              font-size: 12px !important;
+              font-weight: 800 !important;
+              color: #475569 !important;
+              text-transform: uppercase !important;
+              letter-spacing: 0.5px !important;
+              display: flex !important;
+              justify-content: space-between !important;
+              align-items: center !important;
+            }
+
+            .spm-unit-scroll-list {
+              overflow-y: auto !important;
+              flex-grow: 1 !important;
+              padding: 8px !important;
+            }
+
+            .spm-unit-card-item {
+              padding: 12px 14px !important;
+              border-radius: 12px !important;
+              cursor: pointer !important;
+              margin-bottom: 4px !important;
+              display: flex !important;
+              justify-content: space-between !important;
+              align-items: center !important;
+              transition: all 0.15s ease !important;
+              border: 1px solid transparent !important;
+            }
+            .spm-unit-card-item:hover {
+              background: #f1f5f9 !important;
+            }
+            .spm-unit-card-item.active {
+              background: #eff6ff !important;
+              border-color: #bfdbfe !important;
+            }
+
+            .spm-unit-item-title {
+              font-size: 13.5px !important;
+              font-weight: 700 !important;
+              color: #0f172a !important;
+              white-space: nowrap !important;
+              overflow: hidden !important;
+              text-overflow: ellipsis !important;
+              max-width: 220px !important;
+            }
+
+            .spm-status-dot {
+              width: 8px !important;
+              height: 8px !important;
+              border-radius: 50% !important;
+              display: inline-block !important;
+            }
+            .spm-dot-reviewed { background: #10b981 !important; }
+            .spm-dot-pending { background: #f59e0b !important; }
+
+            .spm-main-editor-box {
+              background: #ffffff !important;
+              border-radius: 16px !important;
+              border: 1px solid #e2e8f0 !important;
+              display: flex !important;
+              flex-direction: column !important;
+              overflow: hidden !important;
+            }
+
+            .spm-editor-header {
+              padding: 16px 20px !important;
+              border-bottom: 1px solid #e2e8f0 !important;
+              display: flex !important;
+              justify-content: space-between !important;
+              align-items: center !important;
+              background: #ffffff !important;
+            }
+
+            .spm-active-unit-heading {
+              font-size: 16px !important;
+              font-weight: 800 !important;
+              color: #0f172a !important;
+              display: flex !important;
+              align-items: center !important;
+              gap: 10px !important;
+            }
+
+            .spm-table-scroll-area {
+              overflow-y: auto !important;
+              flex-grow: 1 !important;
+              padding: 0 20px 20px 20px !important;
+            }
+
+            .spm-matrix-grid-table {
+              width: 100% !important;
+              border-collapse: separate !important;
+              border-spacing: 0 !important;
+            }
+
+            .spm-matrix-grid-table th {
+              position: sticky !important;
+              top: 0 !important;
+              background: #ffffff !important;
+              z-index: 5 !important;
+              padding: 14px 12px !important;
+              font-size: 11px !important;
+              font-weight: 800 !important;
+              color: #94a3b8 !important;
+              text-transform: uppercase !important;
+              letter-spacing: 0.5px !important;
+              border-bottom: 2px solid #f1f5f9 !important;
+            }
+
+            .spm-matrix-grid-table td {
+              padding: 8px 12px !important;
+              border-bottom: 1px solid #f8fafc !important;
+              vertical-align: middle !important;
+            }
+
+            .spm-bio-idx-badge {
+              font-size: 12px !important;
+              font-weight: 800 !important;
+              color: #94a3b8 !important;
+              width: 30px !important;
+              display: inline-block !important;
+              text-align: center !important;
+            }
+
+            .spm-bio-name-lbl {
+              font-size: 13.5px !important;
+              font-weight: 700 !important;
+              color: #1e293b !important;
+            }
+
+            .spm-input-num-clean {
+              width: 100% !important;
+              height: 38px !important;
+              border-radius: 10px !important;
+              border: 1px solid #cbd5e1 !important;
+              text-align: center !important;
+              font-weight: 700 !important;
+              font-size: 14px !important;
+              color: #0f172a !important;
+              background: #f8fafc !important;
+              outline: none !important;
+              transition: all 0.15s ease !important;
+            }
+
+            .spm-input-num-clean:focus {
+              background: #ffffff !important;
+              border-color: #2563eb !important;
+              box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+            }
+
+            .spm-editor-footer-bar {
+              padding: 12px 20px !important;
+              background: #f8fafc !important;
+              border-top: 1px solid #e2e8f0 !important;
+              display: flex !important;
+              justify-content: space-between !important;
+              align-items: center !important;
+              font-size: 12px !important;
+              color: #64748b !important;
+              font-weight: 600 !important;
+            }
+
+            /* Modal de Vista Previa de la Calculadora Admin */
+            .spm-preview-overlay {
+              position: fixed !important;
+              inset: 0 !important;
+              z-index: 100000 !important;
+              background: rgba(15, 23, 42, 0.55) !important;
+              backdrop-filter: blur(8px) !important;
+              -webkit-backdrop-filter: blur(8px) !important;
+              align-items: center !important;
+              justify-content: center !important;
+              padding: 24px !important;
+            }
+            .spm-preview-card {
+              background: #ffffff !important;
+              border-radius: 24px !important;
+              width: 100% !important;
+              max-width: 900px !important;
+              max-height: 85vh !important;
+              display: flex !important;
+              flex-direction: column !important;
+              overflow: hidden !important;
+              box-shadow: 0 24px 48px rgba(0,0,0,0.25) !important;
+            }
+            .spm-preview-head {
+              padding: 20px 24px !important;
+              border-bottom: 1px solid #e2e8f0 !important;
+              display: flex !important;
+              align-items: center !important;
+              justify-content: space-between !important;
+              gap: 12px !important;
+            }
+            .spm-preview-head h3 {
+              margin: 0 !important;
+              font-size: 16px !important;
+              font-weight: 800 !important;
+              color: #0f172a !important;
+            }
+            .spm-preview-summary {
+              padding: 12px 24px !important;
+              background: #f8fafc !important;
+              border-bottom: 1px solid #e2e8f0 !important;
+              font-size: 12px !important;
+              font-weight: 700 !important;
+              color: #475569 !important;
+            }
+            .spm-preview-body {
+              overflow-y: auto !important;
+              flex-grow: 1 !important;
+            }
+            .spm-preview-table {
+              width: 100% !important;
+              border-collapse: collapse !important;
+              font-size: 12.5px !important;
+            }
+            .spm-preview-table th {
+              position: sticky !important;
+              top: 0 !important;
+              background: #f1f5f9 !important;
+              text-align: left !important;
+              padding: 10px 14px !important;
+              font-weight: 800 !important;
+              color: #475569 !important;
+              text-transform: uppercase !important;
+              font-size: 10.5px !important;
+              letter-spacing: 0.4px !important;
+              border-bottom: 1px solid #e2e8f0 !important;
+            }
+            .spm-preview-table td {
+              padding: 9px 14px !important;
+              border-bottom: 1px solid #f1f5f9 !important;
+              color: #1e293b !important;
+              font-weight: 600 !important;
+              white-space: nowrap !important;
+            }
+            .spm-preview-diff strong { color: #2563eb !important; }
+            .spm-preview-foot {
+              padding: 14px 24px !important;
+              border-top: 1px solid #e2e8f0 !important;
+              display: flex !important;
+              justify-content: flex-end !important;
+              gap: 10px !important;
+              background: #f8fafc !important;
+            }
+          </style>
+
+          <!-- Estructura de la Consola -->
+          <div class="spm-console-wrapper">
+            <!-- Header Superior -->
+            <div class="spm-header-bar">
+              <div class="spm-title-block">
+                <h3>Parámetros por Unidad de Salud</h3>
+                <span>Ajuste directo de Mínimos, Máximos y Promedios (SIS + 10% colchón técnico)</span>
+              </div>
+
+              <div class="spm-actions-block">
+                <select class="spm-pill-select-custom" id="spmParamMuniSelect" onchange="window.spmFilterUnitsByMuni(this.value)">
+                  <option value="">Cargando municipios...</option>
+                </select>
+
+                <!-- Ícono Calculadora Admin Global Único -->
+                <button id="spmBtnAdminCalc" class="spm-btn-icon-custom" title="Ejecutar Calculadora Admin Masiva (SIS + 10% Colchón)" onclick="window.spmRunAdminCalculation()">
+                  <svg viewBox="0 0 24 24"><path d="M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 2v4h16V4H4zm0 6v10h16V10H4zm2 2h3v2H6v-2zm5 0h3v2h-3v-2zm5 0h3v2h-3v-2zm-10 4h3v2H6v-2zm5 0h3v2h-3v-2zm5 0h3v2h-3v-2z"/></svg>
+                </button>
+
+                <!-- Ícono Guardar Cambios en Supabase -->
+                <button class="spm-btn-icon-custom spm-btn-icon-primary-custom" title="Guardar Cambios en la base de datos (biologicos_params)" onclick="window.spmSaveCurrentUnitParams()">
+                  <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                </button>
               </div>
             </div>
 
-            <!-- Tab bar (Botonera Estándar SIREVAQ) -->
-            <div class="p-6 border-b border-outline-variant/20 bg-surface flex justify-start">
-              <div class="nav-container" id="paramCalcTabContainer" style="margin: 0; position: relative;">
-                <div class="nav-indicator nav-indicator-premium"></div>
-                <button class="nav-tab active" id="tabParamCalc" onclick="window.switchParamTab('calc')" type="button">
-                  <span class="material-symbols-rounded">calculate</span>
-                  <span>Calculadora de Parámetros</span>
-                </button>
-                <button class="nav-tab" id="tabParamSchemes" onclick="window.switchParamTab('schemes')" type="button">
-                  <span class="material-symbols-rounded">campaign</span>
-                  <span>Esquemas y Temporadas</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Contenido de Calculadora -->
-            <div id="paramCalcTabContent">
-              <!-- Controles -->
-              <div class="p-6 flex flex-wrap items-end gap-4 border-b border-outline-variant/10">
-                <div class="flex flex-col gap-1">
-                  <label class="text-[10px] font-black text-primary/60 uppercase tracking-widest">Año Base</label>
-                  <select id="paramCalcAnio"
-                    class="h-10 px-4 rounded-xl border border-outline-variant/40 bg-surface text-[13px] font-bold text-primary focus:ring-2 focus:ring-primary/30 outline-none min-w-[100px]">
-                    <option value="2026" selected>2026</option>
-                    <option value="2025">2025</option>
-                    <option value="2024">2024</option>
-                  </select>
+            <!-- Consola Split View -->
+            <div class="spm-workspace-split">
+              <!-- Panel Izquierdo: Lista de Unidades -->
+              <div class="spm-sidebar-box">
+                <div class="spm-sidebar-top">
+                  <span>Unidades de Salud</span>
+                  <span id="spmUnitsProgressCounter" style="font-weight:700; color:#2563eb;">0 / 0 Rev.</span>
                 </div>
-
-                <div class="flex flex-col gap-1">
-                  <label class="text-[10px] font-black text-primary/60 uppercase tracking-widest">Margen de demanda
-                    (%)</label>
-                  <input id="paramCalcBuffer" type="number" value="10" min="0" max="50" step="1"
-                    class="h-10 px-4 rounded-xl border border-outline-variant/40 bg-surface text-[13px] font-bold text-primary focus:ring-2 focus:ring-primary/30 outline-none w-[100px]" />
-                </div>
-
-                <button id="btnCalcParams" onclick="window.runBioParamCalculation()"
-                  class="h-10 px-6 rounded-full bg-primary text-primary-on text-[12px] font-bold border-none cursor-pointer shadow-sm hover:translate-y-[-1px] hover:shadow-md transition-all flex items-center gap-2">
-                  <span class="material-symbols-rounded text-[18px]">calculate</span>
-                  Calcular
-                </button>
-              </div>
-
-              <!-- Resumen de resultados -->
-              <div id="paramCalcSummary" class="p-4 mx-6 mt-4 rounded-2xl bg-primary/5 border border-primary/10"
-                style="display:none;">
-                <div class="flex flex-wrap items-center gap-4 text-[12px] font-bold text-primary">
-                  <span>📊 <span id="paramCalcUnitsCount">0</span> unidades</span>
-                  <span class="text-primary/30">|</span>
-                  <span>🧬 <span id="paramCalcBiosCount">0</span> biológicos</span>
-                  <span class="text-primary/30">|</span>
-                  <span>📅 Meses: <span id="paramCalcMonths">—</span></span>
-                  <span class="text-primary/30">|</span>
-                  <span>🛡️ Margen: <span id="paramCalcBufferVal">10</span>%</span>
+                <div class="spm-unit-scroll-list" id="spmUnitsListContainer">
+                  <div style="padding: 20px; text-align: center; color: #64748b; font-size: 13px;">Cargando unidades...</div>
                 </div>
               </div>
 
-              <!-- Filtros Premium -->
-              <div id="paramCalcFilterRow" class="px-6 pt-4 flex flex-wrap gap-3 items-center" style="display:none;">
-                <div class="flex-grow min-w-[200px]">
-                  <input id="paramCalcFilter" type="text" placeholder="Buscar por CLUES, unidad o municipio..."
-                    oninput="window.filterParamCalcTable(true)"
-                    class="w-full h-9 px-4 rounded-xl border border-outline-variant/30 bg-surface text-[12px] font-medium text-primary placeholder:text-primary/40 focus:ring-2 focus:ring-primary/30 outline-none" />
+              <!-- Panel Derecho: Matriz de 12 Biológicos -->
+              <div class="spm-main-editor-box">
+                <div class="spm-editor-header">
+                  <div class="spm-active-unit-heading">
+                    <span class="spm-status-dot spm-dot-pending" id="spmActiveUnitDot"></span>
+                    <span id="spmActiveUnitName">Selecciona una unidad</span>
+                  </div>
+                  <div style="font-size: 13px; color: #64748b; font-weight:600;" id="spmBioCounterInfo">
+                    12 Biológicos Registrados
+                  </div>
                 </div>
-                <div class="w-[180px]">
-                  <select id="paramCalcFilterBio" onchange="window.filterParamCalcTable(true)"
-                    class="w-full h-9 px-3 rounded-xl border border-outline-variant/30 bg-surface text-[12px] font-bold text-primary focus:ring-2 focus:ring-primary/30 outline-none">
-                    <option value="">Todos los Biológicos</option>
-                  </select>
+
+                <div class="spm-table-scroll-area">
+                  <table class="spm-matrix-grid-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 40px; text-align: center;">#</th>
+                        <th style="text-align: left;">Biológico</th>
+                        <th style="width: 150px; text-align: center;">Promedio (SIS + 10%)</th>
+                        <th style="width: 150px; text-align: center;">Mínimo (Seguridad)</th>
+                        <th style="width: 150px; text-align: center;">Máximo (Capacidad)</th>
+                      </tr>
+                    </thead>
+                    <tbody id="spmMatrixTbody">
+                      <tr>
+                        <td colspan="5" style="text-align:center; padding: 40px; color:#64748b; font-size:13px;">
+                          Cargando datos de la unidad...
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
-                <div class="w-[180px]">
-                  <select id="paramCalcFilterMuni" onchange="window.filterParamCalcTable(true)"
-                    class="w-full h-9 px-3 rounded-xl border border-outline-variant/30 bg-surface text-[12px] font-bold text-primary focus:ring-2 focus:ring-primary/30 outline-none">
-                    <option value="">Todos los Municipios</option>
-                  </select>
+
+                <div class="spm-editor-footer-bar">
+                  <span id="spmDbStatusText">Estado: <strong>Guardado en la base de datos</strong></span>
+                  <span id="spmLastUpdatedText">Última modificación: —</span>
                 </div>
-              </div>
-
-              <!-- Tabla de resultados -->
-              <div class="overflow-x-auto p-6">
-                <table class="w-full text-left border-collapse bg-surface/50 rounded-2xl overflow-hidden shadow-sm"
-                  id="paramCalcTable" style="display:none;">
-                  <thead>
-                    <tr class="bg-primary/5">
-                      <th
-                        class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 sticky left-0 bg-primary/5 z-10">
-                        Unidad</th>
-                      <th
-                        class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">
-                        Biológico</th>
-                      <th
-                        class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center">
-                        Min</th>
-                      <th
-                        class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center">
-                        Max</th>
-                      <th
-                        class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center">
-                        Prom. Frascos</th>
-                      <th
-                        class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center">
-                        Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody id="paramCalcTbody" class="divide-y divide-outline-variant/20"></tbody>
-                </table>
-
-                <div id="paramCalcEmpty" class="text-center py-12 text-xs font-medium text-primary/50">
-                  Selecciona un año y presiona "Calcular" para generar los parámetros.
-                </div>
-              </div>
-
-              <!-- Controles de Paginación -->
-              <div id="paramCalcPagination" class="px-6 pb-4 flex flex-wrap justify-between items-center gap-3"
-                style="display:none;">
-                <div class="flex items-center gap-2 text-xs font-bold text-primary/70">
-                  <span>Registros por página:</span>
-                  <select id="paramCalcPageSize" onchange="window.updateParamCalcPageSize(this.value)"
-                    class="h-8 px-2 rounded-lg border border-outline-variant/30 bg-surface text-[12px] font-bold text-primary focus:ring-2 focus:ring-primary/20 outline-none">
-                    <option value="10">10</option>
-                    <option value="25" selected>25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                  </select>
-                  <span class="ml-2">Mostrando <span id="paramCalcPageStart">0</span>-<span
-                      id="paramCalcPageEnd">0</span> de <span id="paramCalcTotalCount">0</span></span>
-                </div>
-                <div class="flex items-center gap-1">
-                  <button type="button" onclick="window.changeParamCalcPage(-1)" id="btnParamCalcPrev"
-                    class="h-8 w-8 rounded-lg border border-outline-variant/30 bg-surface flex items-center justify-center text-primary hover:bg-primary/5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all">
-                    <span class="material-symbols-rounded text-[18px]">chevron_left</span>
-                  </button>
-                  <span class="text-xs font-bold text-primary px-3">Página <span id="paramCalcCurrentPage">1</span> de
-                    <span id="paramCalcTotalPages">1</span></span>
-                  <button type="button" onclick="window.changeParamCalcPage(1)" id="btnParamCalcNext"
-                    class="h-8 w-8 rounded-lg border border-outline-variant/30 bg-surface flex items-center justify-center text-primary hover:bg-primary/5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all">
-                    <span class="material-symbols-rounded text-[18px]">chevron_right</span>
-                  </button>
-                </div>
-              </div>
-
-              <div id="paramCalcFooter"
-                class="p-6 bg-surface-variant/20 border-t border-outline-variant/20 flex justify-between items-center"
-                style="display:none;">
-                <span class="text-[11px] font-bold text-primary/50">Los valores se guardarán en biologicos_params</span>
-                <button id="btnSaveCalcParams" onclick="window.saveCalculatedBioParams()"
-                  class="h-10 px-6 rounded-full bg-green-600 text-primary-on text-[12px] font-bold border-none cursor-pointer shadow-sm hover:translate-y-[-1px] hover:shadow-md transition-all flex items-center gap-2">
-                  <span class="material-symbols-rounded text-[18px]">save</span>
-                  Guardar Todo en Base de Datos
-                </button>
-              </div>
-            </div>
-
-            <!-- Contenido de Esquemas y Temporadas -->
-            <div id="paramSchemesTabContent" style="display:none;" class="p-6">
-              <div class="mb-6 bg-primary/5 border border-primary/10 rounded-2xl p-4 flex gap-3 items-start">
-                <span class="material-symbols-rounded text-primary text-[20px] mt-0.5">info</span>
-                <div>
-                  <h5 class="text-[12px] font-black text-primary uppercase m-0">Esquemas de Biológicos</h5>
-                  <p class="text-[11px] font-medium text-primary/70 m-0 mt-1 leading-relaxed">
-                    Define la temporalidad y tipo de captura de cada vacuna.
-                    Las vacunas marcadas como <b>Campaña</b> o <b>Temporada</b> tendrán ventanas de captura dinámicas.
-                    Desactiva <b>Captura Activa</b> para suspender el ingreso de datos de esa vacuna a nivel global.
-                  </p>
-                </div>
-              </div>
-
-              <!-- Tabla de Esquemas -->
-              <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse bg-surface/50 rounded-2xl overflow-hidden shadow-sm">
-                  <thead>
-                    <tr class="bg-primary/5">
-                      <th
-                        class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center w-16">
-                        Orden</th>
-                      <th
-                        class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">
-                        Biológico</th>
-                      <th
-                        class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">
-                        Referencia Total</th>
-                      <th
-                        class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center w-[140px]">
-                        Múltiplo Pedido</th>
-                      <th
-                        class="px-4 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 text-center w-[240px]">
-                        Tipo de Esquema</th>
-                    </tr>
-                  </thead>
-                  <tbody id="paramSchemesTbody" class="divide-y divide-outline-variant/20">
-                    <!-- Se carga dinámicamente con JS -->
-                  </tbody>
-                </table>
-              </div>
-
-              <div
-                class="mt-6 flex justify-between items-center bg-surface-variant/20 p-4 rounded-2xl border border-outline-variant/20">
-                <span class="text-[11px] font-bold text-primary/50">Los cambios afectarán el flujo de captura mensual al
-                  instante</span>
-                <button onclick="window.saveBioCatalogSchemes()"
-                  class="h-10 px-6 rounded-full bg-green-600 text-primary-on text-[12px] font-bold border-none cursor-pointer shadow-sm hover:translate-y-[-1px] hover:shadow-md transition-all flex items-center gap-2">
-                  <span class="material-symbols-rounded text-[18px]">save</span>
-                  Guardar Catálogo
-                </button>
               </div>
             </div>
           </div>
 
-          <!-- Card: Configuración de Turnos BCG por Unidad -->
-          <div class="bg-surface/50 rounded-[32px] overflow-hidden border border-outline-variant/30 shadow-sm mt-6">
-            <!-- Header -->
-            <div
-              class="p-6 bg-primary/5 border-b border-outline-variant/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div class="flex items-center gap-3">
-                <span class="material-symbols-rounded text-primary text-[24px]">vaccines</span>
-                <div>
-                  <h4 class="text-[14px] font-black text-primary m-0 uppercase tracking-widest">Turnos BCG Autorizados
-                  </h4>
-                  <p class="text-[11px] font-medium text-primary/50 m-0 mt-0.5">Autoriza qué turnos puede seleccionar
-                    cada unidad para la apertura de vacuna BCG.</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Controles -->
-            <div class="p-6 flex flex-col gap-6">
-              <div
-                style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px; align-items:start;">
-                <!-- Selección y Filtros -->
-                <div class="flex flex-col gap-3">
-                  <div class="flex flex-col gap-1">
-                    <label class="text-[10px] font-black text-primary/60 uppercase tracking-widest">Filtrar por
-                      Municipio</label>
-                    <select id="paramBCGAdminMuniSelect" onchange="window.filterBCGAdminUnits()"
-                      class="h-10 px-4 rounded-xl border border-outline-variant/40 bg-surface text-[13px] font-bold text-primary focus:ring-2 focus:ring-primary/30 outline-none w-full">
-                      <option value="">Todos los Municipios</option>
-                    </select>
-                  </div>
-                  <div class="flex flex-col gap-1">
-                    <label class="text-[10px] font-black text-primary/60 uppercase tracking-widest">Buscar
-                      Unidad</label>
-                    <input id="paramBCGAdminSearch" type="text" placeholder="Buscar por CLUES o nombre..."
-                      oninput="window.filterBCGAdminUnits()"
-                      class="h-10 px-4 rounded-xl border border-outline-variant/40 bg-surface text-[13px] font-medium text-primary focus:ring-2 focus:ring-primary/30 outline-none w-full">
-                  </div>
-                </div>
-
-                <!-- Lista de Unidades con Checkboxes -->
-                <div class="flex flex-col gap-1">
-                  <div class="flex justify-between items-center">
-                    <label class="text-[10px] font-black text-primary/60 uppercase tracking-widest">Unidades a
-                      Configurar</label>
-                    <label
-                      style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:800; color:var(--md-sys-color-primary); cursor:pointer;">
-                      <input type="checkbox" id="paramBCGSelectAllUnits"
-                        onchange="window.toggleAllBCGAdminUnits(this.checked)"
-                        style="width:14px; height:14px; accent-color: #0ea5e9;">
-                      <span>Marcar todas</span>
-                    </label>
-                  </div>
-                  <div id="paramBCGUnitsChecklist"
-                    style="max-height:160px; overflow-y:auto; border:1px solid var(--md-sys-color-outline-variant); padding:12px; border-radius:16px; background:var(--md-sys-color-surface); display:flex; flex-direction:column; gap:8px;">
-                    <span
-                      style="font-size:11px; color:var(--md-sys-color-on-surface-variant); font-weight:600;">Cargando
-                      unidades...</span>
-                  </div>
-                </div>
-
-                <!-- Turnos a autorizar -->
-                <div class="flex flex-col gap-2">
-                  <label class="text-[10px] font-black text-primary/60 uppercase tracking-widest">Turnos
-                    Permitidos</label>
-                  <div
-                    style="display: flex; flex-direction: column; gap: 10px; background: rgba(14, 165, 233, 0.05); padding: 14px 20px; border-radius: 18px; border: 1px solid rgba(14, 165, 233, 0.15);">
-                    <label
-                      style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer;">
-                      <input type="checkbox" id="paramBCGShiftMatutino" value="MATUTINO"
-                        style="width:16px; height:16px; accent-color: #0ea5e9;">
-                      <span>Matutino</span>
-                    </label>
-                    <label
-                      style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer;">
-                      <input type="checkbox" id="paramBCGShiftVespertino" value="VESPERTINO"
-                        style="width:16px; height:16px; accent-color: #0ea5e9;">
-                      <span>Vespertino</span>
-                    </label>
-                    <label
-                      style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer;">
-                      <input type="checkbox" id="paramBCGShiftEspecial" value="ESPECIAL"
-                        style="width:16px; height:16px; accent-color: #0ea5e9;">
-                      <span>Especial</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Botones de Acción -->
-              <div
-                style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--md-sys-color-outline-variant); padding-top: 16px;">
-                <button onclick="window.saveBCGUnitConfig()"
-                  class="h-10 px-6 rounded-full bg-primary text-primary-on text-[12px] font-bold border-none cursor-pointer shadow-sm hover:translate-y-[-1px] hover:shadow-md transition-all flex items-center gap-2">
-                  <span class="material-symbols-rounded text-[18px]">save</span>
-                  Guardar Configuración
+          <!-- Modal de Vista Previa: Calculadora Admin Masiva -->
+          <div id="spmCalcPreviewModal" class="spm-preview-overlay" style="display:none;">
+            <div class="spm-preview-card">
+              <div class="spm-preview-head">
+                <h3>Vista previa del cálculo masivo</h3>
+                <button type="button" class="spm-btn-icon-custom" onclick="window.spmCancelCalcPreview()" title="Cerrar">
+                  <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
                 </button>
+              </div>
+              <div class="spm-preview-summary" id="spmCalcPreviewSummary"></div>
+              <div class="spm-preview-body" id="spmCalcPreviewBody"></div>
+              <div class="spm-preview-foot">
+                <button type="button" class="ghostBtn" style="height:38px; padding:0 18px; border-radius:12px; font-weight:700; cursor:pointer; border:1px solid #cbd5e1; background:#fff; color:#64748b; font-size:12.5px;" onclick="window.spmCancelCalcPreview()">Cancelar</button>
+                <button type="button" id="spmBtnCalcPreviewConfirm" style="height:38px; padding:0 22px; border-radius:12px; font-weight:700; cursor:pointer; border:none; background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%); color:#fff; font-size:12.5px;" onclick="window.spmConfirmCalcSave()">Confirmar y Guardar en Supabase</button>
               </div>
             </div>
           </div>
         </div>
+
+
 
         <!-- SUB-PANEL 6: MAPEADOR DE VARIABLES SIS -->
         <div id="adminSection_mapeador" class="admin-sub-panel animate-in fade-in slide-in-from-bottom-4 duration-500"
@@ -7318,26 +7514,29 @@
     </div>
   </div>
 
-  <!-- ✅ MODAL DE CONFIRMACIÓN CUSTOM PREMIUM -->
+  <!-- ✅ MODAL DE CONFIRMACIÓN CUSTOM LIQUID GLASS -->
   <div class="overlay" id="genericConfirmOverlay"
-    style="display:none; background: rgba(3,8,18,0.55) !important; z-index:99999; justify-content: center; align-items: center;">
+    style="display:none; background: rgba(15, 23, 42, 0.4) !important; z-index:99999; justify-content: center; align-items: center; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);">
     <div class="modal"
-      style="max-width:400px; background: var(--md-sys-color-surface); border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden; display: flex; flex-direction: column; padding: 0; border: 1px solid var(--md-sys-color-outline-variant);">
+      style="max-width:380px; width:90%; background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border-radius: 24px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(255, 255, 255, 0.5) inset; overflow: hidden; display: flex; flex-direction: column; padding: 0; border: 1px solid rgba(255, 255, 255, 0.65);">
       <div class="modalHead"
-        style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 24px 24px 18px;">
+        style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 20px 24px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
         <div class="modalTitle" id="genericConfirmTitle"
-          style="color: #fff; font-size: 16px; font-weight: 850; letter-spacing: -0.01em;">Confirmación</div>
+          style="color: #ffffff; font-size: 15px; font-weight: 800; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px;">
+          <span class="material-symbols-rounded" style="font-size: 18px; color: #f43f5e;">warning</span>
+          <span id="genericConfirmTitleText">Confirmación</span>
+        </div>
       </div>
-      <div class="modalBody" style="padding: 24px;">
+      <div class="modalBody" style="padding: 22px 24px 20px; background: transparent;">
         <p id="genericConfirmMessage"
-          style="margin: 0; font-size: 13px; color: var(--md-sys-color-on-surface-variant); line-height: 1.6; font-weight: 600;">
+          style="margin: 0; font-size: 13.5px; color: #334155; line-height: 1.55; font-weight: 600; letter-spacing: -0.005em;">
         </p>
         <div
-          style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--md-sys-color-outline-variant);">
+          style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; padding-top: 14px; border-top: 1px solid rgba(226, 232, 240, 0.6);">
           <button class="ghostBtn" id="btnGenericConfirmCancel" type="button"
-            style="height: 38px; padding: 0 16px; border-radius: 10px; font-weight: 800; cursor: pointer; border: none; background: transparent; color: #64748b; font-size: 12px;">Cancelar</button>
+            style="height: 38px; padding: 0 18px; border-radius: 12px; font-weight: 700; cursor: pointer; border: 1px solid rgba(203, 213, 225, 0.5); background: rgba(255, 255, 255, 0.6); color: #64748b; font-size: 12.5px; transition: all 0.2s ease;">Cancelar</button>
           <button class="btn-premium-action" id="btnGenericConfirmAccept" type="button"
-            style="height: 38px; padding: 0 20px; border-radius: 10px; font-weight: 800; cursor: pointer; border: none; background: var(--md-sys-color-primary); color: #fff; margin-top:0; font-size: 12px;">Aceptar</button>
+            style="height: 38px; padding: 0 22px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff; margin-top:0; font-size: 12.5px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25); transition: all 0.2s ease;">Aceptar</button>
         </div>
       </div>
     </div>

@@ -11,6 +11,15 @@ class RDAParser {
     // Tipo de CSV detectado: 'SIS' | 'POBLACION' | null
     static detectedType = null;
 
+    // Alias histórico ÚNICO de CLUES aplicado en la ingesta (no en la BD): así, sin importar
+    // cuántas veces se recargue el concentrado, los registros del año indicado siempre quedan
+    // bajo el CLUES vigente de la unidad, aunque el archivo fuente traiga el CLUES viejo.
+    // Clave: 'CLUES_VIEJO|ANIO' -> CLUES_NUEVO. Quitar la entrada cuando ya no se necesite
+    // (p.ej. cuando ya no exista ningún concentrado histórico con el CLUES viejo para ese año).
+    static CLUES_REASSIGNMENT = {
+        'QTSSA002020|2026': 'QTSSA013034' // TLACOTE EL BAJO: cambio de CLUES a mitad de 2026
+    };
+
     static init() {
         const fileInput = document.getElementById('rdaCsvInput');
         const btnConfirm = document.getElementById('btnConfirmUploadCSV');
@@ -289,7 +298,7 @@ class RDAParser {
         let skippedInventory = 0;
 
         for (const row of data) {
-            const clues    = this._getCol(row, 'CLUES');
+            let clues      = this._getCol(row, 'CLUES');
             const variable = this._getCol(row, 'VARIABLE');
             const valorRaw = this._getCol(row, 'VALOR');
             const mesRaw   = this._getCol(row, 'MES');
@@ -304,6 +313,10 @@ class RDAParser {
             const mes   = parseInt(mesRaw, 10);
 
             if (!clues || !variable || isNaN(valor) || isNaN(mes) || isNaN(anio)) continue;
+
+            // Corregir CLUES histórico antes de guardar (ver RDAParser.CLUES_REASSIGNMENT arriba)
+            const reassignedClues = RDAParser.CLUES_REASSIGNMENT[`${clues}|${anio}`];
+            if (reassignedClues) clues = reassignedClues;
 
             const varUpper = variable.toUpperCase();
 
