@@ -6444,6 +6444,54 @@ body.bioConfirmOpen {
   pointer-events: none;
 }
 
+/* ============================================================================
+   Insignia de éxito "check" — acompaña a triggerConfetti() en todo guardado o
+   carga exitosa. Se dibuja una sola vez (círculo + palomita) y se retira sola;
+   no es el loop infinito de la galería de íconos, es un remate puntual.
+   ============================================================================ */
+#successCheckBadge {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 16px 40px -10px rgba(16, 185, 129, 0.5), 0 4px 14px rgba(15, 23, 42, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1000001;
+  transform: translate(-50%, -50%) scale(0.75);
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+#successCheckBadge.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+#successCheckBadge .success-check-circle {
+  stroke-dasharray: 126;
+  stroke-dashoffset: 126;
+}
+#successCheckBadge .success-check-path {
+  stroke-dasharray: 32;
+  stroke-dashoffset: 32;
+}
+#successCheckBadge.show .success-check-circle {
+  animation: successCheckCircleDraw 0.45s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+#successCheckBadge.show .success-check-path {
+  animation: successCheckPathDraw 0.3s cubic-bezier(0.65, 0, 0.35, 1) 0.35s forwards;
+}
+@keyframes successCheckCircleDraw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes successCheckPathDraw {
+  to { stroke-dashoffset: 0; }
+}
+
 .toast-new,
 .toast-new.good,
 .toast-new.bad,

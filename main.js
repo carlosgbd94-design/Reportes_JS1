@@ -23350,8 +23350,47 @@ function getConfettiTintedLogo(colorStr) {
 }
 
 let localConfetti = null;
+let _successCheckHideTimer = null;
+
+/**
+ * Insignia de éxito "check" (círculo + palomita dibujándose una sola vez).
+ * Se llama junto con triggerConfetti() para rematar el festejo con un ícono
+ * claro de "completado", en vez de dejar el confetti solo.
+ */
+function showSuccessCheckBadge() {
+  try {
+    let badge = document.getElementById("successCheckBadge");
+    if (!badge) {
+      badge = document.createElement("div");
+      badge.id = "successCheckBadge";
+      badge.innerHTML = `
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <circle class="success-check-circle" cx="24" cy="24" r="20" stroke="#10b981" stroke-width="3"/>
+          <path class="success-check-path" d="M15 24l6 6 12-13" stroke="#10b981" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+      `;
+      document.body.appendChild(badge);
+    }
+
+    // Reinicia la animación desde cero si se dispara varias veces seguidas
+    badge.classList.remove("show");
+    void badge.offsetWidth; // fuerza reflow para reiniciar la animación CSS
+    badge.classList.add("show");
+
+    if (_successCheckHideTimer) clearTimeout(_successCheckHideTimer);
+    _successCheckHideTimer = setTimeout(() => {
+      badge.classList.remove("show");
+    }, 1300);
+  } catch (e) {
+    console.warn("showSuccessCheckBadge error:", e);
+  }
+}
+window.showSuccessCheckBadge = showSuccessCheckBadge;
+
 function triggerConfetti() {
   try {
+    showSuccessCheckBadge();
+
     if (typeof window.confetti === "function") {
       let canvas = document.getElementById("confetti-canvas");
       if (!canvas) {
