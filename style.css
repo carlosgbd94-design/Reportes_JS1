@@ -10333,6 +10333,11 @@ html body .modern-input-group input[type="date"]:focus,
 }
 
 /* Modal and Overlay Backdrop Animations */
+/* Nota de rendimiento: el blur y el color de fondo van fijos (no animados) porque
+   animar backdrop-filter cuadro por cuadro obliga al navegador a recalcular el
+   desenfoque completo del fondo en cada frame — eso es lo que causaba el "lag"
+   perceptible al abrir estos modales. Solo se anima opacity (barato, compositable
+   por GPU sin repintar), y el resultado visual final es idéntico. */
 .overlay.show,
 .modal-backdrop.show,
 #uploadFilesOverlay.show,
@@ -10342,18 +10347,17 @@ html body .modern-input-group input[type="date"]:focus,
 #liveViewOverlay.show {
   animation: premiumOverlayFadeIn 0.3s ease-out forwards !important;
   display: flex !important; /* Ensure it is flex */
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  background-color: rgba(15, 23, 42, 0.3) !important;
 }
 
 @keyframes premiumOverlayFadeIn {
   0% {
     opacity: 0;
-    backdrop-filter: blur(0px);
-    background-color: rgba(0, 0, 0, 0);
   }
   100% {
     opacity: 1;
-    backdrop-filter: blur(12px);
-    background-color: rgba(15, 23, 42, 0.3);
   }
 }
 
