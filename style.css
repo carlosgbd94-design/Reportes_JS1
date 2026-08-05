@@ -1,5 +1,68 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
+/* ============================================================================
+   PARCHE: utilidades de Tailwind ausentes en tailwind_compiled.css
+   El HTML usa estas clases pero el compilado está desactualizado y nunca las
+   generó (content: solo escanea index.html y main.js, no rda_parser.js, y el
+   build no se ha vuelto a correr desde que se agregaron estos bloques).
+   Se definen aquí a mano con los mismos valores que generaría Tailwind, para
+   no depender de volver a correr el build. Si algún día se reconstruye
+   tailwind_compiled.css con estas clases incluidas, este bloque queda inerte
+   (mismos valores) y se puede borrar.
+   ============================================================================ */
+.bg-teal-50 { background-color: #f0fdfa; }
+.bg-teal-50\/70 { background-color: rgba(240, 253, 250, 0.7); }
+.hover\:bg-teal-100:hover { background-color: #ccfbf1; }
+.text-teal-700 { color: #0f766e; }
+.text-teal-800 { color: #115e59; }
+.hover\:text-teal-800:hover { color: #115e59; }
+.text-teal-900 { color: #134e4a; }
+.text-teal-900\/90 { color: rgba(19, 78, 74, 0.9); }
+.text-teal-950 { color: #042f2e; }
+.border-teal-200 { border-color: #99f6e4; }
+
+.text-indigo-700 { color: #4338ca; }
+.border-indigo-200 { border-color: #c7d2fe; }
+
+.font-mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace; }
+/* ============================================================================ */
+
+/* ============================================================================
+   ÍCONOS ANIMADOS DE ENCABEZADO: Pinol® y Meta-Logro Influenza
+   Diseñados y aprobados en temp_pinol_influenza_icons_gallery.html.
+   ============================================================================ */
+
+/* Pinol — botella estática con acabado glass; solo las burbujas se animan */
+.pinol-icon-bubble {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+}
+.pinol-icon-b1 { animation: pinolBubbleRise 2.6s ease-out infinite; animation-delay: 0s; }
+.pinol-icon-b2 { animation: pinolBubbleRise 2.6s ease-out infinite; animation-delay: 0.75s; }
+.pinol-icon-b3 { animation: pinolBubbleRise 2.6s ease-out infinite; animation-delay: 1.5s; }
+@keyframes pinolBubbleRise {
+  0%   { opacity: 0;    transform: translate(0, 0) scale(0.35); }
+  12%  { opacity: 0.95; transform: translate(0, -1px) scale(0.6); }
+  55%  { opacity: 0.8;  transform: translate(2px, -9px) scale(0.95); }
+  100% { opacity: 0;    transform: translate(-2px, -18px) scale(1.25); }
+}
+
+/* Meta-Logro Influenza — asta fija, tela en 4 franjas que ondulan en cascada */
+.influenza-icon-seg { transform-box: fill-box; transform-origin: left center; }
+.influenza-icon-s1 { animation: influenzaFlagWave 1.6s ease-in-out infinite; animation-delay: 0s; }
+.influenza-icon-s2 { animation: influenzaFlagWave 1.6s ease-in-out infinite; animation-delay: 0.13s; }
+.influenza-icon-s3 { animation: influenzaFlagWave 1.6s ease-in-out infinite; animation-delay: 0.26s; }
+.influenza-icon-s4 { animation: influenzaFlagWave 1.6s ease-in-out infinite; animation-delay: 0.39s; }
+@keyframes influenzaFlagWave {
+  0%, 100% { transform: skewY(0deg) scaleY(1); }
+  50% { transform: skewY(-16deg) scaleY(0.9); }
+}
+.influenza-icon-ball { animation: influenzaBallShine 1.6s ease-in-out infinite; }
+@keyframes influenzaBallShine {
+  0%, 100% { opacity: 1; } 50% { opacity: 0.7; }
+}
+
 :root {
   /* MD3 Tonal Palette - Senior UX CARBON Edition */
   --md-sys-color-primary: #0f172a; /* Carbon / Graphite Blue */

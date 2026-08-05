@@ -5736,7 +5736,7 @@
           </div>
         </div>
         <button type="button"
-          class="w-8 h-8 flex items-center justify-center rounded-full bg-surface-variant/50 text-primary hover:bg-error hover:text-error-on transition-colors border-none cursor-pointer"
+          class="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-outline-variant/30 shadow-sm text-primary hover:bg-status-error hover:text-white hover:-translate-y-0.5 hover:shadow-md active:scale-95 transition-all cursor-pointer"
           onclick="document.getElementById('modalUploadCSV').classList.remove('show'); document.getElementById('rdaCsvInput').value = ''; document.getElementById('csvPreviewArea').style.display='none'; document.getElementById('csvDropZone').style.display='flex'; document.getElementById('btnConfirmUploadCSV').classList.add('opacity-50', 'pointer-events-none');">
           <span class="material-symbols-rounded text-[18px]">close</span>
         </button>
@@ -5753,28 +5753,41 @@
           </select>
         </div>
 
-        <button type="button" 
+        <button type="button"
           onclick="const h = document.getElementById('csvHelpBox'); h.style.display = h.style.display === 'none' ? 'block' : 'none';"
-          class="text-xs font-bold text-teal-700 hover:text-teal-800 bg-teal-50 hover:bg-teal-100 px-3 py-1.5 rounded-lg border border-teal-200 cursor-pointer flex items-center gap-1">
-          <span class="material-symbols-rounded text-sm">help_outline</span>
-          💡 Plantilla y Formato CSV
+          class="text-xs font-bold text-primary bg-white border border-outline-variant/30 shadow-sm hover:shadow-md hover:-translate-y-0.5 hover:border-primary/30 active:scale-95 transition-all px-3 py-1.5 rounded-lg cursor-pointer flex items-center gap-1.5">
+          <span class="material-symbols-rounded text-sm text-primary">help_outline</span>
+          Plantilla y Formato CSV
         </button>
       </div>
 
       <!-- Caja de Ayuda Desplegable (Hints) -->
-      <div id="csvHelpBox" style="display: none;" class="p-4 bg-teal-50/70 border-b border-teal-200 text-xs text-teal-950">
-        <div class="font-bold mb-1 text-teal-900 flex items-center gap-1">
-          <span class="material-symbols-rounded text-base text-teal-700">info</span> Estructura esperada para el archivo CSV:
+      <div id="csvHelpBox" style="display: none;" class="p-4 bg-primary/5 border-b border-outline-variant/20 text-xs text-primary">
+        <div class="font-bold mb-2 text-primary flex items-center gap-1.5">
+          <span class="material-symbols-rounded text-base text-primary">description</span> ¿Qué formato necesita mi CSV?
         </div>
-        <p class="mb-2 leading-relaxed text-teal-900/90">
-          • <strong>Para Datos SIS</strong>: Debe contener las columnas <code>CLUES</code>, <code>ANIO</code> (o seleccionar año arriba), <code>MES</code> (1 al 12), <code>VARIABLE_SIS</code> (ej. VAC69, VBC01) y <code>VALOR</code>.<br>
-          • <strong>Para Población Anual</strong>: Debe contener <code>CLUES</code> y al menos una columna de población: <code>POB_MENOR_1</code>, <code>POB_1_ANO</code>, <code>POB_4_ANOS</code> o <code>POB_6_ANOS</code>.
+
+        <div class="flex flex-col gap-2 mb-2">
+          <div class="bg-white/60 rounded-xl p-3 border border-primary/10">
+            <p class="font-bold text-primary text-[10px] uppercase tracking-wider mb-1">📊 Productividad SIS</p>
+            <p class="leading-relaxed text-primary/70">Columnas: <code>CLUES</code>, <code>ANIO</code> (o elige el año arriba), <code>MES</code> (1 al 12, o el nombre — ej. "Marzo"), <code>VARIABLE_SIS</code> (ej. VAC69, VBC01) y <code>VALOR</code>.</p>
+          </div>
+          <div class="bg-white/60 rounded-xl p-3 border border-primary/10">
+            <p class="font-bold text-primary text-[10px] uppercase tracking-wider mb-1">👥 Población Anual</p>
+            <p class="leading-relaxed text-primary/70"><code>CLUES</code> + al menos una columna de población: <code>POB_MENOR_1</code>, <code>POB_1_ANO</code>, <code>POB_4_ANOS</code> o <code>POB_6_ANOS</code>.</p>
+          </div>
+        </div>
+
+        <p class="text-[11px] text-primary/70 leading-relaxed flex items-start gap-1.5 mb-1 bg-white/50 rounded-xl p-3 border border-primary/10">
+          <span class="material-symbols-rounded text-sm mt-0.5 text-primary">auto_fix_high</span>
+          <span>No te preocupes por errores menores en Productividad SIS: comas, espacios o el mes escrito con letra se corrigen solos. Las filas con CLUES o variables desconocidas se marcan aparte para que las revises y edites antes de confirmar la subida.</span>
         </p>
+
         <div class="flex items-center gap-3 mt-2">
-          <button type="button" 
+          <button type="button"
             onclick="const link = document.createElement('a'); link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent('CLUES,POB_MENOR_1,POB_1_ANO,POB_4_ANOS,POB_6_ANOS\nQTSSA000830,229,226,221,0\nQTSSA000842,145,143,140,0'); link.download = 'plantilla_poblacion_modelo.csv'; document.body.appendChild(link); link.click(); document.body.removeChild(link);"
-            style="background-color: #0d9488 !important; color: #ffffff !important; border: none !important;"
-            class="px-3.5 py-1.5 rounded-xl font-extrabold text-xs cursor-pointer flex items-center gap-1.5 shadow-sm transition-all hover:bg-teal-700">
+            style="background-color: #0ea5e9 !important; color: #ffffff !important; border: none !important;"
+            class="px-3.5 py-1.5 rounded-xl font-extrabold text-xs cursor-pointer flex items-center gap-1.5 shadow-sm transition-all">
             <span class="material-symbols-rounded text-sm text-white">download</span> Descargar Modelo Población (.csv)
           </button>
           <button type="button" 
@@ -5814,18 +5827,28 @@
               onclick="document.getElementById('rdaCsvInput').value = ''; document.getElementById('csvPreviewArea').style.display='none'; document.getElementById('csvDropZone').style.display='flex'; document.getElementById('btnConfirmUploadCSV').classList.add('opacity-50', 'pointer-events-none');">Quitar</button>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <div class="bg-surface-variant/30 p-4 rounded-2xl border border-outline-variant/30 text-center">
+          <div class="grid grid-cols-2 gap-3" id="csvCountersGrid">
+            <div class="bg-surface-variant/30 p-3 rounded-2xl border border-outline-variant/30 text-center">
               <span class="block text-[11px] font-bold uppercase tracking-widest text-primary/60 mb-1">Válidos</span>
-              <span id="csvValidCount" class="block text-[24px] font-black text-green-600">0</span>
+              <span id="csvValidCount" class="block text-[20px] font-black text-green-600">0</span>
             </div>
-            <div class="bg-surface-variant/30 p-4 rounded-2xl border border-outline-variant/30 text-center">
-              <span class="block text-[11px] font-bold uppercase tracking-widest text-primary/60 mb-1">Ignorados</span>
-              <span id="csvIgnoredCount" class="block text-[24px] font-black text-primary/40">0</span>
+            <div class="bg-surface-variant/30 p-3 rounded-2xl border border-outline-variant/30 text-center" id="csvFixedCard" style="display:none;">
+              <span class="block text-[11px] font-bold uppercase tracking-widest text-primary/60 mb-1">Corregidos</span>
+              <span id="csvFixedCount" class="block text-[20px] font-black text-blue-600">0</span>
+            </div>
+            <div class="bg-surface-variant/30 p-3 rounded-2xl border border-outline-variant/30 text-center" id="csvWarningCard" style="display:none;">
+              <span class="block text-[11px] font-bold uppercase tracking-widest text-primary/60 mb-1">Advertencia</span>
+              <span id="csvWarningCount" class="block text-[20px] font-black text-amber-600">0</span>
+            </div>
+            <div class="bg-surface-variant/30 p-3 rounded-2xl border border-outline-variant/30 text-center">
+              <span class="block text-[11px] font-bold uppercase tracking-widest text-primary/60 mb-1" id="csvIgnoredLabel">Ignorados</span>
+              <span id="csvIgnoredCount" class="block text-[20px] font-black text-primary/40">0</span>
             </div>
           </div>
 
-          <!-- Detalles de Registros Ignorados -->
+          <p id="csvExcludedNote" style="display:none;" class="text-[11px] text-slate-500 m-0"></p>
+
+          <!-- Detalles de Registros Ignorados (flujo Población, sin cambios) -->
           <div id="csvIgnoredDetailsArea" style="display: none;"
             class="p-4 bg-surface-container border border-slate-200 rounded-2xl flex flex-col gap-2">
             <button type="button" id="btnToggleIgnoredDetails"
@@ -5843,8 +5866,50 @@
             </div>
           </div>
 
+          <!-- Tabla de Revisión Editable (flujo SIS) -->
+          <div id="csvReviewTableArea" style="display: none;" class="flex flex-col gap-2">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <button type="button" id="btnToggleReviewTable"
+                class="text-[12px] font-bold text-slate-700 bg-transparent border-none cursor-pointer flex items-center gap-1.5 p-0">
+                <span class="material-symbols-rounded text-[16px] text-slate-500">rule</span>
+                <span id="csvReviewTableTitle">Revisar y corregir filas con problemas</span>
+                <span id="reviewTableArrow" class="material-symbols-rounded text-[18px]">expand_more</span>
+              </button>
+              <button type="button" id="btnRevalidateCsv"
+                class="text-[11px] font-bold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg border-none cursor-pointer flex items-center gap-1">
+                <span class="material-symbols-rounded text-[14px]">refresh</span> Re-validar cambios
+              </button>
+            </div>
+            <div id="csvReviewTableWrap" style="display: none; max-height: 320px; overflow: auto;"
+              class="border border-slate-200 rounded-2xl">
+              <table class="w-full text-[11px] border-collapse" id="csvReviewTable">
+                <thead class="sticky top-0 bg-slate-100 text-slate-600 text-[10px] uppercase tracking-wider">
+                  <tr>
+                    <th class="p-2 text-left">Fila</th>
+                    <th class="p-2 text-left">Estado</th>
+                    <th class="p-2 text-left">CLUES</th>
+                    <th class="p-2 text-left">Variable</th>
+                    <th class="p-2 text-left">Valor</th>
+                    <th class="p-2 text-left">Mes</th>
+                    <th class="p-2 text-left">Año</th>
+                    <th class="p-2 text-left">Detalle</th>
+                    <th class="p-2 text-left"></th>
+                  </tr>
+                </thead>
+                <tbody id="csvReviewTableBody"></tbody>
+              </table>
+            </div>
+            <div class="flex items-center justify-between gap-2">
+              <p id="csvReviewTableMore" style="display: none;" class="text-[11px] text-slate-500 m-0"></p>
+              <button type="button" id="btnLoadMoreReview" style="display: none;"
+                class="text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg border-none cursor-pointer">
+                Cargar más filas
+              </button>
+            </div>
+          </div>
+
           <div id="csvSchemaError"
-            class="p-4 bg-error/10 border border-error/20 rounded-xl text-[12px] font-medium text-error flex items-start gap-2"
+            class="p-4 bg-status-error/10 border border-status-error/20 rounded-xl text-[12px] font-medium text-status-error flex items-start gap-2"
             style="display: none;">
             <span class="material-symbols-rounded text-[18px]">error</span>
             <span id="csvSchemaErrorText">El archivo no tiene el formato requerido.</span>
@@ -8238,6 +8303,38 @@
         </button>
         <button type="submit" form="formFeedback" id="btnSubmitFeedback" class="feedback-btn-submit">
           <span class="material-symbols-rounded" style="font-size:18px;">send</span> Enviar Reporte
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ CONFIRMACIÓN DE CARGA CSV CON FILAS INVÁLIDAS PENDIENTES -->
+  <div id="csvUploadConfirmOverlay"
+    class="fixed inset-0 flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
+    style="z-index: 999999 !important;" aria-hidden="true">
+    <div
+      class="w-full max-w-[460px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
+      <div class="p-8 pb-6 bg-gradient-to-br from-amber-500/10 to-transparent border-b border-outline-variant/20">
+        <div class="flex items-center gap-2 text-amber-600 text-xs font-bold uppercase tracking-[0.1em] mb-3">
+          <span class="material-symbols-rounded text-base">warning</span>
+          Filas con error sin resolver
+        </div>
+        <div class="text-[20px] font-extrabold text-primary tracking-tight mb-2">¿Confirmar carga masiva?</div>
+        <div class="text-[13px] font-medium text-surface-onVariant/80" id="csvUploadConfirmIntro">
+          Se subirán los registros válidos. Los inválidos se ignorarán.
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 p-6 bg-surface border-t border-outline-variant/30">
+        <button
+          class="bg-surface-variant/60 text-primary hover:bg-surface-variant px-5 h-[44px] rounded-xl font-bold flex items-center justify-center gap-2 transition-all border-none cursor-pointer"
+          id="btnCsvUploadConfirmCancel" type="button">
+          <span class="material-symbols-rounded text-[18px]">edit</span> Regresar a revisar
+        </button>
+        <button
+          class="bg-primary text-primary-on hover:-translate-y-0.5 active:scale-[0.98] px-5 h-[44px] rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md3-1 border-none cursor-pointer"
+          id="btnCsvUploadConfirmAccept" type="button">
+          <span class="material-symbols-rounded text-[18px]">cloud_upload</span> Sí, subir e ignorar el resto
         </button>
       </div>
     </div>

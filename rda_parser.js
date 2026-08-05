@@ -11,6 +11,28 @@ class RDAParser {
     // Tipo de CSV detectado: 'SIS' | 'POBLACION' | null
     static detectedType = null;
 
+    // Dataset editable de la fila SIS analizada (una vez por archivo cargado).
+    // Cada elemento: { idx, rowNum, clues, variable, valor, mes, anio, municipio, status, issues, suggestions, discarded }
+    static _rows = null;
+
+    // Cache en memoria del catálogo de unidades (clues -> {nombre, municipio}), para validar
+    // CLUES y sugerir coincidencias cercanas sin repetir la consulta a Supabase.
+    static _unitCatalog = null;
+
+    // Set de códigos VARIABLE_SIS reconocidos (derivado de window.DICT_RDA) para detectar variables no mapeadas.
+    static _validVarsSet = null;
+
+    // Para deduplicación editable: clave "CLUES|VARIABLE|MES|ANIO" -> idx de la fila que el usuario eligió mantener.
+    static _dedupePreferred = new Map();
+
+    // Cuántas filas de la tabla de revisión se muestran (paginación simple para archivos grandes).
+    static _reviewRenderedCount = 200;
+
+    static _MONTHS = {
+        ENERO: 1, FEBRERO: 2, MARZO: 3, ABRIL: 4, MAYO: 5, JUNIO: 6,
+        JULIO: 7, AGOSTO: 8, SEPTIEMBRE: 9, SETIEMBRE: 9, OCTUBRE: 10, NOVIEMBRE: 11, DICIEMBRE: 12
+    };
+
     // Alias histórico ÚNICO de CLUES aplicado en la ingesta (no en la BD): así, sin importar
     // cuántas veces se recargue el concentrado, los registros del año indicado siempre quedan
     // bajo el CLUES vigente de la unidad, aunque el archivo fuente traiga el CLUES viejo.
@@ -33,19 +55,113 @@ class RDAParser {
         }
 
         if (btnConfirm) {
-            btnConfirm.addEventListener('click', () => {
-                if (this.pendingData) {
+            btnConfirm.addEventListener('click', async () => {
+                if (!this.pendingData) return;
+
+                if (this.detectedType === 'POBLACION') {
                     document.getElementById('modalUploadCSV').classList.remove('show');
-                    if (this.detectedType === 'POBLACION') {
-                        this.processPoblacionData(this.pendingData);
-                    } else {
-                        this.processData(this.pendingData);
-                    }
+                    this.processPoblacionData(this.pendingData);
+                    this.pendingData = null;
+                    this.detectedType = null;
+                    return;
+                }
+
+                const proceeded = await this.confirmAndProcessSIS();
+                if (proceeded) {
+                    document.getElementById('modalUploadCSV').classList.remove('show');
                     this.pendingData = null;
                     this.detectedType = null;
                 }
             });
         }
+
+        // Delegación de eventos para la tabla de revisión editable (SIS)
+        const reviewBody = document.getElementById('csvReviewTableBody');
+        if (reviewBody) {
+            reviewBody.addEventListener('input', (e) => {
+                const input = e.target.closest('.csv-cell-input');
+                if (!input) return;
+                const idx = parseInt(input.dataset.idx, 10);
+                const field = input.dataset.field;
+                const row = (RDAParser._rows || []).find(r => r.idx === idx);
+                if (row) row[field] = input.value;
+            });
+
+            reviewBody.addEventListener('click', (e) => {
+                const discardBtn = e.target.closest('.csv-row-discard');
+                const restoreBtn = e.target.closest('.csv-row-restore');
+                const suggChip = e.target.closest('.csv-sugg-chip');
+
+                if (discardBtn || restoreBtn) {
+                    const idx = parseInt((discardBtn || restoreBtn).dataset.idx, 10);
+                    const row = (RDAParser._rows || []).find(r => r.idx === idx);
+                    if (row) {
+                        row.discarded = !!discardBtn;
+                        RDAParser.runAnalysis();
+                    }
+                    return;
+                }
+
+                if (suggChip) {
+                    const idx = parseInt(suggChip.dataset.idx, 10);
+                    const field = suggChip.dataset.field;
+                    const value = suggChip.dataset.value;
+                    const row = (RDAParser._rows || []).find(r => r.idx === idx);
+                    if (row) {
+                        row[field] = value;
+                        RDAParser.runAnalysis();
+                    }
+                }
+            });
+        }
+
+        const btnRevalidate = document.getElementById('btnRevalidateCsv');
+        if (btnRevalidate) {
+            btnRevalidate.addEventListener('click', () => RDAParser.runAnalysis());
+        }
+
+        const btnLoadMore = document.getElementById('btnLoadMoreReview');
+        if (btnLoadMore) {
+            btnLoadMore.addEventListener('click', () => {
+                RDAParser._reviewRenderedCount += 200;
+                RDAParser._renderReviewUI();
+            });
+        }
+
+        const btnToggleReview = document.getElementById('btnToggleReviewTable');
+        if (btnToggleReview) {
+            btnToggleReview.addEventListener('click', () => {
+                const wrap = document.getElementById('csvReviewTableWrap');
+                const arrow = document.getElementById('reviewTableArrow');
+                if (!wrap) return;
+                const show = wrap.style.display === 'none';
+                wrap.style.display = show ? 'block' : 'none';
+                if (arrow) arrow.textContent = show ? 'expand_less' : 'expand_more';
+            });
+        }
+
+        // Cerrar con tecla Escape: si el diálogo de confirmación de subida está abierto,
+        // se cierra primero ese (cancela); si no, se cierra el modal completo de carga.
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+
+            const confirmOverlay = document.getElementById('csvUploadConfirmOverlay');
+            if (confirmOverlay && confirmOverlay.classList.contains('show')) {
+                RDAParser.closeCsvUploadConfirm(false);
+                return;
+            }
+
+            const modal = document.getElementById('modalUploadCSV');
+            if (modal && modal.classList.contains('show')) {
+                modal.classList.remove('show');
+                if (fileInput) fileInput.value = '';
+                const previewArea = document.getElementById('csvPreviewArea');
+                if (previewArea) previewArea.style.display = 'none';
+                const dropZone = document.getElementById('csvDropZone');
+                if (dropZone) dropZone.style.display = 'flex';
+                if (btnConfirm) btnConfirm.classList.add('opacity-50', 'pointer-events-none');
+            }
+        });
     }
 
     /** Normaliza un nombre de columna (quita tildes, espacios, mayúsculas) */
@@ -96,7 +212,7 @@ class RDAParser {
 
     static parseCSVAndPreview(file) {
         document.getElementById('csvSchemaError').style.display = 'none';
-        
+
         // Show basic file info
         document.getElementById('csvDropZone').style.display = 'none';
         document.getElementById('csvPreviewArea').style.display = 'flex';
@@ -107,6 +223,13 @@ class RDAParser {
         document.getElementById('csvIgnoredCount').textContent = '...';
         document.getElementById('csvMonthsWarning').style.display = 'none';
 
+        // Reset estado de análisis previo
+        this._rows = null;
+        this._dedupePreferred = new Map();
+        this._reviewRenderedCount = 200;
+        const reviewArea = document.getElementById('csvReviewTableArea');
+        if (reviewArea) reviewArea.style.display = 'none';
+
         // Reset tipo badge
         const badge = document.getElementById('csvTypeBadge');
         if (badge) badge.style.display = 'none';
@@ -114,12 +237,12 @@ class RDAParser {
         Papa.parse(file, {
             header: true,
             skipEmptyLines: true,
-            complete: (results) => {
+            complete: async (results) => {
                 if (!results.data || results.data.length === 0) {
                     this._showSchemaError("El archivo CSV está vacío.");
                     return;
                 }
-                
+
                 // Auto-detectar tipo de CSV
                 const fields = results.meta.fields || [];
                 this.detectedType = this.detectCSVType(fields);
@@ -136,7 +259,7 @@ class RDAParser {
                 this._updateModalForType(this.detectedType);
 
                 if (this.detectedType === 'SIS') {
-                    this.validateAndPreviewData(results.data);
+                    await this.buildAndAnalyzeSIS(results.data);
                 } else if (this.detectedType === 'POBLACION') {
                     this.validateAndPreviewPoblacion(results.data);
                 }
@@ -154,16 +277,32 @@ class RDAParser {
         const subtitleEl = document.querySelector('#modalUploadCSV h3 + p');
         const badge = document.getElementById('csvTypeBadge');
         const monthsWarning = document.getElementById('csvMonthsWarning');
+        const countersGrid = document.getElementById('csvCountersGrid');
+        const fixedCard = document.getElementById('csvFixedCard');
+        const warningCard = document.getElementById('csvWarningCard');
+        const ignoredLabel = document.getElementById('csvIgnoredLabel');
+        const reviewArea = document.getElementById('csvReviewTableArea');
+        const oldIgnoredArea = document.getElementById('csvIgnoredDetailsArea');
 
         if (type === 'SIS') {
             if (titleEl) titleEl.textContent = 'Carga de Reporte SIS';
             if (subtitleEl) subtitleEl.textContent = 'Productividad mensual — formato .csv';
             if (badge) { badge.textContent = '📊 PRODUCTIVIDAD SIS'; badge.className = 'inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-700 mt-2'; badge.style.display = 'inline-flex'; }
+            if (countersGrid) countersGrid.className = 'grid grid-cols-4 gap-2';
+            if (fixedCard) fixedCard.style.display = '';
+            if (warningCard) warningCard.style.display = '';
+            if (ignoredLabel) ignoredLabel.textContent = 'Inválidos';
+            if (oldIgnoredArea) oldIgnoredArea.style.display = 'none';
         } else if (type === 'POBLACION') {
             if (titleEl) titleEl.textContent = 'Carga de Población';
             if (subtitleEl) subtitleEl.textContent = 'Actualización masiva de datos demográficos';
             if (badge) { badge.textContent = '👥 POBLACIÓN'; badge.className = 'inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700 mt-2'; badge.style.display = 'inline-flex'; }
             if (monthsWarning) monthsWarning.style.display = 'none';
+            if (countersGrid) countersGrid.className = 'grid grid-cols-2 gap-3';
+            if (fixedCard) fixedCard.style.display = 'none';
+            if (warningCard) warningCard.style.display = 'none';
+            if (ignoredLabel) ignoredLabel.textContent = 'Ignorados';
+            if (reviewArea) reviewArea.style.display = 'none';
         }
     }
 
@@ -177,154 +316,450 @@ class RDAParser {
     }
 
     // =========================================================================
-    // SIS FLOW (original, sin cambios funcionales)
+    // SIS FLOW — Motor de análisis inteligente + revisión editable
     // =========================================================================
 
-    static validateAndPreviewData(data) {
-        let validos = 0;
-        let ignorados = 0;
-        const mesesEnCSV = new Set();
-        
-        // Registrar detalles de los registros ignorados
-        const reasonCounts = {
-            missing: { label: "Falta algún campo requerido (CLUES, Variable, Valor, Mes, Año)", count: 0, examples: [] },
-            inventory: { label: "Variables de inventario excluidas (VOI, VOF, VBC5)", count: 0, examples: [] }
-        };
-
-        for (let i = 0; i < data.length; i++) {
-            const row = data[i];
-            const rowNum = i + 2; // Fila 1 es el header, la primera fila de datos es la 2
-            const clues    = this._getCol(row, 'CLUES');
-            const variable = this._getCol(row, 'VARIABLE');
-            const valorRaw = this._getCol(row, 'VALOR');
-            const mesRaw   = this._getCol(row, 'MES');
-            const anioRaw  = this._getCol(row, 'ANO') || this._getCol(row, 'ANIO');
-
-            const uiYearVal = parseInt(document.getElementById('csvAnioSelector')?.value || '2026', 10);
-            const rawYearParsed = parseInt(anioRaw, 10);
-            const anio = (!isNaN(rawYearParsed) && rawYearParsed >= 2020 && rawYearParsed <= 2035) ? rawYearParsed : uiYearVal;
-
-            const valor = parseInt(valorRaw, 10);
-            const mes   = parseInt(mesRaw, 10);
-
-            if (!clues || !variable || isNaN(valor) || isNaN(mes) || isNaN(anio)) {
-                ignorados++;
-                reasonCounts.missing.count++;
-                if (reasonCounts.missing.examples.length < 5) {
-                    reasonCounts.missing.examples.push(`[Fila ${rowNum}] CLUES: ${clues || 'nulo'}, Var: ${variable || 'nulo'}, Valor: ${valorRaw || 'nulo'}`);
-                }
-                continue;
+    /** Distancia de Levenshtein simple (sin dependencias externas) */
+    static _levenshtein(a, b) {
+        const m = a.length, n = b.length;
+        if (m === 0) return n;
+        if (n === 0) return m;
+        const dp = new Array(n + 1);
+        for (let j = 0; j <= n; j++) dp[j] = j;
+        for (let i = 1; i <= m; i++) {
+            let prev = dp[0];
+            dp[0] = i;
+            for (let j = 1; j <= n; j++) {
+                const tmp = dp[j];
+                dp[j] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[j], dp[j - 1]);
+                prev = tmp;
             }
+        }
+        return dp[n];
+    }
 
-            const varUpper = variable.toUpperCase();
-            if (varUpper.startsWith('VOI') || varUpper.startsWith('VOF') || varUpper.startsWith('VBC5')) {
-                ignorados++;
-                reasonCounts.inventory.count++;
-                if (reasonCounts.inventory.examples.length < 5) {
-                    reasonCounts.inventory.examples.push(`[Fila ${rowNum}] Var: ${variable} (${clues})`);
-                }
-                continue;
-            }
+    /** Busca la coincidencia más cercana a `value` dentro de `candidates`, dentro de `maxDistance` ediciones */
+    static _closestMatch(value, candidates, maxDistance = 2) {
+        if (!value || !candidates || !candidates.length) return null;
+        let best = null, bestDist = Infinity;
+        for (const c of candidates) {
+            if (c === value) return null; // coincidencia exacta: no hay nada que sugerir
+            const d = RDAParser._levenshtein(value, c);
+            if (d < bestDist) { bestDist = d; best = c; }
+        }
+        return (best !== null && bestDist <= maxDistance) ? best : null;
+    }
 
-            validos++;
-            mesesEnCSV.add(mes);
+    /** Convierte nombres de mes en español (con o sin acentos) a su número 1-12 */
+    static _normalizeMonthName(str) {
+        const n = RDAParser._normalizeKey(str);
+        return RDAParser._MONTHS[n] || null;
+    }
+
+    /** Escapa un valor para uso seguro dentro de un atributo HTML */
+    static _escAttr(val) {
+        return String(val ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    }
+
+    /** Trae y cachea el catálogo de unidades médicas (clues -> {nombre, municipio}) */
+    static async ensureUnitCatalog() {
+        if (RDAParser._unitCatalog) return RDAParser._unitCatalog;
+        try {
+            const { data, error } = await window.supabase.from('unidades_medicas').select('clues,nombre,municipio');
+            if (error) throw error;
+            const map = new Map();
+            (data || []).forEach(u => map.set(String(u.clues || '').trim().toUpperCase(), { nombre: u.nombre, municipio: u.municipio }));
+            RDAParser._unitCatalog = map;
+        } catch (e) {
+            console.warn('[RDA Parser] No se pudo cargar el catálogo de unidades para validación:', e);
+            RDAParser._unitCatalog = new Map();
+        }
+        return RDAParser._unitCatalog;
+    }
+
+    /** Refresca el set de códigos VARIABLE_SIS reconocidos desde window.DICT_RDA */
+    static ensureVariableDictionary() {
+        RDAParser._validVarsSet = new Set(Object.values(window.DICT_RDA || {}).flat());
+        return RDAParser._validVarsSet;
+    }
+
+    /** Construye el dataset editable a partir del CSV parseado y dispara el primer análisis */
+    static async buildAndAnalyzeSIS(data) {
+        RDAParser._rows = data.map((row, i) => ({
+            idx: i,
+            rowNum: i + 2, // Fila 1 es el header
+            clues: RDAParser._getCol(row, 'CLUES') || '',
+            variable: RDAParser._getCol(row, 'VARIABLE') || '',
+            valor: RDAParser._getCol(row, 'VALOR') || '',
+            mes: RDAParser._getCol(row, 'MES') || '',
+            anio: RDAParser._getCol(row, 'ANO') || RDAParser._getCol(row, 'ANIO') || '',
+            municipio: RDAParser._getCol(row, 'MUNICIPIO') || '',
+            status: 'valid',
+            issues: [],
+            suggestions: {},
+            discarded: false
+        }));
+        RDAParser._dedupePreferred = new Map();
+        RDAParser._reviewRenderedCount = 200;
+        RDAParser.pendingData = true; // sentinela: ya hay un archivo parseado
+
+        await RDAParser.ensureUnitCatalog();
+        RDAParser.ensureVariableDictionary();
+        RDAParser.runAnalysis();
+    }
+
+    /** Clasifica una fila individual (sin resolver duplicados, eso se hace en runAnalysis) */
+    static _analyzeRow(r, context) {
+        const clues = String(r.clues || '').trim().toUpperCase();
+        const variable = String(r.variable || '').trim().toUpperCase();
+        const valorRaw = String(r.valor ?? '').trim();
+        const mesRaw = String(r.mes ?? '').trim();
+
+        // 1. Campos faltantes — no hay forma segura de auto-corregir esto
+        if (!clues || !variable || !valorRaw || !mesRaw) {
+            r.issues.push('Falta CLUES, Variable, Valor o Mes');
+            r.status = 'invalid';
         }
 
-        document.getElementById('csvValidCount').textContent = validos.toLocaleString();
-        document.getElementById('csvIgnoredCount').textContent = ignorados.toLocaleString();
-
-        // Mostrar / Ocultar área de detalles ignorados
-        const detailsArea = document.getElementById('csvIgnoredDetailsArea');
-        const detailsList = document.getElementById('csvIgnoredDetailsList');
-        
-        if (detailsList) {
-            detailsList.innerHTML = '';
-            if (ignorados > 0) {
-                let html = '';
-                if (reasonCounts.missing.count > 0) {
-                    html += `
-                        <div class="py-1">
-                            <span class="font-bold text-slate-800">${reasonCounts.missing.count} registros</span> - ${reasonCounts.missing.label}
-                            <ul style="margin: 4px 0 0 16px; padding: 0;" class="text-slate-500 list-disc">
-                                ${reasonCounts.missing.examples.map(ex => `<li>${ex}</li>`).join('')}
-                                ${reasonCounts.missing.count > 5 ? `<li>... y ${reasonCounts.missing.count - 5} más</li>` : ''}
-                            </ul>
-                        </div>
-                    `;
-                }
-                if (reasonCounts.inventory.count > 0) {
-                    html += `
-                        <div class="py-1">
-                            <span class="font-bold text-slate-800">${reasonCounts.inventory.count} registros</span> - ${reasonCounts.inventory.label}
-                            <ul style="margin: 4px 0 0 16px; padding: 0;" class="text-slate-500 list-disc">
-                                ${reasonCounts.inventory.examples.map(ex => `<li>${ex}</li>`).join('')}
-                                ${reasonCounts.inventory.count > 5 ? `<li>... y ${reasonCounts.inventory.count - 5} más</li>` : ''}
-                            </ul>
-                        </div>
-                    `;
-                }
-                detailsList.innerHTML = html;
-                detailsArea.style.display = 'block';
+        // 2. VALOR: intentar limpieza si no es numérico directo (comas, espacios, texto)
+        let valor = parseInt(valorRaw, 10);
+        if (isNaN(valor) && valorRaw) {
+            const cleaned = valorRaw.replace(/[^\d-]/g, '');
+            const fixedVal = parseInt(cleaned, 10);
+            if (!isNaN(fixedVal)) {
+                valor = fixedVal;
+                r._valorFixed = String(fixedVal);
+                r.issues.push(`Valor "${valorRaw}" interpretado como ${fixedVal}`);
+                if (r.status === 'valid') r.status = 'fixed';
             } else {
-                detailsArea.style.display = 'none';
+                r.issues.push(`Valor "${valorRaw}" no es numérico`);
+                r.status = 'invalid';
             }
         }
 
-        if (validos > 0) {
-            this.pendingData = data; // Guardar para confirmación
-            document.getElementById('btnConfirmUploadCSV').classList.remove('opacity-50', 'pointer-events-none');
-            
-            const mesesArray = [...mesesEnCSV].sort((a, b) => a - b);
-            if (mesesArray.length > 0) {
-                document.getElementById('csvMonthsList').textContent = mesesArray.join(', ');
-                document.getElementById('csvMonthsWarning').style.display = 'block';
+        // 3. MES: aceptar nombres de mes en español además de 1-12
+        let mes = parseInt(mesRaw, 10);
+        if ((isNaN(mes) || mes < 1 || mes > 12) && mesRaw) {
+            const mapped = RDAParser._normalizeMonthName(mesRaw);
+            if (mapped) {
+                mes = mapped;
+                r._mesFixed = String(mapped);
+                r.issues.push(`Mes "${mesRaw}" interpretado como ${mapped}`);
+                if (r.status === 'valid') r.status = 'fixed';
+            } else {
+                r.issues.push(`Mes "${mesRaw}" inválido (debe ser 1-12)`);
+                r.status = 'invalid';
             }
-        } else {
-            this._showSchemaError("No se encontraron registros válidos para subir (todos fueron ignorados).");
+        }
+
+        // 4. VALOR negativo — no es un caso de formato válido en ninguna unidad, se marca para revisión.
+        //    (Nota: NO se marcan valores altos como sospechosos — hay unidades cuya productividad
+        //    real supera con normalidad los 1,500 registros mensuales; juzgar por magnitud generaba
+        //    falsos positivos y ruido innecesario.)
+        if (!isNaN(valor) && valor < 0) {
+            r.issues.push('Valor negativo');
+            if (r.status === 'valid') r.status = 'warning';
+        }
+
+        // 5. CLUES desconocido en el catálogo real de unidades
+        if (clues && context.unitCatalog && context.unitCatalog.size > 0 && !context.unitCatalog.has(clues)) {
+            r.issues.push('CLUES no encontrado en el catálogo de unidades');
+            if (r.status === 'valid') r.status = 'warning';
+            const match = RDAParser._closestMatch(clues, context.unitCatalogKeys, 2);
+            if (match) r.suggestions.clues = match;
+        }
+
+        // 6. VARIABLE_SIS no reconocida en el diccionario de biológicos
+        if (variable && context.validVars && context.validVars.size > 0 && !context.validVars.has(variable)) {
+            r.issues.push('Variable SIS no reconocida en el diccionario');
+            if (r.status === 'valid') r.status = 'warning';
+            const match = RDAParser._closestMatch(variable, context.validVarsArr, 2);
+            if (match) r.suggestions.variable = match;
         }
     }
 
-    static async processData(data) {
+    /** Estado visual (badge/ícono) para un status de fila */
+    static _statusMeta(status) {
+        switch (status) {
+            case 'invalid': return { label: 'Inválido', badge: 'bg-rose-100 text-rose-700', icon: '❌' };
+            case 'warning': return { label: 'Advertencia', badge: 'bg-amber-100 text-amber-700', icon: '⚠️' };
+            case 'fixed': return { label: 'Corregido', badge: 'bg-blue-100 text-blue-700', icon: '🔧' };
+            case 'discarded': return { label: 'Descartada', badge: 'bg-slate-200 text-slate-500', icon: '🗑️' };
+            default: return { label: 'OK', badge: 'bg-emerald-100 text-emerald-700', icon: '✅' };
+        }
+    }
+
+    /**
+     * Re-analiza TODO el dataset en memoria (RDAParser._rows), incluyendo deduplicación,
+     * y repinta contadores + tabla de revisión. Se llama tras el parseo inicial, tras editar
+     * una celda y pulsar "Re-validar", tras descartar/restaurar una fila, o tras aplicar una sugerencia.
+     */
+    static runAnalysis() {
+        if (!RDAParser._rows) return;
+
+        const uiYear = parseInt(document.getElementById('csvAnioSelector')?.value || '2026', 10);
+        const context = {
+            uiYear,
+            unitCatalog: RDAParser._unitCatalog || new Map(),
+            unitCatalogKeys: RDAParser._unitCatalog ? Array.from(RDAParser._unitCatalog.keys()) : [],
+            validVars: RDAParser._validVarsSet || new Set(),
+            validVarsArr: RDAParser._validVarsSet ? Array.from(RDAParser._validVarsSet) : []
+        };
+
+        // Paso 1: clasificar cada fila individualmente y agrupar claves candidatas a duplicado
+        const keyMap = new Map(); // "CLUES|VARIABLE|MES|ANIO" -> [filas]
+        RDAParser._rows.forEach(r => {
+            r.issues = [];
+            r.suggestions = {};
+            r._valorFixed = null;
+            r._mesFixed = null;
+
+            if (r.discarded) { r.status = 'discarded'; return; }
+
+            const variable = String(r.variable || '').trim().toUpperCase();
+            if (variable && (variable.startsWith('VOI') || variable.startsWith('VOF') || variable.startsWith('VBC5'))) {
+                r.status = 'excluded';
+                r.issues.push('Variable de inventario excluida por regla de negocio (no es aplicación)');
+                return;
+            }
+
+            r.status = 'valid';
+            RDAParser._analyzeRow(r, context);
+
+            if (r.status !== 'invalid') {
+                const clues = String(r.clues || '').trim().toUpperCase();
+                const mes = r._mesFixed || r.mes;
+                let anio = parseInt(r.anio, 10);
+                if (isNaN(anio) || anio < 2020 || anio > 2035) anio = uiYear;
+                const key = `${clues}|${variable}|${mes}|${anio}`;
+                if (!keyMap.has(key)) keyMap.set(key, []);
+                keyMap.get(key).push(r);
+            }
+        });
+
+        // Paso 2: deduplicar — dentro de cada grupo, se mantiene la fila preferida (o la última por defecto)
+        keyMap.forEach((group, key) => {
+            if (group.length <= 1) return;
+            const preferredIdx = RDAParser._dedupePreferred.get(key);
+            const keepRow = group.find(r => r.idx === preferredIdx) || group[group.length - 1];
+            group.forEach(r => {
+                if (r !== keepRow) {
+                    r.status = 'invalid';
+                    r.issues.push(`Duplicado: se mantiene la fila ${keepRow.rowNum} para CLUES+Variable+Mes+Año`);
+                    r._duplicateKeepIdx = keepRow.idx;
+                }
+            });
+        });
+
+        RDAParser._renderReviewUI();
+    }
+
+    /** Genera el HTML de una fila editable de la tabla de revisión */
+    static _renderRowHtml(r) {
+        const meta = RDAParser._statusMeta(r.status);
+        const isDiscarded = r.status === 'discarded';
+        const disabledAttr = isDiscarded ? 'disabled' : '';
+        const rowOpacity = isDiscarded ? 'opacity: 0.55;' : '';
+
+        const suggChip = (field, value) => value
+            ? `<button type="button" class="csv-sugg-chip block mt-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 cursor-pointer" data-idx="${r.idx}" data-field="${field}" data-value="${RDAParser._escAttr(value)}">¿${RDAParser._escAttr(value)}?</button>`
+            : '';
+
+        const actionBtn = isDiscarded
+            ? `<button type="button" class="csv-row-restore text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded-lg border-none cursor-pointer" data-idx="${r.idx}">Restaurar</button>`
+            : `<button type="button" class="csv-row-discard text-[10px] font-bold text-error bg-error/10 px-2 py-1 rounded-lg border-none cursor-pointer" data-idx="${r.idx}">Descartar</button>`;
+
+        const cell = (field, value) => `<input type="text" ${disabledAttr} data-idx="${r.idx}" data-field="${field}" value="${RDAParser._escAttr(value)}" class="csv-cell-input w-full px-1.5 py-1 rounded border border-slate-200 text-[11px] font-mono bg-white disabled:bg-slate-100">`;
+
+        return `
+        <tr class="border-t border-slate-100 align-top" style="${rowOpacity}" data-row-idx="${r.idx}">
+          <td class="p-2 text-slate-400 font-mono text-[10px]">${r.rowNum}</td>
+          <td class="p-2"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap ${meta.badge}">${meta.icon} ${meta.label}</span></td>
+          <td class="p-2 min-w-[110px]">${cell('clues', r.clues)}${suggChip('clues', r.suggestions.clues)}</td>
+          <td class="p-2 min-w-[90px]">${cell('variable', r.variable)}${suggChip('variable', r.suggestions.variable)}</td>
+          <td class="p-2 min-w-[60px]">${cell('valor', r._valorFixed ?? r.valor)}</td>
+          <td class="p-2 min-w-[45px]">${cell('mes', r._mesFixed ?? r.mes)}</td>
+          <td class="p-2 min-w-[55px]">${cell('anio', r.anio)}</td>
+          <td class="p-2 text-[10px] text-slate-500 max-w-[200px]">${(r.issues || []).map(i => RDAParser._escAttr(i)).join('<br>')}</td>
+          <td class="p-2">${actionBtn}</td>
+        </tr>`;
+    }
+
+    /** Repinta contadores, aviso de meses y tabla de revisión a partir de RDAParser._rows ya analizado */
+    static _renderReviewUI() {
+        const rows = RDAParser._rows || [];
+        const counts = { valid: 0, fixed: 0, warning: 0, invalid: 0, excluded: 0, discarded: 0 };
+        rows.forEach(r => { counts[r.status] = (counts[r.status] || 0) + 1; });
+
+        const uploadable = counts.valid + counts.fixed + counts.warning;
+
+        const validEl = document.getElementById('csvValidCount');
+        if (validEl) validEl.textContent = counts.valid.toLocaleString();
+        const fixedEl = document.getElementById('csvFixedCount');
+        if (fixedEl) fixedEl.textContent = counts.fixed.toLocaleString();
+        const warnEl = document.getElementById('csvWarningCount');
+        if (warnEl) warnEl.textContent = counts.warning.toLocaleString();
+        const invalidEl = document.getElementById('csvIgnoredCount');
+        if (invalidEl) invalidEl.textContent = counts.invalid.toLocaleString();
+
+        const btnConfirm = document.getElementById('btnConfirmUploadCSV');
+        if (btnConfirm) {
+            if (uploadable > 0) btnConfirm.classList.remove('opacity-50', 'pointer-events-none');
+            else btnConfirm.classList.add('opacity-50', 'pointer-events-none');
+        }
+
+        // Aviso de meses que se sobrescribirán (solo filas que efectivamente se subirán)
+        const mesesSet = new Set();
+        rows.forEach(r => {
+            if (r.status === 'valid' || r.status === 'fixed' || r.status === 'warning') {
+                const m = parseInt(r._mesFixed || r.mes, 10);
+                if (!isNaN(m)) mesesSet.add(m);
+            }
+        });
+        const mesesArray = [...mesesSet].sort((a, b) => a - b);
+        const monthsWarnEl = document.getElementById('csvMonthsWarning');
+        if (monthsWarnEl) {
+            if (mesesArray.length > 0) {
+                const listEl = document.getElementById('csvMonthsList');
+                if (listEl) listEl.textContent = mesesArray.join(', ');
+                monthsWarnEl.style.display = 'block';
+            } else {
+                monthsWarnEl.style.display = 'none';
+            }
+        }
+
+        // Tabla de revisión: todo lo que no sea 'valid' puro ni 'excluded' (regla de negocio intencional)
+        const reviewRows = rows.filter(r => r.status !== 'valid' && r.status !== 'excluded');
+        const area = document.getElementById('csvReviewTableArea');
+        const body = document.getElementById('csvReviewTableBody');
+        const moreEl = document.getElementById('csvReviewTableMore');
+        const btnLoadMore = document.getElementById('btnLoadMoreReview');
+        const titleEl = document.getElementById('csvReviewTableTitle');
+        const excludedNote = document.getElementById('csvExcludedNote');
+
+        if (excludedNote) {
+            if (counts.excluded > 0) {
+                excludedNote.style.display = 'block';
+                excludedNote.textContent = `ℹ️ ${counts.excluded.toLocaleString()} fila(s) de variables de inventario (VOI/VOF/VBC5) excluidas automáticamente — no son aplicaciones.`;
+            } else {
+                excludedNote.style.display = 'none';
+            }
+        }
+
+        if (reviewRows.length === 0) {
+            if (area) area.style.display = 'none';
+        } else if (area && body) {
+            area.style.display = 'flex';
+            if (titleEl) titleEl.textContent = `Revisar y corregir ${reviewRows.length.toLocaleString()} fila(s) con problemas`;
+            const limit = RDAParser._reviewRenderedCount || 200;
+            const toRender = reviewRows.slice(0, limit);
+            body.innerHTML = toRender.map(r => RDAParser._renderRowHtml(r)).join('');
+
+            if (reviewRows.length > toRender.length) {
+                if (moreEl) { moreEl.style.display = 'block'; moreEl.textContent = `Mostrando ${toRender.length.toLocaleString()} de ${reviewRows.length.toLocaleString()} filas con problemas.`; }
+                if (btnLoadMore) btnLoadMore.style.display = 'inline-flex';
+            } else {
+                if (moreEl) moreEl.style.display = 'none';
+                if (btnLoadMore) btnLoadMore.style.display = 'none';
+            }
+        }
+    }
+
+    /** Diálogo "¿Confirmas subir N válidos e ignorar M con error?" — clon del patrón openBioConfirm/closeBioConfirm */
+    static _csvUploadConfirmResolver = null;
+
+    static openCsvUploadConfirm(validCount, invalidCount) {
+        return new Promise((resolve) => {
+            const overlay = document.getElementById('csvUploadConfirmOverlay');
+            if (!overlay) { resolve(false); return; }
+
+            if (overlay.parentNode !== document.body) document.body.appendChild(overlay);
+
+            overlay.onclick = (e) => { if (e.target === overlay) RDAParser.closeCsvUploadConfirm(false); };
+
+            const btnCancel = overlay.querySelector('#btnCsvUploadConfirmCancel');
+            const btnAccept = overlay.querySelector('#btnCsvUploadConfirmAccept');
+            if (btnCancel) btnCancel.onclick = () => RDAParser.closeCsvUploadConfirm(false);
+            if (btnAccept) btnAccept.onclick = () => RDAParser.closeCsvUploadConfirm(true);
+
+            RDAParser._csvUploadConfirmResolver = resolve;
+
+            const introEl = overlay.querySelector('#csvUploadConfirmIntro');
+            if (introEl) {
+                introEl.innerHTML = `Se subirán <strong>${validCount.toLocaleString()}</strong> registro(s) válido(s). ` +
+                    `Se <strong>ignorarán ${invalidCount.toLocaleString()}</strong> fila(s) con error sin resolver.`;
+            }
+
+            requestAnimationFrame(() => overlay.classList.add('show'));
+            if (btnCancel) btnCancel.focus();
+        });
+    }
+
+    static closeCsvUploadConfirm(result) {
+        const overlay = document.getElementById('csvUploadConfirmOverlay');
+        if (!overlay) return;
+        overlay.classList.remove('show');
+
+        const resolver = RDAParser._csvUploadConfirmResolver;
+        RDAParser._csvUploadConfirmResolver = null;
+        if (typeof resolver === 'function') {
+            setTimeout(() => resolver(!!result), 300);
+        }
+    }
+
+    /** Orquesta la confirmación (si aplica) y dispara la subida real. Devuelve true si se subió (o se canceló limpiamente). */
+    static async confirmAndProcessSIS() {
+        // Asegura que cualquier edición manual pendiente en la tabla se refleje en el estado
+        // de cada fila antes de decidir qué se sube y qué se ignora.
+        RDAParser.runAnalysis();
+
+        const rows = RDAParser._rows || [];
+        const uploadable = rows.filter(r => r.status === 'valid' || r.status === 'fixed' || r.status === 'warning');
+        const invalidCount = rows.filter(r => r.status === 'invalid').length;
+
+        if (uploadable.length === 0) {
+            if (typeof showToast === 'function') showToast('No hay registros válidos para subir', false, 'warn');
+            return false;
+        }
+
+        if (invalidCount > 0) {
+            const ok = await RDAParser.openCsvUploadConfirm(uploadable.length, invalidCount);
+            if (!ok) return false;
+        }
+
+        await RDAParser.processData();
+        return true;
+    }
+
+    static async processData() {
         if (typeof showProgressOverlay === 'function') {
             showProgressOverlay("Procesando datos...", "Analizando", "CARGA DE ARCHIVO");
         } else if (typeof showOverlay === 'function') {
             showOverlay("Procesando datos...", "Analizando");
         }
 
-        // 1. Parsear y filtrar datos
+        const uiYearVal = parseInt(document.getElementById('csvAnioSelector')?.value || '2026', 10);
+        const uploadableRows = (RDAParser._rows || []).filter(r => r.status === 'valid' || r.status === 'fixed' || r.status === 'warning');
+
+        // 1. Convertir filas aprobadas en registros limpios
         const cleanData = [];
         const uniqueUnits = {};
         const mesesEnCSV = new Set();
-        let skippedInventory = 0;
 
-        for (const row of data) {
-            let clues      = this._getCol(row, 'CLUES');
-            const variable = this._getCol(row, 'VARIABLE');
-            const valorRaw = this._getCol(row, 'VALOR');
-            const mesRaw   = this._getCol(row, 'MES');
-            const anioRaw  = this._getCol(row, 'ANO') || this._getCol(row, 'ANIO');
-            const municipio = this._getCol(row, 'MUNICIPIO') || 'DESCONOCIDO';
+        for (const r of uploadableRows) {
+            let clues = String(r.clues || '').trim().toUpperCase();
+            const variable = String(r.variable || '').trim().toUpperCase();
+            const valor = parseInt(r._valorFixed ?? r.valor, 10);
+            const mes = parseInt(r._mesFixed ?? r.mes, 10);
+            let anio = parseInt(r.anio, 10);
+            if (isNaN(anio) || anio < 2020 || anio > 2035) anio = uiYearVal;
 
-            const uiYearVal = parseInt(document.getElementById('csvAnioSelector')?.value || '2026', 10);
-            const rawYearParsed = parseInt(anioRaw, 10);
-            const anio = (!isNaN(rawYearParsed) && rawYearParsed >= 2020 && rawYearParsed <= 2035) ? rawYearParsed : uiYearVal;
-
-            const valor = parseInt(valorRaw, 10);
-            const mes   = parseInt(mesRaw, 10);
-
+            // Salvaguarda final: si por alguna razón la fila sigue incompleta, se omite en silencio
             if (!clues || !variable || isNaN(valor) || isNaN(mes) || isNaN(anio)) continue;
 
             // Corregir CLUES histórico antes de guardar (ver RDAParser.CLUES_REASSIGNMENT arriba)
             const reassignedClues = RDAParser.CLUES_REASSIGNMENT[`${clues}|${anio}`];
             if (reassignedClues) clues = reassignedClues;
-
-            const varUpper = variable.toUpperCase();
-
-            // Solo excluir variables de inventario (no son aplicaciones)
-            if (varUpper.startsWith('VOI') || varUpper.startsWith('VOF') || varUpper.startsWith('VBC5')) {
-                skippedInventory++;
-                continue;
-            }
 
             // ⚠️ NO filtrar por ALL_RDA_SET — guardar TODAS las variables de aplicaciones.
             // El calculator selecciona las que necesita. Así no perdemos datos si
@@ -332,7 +767,7 @@ class RDAParser {
 
             cleanData.push({
                 clues: clues,
-                variable_sis: varUpper,
+                variable_sis: variable,
                 valor: valor,
                 mes: mes,
                 anio: anio
@@ -340,18 +775,20 @@ class RDAParser {
 
             mesesEnCSV.add(mes);
 
-            // Recolectar unidades únicas para auto-upsert
+            // Recolectar unidades únicas para auto-upsert — usa el catálogo real si ya conocemos el CLUES
             if (!uniqueUnits[clues]) {
+                const catalogInfo = RDAParser._unitCatalog?.get(clues);
+                const municipioCsv = String(r.municipio || '').trim().toUpperCase();
                 uniqueUnits[clues] = {
                     clues: clues,
-                    nombre: `UNIDAD ${clues}`,
-                    municipio: municipio.toUpperCase()
+                    nombre: catalogInfo?.nombre || `UNIDAD ${clues}`,
+                    municipio: catalogInfo?.municipio || municipioCsv || 'DESCONOCIDO'
                 };
             }
         }
 
         const mesesArray = [...mesesEnCSV].sort((a, b) => a - b);
-        console.log(`[RDA Parser] CSV procesado: ${data.length} filas → ${cleanData.length} registros válidos (${skippedInventory} inventario excluido)`);
+        console.log(`[RDA Parser] CSV procesado: ${uploadableRows.length} filas aprobadas → ${cleanData.length} registros finales.`);
         console.log(`[RDA Parser] CLUES únicas: ${Object.keys(uniqueUnits).length} | Meses: ${mesesArray.join(', ')}`);
 
         if (cleanData.length === 0) {
