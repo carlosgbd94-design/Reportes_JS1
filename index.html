@@ -273,6 +273,20 @@
       border-color: rgba(37, 211, 102, 0.3) !important;
     }
 
+    /* Botón "Copiar plantilla WhatsApp": el ícono de WhatsApp se transforma en el de Copiar al pasar el mouse */
+    .whatsapp-copy-btn .icon-wa {
+      opacity: 1;
+      transform: scale(1) rotate(0deg);
+    }
+    .whatsapp-copy-btn:hover .icon-wa {
+      opacity: 0;
+      transform: scale(0.5) rotate(45deg);
+    }
+    .whatsapp-copy-btn:hover .icon-copy {
+      opacity: 1 !important;
+      transform: scale(1) rotate(0deg) !important;
+    }
+
     /* Ajuste para que quepan las 8 pestañas de administración en la botonera */
     #panelAdminSecurityTabs .nav-tab {
       padding: 0 10px !important;
@@ -2303,11 +2317,26 @@
 
           <!-- Izquierda: Ecualizador + Título + Subtítulo -->
           <div style="display:flex; align-items:center; gap:14px; min-width:0;">
-            <!-- Ecualizador Animado -->
-            <div style="width:38px; height:38px; flex-shrink:0; display:flex; align-items:flex-end; justify-content:center; gap:4px; padding:7px 8px; background:rgba(239,246,255,0.8); border-radius:12px; border:1px solid rgba(219,234,254,0.8);" title="Métricas de captura en vivo">
-              <span style="width:4px; background:#2563eb; border-radius:2px;" class="eq-bar-anim-1"></span>
-              <span style="width:4px; background:#2563eb; border-radius:2px;" class="eq-bar-anim-2"></span>
-              <span style="width:4px; background:#2563eb; border-radius:2px;" class="eq-bar-anim-3"></span>
+            <!-- Lupa que escanea las barras de captura -->
+            <div style="width:38px; height:38px; flex-shrink:0; display:flex; align-items:center; justify-content:center;" title="Métricas de captura en vivo">
+              <svg width="38" height="38" viewBox="0 0 48 48" fill="none">
+                <defs>
+                  <radialGradient id="scanGlowGradSummary" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#0ea5e9" stop-opacity="0.35"/>
+                    <stop offset="100%" stop-color="#0ea5e9" stop-opacity="0"/>
+                  </radialGradient>
+                </defs>
+                <rect class="scan-data-bar d1" x="6" y="30" width="4" height="10" rx="1.5" fill="#cbd5e1"/>
+                <rect class="scan-data-bar d2" x="13" y="22" width="4" height="18" rx="1.5" fill="#cbd5e1"/>
+                <rect class="scan-data-bar d3" x="20" y="26" width="4" height="14" rx="1.5" fill="#cbd5e1"/>
+                <rect class="scan-data-bar d4" x="27" y="18" width="4" height="22" rx="1.5" fill="#cbd5e1"/>
+                <rect class="scan-data-bar d5" x="34" y="24" width="4" height="16" rx="1.5" fill="#cbd5e1"/>
+                <g class="scan-lens-group">
+                  <ellipse class="scan-glow" cx="22" cy="17" rx="10" ry="6" fill="url(#scanGlowGradSummary)"/>
+                  <circle cx="22" cy="15" r="7" stroke="#0ea5e9" stroke-width="2.5" fill="#ffffff"/>
+                  <line x1="27" y1="20" x2="31" y2="24" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round"/>
+                </g>
+              </svg>
             </div>
             <!-- Título + Subtítulo -->
             <div style="min-width:0;">
@@ -2416,9 +2445,7 @@
               <!-- Botón WhatsApp -->
               <button onclick="generateWhatsAppTemplate()" title="Copiar plantilla para WhatsApp"
                 class="whatsapp-copy-btn"
-                style="background:transparent; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:4px; outline:none; position:relative; width:32px; height:32px; border-radius:50%; overflow:hidden; transition:background-color 0.2s;"
-                onmouseover="this.style.backgroundColor='#25D36615';"
-                onmouseout="this.style.backgroundColor='transparent';">
+                style="background:transparent; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:4px; outline:none; position:relative; width:32px; height:32px;">
                 <span class="icon-wa" style="position:absolute; display:flex; align-items:center; justify-content:center; transition:all 0.3s cubic-bezier(0.4,0,0.2,1);">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
                 </span>
@@ -4874,6 +4901,53 @@
           margin-bottom: 16px;
         }
 
+        /* Ícono de cabecera "Indicadores": barras + línea de tendencia, sin contenedor */
+        .rda-header-icon-wrap {
+          position: relative;
+          width: 48px;
+          height: 48px;
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .rda-metric-bar {
+          transform-box: fill-box;
+          transform-origin: bottom;
+          animation: rdaMetricBarWave 2s ease-in-out infinite;
+        }
+        .rda-metric-bar.b1 { animation-delay: 0s; }
+        .rda-metric-bar.b2 { animation-delay: 0.18s; }
+        .rda-metric-bar.b3 { animation-delay: 0.36s; }
+        .rda-metric-bar.b4 { animation-delay: 0.54s; }
+        @keyframes rdaMetricBarWave {
+          0%, 100% { transform: scaleY(0.6); }
+          50% { transform: scaleY(1); }
+        }
+        .rda-metric-trend-line {
+          stroke-dasharray: 52;
+          stroke-dashoffset: 52;
+          animation: rdaMetricTrendDraw 2.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+        }
+        @keyframes rdaMetricTrendDraw {
+          0% { stroke-dashoffset: 52; opacity: 1; }
+          55% { stroke-dashoffset: 0; opacity: 1; }
+          80% { stroke-dashoffset: 0; opacity: 1; }
+          92% { opacity: 0; }
+          93% { stroke-dashoffset: 52; opacity: 0; }
+          100% { stroke-dashoffset: 52; opacity: 1; }
+        }
+        .rda-metric-trend-dot {
+          transform-box: fill-box;
+          transform-origin: center;
+          animation: rdaMetricDotPop 2.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+        }
+        @keyframes rdaMetricDotPop {
+          0%, 52% { opacity: 0; transform: scale(0.4); }
+          60%, 80% { opacity: 1; transform: scale(1); }
+          92%, 100% { opacity: 0; transform: scale(0.4); }
+        }
+
         .rda-mobile-close-btn {
           display: none;
         }
@@ -4912,9 +4986,15 @@
               flex-wrap: wrap; gap: 16px;
             ">
           <div style="display: flex; align-items: center; gap: 16px;">
-            <div
-              style="width: 48px; height: 48px; border-radius: 14px; background: var(--md-sys-color-on-surface); display: flex; align-items: center; justify-content: center; color: #67e8f9;">
-              <span class="material-symbols-rounded premium-anim-bar" style="font-size: 24px;">stacked_bar_chart</span>
+            <div class="rda-header-icon-wrap" title="Indicadores">
+              <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
+                <rect class="rda-metric-bar b1" x="6" y="18" width="6" height="20" rx="2" fill="#0ea5e9"/>
+                <rect class="rda-metric-bar b2" x="16" y="10" width="6" height="28" rx="2" fill="#0ea5e9"/>
+                <rect class="rda-metric-bar b3" x="26" y="22" width="6" height="16" rx="2" fill="#0ea5e9"/>
+                <rect class="rda-metric-bar b4" x="36" y="6" width="6" height="32" rx="2" fill="#0ea5e9"/>
+                <path class="rda-metric-trend-line" d="M4,34 L14,26 L22,30 L32,18 L42,8" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                <circle class="rda-metric-trend-dot" cx="42" cy="8" r="3" fill="#10b981"/>
+              </svg>
             </div>
             <div>
               <h2

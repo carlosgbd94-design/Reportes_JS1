@@ -3142,7 +3142,7 @@ tr:hover td {
   appearance: none !important;
   -webkit-appearance: none !important;
   padding: 0 36px 0 16px !important;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2.2' stroke='%3C%2364748b' class='w-5 h-5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5' /%3E%3C/svg%3E") !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2.2' stroke='%2364748b' class='w-5 h-5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5' /%3E%3C/svg%3E") !important;
   background-repeat: no-repeat !important;
   background-position: right 12px center !important;
   background-size: 16px !important;
@@ -3213,23 +3213,67 @@ tr:hover td {
   filter: drop-shadow(0 2px 5px rgba(37, 99, 235, 0.3));
 }
 
-/* Animación de Ecualizador — necesitan altura base y display:block para ser visibles */
-#panelCaptureSummary .eq-bar-anim-1,
-#panelCaptureSummary .eq-bar-anim-2,
-#panelCaptureSummary .eq-bar-anim-3 {
-  display: block;
-  height: 10px; /* altura base */
-  min-height: 4px;
-  flex-shrink: 0;
-  border-radius: 3px;
+/* Ícono de cabecera "Resumen de Captura": lupa que escanea las barras de datos */
+#panelCaptureSummary .scan-lens-group {
+  animation: scanLensMove 2.6s linear infinite;
 }
-#panelCaptureSummary .eq-bar-anim-1 { animation: eqAnim1 1.4s ease-in-out infinite alternate; }
-#panelCaptureSummary .eq-bar-anim-2 { animation: eqAnim2 1.1s ease-in-out infinite alternate 0.2s; }
-#panelCaptureSummary .eq-bar-anim-3 { animation: eqAnim3 1.5s ease-in-out infinite alternate 0.4s; }
+@keyframes scanLensMove {
+  0%   { transform: translateX(-14px); }
+  50%  { transform: translateX(14px); }
+  100% { transform: translateX(-14px); }
+}
+#panelCaptureSummary .scan-glow {
+  animation: scanGlowPulse 2.6s ease-in-out infinite;
+}
+@keyframes scanGlowPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
 
-@keyframes eqAnim1 { 0% { height: 5px; } 100% { height: 20px; } }
-@keyframes eqAnim2 { 0% { height: 22px; } 100% { height: 7px; } }
-@keyframes eqAnim3 { 0% { height: 9px; } 100% { height: 18px; } }
+/* Barras que se "iluminan" al pasar la lupa por encima (sincronizado con scanLensMove) */
+#panelCaptureSummary .scan-data-bar {
+  animation-duration: 2.6s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+#panelCaptureSummary .scan-data-bar.d1 { animation-name: scanLight1; }
+#panelCaptureSummary .scan-data-bar.d2 { animation-name: scanLight2; }
+#panelCaptureSummary .scan-data-bar.d3 { animation-name: scanLight3; }
+#panelCaptureSummary .scan-data-bar.d4 { animation-name: scanLight4; }
+#panelCaptureSummary .scan-data-bar.d5 { animation-name: scanLight5; }
+
+@keyframes scanLight1 {
+  0%          { fill: #0ea5e9; filter: drop-shadow(0 0 3px rgba(14,165,233,0.75)); }
+  6%          { fill: #cbd5e1; filter: none; }
+  94%         { fill: #cbd5e1; filter: none; }
+  100%        { fill: #0ea5e9; filter: drop-shadow(0 0 3px rgba(14,165,233,0.75)); }
+}
+@keyframes scanLight2 {
+  0%, 6.5%    { fill: #cbd5e1; filter: none; }
+  12.5%       { fill: #0ea5e9; filter: drop-shadow(0 0 3px rgba(14,165,233,0.75)); }
+  18.5%, 81.5% { fill: #cbd5e1; filter: none; }
+  87.5%       { fill: #0ea5e9; filter: drop-shadow(0 0 3px rgba(14,165,233,0.75)); }
+  93.5%, 100% { fill: #cbd5e1; filter: none; }
+}
+@keyframes scanLight3 {
+  0%, 19%     { fill: #cbd5e1; filter: none; }
+  25%         { fill: #0ea5e9; filter: drop-shadow(0 0 3px rgba(14,165,233,0.75)); }
+  31%, 69%    { fill: #cbd5e1; filter: none; }
+  75%         { fill: #0ea5e9; filter: drop-shadow(0 0 3px rgba(14,165,233,0.75)); }
+  81%, 100%   { fill: #cbd5e1; filter: none; }
+}
+@keyframes scanLight4 {
+  0%, 31.5%   { fill: #cbd5e1; filter: none; }
+  37.5%       { fill: #0ea5e9; filter: drop-shadow(0 0 3px rgba(14,165,233,0.75)); }
+  43.5%, 56.5% { fill: #cbd5e1; filter: none; }
+  62.5%       { fill: #0ea5e9; filter: drop-shadow(0 0 3px rgba(14,165,233,0.75)); }
+  68.5%, 100% { fill: #cbd5e1; filter: none; }
+}
+@keyframes scanLight5 {
+  0%, 44%     { fill: #cbd5e1; filter: none; }
+  50%         { fill: #0ea5e9; filter: drop-shadow(0 0 3px rgba(14,165,233,0.75)); }
+  56%, 100%   { fill: #cbd5e1; filter: none; }
+}
 
 /* Scroll personalizado para paneles de tablas */
 .src-custom-scroll {
