@@ -2546,8 +2546,10 @@ async function exportIndividualPDF() {
     }
 }
 
-const _prepareClonedDocForHDImage = (clonedDoc, contentEl) => {
-    const clonedContent = clonedDoc.getElementById('rdaDashboardContent');
+// Preparación del clon (rdaDashboardContent) antes de capturarlo con html2canvas: inyecta el
+// membrete institucional, apaga animaciones/brillos, corrige overflow/sticky y centra chips.
+const _applyExportFixesToRoot = (clonedContent) => {
+    const clonedDoc = clonedContent.ownerDocument;
     if (clonedContent) {
         clonedContent.style.overflow = 'visible';
         clonedContent.style.maxHeight = 'none';
@@ -2731,17 +2733,37 @@ const _prepareClonedDocForHDImage = (clonedDoc, contentEl) => {
         ];
 
         const centerChipText = (clonedEl) => {
-            clonedEl.style.setProperty('display', 'inline-flex', 'important');
-            clonedEl.style.setProperty('align-items', 'center', 'important');
-            clonedEl.style.setProperty('justify-content', 'center', 'important');
-            clonedEl.style.setProperty('height', 'auto', 'important');
-            clonedEl.style.setProperty('line-height', '1', 'important');
-            clonedEl.style.setProperty('padding-top', '4px', 'important');
-            clonedEl.style.setProperty('padding-bottom', '5px', 'important');
+            // html2canvas NO calcula bien el centrado vertical de texto dentro de contenedores
+            // flex (aunque se fuerce align-items:center con !important) — es una limitación de
+            // su motor de texto, no algo que se arregle con más CSS de flexbox (por eso el fix
+            // anterior, que hacía exactamente eso, nunca funcionó). La técnica que sí es
+            // compatible con su motor es la clásica de centrado por línea base: line-height
+            // igual a la altura del contenedor, sin flexbox. Se mide la altura real ANTES de
+            // tocar el layout para no perder el tamaño/diseño original del chip.
+            const measuredHeight = clonedEl.offsetHeight
+                || parseInt(getComputedStyle(clonedEl).height, 10)
+                || 0;
+
+            clonedEl.style.setProperty('display', 'inline-block', 'important');
             clonedEl.style.setProperty('text-align', 'center', 'important');
             clonedEl.style.setProperty('white-space', 'nowrap', 'important');
             clonedEl.style.setProperty('box-sizing', 'border-box', 'important');
             clonedEl.style.setProperty('vertical-align', 'middle', 'important');
+
+            if (measuredHeight > 0) {
+                clonedEl.style.setProperty('height', `${measuredHeight}px`, 'important');
+                clonedEl.style.setProperty('line-height', `${measuredHeight}px`, 'important');
+                clonedEl.style.setProperty('padding-top', '0', 'important');
+                clonedEl.style.setProperty('padding-bottom', '0', 'important');
+            }
+
+            // Si el chip trae un ícono u otro elemento en línea junto al texto (ej. "✓ Meta
+            // Alcanzada"), cada hijo debe centrarse por línea base también, o solo el texto
+            // suelto quedaría centrado y el ícono no.
+            Array.from(clonedEl.children).forEach(child => {
+                child.style.setProperty('display', 'inline', 'important');
+                child.style.setProperty('vertical-align', 'middle', 'important');
+            });
         };
 
         // Chips con ID conocido
@@ -2764,7 +2786,11 @@ const _prepareClonedDocForHDImage = (clonedDoc, contentEl) => {
             }
         });
     }
+};
 
+// Conversión manual de <canvas> (gráficas Chart.js/ECharts) a <img> — html2canvas no sabe leer
+// el contenido de un canvas por sí solo, así que hay que hacerlo explícito antes de capturar.
+const _convertCanvasesToImages = (contentEl, clonedDoc) => {
     const origCanvases = contentEl.querySelectorAll('canvas');
     const clonedCanvases = clonedDoc.querySelectorAll('canvas');
     origCanvases.forEach((origCanvas, idx) => {
@@ -2788,6 +2814,38 @@ const _prepareClonedDocForHDImage = (clonedDoc, contentEl) => {
         }
     });
 };
+
+// Wrapper para el camino de html2canvas (respaldo): recibe el documento clonado completo,
+// tal como lo entrega su onclone, y conserva exactamente el comportamiento original.
+const _prepareClonedDocForHDImage = (clonedDoc, contentEl) => {
+    const clonedContent = clonedDoc.getElementById('rdaDashboardContent');
+    if (clonedContent) {
+        _applyExportFixesToRoot(clonedContent);
+    }
+    _convertCanvasesToImages(contentEl, clonedDoc);
+};
+
+// NOTA: se intentó usar "modern-screenshot" (renderizado vía SVG <foreignObject>) como motor
+// principal para evitar un bug de centrado de texto en chips propio de html2canvas. Se revirtió:
+// los íconos "Material Symbols" de esta app funcionan por ligadura de fuente (el texto literal
+// "school", "groups", etc. se sustituye visualmente por el glifo del ícono), y esa sustitución no
+// se aplica de forma confiable dentro de un <foreignObject> renderizado como imagen aislada — el
+// resultado mostraba el texto crudo en vez de los íconos, y el encabezado con el layout roto. No
+// lanzaba ningún error de JS (por eso el intento de respaldo automático nunca se activaba), así
+// que se optó por quedarse con html2canvas, que sí renderiza estos íconos correctamente.
+async function _captureRdaContentAsCanvas(content, scale) {
+    return await html2canvas(content, {
+        scale,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        scrollX: 0,
+        scrollY: 0,
+        onclone: (clonedDoc) => {
+            _prepareClonedDocForHDImage(clonedDoc, content);
+        }
+    });
+}
 
 async function exportDashboardImagen(format = 'png') {
     const content = document.getElementById('rdaDashboardContent');
@@ -2819,24 +2877,11 @@ async function exportDashboardImagen(format = 'png') {
 
     try {
         if (typeof updateOverlayProgress === 'function') {
-            updateOverlayProgress(35, 100, 'Preparando lienzo de alta resolución (2.5x HD)...', 'Captura HD', 'EXPORTACIÓN IMAGEN');
+            updateOverlayProgress(35, 100, 'Renderizando elementos y gráficos en alta resolución (2.5x HD)...', 'Captura HD', 'EXPORTACIÓN IMAGEN');
         }
 
         // Captura completa en 1 sola pieza continua con resolución 2.5x HD (Retina Quality)
-        const canvas = await html2canvas(content, {
-            scale: 2.5,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            scrollX: 0,
-            scrollY: 0,
-            onclone: (clonedDoc) => {
-                if (typeof updateOverlayProgress === 'function') {
-                    updateOverlayProgress(65, 100, 'Renderizando elementos y gráficos HD...', 'Captura HD', 'EXPORTACIÓN IMAGEN');
-                }
-                _prepareClonedDocForHDImage(clonedDoc, content);
-            }
-        });
+        const canvas = await _captureRdaContentAsCanvas(content, 2.5);
 
         if (typeof updateOverlayProgress === 'function') {
             updateOverlayProgress(90, 100, 'Generando archivo final de imagen...', 'Captura HD', 'EXPORTACIÓN IMAGEN');
@@ -3045,18 +3090,8 @@ async function exportMasivoZIP(mode = 'pdf') {
                 const fname = _rdaState.esquema === 'comparativa_multianual' 
                     ? `${_safeName(u.nombre)}_${u.clues}_COMPARATIVA_25-26_RDA.${ext}`
                     : `RDA_${u.clues}_${_safeName(u.nombre)}.${ext}`;
-                if (typeof html2canvas !== 'undefined' && content) {
-                    const canvas = await html2canvas(content, {
-                        scale: 2.5,
-                        useCORS: true,
-                        allowTaint: true,
-                        backgroundColor: '#ffffff',
-                        scrollX: 0,
-                        scrollY: 0,
-                        onclone: (clonedDoc) => {
-                            _prepareClonedDocForHDImage(clonedDoc, content);
-                        }
-                    });
+                if (content) {
+                    const canvas = await _captureRdaContentAsCanvas(content, 2.5);
                     const mimeType = isJpeg ? 'image/jpeg' : 'image/png';
                     const dataUrl = isJpeg ? canvas.toDataURL(mimeType, 0.92) : canvas.toDataURL(mimeType);
                     const base64Data = dataUrl.replace(new RegExp(`^data:${mimeType.replace('/', '\\/')};base64,`), "");
@@ -4926,35 +4961,31 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
         };
 
         // Título y ámbito dinámico con alta jerarquía visual executive en sobrio tono slate
+        // Sin chips/píldoras: texto plano con ícono al frente, sin fondo ni border-radius. Los
+        // chips con fondo+flex-centrado son los que html2canvas nunca logra alinear bien al
+        // exportar; texto plano en línea no tiene ese problema (nada que centrar dentro de una caja).
         let scopeHtml = '';
         if (uniFilter) {
             const uM = (_rdaCache.unidades||[]).find(x => x.clues === uniFilter);
             const mName = uM?.municipio || muniFilter || 'QUERÉTARO';
             const uName = uM?.nombre || 'UNIDAD MÉDICA';
             scopeHtml = `
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
-                    <span style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-size: 11.5px; font-weight: 800; padding: 6px 14px; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px;">
-                        <span class="material-symbols-rounded" style="font-size: 16px;">location_city</span> MUNICIPIO: ${mName.toUpperCase()}
-                    </span>
-                    <span style="background: #0f172a; color: #ffffff; font-size: 11.5px; font-weight: 900; padding: 6px 16px; border-radius: 10px; box-shadow: 0 4px 12px rgba(15,23,42,0.15); display: inline-flex; align-items: center; gap: 6px;">
-                        <span class="material-symbols-rounded" style="font-size: 16px;">local_hospital</span> UNIDAD: ${uName.toUpperCase()} — ${uniFilter}
-                    </span>
+                <div style="margin-top: 8px; font-size: 11.5px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.03em;">
+                    <span class="material-symbols-rounded" style="font-size: 14px; vertical-align: -2px;">location_city</span> MUNICIPIO: ${mName.toUpperCase()}
+                    &nbsp;&nbsp;·&nbsp;&nbsp;
+                    <span class="material-symbols-rounded" style="font-size: 14px; vertical-align: -2px;">local_hospital</span> UNIDAD: ${uName.toUpperCase()} — ${uniFilter}
                 </div>
             `;
         } else if (muniFilter) {
             scopeHtml = `
-                <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-                    <span style="background: #0f172a; color: #ffffff; font-size: 11.5px; font-weight: 900; padding: 6px 16px; border-radius: 10px; box-shadow: 0 4px 12px rgba(15,23,42,0.15); display: inline-flex; align-items: center; gap: 6px;">
-                        <span class="material-symbols-rounded" style="font-size: 16px;">location_city</span> MUNICIPIO: ${muniFilter.toUpperCase()}
-                    </span>
+                <div style="margin-top: 8px; font-size: 11.5px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 0.03em;">
+                    <span class="material-symbols-rounded" style="font-size: 14px; vertical-align: -2px;">location_city</span> MUNICIPIO: ${muniFilter.toUpperCase()}
                 </div>
             `;
         } else {
             scopeHtml = `
-                <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-                    <span style="background: #f8fafc; color: #0f172a; border: 1px solid #cbd5e1; font-size: 11.5px; font-weight: 800; padding: 6px 14px; border-radius: 10px; display: inline-flex; align-items: center; gap: 6px;">
-                        <span class="material-symbols-rounded" style="font-size: 16px;">domain</span> JURISDICCIÓN SANITARIA 1 (QUERÉTARO)
-                    </span>
+                <div style="margin-top: 8px; font-size: 11.5px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.03em;">
+                    <span class="material-symbols-rounded" style="font-size: 14px; vertical-align: -2px;">domain</span> JURISDICCIÓN SANITARIA 1 (QUERÉTARO)
                 </div>
             `;
         }
@@ -4995,7 +5026,7 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                         </div>
                         <!-- AÑO 2026 (Electric Vibrant Blue) -->
                         <div style="background: #f0f9ff; padding: 10px 12px; border-radius: 12px; border: 1px solid #bae6fd;">
-                            <span style="font-size: 10px; font-weight: 900; color: #0284c7; text-transform: uppercase; letter-spacing: 0.04em; display: inline-flex; align-items: center; gap: 4px;">AÑO 2026 <span style="font-size: 9px;">⚡</span></span>
+                            <span style="font-size: 10px; font-weight: 900; color: #0284c7; text-transform: uppercase; letter-spacing: 0.04em;">AÑO 2026 <span style="font-size: 9px;">⚡</span></span>
                             <div style="font-size: 25px; font-weight: 900; color: #0369a1; margin-top: 2px;">${cov26}%</div>
                         </div>
                     </div>
