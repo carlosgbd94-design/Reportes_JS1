@@ -8354,6 +8354,13 @@ async function refreshAfterMutation(options = {}) {
     if (isOps) {
       scheduleOpsPrewarm(260);
     }
+
+    // 🎯 Refrescar el chip de cumplimiento inmediatamente tras cualquier captura
+    if (touchToday || touchCaptureSummary || touchBio) {
+      if (typeof triggerComplianceStatusUpdate === "function") {
+        await triggerComplianceStatusUpdate();
+      }
+    }
   } catch (e) {
     console.error("refreshAfterMutation error:", e);
   }
