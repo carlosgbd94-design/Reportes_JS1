@@ -3,6 +3,7 @@ playwright-report/
 test-results/
 .env
 .env*
+!.env.example
 *.env
 *.key
 *.json

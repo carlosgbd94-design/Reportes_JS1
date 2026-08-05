@@ -1,5 +1,14 @@
 const { defineConfig, devices } = require('@playwright/test');
 
+// Carga variables de entorno desde ".env" (archivo local, nunca subido a git).
+// Si el archivo no existe todavia, simplemente no se cargan credenciales
+// y las pruebas que las necesiten se saltan solas (ver tests/rls-*.spec.js).
+try {
+  process.loadEnvFile('.env');
+} catch {
+  // No existe .env todavia: normal si aun no configuraste la cuenta de prueba.
+}
+
 module.exports = defineConfig({
   testDir: './tests',
   /* Maximum time one test can run for. */

@@ -1,0 +1,6 @@
+-- Ver conversacion/commit para contexto completo. Resumen: se revoca acceso
+-- anonimo a 18 funciones SECURITY DEFINER que no tenian ningun candado, se
+-- quita SECURITY DEFINER a 5 de ellas porque las tablas que consultan ya
+-- tienen RLS correcto, se acota biologicos_pedido a usuarios autenticados,
+-- y se corrige upsert_poblacion_data(jsonb,integer) que no validaba rol ADMIN.
+-- Aplicado directamente en Supabase (proyecto utclfqjietlxzlorxhrs) el 2026-08-05.

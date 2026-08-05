@@ -359,20 +359,22 @@
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
   <!-- Módulos Avanzados SIREVAQ -->
-  <script src="offline_db.js?v=2026.1" defer></script>
-  <script src="stock_predictor.js?v=2026.1" defer></script>
-  <script src="export_manager.js?v=2026.1" defer></script>
-  <!-- Assets para PDF y Pinol -->
-  <script src="pdf_assets.js" defer></script>
-  <script src="pinol_assets.js" defer></script>
-  <!-- Archivo Principal -->
-  <script src="main.js?v=2026.66" defer></script>
-  <!-- Influenza Meta-Logro Module -->
-  <script src="influenza_module.js" defer></script>
+  <!-- Empaquetado: bundle-head.js = offline_db + stock_predictor + export_manager
+       + pdf_assets + pinol_assets + main + influenza_module, en ese mismo orden.
+       Generado por build-bundle.js. Los archivos originales siguen en el repo
+       (sin borrar) por si hace falta revertir este cambio. -->
+  <script src="dist/bundle-head.js?v=2026.1" defer></script>
 
   <!-- 🔧 Service Worker Registration (PWA) -->
   <script>
     if ('serviceWorker' in navigator) {
+      // Si ya había un Service Worker controlando esta pestaña, un "controllerchange"
+      // mas adelante significa una ACTUALIZACION real (recargar tiene sentido).
+      // Si NO habia ninguno (primera visita, cache borrado, dispositivo nuevo), el
+      // primer "controllerchange" es solo la activacion inicial: recargar aqui
+      // cancelaria a media conexion cualquier accion en curso (ej. iniciar sesion).
+      const hadControllerBeforeRegister = !!navigator.serviceWorker.controller;
+
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
           .then(reg => {
@@ -381,9 +383,15 @@
           })
           .catch(err => console.warn('[PWA] Error al registrar Service Worker:', err));
       });
-      // Recargar automáticamente cuando el nuevo Service Worker tome control
+
       let refreshing = false;
+      let isFirstActivation = !hadControllerBeforeRegister;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (isFirstActivation) {
+          isFirstActivation = false;
+          console.log('[PWA] Primera activación del Service Worker (sin recargar).');
+          return;
+        }
         if (!refreshing) {
           refreshing = true;
           window.location.reload();
@@ -7736,10 +7744,9 @@
   <!-- FOCUS OVERLAY -->
   <div id="focusOverlay" onclick="closeFocusMode()"></div>
 
-  <script defer src="rda_calculator.js?v=2026.14"></script>
-  <script defer src="rda_parser.js?v=2026.14"></script>
-  <script defer src="param_calculator.js?v=2026.19"></script>
-  <script defer src="rda_ui.js?v=2026.16"></script>
+  <!-- Empaquetado: bundle-body.js = rda_calculator + rda_parser + param_calculator
+       + rda_ui, en ese mismo orden. Generado por build-bundle.js. -->
+  <script src="dist/bundle-body.js?v=2026.1" defer></script>
 
   <!-- FEEDBACK FAB & MODAL -->
   <style>

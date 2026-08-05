@@ -1,7 +1,8 @@
 const { test, expect } = require('@playwright/test');
+const { ENTRY_HTML } = require('./_entry');
 
 test('Debug Campaign Dropdown Visibility', async ({ page }) => {
-  await page.goto('/index.html');
+  await page.goto('/' + ENTRY_HTML);
 
   // Evaluar un script para mockear el estado de la aplicación e inicializar el panel
   const debugInfo = await page.evaluate(async () => {

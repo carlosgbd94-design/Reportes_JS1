@@ -1,9 +1,10 @@
 const { test, expect } = require('@playwright/test');
+const { ENTRY_HTML } = require('./_entry');
 
 test.describe('SIREVAQ Login Flow', () => {
   test('debería mostrar la pantalla de login al cargar la página', async ({ page }) => {
     // Navegar a la página principal
-    await page.goto('/index.html');
+    await page.goto('/' + ENTRY_HTML);
 
     // Verificar que el título sea correcto
     await expect(page).toHaveTitle(/SIREVAQ/);
