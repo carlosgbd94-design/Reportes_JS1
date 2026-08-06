@@ -946,8 +946,9 @@ body:has(#loginWrapper:not(.hidden)) {
 
 .liquidGL {
     background: rgba(255, 255, 255, 0.15) !important; /* Casi transparente para Liquid Glass puro */
-    backdrop-filter: url(#liquid-glass-refraction) blur(10px) saturate(140%) !important;
-    -webkit-backdrop-filter: blur(10px) saturate(140%) !important;
+    /* backdrop-filter: lo aplica en vivo initHeaderGlass() (main.js) vía estilo inline
+       con !important, que siempre gana sobre esta regla — se quita de aquí para no
+       dejar una declaración muerta que confunda a futuras ediciones. */
     border: 1px solid rgba(255, 255, 255, 0.4) !important;
     box-shadow: 
         inset 1.5px 1.5px 1px rgba(255, 255, 255, 0.4),
@@ -5888,6 +5889,11 @@ input[disabled] {
   /* Ocupa el espacio restante */
   scrollbar-width: thin;
   scrollbar-color: var(--modal-accent) transparent;
+  /* Aísla el repintado de esta lista al hacer scroll, para que no arrastre
+     al navegador a repintar también el modal/fondo desenfocado detrás
+     (causa del lag al hacer scroll dentro de la card). */
+  contain: layout paint;
+  transform: translateZ(0);
 }
 
 .modalBody::-webkit-scrollbar {
@@ -6149,8 +6155,9 @@ input[disabled] {
 .GlassContent {
     position: relative !important;
     background: transparent !important; /* NO WHITE BLUR - RULE 16 */
-    backdrop-filter: blur(12px) saturate(210%) contrast(1.15) !important; /* Rules 17 & 18 */
-    -webkit-backdrop-filter: blur(12px) saturate(210%) contrast(1.15) !important;
+    /* backdrop-filter: lo aplica en vivo initHeaderGlass() (main.js) vía estilo inline
+       con !important, que siempre gana sobre esta regla — se quita de aquí para no
+       dejar una declaración muerta que confunda a futuras ediciones. */
     border: 1px solid rgba(255, 255, 255, 0.35) !important;
     border-radius: inherit;
     box-shadow: 
@@ -7065,11 +7072,11 @@ input, textarea, select, [contenteditable] {
 .GlassContent {
     position: relative !important;
     background: var(--glass-bg, rgba(255, 255, 255, 0.05)) !important; /* Higher Transparency */
-    
-    /* THE LIQUID ENGINE (Refined Transparency) */
-    backdrop-filter: url(#liquid-glass-refraction) blur(1.5px) saturate(160%) !important;
-    -webkit-backdrop-filter: blur(1.5px) saturate(160%) !important;
-    
+
+    /* backdrop-filter: lo aplica en vivo initHeaderGlass() (main.js) vía estilo inline
+       con !important, que siempre gana sobre esta regla — se quita de aquí para no
+       dejar una declaración muerta que confunda a futuras ediciones. */
+
     /* THE PHYSICAL BEVEL SYSTEM */
     border: 1px solid rgba(255, 255, 255, 0.4) !important;
     border-radius: var(--corner-radius, 100px) !important;
@@ -7554,6 +7561,322 @@ input, textarea, select, [contenteditable] {
 .nav-tab.active[onclick*="'BIO'"] .material-symbols-rounded { color: #e11d48; }  /* Red (Pedido) */
 .nav-tab.active[onclick*="'INFLUENZA'"] .material-symbols-rounded { color: #f1bdad; } /* Light Salmon (Official Influenza Color) */
 .nav-tab.active[onclick*="'PINOL'"] .material-symbols-rounded { color: #d97706; } /* Orange (Pinol) */
+
+/* ==========================================================================
+   NAV TABS RESPONSIVE (Escalado fluido + Modo compacto "solo ícono")
+   Aplica a TODAS las botoneras .nav-container (Operaciones, Unidad, Admin,
+   Influenza, Captura). En vez de romper/desbordarse al comprimir la página,
+   el texto se reduce de forma continua y, si aun así no cabe, colapsa a
+   íconos con tooltip. El modo compacto se activa por JS midiendo el ancho
+   real disponible (no por breakpoints fijos, ya que cada botonera tiene un
+   número distinto de pestañas).
+   ========================================================================== */
+.nav-container {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.nav-tab {
+  padding: 0 clamp(12px, 1.6vw, 24px);
+  gap: clamp(6px, 0.9vw, 10px);
+  font-size: clamp(11.5px, 1.05vw, 13.5px);
+}
+
+.nav-tab .material-symbols-rounded {
+  font-size: clamp(18px, 1.7vw, 24px);
+}
+
+.nav-tab span:not(.material-symbols-rounded) {
+  transition: opacity 0.25s ease, width 0.25s ease, margin 0.25s ease;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.nav-container.nav-compact .nav-tab {
+  padding: 0 12px;
+  gap: 0;
+}
+
+.nav-container.nav-compact .nav-tab span:not(.material-symbols-rounded) {
+  opacity: 0;
+  width: 0;
+  margin: 0;
+  display: inline-block;
+}
+
+/* ==========================================================================
+   BLOQUEO DE SCROLL DE FONDO (con modal abierto)
+   Clase que aplica el MutationObserver de main.js (initModalScrollLock).
+   ========================================================================== */
+html.sirevaq-scroll-locked,
+html.sirevaq-scroll-locked body {
+  overflow: hidden !important;
+  overscroll-behavior: contain;
+}
+
+/* Con un modal abierto (backdrop-filter activo), cualquier animación de
+   fondo que siga corriendo obliga al navegador a recalcular el desenfoque
+   en cada frame — es la causa real del lag, no el blur en sí. Se pausan
+   las animaciones decorativas de "infinite" mientras el modal está abierto;
+   se reanudan solas al cerrarlo (nada se elimina, solo se congela un rato). */
+html.sirevaq-scroll-locked .tech-node-light,
+html.sirevaq-scroll-locked .bounce-logo,
+html.sirevaq-scroll-locked .btn-glow,
+html.sirevaq-scroll-locked .btn-save-animate {
+  animation-play-state: paused !important;
+}
+
+/* (Antes ocultábamos #mainHeader completo mientras había un modal abierto,
+   asumiendo que siempre quedaba 100% tapado. No es cierto para modales
+   centrados con padding (como el de notificaciones) — el header se alcanzaba
+   a ver detrás, y visibility:hidden lo dejaba con las píldoras vacías/rotas
+   al reaparecer. Se quitó: el ahorro de rendimiento no valía el bug visual.) */
+
+/* ==========================================================================
+   MODAL DE NOTIFICACIÓN — LIQUID GLASS + PERSONALIDAD
+   Estilo 100% en CSS propio (no clases de Tailwind): este proyecto usa un
+   Tailwind compilado estáticamente que solo trae las clases ya usadas en el
+   resto del sitio — combinaciones nuevas (opacidades, valores arbitrarios,
+   animate-in, gradientes) no generan ninguna regla real.
+   ========================================================================== */
+.notif-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.45);
+  /* Igual filosofía que Live View: sin blur (carísimo en pantalla completa),
+     solo oscurecido. El vidrio real vive en el header de la tarjeta. */
+  backdrop-filter: brightness(0.6) saturate(1.1);
+  -webkit-backdrop-filter: brightness(0.6) saturate(1.1);
+}
+
+.notif-modal-overlay.hidden {
+  display: none;
+}
+
+/* Tarjeta — Suave neumórfico + Liquid Glass (superficie de vidrio lechoso
+   con blur real y relieve suave tallado, en vez del header sólido/gris de
+   las primeras versiones). Sin motor SVG de aberración cromática: es CSS
+   puro (backdrop-filter blur), mucho más barato — no lo necesita, este
+   modal se abre/cierra todo el tiempo durante el trabajo diario. */
+.notif-modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  max-height: 90vh;
+  border-radius: 30px;
+  padding: 26px;
+  overflow-y: auto;
+  /* Personalidad: color según el tipo de notificación (lo define
+     openNotifDetailModal vía --notif-*), en vez de un azul fijo para todas. */
+  --notif-glow: rgba(2, 132, 199, 0.32);
+  --notif-accent: #0284c7;
+  --notif-badge-text: #075985;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(76px) saturate(150%);
+  -webkit-backdrop-filter: blur(76px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 25px 60px -15px var(--notif-glow),
+    14px 14px 32px rgba(0, 0, 0, 0.35),
+    -8px -8px 24px rgba(255, 255, 255, 0.04),
+    inset 0 1px 1px rgba(255, 255, 255, 0.7);
+  will-change: transform, opacity;
+  transition: box-shadow 0.4s ease;
+  animation: notifCardIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.notif-modal-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0) 45%);
+}
+
+.notif-modal-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Animación de entrada: opacity + transform (baratas, compuestas por GPU) —
+   nada de propiedades caras de repintar, para que corra fluida a 60fps. */
+@keyframes notifCardIn {
+  0% { opacity: 0; transform: scale(0.94) translateY(10px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.notif-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.notif-icon-badge {
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.5);
+  box-shadow: inset 3px 3px 7px rgba(15, 23, 42, 0.14), inset -3px -3px 7px rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  color: var(--notif-accent);
+  transition: color 0.3s ease;
+}
+
+.notif-icon-badge .material-symbols-rounded {
+  font-size: 21px;
+}
+
+/* Botón cerrar con animación premium: gira al pasar el mouse. */
+.notif-close-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.35);
+  color: #475569;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 3px 3px 7px rgba(15, 23, 42, 0.14), -3px -3px 7px rgba(255, 255, 255, 0.5);
+  transition: background-color 0.2s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.notif-close-btn .material-symbols-rounded {
+  font-size: 17px;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.notif-close-btn:hover {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.notif-close-btn:hover .material-symbols-rounded {
+  transform: rotate(90deg);
+}
+
+.notif-close-btn:active {
+  transform: scale(0.9);
+}
+
+.notif-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 16px 0 2px;
+  line-height: 1.3;
+}
+
+.notif-meta {
+  font-size: 11.5px;
+  color: #3f4d63;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Insignia de tipo: sin chip/píldora — solo un punto de color + texto. */
+.notif-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--notif-badge-text);
+}
+
+.notif-type-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--notif-badge-text);
+  flex-shrink: 0;
+}
+
+.notif-message {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #334155;
+  background: rgba(255, 255, 255, 0.4);
+  box-shadow: inset 2px 2px 6px rgba(15, 23, 42, 0.08), inset -2px -2px 6px rgba(255, 255, 255, 0.55);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.notif-sender {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 0;
+  font-size: 11.5px;
+  color: #475569;
+  font-weight: 600;
+}
+
+.notif-sender .material-symbols-rounded {
+  font-size: 15px;
+  color: var(--notif-accent);
+}
+
+.notif-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.notif-btn-ghost,
+.notif-btn-primary {
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.notif-btn-ghost {
+  color: #475569;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 4px 4px 10px rgba(15, 23, 42, 0.12), -4px -4px 10px rgba(255, 255, 255, 0.5);
+}
+
+.notif-btn-ghost:hover {
+  transform: translateY(-1px);
+}
+
+.notif-btn-primary {
+  color: #fff;
+  background: linear-gradient(135deg, var(--notif-accent), color-mix(in srgb, var(--notif-accent) 70%, black));
+  border: none;
+  box-shadow: 0 8px 18px -6px var(--notif-glow), 4px 4px 10px rgba(15, 23, 42, 0.2);
+}
+
+.notif-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px -6px var(--notif-glow), 4px 4px 10px rgba(15, 23, 42, 0.2);
+}
 
 /* ==========================================================================
    COMMAND HUB & PREMIUM ACTION CHIPS
@@ -10410,9 +10733,18 @@ html body .modern-input-group input[type="date"]:focus,
 #liveViewOverlay.show {
   animation: premiumOverlayFadeIn 0.3s ease-out forwards !important;
   display: flex !important; /* Ensure it is flex */
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  background-color: rgba(15, 23, 42, 0.3) !important;
+  /* Sin blur: en vez de desenfocar (caro, requiere mezclar píxeles vecinos),
+     solo se oscurece lo que hay detrás (cálculo por píxel, mucho más barato
+     que blur — casi gratis en equipos sin tarjeta gráfica dedicada). Da un
+     efecto tipo "spotlight/atenuado" en vez de vidrio esmerilado. */
+  backdrop-filter: brightness(0.55) saturate(1.1) !important;
+  -webkit-backdrop-filter: brightness(0.55) saturate(1.1) !important;
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  /* Le avisa al navegador de antemano que esto va a animarse y a desenfocar
+     el fondo, para que prepare su propia capa GPU ANTES de que empiece la
+     animación, en vez de decidirlo a medio vuelo (eso causaba el tropiezo
+     justo en el instante de abrir). */
+  will-change: opacity, backdrop-filter;
 }
 
 @keyframes premiumOverlayFadeIn {
@@ -10435,6 +10767,7 @@ html body .modern-input-group input[type="date"]:focus,
 #passwordOverlay.show .GlassContainer,
 #liveViewOverlay.show .GlassContainer {
   animation: premiumModalScaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+  will-change: transform, opacity;
 }
 
 @keyframes premiumModalScaleIn {
@@ -10673,61 +11006,14 @@ html body .modern-input-group input[type="date"]:focus,
   transform: translateY(0) scale(0.95);
 }
 
-/* Fix modalNotifDetail layout & High Contrast Styles */
-#modalNotifDetail {
-  position: fixed !important;
-  inset: 0 !important;
-  z-index: 99999 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  padding: 16px !important;
-  background: rgba(15, 23, 42, 0.75) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-}
-
+/* Fix modalNotifDetail layout & High Contrast Styles
+   (Nota: este bloque forzaba con !important un diseño anterior del modal —
+   fondo con blur pesado, header degradado plano, tamaños de ícono viejos.
+   Chocaba directo con el rediseño de vidrio líquido de "MODAL DE
+   NOTIFICACIÓN — LIQUID GLASS + PERSONALIDAD" más arriba. Se deja solo lo
+   que sigue siendo válido: ocultar con .hidden y el contraste del mensaje.) */
 #modalNotifDetail.hidden {
   display: none !important;
-}
-
-#modalNotifDetail > div {
-  width: 100% !important;
-  max-width: 560px !important;
-  margin: auto !important;
-  background: #ffffff !important;
-  border-radius: 24px !important;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35) !important;
-  overflow: hidden !important;
-  border: 1px solid rgba(226, 232, 240, 0.9) !important;
-}
-
-/* Modal Header contrast fix */
-#modalNotifDetail .bg-gradient-to-r {
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
-  padding: 18px 24px !important;
-}
-
-#modalNotifDetail .w-10.h-10 {
-  background: rgba(14, 165, 233, 0.2) !important;
-  border: 1px solid rgba(56, 189, 248, 0.4) !important;
-  color: #38bdf8 !important;
-}
-
-#modalNotifDetail .w-10.h-10 span {
-  font-size: 24px !important;
-  color: #38bdf8 !important;
-}
-
-/* Modal Close Button */
-#modalNotifDetail button[onclick="closeNotifDetailModal()"] {
-  background: rgba(255, 255, 255, 0.15) !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
-  transition: all 0.2s ease !important;
-}
-#modalNotifDetail button[onclick="closeNotifDetailModal()"]:hover {
-  background: rgba(255, 255, 255, 0.25) !important;
 }
 
 /* Modal Body text contrast */
@@ -10738,24 +11024,6 @@ html body .modern-input-group input[type="date"]:focus,
   font-size: 14px !important;
   line-height: 1.6 !important;
   font-weight: 500 !important;
-}
-
-/* Modal Footer Buttons high contrast */
-#modalNotifDetail .bg-slate-100\/80 {
-  background: #f1f5f9 !important;
-  border-top: 1px solid #e2e8f0 !important;
-  padding: 14px 24px !important;
-}
-
-#modalNotifDetail button.bg-slate-200 {
-  background: #e2e8f0 !important;
-  color: #1e293b !important;
-  font-weight: 800 !important;
-  border: 1px solid #cbd5e1 !important;
-}
-
-#modalNotifDetail button.bg-slate-200:hover {
-  background: #cbd5e1 !important;
 }
 
 #notifDetailModalReadBtn {

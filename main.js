@@ -2235,9 +2235,45 @@ window.openNotifDetailModal = function(id, title, message, date, sender, scope, 
   const scopeEl = document.getElementById('notifDetailModalScope');
   if (scopeEl) scopeEl.textContent = (scope || 'COMUNICADO INSTITUCIONAL').toUpperCase();
   const senderEl = document.getElementById('notifDetailModalSender');
-  if (senderEl) senderEl.innerHTML = `<span class="material-symbols-rounded text-base text-sky-600">account_circle</span><span>Emitido por: <strong>${escapeHtml(sender || 'Administración')}</strong></span>`;
+  if (senderEl) senderEl.innerHTML = `<span class="material-symbols-rounded">account_circle</span><span>Emitido por: <strong>${escapeHtml(sender || 'Administración')}</strong></span>`;
+
+  // Color/ícono según categoría real de la notificación (misma detección que
+  // usa la lista de notificaciones), en vez del genérico azul/"campaign" fijo.
+  // Se aplica vía variables CSS (--notif-*) en la tarjeta, no clases de
+  // Tailwind: este proyecto usa un Tailwind compilado estático que no trae
+  // combinaciones nuevas de color/opacidad (ver nota en el HTML del modal).
+  const meta = notif && typeof parseNotifMeta === 'function' ? parseNotifMeta(notif.meta_json) : null;
+  const isPinolNotif = (meta && String(meta.source || "").toUpperCase() === "PINOL") ||
+    (meta && meta.event === 'PINOL_SOLICITADO') ||
+    String(title || "").toLowerCase().includes("pinol");
+  const isDesabastoNotif = String(type || "").toUpperCase() === "ALERTA_DESABASTO";
+  const isDesabastoActiveNotif = isDesabastoNotif && meta?.status === "activa";
+
+  // Pinol = verde (el color real del producto, no ámbar). Desabasto
+  // resuelto = teal, para no chocar con el verde de Pinol.
+  let cat = { icon: 'campaign', accent: '#0284c7', badgeText: '#075985', glow: 'rgba(2, 132, 199, 0.32)' };
+  if (isPinolNotif) {
+    cat = { icon: 'inventory_2', accent: '#16a34a', badgeText: '#166534', glow: 'rgba(22, 163, 74, 0.35)' };
+  } else if (isDesabastoActiveNotif) {
+    cat = { icon: 'warning', accent: '#e11d48', badgeText: '#9f1239', glow: 'rgba(225, 29, 72, 0.35)' };
+  } else if (isDesabastoNotif) {
+    cat = { icon: 'check_circle', accent: '#0d9488', badgeText: '#115e59', glow: 'rgba(13, 148, 136, 0.32)' };
+  }
+
+  const iconEl = document.getElementById('notifDetailModalIcon');
+  if (iconEl) iconEl.textContent = cat.icon;
+
   const typeEl = document.getElementById('notifDetailModalType');
-  if (typeEl) typeEl.textContent = (type || 'INFO').toUpperCase();
+  // Sin guión bajo en pantalla (ALERTA_DESABASTO -> ALERTA DESABASTO); el
+  // valor interno de "type" no cambia, solo cómo se muestra.
+  if (typeEl) typeEl.textContent = (type || 'INFO').toUpperCase().replace(/_/g, ' ');
+
+  const cardEl = document.getElementById('notifDetailModalCard');
+  if (cardEl) {
+    cardEl.style.setProperty('--notif-glow', cat.glow);
+    cardEl.style.setProperty('--notif-accent', cat.accent);
+    cardEl.style.setProperty('--notif-badge-text', cat.badgeText);
+  }
 
   const readBtn = document.getElementById('notifDetailModalReadBtn');
   if (readBtn) {
@@ -2256,6 +2292,14 @@ window.closeNotifDetailModal = function() {
   const modal = document.getElementById('modalNotifDetail');
   if (modal) modal.classList.add('hidden');
 };
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const modal = document.getElementById('modalNotifDetail');
+  if (modal && !modal.classList.contains('hidden')) {
+    closeNotifDetailModal();
+  }
+});
 
 function buildNotificationsHtml(items = []) {
   const arr = Array.isArray(items) ? items : [];
@@ -13691,6 +13735,130 @@ window.addEventListener('resize', () => {
 });
 
 /**
+ * BOTONERAS RESPONSIVAS (Auto Compact)
+ * Detecta, para CADA .nav-container del sitio, si sus pestañas caben en el
+ * ancho realmente disponible (el de su contenedor padre). Si no caben,
+ * agrega .nav-compact (colapsa el texto a solo ícono vía CSS). Se re-evalúa
+ * con ResizeObserver sobre el padre (cubre resize de ventana, colapso de
+ * sidebar y paneles que pasan de display:none a visibles) y con el evento
+ * 'resize' como respaldo. Cubre las 6 botoneras del sitio sin necesitar un
+ * selector particular por panel.
+ */
+(function initResponsiveNavTabs() {
+  function ensureTooltip(btn) {
+    if (btn.hasAttribute('title')) return;
+    const label = btn.querySelector('span:not(.material-symbols-rounded)');
+    if (label && label.textContent.trim()) {
+      btn.title = label.textContent.trim();
+    }
+  }
+
+  function repositionIndicator(nav) {
+    const activeBtn = nav.querySelector('.nav-tab.active');
+    const indicator = nav.querySelector('.nav-indicator');
+    if (!activeBtn || !indicator || activeBtn.offsetWidth === 0) return;
+    indicator.style.width = `${activeBtn.offsetWidth}px`;
+    indicator.style.left = `${activeBtn.offsetLeft}px`;
+  }
+
+  function evaluateCompact(nav) {
+    const parent = nav.parentElement;
+    if (!parent || parent.offsetWidth === 0) return;
+
+    nav.classList.remove('nav-compact');
+    const needed = nav.scrollWidth;
+    const available = parent.clientWidth;
+
+    if (needed > available) {
+      nav.classList.add('nav-compact');
+    }
+
+    repositionIndicator(nav);
+  }
+
+  function evaluateAll() {
+    document.querySelectorAll('.nav-container').forEach(evaluateCompact);
+  }
+
+  const navResizeObserver = new ResizeObserver(() => evaluateAll());
+
+  function init() {
+    document.querySelectorAll('.nav-tab').forEach(ensureTooltip);
+    document.querySelectorAll('.nav-container').forEach((nav) => {
+      if (nav.parentElement) navResizeObserver.observe(nav.parentElement);
+    });
+    evaluateAll();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  window.addEventListener('resize', evaluateAll);
+})();
+
+/**
+ * BLOQUEO DE SCROLL DE FONDO PARA MODALES (genérico, cubre TODOS los modales)
+ *
+ * Problema: al abrir cualquier modal (live view, subir CSV, contraseña, etc.)
+ * el contenido de atrás seguía siendo "scrolleable" — además de verse mal,
+ * obligaba al navegador a recalcular el blur del fondo en cada frame de
+ * scroll (causa real del lag reportado, más que el blur en sí).
+ *
+ * En vez de tocar cada función que abre un modal (son más de 30, dispersas
+ * por todo el archivo, con distintas convenciones de clase), se detecta
+ * automáticamente CUALQUIER overlay de pantalla completa visible (position:
+ * fixed, casi del tamaño de la ventana) usando un MutationObserver sobre la
+ * clase "show"/"style", que es la convención que ya usan todos los modales
+ * del sitio. Así funciona para los modales de hoy y los que se agreguen después.
+ */
+(function initModalScrollLock() {
+  function isFullScreenOverlay(el) {
+    const cs = getComputedStyle(el);
+    if (cs.position !== 'fixed') return false;
+    if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) === 0) return false;
+    const rect = el.getBoundingClientRect();
+    return rect.width >= window.innerWidth * 0.9 && rect.height >= window.innerHeight * 0.9;
+  }
+
+  function updateLock() {
+    // No se limita a una convención de clase fija (.show, .overlay, ...): el
+    // sitio mezcla varias (Tailwind "hidden", clases custom, etc.). Se buscan
+    // TODOS los elementos cuyo id o clase contenga "modal"/"overlay" — cubre
+    // las ~30+ ventanas del sitio sin depender de cómo cada una se muestra/oculta.
+    const candidates = document.querySelectorAll(
+      '[id*="modal" i], [id*="overlay" i], [class*="modal" i], [class*="overlay" i]'
+    );
+    const anyOpen = Array.from(candidates).some(isFullScreenOverlay);
+
+    if (anyOpen) {
+      if (!document.documentElement.classList.contains('sirevaq-scroll-locked')) {
+        const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+        if (scrollbarWidth > 0) document.body.style.paddingRight = `${scrollbarWidth}px`;
+        document.documentElement.classList.add('sirevaq-scroll-locked');
+      }
+    } else if (document.documentElement.classList.contains('sirevaq-scroll-locked')) {
+      document.documentElement.classList.remove('sirevaq-scroll-locked');
+      document.body.style.paddingRight = '';
+    }
+  }
+
+  // MutationObserver ya agrupa mutaciones síncronas simultáneas en una sola
+  // llamada (microtarea), así que no hace falta esperar a un frame para
+  // reaccionar — se actualiza de inmediato, sin depender del renderizado.
+  const observer = new MutationObserver(updateLock);
+  observer.observe(document.body, { attributes: true, attributeFilter: ['class', 'style'], subtree: true });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updateLock);
+  } else {
+    updateLock();
+  }
+})();
+
+/**
  * ACTIVATE OPS TAB (Final Refactor - High Fidelity)
  */
 window.activateOpsTab = function (tab) {
@@ -22414,11 +22582,19 @@ if (!window.originalActivateMain) {
 // ============================================================================
 // DYNAMIC HEADER LIQUID GLASS GENERATOR (Lens Refraction + Frosted Blur)
 // ============================================================================
-function initHeaderGlass() {
-  let svgContainer = document.getElementById('header-glass-svg-container');
+/**
+ * Motor genérico de "Liquid Glass" con aberración cromática real (misma
+ * fórmula probada en referenceIOS26Oficial.html). Recibe una lista de
+ * elementos y les aplica el efecto vía un <svg> de filtros propio (para no
+ * chocar IDs con otros usos). Se usa tanto para el header (siempre visible)
+ * como para tarjetas/modales puntuales (se regeneran solo cuando se abren,
+ * no en cada resize global).
+ */
+function applyLiquidGlassEffect(items, svgContainerId, filterPrefix) {
+  let svgContainer = document.getElementById(svgContainerId);
   if (!svgContainer) {
     svgContainer = document.createElement('div');
-    svgContainer.id = 'header-glass-svg-container';
+    svgContainer.id = svgContainerId;
     svgContainer.style.width = '0';
     svgContainer.style.height = '0';
     svgContainer.style.position = 'absolute';
@@ -22426,8 +22602,15 @@ function initHeaderGlass() {
     document.body.appendChild(svgContainer);
   }
 
-  const items = document.querySelectorAll('.header-liquid-glass');
   let svgDefs = '<svg xmlns="http://www.w3.org/2000/svg"><defs>';
+
+  // Parámetros del efecto (afinados para píldoras/tarjetas chicas, no para
+  // tarjetas grandes de demo). Antes STRENGTH=70/BLUR=1.6 se veían
+  // "derretidos" o dejaban ver el texto de fondo — ver conversación previa.
+  const STRENGTH = 14;    // desplazamiento base del refractado
+  const ABERRATION = 1.5; // separación extra por canal R/G/B (el "efecto lente")
+  const EDGE_DEPTH = 8;   // qué tan angosto es el borde que refracta (el centro queda plano)
+  const BLUR = 6;         // desenfoque final del vidrio
 
   items.forEach((item, index) => {
     const rect = item.getBoundingClientRect();
@@ -22435,37 +22618,66 @@ function initHeaderGlass() {
     const height = Math.max(10, Math.round(rect.height));
     const computedStyle = window.getComputedStyle(item);
     let radius = parseInt(computedStyle.borderTopLeftRadius) || 28;
+    const maxRadius = Math.min(width / 2, height / 2);
+    if (radius > maxRadius) radius = maxRadius;
 
-    // Neutral displacement map with a subtle bevel at the edges.
-    // #808080 represents 0 displacement.
-    // We use an inset shadow-like gradient by using a slightly darker/lighter edge.
-    const mapSvg = `<svg viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+    const y1 = Math.min(100, Math.ceil((radius / height) * 15));
+    const y2 = Math.max(0, Math.floor(100 - (radius / height) * 15));
+    const x1 = Math.min(100, Math.ceil((radius / width) * 15));
+    const x2 = Math.max(0, Math.floor(100 - (radius / width) * 15));
+
+    const scaleR = STRENGTH + ABERRATION * 2;
+    const scaleG = STRENGTH + ABERRATION;
+    const scaleB = STRENGTH;
+
+    // Mapa de desplazamiento: el centro queda plano (vidrio "real" no distorsiona
+    // el centro), solo el borde abulta — igual que en el prototipo de referencia.
+    const mapSvg = `<svg height="${height}" width="${width}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
             <defs>
-                <radialGradient id="lensGrad-${index}" cx="50%" cy="50%" r="60%">
-                    <stop offset="60%" stop-color="#808080"/>
-                    <stop offset="100%" stop-color="#404040"/>
-                </radialGradient>
+                <linearGradient id="glassY-${index}" x1="0" x2="0" y1="${y1}%" y2="${y2}%">
+                    <stop offset="0%" stop-color="#0F0" />
+                    <stop offset="100%" stop-color="#000" />
+                </linearGradient>
+                <linearGradient id="glassX-${index}" x1="${x1}%" x2="${x2}%" y1="0" y2="0">
+                    <stop offset="0%" stop-color="#F00" />
+                    <stop offset="100%" stop-color="#000" />
+                </linearGradient>
             </defs>
-            <rect x="0" y="0" width="${width}" height="${height}" rx="${radius}" fill="url(#lensGrad-${index})" />
+            <rect x="0" y="0" height="${height}" width="${width}" fill="#808080" />
+            <g style="filter:blur(2px)">
+                <rect x="0" y="0" height="${height}" width="${width}" fill="#000080" />
+                <rect x="0" y="0" height="${height}" width="${width}" fill="url(#glassY-${index})" style="mix-blend-mode:screen" />
+                <rect x="0" y="0" height="${height}" width="${width}" fill="url(#glassX-${index})" style="mix-blend-mode:screen" />
+                <rect x="${EDGE_DEPTH}" y="${EDGE_DEPTH}" height="${Math.max(0, height - 2 * EDGE_DEPTH)}" width="${Math.max(0, width - 2 * EDGE_DEPTH)}" fill="#808080" rx="${radius}" ry="${radius}" style="filter:blur(${EDGE_DEPTH}px)" />
+            </g>
         </svg>`;
 
     const encodedMap = btoa(unescape(encodeURIComponent(mapSvg)));
     const dataUri = `data:image/svg+xml;base64,${encodedMap}`;
 
-    // Refraction without chromatic aberration + frosted blur
+    // Aberración cromática real: 3 desplazamientos independientes (uno por
+    // canal R/G/B, con distinta fuerza cada uno) recombinados con feBlend.
+    // Igual que en referenceIOS26Oficial.html.
     svgDefs += `
-            <filter id="headerGlassFilter-${index}" x="-20%" y="-20%" width="140%" height="140%">
-                <!-- Load the displacement map -->
-                <feImage x="0" y="0" width="${width}" height="${height}" result="map" href="${dataUri}"></feImage>
-                
-                <!-- Displace the background cleanly -->
-                <feDisplacementMap in="SourceGraphic" in2="map" xChannelSelector="R" yChannelSelector="G" scale="18" result="refraction" />
-                
-                <!-- Frosted blur effect (CONTROL DE TRANSPARENCIA / BLUR) -->
-                <!-- Cambia el valor de stdDeviation para más o menos blur. Ej: 0.5 (muy transparente), 4.0 (muy borroso) -->
-                <feGaussianBlur in="refraction" stdDeviation="1.3" result="frosted" />
-                
-                <!-- Slight brightness boost -->
+            <filter id="${filterPrefix}-${index}" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+                <feImage x="0" y="0" width="${width}" height="${height}" href="${dataUri}" result="map" />
+
+                <feDisplacementMap in="SourceGraphic" in2="map" scale="${scaleR}" xChannelSelector="R" yChannelSelector="G" />
+                <feColorMatrix type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="dispR" />
+
+                <feDisplacementMap in="SourceGraphic" in2="map" scale="${scaleG}" xChannelSelector="R" yChannelSelector="G" />
+                <feColorMatrix type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="dispG" />
+
+                <feDisplacementMap in="SourceGraphic" in2="map" scale="${scaleB}" xChannelSelector="R" yChannelSelector="G" />
+                <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="dispB" />
+
+                <feBlend in="dispR" in2="dispG" mode="screen" result="rgBlend" />
+                <feBlend in="rgBlend" in2="dispB" mode="screen" result="refraction" />
+
+                <!-- Desenfoque final (CONTROL DE TRANSPARENCIA / BLUR) -->
+                <feGaussianBlur in="refraction" stdDeviation="${BLUR}" result="frosted" />
+
+                <!-- Realce leve de brillo -->
                 <feComponentTransfer in="frosted">
                     <feFuncR type="linear" slope="1.05"/>
                     <feFuncG type="linear" slope="1.05"/>
@@ -22474,12 +22686,16 @@ function initHeaderGlass() {
             </filter>
         `;
 
-    item.style.setProperty('backdrop-filter', `url(#headerGlassFilter-${index})`, 'important');
-    item.style.setProperty('-webkit-backdrop-filter', `url(#headerGlassFilter-${index})`, 'important');
+    item.style.setProperty('backdrop-filter', `url(#${filterPrefix}-${index})`, 'important');
+    item.style.setProperty('-webkit-backdrop-filter', `url(#${filterPrefix}-${index})`, 'important');
   });
 
   svgDefs += '</defs></svg>';
   svgContainer.innerHTML = svgDefs;
+}
+
+function initHeaderGlass() {
+  applyLiquidGlassEffect(document.querySelectorAll('.header-liquid-glass'), 'header-glass-svg-container', 'headerGlassFilter');
 }
 
 window.addEventListener('resize', () => {

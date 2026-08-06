@@ -287,12 +287,9 @@
       transform: scale(1) rotate(0deg) !important;
     }
 
-    /* Ajuste para que quepan las 8 pestañas de administración en la botonera */
-    #panelAdminSecurityTabs .nav-tab {
-      padding: 0 10px !important;
-      gap: 4px !important;
-      font-size: 11px !important;
-    }
+    /* Nota: el ajuste de espaciado de esta botonera (8 pestañas) ahora lo maneja
+       el sistema responsivo genérico de .nav-container/.nav-tab en style.css
+       (escalado fluido + modo compacto automático), ver "NAV TABS RESPONSIVE". */
 
     /* 📌 Standardized Pill Input Style for Native Dropdowns & Date Inputs */
     .src-pill-input {
@@ -7117,7 +7114,7 @@
   <div id="liveViewOverlay" class="overlay" aria-hidden="true"
     style="z-index: 10000; align-items:center; justify-content:center; padding: 0;">
     <div class="modal"
-      style="width: 100%; max-width: 1180px; height: 95vh; display: flex; flex-direction: column; background: var(--md-sys-color-surface); border-radius: 32px; overflow: hidden; box-shadow: 0 40px 100px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);">
+      style="width: 100%; max-width: 1180px; height: 95vh; display: flex; flex-direction: column; background: var(--md-sys-color-surface); border-radius: 32px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2);">
 
       <!-- Header con Identidad Visual Fuerte -->
       <div class="modalHeader"
@@ -8806,53 +8803,35 @@
     </div>
   </dialog>
 
-  <!-- 🔔 MODAL DE LECTURA COMPLETA DE NOTIFICACIÓN (LIQUID GLASS) -->
-  <div id="modalNotifDetail"
-    class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/75 backdrop-blur-md hidden transition-opacity duration-300">
-    <div
-      class="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
-      <!-- Modal Header -->
-      <div
-        class="px-6 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-between border-b border-slate-700/50">
-        <div class="flex items-center gap-3">
-          <div
-            class="w-10 h-10 rounded-2xl bg-sky-500/20 border border-sky-400/30 flex items-center justify-center text-sky-400">
-            <span class="material-symbols-rounded text-2xl">campaign</span>
-          </div>
-          <div>
-            <h3 class="text-base font-extrabold tracking-wide text-white" id="notifDetailModalScope">COMUNICADO
-              INSTITUCIONAL</h3>
-            <p class="text-xs text-slate-300 font-medium" id="notifDetailModalDate">—</p>
-          </div>
+  <!-- 🔔 MODAL DE LECTURA COMPLETA DE NOTIFICACIÓN (LIQUID GLASS)
+       Nota: todo el estilo de este modal vive en CSS propio (style.css,
+       sección "MODAL DE NOTIFICACIÓN"), NO en clases de Tailwind — este
+       proyecto usa un Tailwind compilado estáticamente (tailwind_compiled.css)
+       que solo incluye las clases usadas en el resto del sitio; combinaciones
+       nuevas (colores con opacidad, valores arbitrarios, animate-in, etc.)
+       no generan ninguna regla y quedan silenciosamente sin efecto. -->
+  <div id="modalNotifDetail" class="notif-modal-overlay hidden">
+    <div id="notifDetailModalCard" class="notif-modal-card">
+      <div class="notif-top">
+        <div id="notifDetailModalIconBg" class="notif-icon-badge">
+          <span class="material-symbols-rounded" id="notifDetailModalIcon">campaign</span>
         </div>
-        <button type="button" onclick="closeNotifDetailModal()"
-          class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors">
-          <span class="material-symbols-rounded text-xl">close</span>
+        <button type="button" onclick="closeNotifDetailModal()" class="notif-close-btn" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
         </button>
       </div>
-      <!-- Modal Body -->
-      <div class="p-6 overflow-y-auto flex-1 space-y-4">
-        <div id="notifDetailModalTitle" class="text-xl font-black text-slate-900 leading-snug"></div>
-        <div
-          class="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 text-slate-800 text-sm leading-relaxed font-normal whitespace-pre-wrap break-words"
-          id="notifDetailModalMessage"></div>
-        <div
-          class="flex items-center justify-between pt-2 text-xs text-slate-500 font-semibold border-t border-slate-100">
-          <div class="flex items-center gap-1.5" id="notifDetailModalSender">
-            <span class="material-symbols-rounded text-base text-sky-600">account_circle</span>
-            <span>Emitido por: —</span>
-          </div>
-          <div id="notifDetailModalType" class="px-2.5 py-1 rounded-full bg-sky-100 text-sky-800 text-[11px] font-bold">
-            INFO</div>
-        </div>
-      </div>
-      <!-- Modal Footer -->
-      <div class="px-6 py-4 bg-slate-100/80 border-t border-slate-200/80 flex items-center justify-end gap-3">
-        <button type="button" onclick="closeNotifDetailModal()"
-          class="px-5 py-2.5 rounded-full text-xs font-bold text-slate-700 bg-slate-200 hover:bg-slate-300 transition-colors">Cerrar</button>
-        <button type="button" id="notifDetailModalReadBtn"
-          class="px-5 py-2.5 rounded-full text-xs font-bold text-white bg-sky-600 hover:bg-sky-700 transition-colors shadow-md flex items-center gap-1.5">
-          <span class="material-symbols-rounded text-base">done_all</span> Marcar como Leída
+      <div id="notifDetailModalTitle" class="notif-title"></div>
+      <p class="notif-meta"><span id="notifDetailModalScope">COMUNICADO INSTITUCIONAL</span> · <span id="notifDetailModalDate">—</span></p>
+      <div id="notifDetailModalType" class="notif-type-badge">INFO</div>
+      <div id="notifDetailModalMessage" class="notif-message"></div>
+      <p class="notif-sender" id="notifDetailModalSender">
+        <span class="material-symbols-rounded">account_circle</span>
+        <span>Emitido por: —</span>
+      </p>
+      <div class="notif-modal-footer">
+        <button type="button" onclick="closeNotifDetailModal()" class="notif-btn-ghost">Cerrar</button>
+        <button type="button" id="notifDetailModalReadBtn" class="notif-btn-primary">
+          <span class="material-symbols-rounded">done_all</span> Marcar como Leída
         </button>
       </div>
     </div>
