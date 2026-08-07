@@ -203,7 +203,17 @@ let BATCH_CATALOG = [];
 let UNIT_BATCHES = [];
 
 // 🏆 GLOBAL ERROR BOUNDARY (Senior Safety Net)
+// Solo reacciona a errores que vienen de nuestros propios scripts. Sin este
+// filtro, cualquier extension del navegador (React DevTools/installHook.js,
+// etc.) que truene en la pestaña disparaba un toast falso de "Error en el
+// reporte" aunque SIREVAQ no tuviera ningun problema real.
 window.addEventListener('error', (event) => {
+  const filename = event.filename || "";
+  const isOwnScript = /\/(bundle-head|bundle-body|main|rda_ui|rda_parser|rda_calculator|param_calculator|influenza_module|offline_db|export_manager|pdf_assets|pinol_assets|stock_predictor|sirevaq_storage|sirevaq_utils)\.js/.test(filename);
+  if (!isOwnScript) {
+    console.warn('[Ignored Error] (script externo/extension, no es de SIREVAQ)', filename || '(sin origen)', event.error);
+    return;
+  }
   console.error(' [Fatal Error] ', event.error);
   if (typeof showToast === 'function') showToast("Error inesperado en la interfaz", false, "bad");
 });
@@ -14976,11 +14986,35 @@ if ($("btnDoExport")) $("btnDoExport").onclick = async () => {
 };
 
 /**
+ * Carga bajo demanda pdf_assets.js (imagenes base64 del membrete/pie de
+ * Resguardo). Antes venia empacado en bundle-head.js y pesaba en CADA carga
+ * de la app aunque casi nadie exporte ese PDF; ahora solo se descarga la
+ * primera vez que se necesita.
+ */
+let _pdfAssetsLoadPromise = null;
+function ensurePdfAssetsLoaded() {
+  if (window.RESGUARDO_IMG_FOOTER) return Promise.resolve();
+  if (_pdfAssetsLoadPromise) return _pdfAssetsLoadPromise;
+  _pdfAssetsLoadPromise = new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "pdf_assets.js";
+    script.onload = () => resolve();
+    script.onerror = () => {
+      console.warn("[PDF] No se pudieron cargar las imagenes de membrete/pie; se generara el PDF sin ellas.");
+      resolve();
+    };
+    document.head.appendChild(script);
+  });
+  return _pdfAssetsLoadPromise;
+}
+
+/**
  * Generador de PDF de Resguardo Profesional Oficial (Cliente)
  */
 async function generarPDFResguardoSR(municipios, fIni, fFin, isUnitExport = false) {
   showOverlay("Preparando PDF...", "PDF");
   try {
+    await ensurePdfAssetsLoaded();
     const groups = {};
 
     if (isUnitExport) {

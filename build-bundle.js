@@ -16,11 +16,13 @@ const path = require('path');
 const DIST_DIR = path.join(__dirname, 'dist');
 
 // Mismo orden exacto en el que index.html los carga hoy (ver <head>, linea ~362-371).
+// pdf_assets.js (imagenes base64 del PDF de Resguardo) se excluye a proposito:
+// main.js ahora lo carga bajo demanda (ver ensurePdfAssetsLoaded) solo cuando
+// se exporta ese PDF, en vez de pesar en el bundle de cada carga de la app.
 const GROUP_HEAD = [
   'offline_db.js',
   'stock_predictor.js',
   'export_manager.js',
-  'pdf_assets.js',
   'pinol_assets.js',
   'main.js',
   'influenza_module.js',

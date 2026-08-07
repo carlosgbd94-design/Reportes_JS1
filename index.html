@@ -23,13 +23,16 @@
   <script src="https://js.sentry-cdn.com/ad5eb763bc0b321edddbb0ce59e2c0f0.min.js" crossorigin="anonymous"></script>
 
   <!-- Dexie.js (IndexedDB Wrapper), SheetJS (XLSX Export) & Lucide Icons -->
-  <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- defer: no bloquean el parseo/primer render; siguen ejecutando en este
+       mismo orden (justo antes de bundle-head.js) porque los scripts defer
+       corren en orden de documento, asi que la dependencia se conserva. -->
+  <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+  <script src="https://unpkg.com/lucide@latest" defer></script>
 
   <!-- Módulos de Optimización y Modales SIREVAQ -->
-  <script src="sirevaq_storage.js"></script>
-  <script src="sirevaq_utils.js"></script>
+  <script src="sirevaq_storage.js" defer></script>
+  <script src="sirevaq_utils.js" defer></script>
 
   <!-- PostHog Analytics -->
   <script>
@@ -357,10 +360,12 @@
 
   <!-- Módulos Avanzados SIREVAQ -->
   <!-- Empaquetado: bundle-head.js = offline_db + stock_predictor + export_manager
-       + pdf_assets + pinol_assets + main + influenza_module, en ese mismo orden.
+       + pinol_assets + main + influenza_module, en ese mismo orden.
+       pdf_assets.js YA NO se empaqueta aqui: main.js lo carga bajo demanda
+       (ensurePdfAssetsLoaded) solo al exportar el PDF de Resguardo.
        Generado por build-bundle.js. Los archivos originales siguen en el repo
        (sin borrar) por si hace falta revertir este cambio. -->
-  <script src="dist/bundle-head.js?v=2026.1" defer></script>
+  <script src="dist/bundle-head.js?v=2026.2" defer></script>
 
   <!-- 🔧 Service Worker Registration (PWA) -->
   <script>
@@ -3786,7 +3791,7 @@
             </div>
           </div>
 
-          <div id="panelAdminSecurityTabs" data-role-gate="ADMIN" class="contain-layout">
+          <div id="panelAdminSecurityTabs" data-role-gate="ADMIN" class="contain-layout min-w-0">
             <div class="nav-container">
               <div id="adminTabIndicator" class="nav-indicator nav-indicator-premium"></div>
 

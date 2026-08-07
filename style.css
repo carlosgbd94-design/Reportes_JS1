@@ -7317,7 +7317,12 @@ input, textarea, select, [contenteditable] {
   font-size: 13.5px;
   font-weight: 800;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  /* Solo "color" (no "all"): el boton tambien tiene padding/gap/font-size
+     fluidos por vw (ver bloque NAV TABS RESPONSIVE mas abajo) y con "all"
+     esos cambios de tamano por resize quedaban animados 0.4s, asi que el
+     JS de resize leia anchos a medio-animar y el indicador se desincronizaba
+     del boton activo (se "perdia") al soltar el arrastre de la ventana. */
+  transition: color 0.4s cubic-bezier(0.23, 1, 0.32, 1);
   z-index: 10;
   border: none !important;
   background: transparent !important;
@@ -7521,7 +7526,12 @@ input, textarea, select, [contenteditable] {
   font-size: 13.5px;
   font-weight: 800;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  /* Solo "color" (no "all"): el boton tambien tiene padding/gap/font-size
+     fluidos por vw (ver bloque NAV TABS RESPONSIVE mas abajo) y con "all"
+     esos cambios de tamano por resize quedaban animados 0.4s, asi que el
+     JS de resize leia anchos a medio-animar y el indicador se desincronizaba
+     del boton activo (se "perdia") al soltar el arrastre de la ventana. */
+  transition: color 0.4s cubic-bezier(0.23, 1, 0.32, 1);
   z-index: 10;
   border: none !important;
   background: transparent !important;
