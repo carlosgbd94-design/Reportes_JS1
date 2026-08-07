@@ -793,7 +793,6 @@ function updateOverlayProgress(current, total, detailMsg = "", title = "Procesan
 }
 
 function hideOverlay() {
-  if (window._isBatchExporting) return;
   const mainOverlay = $("overlay");
   if (mainOverlay) mainOverlay.classList.remove("show");
   const pOverlay = $("progressOverlay");

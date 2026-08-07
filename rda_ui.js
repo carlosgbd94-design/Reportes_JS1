@@ -1881,18 +1881,32 @@ function renderTable(fUnits, esquema, agg) {
         const pct = typeof v === 'number' ? v : (parseFloat(v) || 0);
         let statusText = 'ÓPTIMO';
         let statusColor = '#15803d';
+        // Check-circle
+        let statusIcon = '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>';
         if (pct < 80) {
             statusText = 'CRÍTICO';
             statusColor = '#dc2626';
+            // Triángulo de alerta
+            statusIcon = '<path d="M12 3l9 16H3z"/><line x1="12" y1="10" x2="12" y2="14"/><circle cx="12" cy="16.6" r=".6" fill="currentColor" stroke="none"/>';
         } else if (pct < 95) {
             statusText = 'REGULAR';
             statusColor = '#d97706';
+            // Círculo con guion (estado intermedio)
+            statusIcon = '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><circle cx="12" cy="16.3" r=".6" fill="currentColor" stroke="none"/>';
         }
+        const barPct = Math.max(0, Math.min(100, pct));
 
         return `
-            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div style="font-size: 13px; font-weight: 900; color: #0f172a; line-height: 1.2;">${pct}%</div>
-                <div style="font-size: 9px; font-weight: 800; color: ${statusColor}; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.1; margin-top: 1px;">${statusText}</div>
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;" title="${statusText}">
+                <div style="display: inline-flex; align-items: center; gap: 5px;">
+                    <span style="display: flex; align-items: center; justify-content: center; color: ${statusColor}; flex-shrink: 0;">
+                        <svg viewBox="0 0 24 24" width="13" height="13" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;">${statusIcon}</svg>
+                    </span>
+                    <span style="font-size: 13px; font-weight: 900; color: #0f172a; line-height: 1.2;">${pct}%</span>
+                </div>
+                <span style="display: block; width: 52px; height: 4px; border-radius: 2px; background: #eef1f6; overflow: hidden;">
+                    <span style="display: block; height: 100%; border-radius: 2px; width: ${barPct}%; background: ${statusColor};"></span>
+                </span>
             </div>
         `;
     };
@@ -2945,6 +2959,7 @@ async function exportMasivoZIP(mode = 'pdf') {
     }
 
     window._isBatchExporting = true;
+    try {
     const labelProceso = isJpeg ? 'ZIP Imágenes JPEG' : (mode === 'png' ? 'ZIP Imágenes PNG HD' : 'ZIP PDFs');
     
     const setOverlayProgress = (current, total, name, modeStr) => {
@@ -3121,7 +3136,6 @@ async function exportMasivoZIP(mode = 'pdf') {
         console.error('[RDA ZIP]', e);
         if (typeof showToast === 'function') showToast('Error en exportación masiva', false, 'bad');
     } finally {
-        window._isBatchExporting = false;
         if (originalChartAnim !== null && typeof Chart !== 'undefined') {
             Chart.defaults.animation = originalChartAnim;
         }
@@ -3133,6 +3147,9 @@ async function exportMasivoZIP(mode = 'pdf') {
 
         removeOverlayProgress();
         if (typeof hideOverlay === 'function') hideOverlay();
+    }
+    } finally {
+        window._isBatchExporting = false;
     }
 }
 
@@ -4912,23 +4929,36 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
             };
         });
 
-        // Función helper para renderizar celdas con Opción 8 (Cifra + Estado en subtexto sin chips)
+        // Función helper para renderizar celdas con ícono + barra (misma opción que
+        // ya se usa en la tabla principal de Indicadores RDA, ver badge() más arriba).
+        // Nada de chips: mismo motivo documentado abajo (html2canvas no las exporta bien).
         const renderOption8Coverage = (pctVal, isPrimary2026 = false) => {
             const pct = typeof pctVal === 'number' ? pctVal : (parseFloat(pctVal) || 0);
             let statusLabel = 'ÓPTIMO';
             let statusColor = '#15803d';
+            let statusIcon = '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>';
             if (pct < 80) {
                 statusLabel = 'CRÍTICO';
                 statusColor = '#dc2626';
+                statusIcon = '<path d="M12 3l9 16H3z"/><line x1="12" y1="10" x2="12" y2="14"/><circle cx="12" cy="16.6" r=".6" fill="currentColor" stroke="none"/>';
             } else if (pct < 95) {
                 statusLabel = 'REGULAR';
                 statusColor = '#d97706';
+                statusIcon = '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><circle cx="12" cy="16.3" r=".6" fill="currentColor" stroke="none"/>';
             }
             const mainColor = isPrimary2026 ? '#0284c7' : '#0f172a';
+            const barPct = Math.max(0, Math.min(100, pct));
             return `
-                <div style="display: flex; flex-direction: column; align-items: flex-start; justify-content: center;">
-                    <div style="font-size: 13px; font-weight: 900; color: ${mainColor}; line-height: 1.2;">${pct}%</div>
-                    <div style="font-size: 9px; font-weight: 800; color: ${statusColor}; letter-spacing: 0.05em; text-transform: uppercase; line-height: 1.1; margin-top: 1px;">${statusLabel}</div>
+                <div style="display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;" title="${statusLabel}">
+                    <div style="display: inline-flex; align-items: center; gap: 5px;">
+                        <span style="display: flex; align-items: center; justify-content: center; color: ${statusColor}; flex-shrink: 0;">
+                            <svg viewBox="0 0 24 24" width="13" height="13" style="fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;">${statusIcon}</svg>
+                        </span>
+                        <span style="font-size: 13px; font-weight: 900; color: ${mainColor}; line-height: 1.2;">${pct}%</span>
+                    </div>
+                    <span style="display: block; width: 48px; height: 4px; border-radius: 2px; background: #eef1f6; overflow: hidden;">
+                        <span style="display: block; height: 100%; border-radius: 2px; width: ${barPct}%; background: ${statusColor};"></span>
+                    </span>
                 </div>
             `;
         };
