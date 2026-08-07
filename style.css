@@ -464,8 +464,8 @@ body::after {
   margin: 0 0 10px 4px;
   opacity: 0.5;
 }/* */
-input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not(.notifSearchInput), 
-select, 
+input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not(.notifSearchInput):not(.spm-input-num-clean),
+select,
 textarea {
   width: 100% !important;
   height: 52px !important;

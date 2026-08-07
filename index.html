@@ -69,7 +69,7 @@
 
   <!-- Estilos -->
   <link rel="stylesheet" href="tailwind_compiled.css">
-  <link rel="stylesheet" href="style.css?v=2026.69" type="text/css">
+  <link rel="stylesheet" href="style.css?v=2026.70" type="text/css">
 
   <style>
     /* BOTONES DE ACCIÓN: PUROS ÍCONOS ELEGANTES 3D VERTICALMENTE ALINEADOS AL CENTRO */
@@ -365,7 +365,7 @@
        (ensurePdfAssetsLoaded) solo al exportar el PDF de Resguardo.
        Generado por build-bundle.js. Los archivos originales siguen en el repo
        (sin borrar) por si hace falta revertir este cambio. -->
-  <script src="dist/bundle-head.js?v=2026.2" defer></script>
+  <script src="dist/bundle-head.js?v=2026.3" defer></script>
 
   <!-- 🔧 Service Worker Registration (PWA) -->
   <script>
@@ -4312,6 +4312,7 @@
               width: 44px !important;
               height: 44px !important;
               min-width: 44px !important;
+              min-height: 44px !important;
               border-radius: 14px !important;
               background: #ffffff !important;
               color: #334155 !important;
@@ -4727,13 +4728,6 @@
               <p class="text-[12px] font-bold text-slate-400 mt-1">Configura las claves/variables SIS del CSV asociadas a
                 cada tipo de biológico del sistema para los cálculos del RDA.</p>
             </div>
-
-            <button type="button" onclick="document.getElementById('modalSisConcentrator').classList.add('show');"
-              style="background-color: #0d9488 !important; color: #ffffff !important; border: none !important;"
-              class="h-10 px-5 rounded-2xl font-extrabold text-xs shadow-md cursor-pointer flex items-center gap-2 transition-all">
-              <span class="material-symbols-rounded text-lg text-white">merge</span>
-              ⚡ Concentrador Masivo Excel (.xlsx / .csv)
-            </button>
           </div>
 
           <div class="bg-surface rounded-3xl border border-outline-variant/30 shadow-sm overflow-hidden">
@@ -5786,14 +5780,14 @@
           </div>
           <div>
             <h3 class="text-[16px] font-black text-primary m-0 tracking-tight">Carga de Reporte SIS</h3>
-            <p class="text-[11px] font-medium text-primary/60 m-0">Formato requerido: .csv delimitado por comas</p>
+            <p class="text-[11px] font-medium text-primary/60 m-0">Acepta .csv y .xlsx — selecciona varios archivos (por municipio o por mes) para concentrarlos en una sola carga</p>
             <span id="csvTypeBadge" style="display:none;"
               class="inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-700 mt-2"></span>
           </div>
         </div>
         <button type="button"
           class="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-outline-variant/30 shadow-sm text-primary hover:bg-status-error hover:text-white hover:-translate-y-0.5 hover:shadow-md active:scale-95 transition-all cursor-pointer"
-          onclick="document.getElementById('modalUploadCSV').classList.remove('show'); document.getElementById('rdaCsvInput').value = ''; document.getElementById('csvPreviewArea').style.display='none'; document.getElementById('csvDropZone').style.display='flex'; document.getElementById('btnConfirmUploadCSV').classList.add('opacity-50', 'pointer-events-none');">
+          onclick="document.getElementById('modalUploadCSV').classList.remove('show'); window.resetCsvUploadModal();">
           <span class="material-symbols-rounded text-[18px]">close</span>
         </button>
       </div>
@@ -5839,6 +5833,11 @@
           <span>No te preocupes por errores menores en Productividad SIS: comas, espacios o el mes escrito con letra se corrigen solos. Las filas con CLUES o variables desconocidas se marcan aparte para que las revises y edites antes de confirmar la subida.</span>
         </p>
 
+        <p class="text-[11px] text-primary/70 leading-relaxed flex items-start gap-1.5 mb-1 bg-white/50 rounded-xl p-3 border border-primary/10">
+          <span class="material-symbols-rounded text-sm mt-0.5 text-primary">merge</span>
+          <span>¿Tienes un archivo por municipio o por mes? Selecciónalos todos juntos (o arrástralos de una vez) — se concentran automáticamente en un solo lote antes de la revisión.</span>
+        </p>
+
         <div class="flex items-center gap-3 mt-2">
           <button type="button"
             onclick="const link = document.createElement('a'); link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent('CLUES,POB_MENOR_1,POB_1_ANO,POB_4_ANOS,POB_6_ANOS\nQTSSA000830,229,226,221,0\nQTSSA000842,145,143,140,0'); link.download = 'plantilla_poblacion_modelo.csv'; document.body.appendChild(link); link.click(); document.body.removeChild(link);"
@@ -5865,8 +5864,8 @@
           ondrop="event.preventDefault(); this.classList.remove('dragover'); handleCsvDrop(event)">
           <span class="material-symbols-rounded text-[40px] text-primary/50 pointer-events-none">upload_file</span>
           <div class="text-center pointer-events-none">
-            <h4 class="text-[14px] font-bold text-primary m-0">Arrastra y suelta tu archivo CSV aquí</h4>
-            <p class="text-[12px] text-primary/60 m-0 mt-1">O haz clic para explorar en tu equipo</p>
+            <h4 class="text-[14px] font-bold text-primary m-0">Arrastra y suelta tus archivos aquí</h4>
+            <p class="text-[12px] text-primary/60 m-0 mt-1">.csv o .xlsx — puedes seleccionar varios a la vez (ej. uno por municipio)</p>
           </div>
         </div>
 
@@ -5880,8 +5879,10 @@
             </div>
             <button
               class="flex-shrink-0 text-[11px] font-bold text-error bg-error/10 px-3 py-1 rounded-full border-none cursor-pointer hover:bg-error/20"
-              onclick="document.getElementById('rdaCsvInput').value = ''; document.getElementById('csvPreviewArea').style.display='none'; document.getElementById('csvDropZone').style.display='flex'; document.getElementById('btnConfirmUploadCSV').classList.add('opacity-50', 'pointer-events-none');">Quitar</button>
+              onclick="window.resetCsvUploadModal();">Quitar</button>
           </div>
+
+          <div id="csvFileListBadges" class="flex flex-wrap gap-1.5" style="display:none;"></div>
 
           <div class="grid grid-cols-2 gap-3" id="csvCountersGrid">
             <div class="bg-surface-variant/30 p-3 rounded-2xl border border-outline-variant/30 text-center">
@@ -5979,6 +5980,9 @@
                 <p class="text-[11px] font-medium text-amber-700/80 m-0 leading-relaxed">El archivo contiene datos de
                   los meses: <strong id="csvMonthsList"></strong>. Al confirmar, se eliminarán los registros previos de
                   esos meses antes de insertar los nuevos para evitar duplicados.</p>
+                <p id="csvMunicipioCoverageWarning" style="display:none;" class="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl p-2.5 m-0 mt-2 leading-relaxed">
+                  ⚠️ Este lote NO incluye datos de: <strong id="csvMunicipioCoverageList"></strong>. Como el borrado es por mes (no por municipio), si confirmas se perderán los registros ya guardados de esos municipios para el/los mes(es) de arriba. Agrega su(s) archivo(s) antes de confirmar si no era intencional.
+                </p>
               </div>
             </div>
           </div>
@@ -5989,92 +5993,12 @@
       <div class="p-6 bg-surface-variant/20 border-t border-outline-variant/20 flex justify-end gap-3">
         <button type="button"
           class="h-10 px-5 rounded-full bg-surface border border-outline-variant/50 text-[12px] font-bold text-primary hover:bg-surface-variant transition-colors cursor-pointer"
-          onclick="document.getElementById('modalUploadCSV').classList.remove('show'); document.getElementById('rdaCsvInput').value = ''; document.getElementById('csvPreviewArea').style.display='none'; document.getElementById('csvDropZone').style.display='flex'; document.getElementById('btnConfirmUploadCSV').classList.add('opacity-50', 'pointer-events-none');">Cancelar</button>
+          onclick="document.getElementById('modalUploadCSV').classList.remove('show'); window.resetCsvUploadModal();">Cancelar</button>
         <button type="button" id="btnConfirmUploadCSV"
           class="h-10 px-6 rounded-full bg-primary text-primary-on text-[12px] font-bold shadow-sm transition-all hover:translate-y-[-1px] hover:shadow-md cursor-pointer border-none flex items-center gap-2 opacity-50 pointer-events-none">
           <span class="material-symbols-rounded text-[18px]">check_circle</span>
           Confirmar y Subir
         </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ✅ MODAL CONCENTRADOR E INSPECTOR MASIVO SIS (EXCEL / CSV) -->
-  <div id="modalSisConcentrator"
-    class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
-    aria-hidden="true">
-    <div class="w-full max-w-[720px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] flex flex-col"
-      style="max-height: 88vh;">
-      <!-- Header -->
-      <div class="flex items-center justify-between p-6 bg-slate-900 text-white border-b border-slate-800">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-teal-500/20 text-teal-400 flex items-center justify-center">
-            <span class="material-symbols-rounded text-2xl">merge</span>
-          </div>
-          <div>
-            <h3 class="text-base font-black m-0 tracking-tight text-white">Concentrador & Diagnóstico Web SIS</h3>
-            <p class="text-xs text-slate-400 m-0">Selecciona múltiples archivos Excel o CSV para unificarlos y limpiarlos en 1 solo CSV listo para el RDA.</p>
-          </div>
-        </div>
-        <button type="button" style="background-color: #334155 !important; color: #ffffff !important; border: none !important;" class="w-8 h-8 flex items-center justify-center rounded-full transition-colors cursor-pointer"
-          onclick="document.getElementById('modalSisConcentrator').classList.remove('show');">
-          <span class="material-symbols-rounded text-lg text-white">close</span>
-        </button>
-      </div>
-
-      <!-- Configuración & Drop Zone -->
-      <div class="p-6 overflow-y-auto flex-1 space-y-4">
-        <!-- Opciones de saneamiento -->
-        <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div class="flex items-center gap-2">
-            <label for="sisConcTargetSheet" class="font-bold text-slate-700">Hoja Excel:</label>
-            <input type="text" id="sisConcTargetSheet" value="CSV" class="w-20 px-2 py-1 bg-white border border-slate-300 rounded-lg text-center font-black text-slate-800 outline-none">
-          </div>
-          <label class="flex items-center gap-2 font-bold text-teal-800 cursor-pointer">
-            <input type="checkbox" id="sisConcAutoZero" checked class="w-4 h-4 accent-teal-600">
-            <span>Convertir espacios vacíos (" ") a 0 automáticamente</span>
-          </label>
-        </div>
-
-        <!-- Drop Zone -->
-        <div id="sisConcDropZone"
-          class="w-full h-[150px] rounded-2xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center gap-2 bg-slate-50/50 hover:bg-slate-100/50 hover:border-slate-400 transition-all cursor-pointer"
-          onclick="document.getElementById('sisConcFileInput').click()">
-          <input type="file" id="sisConcFileInput" multiple accept=".xlsx,.xls,.csv" style="display:none;" onchange="window.handleSisConcFilesSelect(this.files)">
-          <span class="material-symbols-rounded text-3xl text-slate-400">note_add</span>
-          <div class="text-center">
-            <h4 class="text-xs font-black text-slate-700 m-0">Selecciona o arrastra tus archivos .xlsx o .csv</h4>
-            <p class="text-[11px] text-slate-400 m-0 mt-0.5">Puedes seleccionar múltiples archivos mensuales simultáneamente</p>
-          </div>
-        </div>
-
-        <!-- Archivos Seleccionados badge list -->
-        <div id="sisConcFileList" class="flex flex-wrap gap-2 text-xs font-bold text-slate-600"></div>
-
-        <!-- Consola Log Diagnóstico -->
-        <div class="bg-slate-950 rounded-2xl p-4 font-mono text-[11px] text-slate-200 h-[180px] overflow-y-auto space-y-1 shadow-inner border border-slate-800" id="sisConcConsole">
-          <div class="text-slate-500">// Diagnóstico y compilación de salud SIS... Lista para iniciar.</div>
-        </div>
-      </div>
-
-      <!-- Footer -->
-      <div class="p-6 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3">
-        <button type="button" id="btnDownloadConcentrated" style="display:none; background-color: #059669 !important; color: #ffffff !important; border: none !important;" onclick="window.downloadConcentratedResult()"
-          class="h-10 px-5 rounded-full font-extrabold text-xs shadow-md hover:bg-emerald-700 cursor-pointer flex items-center gap-2 transition-all">
-          <span class="material-symbols-rounded text-lg text-white">download</span>
-          Descargar Concentrado (.csv)
-        </button>
-
-        <div class="flex items-center gap-2 ml-auto">
-          <button type="button" style="background-color: #e2e8f0 !important; color: #0f172a !important; border: 1px solid #cbd5e1 !important;" class="h-10 px-5 rounded-full text-xs font-bold cursor-pointer"
-            onclick="document.getElementById('modalSisConcentrator').classList.remove('show');">Cerrar</button>
-          <button type="button" id="btnRunSisConcentrator" onclick="window.runWebSisConcentrator()"
-            style="background-color: #0f172a !important; color: #ffffff !important; border: none !important;"
-            class="h-10 px-6 rounded-full font-black text-xs shadow-md cursor-pointer flex items-center gap-2 transition-all">
-            <span class="material-symbols-rounded text-lg text-teal-400">bolt</span>
-            Compilar & Limpiar
-          </button>
-        </div>
       </div>
     </div>
   </div>
@@ -7688,7 +7612,7 @@
 
 
   <!-- UPLOAD COMPONENT (Hidden, triggered by Admin Button) -->
-  <input type="file" id="rdaCsvInput" accept=".csv" class="hidden">
+  <input type="file" id="rdaCsvInput" accept=".csv,.xlsx,.xls" multiple class="hidden">
 
   <!-- ==================================================================================== -->
 
@@ -7748,7 +7672,7 @@
 
   <!-- Empaquetado: bundle-body.js = rda_calculator + rda_parser + param_calculator
        + rda_ui, en ese mismo orden. Generado por build-bundle.js. -->
-  <script src="dist/bundle-body.js?v=2026.1" defer></script>
+  <script src="dist/bundle-body.js?v=2026.3" defer></script>
 
   <!-- FEEDBACK FAB & MODAL -->
   <style>
@@ -8370,7 +8294,7 @@
     <div
       class="w-full max-w-[460px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
       <div class="p-8 pb-6 bg-gradient-to-br from-amber-500/10 to-transparent border-b border-outline-variant/20">
-        <div class="flex items-center gap-2 text-amber-600 text-xs font-bold uppercase tracking-[0.1em] mb-3">
+        <div class="flex items-center gap-2 text-amber-600 text-xs font-bold uppercase tracking-[0.1em] mb-3" id="csvUploadConfirmLabel">
           <span class="material-symbols-rounded text-base">warning</span>
           Filas con error sin resolver
         </div>

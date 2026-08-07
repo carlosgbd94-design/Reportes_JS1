@@ -19,11 +19,17 @@ class RDAParser {
     // CLUES y sugerir coincidencias cercanas sin repetir la consulta a Supabase.
     static _unitCatalog = null;
 
-    // Set de códigos VARIABLE_SIS reconocidos (derivado de window.DICT_RDA) para detectar variables no mapeadas.
-    static _validVarsSet = null;
-
     // Para deduplicación editable: clave "CLUES|VARIABLE|MES|ANIO" -> idx de la fila que el usuario eligió mantener.
     static _dedupePreferred = new Map();
+
+    // Lote acumulado de archivos (.csv/.xlsx/.xls) seleccionados para esta carga — se va agregando
+    // con cada selección o arrastre, no se reemplaza, para poder soltar un archivo por municipio
+    // en picks separados en vez de exigir un solo diálogo con selección múltiple.
+    static _selectedFiles = [];
+
+    // Cache de parseo por archivo, clave = _fileKey(file) -> { rows, type, error }. Evita re-leer
+    // archivos ya procesados cuando se agrega o se quita uno del lote.
+    static _fileParseCache = new Map();
 
     // Cuántas filas de la tabla de revisión se muestran (paginación simple para archivos grandes).
     static _reviewRenderedCount = 200;
@@ -49,8 +55,20 @@ class RDAParser {
         if (fileInput) {
             fileInput.addEventListener('change', () => {
                 if (!fileInput.files.length) return;
-                const file = fileInput.files[0];
-                this.parseCSVAndPreview(file);
+                const picked = Array.from(fileInput.files);
+                fileInput.value = ''; // permite re-seleccionar el mismo archivo más adelante
+                this.parseFilesAndPreview(picked);
+            });
+        }
+
+        // Delegación de clic para quitar un archivo individual del lote (ficha con botón "✕")
+        const fileBadgesEl = document.getElementById('csvFileListBadges');
+        if (fileBadgesEl) {
+            fileBadgesEl.addEventListener('click', (e) => {
+                const removeBtn = e.target.closest('.csv-file-remove-btn');
+                if (!removeBtn) return;
+                const idx = parseInt(removeBtn.dataset.idx, 10);
+                RDAParser.removeSelectedFile(idx);
             });
         }
 
@@ -60,17 +78,16 @@ class RDAParser {
 
                 if (this.detectedType === 'POBLACION') {
                     document.getElementById('modalUploadCSV').classList.remove('show');
-                    this.processPoblacionData(this.pendingData);
-                    this.pendingData = null;
-                    this.detectedType = null;
+                    const poblacionData = this.pendingData;
+                    RDAParser.resetUploadModalUI(); // limpia el lote para que la próxima carga empiece de cero
+                    this.processPoblacionData(poblacionData);
                     return;
                 }
 
                 const proceeded = await this.confirmAndProcessSIS();
                 if (proceeded) {
                     document.getElementById('modalUploadCSV').classList.remove('show');
-                    this.pendingData = null;
-                    this.detectedType = null;
+                    RDAParser.resetUploadModalUI(); // limpia el lote para que la próxima carga empiece de cero
                 }
             });
         }
@@ -154,12 +171,7 @@ class RDAParser {
             const modal = document.getElementById('modalUploadCSV');
             if (modal && modal.classList.contains('show')) {
                 modal.classList.remove('show');
-                if (fileInput) fileInput.value = '';
-                const previewArea = document.getElementById('csvPreviewArea');
-                if (previewArea) previewArea.style.display = 'none';
-                const dropZone = document.getElementById('csvDropZone');
-                if (dropZone) dropZone.style.display = 'flex';
-                if (btnConfirm) btnConfirm.classList.add('opacity-50', 'pointer-events-none');
+                RDAParser.resetUploadModalUI();
             }
         });
     }
@@ -194,8 +206,8 @@ class RDAParser {
         const nf = fields.map(f => this._normalizeKey(f));
 
         const hasClues    = nf.includes("CLUES");
-        const hasVariable = nf.includes("VARIABLE");
-        const hasValor    = nf.includes("VALOR");
+        const hasVariable = nf.includes("VARIABLE") || nf.includes("VARIABLE_SIS");
+        const hasValor    = nf.includes("VALOR") || nf.includes("DOSIS");
         const hasMes      = nf.includes("MES");
         const hasAnio     = nf.includes("ANO") || nf.includes("ANIO");
 
@@ -210,65 +222,225 @@ class RDAParser {
         return null;
     }
 
-    static parseCSVAndPreview(file) {
-        document.getElementById('csvSchemaError').style.display = 'none';
+    /** Restaura el modal de carga a su estado inicial (sin archivos seleccionados). */
+    static resetUploadModalUI() {
+        const fileInput = document.getElementById('rdaCsvInput');
+        if (fileInput) fileInput.value = '';
 
-        // Show basic file info
+        const previewArea = document.getElementById('csvPreviewArea');
+        if (previewArea) previewArea.style.display = 'none';
+        const dropZone = document.getElementById('csvDropZone');
+        if (dropZone) dropZone.style.display = 'flex';
+        const btnConfirm = document.getElementById('btnConfirmUploadCSV');
+        if (btnConfirm) btnConfirm.classList.add('opacity-50', 'pointer-events-none');
+        const badgesEl = document.getElementById('csvFileListBadges');
+        if (badgesEl) { badgesEl.style.display = 'none'; badgesEl.innerHTML = ''; }
+        const errorDiv = document.getElementById('csvSchemaError');
+        if (errorDiv) errorDiv.style.display = 'none';
+
+        RDAParser._rows = null;
+        RDAParser._selectedFiles = [];
+        RDAParser._fileParseCache = new Map();
+        RDAParser.pendingData = null;
+        RDAParser.detectedType = null;
+    }
+
+    /** Lee un solo archivo (.csv, .xlsx o .xls) y devuelve sus filas como arreglo de objetos {columna: valor}. */
+    static async _parseOneFile(file, targetSheet = 'CSV') {
+        const name = file.name.toLowerCase();
+
+        if (name.endsWith('.csv')) {
+            return new Promise((resolve, reject) => {
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => resolve(results.data || []),
+                    error: (error) => reject(error)
+                });
+            });
+        }
+
+        if (typeof XLSX === 'undefined') {
+            throw new Error('El lector de archivos Excel no está disponible (XLSX no cargó).');
+        }
+
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: 'array' });
+        if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+            throw new Error('El archivo no contiene hojas.');
+        }
+        let sheetName = workbook.SheetNames.find(s => s.trim().toUpperCase() === targetSheet.toUpperCase());
+        if (!sheetName) sheetName = workbook.SheetNames[0];
+        return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: false, defval: '' });
+    }
+
+    /** Clave estable de un File (para el caché de parseo — no depende de su posición en el lote). */
+    static _fileKey(file) {
+        return `${file.name}|${file.size}|${file.lastModified}`;
+    }
+
+    /** Pinta el resumen (nombre/tamaño total) y una ficha removible por archivo, con su resultado si ya se procesó. */
+    static _renderFileBadges(files, perFileInfo, statusMsg) {
+        const nameEl = document.getElementById('csvFileName');
+        const sizeEl = document.getElementById('csvFileSize');
+        const badgesEl = document.getElementById('csvFileListBadges');
+
+        if (nameEl) nameEl.textContent = files.length === 1 ? files[0].name : `${files.length} archivos seleccionados`;
+        if (sizeEl) {
+            const totalKb = files.reduce((sum, f) => sum + f.size, 0) / 1024;
+            sizeEl.textContent = statusMsg || `${totalKb.toFixed(1)} KB en total`;
+        }
+        if (!badgesEl) return;
+
+        if (!files.length) {
+            badgesEl.style.display = 'none';
+            badgesEl.innerHTML = '';
+            return;
+        }
+
+        badgesEl.style.display = 'flex';
+        badgesEl.innerHTML = files.map((f, i) => {
+            const info = perFileInfo ? perFileInfo[i] : null;
+            let cls = 'bg-slate-100 text-slate-600 border-slate-200';
+            let icon = '⏳';
+            let extra = 'leyendo...';
+            if (info) {
+                if (info.ok) {
+                    cls = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                    icon = '✅';
+                    extra = `${info.rows.toLocaleString()} filas`;
+                } else {
+                    cls = 'bg-rose-50 text-rose-700 border-rose-200';
+                    icon = '⚠️';
+                    extra = info.note;
+                }
+            }
+            return `<span class="px-2.5 py-1 rounded-lg text-[10px] font-bold border ${cls} inline-flex items-center gap-1.5" title="${RDAParser._escAttr(f.name)} — ${RDAParser._escAttr(extra)}">${icon} ${RDAParser._escAttr(f.name)} <span class="opacity-70">(${RDAParser._escAttr(extra)})</span><button type="button" class="csv-file-remove-btn opacity-60 hover:opacity-100 hover:text-rose-600 cursor-pointer border-none bg-transparent p-0 font-black leading-none" data-idx="${i}" title="Quitar este archivo">✕</button></span>`;
+        }).join('');
+    }
+
+    /** Quita un archivo del lote (por su posición actual) y re-analiza el resto. */
+    static async removeSelectedFile(idx) {
+        const files = RDAParser._selectedFiles || [];
+        if (idx < 0 || idx >= files.length) return;
+        files.splice(idx, 1);
+        await RDAParser._reprocessSelectedFiles();
+    }
+
+    /**
+     * Punto de entrada de la carga: AGREGA uno o varios archivos .csv/.xlsx/.xls al lote actual
+     * (no lo reemplaza) — así puedes ir soltando un archivo por municipio en selecciones separadas,
+     * en vez de tener que elegir los 4 juntos en un solo diálogo. Cada vez que el lote cambia se
+     * vuelve a concentrar todo en un único dataset y se pasa al motor de análisis (SIS o Población)
+     * exactamente como si fuera un solo archivo — no hay un "concentrador" aparte que generar y
+     * volver a subir; es el mismo flujo de revisión y carga ya probado de un solo archivo.
+     */
+    static async parseFilesAndPreview(newFiles) {
+        const incoming = Array.from(newFiles || []).filter(f => /\.(csv|xlsx|xls)$/i.test(f.name));
+        if (!incoming.length) {
+            if (!(RDAParser._selectedFiles || []).length) {
+                this._showSchemaError('Selecciona al menos un archivo .csv, .xlsx o .xls.');
+            }
+            return;
+        }
+
+        const existingKeys = new Set((RDAParser._selectedFiles || []).map(f => RDAParser._fileKey(f)));
+        const toAdd = incoming.filter(f => !existingKeys.has(RDAParser._fileKey(f)));
+        RDAParser._selectedFiles = [...(RDAParser._selectedFiles || []), ...toAdd];
+
+        await RDAParser._reprocessSelectedFiles();
+    }
+
+    /** Re-lee (con caché por archivo) TODO el lote en RDAParser._selectedFiles, lo concentra y dispara el análisis. */
+    static async _reprocessSelectedFiles() {
+        const fileArr = RDAParser._selectedFiles || [];
+        if (!fileArr.length) {
+            RDAParser.resetUploadModalUI();
+            return;
+        }
+
+        document.getElementById('csvSchemaError').style.display = 'none';
         document.getElementById('csvDropZone').style.display = 'none';
         document.getElementById('csvPreviewArea').style.display = 'flex';
-        document.getElementById('csvFileName').textContent = file.name;
-        document.getElementById('csvFileSize').textContent = (file.size / 1024).toFixed(2) + ' KB';
         document.getElementById('btnConfirmUploadCSV').classList.add('opacity-50', 'pointer-events-none');
         document.getElementById('csvValidCount').textContent = '...';
         document.getElementById('csvIgnoredCount').textContent = '...';
         document.getElementById('csvMonthsWarning').style.display = 'none';
 
-        // Reset estado de análisis previo
-        this._rows = null;
-        this._dedupePreferred = new Map();
-        this._reviewRenderedCount = 200;
+        RDAParser._rows = null;
+        RDAParser._dedupePreferred = new Map();
+        RDAParser._reviewRenderedCount = 200;
         const reviewArea = document.getElementById('csvReviewTableArea');
         if (reviewArea) reviewArea.style.display = 'none';
-
-        // Reset tipo badge
         const badge = document.getElementById('csvTypeBadge');
         if (badge) badge.style.display = 'none';
 
-        Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            complete: async (results) => {
-                if (!results.data || results.data.length === 0) {
-                    this._showSchemaError("El archivo CSV está vacío.");
-                    return;
+        RDAParser._renderFileBadges(fileArr, null, `Leyendo ${fileArr.length} archivo(s)...`);
+
+        // Paso 1: leer (con caché) cada archivo de forma independiente.
+        for (const file of fileArr) {
+            const key = RDAParser._fileKey(file);
+            if (RDAParser._fileParseCache.has(key)) continue;
+
+            let entry;
+            try {
+                const rawRows = await RDAParser._parseOneFile(file, 'CSV');
+                if (!rawRows.length) {
+                    entry = { rows: [], type: null, error: 'Archivo vacío' };
+                } else {
+                    const fields = Object.keys(rawRows[0] || {});
+                    const type = RDAParser.detectCSVType(fields);
+                    entry = type
+                        ? { rows: rawRows, type, error: null }
+                        : { rows: [], type: null, error: 'Columnas no reconocidas' };
                 }
-
-                // Auto-detectar tipo de CSV
-                const fields = results.meta.fields || [];
-                this.detectedType = this.detectCSVType(fields);
-
-                if (!this.detectedType) {
-                    this._showSchemaError(
-                        "Formato no reconocido. El CSV debe ser de tipo Productividad SIS (CLUES, VARIABLE, VALOR, MES, ANO) " +
-                        "o de Población (CLUES + columnas de población como POB_MENOR_1, POB_1_ANO, POB_4_ANOS)."
-                    );
-                    return;
-                }
-
-                // Actualizar UI según tipo detectado
-                this._updateModalForType(this.detectedType);
-
-                if (this.detectedType === 'SIS') {
-                    await this.buildAndAnalyzeSIS(results.data);
-                } else if (this.detectedType === 'POBLACION') {
-                    this.validateAndPreviewPoblacion(results.data);
-                }
-            },
-            error: (error) => {
-                this._showSchemaError("Error al leer el archivo CSV.");
-                console.error("[RDA Parser]", error);
+            } catch (err) {
+                console.error('[RDA Parser] Error leyendo', file.name, err);
+                entry = { rows: [], type: null, error: err.message || 'Error al leer el archivo' };
             }
+            RDAParser._fileParseCache.set(key, entry);
+        }
+
+        // Paso 2: el tipo del lote es el del primer archivo (en el orden actual) que se leyó bien.
+        let detectedType = null;
+        for (const file of fileArr) {
+            const entry = RDAParser._fileParseCache.get(RDAParser._fileKey(file));
+            if (entry && entry.type) { detectedType = entry.type; break; }
+        }
+
+        // Paso 3: decidir inclusión por archivo y concentrar filas de los que coincidan con el tipo del lote.
+        let mergedRows = [];
+        const perFileInfo = fileArr.map(file => {
+            const entry = RDAParser._fileParseCache.get(RDAParser._fileKey(file));
+            if (!entry || entry.error) {
+                return { ok: false, note: (entry && entry.error) || 'Error al leer el archivo' };
+            }
+            if (!detectedType || entry.type !== detectedType) {
+                return { ok: false, note: `Es de tipo ${entry.type}, se esperaba ${detectedType}` };
+            }
+            mergedRows.push(...entry.rows);
+            return { ok: true, rows: entry.rows.length };
         });
+
+        RDAParser._renderFileBadges(fileArr, perFileInfo, null);
+
+        if (!detectedType || mergedRows.length === 0) {
+            this._showSchemaError(
+                'No se pudo extraer información válida de los archivos seleccionados. Revisa el detalle por archivo arriba y ' +
+                'que tengan el formato correcto (ver "Plantilla y Formato CSV"): Productividad SIS (CLUES, VARIABLE, VALOR, MES, ANO) ' +
+                'o Población (CLUES + columnas de población).'
+            );
+            return;
+        }
+
+        this.detectedType = detectedType;
+        this._updateModalForType(detectedType);
+
+        if (detectedType === 'SIS') {
+            await this.buildAndAnalyzeSIS(mergedRows);
+        } else if (detectedType === 'POBLACION') {
+            this.validateAndPreviewPoblacion(mergedRows);
+        }
     }
 
     /** Actualiza el título y badge del modal según tipo detectado */
@@ -377,20 +549,14 @@ class RDAParser {
         return RDAParser._unitCatalog;
     }
 
-    /** Refresca el set de códigos VARIABLE_SIS reconocidos desde window.DICT_RDA */
-    static ensureVariableDictionary() {
-        RDAParser._validVarsSet = new Set(Object.values(window.DICT_RDA || {}).flat());
-        return RDAParser._validVarsSet;
-    }
-
     /** Construye el dataset editable a partir del CSV parseado y dispara el primer análisis */
     static async buildAndAnalyzeSIS(data) {
         RDAParser._rows = data.map((row, i) => ({
             idx: i,
             rowNum: i + 2, // Fila 1 es el header
             clues: RDAParser._getCol(row, 'CLUES') || '',
-            variable: RDAParser._getCol(row, 'VARIABLE') || '',
-            valor: RDAParser._getCol(row, 'VALOR') || '',
+            variable: RDAParser._getCol(row, 'VARIABLE_SIS') || RDAParser._getCol(row, 'VARIABLE') || '',
+            valor: RDAParser._getCol(row, 'VALOR') || RDAParser._getCol(row, 'DOSIS') || '',
             mes: RDAParser._getCol(row, 'MES') || '',
             anio: RDAParser._getCol(row, 'ANO') || RDAParser._getCol(row, 'ANIO') || '',
             municipio: RDAParser._getCol(row, 'MUNICIPIO') || '',
@@ -404,7 +570,6 @@ class RDAParser {
         RDAParser.pendingData = true; // sentinela: ya hay un archivo parseado
 
         await RDAParser.ensureUnitCatalog();
-        RDAParser.ensureVariableDictionary();
         RDAParser.runAnalysis();
     }
 
@@ -421,15 +586,22 @@ class RDAParser {
             r.status = 'invalid';
         }
 
-        // 2. VALOR: intentar limpieza si no es numérico directo (comas, espacios, texto)
-        let valor = parseInt(valorRaw, 10);
-        if (isNaN(valor) && valorRaw) {
-            const cleaned = valorRaw.replace(/[^\d-]/g, '');
-            const fixedVal = parseInt(cleaned, 10);
-            if (!isNaN(fixedVal)) {
-                valor = fixedVal;
-                r._valorFixed = String(fixedVal);
-                r.issues.push(`Valor "${valorRaw}" interpretado como ${fixedVal}`);
+        // 2. VALOR: limpiar separadores de miles ("1,500"), espacios o texto sobrante ANTES de
+        //    interpretar como número — parseInt("1,500") da 1 en vez de NaN, así que no basta
+        //    con limpiar solo cuando el parseo directo falla.
+        let valor;
+        const cleanedValor = valorRaw.replace(/[^\d-]/g, '');
+        if (cleanedValor === valorRaw) {
+            valor = parseInt(valorRaw, 10);
+            if (isNaN(valor)) {
+                r.issues.push(`Valor "${valorRaw}" no es numérico`);
+                r.status = 'invalid';
+            }
+        } else {
+            valor = parseInt(cleanedValor, 10);
+            if (!isNaN(valor)) {
+                r._valorFixed = String(valor);
+                r.issues.push(`Valor "${valorRaw}" interpretado como ${valor}`);
                 if (r.status === 'valid') r.status = 'fixed';
             } else {
                 r.issues.push(`Valor "${valorRaw}" no es numérico`);
@@ -469,13 +641,41 @@ class RDAParser {
             if (match) r.suggestions.clues = match;
         }
 
-        // 6. VARIABLE_SIS no reconocida en el diccionario de biológicos
-        if (variable && context.validVars && context.validVars.size > 0 && !context.validVars.has(variable)) {
-            r.issues.push('Variable SIS no reconocida en el diccionario');
-            if (r.status === 'valid') r.status = 'warning';
-            const match = RDAParser._closestMatch(variable, context.validVarsArr, 2);
-            if (match) r.suggestions.variable = match;
-        }
+        // Nota: NO se marca como advertencia una VARIABLE_SIS ausente del diccionario de
+        // indicadores (window.DICT_RDA). Ese diccionario decide qué variables alimentan cada
+        // indicador calculado — es un filtro de la calculadora, no una regla de validez del dato.
+        // La carga debe aceptar y guardar TODAS las variables de aplicaciones tal cual vienen;
+        // cada función que calcule algo específico filtra lo que necesita, no la carga.
+    }
+
+    /**
+     * Compara los municipios cubiertos por las filas que SÍ se van a subir contra los municipios
+     * conocidos en el catálogo de unidades, y devuelve los que faltan por completo en este lote.
+     * Existe porque el borrado en rpcUpsert es por (año, mes) — NO por municipio/CLUES — así que
+     * subir un lote incompleto (p.ej. solo 2 de 4 municipios) borraría también los registros ya
+     * guardados de los municipios ausentes para ese mes, sin insertar nada nuevo para reemplazarlos.
+     * Si el catálogo de unidades no cargó (o no tiene municipios), devuelve [] para no dar falsas alarmas.
+     */
+    static _computeMissingMunicipios(uploadableRows) {
+        const catalog = RDAParser._unitCatalog;
+        if (!catalog || catalog.size === 0) return [];
+
+        const known = new Set();
+        catalog.forEach(u => {
+            const m = String(u.municipio || '').trim().toUpperCase();
+            if (m && m !== 'DESCONOCIDO') known.add(m);
+        });
+        if (known.size === 0) return [];
+
+        const covered = new Set();
+        (uploadableRows || []).forEach(r => {
+            const clues = String(r.clues || '').trim().toUpperCase();
+            const catalogInfo = catalog.get(clues);
+            const m = String((catalogInfo && catalogInfo.municipio) || r.municipio || '').trim().toUpperCase();
+            if (m) covered.add(m);
+        });
+
+        return Array.from(known).filter(m => !covered.has(m)).sort();
     }
 
     /** Estado visual (badge/ícono) para un status de fila */
@@ -501,9 +701,7 @@ class RDAParser {
         const context = {
             uiYear,
             unitCatalog: RDAParser._unitCatalog || new Map(),
-            unitCatalogKeys: RDAParser._unitCatalog ? Array.from(RDAParser._unitCatalog.keys()) : [],
-            validVars: RDAParser._validVarsSet || new Set(),
-            validVarsArr: RDAParser._validVarsSet ? Array.from(RDAParser._validVarsSet) : []
+            unitCatalogKeys: RDAParser._unitCatalog ? Array.from(RDAParser._unitCatalog.keys()) : []
         };
 
         // Paso 1: clasificar cada fila individualmente y agrupar claves candidatas a duplicado
@@ -628,6 +826,20 @@ class RDAParser {
             }
         }
 
+        // Aviso de municipios ausentes en este lote (ver _computeMissingMunicipios)
+        const uploadableForCoverage = rows.filter(r => r.status === 'valid' || r.status === 'fixed' || r.status === 'warning');
+        const missingMunicipios = RDAParser._computeMissingMunicipios(uploadableForCoverage);
+        const coverageWarnEl = document.getElementById('csvMunicipioCoverageWarning');
+        if (coverageWarnEl) {
+            if (missingMunicipios.length > 0 && mesesArray.length > 0) {
+                const listEl = document.getElementById('csvMunicipioCoverageList');
+                if (listEl) listEl.textContent = missingMunicipios.join(', ');
+                coverageWarnEl.style.display = 'block';
+            } else {
+                coverageWarnEl.style.display = 'none';
+            }
+        }
+
         // Tabla de revisión: todo lo que no sea 'valid' puro ni 'excluded' (regla de negocio intencional)
         const reviewRows = rows.filter(r => r.status !== 'valid' && r.status !== 'excluded');
         const area = document.getElementById('csvReviewTableArea');
@@ -668,7 +880,7 @@ class RDAParser {
     /** Diálogo "¿Confirmas subir N válidos e ignorar M con error?" — clon del patrón openBioConfirm/closeBioConfirm */
     static _csvUploadConfirmResolver = null;
 
-    static openCsvUploadConfirm(validCount, invalidCount) {
+    static openCsvUploadConfirm(validCount, invalidCount, extraWarningHtml = '') {
         return new Promise((resolve) => {
             const overlay = document.getElementById('csvUploadConfirmOverlay');
             if (!overlay) { resolve(false); return; }
@@ -684,10 +896,22 @@ class RDAParser {
 
             RDAParser._csvUploadConfirmResolver = resolve;
 
+            const labelEl = overlay.querySelector('#csvUploadConfirmLabel');
+            if (labelEl) {
+                const labelText = invalidCount > 0 && extraWarningHtml
+                    ? 'Filas con error y municipios ausentes'
+                    : (invalidCount > 0 ? 'Filas con error sin resolver' : 'Municipios ausentes en este lote');
+                labelEl.innerHTML = `<span class="material-symbols-rounded text-base">warning</span>${labelText}`;
+            }
+
             const introEl = overlay.querySelector('#csvUploadConfirmIntro');
             if (introEl) {
-                introEl.innerHTML = `Se subirán <strong>${validCount.toLocaleString()}</strong> registro(s) válido(s). ` +
-                    `Se <strong>ignorarán ${invalidCount.toLocaleString()}</strong> fila(s) con error sin resolver.`;
+                let html = invalidCount > 0
+                    ? `Se subirán <strong>${validCount.toLocaleString()}</strong> registro(s) válido(s). ` +
+                      `Se <strong>ignorarán ${invalidCount.toLocaleString()}</strong> fila(s) con error sin resolver.`
+                    : `Se subirán <strong>${validCount.toLocaleString()}</strong> registro(s) válido(s).`;
+                if (extraWarningHtml) html += `<br><br>${extraWarningHtml}`;
+                introEl.innerHTML = html;
             }
 
             requestAnimationFrame(() => overlay.classList.add('show'));
@@ -722,8 +946,19 @@ class RDAParser {
             return false;
         }
 
-        if (invalidCount > 0) {
-            const ok = await RDAParser.openCsvUploadConfirm(uploadable.length, invalidCount);
+        // Ver _computeMissingMunicipios: el borrado previo a insertar es por (año, mes), no por
+        // municipio, así que un lote incompleto borraría datos de municipios que no vienen a
+        // reemplazarse. Si falta alguno, se exige confirmación explícita aunque no haya filas inválidas.
+        const missingMunicipios = RDAParser._computeMissingMunicipios(uploadable);
+
+        if (invalidCount > 0 || missingMunicipios.length > 0) {
+            let extraWarningHtml = '';
+            if (missingMunicipios.length > 0) {
+                extraWarningHtml = `⚠️ <strong>Este lote no incluye datos de: ${missingMunicipios.join(', ')}.</strong> ` +
+                    `La limpieza previa a la carga es por mes (no por municipio) — si confirmas, se perderán los ` +
+                    `registros ya guardados de esos municipios para el/los mes(es) de este lote.`;
+            }
+            const ok = await RDAParser.openCsvUploadConfirm(uploadable.length, invalidCount, extraWarningHtml);
             if (!ok) return false;
         }
 
@@ -1108,256 +1343,11 @@ window.addEventListener('DOMContentLoaded', () => RDAParser.init());
 
 window.handleCsvDrop = function(event) {
     if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
-        const file = event.dataTransfer.files[0];
         document.getElementById('rdaCsvInput').files = event.dataTransfer.files;
-        RDAParser.parseCSVAndPreview(file);
+        RDAParser.parseFilesAndPreview(event.dataTransfer.files);
     }
 };
 
-// ==============================================================================
-// CONCENTRADOR E INSPECTOR WEB SIS (PROCESAMIENTO DE ARCHIVOS MÚLTIPLES EN JS)
-// ==============================================================================
-let _selectedSisFiles = [];
-let _concentratedResultBlob = null;
-
-window.handleSisConcFilesSelect = function(files) {
-    if (!files || !files.length) return;
-    _selectedSisFiles = Array.from(files);
-    
-    const fileListEl = document.getElementById('sisConcFileList');
-    if (fileListEl) {
-        fileListEl.innerHTML = _selectedSisFiles.map((f, i) => `
-            <span class="px-3 py-1 rounded-xl bg-slate-200 text-slate-800 border border-slate-300 flex items-center gap-1">
-                📄 ${f.name} <span class="text-[10px] text-slate-500">(${Math.round(f.size/1024)} KB)</span>
-            </span>
-        `).join('');
-    }
-
-    const consoleEl = document.getElementById('sisConcConsole');
-    if (consoleEl) {
-        consoleEl.innerHTML = `<div class="text-teal-400">➜ Se seleccionaron ${_selectedSisFiles.length} archivos para unificar y compilar. Haz clic en "Compilar & Limpiar".</div>`;
-    }
-    document.getElementById('btnDownloadConcentrated').style.display = 'none';
-};
-
-window.runWebSisConcentrator = async function() {
-    const consoleEl = document.getElementById('sisConcConsole');
-    const autoZero = document.getElementById('sisConcAutoZero')?.checked ?? true;
-    const targetSheet = (document.getElementById('sisConcTargetSheet')?.value || 'CSV').trim().toUpperCase();
-
-    if (!_selectedSisFiles || _selectedSisFiles.length === 0) {
-        if (typeof showToast === 'function') showToast("Por favor selecciona al menos un archivo .xlsx o .csv", false, 'bad');
-        return;
-    }
-
-    const log = (msg, color = 'text-slate-200') => {
-        if (consoleEl) {
-            consoleEl.innerHTML += `<div class="${color}">${msg}</div>`;
-            consoleEl.scrollTop = consoleEl.scrollHeight;
-        }
-    };
-
-    consoleEl.innerHTML = '';
-    log("==========================================================", "text-teal-400 font-bold");
-    log(" 🚀 INICIANDO CONCENTRADOR WEB SIS", "text-teal-400 font-bold");
-    log("==========================================================", "text-teal-400 font-bold");
-
-    let allRows = [];
-    let stats = { procesados: 0, omitidos: 0, vaciosCorr: 0, duplicados: 0 };
-    const ordenMunicipios = ['QUERÉTARO', 'CORREGIDORA', 'MARQUÉS', 'HUIMILPAN'];
-
-    for (let i = 0; i < _selectedSisFiles.length; i++) {
-        const file = _selectedSisFiles[i];
-        log(`[${i+1}/${_selectedSisFiles.length}] Procesando: ${file.name}...`);
-
-        try {
-            let jsonRows = [];
-            if (file.name.endsWith('.csv')) {
-                const text = await file.text();
-                const workbook = XLSX.read(text, { type: 'string' });
-                const sheetName = workbook.SheetNames[0];
-                jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: false, defval: '' });
-            } else {
-                const buffer = await file.arrayBuffer();
-                const workbook = XLSX.read(buffer, { type: 'array' });
-                
-                // Buscar la hoja especificada
-                let sheetName = workbook.SheetNames.find(s => s.trim().toUpperCase() === targetSheet);
-                if (!sheetName && workbook.SheetNames.length > 0) {
-                    sheetName = workbook.SheetNames[0]; // fallback
-                }
-
-                if (!sheetName) throw new Error(`No se encontró la hoja '${targetSheet}'.`);
-                jsonRows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: false, defval: '' });
-            }
-
-            if (!jsonRows || jsonRows.length === 0) {
-                log(`   └─ ⚠️ Archivo vacío o sin datos válidos. Omitido.`, "text-amber-400");
-                stats.omitidos++;
-                continue;
-            }
-
-            // Normalización de claves por fila y saneamiento a "0"
-            let processedRows = jsonRows.map((row, index) => {
-                let normRow = {};
-                for (let k in row) {
-                    let keyNorm = RDAParser._normalizeKey(k);
-                    if (keyNorm.startsWith('UNNAMED')) continue;
-
-                    let val = String(row[k] ?? '').trim();
-                    // Sanitizar " " -> 0
-                    if (autoZero && (val === '' || val === 'nan' || val === 'null' || val === 'None')) {
-                        val = '0';
-                        stats.vaciosCorr++;
-                    }
-                    normRow[keyNorm] = val;
-                }
-
-                // Estandarización de nombres de columnas
-                if (normRow['VARIABLE'] && !normRow['VARIABLE_SIS']) normRow['VARIABLE_SIS'] = normRow['VARIABLE'];
-                if (normRow['DOSIS'] && !normRow['VALOR']) normRow['VALOR'] = normRow['DOSIS'];
-                if (normRow['AÑO'] && !normRow['ANIO']) normRow['ANIO'] = normRow['AÑO'];
-
-                // Homologación de municipio
-                if (normRow['MUNICIPIO']) {
-                    let m = normRow['MUNICIPIO'].toUpperCase().trim();
-                    if (m === 'EL MARQUÉS' || m === 'EL MARQUES' || m === 'MARQUES') m = 'MARQUÉS';
-                    if (m === 'QUERETARO') m = 'QUERÉTARO';
-                    normRow['MUNICIPIO'] = m;
-                }
-
-                normRow['_ORDEN_ORIGINAL'] = index;
-                return normRow;
-            });
-
-            allRows.push(...processedRows);
-            stats.procesados++;
-            log(`   └─ ✅ OK: ${processedRows.length} registros cargados.`, "text-emerald-400");
-        } catch (err) {
-            log(`   └─ ❌ ERROR: ${err.message}`, "text-rose-400");
-            stats.omitidos++;
-        }
-    }
-
-    if (allRows.length === 0) {
-        log("\n❌ No se extrajo ningún registro de los archivos seleccionados.", "text-rose-400 font-bold");
-        return;
-    }
-
-    log("\n----------------------------------------------------------", "text-slate-500");
-    log("⚙️ APLICANDO DEDUPLICACIÓN Y ORDENAMIENTO TOP-DOWN...", "text-teal-400 font-bold");
-
-    // 1. Deduplicación inteligente por [CLUES, VARIABLE_SIS, MES, ANIO]
-    const dedupeMap = new Map();
-    const rowsBefore = allRows.length;
-    allRows.forEach(row => {
-        const key = `${row['CLUES']||''}_${row['VARIABLE_SIS']||''}_${row['MES']||''}_${row['ANIO']||''}`;
-        dedupeMap.set(key, row);
-    });
-    allRows = Array.from(dedupeMap.values());
-    stats.duplicados = rowsBefore - allRows.length;
-
-    // 2. Ordenamiento Top-Down (Mes -> Municipio -> CLUES -> Orden)
-    allRows.sort((a, b) => {
-        const mesA = parseInt(a['MES'], 10) || 0;
-        const mesB = parseInt(b['MES'], 10) || 0;
-        if (mesA !== mesB) return mesA - mesB;
-
-        const idxA = ordenMunicipios.indexOf(a['MUNICIPIO']);
-        const idxB = ordenMunicipios.indexOf(b['MUNICIPIO']);
-        if (idxA !== idxB) return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
-
-        const cluesA = a['CLUES'] || '';
-        const cluesB = b['CLUES'] || '';
-        if (cluesA !== cluesB) return cluesA.localeCompare(cluesB);
-
-        return (a['_ORDEN_ORIGINAL'] || 0) - (b['_ORDEN_ORIGINAL'] || 0);
-    });
-
-    // 3. MOTOR DE AUDITORÍA Y DIAGNÓSTICO DE SALUD DE DATOS EPIDEMIOLÓGICOS (SIN TOCAR TABLAS BD)
-    log("\n----------------------------------------------------------", "text-slate-500");
-    log("🔍 EJECUTANDO MOTOR DE AUDITORÍA Y COMPROBACIÓN DE SALUD...", "text-indigo-400 font-bold");
-
-    let audit = {
-        cluesDesconocidas: new Set(),
-        variablesSinMapeo: new Set(),
-        valoresNegativos: 0,
-        picosAnomalos: 0,
-        mesesPresentes: new Set(),
-        municipiosUnicos: new Set()
-    };
-
-    const validDictVars = new Set(Object.values(window.DICT_RDA || {}).flat());
-
-    allRows.forEach((r, idx) => {
-        const c = (r['CLUES'] || '').toUpperCase();
-        const v = (r['VARIABLE_SIS'] || '').toUpperCase();
-        const val = parseInt(r['VALOR'], 10) || 0;
-        const m = parseInt(r['MES'], 10);
-
-        if (m >= 1 && m <= 12) audit.mesesPresentes.add(m);
-        if (r['MUNICIPIO']) audit.municipiosUnicos.add(r['MUNICIPIO']);
-
-        // Validar formato de CLUES (ej: QTSSA...)
-        if (c && !c.startsWith('QT') && !c.startsWith('CLUES')) {
-            audit.cluesDesconocidas.add(c);
-        }
-
-        // Detectar si la clave SIS no está mapeada en ninguna vacuna RDA
-        if (v && validDictVars.size > 0 && !validDictVars.has(v)) {
-            audit.variablesSinMapeo.add(v);
-        }
-
-        // Anomalías en valores
-        if (val < 0) audit.valoresNegativos++;
-        if (val > 1500) audit.picosAnomalos++; // Alerta si una sola dosis mensual supera 1,500 aplicadas
-    });
-
-    log(`📈 Meses detectados en el lote : [${Array.from(audit.mesesPresentes).sort((a,b)=>a-b).join(', ')}]`, "text-slate-200");
-    log(`🏛️ Municipios agregados        : [${Array.from(audit.municipiosUnicos).join(', ')}]`, "text-slate-200");
-
-    if (audit.cluesDesconocidas.size > 0) {
-        log(`🚨 ALERTA ESTRUCTURAL: ${audit.cluesDesconocidas.size} CLUES con sintaxis inusual: [${Array.from(audit.cluesDesconocidas).slice(0, 5).join(', ')}]`, "text-rose-400");
-    }
-
-    if (audit.picosAnomalos > 0) {
-        log(`⚠️ ALERTA DE DATOS: Se detectaron ${audit.picosAnomalos} registros con valores >1,500 dosis (posible error de captura).`, "text-amber-400");
-    }
-
-    // 4. Generar CSV String final y Blob (Exclusivo en memoria del navegador)
-    if (allRows.length > 0) {
-        allRows.forEach(r => delete r['_ORDEN_ORIGINAL']);
-        
-        const worksheet = XLSX.utils.json_to_sheet(allRows);
-        const csvString = XLSX.utils.sheet_to_csv(worksheet);
-        
-        _concentratedResultBlob = new Blob(["\ufeff" + csvString], { type: 'text/csv;charset=utf-8;' });
-
-        log("\n==========================================================", "text-emerald-400 font-bold");
-        log(" 🎉 ¡COMPILACIÓN Y ANÁLISIS COMPLETADO CON ÉXITO!", "text-emerald-400 font-bold");
-        log("==========================================================", "text-emerald-400 font-bold");
-        log(`📊 Registros limpios consolidados : ${allRows.length.toLocaleString()}`, "text-slate-100 font-bold");
-        log(`📁 Archivos procesados con éxito  : ${stats.procesados}`, "text-slate-100");
-        log(`🧹 Celdas vacías corregidas a "0"  : ${stats.vaciosCorr.toLocaleString()}`, "text-slate-100");
-        log(`🛡️ Duplicados eliminados          : ${stats.duplicados.toLocaleString()}`, "text-slate-100");
-        log(`🔒 Estado Base de Datos           : 100% Intacta (Procesamiento en Memoria)`, "text-teal-300 font-bold");
-
-        const dlBtn = document.getElementById('btnDownloadConcentrated');
-        if (dlBtn) {
-            dlBtn.style.display = 'inline-flex';
-            dlBtn.style.backgroundColor = '#059669';
-            dlBtn.style.color = '#ffffff';
-        }
-        if (typeof showToast === 'function') showToast("¡Análisis completado! Archivo listo para descarga.", true, 'good');
-    }
-};
-
-window.downloadConcentratedResult = function() {
-    if (!_concentratedResultBlob) return;
-    const url = URL.createObjectURL(_concentratedResultBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `concentrado_total_sis_${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+window.resetCsvUploadModal = function() {
+    RDAParser.resetUploadModalUI();
 };
