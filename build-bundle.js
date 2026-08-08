@@ -33,6 +33,7 @@ const GROUP_BODY = [
   'rda_calculator.js',
   'rda_parser.js',
   'param_calculator.js',
+  'jeringas_calculator.js',
   'rda_ui.js',
 ];
 

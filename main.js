@@ -13890,7 +13890,7 @@ window.activateOpsTab = function (tab) {
   // Sync AppState.mainTab to prevent async summary panel leaks
   if (tab === "NOTIFICATIONS") {
     AppState.mainTab = "NOTIFS";
-  } else if (tab === "SECURITY" || tab === "PARAMS") {
+  } else if (tab === "SECURITY" || tab === "PARAMS" || tab === "JERINGAS") {
     AppState.mainTab = "ADMIN";
   } else {
     AppState.mainTab = "CAP";
@@ -13913,7 +13913,8 @@ window.activateOpsTab = function (tab) {
       "LOTES": "tabLOTES",
       "NOTIFICATIONS": "tabOPS_NOTIFS",
       "SECURITY": "tabOPS_ADMIN",
-      "PARAMS": "tabOPS_PARAMS"
+      "PARAMS": "tabOPS_PARAMS",
+      "JERINGAS": "tabOPS_JERINGAS"
     };
     const targetId = buttonIds[tab];
     if (targetId) {
@@ -13936,7 +13937,8 @@ window.activateOpsTab = function (tab) {
     "LOTES": "panelLOTES",
     "NOTIFICATIONS": "panelNOTIFS",
     "SECURITY": "panelADMIN",
-    "PARAMS": "panelADMIN"
+    "PARAMS": "panelADMIN",
+    "JERINGAS": "panelADMIN"
   };
 
   const isMobileRda = tab === "RDA" && (document.body.classList.contains("touch-ui") || window.innerWidth < 768);
@@ -14032,6 +14034,9 @@ window.activateOpsTab = function (tab) {
   }
   if (tab === "PARAMS") {
     if (typeof activateAdminSubPanel === 'function') activateAdminSubPanel("parametros");
+  }
+  if (tab === "JERINGAS") {
+    if (typeof activateAdminSubPanel === 'function') activateAdminSubPanel("jeringas");
   }
   if (tab === "NOTIFICATIONS") {
     if (AppState.rol !== "UNIDAD" && typeof initNotificationCenter === 'function') {
@@ -15709,6 +15714,11 @@ window.activateAdminSubPanel = function (panelId) {
   if (panelId === 'parametros') {
     if (typeof window.initConsoleParametros === 'function') {
       window.initConsoleParametros();
+    }
+  }
+  if (panelId === 'jeringas') {
+    if (typeof window.initConsoleJeringas === 'function') {
+      window.initConsoleJeringas();
     }
   }
   if (panelId === 'campanas') {
