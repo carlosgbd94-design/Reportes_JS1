@@ -1095,6 +1095,48 @@ function jerMuniScopeTitle(municipio) {
     return `MUNICIPIO DE ${String(municipio || '').toUpperCase()} — JURISDICCIÓN SANITARIA NO. 1`;
 }
 
+/**
+ * Exporta el alcance completo de un usuario Municipal: 1 hoja por cada municipio que
+ * tenga asignado (normalmente 1, pero `perfiles.municipios_allowed` admite varios).
+ * `_jerUnitsList` ya viene filtrado por municipio permitido desde `jerLoadAllData`, así
+ * que agrupar por municipio aquí basta para no depender de tomar solo el primero.
+ */
+window.jerExportMyMunicipios = async function() {
+    if (typeof ExcelJS === 'undefined') {
+        if (typeof showToast === 'function') showToast('Librería de exportación no cargada', false, 'bad');
+        return;
+    }
+    const byMuni = jerGroupUnitsByMunicipio(window._jerUnitsList);
+    const municipios = Object.keys(byMuni).sort();
+    if (municipios.length === 0) {
+        if (typeof showToast === 'function') showToast('No se pudo determinar tu municipio', false, 'bad');
+        return;
+    }
+    if (municipios.length === 1) {
+        return window.jerExportSingleMunicipio(municipios[0]);
+    }
+
+    if (typeof showOverlay === 'function') showOverlay(`Generando Excel de ${municipios.length} municipios...`, "Exportar Jeringas");
+    try {
+        const wb = new ExcelJS.Workbook();
+        wb.creator = 'SIREVAQ';
+        municipios.forEach(m => {
+            const ws = wb.addWorksheet(jerSanitizeSheetName(m), { views: [{ showGridLines: false }] });
+            const title = jerMuniScopeTitle(m);
+            jerBuildSheetForUnits(ws, `MIS MUNICIPIOS (${municipios.length}) — JURISDICCIÓN SANITARIA NO. 1`, title, byMuni[m]);
+        });
+
+        const buffer = await wb.xlsx.writeBuffer();
+        jerDownloadWorkbookBuffer(buffer, `Jeringas_Mis_Municipios_${jerTodayStr()}.xlsx`);
+        if (typeof showToast === 'function') showToast('Excel generado con éxito', true, 'good');
+    } catch (e) {
+        console.error('Error al exportar jeringas (mis municipios):', e);
+        if (typeof showToast === 'function') showToast('Error al generar el Excel: ' + e.message, false, 'bad');
+    } finally {
+        if (typeof hideOverlay === 'function') hideOverlay();
+    }
+};
+
 /** Exporta un solo municipio (usado tanto por el botón único de Municipal como por el modo "4 archivos"). */
 window.jerExportSingleMunicipio = async function(municipio) {
     if (typeof ExcelJS === 'undefined') {
@@ -1242,12 +1284,9 @@ window.jerExportTotalJurisdiccional = async function() {
 window.jerToggleExportMenu = function() {
     const role = window._jerUserRole;
     if (role === 'MUNICIPAL') {
-        const muni = (window._jerUnitsList && window._jerUnitsList[0] && window._jerUnitsList[0].municipio) || null;
-        if (!muni) {
-            if (typeof showToast === 'function') showToast('No se pudo determinar tu municipio', false, 'bad');
-            return;
-        }
-        window.jerExportSingleMunicipio(muni);
+        // Exporta TODOS los municipios que el usuario tenga asignados, no solo el primero
+        // en orden alfabético — perfiles.municipios_allowed admite más de uno.
+        window.jerExportMyMunicipios();
         return;
     }
     const menu = document.getElementById('jerExportMenu');
