@@ -657,6 +657,7 @@ async function renderDashboard() {
             if (_rdaCharts.b) { try { _rdaCharts.b.dispose(); } catch(e){} _rdaCharts.b = null; }
             if (_rdaCharts.total) { try { _rdaCharts.total.dispose(); } catch(e){} _rdaCharts.total = null; }
             if (_rdaCharts.d) { try { _rdaCharts.d.dispose(); } catch(e){} _rdaCharts.d = null; }
+            if (_rdaCharts.comparativa) { try { _rdaCharts.comparativa.dispose(); } catch(e){} _rdaCharts.comparativa = null; }
             container.innerHTML = _rdaState.originalDashboardHtml;
         }
     }
@@ -1685,6 +1686,7 @@ function renderBarChart(fUnits, muniFilter, esquema) {
             if (_rdaCharts.b) _rdaCharts.b.resize();
             if (_rdaCharts.total) _rdaCharts.total.resize();
             if (_rdaCharts.d) _rdaCharts.d.resize();
+            if (_rdaCharts.comparativa) { try { _rdaCharts.comparativa.resize(); } catch(e){} }
         });
         window._rdaEchartsResizeAttached = true;
     }
@@ -5337,7 +5339,22 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
         setTimeout(() => {
             const chartDom = document.getElementById('chartComparativeMulti');
             if (chartDom && typeof echarts !== 'undefined') {
+                // Cada re-render (cambio de filtro) reemplaza el HTML del contenedor y crea un
+                // #chartComparativeMulti nuevo; si no se destruye la instancia anterior aquí, se
+                // queda viva apuntando a un nodo ya desconectado del DOM, y el próximo movimiento
+                // de mouse la hace tronar al intentar reposicionar su tooltip (getSize de null).
+                if (_rdaCharts.comparativa) { try { _rdaCharts.comparativa.dispose(); } catch(e){} _rdaCharts.comparativa = null; }
                 const myChart = echarts.init(chartDom, null, { renderer: 'canvas' });
+                _rdaCharts.comparativa = myChart;
+                if (!window._rdaEchartsResizeAttached) {
+                    window.addEventListener('resize', () => {
+                        if (_rdaCharts.b) _rdaCharts.b.resize();
+                        if (_rdaCharts.total) _rdaCharts.total.resize();
+                        if (_rdaCharts.d) _rdaCharts.d.resize();
+                        if (_rdaCharts.comparativa) { try { _rdaCharts.comparativa.resize(); } catch(e){} }
+                    });
+                    window._rdaEchartsResizeAttached = true;
+                }
                 const fontModern = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
                 
                 const subtextStr = (_rdaState.corteTemporal === '0' || !_rdaState.corteTemporal)
@@ -5426,7 +5443,8 @@ async function renderComparativaMultianual(muniFilter, uniFilter) {
                     ]
                 };
                 myChart.setOption(option);
-                window.addEventListener('resize', () => myChart.resize());
+                // El resize de esta instancia ya lo cubre el listener global de renderBarChart
+                // (window._rdaEchartsResizeAttached), que ahora también revisa _rdaCharts.comparativa.
             }
         }, 100);
 
