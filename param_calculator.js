@@ -132,10 +132,13 @@ window.initConsoleParametros = async function() {
         }
     }
 
-    // Ocultar botón de Calculadora Admin si no es Admin o Jurisdiccional
+    // Ocultar botón de Calculadora Admin si no es Admin o Jurisdiccional.
+    // .spm-btn-icon-custom fija "display: inline-flex !important" en CSS, así que un
+    // style.display normal (sin prioridad) no lo tapa — hay que igualar la prioridad con
+    // setProperty(..., 'important') o el botón se queda visible/clickeable para Municipal.
     const btnAdminCalc = document.getElementById('spmBtnAdminCalc');
     if (btnAdminCalc) {
-        btnAdminCalc.style.display = (roleRaw.includes("ADMIN") || roleRaw.includes("JURISDICCIONAL")) ? "inline-flex" : "none";
+        btnAdminCalc.style.setProperty('display', (roleRaw.includes("ADMIN") || roleRaw.includes("JURISDICCIONAL")) ? "inline-flex" : "none", "important");
     }
 
     await window.spmLoadAllData();
@@ -473,6 +476,17 @@ window.spmSaveCurrentUnitParams = async function() {
 
 // 8. CALCULADORA ADMIN MASIVA DESDE HISTÓRICO SIS (CON AÑO EN CURSO Y MESES CARGADOS REALES + 10% COLCHÓN TÉCNICO)
 window.spmRunAdminCalculation = async function() {
+    // Respaldo por si el botón queda visible para Municipal por algún problema de CSS (ya
+    // pasó una vez): sin esto, el único freno era ocultar el botón, y si ese freno fallaba
+    // el usuario topaba directo con el error crudo de la RPC restringida por RLS.
+    const role = window._spmUserRole || "";
+    if (!role.includes("ADMIN") && !role.includes("JURISDICCIONAL")) {
+        if (typeof showToast === 'function') {
+            showToast("Tu perfil no tiene permisos para ejecutar la calculadora automática.", false, 'bad');
+        }
+        return;
+    }
+
     const currentYear = new Date().getFullYear(); // Año en curso dinámico
 
     const confirmCalc = await window.showConfirmDialog(

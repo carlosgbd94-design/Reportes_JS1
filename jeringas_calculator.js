@@ -143,13 +143,16 @@ window.initConsoleJeringas = async function() {
     // La calculadora masiva desde histórico SIS requiere las mismas RPCs que usa Parámetros,
     // las cuales están restringidas por RLS a ADMIN/JURISDICCIONAL — Municipal no puede llamarlas,
     // así que se oculta el botón para evitar un error de permisos al hacer clic.
+    // .spm-btn-icon-custom fija "display: inline-flex !important" en CSS, así que un
+    // style.display normal (sin prioridad) no lo tapa — hay que igualar la prioridad con
+    // setProperty(..., 'important') o el botón se queda visible/clickeable para Municipal.
     const btnAdminCalc = document.getElementById('jerBtnAdminCalc');
     if (btnAdminCalc) {
-        btnAdminCalc.style.display = (roleRaw === "ADMIN" || roleRaw === "JURISDICCIONAL") ? "inline-flex" : "none";
+        btnAdminCalc.style.setProperty('display', (roleRaw === "ADMIN" || roleRaw === "JURISDICCIONAL") ? "inline-flex" : "none", "important");
     }
     const bufferWrap = document.getElementById('jerBufferPctWrap');
     if (bufferWrap) {
-        bufferWrap.style.display = (roleRaw === "ADMIN" || roleRaw === "JURISDICCIONAL") ? "flex" : "none";
+        bufferWrap.style.setProperty('display', (roleRaw === "ADMIN" || roleRaw === "JURISDICCIONAL") ? "flex" : "none", "important");
     }
 
     // El botón de exportar es el mismo para todos, pero para Municipal exporta directo
@@ -529,6 +532,16 @@ window.jerResolveVarsForJeringa = function(def, mappingMap) {
 
 // 8. CALCULADORA ADMIN MASIVA DESDE HISTÓRICO SIS (SOLO ADMIN/JURISDICCIONAL — mismo límite que RLS de las RPCs)
 window.jerRunAdminCalculation = async function() {
+    // Respaldo por si el botón queda visible para Municipal por algún problema de CSS (ya
+    // pasó una vez): sin esto, el único freno era ocultar el botón, y si ese freno fallaba
+    // el usuario topaba directo con el error crudo de la RPC restringida por RLS.
+    if (window._jerUserRole !== "ADMIN" && window._jerUserRole !== "JURISDICCIONAL") {
+        if (typeof showToast === 'function') {
+            showToast("Tu perfil no tiene permisos para ejecutar la calculadora automática.", false, 'bad');
+        }
+        return;
+    }
+
     const currentYear = new Date().getFullYear();
 
     const bufferInput = document.getElementById('jerBufferPct');
