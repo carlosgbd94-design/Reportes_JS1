@@ -365,7 +365,7 @@
        (ensurePdfAssetsLoaded) solo al exportar el PDF de Resguardo.
        Generado por build-bundle.js. Los archivos originales siguen en el repo
        (sin borrar) por si hace falta revertir este cambio. -->
-  <script src="dist/bundle-head.js?v=2026.10" defer></script>
+  <script src="dist/bundle-head.js?v=2026.13" defer></script>
 
   <!-- 🔧 Service Worker Registration (PWA) -->
   <script>
@@ -3845,6 +3845,11 @@
                 <span class="material-symbols-rounded">campaign</span>
                 <span>Campañas</span>
               </button>
+
+              <button class="nav-tab" id="tabAdminAuditoria" data-role-gate="ADMIN" onclick="activateAdminSubPanel('auditoria')">
+                <span class="material-symbols-rounded">fact_check</span>
+                <span>Auditoría</span>
+              </button>
             </div>
           </div>
 
@@ -4643,6 +4648,29 @@
                   <option value="">Cargando municipios...</option>
                 </select>
 
+                <div id="spmBufferPctWrap" style="display:none; align-items:center; gap:6px;">
+                  <select id="spmCalcMode" class="spm-pill-select-custom" style="width:auto; min-width:0;" onchange="window.spmToggleCalcMode()" title="Método de cálculo del colchón de seguridad">
+                    <option value="colchon_fijo">Colchón fijo</option>
+                    <option value="nivel_servicio">Nivel de servicio</option>
+                  </select>
+
+                  <div id="spmColchonInputWrap" style="display:flex; align-items:center; gap:6px;">
+                    <label for="spmBufferPct" style="font-size:11px; font-weight:800; color:#64748b; white-space:nowrap;">% Colchón</label>
+                    <div style="width:52px; flex-shrink:0;">
+                      <input type="number" id="spmBufferPct" value="10" min="0" max="100" step="1" class="spm-input-num-clean">
+                    </div>
+                  </div>
+
+                  <div id="spmServiceLevelWrap" style="display:none; align-items:center; gap:6px;">
+                    <label for="spmServiceLevel" style="font-size:11px; font-weight:800; color:#64748b; white-space:nowrap;">Nivel de servicio</label>
+                    <select id="spmServiceLevel" class="spm-pill-select-custom" style="width:auto; min-width:0;" title="Probabilidad objetivo de no quedarse sin stock (afecta solo el Promedio)">
+                      <option value="90">90% (z=1.28)</option>
+                      <option value="95" selected>95% (z=1.65)</option>
+                      <option value="99">99% (z=2.33)</option>
+                    </select>
+                  </div>
+                </div>
+
                 <!-- Ícono Calculadora Admin Global Único -->
                 <button id="spmBtnAdminCalc" class="spm-btn-icon-custom" title="Ejecutar Calculadora Admin Masiva (SIS + 10% Colchón)" onclick="window.spmRunAdminCalculation()">
                   <svg viewBox="0 0 24 24"><path d="M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 2v4h16V4H4zm0 6v10h16V10H4zm2 2h3v2H6v-2zm5 0h3v2h-3v-2zm5 0h3v2h-3v-2zm-10 4h3v2H6v-2zm5 0h3v2h-3v-2zm5 0h3v2h-3v-2z"/></svg>
@@ -4727,9 +4755,25 @@
                 </select>
 
                 <div id="jerBufferPctWrap" style="display:none; align-items:center; gap:6px;">
-                  <label for="jerBufferPct" style="font-size:11px; font-weight:800; color:#64748b; white-space:nowrap;">% Colchón</label>
-                  <div style="width:52px; flex-shrink:0;">
-                    <input type="number" id="jerBufferPct" value="10" min="0" max="100" step="1" class="spm-input-num-clean">
+                  <select id="jerCalcMode" class="spm-pill-select-custom" style="width:auto; min-width:0;" onchange="window.jerToggleCalcMode()" title="Método de cálculo del colchón de seguridad">
+                    <option value="colchon_fijo">Colchón fijo</option>
+                    <option value="nivel_servicio">Nivel de servicio</option>
+                  </select>
+
+                  <div id="jerColchonInputWrap" style="display:flex; align-items:center; gap:6px;">
+                    <label for="jerBufferPct" style="font-size:11px; font-weight:800; color:#64748b; white-space:nowrap;">% Colchón</label>
+                    <div style="width:52px; flex-shrink:0;">
+                      <input type="number" id="jerBufferPct" value="10" min="0" max="100" step="1" class="spm-input-num-clean">
+                    </div>
+                  </div>
+
+                  <div id="jerServiceLevelWrap" style="display:none; align-items:center; gap:6px;">
+                    <label for="jerServiceLevel" style="font-size:11px; font-weight:800; color:#64748b; white-space:nowrap;">Nivel de servicio</label>
+                    <select id="jerServiceLevel" class="spm-pill-select-custom" style="width:auto; min-width:0;" title="Probabilidad objetivo de no quedarse sin stock (afecta solo el Promedio)">
+                      <option value="90">90% (z=1.28)</option>
+                      <option value="95" selected>95% (z=1.65)</option>
+                      <option value="99">99% (z=2.33)</option>
+                    </select>
                   </div>
                 </div>
 
@@ -5010,6 +5054,49 @@
           </div>
         </div>
 
+        <!-- SUB-PANEL 9: AUDITORÍA DE INTEGRIDAD DE DATOS -->
+        <div id="adminSection_auditoria" class="admin-sub-panel hide animate-in fade-in slide-in-from-bottom-4 duration-500"
+          style="display:none;">
+          <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h4 class="text-[18px] font-black text-primary m-0 tracking-tight">Auditoría de Integridad de Datos</h4>
+              <p class="text-[12px] font-bold text-slate-400 mt-1">Revisa CLUES mal formados, unidades huérfanas,
+                población duplicada entre años y meses faltantes — los mismos checks que ya encontraron y corrigieron
+                errores reales en la base de datos.</p>
+            </div>
+            <button class="btn-premium-action btn-save-animate" id="btnRunAuditFindings" onclick="window.auditRunFindings()" style="margin-top:0;">
+              <span class="material-symbols-rounded">fact_check</span> Correr auditoría
+            </button>
+          </div>
+
+          <div id="auditSummaryBar" style="display:none; margin-bottom:16px; padding:12px 16px; border-radius:14px; background:#f8fafc; border:1px solid #e2e8f0; font-size:12.5px; font-weight:700; color:#475569;"></div>
+
+          <div class="bg-surface rounded-3xl border border-outline-variant/30 shadow-sm overflow-hidden">
+            <div class="p-6">
+              <div class="overflow-x-auto rounded-2xl border border-outline-variant/20">
+                <table class="w-full text-left border-collapse bg-surface/50 shadow-sm">
+                  <thead>
+                    <tr class="bg-primary/5">
+                      <th class="px-6 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 w-24">
+                        Severidad</th>
+                      <th class="px-6 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">
+                        Categoría</th>
+                      <th class="px-6 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30 w-32">
+                        CLUES</th>
+                      <th class="px-6 py-3 text-[10px] font-black text-primary uppercase tracking-widest border-b border-outline-variant/30">
+                        Descripción</th>
+                    </tr>
+                  </thead>
+                  <tbody id="auditFindingsTbody" class="divide-y divide-outline-variant/20">
+                    <tr>
+                      <td colspan="4" class="px-6 py-4 text-center text-slate-400">Da clic en "Correr auditoría" para revisar la base de datos.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
 
       </div>
     </div>
@@ -5750,13 +5837,13 @@
 
         <div class="modalFooter" style="margin-top:24px; display:flex; justify-content:flex-end; gap:12px; flex-wrap:wrap;">
           <button class="ghostBtn" id="btnCancelarEntregaPinol" type="button"
-            style="font-weight:700; border:none; background:transparent; cursor:pointer; color:#64748b;">
+            style="font-weight:700; cursor:pointer; color:#64748b;">
             Cancelar
           </button>
 
           <button class="btn" id="btnConfirmarEntregaPinol" type="button" style="
                 background: #f1f5f9;
-                color: #334155;
+                color: #334155 !important;
                 padding: 10px 20px;
                 border: 1px solid #cbd5e1;
                 border-radius: 14px;
@@ -6336,7 +6423,7 @@
         style="margin-top:24px; padding:20px; display:flex; justify-content:flex-end; gap:12px; border-top: 1px solid rgba(0,0,0,0.05);">
         <button class="ghostBtn" type="button"
           onclick="document.getElementById('createUserModal').classList.remove('show')"
-          style="font-weight:700; border:none; background:transparent;">
+          style="font-weight:700;">
           <span class="material-symbols-rounded">close</span> Cancelar
         </button>
         <button class="btn" id="btnSubmitCreateUser" type="button"
@@ -6428,7 +6515,7 @@
 
       <div class="modalFooter" style="display:flex; justify-content:flex-end; gap:12px; padding-top: 10px;">
         <button class="ghostBtn" id="btnPwdClose" type="button"
-          style="display:none; border:none; background:transparent; font-weight:700;">
+          style="display:none; font-weight:700;">
           <span class="material-symbols-rounded">close</span> Cerrar
         </button>
 
@@ -6486,7 +6573,7 @@
 
         <div class="modalFooter" style="margin-top:24px; display:flex; justify-content:flex-end; gap:12px;">
           <button class="ghostBtn" id="btnForgotClose" type="button"
-            style="border:none; background:transparent; font-weight:700;">
+            style="font-weight:700;">
             <span class="material-symbols-rounded">close</span> Cerrar
           </button>
 
@@ -6626,7 +6713,7 @@
         <div class="modalFooter"
           style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 16px; border-t: 1px solid #e2e8f0;">
           <button class="ghostBtn" id="btnCancelNewCap" type="button"
-            style="height: 40px; padding: 0 16px; border-radius: 10px; font-weight: 700; cursor: pointer; border: none; background: transparent; color: #475569; display: flex; align-items: center; gap: 8px;">Cancelar</button>
+            style="height: 40px; padding: 0 16px; border-radius: 10px; font-weight: 700; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 8px;">Cancelar</button>
           <button class="btn-premium-action btn-save-animate" id="btnSaveNewCap" type="button"
             style="height: 40px; padding: 0 20px; border-radius: 10px; font-weight: 800; cursor: pointer; border: none; background: var(--md-sys-color-primary); color: #fff; display: flex; align-items: center; gap: 8px; margin-top: 0;">Crear</button>
         </div>
@@ -6665,7 +6752,7 @@
         <div class="modalFooter"
           style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 16px; border-t: 1px solid #e2e8f0;">
           <button class="ghostBtn" id="btnCancelEditCap" type="button"
-            style="height: 40px; padding: 0 16px; border-radius: 10px; font-weight: 700; cursor: pointer; border: none; background: transparent; color: #475569; display: flex; align-items: center; gap: 8px;">Cancelar</button>
+            style="height: 40px; padding: 0 16px; border-radius: 10px; font-weight: 700; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 8px;">Cancelar</button>
           <button class="btn-premium-action btn-save-animate" id="btnSaveEditCap" type="button"
             style="height: 40px; padding: 0 20px; border-radius: 10px; font-weight: 800; cursor: pointer; border: none; background: var(--md-sys-color-primary); color: #fff; display: flex; align-items: center; gap: 8px; margin-top: 0;">Guardar Cambios</button>
         </div>
@@ -6704,7 +6791,7 @@
         <div class="modalFooter"
           style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 16px; border-t: 1px solid #e2e8f0;">
           <button class="ghostBtn" id="btnCancelNewCamp" type="button"
-            style="height: 40px; padding: 0 16px; border-radius: 10px; font-weight: 700; cursor: pointer; border: none; background: transparent; color: #475569; display: flex; align-items: center; gap: 8px;">Cancelar</button>
+            style="height: 40px; padding: 0 16px; border-radius: 10px; font-weight: 700; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 8px;">Cancelar</button>
           <button class="btn-premium-action btn-save-animate" id="btnSaveNewCamp" type="button"
             style="height: 40px; padding: 0 20px; border-radius: 10px; font-weight: 800; cursor: pointer; border: none; background: var(--md-sys-color-primary); color: #fff; display: flex; align-items: center; gap: 8px; margin-top: 0;">Crear</button>
         </div>
@@ -7061,41 +7148,12 @@
       </div>
       <div class="modalFooter" style="margin-top:32px; display:flex; justify-content:flex-end; gap:12px;">
         <button class="ghostBtn" type="button" onclick="closeDesabastoModal()"
-          style="font-weight:700; border:none; background:transparent;">
+          style="font-weight:700;">
           Regresar a Corregir
         </button>
         <button class="btn" id="btnConfirmDesabasto" type="button"
           style="background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); font-weight:800;">
           Sí, Continuar
-        </button>
-      </div>
-    </div>
-  </div>
-  <!-- ⚠️ ALERTA DE COMPRESIÓN DE PDF (>10MB) -->
-  <div class="modalOverlay" id="pdfLimitAlertOverlay"
-    style="display: none; z-index: 11000; align-items: center; justify-content: center; position: fixed; inset: 0; background: rgba(3, 8, 18, 0.4);">
-    <div class="modal"
-      style="width: 100%; max-width: 480px; background: var(--md-sys-color-surface); border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden; padding: 32px; display: flex; flex-direction: column; gap: 24px;">
-      <div class="modalHead" style="text-align: center; display: flex; flex-direction: column; align-items: center;">
-        <div class="modalEyebrow"
-          style="background: #fffbeb; color: #d97706; padding: 6px 14px; border-radius: 12px; display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 11px; text-transform: uppercase; margin-bottom: 12px;">
-          <span class="material-symbols-rounded" style="font-size:16px; color:#d97706;">warning</span> Optimización
-          Necesaria
-        </div>
-        <div class="modalTitle" style="font-weight:900; margin-bottom:8px; font-size: 20px;">Archivo muy pesado</div>
-        <div class="modalSub" style="color:var(--md-sys-color-on-surface-variant); line-height:1.5; font-size: 14px;">
-          El archivo PDF que intentas subir supera el límite permitido de <strong>10 MB</strong>. Se procederá a
-          comprimir y optimizar el archivo automáticamente para reducir su tamaño y permitir la subida.
-        </div>
-      </div>
-      <div class="modalFooter" style="display:flex; justify-content:center; gap:12px; width: 100%; margin-top: 8px;">
-        <button class="ghostBtn" id="btnCancelPdfCompress" type="button"
-          style="border:none; background:transparent; font-weight:700; flex: 1; display:flex; align-items:center; justify-content:center; gap:8px;">
-          <span class="material-symbols-rounded">close</span> Cancelar
-        </button>
-        <button class="btn" id="btnConfirmPdfCompress" type="button"
-          style="background: #d97706; color: white; font-weight:800; padding: 12px 20px; border-radius: 12px; border: none; flex: 1.5; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);">
-          <span class="material-symbols-rounded">compress</span> Comprimir y continuar
         </button>
       </div>
     </div>
@@ -7780,7 +7838,7 @@
 
   <!-- Empaquetado: bundle-body.js = rda_calculator + rda_parser + param_calculator
        + rda_ui, en ese mismo orden. Generado por build-bundle.js. -->
-  <script src="dist/bundle-body.js?v=2026.10" defer></script>
+  <script src="dist/bundle-body.js?v=2026.13" defer></script>
 
   <!-- FEEDBACK FAB & MODAL -->
   <style>
@@ -8694,7 +8752,7 @@
       <div class="modalFooter"
         style="padding: 16px 24px; display:flex; justify-content:flex-end; gap:12px; background: var(--md-sys-color-surface); border-top: 1px solid var(--md-sys-color-surface-container);">
         <button id="btnCancelBCGApertura" type="button" class="ghostBtn"
-          style="border:none; background:transparent; font-weight:700; cursor: pointer; color: var(--md-sys-color-on-surface-variant);">Cancelar</button>
+          style="font-weight:700; cursor: pointer; color: var(--md-sys-color-on-surface-variant);">Cancelar</button>
         <button id="btnSaveBCGApertura" type="button"
           style="background: #0ea5e9; color: white; border: none; font-weight: 800; padding: 10px 20px; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);">Guardar
           Cambios</button>

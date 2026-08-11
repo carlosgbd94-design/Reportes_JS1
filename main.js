@@ -15724,6 +15724,11 @@ window.activateAdminSubPanel = function (panelId) {
   if (panelId === 'campanas') {
     loadCampanasAdmin();
   }
+  if (panelId === 'auditoria') {
+    if (typeof window.initConsoleAuditoria === 'function') {
+      window.initConsoleAuditoria();
+    }
+  }
 };
 
 // --- GESTIÓN DE CAPACITACIONES (ADMIN PANEL) ---

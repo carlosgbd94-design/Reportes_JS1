@@ -140,6 +140,10 @@ window.initConsoleParametros = async function() {
     if (btnAdminCalc) {
         btnAdminCalc.style.setProperty('display', (roleRaw.includes("ADMIN") || roleRaw.includes("JURISDICCIONAL")) ? "inline-flex" : "none", "important");
     }
+    const bufferWrap = document.getElementById('spmBufferPctWrap');
+    if (bufferWrap) {
+        bufferWrap.style.setProperty('display', (roleRaw.includes("ADMIN") || roleRaw.includes("JURISDICCIONAL")) ? "flex" : "none", "important");
+    }
 
     await window.spmLoadAllData();
 };
@@ -475,6 +479,15 @@ window.spmSaveCurrentUnitParams = async function() {
 };
 
 // 8. CALCULADORA ADMIN MASIVA DESDE HISTÓRICO SIS (CON AÑO EN CURSO Y MESES CARGADOS REALES + 10% COLCHÓN TÉCNICO)
+/** Alterna entre el input de "% Colchón" y el selector de "Nivel de servicio" según el modo elegido. */
+window.spmToggleCalcMode = function() {
+    const mode = document.getElementById('spmCalcMode')?.value;
+    const colchonWrap = document.getElementById('spmColchonInputWrap');
+    const serviceWrap = document.getElementById('spmServiceLevelWrap');
+    if (colchonWrap) colchonWrap.style.display = (mode === 'nivel_servicio') ? 'none' : 'flex';
+    if (serviceWrap) serviceWrap.style.display = (mode === 'nivel_servicio') ? 'flex' : 'none';
+};
+
 window.spmRunAdminCalculation = async function() {
     // Respaldo por si el botón queda visible para Municipal por algún problema de CSS (ya
     // pasó una vez): sin esto, el único freno era ocultar el botón, y si ese freno fallaba
@@ -489,9 +502,29 @@ window.spmRunAdminCalculation = async function() {
 
     const currentYear = new Date().getFullYear(); // Año en curso dinámico
 
+    const bufferInput = document.getElementById('spmBufferPct');
+    let bufferPct = parseFloat(bufferInput?.value);
+    if (!Number.isFinite(bufferPct) || bufferPct < 0) bufferPct = 10;
+    const bufferMultiplier = 1 + (bufferPct / 100);
+
+    // Modo "Nivel de servicio": mismo modelo que ya tiene la Calculadora de Jeringas — el
+    // Promedio usa la desviación estándar del consumo mensual real en vez de un % fijo; Mínimo
+    // y Máximo NO cambian de fórmula (siguen usando el colchón fijo), y el piso operativo de
+    // MIN_DOSIS_FLOOR sigue aplicando igual en ambos modos.
+    const calcModeEl = document.getElementById('spmCalcMode');
+    const calcMode = calcModeEl?.value === 'nivel_servicio' ? 'nivel_servicio' : 'colchon_fijo';
+    const SPM_Z_SCORES = { '90': 1.28, '95': 1.65, '99': 2.33 };
+    const serviceLevelEl = document.getElementById('spmServiceLevel');
+    const serviceLevelPct = calcMode === 'nivel_servicio' ? (serviceLevelEl?.value || '95') : null;
+    const zScore = SPM_Z_SCORES[serviceLevelPct] || 1.65;
+
+    const confirmMsg = calcMode === 'nivel_servicio'
+        ? `¿Deseas calcular automáticamente los promedios de productividad SIS del año ${currentYear} para todas las unidades activas? El Promedio usará el modo "Nivel de servicio" (${serviceLevelPct}%, z=${zScore}) sobre la variabilidad real de consumo; Mínimo y Máximo siguen usando el colchón fijo del ${bufferPct}%.`
+        : `¿Deseas calcular automáticamente los promedios de productividad SIS del año ${currentYear} (con +${bufferPct}% colchón técnico) para todas las unidades activas?`;
+
     const confirmCalc = await window.showConfirmDialog(
         "Ejecutar Calculadora de Aplicaciones SIS",
-        `¿Deseas calcular automáticamente los promedios de productividad SIS del año ${currentYear} (con +10% colchón técnico) para todas las unidades activas?`
+        confirmMsg
     );
     if (!confirmCalc) return;
 
@@ -592,10 +625,18 @@ window.spmRunAdminCalculation = async function() {
                 const rawMin = Math.min(...monthlyTotals);
                 const rawMax = Math.max(...monthlyTotals);
 
-                // Colchón técnico del 10% sobre las 3 métricas
-                const avgWithBuffer = rawAvg * 1.10;
-                const minWithBuffer = rawMin * 1.10;
-                const maxWithBuffer = rawMax * 1.10;
+                // Colchón técnico (ajustable, 10% por defecto) sobre Mínimo y Máximo en ambos
+                // modos; el Promedio usa colchón fijo O nivel de servicio, según spmCalcMode.
+                let avgWithBuffer;
+                if (calcMode === 'nivel_servicio') {
+                    const variance = monthlyTotals.reduce((a, v) => a + Math.pow(v - rawAvg, 2), 0) / monthlyTotals.length;
+                    const stdDev = Math.sqrt(variance);
+                    avgWithBuffer = rawAvg + zScore * stdDev;
+                } else {
+                    avgWithBuffer = rawAvg * bufferMultiplier;
+                }
+                const minWithBuffer = rawMin * bufferMultiplier;
+                const maxWithBuffer = rawMax * bufferMultiplier;
 
                 const defaultMultiplo = DEFAULT_DOSES_PER_BOTTLE[bio.toUpperCase()] || 1;
 

@@ -530,6 +530,15 @@ window.jerResolveVarsForJeringa = function(def, mappingMap) {
     return set;
 };
 
+/** Alterna entre el input de "% Colchón" y el selector de "Nivel de servicio" según el modo elegido. */
+window.jerToggleCalcMode = function() {
+    const mode = document.getElementById('jerCalcMode')?.value;
+    const colchonWrap = document.getElementById('jerColchonInputWrap');
+    const serviceWrap = document.getElementById('jerServiceLevelWrap');
+    if (colchonWrap) colchonWrap.style.display = (mode === 'nivel_servicio') ? 'none' : 'flex';
+    if (serviceWrap) serviceWrap.style.display = (mode === 'nivel_servicio') ? 'flex' : 'none';
+};
+
 // 8. CALCULADORA ADMIN MASIVA DESDE HISTÓRICO SIS (SOLO ADMIN/JURISDICCIONAL — mismo límite que RLS de las RPCs)
 window.jerRunAdminCalculation = async function() {
     // Respaldo por si el botón queda visible para Municipal por algún problema de CSS (ya
@@ -549,9 +558,26 @@ window.jerRunAdminCalculation = async function() {
     if (!Number.isFinite(bufferPct) || bufferPct < 0) bufferPct = 10;
     const bufferMultiplier = 1 + (bufferPct / 100);
 
+    // Modo "Nivel de servicio": el Promedio (punto de reorden) se calcula con la desviación
+    // estándar del consumo mensual real en vez de un % fijo — una unidad con demanda errática
+    // recibe más colchón que una estable aunque tengan el mismo promedio. Mínimo y Máximo NO
+    // cambian de fórmula en este modo (siguen siendo el mes más bajo/alto observado × colchón,
+    // igual que en modo "Colchón fijo") — así "máximo" sigue significando lo mismo para quien
+    // ya está acostumbrado a leerlo.
+    const calcModeEl = document.getElementById('jerCalcMode');
+    const calcMode = calcModeEl?.value === 'nivel_servicio' ? 'nivel_servicio' : 'colchon_fijo';
+    const JER_Z_SCORES = { '90': 1.28, '95': 1.65, '99': 2.33 };
+    const serviceLevelEl = document.getElementById('jerServiceLevel');
+    const serviceLevelPct = calcMode === 'nivel_servicio' ? (serviceLevelEl?.value || '95') : null;
+    const zScore = JER_Z_SCORES[serviceLevelPct] || 1.65;
+
+    const confirmMsg = calcMode === 'nivel_servicio'
+        ? `¿Deseas calcular automáticamente las cajas de jeringas del año ${currentYear} para todas las unidades activas? El Promedio usará el modo "Nivel de servicio" (${serviceLevelPct}%, z=${zScore}) sobre la variabilidad real de consumo; Mínimo y Máximo siguen usando el colchón fijo del ${bufferPct}%.`
+        : `¿Deseas calcular automáticamente las cajas de jeringas (Promedio/Mínimo/Máximo) del año ${currentYear}, con un colchón del ${bufferPct}%, para todas las unidades activas?`;
+
     const confirmCalc = await window.showConfirmDialog(
         "Ejecutar Calculadora de Jeringas SIS",
-        `¿Deseas calcular automáticamente las cajas de jeringas (Promedio/Mínimo/Máximo) del año ${currentYear}, con un colchón del ${bufferPct}%, para todas las unidades activas?`
+        confirmMsg
     );
     if (!confirmCalc) return;
 
@@ -663,9 +689,16 @@ window.jerRunAdminCalculation = async function() {
                 const rawMin = Math.min(...monthlyTotals);
                 const rawMax = Math.max(...monthlyTotals);
 
-                // Colchón (ajustable por el usuario, 10% por defecto) sobre las 3 métricas,
-                // y las 3 se redondean SIEMPRE hacia arriba a cajas completas.
-                const avgWithBuffer = rawAvg * bufferMultiplier;
+                // Colchón (ajustable por el usuario, 10% por defecto) sobre Mínimo y Máximo en
+                // ambos modos; el Promedio usa colchón fijo O nivel de servicio, según jerCalcMode.
+                let avgWithBuffer;
+                if (calcMode === 'nivel_servicio') {
+                    const variance = monthlyTotals.reduce((a, v) => a + Math.pow(v - rawAvg, 2), 0) / monthlyTotals.length;
+                    const stdDev = Math.sqrt(variance);
+                    avgWithBuffer = rawAvg + zScore * stdDev;
+                } else {
+                    avgWithBuffer = rawAvg * bufferMultiplier;
+                }
                 const minWithBuffer = rawMin * bufferMultiplier;
                 const maxWithBuffer = rawMax * bufferMultiplier;
 
@@ -1035,46 +1068,61 @@ function jerWriteMetricBlock(ws, startRow, blockLabel, membreteTitle, columns) {
     return r;
 }
 
-/** Prepara una hoja completa (banner + 3 bloques Promedio/Mínimo/Máximo) para un conjunto de columnas ya resuelto por unidad. */
-function jerBuildSheetForUnits(ws, scopeTitle, membreteTitle, units) {
-    const numCols = units.length;
-    const totalColIdx = 3 + numCols + 1;
+/**
+ * Las 3 métricas exportables, cada una en su PROPIA pestaña — a petición explícita: antes vivían
+ * apiladas como 3 bloques dentro de una sola hoja, y por lo importante que es esta información
+ * (Promedio/Mínimo/Máximo son 3 decisiones de pedido distintas) se separan en pestañas propias,
+ * cada una membretada con el nombre de la métrica y coloreada para no confundirse entre sí.
+ */
+const JER_METRIC_DEFS = [
+    { key: 'promedio_cajas', tabName: 'PROMEDIO', blockLabel: 'PROMEDIO MENSUAL', membreteLabel: 'PROMEDIO MENSUAL (CAJAS)', color: 'FF2563EB' },
+    { key: 'min_cajas', tabName: 'MÍNIMO', blockLabel: 'MÍNIMO MENSUAL', membreteLabel: 'MÍNIMO MENSUAL (CAJAS)', color: 'FFD97706' },
+    { key: 'max_cajas', tabName: 'MÁXIMO', blockLabel: 'MÁXIMO MENSUAL', membreteLabel: 'MÁXIMO MENSUAL (CAJAS)', color: 'FF16A34A' }
+];
+
+/**
+ * Arma UNA hoja para UNA sola métrica. `groups` trae 1 bloque por municipio/unidad-lista que se
+ * quiera incluir en esta hoja (1 solo grupo para un municipio único; 1 por municipio si son
+ * varios, ej. concentrado/mis-municipios) — mismo `jerWriteMetricBlock` de siempre, solo que
+ * ahora cada hoja llama la métrica UNA vez en vez de las 3 apiladas.
+ */
+function jerBuildMetricSheetForUnits(ws, metricDef, scopeTitle, groups) {
+    const maxCols = groups.reduce((m, g) => Math.max(m, g.units.length), 0);
+    const totalColIdx = 3 + maxCols + 1;
 
     ws.pageSetup.orientation = 'landscape';
     ws.views = [{ showGridLines: false }];
+    ws.properties.tabColor = { argb: metricDef.color };
     ws.getColumn(1).width = 18.14;
     ws.getColumn(2).width = 55.57;
     ws.getColumn(3).width = 11.43;
-    units.forEach((_, i) => { ws.getColumn(4 + i).width = 16.71; });
+    for (let i = 0; i < maxCols; i++) ws.getColumn(4 + i).width = 16.71;
     ws.getColumn(totalColIdx).width = 12.71;
 
-    jerWriteBanner(ws, totalColIdx, scopeTitle);
+    jerWriteBanner(ws, totalColIdx, `${metricDef.membreteLabel} — ${scopeTitle}`);
 
     let r = 4;
-    r = jerWriteMetricBlock(ws, r, 'PROMEDIO MENSUAL', membreteTitle, jerBuildColumnsForUnits(units, 'promedio_cajas'));
-    r = jerWriteMetricBlock(ws, r, 'MÍNIMO MENSUAL', membreteTitle, jerBuildColumnsForUnits(units, 'min_cajas'));
-    r = jerWriteMetricBlock(ws, r, 'MÁXIMO MENSUAL', membreteTitle, jerBuildColumnsForUnits(units, 'max_cajas'));
+    groups.forEach(g => {
+        r = jerWriteMetricBlock(ws, r, metricDef.blockLabel, g.membreteTitle, jerBuildColumnsForUnits(g.units, metricDef.key));
+    });
 }
 
 /** Igual que arriba, pero con una columna por MUNICIPIO (para el reporte de total jurisdiccional). */
-function jerBuildSheetForMunicipios(ws, scopeTitle, membreteTitle, municipiosList, unitsByMuni) {
-    const numCols = municipiosList.length;
-    const totalColIdx = 3 + numCols + 1;
+function jerBuildMetricSheetForMunicipios(ws, metricDef, scopeTitle, municipiosList, unitsByMuni) {
+    const totalColIdx = 3 + municipiosList.length + 1;
 
     ws.pageSetup.orientation = 'landscape';
     ws.views = [{ showGridLines: false }];
+    ws.properties.tabColor = { argb: metricDef.color };
     ws.getColumn(1).width = 18.14;
     ws.getColumn(2).width = 55.57;
     ws.getColumn(3).width = 11.43;
     municipiosList.forEach((_, i) => { ws.getColumn(4 + i).width = 22; });
     ws.getColumn(totalColIdx).width = 14;
 
-    jerWriteBanner(ws, totalColIdx, scopeTitle);
+    jerWriteBanner(ws, totalColIdx, `${metricDef.membreteLabel} — ${scopeTitle}`);
 
-    let r = 4;
-    r = jerWriteMetricBlock(ws, r, 'PROMEDIO MENSUAL', membreteTitle, jerBuildColumnsForMunicipios(municipiosList, unitsByMuni, 'promedio_cajas'));
-    r = jerWriteMetricBlock(ws, r, 'MÍNIMO MENSUAL', membreteTitle, jerBuildColumnsForMunicipios(municipiosList, unitsByMuni, 'min_cajas'));
-    r = jerWriteMetricBlock(ws, r, 'MÁXIMO MENSUAL', membreteTitle, jerBuildColumnsForMunicipios(municipiosList, unitsByMuni, 'max_cajas'));
+    jerWriteMetricBlock(ws, 4, metricDef.blockLabel, scopeTitle, jerBuildColumnsForMunicipios(municipiosList, unitsByMuni, metricDef.key));
 }
 
 function jerDownloadWorkbookBuffer(buffer, filename) {
@@ -1120,15 +1168,16 @@ window.jerExportMyMunicipios = async function() {
     try {
         const wb = new ExcelJS.Workbook();
         wb.creator = 'SIREVAQ';
-        municipios.forEach(m => {
-            const ws = wb.addWorksheet(jerSanitizeSheetName(m), { views: [{ showGridLines: false }] });
-            const title = jerMuniScopeTitle(m);
-            jerBuildSheetForUnits(ws, `MIS MUNICIPIOS (${municipios.length}) — JURISDICCIÓN SANITARIA NO. 1`, title, byMuni[m]);
+        const scopeTitle = `MIS MUNICIPIOS (${municipios.length}) — JURISDICCIÓN SANITARIA NO. 1`;
+        const groups = municipios.map(m => ({ membreteTitle: jerMuniScopeTitle(m), units: byMuni[m] }));
+        JER_METRIC_DEFS.forEach(metricDef => {
+            const ws = wb.addWorksheet(metricDef.tabName, { views: [{ showGridLines: false }] });
+            jerBuildMetricSheetForUnits(ws, metricDef, scopeTitle, groups);
         });
 
         const buffer = await wb.xlsx.writeBuffer();
         jerDownloadWorkbookBuffer(buffer, `Jeringas_Mis_Municipios_${jerTodayStr()}.xlsx`);
-        if (typeof showToast === 'function') showToast('Excel generado con éxito', true, 'good');
+        if (typeof showToast === 'function') showToast('Excel generado con éxito (pestañas: Promedio, Mínimo, Máximo)', true, 'good');
     } catch (e) {
         console.error('Error al exportar jeringas (mis municipios):', e);
         if (typeof showToast === 'function') showToast('Error al generar el Excel: ' + e.message, false, 'bad');
@@ -1153,13 +1202,16 @@ window.jerExportSingleMunicipio = async function(municipio) {
     try {
         const wb = new ExcelJS.Workbook();
         wb.creator = 'SIREVAQ';
-        const ws = wb.addWorksheet(jerSanitizeSheetName(municipio), { views: [{ showGridLines: false }] });
         const title = jerMuniScopeTitle(municipio);
-        jerBuildSheetForUnits(ws, title, title, units);
+        const groups = [{ membreteTitle: title, units }];
+        JER_METRIC_DEFS.forEach(metricDef => {
+            const ws = wb.addWorksheet(metricDef.tabName, { views: [{ showGridLines: false }] });
+            jerBuildMetricSheetForUnits(ws, metricDef, title, groups);
+        });
 
         const buffer = await wb.xlsx.writeBuffer();
         jerDownloadWorkbookBuffer(buffer, `Jeringas_${municipio}_${jerTodayStr()}.xlsx`);
-        if (typeof showToast === 'function') showToast('Excel generado con éxito', true, 'good');
+        if (typeof showToast === 'function') showToast('Excel generado con éxito (pestañas: Promedio, Mínimo, Máximo)', true, 'good');
     } catch (e) {
         console.error('Error al exportar jeringas (municipio):', e);
         if (typeof showToast === 'function') showToast('Error al generar el Excel: ' + e.message, false, 'bad');
@@ -1186,15 +1238,16 @@ window.jerExportConcentrado = async function() {
     try {
         const wb = new ExcelJS.Workbook();
         wb.creator = 'SIREVAQ';
-        municipios.forEach(m => {
-            const ws = wb.addWorksheet(jerSanitizeSheetName(m), { views: [{ showGridLines: false }] });
-            const title = jerMuniScopeTitle(m);
-            jerBuildSheetForUnits(ws, 'JURISDICCIÓN SANITARIA NO. 1 — CONCENTRADO 4 MUNICIPIOS', title, byMuni[m]);
+        const scopeTitle = 'JURISDICCIÓN SANITARIA NO. 1 — CONCENTRADO 4 MUNICIPIOS';
+        const groups = municipios.map(m => ({ membreteTitle: jerMuniScopeTitle(m), units: byMuni[m] }));
+        JER_METRIC_DEFS.forEach(metricDef => {
+            const ws = wb.addWorksheet(metricDef.tabName, { views: [{ showGridLines: false }] });
+            jerBuildMetricSheetForUnits(ws, metricDef, scopeTitle, groups);
         });
 
         const buffer = await wb.xlsx.writeBuffer();
         jerDownloadWorkbookBuffer(buffer, `Jeringas_Concentrado_4_Municipios_${jerTodayStr()}.xlsx`);
-        if (typeof showToast === 'function') showToast('Excel concentrado generado con éxito', true, 'good');
+        if (typeof showToast === 'function') showToast('Excel concentrado generado con éxito (pestañas: Promedio, Mínimo, Máximo)', true, 'good');
     } catch (e) {
         console.error('Error al exportar jeringas (concentrado):', e);
         if (typeof showToast === 'function') showToast('Error al generar el Excel: ' + e.message, false, 'bad');
@@ -1223,9 +1276,12 @@ window.jerExportPorMunicipio = async function() {
         for (const m of municipios) {
             const wb = new ExcelJS.Workbook();
             wb.creator = 'SIREVAQ';
-            const ws = wb.addWorksheet(jerSanitizeSheetName(m), { views: [{ showGridLines: false }] });
             const title = jerMuniScopeTitle(m);
-            jerBuildSheetForUnits(ws, title, title, byMuni[m]);
+            const groups = [{ membreteTitle: title, units: byMuni[m] }];
+            JER_METRIC_DEFS.forEach(metricDef => {
+                const ws = wb.addWorksheet(metricDef.tabName, { views: [{ showGridLines: false }] });
+                jerBuildMetricSheetForUnits(ws, metricDef, title, groups);
+            });
             const buffer = await wb.xlsx.writeBuffer();
             zip.file(`Jeringas_${m}_${jerTodayStr()}.xlsx`, buffer);
         }
@@ -1238,7 +1294,7 @@ window.jerExportPorMunicipio = async function() {
         a.click();
         window.URL.revokeObjectURL(url);
 
-        if (typeof showToast === 'function') showToast('4 archivos generados con éxito (.zip)', true, 'good');
+        if (typeof showToast === 'function') showToast('4 archivos generados con éxito (.zip, cada uno con pestañas Promedio/Mínimo/Máximo)', true, 'good');
     } catch (e) {
         console.error('Error al exportar jeringas (por municipio):', e);
         if (typeof showToast === 'function') showToast('Error al generar los archivos: ' + e.message, false, 'bad');
@@ -1265,13 +1321,15 @@ window.jerExportTotalJurisdiccional = async function() {
     try {
         const wb = new ExcelJS.Workbook();
         wb.creator = 'SIREVAQ';
-        const ws = wb.addWorksheet('TOTAL JURISDICCIONAL', { views: [{ showGridLines: false }] });
         const title = 'TOTAL JURISDICCIONAL — JURISDICCIÓN SANITARIA NO. 1 (4 MUNICIPIOS)';
-        jerBuildSheetForMunicipios(ws, title, title, municipios, byMuni);
+        JER_METRIC_DEFS.forEach(metricDef => {
+            const ws = wb.addWorksheet(metricDef.tabName, { views: [{ showGridLines: false }] });
+            jerBuildMetricSheetForMunicipios(ws, metricDef, title, municipios, byMuni);
+        });
 
         const buffer = await wb.xlsx.writeBuffer();
         jerDownloadWorkbookBuffer(buffer, `Jeringas_Total_Jurisdiccional_${jerTodayStr()}.xlsx`);
-        if (typeof showToast === 'function') showToast('Excel de total jurisdiccional generado con éxito', true, 'good');
+        if (typeof showToast === 'function') showToast('Excel de total jurisdiccional generado con éxito (pestañas: Promedio, Mínimo, Máximo)', true, 'good');
     } catch (e) {
         console.error('Error al exportar jeringas (total jurisdiccional):', e);
         if (typeof showToast === 'function') showToast('Error al generar el Excel: ' + e.message, false, 'bad');

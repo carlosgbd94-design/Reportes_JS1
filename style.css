@@ -7367,6 +7367,7 @@ input, textarea, select, [contenteditable] {
 .nav-tab.active[onclick*="'mapeador'"] .material-symbols-rounded { color: #f59e0b; }       /* Amber */
 .nav-tab.active[onclick*="'capacitaciones'"] .material-symbols-rounded { color: #14b8a6; } /* Teal */
 .nav-tab.active[onclick*="'campanas'"] .material-symbols-rounded { color: #ec4899; }       /* Pink */
+.nav-tab.active[onclick*="'auditoria'"] .material-symbols-rounded { color: #334155; }      /* Slate */
 
 /* Colores para Calculadora Interna de Parámetros */
 .nav-tab.active[onclick*="'calc'"] .material-symbols-rounded { color: #3b82f6; }           /* Blue */
@@ -9898,6 +9899,7 @@ html body .modern-input-group input[type="date"]:focus,
 .nav-tab.active[onclick*="'usuarios_activos'"] .material-symbols-rounded { color: #10b981; } /* Emerald */
 .nav-tab.active[onclick*="'parametros'"] .material-symbols-rounded { color: #14b8a6; }    /* Teal */
 .nav-tab.active[onclick*="'jeringas'"] .material-symbols-rounded { color: #16a34a; }      /* Green */
+.nav-tab.active[onclick*="'auditoria'"] .material-symbols-rounded { color: #334155; }     /* Slate */
 
 /* Botón de actualizar Premium (Estandarizado Global) */
 .premium-refresh-btn {
@@ -10094,6 +10096,7 @@ html body .modern-input-group input[type="date"]:focus,
 .nav-tab.active[onclick*="'usuarios_activos'"] .material-symbols-rounded { color: #10b981; } /* Emerald */
 .nav-tab.active[onclick*="'parametros'"] .material-symbols-rounded { color: #14b8a6; }    /* Teal */
 .nav-tab.active[onclick*="'jeringas'"] .material-symbols-rounded { color: #16a34a; }      /* Green */
+.nav-tab.active[onclick*="'auditoria'"] .material-symbols-rounded { color: #334155; }     /* Slate */
 
 /* Botón de actualizar Premium (Estandarizado Global) */
 .premium-refresh-btn {

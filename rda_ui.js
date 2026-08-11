@@ -327,6 +327,7 @@ function initRDADashboard() {
             <option value="adicionales">Biológicos Adicionales (Varicela, Hep A)</option>
             <option value="comparativa_multianual" id="optComparativeDynamic">Comparativa Multianual (2025 vs 2026)</option>
             <option value="meta_logro_influenza">Evaluación Meta-Logro Influenza</option>
+            <option value="abandono_esquema">Índice de Deserción de Esquema</option>
         `;
         function updateComparativeOptionLabel() {
             const opt = document.getElementById('optComparativeDynamic');
@@ -658,6 +659,7 @@ async function renderDashboard() {
             if (_rdaCharts.total) { try { _rdaCharts.total.dispose(); } catch(e){} _rdaCharts.total = null; }
             if (_rdaCharts.d) { try { _rdaCharts.d.dispose(); } catch(e){} _rdaCharts.d = null; }
             if (_rdaCharts.comparativa) { try { _rdaCharts.comparativa.dispose(); } catch(e){} _rdaCharts.comparativa = null; }
+            if (_rdaCharts.abandono) { try { _rdaCharts.abandono.dispose(); } catch(e){} _rdaCharts.abandono = null; }
             container.innerHTML = _rdaState.originalDashboardHtml;
         }
     }
@@ -687,7 +689,8 @@ async function renderDashboard() {
             mayores: 'Adultos Mayores',
             embarazadas: 'Embarazadas',
             invernal: 'Temporada Invernal',
-            comparativa_multianual: 'Comparativa Multianual (2025 vs 2026)'
+            comparativa_multianual: 'Comparativa Multianual (2025 vs 2026)',
+            abandono_esquema: 'Índice de Deserción de Esquema'
         };
         const label = labelMap[esquema] || 'Análisis RDA';
         cierreEl.textContent = `${label} | Cierre: ${MONTH_NAMES[(_rdaCache.maxMes||12)-1] || 'Sin datos'}`;
@@ -702,6 +705,11 @@ async function renderDashboard() {
 
     if (esquema === 'comparativa_multianual') {
         await renderComparativaMultianual(muniFilter, uniFilter);
+        return;
+    }
+
+    if (esquema === 'abandono_esquema') {
+        await renderAbandonoEsquema(muniFilter, uniFilter);
         return;
     }
 
@@ -4739,6 +4747,226 @@ window.closeModalAndUnlockBody = function(modalId) {
         document.body.style.overflow = '';
     }
 };
+
+// Cadenas de dosis secuenciales reales disponibles en sis_variables_mapeo (verificadas contra la
+// BD, no asumidas). Se excluyen deliberadamente Td/Tdpa/adulto: sus claves son "ocasión de
+// visita" (varias vías OR'd), no una secuencia real de dosis 1→2→3, y forzarlas en un funnel
+// representaría mal el dato.
+const ABANDONO_CHAINS = [
+    { label: 'Hexavalente', color: '#2563eb', steps: [
+        { key: 'hexa_1', label: 'Dosis 1' }, { key: 'hexa_2', label: 'Dosis 2' },
+        { key: 'hexa_3', label: 'Dosis 3' }, { key: 'hexa_ref', label: 'Refuerzo' }
+    ]},
+    { label: 'Neumococo 13-valente', color: '#f59e0b', steps: [
+        { key: 'neumo_1', label: 'Dosis 1' }, { key: 'neumo_2', label: 'Dosis 2' }, { key: 'neumo_ref', label: 'Refuerzo' }
+    ]},
+    // Serie separada de la anterior a propósito: son dos formulaciones distintas (13-valente
+    // vs. 20-valente, confirmado contra sis_variables_mapeo: VAC17-19/VNC0x = 13-valente,
+    // VCC0x = 20-valente), no serían comparables si se sumaran juntas.
+    { label: 'Neumococo 20-valente', color: '#d97706', steps: [
+        { key: 'neumo_c1', label: 'Dosis 1' }, { key: 'neumo_c2', label: 'Dosis 2' }, { key: 'neumo_c3', label: 'Dosis 3' }
+    ]},
+    { label: 'Rotavirus', color: '#16a34a', steps: [
+        { key: 'rota_1', label: 'Dosis 1' }, { key: 'rota_2', label: 'Dosis 2' }
+    ]},
+    { label: 'SRP', color: '#7c3aed', steps: [
+        { key: 'srp_1', label: 'Dosis 1' }, { key: 'srp_2', label: 'Dosis 2' }
+    ]}
+];
+
+// Panel de Continuidad / Abandono de Esquema — análisis AGREGADO (dosis-N ÷ dosis-1 del
+// periodo), no seguimiento del mismo paciente: registros_sis no tiene identificador de
+// paciente, es un conteo mensual por unidad. Se integra como esquema independiente dentro
+// del propio dashboard de Indicadores (mismo patrón que renderComparativaMultianual), sin
+// tocar ni reemplazar el cálculo de ningún otro esquema.
+async function renderAbandonoEsquema(muniFilter, uniFilter) {
+    const container = document.getElementById('rdaDashboardContent');
+    if (!container) return;
+
+    if (!window._isBatchExporting && typeof showOverlay === 'function') {
+        showOverlay("Calculando continuidad de esquema...", "Análisis de Continuidad");
+    }
+
+    try {
+        const anio = _rdaCache.anio || new Date().getFullYear();
+        const maxMes = _rdaCache.maxMes || 12;
+
+        const { data, error } = await window.supabase.rpc('get_rda_abandono_esquema', { p_anio: anio, p_max_mes: maxMes });
+        if (error) throw error;
+
+        let rows = data || [];
+        if (muniFilter) rows = rows.filter(r => (r.municipio || '').toUpperCase().trim() === muniFilter.toUpperCase().trim());
+        if (uniFilter) rows = rows.filter(r => r.clues === uniFilter);
+
+        // Totales agregados (jurisdicción o filtro actual) por cada paso de cada cadena
+        const chainTotals = ABANDONO_CHAINS.map(chain => ({
+            ...chain,
+            totals: chain.steps.map(s => rows.reduce((a, r) => a + (Number(r[s.key]) || 0), 0))
+        }));
+
+        // Mayor caída relativa por unidad (para la tabla de hallazgos) — solo evalúa unidades
+        // con al menos 1 aplicación en el primer paso de la cadena, para no dividir entre cero
+        // ni destacar unidades sin volumen real.
+        const worstDrops = [];
+        rows.forEach(r => {
+            let worst = null;
+            ABANDONO_CHAINS.forEach(chain => {
+                for (let i = 1; i < chain.steps.length; i++) {
+                    const prevKey = chain.steps[i - 1].key;
+                    const curKey = chain.steps[i].key;
+                    const prevVal = Number(r[prevKey]) || 0;
+                    const curVal = Number(r[curKey]) || 0;
+                    if (prevVal <= 0) continue;
+                    const dropPct = ((prevVal - curVal) / prevVal) * 100;
+                    if (!worst || dropPct > worst.dropPct) {
+                        worst = { chain: chain.label, from: chain.steps[i - 1].label, to: chain.steps[i].label, prevVal, curVal, dropPct };
+                    }
+                }
+            });
+            if (worst && worst.dropPct > 0) {
+                worstDrops.push({ clues: r.clues, unidad: r.nombre, municipio: r.municipio, ...worst });
+            }
+        });
+        worstDrops.sort((a, b) => b.dropPct - a.dropPct);
+
+        const scopeLabel = uniFilter ? (rows[0]?.nombre || uniFilter) : (muniFilter ? `Municipio: ${muniFilter}` : 'Jurisdicción Sanitaria 1 (4 Municipios)');
+
+        const chainRowsHtml = chainTotals.map(chain => {
+            const stepsHtml = chain.steps.map((s, i) => {
+                const total = chain.totals[i];
+                const prevTotal = i === 0 ? null : chain.totals[i - 1];
+                const rate = (i === 0 || !prevTotal) ? null : (total / prevTotal * 100);
+                const desercion = rate === null ? null : Math.max(0, 100 - rate);
+                return `
+                    <td style="text-align:center; padding:8px 10px;">
+                        <div style="font-weight:800; font-size:14px; color:#0f172a;">${total.toLocaleString('es-MX')}</div>
+                        ${desercion !== null ? `<div style="font-size:10.5px; font-weight:700; color:${rate < 70 ? '#dc2626' : rate < 90 ? '#d97706' : '#16a34a'};">Deserción: ${desercion.toFixed(1)}%</div>` : '<div style="font-size:10.5px; color:#94a3b8;">Base (Dosis 1)</div>'}
+                    </td>`;
+            }).join('');
+            return `
+                <tr style="border-bottom:1px solid #f1f5f9;">
+                    <td style="padding:8px 10px; font-weight:800; font-size:12.5px; color:${chain.color};">${chain.label}</td>
+                    ${stepsHtml}
+                    ${chain.steps.length < 4 ? '<td></td>'.repeat(4 - chain.steps.length) : ''}
+                </tr>`;
+        }).join('');
+
+        const worstDropsHtml = worstDrops.slice(0, 30).map(w => `
+            <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:7px 10px; font-size:12px; color:#475569;">${w.municipio || ''}</td>
+                <td style="padding:7px 10px; font-size:12.5px; font-weight:700; color:#0f172a;">${w.unidad || w.clues}</td>
+                <td style="padding:7px 10px; font-size:12px; color:#475569;">${w.chain}: ${w.from} → ${w.to}</td>
+                <td style="padding:7px 10px; font-size:12px; color:#475569; text-align:center;">${w.prevVal} → ${w.curVal}</td>
+                <td style="padding:7px 10px; text-align:center;"><span style="font-weight:800; font-size:12.5px; color:${w.dropPct >= 50 ? '#dc2626' : '#d97706'};">-${w.dropPct.toFixed(1)}%</span></td>
+            </tr>`).join('');
+
+        container.innerHTML = `
+            <div style="padding:24px;">
+                <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:14px; padding:14px 18px; margin-bottom:20px; display:flex; gap:12px; align-items:flex-start;">
+                    <span class="material-symbols-rounded" style="color:#d97706; font-size:22px;">info</span>
+                    <div style="font-size:12.5px; font-weight:700; color:#78350f; line-height:1.5;">
+                        Índice de deserción según la metodología de supervisión del <strong>Manual de Vacunación 2021</strong>
+                        (evaluación de tasas de deserción entre dosis, ej. DTP1/BCG vs. DTP3/Sarampión), aplicada aquí a cada
+                        paso de dosis disponible. Es una <strong>razón agregada</strong> (total de dosis-N ÷ total de dosis-1
+                        del periodo evaluado), <strong>no es seguimiento del mismo paciente</strong> — los registros de SIS son
+                        conteos mensuales por unidad, no expedientes individuales. Úsalo para identificar en qué paso de cada
+                        esquema se concentra la deserción, no como "cuántos pacientes abandonaron literalmente".
+                    </div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <div>
+                        <h3 style="margin:0; font-size:16px; font-weight:900; color:#0f172a;">Índice de Deserción por Cadena de Dosis</h3>
+                        <span style="font-size:12px; font-weight:700; color:#64748b;">${scopeLabel} · ${anio}, Enero a ${MONTH_NAMES[maxMes - 1] || maxMes}</span>
+                    </div>
+                </div>
+
+                <div style="background:#fff; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden; margin-bottom:16px;">
+                    <table style="width:100%; border-collapse:collapse;">
+                        <thead>
+                            <tr style="background:#f8fafc;">
+                                <th style="text-align:left; padding:8px 10px; font-size:10.5px; font-weight:800; color:#64748b; text-transform:uppercase;">Cadena</th>
+                                <th style="text-align:center; padding:8px 10px; font-size:10.5px; font-weight:800; color:#64748b; text-transform:uppercase;">Paso 1</th>
+                                <th style="text-align:center; padding:8px 10px; font-size:10.5px; font-weight:800; color:#64748b; text-transform:uppercase;">Paso 2</th>
+                                <th style="text-align:center; padding:8px 10px; font-size:10.5px; font-weight:800; color:#64748b; text-transform:uppercase;">Paso 3</th>
+                                <th style="text-align:center; padding:8px 10px; font-size:10.5px; font-weight:800; color:#64748b; text-transform:uppercase;">Paso 4</th>
+                            </tr>
+                        </thead>
+                        <tbody>${chainRowsHtml}</tbody>
+                    </table>
+                </div>
+
+                <div id="abandonoChartContainer" style="width:100%; height:360px; background:#fff; border:1px solid #e2e8f0; border-radius:16px; margin-bottom:16px;"></div>
+
+                <h4 style="margin:0 0 10px; font-size:14px; font-weight:900; color:#0f172a;">Mayor índice de deserción por unidad (Top 30)</h4>
+                <div style="background:#fff; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden;">
+                    <table style="width:100%; border-collapse:collapse;">
+                        <thead>
+                            <tr style="background:#f8fafc;">
+                                <th style="text-align:left; padding:8px 10px; font-size:10.5px; font-weight:800; color:#64748b; text-transform:uppercase;">Municipio</th>
+                                <th style="text-align:left; padding:8px 10px; font-size:10.5px; font-weight:800; color:#64748b; text-transform:uppercase;">Unidad</th>
+                                <th style="text-align:left; padding:8px 10px; font-size:10.5px; font-weight:800; color:#64748b; text-transform:uppercase;">Paso con mayor deserción</th>
+                                <th style="text-align:center; padding:8px 10px; font-size:10.5px; font-weight:800; color:#64748b; text-transform:uppercase;">Dosis</th>
+                                <th style="text-align:center; padding:8px 10px; font-size:10.5px; font-weight:800; color:#64748b; text-transform:uppercase;">Deserción</th>
+                            </tr>
+                        </thead>
+                        <tbody>${worstDropsHtml || '<tr><td colspan="5" style="padding:20px; text-align:center; color:#94a3b8;">Sin datos suficientes para calcular deserción en este filtro.</td></tr>'}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        setTimeout(() => {
+            const chartDom = document.getElementById('abandonoChartContainer');
+            if (chartDom && typeof echarts !== 'undefined') {
+                if (_rdaCharts.abandono) { try { _rdaCharts.abandono.dispose(); } catch(e){} _rdaCharts.abandono = null; }
+                const chart = echarts.init(chartDom, null, { renderer: 'canvas' });
+                _rdaCharts.abandono = chart;
+
+                const categories = [];
+                const values = [];
+                const colors = [];
+                chainTotals.forEach(chain => {
+                    chain.steps.forEach((s, i) => {
+                        categories.push(`${chain.label} — ${s.label}`);
+                        values.push(chain.totals[i]);
+                        colors.push(chain.color);
+                    });
+                });
+
+                chart.setOption({
+                    grid: { left: '3%', right: '4%', bottom: '3%', top: 20, containLabel: true },
+                    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                    xAxis: { type: 'value', axisLabel: { fontFamily: 'Inter, sans-serif' } },
+                    yAxis: { type: 'category', data: categories, inverse: true, axisLabel: { fontFamily: 'Inter, sans-serif', fontSize: 11, fontWeight: 700 } },
+                    series: [{
+                        type: 'bar',
+                        data: values.map((v, i) => ({ value: v, itemStyle: { color: colors[i], borderRadius: [0, 6, 6, 0] } })),
+                        label: { show: true, position: 'right', fontWeight: 800, fontSize: 11 },
+                        barWidth: '55%'
+                    }]
+                });
+
+                if (!window._rdaEchartsResizeAttached) {
+                    window.addEventListener('resize', () => {
+                        if (_rdaCharts.b) _rdaCharts.b.resize();
+                        if (_rdaCharts.total) _rdaCharts.total.resize();
+                        if (_rdaCharts.d) _rdaCharts.d.resize();
+                        if (_rdaCharts.comparativa) { try { _rdaCharts.comparativa.resize(); } catch(e){} }
+                        if (_rdaCharts.abandono) { try { _rdaCharts.abandono.resize(); } catch(e){} }
+                    });
+                    window._rdaEchartsResizeAttached = true;
+                }
+            }
+        }, 100);
+
+    } catch (e) {
+        console.error("Error cargando análisis de continuidad de esquema:", e);
+        container.innerHTML = `<div style="padding: 32px; color: #ef4444; font-weight: 700;">Error al generar análisis de continuidad: ${e.message}</div>`;
+    } finally {
+        if (typeof hideOverlay === 'function') hideOverlay();
+    }
+}
 
 // Panel Único de Comparativa Multianual Executive (2025 vs 2026)
 async function renderComparativaMultianual(muniFilter, uniFilter) {
