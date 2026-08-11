@@ -488,6 +488,20 @@ window.spmToggleCalcMode = function() {
     if (serviceWrap) serviceWrap.style.display = (mode === 'nivel_servicio') ? 'flex' : 'none';
 };
 
+/** Muestra/oculta la explicación de "Colchón fijo" vs "Nivel de servicio". */
+window.spmToggleCalcModeInfo = function() {
+    const panel = document.getElementById('spmCalcModeInfoPanel');
+    if (!panel) return;
+    panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'block' : 'none';
+};
+
+document.addEventListener('click', (e) => {
+    const wrap = document.getElementById('spmCalcModeInfoWrap');
+    const panel = document.getElementById('spmCalcModeInfoPanel');
+    if (!wrap || !panel || panel.style.display === 'none') return;
+    if (!wrap.contains(e.target)) panel.style.display = 'none';
+});
+
 window.spmRunAdminCalculation = async function() {
     // Respaldo por si el botón queda visible para Municipal por algún problema de CSS (ya
     // pasó una vez): sin esto, el único freno era ocultar el botón, y si ese freno fallaba

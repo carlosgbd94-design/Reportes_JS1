@@ -17649,7 +17649,7 @@ function renderPinolCommandCenter() {
 
     const obsText = String(x?.observaciones || "").trim();
     const obsHtml = obsText
-      ? `<button type="button" class="ghostBtn" onclick="showPinolObsModal('${escapeHtml(escapeAttr(obsText))}', event)" title="Ver observación" style="margin: 0 auto; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 10px; background: rgba(2, 132, 199, 0.12); color: #0284c7; border: none; cursor: pointer;"><span class="material-symbols-rounded" style="font-size: 18px;">chat</span></button>`
+      ? `<button type="button" class="pn-pure-btn pn-pure-obs" onclick="showPinolObsModal('${escapeHtml(escapeAttr(obsText))}', event)" title="Ver observación" style="margin: 0 auto;"><span class="material-symbols-rounded">chat</span></button>`
       : `<span style="color: #cbd5e1; text-align: center; display: block;">—</span>`;
 
     const fechaSoliFormateada = formatPinolDate(x?.fecha_solicitud);

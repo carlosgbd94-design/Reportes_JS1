@@ -539,6 +539,20 @@ window.jerToggleCalcMode = function() {
     if (serviceWrap) serviceWrap.style.display = (mode === 'nivel_servicio') ? 'flex' : 'none';
 };
 
+/** Muestra/oculta la explicación de "Colchón fijo" vs "Nivel de servicio". */
+window.jerToggleCalcModeInfo = function() {
+    const panel = document.getElementById('jerCalcModeInfoPanel');
+    if (!panel) return;
+    panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'block' : 'none';
+};
+
+document.addEventListener('click', (e) => {
+    const wrap = document.getElementById('jerCalcModeInfoWrap');
+    const panel = document.getElementById('jerCalcModeInfoPanel');
+    if (!wrap || !panel || panel.style.display === 'none') return;
+    if (!wrap.contains(e.target)) panel.style.display = 'none';
+});
+
 // 8. CALCULADORA ADMIN MASIVA DESDE HISTÓRICO SIS (SOLO ADMIN/JURISDICCIONAL — mismo límite que RLS de las RPCs)
 window.jerRunAdminCalculation = async function() {
     // Respaldo por si el botón queda visible para Municipal por algún problema de CSS (ya

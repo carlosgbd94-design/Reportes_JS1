@@ -69,7 +69,7 @@
 
   <!-- Estilos -->
   <link rel="stylesheet" href="tailwind_compiled.css">
-  <link rel="stylesheet" href="style.css?v=2026.70" type="text/css">
+  <link rel="stylesheet" href="style.css?v=2026.72" type="text/css">
 
   <style>
     /* BOTONES DE ACCIÓN: PUROS ÍCONOS ELEGANTES 3D VERTICALMENTE ALINEADOS AL CENTRO */
@@ -365,7 +365,7 @@
        (ensurePdfAssetsLoaded) solo al exportar el PDF de Resguardo.
        Generado por build-bundle.js. Los archivos originales siguen en el repo
        (sin borrar) por si hace falta revertir este cambio. -->
-  <script src="dist/bundle-head.js?v=2026.13" defer></script>
+  <script src="dist/bundle-head.js?v=2026.14" defer></script>
 
   <!-- 🔧 Service Worker Registration (PWA) -->
   <script>
@@ -4280,11 +4280,10 @@
               padding: 16px 20px !important;
               border: 1px solid #e2e8f0 !important;
               display: flex !important;
-              justify-content: space-between !important;
-              align-items: center !important;
+              flex-direction: column !important;
+              align-items: stretch !important;
               box-shadow: 0 2px 10px rgba(0,0,0,0.02) !important;
-              flex-wrap: wrap !important;
-              gap: 16px !important;
+              gap: 14px !important;
             }
 
             .spm-title-block h3 {
@@ -4303,6 +4302,7 @@
               display: flex !important;
               gap: 12px !important;
               align-items: center !important;
+              flex-wrap: wrap !important;
             }
 
             .spm-pill-select-custom {
@@ -4322,6 +4322,19 @@
               background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") no-repeat right 12px center / 16px !important;
               padding: 0 36px 0 16px !important;
               outline: none !important;
+            }
+
+            .spm-muni-select {
+              flex: 0 0 260px !important;
+              width: 260px !important;
+            }
+
+            .spm-btn-group {
+              display: flex !important;
+              align-items: center !important;
+              gap: 12px !important;
+              flex-wrap: nowrap !important;
+              flex-shrink: 0 !important;
             }
 
             .spm-btn-icon-custom {
@@ -4644,26 +4657,39 @@
               </div>
 
               <div class="spm-actions-block">
-                <select class="spm-pill-select-custom" id="spmParamMuniSelect" onchange="window.spmFilterUnitsByMuni(this.value)">
+                <select class="spm-pill-select-custom spm-muni-select" id="spmParamMuniSelect" onchange="window.spmFilterUnitsByMuni(this.value)">
                   <option value="">Cargando municipios...</option>
                 </select>
 
-                <div id="spmBufferPctWrap" style="display:none; align-items:center; gap:6px;">
-                  <select id="spmCalcMode" class="spm-pill-select-custom" style="width:auto; min-width:0;" onchange="window.spmToggleCalcMode()" title="Método de cálculo del colchón de seguridad">
+                <div id="spmBufferPctWrap" style="display:none; align-items:center; gap:6px; flex-wrap:nowrap; flex-shrink:0;">
+                  <select id="spmCalcMode" class="spm-pill-select-custom" style="flex:0 0 210px; width:210px;" onchange="window.spmToggleCalcMode()" title="Método de cálculo del colchón de seguridad">
                     <option value="colchon_fijo">Colchón fijo</option>
                     <option value="nivel_servicio">Nivel de servicio</option>
                   </select>
 
-                  <div id="spmColchonInputWrap" style="display:flex; align-items:center; gap:6px;">
-                    <label for="spmBufferPct" style="font-size:11px; font-weight:800; color:#64748b; white-space:nowrap;">% Colchón</label>
-                    <div style="width:52px; flex-shrink:0;">
+                  <div id="spmCalcModeInfoWrap" style="position:relative; flex:0 0 32px;">
+                    <button type="button" id="spmCalcModeInfoBtn" class="spm-btn-icon-custom"
+                      style="width:32px; height:32px; min-width:32px; min-height:32px; border-radius:50%; font-size:13px; font-weight:800;"
+                      title="¿Qué significa cada método?" onclick="window.spmToggleCalcModeInfo()">?</button>
+                    <div id="spmCalcModeInfoPanel" style="display:none; position:absolute; top:40px; left:0; z-index:60; background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 20px 40px -10px rgba(15,23,42,0.25); width:320px; padding:14px 16px; text-align:left;">
+                      <div style="font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">¿Cómo se calcula el colchón?</div>
+                      <div style="font-size:12.5px; font-weight:800; color:#0f172a;">Colchón fijo</div>
+                      <div style="font-size:12px; color:#475569; line-height:1.45; margin:2px 0 10px;">Suma un % constante (por defecto 10%) al Mínimo y Máximo históricos observados. Simple y predecible, pero aplica el mismo margen a una unidad con consumo estable que a una con consumo muy variable.</div>
+                      <div style="font-size:12.5px; font-weight:800; color:#0f172a;">Nivel de servicio</div>
+                      <div style="font-size:12px; color:#475569; line-height:1.45; margin:2px 0;">Calcula el Promedio (punto de reorden) usando la variabilidad real del consumo mensual: a mayor variabilidad, mayor colchón, aunque el promedio sea el mismo. El % elegido (90/95/99%) es la probabilidad de no quedarse sin stock; a mayor %, mayor colchón. El Mínimo y Máximo se siguen calculando igual que en Colchón fijo.</div>
+                    </div>
+                  </div>
+
+                  <div id="spmColchonInputWrap" style="display:flex; align-items:center; gap:6px; flex:0 0 150px; width:150px;">
+                    <label for="spmBufferPct" style="font-size:11px; font-weight:800; color:#64748b; white-space:nowrap; flex:0 0 auto;">% Colchón</label>
+                    <div style="width:52px; flex:0 0 52px;">
                       <input type="number" id="spmBufferPct" value="10" min="0" max="100" step="1" class="spm-input-num-clean">
                     </div>
                   </div>
 
-                  <div id="spmServiceLevelWrap" style="display:none; align-items:center; gap:6px;">
-                    <label for="spmServiceLevel" style="font-size:11px; font-weight:800; color:#64748b; white-space:nowrap;">Nivel de servicio</label>
-                    <select id="spmServiceLevel" class="spm-pill-select-custom" style="width:auto; min-width:0;" title="Probabilidad objetivo de no quedarse sin stock (afecta solo el Promedio)">
+                  <div id="spmServiceLevelWrap" style="display:none; align-items:center; gap:6px; flex:0 0 320px; width:320px;">
+                    <label for="spmServiceLevel" style="font-size:11px; font-weight:800; color:#64748b; white-space:nowrap; flex:0 0 auto;">Nivel de servicio</label>
+                    <select id="spmServiceLevel" class="spm-pill-select-custom" style="flex:0 0 170px; width:170px;" title="Probabilidad objetivo de no quedarse sin stock (afecta solo el Promedio)">
                       <option value="90">90% (z=1.28)</option>
                       <option value="95" selected>95% (z=1.65)</option>
                       <option value="99">99% (z=2.33)</option>
@@ -4671,15 +4697,17 @@
                   </div>
                 </div>
 
-                <!-- Ícono Calculadora Admin Global Único -->
-                <button id="spmBtnAdminCalc" class="spm-btn-icon-custom" title="Ejecutar Calculadora Admin Masiva (SIS + 10% Colchón)" onclick="window.spmRunAdminCalculation()">
-                  <svg viewBox="0 0 24 24"><path d="M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 2v4h16V4H4zm0 6v10h16V10H4zm2 2h3v2H6v-2zm5 0h3v2h-3v-2zm5 0h3v2h-3v-2zm-10 4h3v2H6v-2zm5 0h3v2h-3v-2zm5 0h3v2h-3v-2z"/></svg>
-                </button>
+                <div class="spm-btn-group">
+                  <!-- Ícono Calculadora Admin Global Único -->
+                  <button id="spmBtnAdminCalc" class="spm-btn-icon-custom" title="Ejecutar Calculadora Admin Masiva (SIS + 10% Colchón)" onclick="window.spmRunAdminCalculation()">
+                    <svg viewBox="0 0 24 24"><path d="M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 2v4h16V4H4zm0 6v10h16V10H4zm2 2h3v2H6v-2zm5 0h3v2h-3v-2zm5 0h3v2h-3v-2zm-10 4h3v2H6v-2zm5 0h3v2h-3v-2zm5 0h3v2h-3v-2z"/></svg>
+                  </button>
 
-                <!-- Ícono Guardar Cambios en Supabase -->
-                <button class="spm-btn-icon-custom spm-btn-icon-primary-custom" title="Guardar Cambios en la base de datos (biologicos_params)" onclick="window.spmSaveCurrentUnitParams()">
-                  <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                </button>
+                  <!-- Ícono Guardar Cambios en Supabase -->
+                  <button class="spm-btn-icon-custom spm-btn-icon-primary-custom" title="Guardar Cambios en la base de datos (biologicos_params)" onclick="window.spmSaveCurrentUnitParams()">
+                    <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -4750,26 +4778,39 @@
               </div>
 
               <div class="spm-actions-block">
-                <select class="spm-pill-select-custom" id="jerParamMuniSelect" onchange="window.jerFilterUnitsByMuni(this.value)">
+                <select class="spm-pill-select-custom spm-muni-select" id="jerParamMuniSelect" onchange="window.jerFilterUnitsByMuni(this.value)">
                   <option value="">Cargando municipios...</option>
                 </select>
 
-                <div id="jerBufferPctWrap" style="display:none; align-items:center; gap:6px;">
-                  <select id="jerCalcMode" class="spm-pill-select-custom" style="width:auto; min-width:0;" onchange="window.jerToggleCalcMode()" title="Método de cálculo del colchón de seguridad">
+                <div id="jerBufferPctWrap" style="display:none; align-items:center; gap:6px; flex-wrap:nowrap; flex-shrink:0;">
+                  <select id="jerCalcMode" class="spm-pill-select-custom" style="flex:0 0 210px; width:210px;" onchange="window.jerToggleCalcMode()" title="Método de cálculo del colchón de seguridad">
                     <option value="colchon_fijo">Colchón fijo</option>
                     <option value="nivel_servicio">Nivel de servicio</option>
                   </select>
 
-                  <div id="jerColchonInputWrap" style="display:flex; align-items:center; gap:6px;">
-                    <label for="jerBufferPct" style="font-size:11px; font-weight:800; color:#64748b; white-space:nowrap;">% Colchón</label>
-                    <div style="width:52px; flex-shrink:0;">
+                  <div id="jerCalcModeInfoWrap" style="position:relative; flex:0 0 32px;">
+                    <button type="button" id="jerCalcModeInfoBtn" class="spm-btn-icon-custom"
+                      style="width:32px; height:32px; min-width:32px; min-height:32px; border-radius:50%; font-size:13px; font-weight:800;"
+                      title="¿Qué significa cada método?" onclick="window.jerToggleCalcModeInfo()">?</button>
+                    <div id="jerCalcModeInfoPanel" style="display:none; position:absolute; top:40px; left:0; z-index:60; background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 20px 40px -10px rgba(15,23,42,0.25); width:320px; padding:14px 16px; text-align:left;">
+                      <div style="font-size:11px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">¿Cómo se calcula el colchón?</div>
+                      <div style="font-size:12.5px; font-weight:800; color:#0f172a;">Colchón fijo</div>
+                      <div style="font-size:12px; color:#475569; line-height:1.45; margin:2px 0 10px;">Suma un % constante (por defecto 10%) al Mínimo y Máximo históricos observados. Simple y predecible, pero aplica el mismo margen a una unidad con consumo estable que a una con consumo muy variable.</div>
+                      <div style="font-size:12.5px; font-weight:800; color:#0f172a;">Nivel de servicio</div>
+                      <div style="font-size:12px; color:#475569; line-height:1.45; margin:2px 0;">Calcula el Promedio (punto de reorden) usando la variabilidad real del consumo mensual: a mayor variabilidad, mayor colchón, aunque el promedio sea el mismo. El % elegido (90/95/99%) es la probabilidad de no quedarse sin stock; a mayor %, mayor colchón. El Mínimo y Máximo se siguen calculando igual que en Colchón fijo.</div>
+                    </div>
+                  </div>
+
+                  <div id="jerColchonInputWrap" style="display:flex; align-items:center; gap:6px; flex:0 0 150px; width:150px;">
+                    <label for="jerBufferPct" style="font-size:11px; font-weight:800; color:#64748b; white-space:nowrap; flex:0 0 auto;">% Colchón</label>
+                    <div style="width:52px; flex:0 0 52px;">
                       <input type="number" id="jerBufferPct" value="10" min="0" max="100" step="1" class="spm-input-num-clean">
                     </div>
                   </div>
 
-                  <div id="jerServiceLevelWrap" style="display:none; align-items:center; gap:6px;">
-                    <label for="jerServiceLevel" style="font-size:11px; font-weight:800; color:#64748b; white-space:nowrap;">Nivel de servicio</label>
-                    <select id="jerServiceLevel" class="spm-pill-select-custom" style="width:auto; min-width:0;" title="Probabilidad objetivo de no quedarse sin stock (afecta solo el Promedio)">
+                  <div id="jerServiceLevelWrap" style="display:none; align-items:center; gap:6px; flex:0 0 320px; width:320px;">
+                    <label for="jerServiceLevel" style="font-size:11px; font-weight:800; color:#64748b; white-space:nowrap; flex:0 0 auto;">Nivel de servicio</label>
+                    <select id="jerServiceLevel" class="spm-pill-select-custom" style="flex:0 0 170px; width:170px;" title="Probabilidad objetivo de no quedarse sin stock (afecta solo el Promedio)">
                       <option value="90">90% (z=1.28)</option>
                       <option value="95" selected>95% (z=1.65)</option>
                       <option value="99">99% (z=2.33)</option>
@@ -4777,42 +4818,44 @@
                   </div>
                 </div>
 
-                <button id="jerBtnAdminCalc" class="spm-btn-icon-custom" title="Calcular jeringas automáticamente desde el histórico SIS" onclick="window.jerRunAdminCalculation()">
-                  <svg viewBox="0 0 24 24"><path d="M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 2v4h16V4H4zm0 6v10h16V10H4zm2 2h3v2H6v-2zm5 0h3v2h-3v-2zm5 0h3v2h-3v-2zm-10 4h3v2H6v-2zm5 0h3v2h-3v-2zm5 0h3v2h-3v-2z"/></svg>
-                </button>
-
-                <button class="spm-btn-icon-custom spm-btn-icon-primary-custom" title="Guardar Cambios en la base de datos (jeringas_params)" onclick="window.jerSaveCurrentUnitParams()">
-                  <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                </button>
-
-                <div id="jerExportWrap" style="position:relative;">
-                  <button id="jerBtnExport" class="spm-btn-icon-custom" title="Exportar a Excel" onclick="window.jerToggleExportMenu()">
-                    <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14a2 2 0 0 0 2-2v-4h-2v4H5v-4H3v4a2 2 0 0 0 2 2z"/></svg>
+                <div class="spm-btn-group">
+                  <button id="jerBtnAdminCalc" class="spm-btn-icon-custom" title="Calcular jeringas automáticamente desde el histórico SIS" onclick="window.jerRunAdminCalculation()">
+                    <svg viewBox="0 0 24 24"><path d="M4 2h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 2v4h16V4H4zm0 6v10h16V10H4zm2 2h3v2H6v-2zm5 0h3v2h-3v-2zm5 0h3v2h-3v-2zm-10 4h3v2H6v-2zm5 0h3v2h-3v-2zm5 0h3v2h-3v-2z"/></svg>
                   </button>
 
-                  <div id="jerExportMenu" style="display:none; position:absolute; top:52px; right:0; z-index:60; background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 20px 40px -10px rgba(15,23,42,0.25); width:300px; padding:8px; text-align:left;">
-                    <div style="padding:8px 10px 4px; font-size:10px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">Exportar a Excel</div>
+                  <button class="spm-btn-icon-custom spm-btn-icon-primary-custom" title="Guardar Cambios en la base de datos (jeringas_params)" onclick="window.jerSaveCurrentUnitParams()">
+                    <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                  </button>
 
-                    <button type="button" onclick="window.jerExportConcentrado()"
-                      style="display:block; width:100%; text-align:left; background:none; border:none; cursor:pointer; padding:10px 10px; border-radius:12px; transition:background 0.15s;"
-                      onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">
-                      <div style="font-size:12.5px; font-weight:800; color:#0f172a;">Concentrado (1 archivo)</div>
-                      <div style="font-size:11px; color:#64748b; margin-top:2px; line-height:1.35;">Los 4 municipios en un solo Excel, 1 hoja por municipio.</div>
+                  <div id="jerExportWrap" style="position:relative;">
+                    <button id="jerBtnExport" class="spm-btn-icon-custom" title="Exportar a Excel" onclick="window.jerToggleExportMenu()">
+                      <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14a2 2 0 0 0 2-2v-4h-2v4H5v-4H3v4a2 2 0 0 0 2 2z"/></svg>
                     </button>
 
-                    <button type="button" onclick="window.jerExportPorMunicipio()"
-                      style="display:block; width:100%; text-align:left; background:none; border:none; cursor:pointer; padding:10px 10px; border-radius:12px; transition:background 0.15s;"
-                      onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">
-                      <div style="font-size:12.5px; font-weight:800; color:#0f172a;">Por municipio (4 archivos)</div>
-                      <div style="font-size:11px; color:#64748b; margin-top:2px; line-height:1.35;">Un Excel independiente por cada municipio, entregados en un .zip.</div>
-                    </button>
+                    <div id="jerExportMenu" style="display:none; position:absolute; top:52px; right:0; z-index:60; background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 20px 40px -10px rgba(15,23,42,0.25); width:300px; padding:8px; text-align:left;">
+                      <div style="padding:8px 10px 4px; font-size:10px; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">Exportar a Excel</div>
 
-                    <button type="button" onclick="window.jerExportTotalJurisdiccional()"
-                      style="display:block; width:100%; text-align:left; background:none; border:none; cursor:pointer; padding:10px 10px; border-radius:12px; transition:background 0.15s;"
-                      onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">
-                      <div style="font-size:12.5px; font-weight:800; color:#0f172a;">Total jurisdiccional (1 archivo)</div>
-                      <div style="font-size:11px; color:#64748b; margin-top:2px; line-height:1.35;">Solo la suma de los 4 municipios, sin desglose por unidad.</div>
-                    </button>
+                      <button type="button" onclick="window.jerExportConcentrado()"
+                        style="display:block; width:100%; text-align:left; background:none; border:none; cursor:pointer; padding:10px 10px; border-radius:12px; transition:background 0.15s;"
+                        onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">
+                        <div style="font-size:12.5px; font-weight:800; color:#0f172a;">Concentrado (1 archivo)</div>
+                        <div style="font-size:11px; color:#64748b; margin-top:2px; line-height:1.35;">Los 4 municipios en un solo Excel, 1 hoja por municipio.</div>
+                      </button>
+
+                      <button type="button" onclick="window.jerExportPorMunicipio()"
+                        style="display:block; width:100%; text-align:left; background:none; border:none; cursor:pointer; padding:10px 10px; border-radius:12px; transition:background 0.15s;"
+                        onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">
+                        <div style="font-size:12.5px; font-weight:800; color:#0f172a;">Por municipio (4 archivos)</div>
+                        <div style="font-size:11px; color:#64748b; margin-top:2px; line-height:1.35;">Un Excel independiente por cada municipio, entregados en un .zip.</div>
+                      </button>
+
+                      <button type="button" onclick="window.jerExportTotalJurisdiccional()"
+                        style="display:block; width:100%; text-align:left; background:none; border:none; cursor:pointer; padding:10px 10px; border-radius:12px; transition:background 0.15s;"
+                        onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">
+                        <div style="font-size:12.5px; font-weight:800; color:#0f172a;">Total jurisdiccional (1 archivo)</div>
+                        <div style="font-size:11px; color:#64748b; margin-top:2px; line-height:1.35;">Solo la suma de los 4 municipios, sin desglose por unidad.</div>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
