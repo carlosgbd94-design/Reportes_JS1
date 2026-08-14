@@ -162,9 +162,9 @@
       </form>
       
       <div class="mt-6 flex flex-col gap-3">
-        <a href="mobile_reset.html" class="text-xs font-black text-slate-400 hover:text-slate-900 transition-colors uppercase tracking-widest">
+        <button type="button" id="btnForgotPasswordMobile" class="text-xs font-black text-slate-400 hover:text-slate-900 transition-colors uppercase tracking-widest bg-transparent border-none cursor-pointer">
           ¿Olvidaste tu contraseña?
-        </a>
+        </button>
       </div>
     </div>
   </div>
@@ -673,6 +673,30 @@
             <span>Enviar Reporte</span>
           </button>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="dropdown-overlay hidden" id="forgotOverlayMobile">
+    <div class="dropdown-card max-w-md flex flex-col relative w-[calc(100%-32px)] p-6 bg-white rounded-3xl shadow-2xl border border-slate-100">
+      <button type="button" style="position: absolute; top: 20px; right: 20px; z-index: 10;" class="text-slate-400 hover:text-slate-900" id="btnForgotCloseMobile">
+        <span class="material-symbols-rounded">close</span>
+      </button>
+      <div class="border-b border-slate-100 pb-3 mb-4 flex-shrink-0">
+        <h3 class="text-base font-black text-slate-900">Recuperar contraseña</h3>
+        <p class="text-[11px] text-slate-400 font-semibold leading-relaxed">Ingresa tu correo institucional o usuario. Si tu cuenta tiene un correo registrado, recibirás un enlace seguro para restablecerla.</p>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Correo o usuario</label>
+          <input id="forgotUsuarioMobile" type="text" placeholder="ejemplo@js1.com o tu usuario" class="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-3 text-xs font-bold text-slate-800 outline-none focus:border-slate-400">
+        </div>
+
+        <button type="button" id="btnForgotSendMobile" style="background: linear-gradient(135deg, #001B3D 0%, #0ea5e9 100%); box-shadow: 0 4px 12px rgba(0, 27, 61, 0.2);" class="w-full h-12 text-white font-black rounded-xl text-xs uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2">
+          <span class="material-symbols-rounded text-sm">mail</span>
+          <span>Enviar enlace</span>
+        </button>
       </div>
     </div>
   </div>

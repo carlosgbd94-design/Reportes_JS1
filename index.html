@@ -6,7 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SIREVAQ</title>
   <script>
-    if (('ontouchstart' in window || navigator.maxTouchPoints > 0) &&
+    // Un enlace de recuperación de contraseña debe ir siempre a reset.html (página
+    // responsiva compartida). Se revisa ANTES de la redirección a mobile.html para
+    // no perder el token de recuperación que viaja en el hash de la URL.
+    if (window.location.hash && window.location.hash.includes('type=recovery')) {
+      window.location.replace('reset.html' + window.location.hash);
+    } else if (('ontouchstart' in window || navigator.maxTouchPoints > 0) &&
       (window.innerWidth <= 1024 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))) {
       window.location.replace('mobile.html');
     }

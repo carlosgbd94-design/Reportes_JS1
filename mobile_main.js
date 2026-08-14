@@ -2851,6 +2851,91 @@
         }
     };
 
+    // --- Recuperación de Contraseña (Móvil) ---
+    const maskEmailMobile = (email) => {
+        if (!email || !email.includes("@")) return email;
+        const [local, domain] = email.split("@");
+        if (local.length <= 3) return local.charAt(0) + "***@" + domain;
+        return local.substring(0, 3) + "***" + local.substring(local.length - 2) + "@" + domain;
+    };
+
+    const openForgotModalMobile = () => {
+        const input = document.getElementById('forgotUsuarioMobile');
+        if (input) input.value = '';
+        document.getElementById('forgotOverlayMobile')?.classList.remove('hidden');
+        setTimeout(() => input?.focus(), 60);
+    };
+
+    const closeForgotModalMobile = () => {
+        document.getElementById('forgotOverlayMobile')?.classList.add('hidden');
+    };
+
+    const requestPasswordResetFlowMobile = async () => {
+        const lastRequest = localStorage.getItem("JS1_last_reset_request");
+        const now = Date.now();
+        const cooldownMs = 60000; // 60 segundos de bloqueo para evitar saturar Supabase
+        if (lastRequest) {
+            const elapsed = now - parseInt(lastRequest, 10);
+            if (elapsed < cooldownMs) {
+                const remaining = Math.ceil((cooldownMs - elapsed) / 1000);
+                showToast(`Espera ${remaining} segundos antes de solicitar otra recuperación.`, "error");
+                return;
+            }
+        }
+
+        const input = document.getElementById('forgotUsuarioMobile');
+        const emailOrUser = input ? input.value.trim() : "";
+        if (!emailOrUser) {
+            showToast("Ingresa tu usuario o correo institucional", "error");
+            return;
+        }
+
+        const btn = document.getElementById('btnForgotSendMobile');
+        const btnLabel = btn?.querySelector('span:last-child');
+        let finalEmail = emailOrUser;
+
+        try {
+            if (btn) { btn.disabled = true; }
+            if (btnLabel) { btnLabel.textContent = 'Enviando...'; }
+
+            if (!emailOrUser.includes("@")) {
+                const { data, error } = await supabaseClient
+                    .from('usuarios_legacy')
+                    .select('email')
+                    .ilike('usuario', emailOrUser)
+                    .maybeSingle();
+
+                if (error) throw error;
+                if (!data || !data.email) {
+                    showToast("El usuario no tiene un correo registrado o no existe", "error");
+                    return;
+                }
+                finalEmail = data.email;
+            }
+
+            // El redirectTo apunta a reset.html (página responsiva compartida con desktop)
+            // para asegurar que el link funcione sin importar el dispositivo donde se abra el correo.
+            const { error } = await supabaseClient.auth.resetPasswordForEmail(finalEmail, {
+                redirectTo: window.location.origin + window.location.pathname.replace('mobile.html', '') + 'reset.html'
+            });
+
+            if (error) {
+                showToast(error.message || "No se pudo enviar el enlace", "error");
+                return;
+            }
+
+            localStorage.setItem("JS1_last_reset_request", Date.now().toString());
+            showToast(`Enlace enviado a ${maskEmailMobile(finalEmail)}. Revisa también tu bandeja de SPAM.`, "success");
+            closeForgotModalMobile();
+        } catch (e) {
+            console.error(e);
+            showToast("Error al solicitar recuperación", "error");
+        } finally {
+            if (btn) { btn.disabled = false; }
+            if (btnLabel) { btnLabel.textContent = 'Enviar enlace'; }
+        }
+    };
+
     // --- Event Listeners Setup ---
     const setupEventListeners = () => {
         document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
@@ -2860,6 +2945,13 @@
             const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
             if (error) showToast(error.message, "error");
             else handleAuthSuccess(data.user);
+        });
+
+        document.getElementById('btnForgotPasswordMobile')?.addEventListener('click', openForgotModalMobile);
+        document.getElementById('btnForgotCloseMobile')?.addEventListener('click', closeForgotModalMobile);
+        document.getElementById('btnForgotSendMobile')?.addEventListener('click', requestPasswordResetFlowMobile);
+        document.getElementById('forgotOverlayMobile')?.addEventListener('click', (e) => {
+            if (e.target.id === 'forgotOverlayMobile') closeForgotModalMobile();
         });
 
         document.getElementById('btnBiometricLogin')?.addEventListener('click', handleBiometricLogin);
