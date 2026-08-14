@@ -110,6 +110,8 @@ if (!window.supabase || typeof window.supabase.createClient !== 'function') {
       }
     }
   });
+  // Alias esperado por offline_db.js para poder sincronizar la cola local al recuperar la red.
+  window.supabaseClient = window.supabase;
 }
 
 
@@ -508,17 +510,24 @@ const AppService = {
       if (!res || !res.ok) throw new Error(res?.error || "Error al procesar la solicitud");
 
       muteRealtimeFor(12000);
-      showToast(successMsg, true, "good");
-      if (typeof playNotificationSound === "function") {
-        playNotificationSound("success");
+      if (res.offline) {
+        // Captura encolada sin conexión: aún no existe en el servidor, así que no hay
+        // nada que refrescar (mutation) ni celebrar todavía — se confirmará al sincronizar.
+        showToast(`🟡 ${successMsg} localmente. Se sincronizará automáticamente al recuperar conexión.`, true, "warn");
+        pushLiveEvent(eventTitle, "Guardado en este dispositivo, pendiente de sincronizar.", "warn");
+      } else {
+        showToast(successMsg, true, "good");
+        if (typeof playNotificationSound === "function") {
+          playNotificationSound("success");
+        }
+        if (typeof triggerConfetti === "function") {
+          triggerConfetti();
+        }
+        pushLiveEvent(eventTitle, eventMsg, "good");
+        if (mutation) await refreshAfterMutation(mutation);
       }
-      if (typeof triggerConfetti === "function") {
-        triggerConfetti();
-      }
-      pushLiveEvent(eventTitle, eventMsg, "good");
       setSavedStamp();
 
-      if (mutation) await refreshAfterMutation(mutation);
       return res;
     } catch (error) {
       showToast(error.message, false, "bad");
@@ -529,6 +538,25 @@ const AppService = {
     }
   }
 };
+
+// Expuesto en window para que offline_db.js pueda reproducir (replay) una captura
+// encolada sin conexión llamando exactamente la misma acción que se usa en línea
+// (misma validación de negocio, mismos triggers de notificación, etc.).
+window.AppService = AppService;
+
+/**
+ * 📴 queueOfflineCapture: Encola una captura en IndexedDB cuando no hay conexión,
+ * usando el mismo nombre de acción y payload que se enviaría a AppService.call.
+ * Al recuperar la red, offline_db.js reproduce la acción tal cual (ver AppService.call arriba),
+ * por lo que la validación/lógica de negocio del servidor corre igual que en una captura en línea,
+ * solo que diferida.
+ */
+async function queueOfflineCapture(actionType, payload) {
+  if (!window.OfflineDB) throw new Error("El modo sin conexión no está disponible en este dispositivo.");
+  const saved = await window.OfflineDB.saveOfflineRecord(actionType, payload);
+  if (!saved) throw new Error("No se pudo guardar la captura en este dispositivo.");
+  return { ok: true, offline: true };
+}
 
 /**
  * 📦 DOM_CACHE: Performance optimization
@@ -1262,6 +1290,9 @@ function showToast(msg, ok = true, type = null, options = {}) {
     }, { once: true });
   }, duration);
 }
+// Expuesto explícitamente en window: offline_db.js (empaquetado junto a main.js en
+// dist/bundle-head.js) lo necesita para mostrar los avisos de sincronización.
+window.showToast = showToast;
 /** ===== UTILS PORTED FROM BACKEND ===== **/
 function normalizeTextKey_(v) {
   let s = String(v ?? "")
@@ -8920,9 +8951,22 @@ async function hydrateSessionUi(user, status, opts = {}) {
     if (user && (user.rol === "ADMIN" || user.rol === "MUNICIPAL" || user.rol === "JURISDICCIONAL" || user.rol === "VISUALIZADOR_JURISDICCIONAL")) {
       await loadNotifUnitCatalog();
       refreshNotifScopeUi();
-      
+
       // Init Realtime Command Center for Admin roles
       setupRealtimeCommandCenter();
+    }
+
+    // 📴 Reintentar sincronización de capturas offline pendientes (IndexedDB).
+    // Necesario porque OfflineDB solo escucha el evento 'online': si el dispositivo
+    // ya estaba conectado cuando se abrió la app (sin transición offline→online), la
+    // cola nunca se dispara sola. Aquí, con USER ya listo, se reintenta explícitamente.
+    if (navigator.onLine && window.OfflineDB) {
+      try {
+        const pending = await window.OfflineDB.getPendingCount();
+        if (pending > 0) window.OfflineDB.syncQueue(window.supabase);
+      } catch (e) {
+        console.warn("[OfflineDB] No se pudo reintentar la sincronización al iniciar sesión:", e);
+      }
     }
   });
 }
@@ -14350,13 +14394,15 @@ async function performSaveSR() {
       mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true },
       action: () => {
         saveUxValue(UX_KEYS.existenciaName, nombre);
-        return AppService.call("saveSR", {
+        const payload = {
           fecha: todayYmdLocal(),
           nombre,
           items: sinMovItems,
           editado: "NO",
           sin_movimiento: true
-        });
+        };
+        if (!navigator.onLine) return queueOfflineCapture("saveSR", payload);
+        return AppService.call("saveSR", payload);
       }
     });
     return;
@@ -14498,13 +14544,15 @@ async function performSaveSR() {
     mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true },
     action: () => {
       saveUxValue(UX_KEYS.existenciaName, nombre);
-      return AppService.call("saveSR", {
+      const payload = {
         fecha: todayYmdLocal(),
         nombre,
         items,
         editado: EDIT_SR ? "SI" : "NO",
         sin_movimiento: SIN_MOVIMIENTO_SR || false
-      });
+      };
+      if (!navigator.onLine) return queueOfflineCapture("saveSR", payload);
+      return AppService.call("saveSR", payload);
     }
   });
 };
@@ -14541,7 +14589,8 @@ async function performSaveCONS() {
       mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true },
       action: () => {
         saveUxValue(UX_KEYS.consName, nombre);
-        return AppService.call("saveConsumibles", {
+        const payload = {
+          fecha: todayYmdLocal(),
           nombre,
           srp_dosis: safeNum(PREFILL_CONS_DATA.srp_dosis),
           sr_dosis: safeNum(PREFILL_CONS_DATA.sr_dosis),
@@ -14550,7 +14599,9 @@ async function performSaveCONS() {
           aguja_0600403711: safeNum(PREFILL_CONS_DATA.aguja_0600403711),
           editado: "NO",
           sin_movimiento: true
-        });
+        };
+        if (!navigator.onLine) return queueOfflineCapture("saveConsumibles", payload);
+        return AppService.call("saveConsumibles", payload);
       }
     });
     return;
@@ -14580,7 +14631,8 @@ async function performSaveCONS() {
     mutation: { touchToday: true, touchCaptureSummary: true, touchHistory: true },
     action: () => {
       saveUxValue(UX_KEYS.consName, nombre);
-      return AppService.call("saveConsumibles", {
+      const payload = {
+        fecha: todayYmdLocal(),
         nombre,
         srp_dosis: safeNum("srp_dosis"),
         sr_dosis: safeNum("sr_dosis"),
@@ -14589,7 +14641,9 @@ async function performSaveCONS() {
         aguja_0600403711: safeNum("aguja_0600403711"),
         editado: EDIT_CONS ? "SI" : "NO",
         sin_movimiento: SIN_MOVIMIENTO_CONS || false
-      });
+      };
+      if (!navigator.onLine) return queueOfflineCapture("saveConsumibles", payload);
+      return AppService.call("saveConsumibles", payload);
     }
   });
 };
@@ -14735,7 +14789,7 @@ async function performSaveBIO() {
     mutation: { touchToday: false, touchCaptureSummary: true, touchHistory: true, touchBio: true },
     action: async () => {
       saveUxValue(UX_KEYS.bioName, nombre);
-      const res = await AppService.call("saveBio", {
+      const payload = {
         nombre,
         items,
         tipo_pedido: BIO_STATE.isInsideWindow ? "MENSUAL" : "EXTRAORDINARIO",
@@ -14744,8 +14798,11 @@ async function performSaveBIO() {
         fechaPedidoProgramada: BIO_STATE.fechaPedidoProgramada,
         windowStartYmd: BIO_STATE.captureWindowStartYmd,
         windowEndYmd: BIO_STATE.captureWindowEndYmd
-      });
-      if (res.ok) await loadBioForm(true);
+      };
+      const res = navigator.onLine
+        ? await AppService.call("saveBio", payload)
+        : await queueOfflineCapture("saveBio", payload);
+      if (res.ok && !res.offline) await loadBioForm(true);
       return res;
     }
   });
@@ -14791,12 +14848,15 @@ $("btnSavePINOL").onclick = async () => {
     mutation: { touchPinol: true },
     action: async () => {
       saveUxValue(UX_KEYS.pinolName, nombre);
-      const res = await AppService.call("savePinol", {
+      const payload = {
         nombre,
         existencia_actual_botellas: $("pinol_existencia")?.value,
         solicitud_botellas: $("pinol_solicitud")?.value,
         observaciones: $("pinol_observaciones")?.value.trim()
-      });
+      };
+      const res = navigator.onLine
+        ? await AppService.call("savePinol", payload)
+        : await queueOfflineCapture("savePinol", payload);
       if (res.ok) {
         $("nombrePINOL").value = "";
         $("pinol_existencia").value = "";
@@ -22557,16 +22617,14 @@ function syncCommandHub() {
 
           const saved = await window.OfflineDB.saveOfflineRecord('UPSERT_INFLUENZA_CAPTURA', payload);
           if (saved) {
-            showToast("🟡 Captura guardada localmente (Modo sin conexión). Se sincronizará al volver la red.", true, "warning");
+            showToast("🟡 Captura guardada localmente (Modo sin conexión). Se sincronizará al volver la red.", true, "warn");
             return;
           }
         }
 
-        if (!navigator.onLine && captureTab !== "INFLUENZA") {
-          showToast("Sin conexión a internet: este tipo de captura no se puede guardar sin conexión.", false, "warn");
-          return;
-        }
-
+        // SR, CONS, BIO y PINOL manejan su propio modo offline dentro de cada
+        // performSaveXXX (ver queueOfflineCapture), por lo que ya no es necesario
+        // bloquear el guardado aquí cuando no hay conexión.
         if (captureTab === "SR") await performSaveSR();
         if (captureTab === "CONS") await performSaveCONS();
         if (captureTab === "BIO") await performSaveBIO();

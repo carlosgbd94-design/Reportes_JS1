@@ -24,6 +24,8 @@
     let canCaptureConsGlobal = true;
     let canCaptureSRGlobal = true;
     let mobileConfettiInstance = null;
+    let srPrefillSnapshot = null; // items del último reporte SR precargado, para detectar guardado sin cambios
+    let srPrefillGapInfo = null;  // {diffDays, missedWeeks, lastDate} cuando el salto desde la última captura es >= 9 días
     let recentErrors = [];
     const originalConsoleError = console.error;
     console.error = function(...args) {
@@ -858,6 +860,17 @@
             const respName = lastRecord[0].capturado_por;
             const sinMov = lastRecord[0].sin_movimiento === 'SI' || lastRecord[0].sin_movimiento === true;
 
+            // Detección de salto de semanas (paridad con desktop: execPrefillSemanal).
+            // Si pasaron 9 días o más desde la última captura, se guarda el detalle del salto
+            // para poder advertir al usuario si intenta guardar sin cambios en saveReport().
+            const todayStr = new Date().toISOString().split('T')[0];
+            const diffDays = Math.round((new Date(todayStr).getTime() - new Date(lastDate).getTime()) / (1000 * 3600 * 24));
+            if (diffDays >= 9) {
+                srPrefillGapInfo = { diffDays, missedWeeks: Math.max(1, Math.floor(diffDays / 7)), lastDate };
+            } else {
+                srPrefillGapInfo = null;
+            }
+
             const nombreSRInput = document.getElementById('nombreSR');
             if (nombreSRInput && respName) nombreSRInput.value = respName;
 
@@ -870,6 +883,7 @@
             if (sinMov) {
                 const container = document.getElementById('srCardsContainer');
                 if (container) container.innerHTML = '';
+                srPrefillSnapshot = null;
                 showToast("Se pre-llenó la información de la captura anterior.");
             } else {
                 const { data: details } = await supabaseClient
@@ -890,12 +904,24 @@
                             cantidad: item.cantidad
                         });
                     });
-                    showToast("Se pre-llenó la información de la captura anterior.");
+                    srPrefillSnapshot = JSON.stringify(details.map(item => ({
+                        biologico: String(item.biologico || '').trim().toUpperCase(),
+                        lote: String(item.lote || '').trim().toUpperCase(),
+                        cantidad: Number(item.cantidad)
+                    })));
+                    if (srPrefillGapInfo) {
+                        showToast(`⚠️ Te saltaste ${srPrefillGapInfo.missedWeeks} semana(s) (última captura hace ${diffDays} días). Se precargó esa información — revísala antes de guardar.`, "error");
+                    } else {
+                        showToast("Se pre-llenó la información de la captura anterior.");
+                    }
                 } else {
+                    srPrefillSnapshot = null;
                     addSRCard();
                 }
             }
         } else {
+            srPrefillSnapshot = null;
+            srPrefillGapInfo = null;
             addSRCard();
         }
     };
@@ -2282,6 +2308,34 @@
         });
     };
 
+    // --- Confirmación de guardado sin cambios tras salto de semanas (paridad con desktop) ---
+    const showPrefillGapConfirm = (gapInfo) => {
+        return new Promise((resolve) => {
+            const overlay = document.getElementById('prefillGapConfirmOverlay');
+            const msgEl = document.getElementById('prefillGapConfirmMsg');
+            if (!overlay || !msgEl) { resolve(true); return; }
+
+            msgEl.innerHTML = `Detectamos un salto de <b>${gapInfo.missedWeeks} semana(s)</b> desde tu última captura del <b>${gapInfo.lastDate}</b> (hace ${gapInfo.diffDays} días).<br><br>Estás guardando las existencias sin cambios respecto a esa fecha.<br><br><b>¿Deseas continuar?</b>`;
+
+            const btnAccept = document.getElementById('btnPrefillGapAccept');
+            const btnCancel = document.getElementById('btnPrefillGapCancel');
+
+            const cleanup = (val) => {
+                overlay.classList.add('hidden');
+                if (btnAccept) btnAccept.onclick = null;
+                if (btnCancel) btnCancel.onclick = null;
+                overlay.onclick = null;
+                resolve(val);
+            };
+
+            if (btnAccept) btnAccept.onclick = () => cleanup(true);
+            if (btnCancel) btnCancel.onclick = () => cleanup(false);
+            overlay.onclick = (e) => { if (e.target === overlay) cleanup(false); };
+
+            overlay.classList.remove('hidden');
+        });
+    };
+
     // --- Guardar Reportes ---
     const saveReport = async () => {
         if (!currentUser || !currentProfile) {
@@ -2402,6 +2456,19 @@
                 if (!items.length && !sinMovimiento) {
                     showToast("Captura al menos un biológico", "error");
                     throw new Error("Sin items");
+                }
+
+                // Confirmación de guardado sin cambios tras salto de semanas (paridad con desktop)
+                if (!sinMovimiento && srPrefillGapInfo && srPrefillSnapshot) {
+                    const currentSnapshot = JSON.stringify(items.map(item => ({
+                        biologico: String(item.biologico || '').trim().toUpperCase(),
+                        lote: String(item.lote || '').trim().toUpperCase(),
+                        cantidad: Number(item.cantidad)
+                    })));
+                    if (currentSnapshot === srPrefillSnapshot) {
+                        const confirmed = await showPrefillGapConfirm(srPrefillGapInfo);
+                        if (!confirmed) throw new Error("Confirmación cancelada");
+                    }
                 }
 
                 // Delete existing first to avoid duplicate keys (desktop parity)
@@ -2837,7 +2904,9 @@
 
         } catch (err) {
             console.error(err);
-            if (err.message && err.message !== "Nombre requerido" && err.message !== "Validaciones fallidas" && err.message !== "Sin items" && err.message !== "Campos incompletos" && err.message !== "Valores negativos" && err.message !== "Validación de pedido fallida") {
+            if (err.message === "Confirmación cancelada") {
+                // Cancelación intencional del usuario (modal de salto de semanas) — sin toast.
+            } else if (err.message && err.message !== "Nombre requerido" && err.message !== "Validaciones fallidas" && err.message !== "Sin items" && err.message !== "Campos incompletos" && err.message !== "Valores negativos" && err.message !== "Validación de pedido fallida") {
                 showToast("Error: " + err.message, "error");
             } else if (err.message) {
                 // If it is a validation error but has a message, let's toast it to alert the user

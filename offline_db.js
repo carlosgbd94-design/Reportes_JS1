@@ -11,6 +11,12 @@
   const DB_VERSION = 1;
   const STORE_PENDING = 'pending_sync_queue';
 
+  // Acciones de captura (Biológicos/SR, Consumibles, Pedido/BIO, Pinol) que se reproducen
+  // (replay) llamando directamente a window.AppService.call(actionType, payload) al
+  // recuperar la red — exactamente la misma acción que usaría una captura en línea, con
+  // toda su lógica de negocio (validación server-side, detección de desabasto, notificaciones).
+  const APP_SERVICE_REPLAY_ACTIONS = new Set(['saveSR', 'saveConsumibles', 'saveBio', 'savePinol']);
+
   let dbPromise = null;
 
   // ── 1. Inicialización de IndexedDB ─────────────────────────────────────────
@@ -58,7 +64,7 @@
         const store = tx.objectStore(STORE_PENDING);
 
         const record = {
-          actionType: actionType, // ej: 'UPSERT_INFLUENZA_CAPTURA', 'UPSERT_EXISTENCIA'
+          actionType: actionType, // ej: 'UPSERT_INFLUENZA_CAPTURA', 'saveSR', 'saveConsumibles', 'saveBio', 'savePinol'
           payload: payload,
           meta: meta,
           timestamp: new Date().toISOString(),
@@ -135,6 +141,9 @@
 
           if (syncHandlers[record.actionType]) {
             synced = await syncHandlers[record.actionType](record.payload, supabaseClient);
+          } else if (APP_SERVICE_REPLAY_ACTIONS.has(record.actionType) && window.AppService && typeof window.AppService.call === 'function') {
+            const res = await window.AppService.call(record.actionType, record.payload, { silent: true });
+            synced = !!(res && res.ok);
           } else {
             synced = await defaultSyncHandler(record, supabaseClient);
           }
@@ -170,31 +179,6 @@
       const { data, error } = await supabaseClient
         .from('influenza_capturas')
         .upsert(payload, { onConflict: 'clues,fecha' });
-      if (error) {
-        console.error('[OfflineDB Sync Error]', error);
-        return false;
-      }
-      return true;
-    }
-
-    if (actionType === 'UPSERT_EXISTENCIA') {
-      // NOTA: ningún flujo de captura llama hoy a saveOfflineRecord('UPSERT_EXISTENCIA', ...) —
-      // el guardado online real de SR/existencia (performSaveSR en main.js) hace un
-      // borrado+inserción dual contra 'biologicos_existencia' Y 'existencia_detalle', comparando
-      // contra el reporte anterior para detectar desabasto; esa lógica no se puede replicar aquí
-      // sin conexión. 'biologicos_existencia' no tiene restricción única en (clues, fecha) —solo
-      // PK en 'id'— por eso aquí se replica el mismo patrón borrado+inserción que usa el guardado
-      // online, en vez de un upsert que fallaría por falta de esa restricción.
-      if (payload && payload.clues && payload.fecha) {
-        await supabaseClient
-          .from('biologicos_existencia')
-          .delete()
-          .eq('clues', payload.clues)
-          .eq('fecha', payload.fecha);
-      }
-      const { data, error } = await supabaseClient
-        .from('biologicos_existencia')
-        .insert(payload);
       if (error) {
         console.error('[OfflineDB Sync Error]', error);
         return false;
@@ -243,8 +227,9 @@
       const syncBtn = document.getElementById('btn-force-sync');
       if (syncBtn) {
         syncBtn.onclick = () => {
-          if (window.supabaseClient) {
-            syncQueue(window.supabaseClient);
+          const client = window.supabaseClient || window.supabase;
+          if (client) {
+            syncQueue(client);
           }
         };
       }
@@ -255,7 +240,11 @@
 
   function showSyncToast(message, type = 'info') {
     if (window.showToast) {
-      window.showToast(message, type);
+      // window.showToast espera (mensaje, ok:boolean, tipo), no (mensaje, tipo) —
+      // se traduce aquí para no perder el estilo (color/ícono) de cada tipo de aviso.
+      const typeMap = { success: 'good', error: 'bad', warning: 'warn', info: 'info' };
+      const mappedType = typeMap[type] || 'info';
+      window.showToast(message, mappedType !== 'bad', mappedType);
     } else {
       console.log(`[Toast ${type}] ${message}`);
     }
@@ -266,8 +255,9 @@
     console.log('[OfflineDB] Conexión recuperada.');
     updateSyncBadge();
     showSyncToast('🟢 Conexión a internet reestablecida.', 'success');
-    if (window.supabaseClient) {
-      syncQueue(window.supabaseClient);
+    const client = window.supabaseClient || window.supabase;
+    if (client) {
+      syncQueue(client);
     }
   });
 

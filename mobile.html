@@ -701,6 +701,20 @@
     </div>
   </div>
 
+  <div class="dropdown-overlay hidden" id="prefillGapConfirmOverlay">
+    <div class="dropdown-card max-w-md flex flex-col relative w-[calc(100%-32px)] p-6 bg-white rounded-3xl shadow-2xl border border-slate-100">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="material-symbols-rounded text-amber-500 text-2xl">warning</span>
+        <h3 class="text-base font-black text-slate-900">Guardado sin cambios</h3>
+      </div>
+      <p id="prefillGapConfirmMsg" class="text-[12px] text-slate-500 font-semibold leading-relaxed mb-5"></p>
+      <div class="flex gap-3">
+        <button type="button" id="btnPrefillGapCancel" class="flex-1 h-11 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs uppercase">Cancelar</button>
+        <button type="button" id="btnPrefillGapAccept" class="flex-1 h-11 bg-amber-500 text-white font-bold rounded-xl text-xs uppercase">Continuar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Supabase CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- DayJS para fechas -->
