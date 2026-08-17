@@ -13898,10 +13898,23 @@ window.addEventListener('resize', () => {
     }
   }
 
-  // MutationObserver ya agrupa mutaciones síncronas simultáneas en una sola
-  // llamada (microtarea), así que no hace falta esperar a un frame para
-  // reaccionar — se actualiza de inmediato, sin depender del renderizado.
-  const observer = new MutationObserver(updateLock);
+  // updateLock() es cara: recorre TODO el documento buscando modales/overlays
+  // y fuerza layout síncrono (getComputedStyle + getBoundingClientRect) por
+  // cada candidato. Los overlays de progreso (updateOverlayProgress) mutan su
+  // barra/anillo vía style.width/strokeDashoffset en cada tick — potencialmente
+  // decenas de veces por segundo durante una exportación o carga — y cada tick
+  // es una macro/microtarea separada, así que el agrupado nativo del observer
+  // no las junta. Sin throttle, cada tick relanzaba el layout thrashing
+  // completo, bloqueando el hilo principal y trabando la animación del propio
+  // loadscreen. Se colapsa a lo sumo una recalculación por frame.
+  let rafPending = null;
+  const observer = new MutationObserver(() => {
+    if (rafPending) return;
+    rafPending = requestAnimationFrame(() => {
+      rafPending = null;
+      updateLock();
+    });
+  });
   observer.observe(document.body, { attributes: true, attributeFilter: ['class', 'style'], subtree: true });
 
   if (document.readyState === 'loading') {
@@ -17747,7 +17760,7 @@ function renderPinolCommandCenter() {
         <td class="text-center" style="vertical-align: middle !important;">${obsHtml}</td>
         <td class="text-xs font-semibold text-slate-600" style="vertical-align: middle !important;">${escapeHtml(fechaEntregaFormateada || "—")}</td>
         <td style="vertical-align: middle !important;">${estatusHtml}</td>
-        <td class="pn-actions-cell" style="padding: 4px 6px !important; text-align: center !important; width: 90px !important; vertical-align: middle !important;">
+        <td class="pn-actions-cell" style="padding: 4px 8px !important; text-align: center !important; width: auto !important; min-width: 132px !important; vertical-align: middle !important;">
           <div class="pn-btn-group" style="display: inline-flex !important; flex-direction: row !important; align-items: center !important; justify-content: center !important; gap: 6px !important; margin: 0 auto !important; padding: 0 !important; background: transparent !important; border: none !important; vertical-align: middle !important;">
             ${actionContent}
           </div>
@@ -19928,6 +19941,7 @@ window.currentLiveViewRes = null;
 window.currentLiveViewTab = 'existencia';
 window.CHART_SEM = null;
 window.CHART_CAD = null;
+window.liveViewExpandedGroups = new Set(); // Persiste qué biológicos (multi-lote) están desplegados en la pestaña Existencia
 
 // ✅ SKELETON LOADERS PARA CARGAS EN VIVO
 window.showLiveViewSkeletons = function() {
@@ -20386,6 +20400,22 @@ window.clearLiveViewFilter = function() {
   renderLiveViewTableContent();
 };
 
+// ✅ EXPANDIR/COLAPSAR TODOS LOS BIOLÓGICOS CON MÚLTIPLES LOTES (pestaña Existencia)
+window.toggleAllLiveViewGroups = function() {
+  const tbody = $("liveViewTbody");
+  if (!tbody) return;
+  const groupKeys = Array.from(tbody.querySelectorAll('.live-view-group-row')).map(r => r.dataset.groupKey).filter(Boolean);
+  if (!groupKeys.length) return;
+
+  const anyCollapsed = groupKeys.some(k => !window.liveViewExpandedGroups.has(k));
+  if (anyCollapsed) {
+    groupKeys.forEach(k => window.liveViewExpandedGroups.add(k));
+  } else {
+    groupKeys.forEach(k => window.liveViewExpandedGroups.delete(k));
+  }
+  renderLiveViewTableContent();
+};
+
 function renderLiveCharts(tipo, leftData, rightData) {
   try {
     const ctxLeft = $("liveChartLeft");
@@ -20664,6 +20694,19 @@ window.exportLiveViewPDF = function() {
   if (pngBtn) pngBtn.style.display = "none";
   if (closeBtn) closeBtn.style.display = "none";
 
+  // Reporte formal: forzar detalle completo por lote, sin importar el estado de expansión en pantalla
+  const liveViewTbodyForPdf = document.getElementById("liveViewTbody");
+  const groupKeysForPdf = liveViewTbodyForPdf
+    ? Array.from(liveViewTbodyForPdf.querySelectorAll('.live-view-group-row')).map(r => r.dataset.groupKey).filter(Boolean)
+    : [];
+  const prevExpandedGroupsForPdf = new Set(window.liveViewExpandedGroups);
+  let forcedExpansionForPdf = false;
+  if (groupKeysForPdf.length && groupKeysForPdf.some(k => !window.liveViewExpandedGroups.has(k))) {
+    groupKeysForPdf.forEach(k => window.liveViewExpandedGroups.add(k));
+    renderLiveViewTableContent();
+    forcedExpansionForPdf = true;
+  }
+
   const clues = window.currentLiveViewParams ? window.currentLiveViewParams.clues : "CLUES";
   const unidad = window.currentLiveViewParams ? window.currentLiveViewParams.unidad : "Unidad";
   const res = window.currentLiveViewRes;
@@ -20782,6 +20825,11 @@ window.exportLiveViewPDF = function() {
 
     window.scrollTo(0, originalScrollTop);
 
+    if (forcedExpansionForPdf) {
+      window.liveViewExpandedGroups = prevExpandedGroupsForPdf;
+      renderLiveViewTableContent();
+    }
+
     if (refreshBtn) refreshBtn.style.display = "flex";
     if (pdfBtn) pdfBtn.style.display = "flex";
     if (pngBtn) pngBtn.style.display = "flex";
@@ -20814,6 +20862,11 @@ window.exportLiveViewPDF = function() {
 
     window.scrollTo(0, originalScrollTop);
 
+    if (forcedExpansionForPdf) {
+      window.liveViewExpandedGroups = prevExpandedGroupsForPdf;
+      renderLiveViewTableContent();
+    }
+
     if (refreshBtn) refreshBtn.style.display = "flex";
     if (pdfBtn) pdfBtn.style.display = "flex";
     if (pngBtn) pngBtn.style.display = "flex";
@@ -20838,6 +20891,19 @@ window.exportLiveViewPNG = function() {
   if (pdfBtn) pdfBtn.style.display = "none";
   if (pngBtn) pngBtn.style.display = "none";
   if (closeBtn) closeBtn.style.display = "none";
+
+  // Reporte formal: forzar detalle completo por lote, sin importar el estado de expansión en pantalla
+  const liveViewTbodyForPng = document.getElementById("liveViewTbody");
+  const groupKeysForPng = liveViewTbodyForPng
+    ? Array.from(liveViewTbodyForPng.querySelectorAll('.live-view-group-row')).map(r => r.dataset.groupKey).filter(Boolean)
+    : [];
+  const prevExpandedGroupsForPng = new Set(window.liveViewExpandedGroups);
+  let forcedExpansionForPng = false;
+  if (groupKeysForPng.length && groupKeysForPng.some(k => !window.liveViewExpandedGroups.has(k))) {
+    groupKeysForPng.forEach(k => window.liveViewExpandedGroups.add(k));
+    renderLiveViewTableContent();
+    forcedExpansionForPng = true;
+  }
 
   const clues = window.currentLiveViewParams ? window.currentLiveViewParams.clues : "CLUES";
   const unidad = window.currentLiveViewParams ? window.currentLiveViewParams.unidad : "Unidad";
@@ -20920,6 +20986,11 @@ window.exportLiveViewPNG = function() {
 
     window.scrollTo(0, originalScrollTop);
 
+    if (forcedExpansionForPng) {
+      window.liveViewExpandedGroups = prevExpandedGroupsForPng;
+      renderLiveViewTableContent();
+    }
+
     if (refreshBtn) refreshBtn.style.display = "flex";
     if (pdfBtn) pdfBtn.style.display = "flex";
     if (pngBtn) pngBtn.style.display = "flex";
@@ -20948,6 +21019,11 @@ window.exportLiveViewPNG = function() {
     }
 
     window.scrollTo(0, originalScrollTop);
+
+    if (forcedExpansionForPng) {
+      window.liveViewExpandedGroups = prevExpandedGroupsForPng;
+      renderLiveViewTableContent();
+    }
 
     if (refreshBtn) refreshBtn.style.display = "flex";
     if (pdfBtn) pdfBtn.style.display = "flex";
@@ -21018,6 +21094,120 @@ function getPermanenciaStatusHelper(recepcionIso) {
   };
 }
 
+// ✅ AGRUPA LAS FILAS DE EXISTENCIA (lote+fecha) POR BIOLÓGICO PARA LA VISTA RESUMEN
+// Regla de seguridad: el "peor caso" (semáforo/permanencia) siempre gana sobre el agregado,
+// nunca se promedia ni se oculta un lote crítico detrás del total.
+const LIVE_VIEW_SEMAFORO_PRIORITY = { expired: 0, pronto: 1, normal: 2, lejana: 3 };
+
+function groupRowsByBiologico(items) {
+  const groups = [];
+  const indexByKey = {};
+
+  (items || []).forEach(r => {
+    const bioKey = window.normalizeBioKey ? window.normalizeBioKey(r.biologico) : String(r.biologico || '').toLowerCase().trim();
+    if (!(bioKey in indexByKey)) {
+      indexByKey[bioKey] = groups.length;
+      groups.push({
+        bioKey,
+        bioName: r.biologico || "—",
+        rows: [],
+        totalCantidad: 0,
+        worstSemaforo: null,
+        soonestCaducidad: null,
+        hasMultipleDistinctCaducidad: false,
+        worstPermanencia: null,
+        loanTypes: new Set()
+      });
+    }
+    groups[indexByKey[bioKey]].rows.push(r);
+  });
+
+  groups.forEach(g => {
+    let bestMonths = Infinity;
+    let worstSemPriority = Infinity;
+    let worstPermDays = -Infinity;
+    let worstPermRow = null;
+    const distinctCad = new Set();
+
+    g.rows.forEach(r => {
+      g.totalCantidad += Number(r.cantidad || 0);
+
+      const status = getSemaforoStatus(r.caducidad);
+      const priority = LIVE_VIEW_SEMAFORO_PRIORITY[status.key] ?? 99;
+      if (priority < worstSemPriority) {
+        worstSemPriority = priority;
+        g.worstSemaforo = status;
+      }
+
+      const months = getMonthsTo(r.caducidad);
+      if (months < bestMonths) {
+        bestMonths = months;
+        g.soonestCaducidad = r.caducidad;
+      }
+      if (r.caducidad) distinctCad.add(isoToMmmaa(r.caducidad));
+
+      if (r.fecha_recepcion) {
+        const dRec = new Date(r.fecha_recepcion);
+        const now = new Date();
+        dRec.setHours(0, 0, 0, 0);
+        now.setHours(0, 0, 0, 0);
+        const diffDays = Math.floor((now - dRec) / (1000 * 60 * 60 * 24));
+        if (diffDays > worstPermDays) {
+          worstPermDays = diffDays;
+          worstPermRow = r;
+        }
+      }
+
+      if (r.tipo === "PRESTAMO_DESABASTO" || r.tipo === "Préstamo por desabasto" || r.tipo === "PRESTAMO_ARF" || r.tipo === "Préstamo por ARF") {
+        g.loanTypes.add(r.tipo);
+      }
+    });
+
+    g.hasMultipleDistinctCaducidad = distinctCad.size > 1;
+    const permRowFallback = worstPermRow || g.rows[0] || {};
+    g.worstPermanencia = getPermanenciaStatusHelper(permRowFallback.fecha_recepcion);
+  });
+
+  return groups;
+}
+
+// ✅ DELEGACIÓN DE CLIC PARA EXPANDIR/COLAPSAR UNA FILA AGREGADA (una sola vez por tbody)
+function bindLiveViewGroupToggle(tbody) {
+  if (!tbody || tbody.dataset.groupToggleBound === "1") return;
+  tbody.dataset.groupToggleBound = "1";
+  tbody.addEventListener("click", (e) => {
+    const row = e.target.closest(".live-view-group-row");
+    if (!row) return;
+    const key = row.dataset.groupKey;
+    if (!key) return;
+
+    const willExpand = !window.liveViewExpandedGroups.has(key);
+    if (willExpand) window.liveViewExpandedGroups.add(key);
+    else window.liveViewExpandedGroups.delete(key);
+
+    row.dataset.expanded = willExpand ? "true" : "false";
+    const toggleBtn = row.querySelector(".live-view-expand-toggle");
+    if (toggleBtn) toggleBtn.setAttribute("aria-expanded", willExpand ? "true" : "false");
+
+    let detailWrapper = row.nextElementSibling;
+    if (detailWrapper && !detailWrapper.classList.contains("live-view-detail-wrapper")) {
+      detailWrapper = tbody.querySelector(`.live-view-detail-wrapper[data-group-key="${CSS.escape(key)}"]`);
+    }
+    const collapseEl = detailWrapper ? detailWrapper.querySelector(".live-view-detail-collapse") : null;
+    if (collapseEl) collapseEl.classList.toggle("is-open", willExpand);
+
+    // Refrescar la etiqueta del botón global "Expandir/Colapsar todo" si está visible
+    const expandAllBtn = document.getElementById("btnLiveViewExpandAll");
+    if (expandAllBtn && expandAllBtn.style.display !== "none") {
+      const anyCollapsed = Array.from(tbody.querySelectorAll(".live-view-group-row")).some(r => r.dataset.expanded !== "true");
+      const labelEl = expandAllBtn.querySelector(".live-view-expand-all-label");
+      const iconEl = expandAllBtn.querySelector(".material-symbols-rounded");
+      if (labelEl) labelEl.textContent = anyCollapsed ? "Expandir todo" : "Colapsar todo";
+      if (iconEl) iconEl.textContent = anyCollapsed ? "unfold_more" : "unfold_less";
+    }
+  });
+}
+
 function highlightZeroRows(items) {
   const tbody = $("liveViewTbody");
   if (!tbody) return;
@@ -21078,9 +21268,13 @@ function highlightZeroRows(items) {
 
   if (biosConCeroTotalKeys.length > 0) {
     Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+      // Las filas de detalle anidadas dentro de un grupo desplegado no deben evaluarse aquí:
+      // el resaltado en cero es a nivel biológico (fila agregada), no por lote individual.
+      if (tr.closest('.live-view-detail-inner')) return;
       const cells = tr.querySelectorAll('td');
       if (cells.length > 0) {
-        const bioKey = normBioName(cells[0].textContent);
+        // La celda de biológico ahora puede incluir chevron/badges; usar data-bio-name si existe.
+        const bioKey = normBioName(tr.dataset.bioName || cells[0].textContent);
         const countBadge = tr.querySelector('.live-view-count-badge');
         if (countBadge && (countBadge.textContent.trim() === '0') && bioTotals[bioKey] === 0) {
           tr.style.background = '#fff5f5';
@@ -21130,6 +21324,10 @@ window.renderLiveViewTableContent = function() {
     zeroAlertEl.style.display = 'none';
     zeroAlertEl.innerHTML = '';
   }
+
+  // Por defecto oculto: solo la pestaña Existencia (tipo SR, sin filtro) lo reactiva si aplica
+  const expandAllBtnReset = document.getElementById("btnLiveViewExpandAll");
+  if (expandAllBtnReset) expandAllBtnReset.style.display = "none";
 
   const tipo = (res.meta && res.meta.tipo) ? res.meta.tipo.toUpperCase() : "SR";
   const tab = window.currentLiveViewTab || 'existencia';
@@ -21205,44 +21403,133 @@ window.renderLiveViewTableContent = function() {
           }
         }
 
+        // Renderiza una fila de lote individual (usada tanto en la vista plana como anidada dentro de un grupo)
+        const renderSrLotRow = (r, opts) => {
+          const nested = !!(opts && opts.nested);
+          const status = getSemaforoStatus(r.caducidad);
+          const diffMonths = getMonthsTo(r.caducidad);
+          const perm = getPermanenciaStatusHelper(r.fecha_recepcion);
+          const bioName = r.biologico || "—";
+          const color = getBiologicoColor(bioName);
+
+          let tipoBadge = "";
+          if (r.tipo === "PRESTAMO_DESABASTO" || r.tipo === "Préstamo por desabasto") {
+            tipoBadge = `<span style="background: #fffbeb; color: #d97706; border: 1px solid #fde68a; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 12px; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">🤝 P. DESABASTO</span>`;
+          } else if (r.tipo === "PRESTAMO_ARF" || r.tipo === "Préstamo por ARF") {
+            tipoBadge = `<span style="background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 12px; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">🤝 P. ARF</span>`;
+          }
+
+          const rowStyle = nested
+            ? "border-bottom: 1px solid #e2e8f0; transition: all 0.2s ease; background: rgba(148, 163, 184, 0.06);"
+            : "border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;";
+          const bioCellPadding = nested ? "10px 24px 10px 50px" : "14px 24px";
+
+          return `
+                <tr class="live-view-row" style="${rowStyle}" data-type="sr" data-status="${status.label}" data-months="${diffMonths}" data-bio-name="${escapeHtml(bioName)}">
+                  <td style="padding:${bioCellPadding}; font-weight:${nested ? 700 : 900}; color:${color}; font-size:${nested ? "13px" : "14px"}; white-space: nowrap;">
+                    ${nested ? `<span class="material-symbols-rounded" style="font-size:14px; color:#cbd5e1; vertical-align:middle; margin-right:4px;">subdirectory_arrow_right</span>` : ""}
+                    <span style="vertical-align: middle;">${escapeHtml(bioName)}</span>${tipoBadge}
+                  </td>
+                  <td style="padding:${nested ? "10px 24px" : "14px 24px"}; font-weight:600; color:#475569;">${escapeHtml(r.lote || "—")}</td>
+                  <td style="padding:${nested ? "10px 24px" : "14px 24px"}; text-align:center;">
+                    <span class="live-view-count-badge" style="color:${color}; font-weight:900;">${escapeHtml(r.cantidad || 0)}</span>
+                  </td>
+                  <td style="padding:${nested ? "10px 24px" : "14px 24px"}; font-weight:700; text-align:center; color:#1e293b;">${escapeHtml(isoToMmmaa(r.caducidad))}</td>
+                  <td style="padding:${nested ? "10px 24px" : "14px 24px"}; text-align:center;">
+                    <span class="status-pill-pro ${status.key}">${status.label}</span>
+                  </td>
+                  <td style="padding:${nested ? "10px 24px" : "14px 24px"}; text-align:center; min-width: 190px;">
+                    ${perm.html}
+                  </td>
+                </tr>
+              `;
+        };
+
+        // Renderiza la fila agregada de un biológico con 2+ lotes/fechas + su bloque de detalle desplegable
+        const renderSrGroupRow = (g) => {
+          const color = getBiologicoColor(g.bioName);
+          const isExpanded = window.liveViewExpandedGroups.has(g.bioKey);
+          const slug = String(g.bioKey).replace(/[^a-zA-Z0-9_-]/g, "_") || "g";
+
+          const loanBadgeTemplates = {
+            "PRESTAMO_DESABASTO": `<span style="background: #fffbeb; color: #d97706; border: 1px solid #fde68a; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 12px; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">🤝 P. DESABASTO</span>`,
+            "Préstamo por desabasto": `<span style="background: #fffbeb; color: #d97706; border: 1px solid #fde68a; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 12px; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">🤝 P. DESABASTO</span>`,
+            "PRESTAMO_ARF": `<span style="background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 12px; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">🤝 P. ARF</span>`,
+            "Préstamo por ARF": `<span style="background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 12px; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">🤝 P. ARF</span>`
+          };
+          const loanTypesArr = Array.from(g.loanTypes);
+          let loanBadgesHtml = loanTypesArr.slice(0, 2).map(t => loanBadgeTemplates[t] || "").join("");
+          if (loanTypesArr.length > 2) {
+            loanBadgesHtml += `<span style="font-size:10px; color:#94a3b8; font-weight:700; margin-left:4px;">+${loanTypesArr.length - 2} más</span>`;
+          }
+
+          const multiCadFlag = g.hasMultipleDistinctCaducidad
+            ? `<span class="material-symbols-rounded" title="Múltiples fechas de caducidad — se muestra la más próxima" style="font-size:14px; color:#94a3b8; vertical-align:middle; margin-left:2px; cursor:help;">more_horiz</span>`
+            : "";
+
+          return `
+                <tr class="live-view-row live-view-group-row" data-type="sr" data-group-key="${escapeHtml(g.bioKey)}" data-bio-name="${escapeHtml(g.bioName)}" data-expanded="${isExpanded}" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease; cursor: pointer;">
+                  <td style="padding:14px 24px; font-weight:900; color:${color}; font-size:14px; white-space: nowrap;">
+                    <button type="button" class="live-view-expand-toggle" aria-expanded="${isExpanded}" aria-controls="live-view-detail-${slug}" title="Ver detalle por lote" style="background:none; border:none; padding:0; margin-right:6px; cursor:pointer; vertical-align:middle; display:inline-flex; align-items:center;">
+                      <span class="material-symbols-rounded" style="font-size:20px; color:#94a3b8;">expand_more</span>
+                    </button>
+                    <span style="vertical-align: middle;">${escapeHtml(g.bioName)}</span>${loanBadgesHtml}
+                    <span class="live-view-lote-count-badge" style="display:inline-flex; align-items:center; margin-left:8px; padding:1px 9px; border-radius:20px; background:#f1f5f9; color:#64748b; font-size:10px; font-weight:800; vertical-align:middle; white-space:nowrap;">${g.rows.length} lotes</span>
+                  </td>
+                  <td style="padding:14px 24px; font-weight:600; color:#94a3b8; font-style:italic; font-size:12px;">Varios (${g.rows.length})</td>
+                  <td style="padding:14px 24px; text-align:center;">
+                    <span class="live-view-count-badge" style="color:${color}; font-weight:900;">${escapeHtml(g.totalCantidad)}</span>
+                  </td>
+                  <td style="padding:14px 24px; font-weight:700; text-align:center; color:#1e293b;">${escapeHtml(isoToMmmaa(g.soonestCaducidad))}${multiCadFlag}</td>
+                  <td style="padding:14px 24px; text-align:center;">
+                    <span class="status-pill-pro ${g.worstSemaforo.key}">${g.worstSemaforo.label}</span>
+                  </td>
+                  <td style="padding:14px 24px; text-align:center; min-width: 190px;">
+                    ${g.worstPermanencia.html}
+                  </td>
+                </tr>
+                <tr class="live-view-detail-wrapper" data-group-key="${escapeHtml(g.bioKey)}">
+                  <td colspan="6" style="padding:0; border-bottom: 1px solid #f1f5f9;">
+                    <div class="live-view-detail-collapse${isExpanded ? " is-open" : ""}" id="live-view-detail-${slug}">
+                      <div class="live-view-detail-inner">
+                        <table style="width:100%; border-collapse:collapse; margin:0;"><tbody>
+                          ${g.rows.map(r => renderSrLotRow(r, { nested: true })).join("")}
+                        </tbody></table>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              `;
+        };
+
         if (displayItems.length === 0) {
           tbody.innerHTML = '<tr><td colspan="6" class="muted" style="padding:40px; text-align:center;">Ningún registro coincide con el filtro seleccionado.</td></tr>';
+        } else if (window.activeLiveViewFilter) {
+          // Filtro de gráfica activo: vista plana por lote. No se agrupa para no promediar/ocultar
+          // el peor caso de un subconjunto ya filtrado por severidad.
+          tbody.innerHTML = displayItems.map(r => renderSrLotRow(r, { nested: false })).join("");
         } else {
-          tbody.innerHTML = displayItems.map(r => {
-            const status = getSemaforoStatus(r.caducidad);
-            const diffMonths = getMonthsTo(r.caducidad);
-            const perm = getPermanenciaStatusHelper(r.fecha_recepcion);
-            const bioName = r.biologico || "—";
-            const color = getBiologicoColor(bioName);
-
-            let tipoBadge = "";
-            if (r.tipo === "PRESTAMO_DESABASTO" || r.tipo === "Préstamo por desabasto") {
-              tipoBadge = `<span style="background: #fffbeb; color: #d97706; border: 1px solid #fde68a; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 12px; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">🤝 P. DESABASTO</span>`;
-            } else if (r.tipo === "PRESTAMO_ARF" || r.tipo === "Préstamo por ARF") {
-              tipoBadge = `<span style="background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 12px; margin-left: 6px; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">🤝 P. ARF</span>`;
-            }
-
-            return `
-                  <tr class="live-view-row" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;" data-type="sr" data-status="${status.label}" data-months="${diffMonths}">
-                    <td style="padding:14px 24px; font-weight:900; color:${color}; font-size:14px; white-space: nowrap;">
-                      <span style="vertical-align: middle;">${escapeHtml(bioName)}</span>${tipoBadge}
-                    </td>
-                    <td style="padding:14px 24px; font-weight:600; color:#475569;">${escapeHtml(r.lote || "—")}</td>
-                    <td style="padding:14px 24px; text-align:center;">
-                      <span class="live-view-count-badge" style="color:${color}; font-weight:900;">${escapeHtml(r.cantidad || 0)}</span>
-                    </td>
-                    <td style="padding:14px 24px; font-weight:700; text-align:center; color:#1e293b;">${escapeHtml(isoToMmmaa(r.caducidad))}</td>
-                    <td style="padding:14px 24px; text-align:center;">
-                      <span class="status-pill-pro ${status.key}">${status.label}</span>
-                    </td>
-                    <td style="padding:14px 24px; text-align:center; min-width: 190px;">
-                      ${perm.html}
-                    </td>
-                  </tr>
-                `;
+          const groups = groupRowsByBiologico(displayItems);
+          tbody.innerHTML = groups.map(g => {
+            if (g.rows.length <= 1) return renderSrLotRow(g.rows[0], { nested: false });
+            return renderSrGroupRow(g);
           }).join("");
         }
 
+        // Botón global "Expandir todo / Colapsar todo": solo visible si hay al menos un
+        // biológico con 2+ lotes y no hay filtro de gráfica activo (ahí la vista ya es plana).
+        const expandAllBtn = document.getElementById("btnLiveViewExpandAll");
+        if (expandAllBtn) {
+          const hasGroups = !window.activeLiveViewFilter && tbody.querySelector('.live-view-group-row');
+          expandAllBtn.style.display = hasGroups ? "inline-flex" : "none";
+          if (hasGroups) {
+            const anyCollapsed = Array.from(tbody.querySelectorAll('.live-view-group-row')).some(r => r.dataset.expanded !== "true");
+            expandAllBtn.querySelector('.live-view-expand-all-label').textContent = anyCollapsed ? "Expandir todo" : "Colapsar todo";
+            expandAllBtn.querySelector('.material-symbols-rounded').textContent = anyCollapsed ? "unfold_more" : "unfold_less";
+          }
+        }
+
+        bindLiveViewGroupToggle(tbody);
         highlightZeroRows(items);
         renderLiveCharts("SR", semStats, cadStats);
       }

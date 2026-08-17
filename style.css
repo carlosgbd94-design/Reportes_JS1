@@ -7013,6 +7013,71 @@ input, textarea, select, [contenteditable] {
   display: inline-block;
 }
 
+/* ===== Live View: agrupación de biológicos con desglose por lote (pestaña Existencia) ===== */
+.live-view-group-row {
+  cursor: pointer;
+}
+
+.live-view-expand-toggle .material-symbols-rounded {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.live-view-group-row[data-expanded="true"] .live-view-expand-toggle .material-symbols-rounded {
+  transform: rotate(180deg);
+  color: #0ea5e9 !important;
+}
+
+.live-view-lote-count-badge {
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.live-view-group-row:hover .live-view-lote-count-badge {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+/* Truco de "auto-height": un <tr>/<td> no anima height de forma confiable entre
+   navegadores, pero un grid de una fila sí puede animar grid-template-rows 0fr -> 1fr,
+   dando un despliegue suave sin medir pixeles ni depender del número de lotes. */
+.live-view-detail-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.live-view-detail-collapse.is-open {
+  grid-template-rows: 1fr;
+}
+
+.live-view-detail-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.live-view-expand-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  background: rgba(14, 165, 233, 0.08);
+  border: 1.5px solid rgba(14, 165, 233, 0.15);
+  color: #0284c7;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.live-view-expand-all-btn:hover {
+  background: rgba(14, 165, 233, 0.15);
+  transform: translateY(-1px);
+}
+
+.live-view-expand-all-btn:active {
+  transform: translateY(0);
+}
 
 
 /* */
@@ -7631,9 +7696,12 @@ html.sirevaq-scroll-locked body {
    fondo que siga corriendo obliga al navegador a recalcular el desenfoque
    en cada frame — es la causa real del lag, no el blur en sí. Se pausan
    las animaciones decorativas de "infinite" mientras el modal está abierto;
-   se reanudan solas al cerrarlo (nada se elimina, solo se congela un rato). */
+   se reanudan solas al cerrarlo (nada se elimina, solo se congela un rato).
+   NOTA: .bounce-logo se excluye a propósito — es el logo animado de los
+   propios loadscreens (#overlay, #progressOverlay, etc.), y como su id
+   contiene "overlay" el MutationObserver de main.js activa este mismo
+   bloqueo al mostrarlos, pausando la animación justo cuando debía correr. */
 html.sirevaq-scroll-locked .tech-node-light,
-html.sirevaq-scroll-locked .bounce-logo,
 html.sirevaq-scroll-locked .btn-glow,
 html.sirevaq-scroll-locked .btn-save-animate {
   animation-play-state: paused !important;
@@ -11870,6 +11938,13 @@ html.dark .kpiCard.info { background-color: rgba(59, 130, 246, 0.1) !important; 
 /* Live View row hover override */
 html.dark .live-view-row:hover { background-color: var(--md-sys-color-surface-container-high) !important; }
 
+/* Live View: grupos/desglose por lote en modo oscuro */
+html.dark .live-view-detail-inner { background: rgba(255, 255, 255, 0.03); }
+html.dark .live-view-lote-count-badge { background: rgba(255, 255, 255, 0.08); color: var(--md-sys-color-on-surface-variant); }
+html.dark .live-view-group-row:hover .live-view-lote-count-badge { background: rgba(14, 165, 233, 0.2); color: #7dd3fc; }
+html.dark .live-view-expand-all-btn { background: rgba(14, 165, 233, 0.12); border-color: rgba(14, 165, 233, 0.25); color: #7dd3fc; }
+html.dark .live-view-expand-all-btn:hover { background: rgba(14, 165, 233, 0.22); }
+
 /* Modern input groups and flatpickr in Dark Mode */
 html.dark .modern-input-group { background-color: var(--md-sys-color-surface) !important; border-color: var(--md-sys-color-outline-variant) !important; }
 html.dark .modern-input-group input, 
@@ -13316,8 +13391,28 @@ input[type="number"] {
   animation: pinolPulseGlow 1.8s infinite ease-in-out !important;
 }
 
+/* Este proyecto usa un Tailwind compilado estáticamente que solo incluye
+   combinaciones de clase ya usadas en el resto del sitio. Los valores
+   arbitrarios "translate-x-full", "z-[2500]"/"z-[2400]" y "max-w-[460px]"
+   del HTML de este drawer NUNCA se generaron en ese build: sin z-index real
+   (quedaba en "auto") el drawer se dibujaba DETRÁS del layout principal
+   (#desktopSplitLeft), y sin max-width ocupaba el 100% del viewport — por
+   eso solo se veía oscurecerse la pantalla (el backdrop sí funcionaba) pero
+   el panel en sí era invisible, aunque técnicamente sí se estaba "abriendo".
+   Se fijan aquí explícitamente, sin depender de esas utilidades. */
+#pinolDrawer {
+  transform: translateX(100%) !important;
+  z-index: 2500 !important;
+  max-width: 460px !important;
+}
+
 #pinolDrawer.open {
   transform: translateX(0) !important;
+}
+
+#pinolDrawerBackdrop {
+  background: rgba(15, 23, 42, 0.4) !important;
+  z-index: 2400 !important;
 }
 
 #pinolDrawerBackdrop.open {
@@ -13326,13 +13421,15 @@ input[type="number"] {
 }
 
 /* ==========================================
-   PINOL DEDICATED PURE 3D SYMBOL BUTTONS (NO BOX CONTAINERS)
+   PINOL — BOTONES DE ACCIÓN (solo símbolo, sin caja)
    ========================================== */
 #pinolTbody td.pn-actions-cell {
-  padding: 4px 6px !important;
+  padding: 4px 8px !important;
   text-align: center !important;
-  width: 90px !important;
-  max-width: 110px !important;
+  width: auto !important;
+  min-width: 132px !important;
+  max-width: none !important;
+  white-space: nowrap !important;
 }
 
 .pn-btn-group {
@@ -13340,7 +13437,7 @@ input[type="number"] {
   flex-direction: row !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 6px !important;
+  gap: 8px !important;
   margin: 0 auto !important;
   padding: 0 !important;
   width: auto !important;
@@ -13354,85 +13451,53 @@ button.pn-pure-btn {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  width: 32px !important;
-  height: 32px !important;
+  width: 30px !important;
+  height: 30px !important;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   cursor: pointer !important;
   padding: 0 !important;
-  margin: 0 1px !important;
+  margin: 0 !important;
   outline: none !important;
 }
 
 button.pn-pure-btn span.material-symbols-rounded {
-  font-size: 22px !important;
+  font-size: 19px !important;
   line-height: 1 !important;
   display: inline-block !important;
-  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.22s ease !important;
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), color 0.18s ease, opacity 0.18s ease !important;
+  opacity: 0.75 !important;
 }
 
-/* 1. SURTIR (Ícono 3D Verde Esmeralda) */
-button.pn-pure-surtir span.material-symbols-rounded {
-  color: #059669 !important;
-  filter: drop-shadow(0 2px 3px rgba(5, 150, 105, 0.45)) drop-shadow(0 1px 0 #047857) !important;
-}
-button.pn-pure-surtir:hover span.material-symbols-rounded {
-  transform: translateY(-3px) scale(1.25) !important;
-  color: #10b981 !important;
-  filter: drop-shadow(0 6px 10px rgba(5, 150, 105, 0.55)) drop-shadow(0 2px 0 #047857) !important;
+button.pn-pure-btn:hover span.material-symbols-rounded {
+  transform: translateY(-2px) scale(1.14) !important;
+  opacity: 1 !important;
 }
 
-/* 2. HISTORIAL / TRAZABILIDAD (Ícono 3D Azul) */
-button.pn-pure-history span.material-symbols-rounded {
-  color: #2563eb !important;
-  filter: drop-shadow(0 2px 3px rgba(37, 99, 235, 0.45)) drop-shadow(0 1px 0 #1d4ed8) !important;
-}
-button.pn-pure-history:hover span.material-symbols-rounded {
-  transform: translateY(-3px) scale(1.25) !important;
-  color: #3b82f6 !important;
-  filter: drop-shadow(0 6px 10px rgba(37, 99, 235, 0.55)) drop-shadow(0 2px 0 #1d4ed8) !important;
+button.pn-pure-btn:active span.material-symbols-rounded {
+  transform: translateY(0) scale(1.02) !important;
 }
 
-/* 3. ACUSE (Ícono 3D Verde Bosque) */
-button.pn-pure-acuse span.material-symbols-rounded {
-  color: #166534 !important;
-  filter: drop-shadow(0 2px 3px rgba(22, 101, 52, 0.45)) drop-shadow(0 1px 0 #14532d) !important;
-}
-button.pn-pure-acuse:hover span.material-symbols-rounded {
-  transform: translateY(-3px) scale(1.25) !important;
-  color: #22c55e !important;
-  filter: drop-shadow(0 6px 10px rgba(22, 101, 52, 0.55)) drop-shadow(0 2px 0 #14532d) !important;
-}
+/* 1. SURTIR (Esmeralda) */
+button.pn-pure-surtir span.material-symbols-rounded { color: #059669 !important; }
+button.pn-pure-surtir:hover span.material-symbols-rounded { color: #047857 !important; }
 
-/* 4. ELIMINAR (Ícono 3D Rojo Carmesí) */
-button.pn-pure-delete span.material-symbols-rounded {
-  color: #ef4444 !important;
-  filter: drop-shadow(0 2px 3px rgba(239, 68, 68, 0.45)) drop-shadow(0 1px 0 #b91c1c) !important;
-}
-button.pn-pure-delete:hover span.material-symbols-rounded {
-  transform: translateY(-3px) scale(1.25) !important;
-  color: #f87171 !important;
-  filter: drop-shadow(0 6px 10px rgba(239, 68, 68, 0.55)) drop-shadow(0 2px 0 #b91c1c) !important;
-}
+/* 2. HISTORIAL / FICHA DE TRAZABILIDAD (Azul) */
+button.pn-pure-history span.material-symbols-rounded { color: #2563eb !important; }
+button.pn-pure-history:hover span.material-symbols-rounded { color: #1d4ed8 !important; }
 
-/* 5. VER OBSERVACIÓN (Ícono 3D Azul Cielo) */
-button.pn-pure-obs span.material-symbols-rounded {
-  color: #0284c7 !important;
-  filter: drop-shadow(0 2px 3px rgba(2, 132, 199, 0.45)) drop-shadow(0 1px 0 #0369a1) !important;
-}
-button.pn-pure-obs:hover span.material-symbols-rounded {
-  animation: pnObsBounce 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
-  color: #38bdf8 !important;
-  filter: drop-shadow(0 6px 10px rgba(2, 132, 199, 0.55)) drop-shadow(0 2px 0 #0369a1) !important;
-}
-@keyframes pnObsBounce {
-  0% { transform: translateY(0) scale(1) rotate(0deg); }
-  30% { transform: translateY(-7px) scale(1.3) rotate(-10deg); }
-  55% { transform: translateY(-1px) scale(1.15) rotate(8deg); }
-  75% { transform: translateY(-4px) scale(1.27) rotate(-4deg); }
-  100% { transform: translateY(-3px) scale(1.25) rotate(0deg); }
-}
+/* 3. ACUSE / IMPRESIÓN (Verde Bosque) */
+button.pn-pure-acuse span.material-symbols-rounded { color: #166534 !important; }
+button.pn-pure-acuse:hover span.material-symbols-rounded { color: #14532d !important; }
+
+/* 4. ELIMINAR (Rojo) */
+button.pn-pure-delete span.material-symbols-rounded { color: #dc2626 !important; }
+button.pn-pure-delete:hover span.material-symbols-rounded { color: #b91c1c !important; }
+
+/* 5. VER OBSERVACIÓN (Azul Cielo) */
+button.pn-pure-obs span.material-symbols-rounded { color: #0284c7 !important; }
+button.pn-pure-obs:hover span.material-symbols-rounded { color: #0369a1 !important; }
 
 
 

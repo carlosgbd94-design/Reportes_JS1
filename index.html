@@ -74,82 +74,13 @@
 
   <!-- Estilos -->
   <link rel="stylesheet" href="tailwind_compiled.css">
-  <link rel="stylesheet" href="style.css?v=2026.72" type="text/css">
+  <link rel="stylesheet" href="style.css?v=2026.75" type="text/css">
 
   <style>
-    /* BOTONES DE ACCIÓN: PUROS ÍCONOS ELEGANTES 3D VERTICALMENTE ALINEADOS AL CENTRO */
+    /* Botones de acción de la tabla Pinol: estilo definido en style.css
+       (#pinolTbody td.pn-actions-cell / .pn-pure-btn / variantes de color). */
     #pinolTbody td {
       vertical-align: middle !important;
-    }
-
-    button.pn-pure-btn {
-      all: unset !important;
-      box-sizing: border-box !important;
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      width: 28px !important;
-      height: 28px !important;
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      cursor: pointer !important;
-      padding: 0 !important;
-      margin: 0 2px !important;
-      outline: none !important;
-      vertical-align: middle !important;
-    }
-
-    button.pn-pure-btn span.material-symbols-rounded {
-      font-size: 20px !important;
-      line-height: 1 !important;
-      display: inline-block !important;
-      -webkit-font-smoothing: antialiased !important;
-      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease, color 0.2s ease !important;
-    }
-
-    /* 1. SURTIR (Verde Esmeralda Elegante) */
-    button.pn-pure-surtir span.material-symbols-rounded {
-      color: #059669 !important;
-      filter: drop-shadow(0 1.5px 1.5px rgba(5, 150, 105, 0.25)) drop-shadow(0 1px 0 #047857) !important;
-    }
-    button.pn-pure-surtir:hover span.material-symbols-rounded {
-      transform: translateY(-2px) scale(1.18) !important;
-      color: #10b981 !important;
-      filter: drop-shadow(0 4px 6px rgba(5, 150, 105, 0.35)) drop-shadow(0 1px 0 #047857) !important;
-    }
-
-    /* 2. HISTORIAL / TRAZABILIDAD (Azul Elegante) */
-    button.pn-pure-history span.material-symbols-rounded {
-      color: #2563eb !important;
-      filter: drop-shadow(0 1.5px 1.5px rgba(37, 99, 235, 0.25)) drop-shadow(0 1px 0 #1d4ed8) !important;
-    }
-    button.pn-pure-history:hover span.material-symbols-rounded {
-      transform: translateY(-2px) scale(1.18) !important;
-      color: #3b82f6 !important;
-      filter: drop-shadow(0 4px 6px rgba(37, 99, 235, 0.35)) drop-shadow(0 1px 0 #1d4ed8) !important;
-    }
-
-    /* 3. ACUSE (Verde Bosque Elegante) */
-    button.pn-pure-acuse span.material-symbols-rounded {
-      color: #166534 !important;
-      filter: drop-shadow(0 1.5px 1.5px rgba(22, 101, 52, 0.25)) drop-shadow(0 1px 0 #14532d) !important;
-    }
-    button.pn-pure-acuse:hover span.material-symbols-rounded {
-      transform: translateY(-2px) scale(1.18) !important;
-      color: #22c55e !important;
-      filter: drop-shadow(0 4px 6px rgba(22, 101, 52, 0.35)) drop-shadow(0 1px 0 #14532d) !important;
-    }
-
-    /* 4. ELIMINAR (Rojo Carmesí Elegante) */
-    button.pn-pure-delete span.material-symbols-rounded {
-      color: #dc2626 !important;
-      filter: drop-shadow(0 1.5px 1.5px rgba(220, 38, 38, 0.25)) drop-shadow(0 1px 0 #991b1b) !important;
-    }
-    button.pn-pure-delete:hover span.material-symbols-rounded {
-      transform: translateY(-2px) scale(1.18) !important;
-      color: #ef4444 !important;
-      filter: drop-shadow(0 4px 6px rgba(220, 38, 38, 0.35)) drop-shadow(0 1px 0 #991b1b) !important;
     }
 
     /* Premium Switch Styling inline to bypass SW cache issues */
@@ -370,7 +301,7 @@
        (ensurePdfAssetsLoaded) solo al exportar el PDF de Resguardo.
        Generado por build-bundle.js. Los archivos originales siguen en el repo
        (sin borrar) por si hace falta revertir este cambio. -->
-  <script src="dist/bundle-head.js?v=2026.16" defer></script>
+  <script src="dist/bundle-head.js?v=2026.17" defer></script>
 
   <!-- 🔧 Service Worker Registration (PWA) -->
   <script>
@@ -7435,18 +7366,26 @@
             <div id="liveViewTableTitle"
               style="font-size: 14px; font-weight: 900; color: var(--md-sys-color-on-surface);">Detalle de
               Existencia Actual</div>
-            <div class="flex items-center gap-1 p-1 rounded-xl" id="liveViewTabSwitcher"
-              style="display: flex; background: rgba(14, 165, 233, 0.08); border-radius: 14px; border: 1.5px solid rgba(14, 165, 233, 0.15);">
-              <button type="button" id="btnLiveTabExistencia"
-                style="padding: 6px 14px; border-radius: 10px; font-size: 11px; font-weight: 800; border: none; cursor: pointer; transition: all 0.2s; background: #0ea5e9; color: #ffffff; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);"
-                onclick="switchLiveViewTab('existencia')">
-                Existencias
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <button type="button" id="btnLiveViewExpandAll" class="live-view-expand-all-btn"
+                title="Expandir o colapsar todos los biológicos con múltiples lotes" style="display:none;"
+                onclick="window.toggleAllLiveViewGroups()">
+                <span class="material-symbols-rounded" style="font-size: 16px;">unfold_more</span>
+                <span class="live-view-expand-all-label">Expandir todo</span>
               </button>
-              <button type="button" id="btnLiveTabMovimiento"
-                style="padding: 6px 14px; border-radius: 10px; font-size: 11px; font-weight: 800; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #0284c7;"
-                onclick="switchLiveViewTab('movimiento')">
-                Movimientos
-              </button>
+              <div class="flex items-center gap-1 p-1 rounded-xl" id="liveViewTabSwitcher"
+                style="display: flex; background: rgba(14, 165, 233, 0.08); border-radius: 14px; border: 1.5px solid rgba(14, 165, 233, 0.15);">
+                <button type="button" id="btnLiveTabExistencia"
+                  style="padding: 6px 14px; border-radius: 10px; font-size: 11px; font-weight: 800; border: none; cursor: pointer; transition: all 0.2s; background: #0ea5e9; color: #ffffff; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);"
+                  onclick="switchLiveViewTab('existencia')">
+                  Existencias
+                </button>
+                <button type="button" id="btnLiveTabMovimiento"
+                  style="padding: 6px 14px; border-radius: 10px; font-size: 11px; font-weight: 800; border: none; cursor: pointer; transition: all 0.2s; background: transparent; color: #0284c7;"
+                  onclick="switchLiveViewTab('movimiento')">
+                  Movimientos
+                </button>
+              </div>
             </div>
           </div>
 
