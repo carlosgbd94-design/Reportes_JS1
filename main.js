@@ -14070,7 +14070,7 @@ window.activateOpsTab = function (tab) {
   if (tab === "HISTORY") {
     if (typeof reloadHistorySilent === 'function') reloadHistorySilent(true);
     if (typeof triggerConfetti === "function") {
-      setTimeout(triggerConfetti, 400);
+      setTimeout(() => triggerConfetti(false), 400);
     }
   }
   if (tab === "PINOL") {
@@ -18877,7 +18877,7 @@ function renderHistoryMetrics(data) {
 
   function triggerConfettiFallback() {
     if (typeof window.confetti === "function") {
-      triggerConfetti();
+      triggerConfetti(false);
       return;
     }
 
@@ -23996,9 +23996,9 @@ function showSuccessCheckBadge() {
 }
 window.showSuccessCheckBadge = showSuccessCheckBadge;
 
-function triggerConfetti() {
+function triggerConfetti(showBadge = true) {
   try {
-    showSuccessCheckBadge();
+    if (showBadge) showSuccessCheckBadge();
 
     if (typeof window.confetti === "function") {
       let canvas = document.getElementById("confetti-canvas");
