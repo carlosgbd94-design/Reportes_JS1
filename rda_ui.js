@@ -1942,8 +1942,16 @@ function renderTable(fUnits, esquema, agg) {
         </tr>`;
     });
 
-    // Fila Destacada de TOTAL JURISDICCIONAL
-    if (rows.length > 0) {
+    // Fila Destacada de Total — JURISDICCIONAL para perfiles con acceso a todas las unidades,
+    // MUNICIPAL para el rol MUNICIPAL (solo suma las unidades de su propio municipio, que es
+    // lo único que `rows`/`agg` contienen en ese caso porque el filtro de municipio es obligatorio).
+    const roleForTotal = String((typeof USER !== 'undefined' && USER?.rol) || '').toUpperCase();
+    const canSeeJurisdictionTotal = ['ADMIN', 'JURISDICCIONAL', 'VISUALIZADOR_JURISDICCIONAL'].includes(roleForTotal);
+    const canSeeMunicipalTotal = roleForTotal === 'MUNICIPAL';
+    if ((canSeeJurisdictionTotal || canSeeMunicipalTotal) && rows.length > 0) {
+        const totalRowLabel = canSeeMunicipalTotal
+            ? `TOTAL MUNICIPAL (${(rows[0]?.municipio || '').toUpperCase()})`
+            : 'TOTAL JURISDICCIONAL (JURISDICCIÓN SANITARIA 1)';
         const jurPob = rows.reduce((sum, r) => sum + (r.pob || 0), 0);
         const jurDosis = rows.reduce((sum, r) => sum + (r.dosis || 0), 0);
         
@@ -1962,7 +1970,7 @@ function renderTable(fUnits, esquema, agg) {
 
         html += `
             <tr style="background-color:#f1f5f9; color:#0f172a; font-weight:900; border-top:2px solid #cbd5e1; border-bottom:2px solid #cbd5e1;">
-                <td colspan="3" style="padding:14px 24px; font-size:12px; uppercase tracking-wider; color:#0f172a; font-weight:900;">TOTAL JURISDICCIONAL (JURISDICCIÓN SANITARIA 1)</td>
+                <td colspan="3" style="padding:14px 24px; font-size:12px; uppercase tracking-wider; color:#0f172a; font-weight:900;">${totalRowLabel}</td>
                 ${vCols.map((c, idx) => `<td style="padding:12px 10px; text-align:center;">${badge(jurVCols[idx], c.n)}</td>`).join('')}
                 ${showMeta ? `<td style="padding:14px 24px; text-align:center; font-size:12px; font-weight:900; color:#0369a1;">${jurPob.toLocaleString('es-MX')}</td>` : ''}
                 <td style="padding:14px 24px; text-align:center; font-size:12px; font-weight:900; color:#0f766e;">${jurDosis.toLocaleString('es-MX')}</td>
