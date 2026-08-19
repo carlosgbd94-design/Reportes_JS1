@@ -1944,14 +1944,25 @@ function renderTable(fUnits, esquema, agg) {
 
     // Fila Destacada de Total — JURISDICCIONAL para perfiles con acceso a todas las unidades,
     // MUNICIPAL para el rol MUNICIPAL (solo suma las unidades de su propio municipio, que es
-    // lo único que `rows`/`agg` contienen en ese caso porque el filtro de municipio es obligatorio).
+    // lo único que `rows`/`agg` contienen en ese caso porque el filtro de municipio es obligatorio),
+    // y CARAVANAS para el rol CARAVANAS (solo suma sus propias unidades FAM/UMME, ya filtradas
+    // desde la carga de datos; puede abarcar uno o varios municipios según el filtro elegido).
     const roleForTotal = String((typeof USER !== 'undefined' && USER?.rol) || '').toUpperCase();
     const canSeeJurisdictionTotal = ['ADMIN', 'JURISDICCIONAL', 'VISUALIZADOR_JURISDICCIONAL'].includes(roleForTotal);
     const canSeeMunicipalTotal = roleForTotal === 'MUNICIPAL';
-    if ((canSeeJurisdictionTotal || canSeeMunicipalTotal) && rows.length > 0) {
-        const totalRowLabel = canSeeMunicipalTotal
-            ? `TOTAL MUNICIPAL (${(rows[0]?.municipio || '').toUpperCase()})`
-            : 'TOTAL JURISDICCIONAL (JURISDICCIÓN SANITARIA 1)';
+    const canSeeCaravanasTotal = roleForTotal === 'CARAVANAS';
+    if ((canSeeJurisdictionTotal || canSeeMunicipalTotal || canSeeCaravanasTotal) && rows.length > 0) {
+        let totalRowLabel;
+        if (canSeeMunicipalTotal) {
+            totalRowLabel = `TOTAL MUNICIPAL (${(rows[0]?.municipio || '').toUpperCase()})`;
+        } else if (canSeeCaravanasTotal) {
+            const caravanasMunicipios = [...new Set(rows.map(r => (r.municipio || '').toUpperCase()))];
+            totalRowLabel = caravanasMunicipios.length === 1
+                ? `TOTAL CARAVANAS (${caravanasMunicipios[0]})`
+                : 'TOTAL CARAVANAS (JURISDICCIÓN SANITARIA 1)';
+        } else {
+            totalRowLabel = 'TOTAL JURISDICCIONAL (JURISDICCIÓN SANITARIA 1)';
+        }
         const jurPob = rows.reduce((sum, r) => sum + (r.pob || 0), 0);
         const jurDosis = rows.reduce((sum, r) => sum + (r.dosis || 0), 0);
         
