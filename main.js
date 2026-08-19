@@ -392,6 +392,15 @@ window.SIREVAQ_CATALOG = {
   "vsr":            { key: "vsr", label: "VSR", isEsquemaBasico: true, requiresPriorHistory: false, dosesPerVial: 1, color: "#4F46E5" }
 };
 
+/**
+ * 💉 Vacunas multidosis cuyo manual exige registrar la fecha de apertura del frasco
+ * (vigencia de 28 días una vez abierto). Excluye BCG y SR por indicación del manual,
+ * y COVID-19 porque su lineamiento cambia según la marca de cada temporada.
+ * Debe coincidir con los valores del <select> de biológico en el formulario SR.
+ */
+window.VACCINES_REQUIRE_APERTURA = ["TD", "DPT", "INFLUENZA", "HEPATITIS B"];
+window.APERTURA_FRASCO_LIMITE_DIAS = 28;
+
 window.normalizeBioKey = function(str) {
   if (!str) return "";
   const raw = String(str).toLowerCase()
@@ -5359,7 +5368,8 @@ async function supabaseRequest(action = "", payload, options = {}) {
             fecha_recepcion: it.fecha_recepcion,
             cantidad: qty,
             capturado_por: nombreResp,
-            tipo: it.tipo || "REQUISICION"
+            tipo: it.tipo || "REQUISICION",
+            fecha_apertura: it.fecha_apertura || null
           });
         });
 
@@ -5669,7 +5679,8 @@ async function supabaseRequest(action = "", payload, options = {}) {
               caducidad: it.caducidad,
               cantidad: it.cantidad,
               fecha_recepcion: it.fecha_recepcion,
-              tipo: it.tipo || "REQUISICION"
+              tipo: it.tipo || "REQUISICION",
+              fecha_apertura: it.fecha_apertura || null
             })),
             ...(srSummary || {})
           };
@@ -7356,7 +7367,13 @@ async function supabaseRequest(action = "", payload, options = {}) {
           } else {
             folderName = `${cleanCategory}/${clues}_${cleanUnit}`;
           }
-          fileName = `${dateStr}-${cleanCategory}_${clues}_${cleanUnit}.${extension}`;
+          // 📎 Evidencia de capacitación: el cliente ya arma el nombre final
+          // (UNIDAD_CLUES_TIPO-DOCUMENTO_DD_MM_AA.ext) para poder verificar y
+          // reemplazar por tipo de documento. Sin esto, se conserva el nombre
+          // genérico de siempre (Otros reportes / Evidencias de campaña).
+          fileName = payload.explicitFileName
+            ? normalizePath(payload.explicitFileName).replace(/[\s\/]/g, '_')
+            : `${dateStr}-${cleanCategory}_${clues}_${cleanUnit}.${extension}`;
         }
 
         const folderPath = `${folderName}/${fileName}`.replace(/\/\//g, '/');
@@ -9734,6 +9751,7 @@ window.addSRRow = function (data = null) {
           </div>
           <input type="number" class="sr-cantidad-input w-[80px] text-center bg-slate-50 border-2 border-slate-400 rounded-xl py-2 text-[14px] font-black text-slate-900 focus:border-primary focus:bg-white focus:shadow-[0_4px_10px_rgba(0,51,102,0.08)] outline-none transition-all" min="0" step="any" value="${data?.cantidad || ""}" placeholder="0" autocomplete="off" data-lpignore="true" data-form-type="other" name="no-autofill-cant-${Date.now()}">
         </div>
+        <div class="sr-apertura-badge" style="display:none; justify-content:center; margin-top:6px; cursor:pointer;" title="Clic para capturar/revisar la fecha de apertura"></div>
       </td>
       <td class="p-4 py-3 text-center" data-label="Acción">
         <div class="flex justify-center items-center w-full gap-2">
@@ -9765,19 +9783,113 @@ window.addSRRow = function (data = null) {
     recepcionInput: tr.querySelector("input.sr-recepcion-input"),
     tipoSelect: tr.querySelector("select.sr-tipo-select"),
     cantidadInput: tr.querySelector("input.sr-cantidad-input"),
-    permanenciaHint: tr.querySelector(".sr-permanencia-hint")
+    permanenciaHint: tr.querySelector(".sr-permanencia-hint"),
+    aperturaBadge: tr.querySelector(".sr-apertura-badge")
   };
+
+  // 💉 Fecha de apertura del frasco (si viene de una captura previa/edición)
+  tr.dataset.fechaApertura = data?.fecha_apertura || "";
 
   tbody.appendChild(tr);
 
   // Listener para actualización en tiempo real de permanencia
   tr._cache.recepcionInput.addEventListener("input", () => window.updatePermanenciaHint(tr));
 
+  // 💉 Detección en vivo de frasco multidosis abierto (decimal en TD/DPT/INFLUENZA/HEPATITIS B):
+  // solo pinta el badge, no interrumpe con un modal (eso ocurre en un solo paso al guardar).
+  tr._cache.cantidadInput.addEventListener("blur", () => window.updateAperturaState(tr));
+  tr._cache.bioSelect.addEventListener("change", () => window.updateAperturaState(tr));
+  // Clic directo en el badge = revisar/capturar esa fila puntual, sin esperar al guardado.
+  tr._cache.aperturaBadge.addEventListener("click", () => window.handleAperturaCheck(tr, { prompt: true, force: true }));
+
   if (data) {
     window.handleSRBioChange(tr._cache.bioSelect, data.lote);
     window.updatePermanenciaHint(tr);
   }
+  window.renderAperturaBadge(tr);
 }
+
+// 💉 Actualiza en vivo el estado/badge de apertura de la fila SIN abrir el modal
+// (se llama en cada blur del input o cambio de biológico). La captura real de la
+// fecha se resuelve en un solo paso al guardar (ver openAperturaBatchModal),
+// o puntualmente si el usuario da clic directo en el badge.
+window.updateAperturaState = function (tr) {
+  if (!tr) return;
+  const cache = tr._cache || {};
+  const bio = (cache.bioSelect || tr.querySelector(".sr-bio-select"))?.value || "";
+  const cantEl = cache.cantidadInput || tr.querySelector(".sr-cantidad-input");
+  const cant = cantEl ? cantEl.value : "";
+  const hasDecimal = cant !== "" && !isNaN(Number(cant)) && Number(cant) % 1 !== 0;
+  const requiresApertura = hasDecimal && window.VACCINES_REQUIRE_APERTURA.includes(bio);
+  if (!requiresApertura) tr.dataset.fechaApertura = "";
+  window.renderAperturaBadge(tr);
+};
+
+// 💉 Evalúa si la fila requiere fecha de apertura (decimal en vacuna multidosis elegible)
+// y, si aplica, dispara el modal de captura individual (clic directo en el badge).
+window.handleAperturaCheck = async function (tr, opts = {}) {
+  if (!tr || tr.dataset.aperturaModalOpen === "1") return;
+
+  const cache = tr._cache || {};
+  const cantEl = cache.cantidadInput || tr.querySelector(".sr-cantidad-input");
+  if (opts.prompt && cantEl && cantEl.disabled) return; // Formulario bloqueado (captura ya guardada, sin editar)
+
+  const bio = (cache.bioSelect || tr.querySelector(".sr-bio-select"))?.value || "";
+  const lote = (cache.loteSelect || tr.querySelector(".sr-lote-select"))?.value || "";
+  const cant = cantEl ? cantEl.value : "";
+  const recep = (cache.recepcionInput || tr.querySelector(".sr-recepcion-input"))?.value || "";
+
+  const hasDecimal = cant !== "" && !isNaN(Number(cant)) && Number(cant) % 1 !== 0;
+  const requiresApertura = hasDecimal && window.VACCINES_REQUIRE_APERTURA.includes(bio);
+
+  if (!requiresApertura) {
+    tr.dataset.fechaApertura = "";
+    window.renderAperturaBadge(tr);
+    return;
+  }
+
+  if (opts.prompt && (opts.force || !tr.dataset.fechaApertura)) {
+    tr.dataset.aperturaModalOpen = "1";
+    try {
+      const fecha = await window.openAperturaFrascoModal({ biologico: bio, lote, fechaRecepcion: recep, initialDate: tr.dataset.fechaApertura || "" });
+      if (fecha) tr.dataset.fechaApertura = fecha;
+    } finally {
+      tr.dataset.aperturaModalOpen = "0";
+    }
+  }
+  window.renderAperturaBadge(tr);
+};
+
+// 💉 Pinta el badge de estado del frasco abierto (o "falta capturar") en la celda de Frascos.
+window.renderAperturaBadge = function (tr) {
+  if (!tr) return;
+  const cache = tr._cache || {};
+  const badge = cache.aperturaBadge || tr.querySelector(".sr-apertura-badge");
+  if (!badge) return;
+
+  const bio = (cache.bioSelect || tr.querySelector(".sr-bio-select"))?.value || "";
+  const cantEl = cache.cantidadInput || tr.querySelector(".sr-cantidad-input");
+  const cant = cantEl ? cantEl.value : "";
+  const hasDecimal = cant !== "" && !isNaN(Number(cant)) && Number(cant) % 1 !== 0;
+  const requiresApertura = hasDecimal && window.VACCINES_REQUIRE_APERTURA.includes(bio);
+
+  if (!requiresApertura) {
+    badge.style.display = "none";
+    badge.innerHTML = "";
+    return;
+  }
+
+  const fecha = tr.dataset.fechaApertura || "";
+  if (!fecha) {
+    badge.style.display = "flex";
+    badge.innerHTML = `<span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:12px; background:#fef2f2; color:#ef4444; font-size:10px; font-weight:800; border:1px solid #ef444440; white-space:nowrap;"><span class="material-symbols-rounded" style="font-size:12px;">error</span> Falta fecha apertura</span>`;
+    return;
+  }
+
+  const status = window.getAperturaStatusHelper(fecha);
+  badge.style.display = "flex";
+  badge.innerHTML = status ? status.html : "";
+};
 
 window.cloneSRRow = function (btn) {
   const originalRow = btn.closest("tr");
@@ -11374,6 +11486,142 @@ function openSinPedidoConfirm() {
     });
   });
 }
+
+// ============================================================
+// 💉 FECHA DE APERTURA DE FRASCO MULTIDOSIS (28 días de vigencia)
+// Se dispara al detectar cantidad decimal en TD/DPT/INFLUENZA/HEPATITIS B.
+// Resuelve con la fecha ISO capturada, o null si el usuario pospone.
+// ============================================================
+function openAperturaFrascoModal({ biologico, lote, fechaRecepcion, initialDate } = {}) {
+  return new Promise((resolve) => {
+    const overlay = $("aperturaFrascoOverlay");
+    if (!overlay) { resolve(null); return; }
+    if (overlay.parentNode !== document.body) document.body.appendChild(overlay);
+
+    const btnCancel = overlay.querySelector("#btnAperturaFrascoCancel");
+    const btnAccept = overlay.querySelector("#btnAperturaFrascoAccept");
+    const dateInput = overlay.querySelector("#aperturaFrascoFechaInput");
+    const contextEl = overlay.querySelector("#aperturaFrascoContext");
+
+    const hoy = todayYmdLocal();
+    if (contextEl) {
+      contextEl.innerHTML = `Detectamos una cantidad decimal en <b>${escapeHtml(biologico || "")}</b>, lote <b>${escapeHtml(lote || "—")}</b>. Según el manual de vacunación, este frasco debe usarse dentro de los <b>28 días</b> posteriores a su apertura.`;
+    }
+    if (dateInput) {
+      dateInput.value = initialDate || hoy;
+      dateInput.min = fechaRecepcion || "";
+      dateInput.max = hoy;
+    }
+
+    const close = (result) => {
+      overlay.classList.remove("show");
+      setTimeout(() => resolve(result), 250);
+    };
+
+    overlay.onclick = (e) => { if (e.target === overlay) close(null); };
+    if (btnCancel) btnCancel.onclick = () => close(null);
+
+    if (btnAccept) {
+      btnAccept.onclick = () => {
+        const val = dateInput ? dateInput.value : "";
+        if (!val) {
+          showToast("Selecciona la fecha de apertura del frasco", false, "warn");
+          return;
+        }
+        if (fechaRecepcion && val < fechaRecepcion) {
+          showToast("La fecha de apertura no puede ser anterior a la recepción del lote", false, "warn");
+          return;
+        }
+        if (val > hoy) {
+          showToast("La fecha de apertura no puede ser posterior a hoy", false, "warn");
+          return;
+        }
+        close(val);
+      };
+    }
+
+    requestAnimationFrame(() => {
+      overlay.classList.add("show");
+      if (typeof playPremiumConfirmSound === "function") playPremiumConfirmSound();
+    });
+  });
+}
+window.openAperturaFrascoModal = openAperturaFrascoModal;
+
+// ============================================================
+// 💉 REVISIÓN EN LOTE DE FRASCOS ABIERTOS PENDIENTES (al guardar)
+// Un único modal que lista todas las filas con decimal en TD/DPT/INFLUENZA/
+// HEPATITIS B sin fecha de apertura, para no interrumpir con un modal por
+// cada fila mientras se captura. Resuelve true si se completaron todas las
+// fechas (y las deja escritas en tr.dataset.fechaApertura), o false si el
+// usuario cancela (en cuyo caso no se debe continuar con el guardado).
+// ============================================================
+function openAperturaBatchModal(pendingRows) {
+  return new Promise((resolve) => {
+    const overlay = $("aperturaBatchOverlay");
+    const listEl = overlay ? overlay.querySelector("#aperturaBatchList") : null;
+    if (!overlay || !listEl) { resolve(false); return; }
+    if (overlay.parentNode !== document.body) document.body.appendChild(overlay);
+
+    const btnCancel = overlay.querySelector("#btnAperturaBatchCancel");
+    const btnAccept = overlay.querySelector("#btnAperturaBatchAccept");
+    const hoy = todayYmdLocal();
+
+    listEl.innerHTML = pendingRows.map((p, i) => `
+      <div class="apertura-batch-item">
+        <div class="apertura-batch-item-label">
+          ${escapeHtml(p.biologico)}
+          <small>Lote ${escapeHtml(p.lote || "—")}</small>
+        </div>
+        <input type="date" class="apertura-batch-date-input" data-idx="${i}" value="${hoy}" min="${p.fechaRecepcion || ""}" max="${hoy}">
+      </div>
+    `).join("");
+
+    const close = (result) => {
+      overlay.classList.remove("show");
+      setTimeout(() => resolve(result), 250);
+    };
+
+    overlay.onclick = (e) => { if (e.target === overlay) close(false); };
+    if (btnCancel) btnCancel.onclick = () => close(false);
+
+    if (btnAccept) {
+      btnAccept.onclick = () => {
+        const inputs = Array.from(listEl.querySelectorAll(".apertura-batch-date-input"));
+        let allValid = true;
+
+        inputs.forEach((inp) => {
+          const idx = Number(inp.dataset.idx);
+          const p = pendingRows[idx];
+          const val = inp.value;
+          const invalid = !val || (p.fechaRecepcion && val < p.fechaRecepcion) || val > hoy;
+          inp.style.borderColor = invalid ? "#ef4444" : "";
+          if (invalid) allValid = false;
+        });
+
+        if (!allValid) {
+          showToast("Revisa las fechas marcadas en rojo (no pueden ser anteriores a la recepción ni posteriores a hoy)", false, "warn");
+          return;
+        }
+
+        inputs.forEach((inp) => {
+          const idx = Number(inp.dataset.idx);
+          const p = pendingRows[idx];
+          p.tr.dataset.fechaApertura = inp.value;
+          window.renderAperturaBadge(p.tr);
+        });
+
+        close(true);
+      };
+    }
+
+    requestAnimationFrame(() => {
+      overlay.classList.add("show");
+      if (typeof playPremiumConfirmSound === "function") playPremiumConfirmSound();
+    });
+  });
+}
+window.openAperturaBatchModal = openAperturaBatchModal;
 
 // ============================================================
 // 🛡️ SIN MOVIMIENTO — ESTADO GLOBAL
@@ -14392,7 +14640,7 @@ async function performSaveSR() {
       const cant = (row.cantidadInput || tr.querySelector(".sr-cantidad-input"))?.value;
       const recep = (row.recepcionInput || tr.querySelector(".sr-recepcion-input"))?.value;
       if (bio && lote && cant && recep) {
-        sinMovItems.push({ biologico: bio, lote, cantidad: Number(cant), fecha_recepcion: recep });
+        sinMovItems.push({ biologico: bio, lote, cantidad: Number(cant), fecha_recepcion: recep, fecha_apertura: tr.dataset.fechaApertura || null });
       }
     });
     if (!sinMovItems.length) return showToast("No hay datos previos para replicar", false, "warn");
@@ -14486,6 +14734,8 @@ async function performSaveSR() {
       if (hasDecimal && !allowedDecimals.includes(bio)) {
         rowErrors.push(`la vacuna ${bio} no admite decimales (solo TD, COVID, INFLUENZA, DPT, HEPATITIS B)`);
       }
+      // 💉 Frasco multidosis abierto sin fecha de apertura: no bloquea aquí como error de fila,
+      // se resuelve en un solo paso (modal de revisión en lote) justo antes de guardar.
     }
 
     if (lote) {
@@ -14503,7 +14753,9 @@ async function performSaveSR() {
       errors.push(`Fila ${index + 1}: ${rowErrors.join(", ")}`);
     } else {
       tr.style.background = "";
-      items.push({ biologico: bio, lote, cantidad: Number(cant), fecha_recepcion: recep, tipo: tipo });
+      const itemObj = { biologico: bio, lote, cantidad: Number(cant), fecha_recepcion: recep, tipo: tipo, fecha_apertura: tr.dataset.fechaApertura || null };
+      items.push(itemObj);
+      tr._pendingSaveItem = itemObj;
     }
   });
 
@@ -14512,6 +14764,29 @@ async function performSaveSR() {
     return;
   }
   if (!items.length) return showToast("Captura al menos un biológico", false, "warn");
+
+  // 💉 Revisión en lote de frascos multidosis abiertos sin fecha de apertura (un solo modal)
+  const pendingAperturaRows = [];
+  document.querySelectorAll("#srCaptureTbody tr").forEach((tr) => {
+    if (!tr._pendingSaveItem || tr.dataset.fechaApertura) return;
+    const row = tr._cache || {};
+    const bio = (row.bioSelect || tr.querySelector(".sr-bio-select"))?.value || "";
+    const lote = (row.loteSelect || tr.querySelector(".sr-lote-select"))?.value || "";
+    const cant = (row.cantidadInput || tr.querySelector(".sr-cantidad-input"))?.value || "";
+    const recep = (row.recepcionInput || tr.querySelector(".sr-recepcion-input"))?.value || "";
+    const hasDecimal = cant !== "" && !isNaN(Number(cant)) && Number(cant) % 1 !== 0;
+    if (hasDecimal && window.VACCINES_REQUIRE_APERTURA.includes(bio)) {
+      pendingAperturaRows.push({ tr, biologico: bio, lote, fechaRecepcion: recep });
+    }
+  });
+
+  if (pendingAperturaRows.length > 0) {
+    const completed = await window.openAperturaBatchModal(pendingAperturaRows);
+    if (!completed) return; // Usuario canceló: no se guarda
+    pendingAperturaRows.forEach(p => {
+      if (p.tr._pendingSaveItem) p.tr._pendingSaveItem.fecha_apertura = p.tr.dataset.fechaApertura || null;
+    });
+  }
 
   if (window.PREFILL_SNAPSHOT) {
     try {
@@ -16042,6 +16317,12 @@ $("btnSaveEditCap")?.addEventListener("click", async () => {
 
   try {
     showOverlay("Actualizando capacitación...", "Guardando");
+
+    // 📩 Si la fecha cambia, la notificación original (calculada con la fecha vieja)
+    // queda desactualizada y nadie se entera del nuevo plazo — hay que avisar de nuevo.
+    const { data: prevRow } = await supabase.from("capacitaciones").select("fecha").eq("id", id).maybeSingle();
+    const fechaChanged = prevRow && prevRow.fecha !== fecha;
+
     const { error } = await supabase
       .from("capacitaciones")
       .update({
@@ -16056,6 +16337,12 @@ $("btnSaveEditCap")?.addEventListener("click", async () => {
     showToast("Capacitación actualizada correctamente", true, "good");
     closeEditCapacitacionModal();
     loadCapacitacionesAdmin();
+
+    if (fechaChanged) {
+      const evDate = new Date(fecha + "T00:00:00");
+      const limitDate = new Date(evDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+      sendEventNotification(normalizedNombre.replace(/_/g, ' '), limitDate.toLocaleDateString(), "capacitacion", "updated");
+    }
   } catch (err) {
     hideOverlay();
     showToast("Error al editar: " + err.message, false, "bad");
@@ -16166,10 +16453,15 @@ $("btnSaveNewCap")?.addEventListener("click", async () => {
 });
 
 // --- HELPER PARA NOTIFICACIONES DE EVENTOS/CAMPAÑAS ---
-async function sendEventNotification(eventName, limitDateStr, eventType) {
+async function sendEventNotification(eventName, limitDateStr, eventType, mode = "created") {
   const label = eventType === "campana" ? "la campaña" : "la capacitación";
-  const title = eventType === "campana" ? "Nueva Campaña Habilitada" : "Nueva Capacitación Habilitada";
-  const msg = `Se ha habilitado la subida de evidencia de ${label} "${eventName}". Se tendrá hasta el día ${limitDateStr} para subir la réplica/evidencia correspondiente.`;
+  const isUpdate = mode === "updated";
+  const title = isUpdate
+    ? (eventType === "campana" ? "Fecha de Campaña Actualizada" : "Fecha de Capacitación Actualizada")
+    : (eventType === "campana" ? "Nueva Campaña Habilitada" : "Nueva Capacitación Habilitada");
+  const msg = isUpdate
+    ? `Se corrigió la fecha de ${label} "${eventName}". Ahora se tendrá hasta el día ${limitDateStr} para subir la réplica/evidencia correspondiente.`
+    : `Se ha habilitado la subida de evidencia de ${label} "${eventName}". Se tendrá hasta el día ${limitDateStr} para subir la réplica/evidencia correspondiente.`;
 
   try {
     // 1. Notificar a UNIDAD
@@ -19425,13 +19717,140 @@ function updateUploadCluesView() {
 $("uploadMuniSelect")?.addEventListener("change", updateUploadUnitList);
 $("uploadUnitSelect")?.addEventListener("change", updateUploadCluesView);
 
+// 🎓 Vigencia de subida de evidencia para un evento (capacitación/campaña): 30 días
+// desde su fecha. Misma convención good/warn/bad usada en el resto de la app.
+function getEventoDeadlineStatus(fechaStr, windowDays = 30) {
+  if (!fechaStr) return null;
+  const eventDate = new Date(fechaStr + "T00:00:00");
+  if (isNaN(eventDate.getTime())) return null;
+  const limitDate = new Date(eventDate.getTime() + windowDays * 24 * 60 * 60 * 1000);
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((limitDate - now) / (1000 * 60 * 60 * 24));
+
+  let tone = "ok", text;
+  if (diffDays < 0) { tone = "bad"; text = "Plazo vencido"; }
+  else if (diffDays === 0) { tone = "warn"; text = "Vence hoy"; }
+  else if (diffDays <= 5) { tone = "warn"; text = `Vence en ${diffDays} día${diffDays === 1 ? "" : "s"}`; }
+  else { tone = "ok"; text = `Vence en ${diffDays} días`; }
+
+  return { tone, text };
+}
+window.getEventoDeadlineStatus = getEventoDeadlineStatus;
+
+// 🎓 Combo personalizado reutilizable para "Seleccionar Capacitación"/"Seleccionar Campaña".
+// Mantiene el <select> nativo oculto y sincronizado (nada más lee .value / data-date en
+// handleFileUploadFlow no cambia), pero pinta un listado propio donde la fecha se muestra
+// como insignia de color — un <option> nativo no permite resaltar parte de su texto.
+function renderJs1Combo({ selectId, comboId, triggerId, triggerTextId, triggerBadgeId, panelId, placeholder, items }) {
+  const nativeSelect = $(selectId);
+  const combo = $(comboId);
+  const trigger = $(triggerId);
+  const triggerText = $(triggerTextId);
+  const triggerBadge = $(triggerBadgeId);
+  const panel = $(panelId);
+  if (!nativeSelect || !combo || !trigger || !panel) return;
+
+  // 1. Reconstruir el <select> nativo (compatibilidad con la lectura existente)
+  nativeSelect.innerHTML = `<option value="" disabled selected>${escapeHtml(placeholder)}</option>` +
+    items.map(it => `<option value="${escapeHtml(it.nombre)}" data-date="${it.fecha || ""}">${escapeHtml(it.nombre.replace(/_/g, ' '))} (${it.fecha || ""})</option>`).join("");
+
+  // 2. Reconstruir el panel visual
+  if (!items.length) {
+    panel.innerHTML = `<div class="js1-combo-item-empty">No hay opciones activas</div>`;
+  } else {
+    panel.innerHTML = items.map(it => {
+      const label = it.nombre.replace(/_/g, ' ');
+      const status = window.getEventoDeadlineStatus(it.fecha);
+      const badge = status
+        ? `<span class="js1-combo-date-badge tone-${status.tone}">📅 ${formatAppDate(it.fecha)} · ${status.text}</span>`
+        : "";
+      return `<div class="js1-combo-item" role="option" data-value="${escapeHtml(it.nombre)}" data-date="${it.fecha || ""}">
+        <span class="js1-combo-item-name">${escapeHtml(label)}</span>
+        ${badge}
+      </div>`;
+    }).join("");
+  }
+
+  // 3. Reset del trigger al placeholder (cada recarga es una selección nueva)
+  triggerText.textContent = placeholder;
+  triggerText.classList.add("placeholder");
+  if (triggerBadge) triggerBadge.style.display = "none";
+  combo.dataset.open = "false";
+  panel.hidden = true;
+
+  // 4. Wiring — una sola vez por combo (guard con dataset.wired)
+  if (combo.dataset.wired === "1") return;
+  combo.dataset.wired = "1";
+
+  const closeCombo = () => {
+    combo.dataset.open = "false";
+    panel.hidden = true;
+    trigger.setAttribute("aria-expanded", "false");
+  };
+  const openCombo = () => {
+    document.querySelectorAll(".js1-combo[data-open='true']").forEach(c => {
+      if (c !== combo) {
+        c.dataset.open = "false";
+        const p = c.querySelector(".js1-combo-panel");
+        if (p) p.hidden = true;
+      }
+    });
+    combo.dataset.open = "true";
+    panel.hidden = false;
+    trigger.setAttribute("aria-expanded", "true");
+  };
+
+  trigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (combo.dataset.open === "true") closeCombo(); else openCombo();
+  });
+
+  panel.addEventListener("click", (e) => {
+    const item = e.target.closest(".js1-combo-item");
+    if (!item) return;
+    const value = item.dataset.value;
+    const date = item.dataset.date || "";
+
+    nativeSelect.value = value;
+    nativeSelect.dispatchEvent(new Event("change", { bubbles: true }));
+
+    triggerText.textContent = value.replace(/_/g, ' ');
+    triggerText.classList.remove("placeholder");
+
+    if (triggerBadge) {
+      const status = window.getEventoDeadlineStatus(date);
+      if (status) {
+        triggerBadge.style.display = "inline-flex";
+        triggerBadge.className = `js1-combo-date-badge tone-${status.tone}`;
+        triggerBadge.innerHTML = `📅 ${formatAppDate(date)} · ${status.text}`;
+      } else {
+        triggerBadge.style.display = "none";
+      }
+    }
+
+    panel.querySelectorAll(".js1-combo-item").forEach(el => el.classList.toggle("is-active", el === item));
+    closeCombo();
+  });
+
+  document.addEventListener("click", (e) => {
+    if (combo.dataset.open === "true" && !combo.contains(e.target)) closeCombo();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && combo.dataset.open === "true") closeCombo();
+  });
+}
+window.renderJs1Combo = renderJs1Combo;
+
 async function loadActiveCapacitaciones() {
   const wrap = $("uploadCapacitacionWrap");
   const select = $("uploadCapacitacionSelect");
+  const panel = $("uploadCapacitacionPanel");
   if (!wrap || !select) return;
 
+  if (panel) panel.innerHTML = `<div class="js1-combo-item-empty">Cargando capacitaciones…</div>`;
+
   try {
-    select.innerHTML = '<option value="" disabled selected>Cargando capacitaciones...</option>';
     const { data, error } = await supabase
       .from("capacitaciones")
       .select("nombre, fecha")
@@ -19440,25 +19859,31 @@ async function loadActiveCapacitaciones() {
 
     if (error) throw error;
 
-    if (data && data.length > 0) {
-      select.innerHTML = '<option value="" disabled selected>Selecciona una capacitación...</option>' +
-        data.map(c => `<option value="${c.nombre}" data-date="${c.fecha}">${c.nombre.replace(/_/g, ' ')} (${c.fecha})</option>`).join("");
-    } else {
-      select.innerHTML = '<option value="" disabled selected>No hay capacitaciones activas</option>';
-    }
+    window.renderJs1Combo({
+      selectId: "uploadCapacitacionSelect",
+      comboId: "uploadCapacitacionCombo",
+      triggerId: "uploadCapacitacionTrigger",
+      triggerTextId: "uploadCapacitacionTriggerText",
+      triggerBadgeId: "uploadCapacitacionTriggerBadge",
+      panelId: "uploadCapacitacionPanel",
+      placeholder: "Selecciona una capacitación...",
+      items: data || []
+    });
   } catch (err) {
     console.error("Error al cargar capacitaciones:", err);
-    select.innerHTML = '<option value="" disabled selected>Error al cargar capacitaciones</option>';
+    if (panel) panel.innerHTML = `<div class="js1-combo-item-empty">Error al cargar capacitaciones</div>`;
   }
 }
 
 async function loadActiveCampanas() {
   const wrap = $("uploadCampanaWrap");
   const select = $("uploadCampanaSelect");
+  const panel = $("uploadCampanaPanel");
   if (!wrap || !select) return;
 
+  if (panel) panel.innerHTML = `<div class="js1-combo-item-empty">Cargando campañas…</div>`;
+
   try {
-    select.innerHTML = '<option value="" disabled selected>Cargando campañas...</option>';
     const { data, error } = await supabase
       .from("campanas")
       .select("nombre, fecha")
@@ -19467,15 +19892,19 @@ async function loadActiveCampanas() {
 
     if (error) throw error;
 
-    if (data && data.length > 0) {
-      select.innerHTML = '<option value="" disabled selected>Selecciona una campaña...</option>' +
-        data.map(c => `<option value="${c.nombre}" data-date="${c.fecha}">${c.nombre.replace(/_/g, ' ')}</option>`).join("");
-    } else {
-      select.innerHTML = '<option value="" disabled selected>No hay campañas activas</option>';
-    }
+    window.renderJs1Combo({
+      selectId: "uploadCampanaSelect",
+      comboId: "uploadCampanaCombo",
+      triggerId: "uploadCampanaTrigger",
+      triggerTextId: "uploadCampanaTriggerText",
+      triggerBadgeId: "uploadCampanaTriggerBadge",
+      panelId: "uploadCampanaPanel",
+      placeholder: "Selecciona una campaña...",
+      items: data || []
+    });
   } catch (err) {
     console.error("Error al cargar campañas:", err);
-    select.innerHTML = '<option value="" disabled selected>Error al cargar campañas</option>';
+    if (panel) panel.innerHTML = `<div class="js1-combo-item-empty">Error al cargar campañas</div>`;
   }
 }
 
@@ -19486,7 +19915,9 @@ function toggleEventSelectors() {
   if (!categorySelect || !capWrap || !campWrap) return;
 
   const val = categorySelect.value;
-  if (val === "Evidencia de capacitaciones") {
+  const isCapEvidence = val === "Evidencia de capacitaciones";
+
+  if (isCapEvidence) {
     capWrap.style.display = "block";
     campWrap.style.display = "none";
     loadActiveCapacitaciones();
@@ -19498,6 +19929,28 @@ function toggleEventSelectors() {
     capWrap.style.display = "none";
     campWrap.style.display = "none";
   }
+
+  // 📎 Evidencia de capacitación: 2 documentos obligatorios que suben por su cuenta
+  // (ver doc-slot), no el selector de archivo genérico ni el botón del footer.
+  const genericFileWrap = $("uploadGenericFileWrap");
+  const capEvidenceWrap = $("uploadCapEvidenceWrap");
+  const btnDoUpload = $("btnDoUpload");
+  const modalFooter = $("uploadModalFooter");
+  const statusNote = $("uploadStatusNote");
+
+  if (genericFileWrap) genericFileWrap.style.display = isCapEvidence ? "none" : "block";
+  if (capEvidenceWrap) capEvidenceWrap.style.display = isCapEvidence ? "block" : "none";
+  if (btnDoUpload) btnDoUpload.style.display = isCapEvidence ? "none" : "inline-flex";
+  // El cierre ahora vive como X en la esquina del modal (btnCloseUpload), no en el pie —
+  // en modo capacitación "Subir Evidencia" también está oculto, así que el pie completo
+  // se oculta para no dejar una barra vacía con la sombra divisora flotando sobre nada.
+  if (modalFooter) modalFooter.style.display = isCapEvidence ? "none" : "flex";
+  if (statusNote) {
+    statusNote.textContent = isCapEvidence
+      ? "El nombre del archivo se genera automáticamente (unidad, CLUES y fecha de la capacitación) — cada documento se sube al elegirlo."
+      : "Los archivos se organizarán por CLUES y Nombre de Unidad en el servidor central.";
+  }
+  if (isCapEvidence) resetCapEvidenceSlots();
 }
 
 $("uploadCategory")?.addEventListener("change", toggleEventSelectors);
@@ -19529,12 +19982,248 @@ function resetUploadForm() {
   if (capSelect) capSelect.value = "";
   const capWrap = $("uploadCapacitacionWrap");
   if (capWrap) capWrap.style.display = "none";
+  resetJs1ComboTrigger("uploadCapacitacionTriggerText", "uploadCapacitacionTriggerBadge", "Selecciona una capacitación...");
 
   const campSelect = $("uploadCampanaSelect");
   if (campSelect) campSelect.value = "";
   const campWrap = $("uploadCampanaWrap");
   if (campWrap) campWrap.style.display = "none";
+  resetJs1ComboTrigger("uploadCampanaTriggerText", "uploadCampanaTriggerBadge", "Selecciona una campaña...");
+
+  resetCapEvidenceSlots();
 }
+
+// 🎓 Regresa el trigger de un js1-combo a su estado vacío (placeholder, sin insignia).
+function resetJs1ComboTrigger(triggerTextId, triggerBadgeId, placeholder) {
+  const triggerText = $(triggerTextId);
+  if (triggerText) {
+    triggerText.textContent = placeholder;
+    triggerText.classList.add("placeholder");
+  }
+  const triggerBadge = $(triggerBadgeId);
+  if (triggerBadge) triggerBadge.style.display = "none";
+}
+
+// ============================================================
+// 📎 EVIDENCIA DE CAPACITACIÓN — 2 documentos obligatorios
+// (Carta Descriptiva / Lista de Asistencia), nomenclatura y nombre de archivo
+// automáticos, sin duplicados: cada documento sube al elegirlo y se puede
+// reemplazar (mismo nombre = misma ruta en R2, no crea copias).
+// Solo el rol UNIDAD llega a esta categoría (ver openUploadFilesModal), así
+// que unidad/CLUES siempre son los del perfil logueado.
+// ============================================================
+
+// DD_MM_AA a partir de una fecha ISO (YYYY-MM-DD) — la de la capacitación, no la de hoy.
+function toDDMMAA(ymd) {
+  if (!ymd) return "00_00_00";
+  const [y, m, d] = String(ymd).split("-");
+  return `${d}_${m}_${(y || "").slice(2)}`;
+}
+
+// Debe coincidir exactamente con la construcción de folderName del case "uploadfile"
+// (main.js ~7345) para que el prefijo usado al verificar evidencia existente apunte
+// a la misma carpeta donde realmente se sube el archivo.
+function buildCapEvidenceFolderPrefix(capNombre) {
+  const cleanCategory = normalizePath("Evidencia de capacitaciones").replace(/[\s\/]/g, '_');
+  const cleanCap = normalizePath(capNombre || "").replace(/[\s\/]/g, '_');
+  const cleanUnit = normalizePath(USER?.unidad || "SIN_UNIDAD").replace(/[\s\/]/g, '_');
+  const clues = USER?.clues || "SIN_CLUES";
+  return `${cleanCategory}/${cleanCap}/${clues}_${cleanUnit}/`;
+}
+
+function buildCapEvidenceFileName(docType, ext, capFechaYmd) {
+  const unidad = normalizePath(USER?.unidad || "SIN_UNIDAD").replace(/[\s\/]/g, '_').toUpperCase();
+  const clues = String(USER?.clues || "SIN_CLUES").toUpperCase();
+  return `${unidad}_${clues}_${docType}_${toDDMMAA(capFechaYmd)}.${ext}`;
+}
+
+// Pinta el estado visual de un doc-slot (pendiente / subiendo / subido).
+// 💡 Confirmación de éxito rediseñada: no depende solo del toast (que se puede pasar
+// por alto). El ícono cambia a un check inequívoco (no solo cambia de color), y la fila
+// hace un destello verde justo en el momento en que termina — dos señales redundantes.
+// Además soporta "locked" (plazo de 30 días vencido): bloquea subir Y reemplazar.
+function setDocSlotState(slotEl, { uploaded, disabled, loading, locked }) {
+  if (!slotEl) return;
+  const iconEl = slotEl.querySelector(".js1-doc-slot-icon");
+  const statusEl = slotEl.querySelector(".js1-doc-slot-status");
+  const btnEl = slotEl.querySelector(".js1-doc-slot-btn");
+
+  const wasUploaded = slotEl.classList.contains("is-done");
+  slotEl.classList.toggle("is-done", !!uploaded);
+  slotEl.classList.toggle("is-locked", !!locked);
+
+  if (iconEl) {
+    iconEl.classList.toggle("js1-doc-slot-icon-spin", !!loading);
+    iconEl.textContent = loading ? "progress_activity" : (locked ? "lock" : (uploaded ? "task_alt" : "description"));
+  }
+
+  if (statusEl) {
+    if (loading) statusEl.textContent = "Subiendo…";
+    else if (locked) statusEl.textContent = uploaded ? "Subido — plazo vencido" : "Plazo vencido, no se puede subir";
+    else statusEl.textContent = uploaded ? "✔ Subido correctamente" : "Pendiente";
+  }
+
+  if (btnEl) {
+    btnEl.disabled = !!disabled || !!loading || !!locked;
+    if (locked) {
+      btnEl.innerHTML = `<span class="material-symbols-rounded">lock</span> Bloqueado`;
+    } else {
+      btnEl.innerHTML = uploaded
+        ? `<span class="material-symbols-rounded">sync</span> Reemplazar`
+        : `<span class="material-symbols-rounded">upload</span> Subir`;
+    }
+  }
+
+  // Destello solo en el instante en que pasa de pendiente -> subido (no en cada re-render).
+  if (uploaded && !wasUploaded && !loading) {
+    slotEl.classList.remove("js1-doc-slot-flash");
+    void slotEl.offsetWidth; // fuerza reflow para poder repetir la animación
+    slotEl.classList.add("js1-doc-slot-flash");
+  }
+}
+
+function resetCapEvidenceSlots() {
+  document.querySelectorAll(".js1-doc-slot").forEach(slot => {
+    setDocSlotState(slot, { uploaded: false, disabled: true, loading: false, locked: false });
+  });
+}
+
+// Consulta r2_objects por la carpeta de esta capacitación+unidad para saber qué
+// documento ya se subió — así el checklist informa la situación real, no supuesta.
+// También calcula si el plazo de 30 días ya venció para bloquear subir/reemplazar
+// de forma visible, en vez de esperar a que el usuario intente y le salga un error.
+async function checkCapacitacionEvidenceStatus() {
+  const select = $("uploadCapacitacionSelect");
+  const capNombre = select?.value;
+  const slots = document.querySelectorAll(".js1-doc-slot");
+  if (!slots.length) return;
+
+  if (!capNombre) {
+    slots.forEach(slot => setDocSlotState(slot, { uploaded: false, disabled: true, loading: false, locked: false }));
+    return;
+  }
+
+  const option = select.options[select.selectedIndex];
+  const capFecha = option?.getAttribute("data-date");
+  const deadline = getEventoDeadlineStatus(capFecha);
+  const isExpired = !!deadline && deadline.tone === "bad";
+
+  slots.forEach(slot => setDocSlotState(slot, { uploaded: false, disabled: true, loading: true, locked: false }));
+
+  try {
+    const prefix = buildCapEvidenceFolderPrefix(capNombre);
+    const { data, error } = await supabase
+      .from('r2_objects')
+      .select('name')
+      .like('name', `${prefix}%`);
+    if (error) throw error;
+
+    slots.forEach(slot => {
+      const docType = slot.dataset.docType;
+      const exists = (data || []).some(r => String(r.name).toUpperCase().includes(docType));
+      setDocSlotState(slot, { uploaded: exists, disabled: false, loading: false, locked: isExpired });
+    });
+  } catch (err) {
+    console.error("Error verificando evidencia existente:", err);
+    slots.forEach(slot => setDocSlotState(slot, { uploaded: false, disabled: false, loading: false, locked: isExpired }));
+  }
+}
+
+// Sube (o reemplaza) el documento de un doc-slot específico. Inmediato: no depende
+// del botón "Subir Evidencia" del footer (ese solo se usa para Otros reportes/campaña).
+async function uploadCapEvidenceSlotFile(slotEl, file) {
+  const docType = slotEl.dataset.docType;
+  const docLabel = slotEl.dataset.docLabel || "Documento";
+  const capSelect = $("uploadCapacitacionSelect");
+  const capNombre = capSelect?.value;
+
+  if (!capNombre) {
+    showToast("Selecciona primero la capacitación", false, "bad");
+    return;
+  }
+
+  const option = capSelect.options[capSelect.selectedIndex];
+  const capFecha = option?.getAttribute("data-date");
+
+  if (capFecha) {
+    const eventDate = new Date(capFecha + "T00:00:00");
+    const limitDate = new Date(eventDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+    if (new Date() > limitDate) {
+      showToast(`El plazo de subida para esta capacitación venció el ${limitDate.toLocaleDateString()}`, false, "bad");
+      return;
+    }
+  }
+
+  const isPDF = file.name.toLowerCase().endsWith(".pdf");
+  const isImage = file.type.startsWith("image/");
+  if (!isPDF && !isImage) {
+    showToast("Solo se aceptan fotos/escaneos (imagen) o PDF", false, "bad");
+    return;
+  }
+
+  const sizeLimit = isPDF ? 40 * 1024 * 1024 : 10 * 1024 * 1024;
+  if (file.size > sizeLimit) {
+    showToast(isPDF ? "El PDF supera el límite de 40MB." : "La imagen excede el límite de 10MB.", false, "bad");
+    return;
+  }
+
+  let uploadFile = file;
+  if (isPDF && file.size > 2 * 1024 * 1024) {
+    try {
+      uploadFile = await compressPDF(file, () => {});
+    } catch (e) {
+      console.warn("No se pudo comprimir el PDF, se sube el original:", e);
+    }
+  }
+  if (uploadFile.size > 10 * 1024 * 1024) {
+    showToast("El archivo final excede el límite de 10MB tras comprimir.", false, "bad");
+    return;
+  }
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  const explicitFileName = buildCapEvidenceFileName(docType, ext, capFecha);
+
+  setDocSlotState(slotEl, { uploaded: slotEl.classList.contains("is-done"), disabled: true, loading: true });
+
+  try {
+    await apiCall({
+      action: "uploadFile",
+      file: uploadFile,
+      category: "Evidencia de capacitaciones",
+      capacitacion: capNombre,
+      targetClues: USER.clues,
+      targetUnidad: USER.unidad,
+      targetMunicipio: USER.municipio,
+      explicitFileName
+    });
+    showToast(`${docLabel} subido correctamente`, true, "good");
+    setDocSlotState(slotEl, { uploaded: true, disabled: false, loading: false });
+  } catch (err) {
+    console.error("Error subiendo documento de evidencia:", err);
+    showToast("Error al subir: " + err.message, false, "bad");
+    setDocSlotState(slotEl, { uploaded: slotEl.classList.contains("is-done"), disabled: false, loading: false });
+  }
+}
+
+document.querySelectorAll(".js1-doc-slot").forEach(slot => {
+  const btn = slot.querySelector(".js1-doc-slot-btn");
+  const input = slot.querySelector(".js1-doc-slot-input");
+  if (!btn || !input) return;
+
+  btn.addEventListener("click", () => {
+    if (btn.disabled) return;
+    input.click();
+  });
+
+  input.addEventListener("change", () => {
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    uploadCapEvidenceSlotFile(slot, file);
+  });
+});
+
+$("uploadCapacitacionSelect")?.addEventListener("change", checkCapacitacionEvidenceStatus);
 
 $("btnOpenUpload")?.addEventListener("click", openUploadFilesModal);
 $("btnCloseUpload")?.addEventListener("click", closeUploadFilesModal);
@@ -21094,6 +21783,38 @@ function getPermanenciaStatusHelper(recepcionIso) {
   };
 }
 
+// ✅ Estado del frasco multidosis abierto (vigencia de 28 días desde su apertura).
+// Misma convención visual que getPermanenciaStatusHelper (good/warn/bad).
+function getAperturaStatusHelper(fechaApertura) {
+  if (!fechaApertura) return null;
+  const limite = window.APERTURA_FRASCO_LIMITE_DIAS || 28;
+  const dOpen = new Date(fechaApertura + "T00:00:00");
+  const now = new Date();
+  dOpen.setHours(0, 0, 0, 0); now.setHours(0, 0, 0, 0);
+  const diffDays = Math.floor((now - dOpen) / (1000 * 60 * 60 * 24));
+  const daysLeft = limite - diffDays;
+
+  let tone = "good", icon = "check_circle", text = `${daysLeft} día${daysLeft === 1 ? "" : "s"} restantes`;
+  if (daysLeft <= 0) { tone = "bad"; icon = "error"; text = "Vencido, descartar"; }
+  else if (daysLeft <= 5) { tone = "warn"; icon = "warning"; text = `${daysLeft} día${daysLeft === 1 ? "" : "s"} restantes`; }
+
+  const bg = tone === "bad" ? "#fef2f2" : tone === "warn" ? "#fffbeb" : "#f0fdf4";
+  const color = tone === "bad" ? "#ef4444" : tone === "warn" ? "#d97706" : "#10b981";
+
+  return {
+    tone, daysLeft, diffDays,
+    html: `
+      <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+        <span style="font-size:11px; color:#64748b; font-weight:700; white-space: nowrap;">💉 Abierto: ${formatAppDate(fechaApertura)}</span>
+        <span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:12px; background:${bg}; color:${color}; font-size:10px; font-weight:800; border: 1px solid ${color}40; white-space: nowrap;">
+          <span class="material-symbols-rounded" style="font-size:12px;">${icon}</span> ${text}
+        </span>
+      </div>
+    `
+  };
+}
+window.getAperturaStatusHelper = getAperturaStatusHelper;
+
 // ✅ AGRUPA LAS FILAS DE EXISTENCIA (lote+fecha) POR BIOLÓGICO PARA LA VISTA RESUMEN
 // Regla de seguridad: el "peor caso" (semáforo/permanencia) siempre gana sobre el agregado,
 // nunca se promedia ni se oculta un lote crítico detrás del total.
@@ -21116,6 +21837,7 @@ function groupRowsByBiologico(items) {
         soonestCaducidad: null,
         hasMultipleDistinctCaducidad: false,
         worstPermanencia: null,
+        worstApertura: null,
         loanTypes: new Set()
       });
     }
@@ -21160,6 +21882,14 @@ function groupRowsByBiologico(items) {
 
       if (r.tipo === "PRESTAMO_DESABASTO" || r.tipo === "Préstamo por desabasto" || r.tipo === "PRESTAMO_ARF" || r.tipo === "Préstamo por ARF") {
         g.loanTypes.add(r.tipo);
+      }
+
+      // 💉 Peor caso de frasco abierto (menos días restantes/ya vencido) nunca se oculta tras el agregado
+      if (r.fecha_apertura) {
+        const aStatus = getAperturaStatusHelper(r.fecha_apertura);
+        if (aStatus && (!g.worstApertura || aStatus.daysLeft < g.worstApertura.daysLeft)) {
+          g.worstApertura = aStatus;
+        }
       }
     });
 
@@ -21433,6 +22163,7 @@ window.renderLiveViewTableContent = function() {
                   <td style="padding:${nested ? "10px 24px" : "14px 24px"}; font-weight:600; color:#475569;">${escapeHtml(r.lote || "—")}</td>
                   <td style="padding:${nested ? "10px 24px" : "14px 24px"}; text-align:center;">
                     <span class="live-view-count-badge" style="color:${color}; font-weight:900;">${escapeHtml(r.cantidad || 0)}</span>
+                    ${r.fecha_apertura ? `<div style="margin-top:4px;">${(getAperturaStatusHelper(r.fecha_apertura) || {}).html || ""}</div>` : ""}
                   </td>
                   <td style="padding:${nested ? "10px 24px" : "14px 24px"}; font-weight:700; text-align:center; color:#1e293b;">${escapeHtml(isoToMmmaa(r.caducidad))}</td>
                   <td style="padding:${nested ? "10px 24px" : "14px 24px"}; text-align:center;">
@@ -21479,6 +22210,7 @@ window.renderLiveViewTableContent = function() {
                   <td style="padding:14px 24px; font-weight:600; color:#94a3b8; font-style:italic; font-size:12px;">Varios (${g.rows.length})</td>
                   <td style="padding:14px 24px; text-align:center;">
                     <span class="live-view-count-badge" style="color:${color}; font-weight:900;">${escapeHtml(g.totalCantidad)}</span>
+                    ${g.worstApertura ? `<div style="margin-top:4px;">${g.worstApertura.html}</div>` : ""}
                   </td>
                   <td style="padding:14px 24px; font-weight:700; text-align:center; color:#1e293b;">${escapeHtml(isoToMmmaa(g.soonestCaducidad))}${multiCadFlag}</td>
                   <td style="padding:14px 24px; text-align:center;">

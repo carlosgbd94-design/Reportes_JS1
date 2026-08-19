@@ -715,6 +715,44 @@
     </div>
   </div>
 
+  <!-- 💉 MODAL FECHA DE APERTURA DE FRASCO (multidosis) -->
+  <div class="dropdown-overlay hidden" id="aperturaFrascoOverlay">
+    <div class="dropdown-card max-w-md flex flex-col relative w-[calc(100%-32px)] p-6 bg-white rounded-3xl shadow-2xl border border-slate-100">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="material-symbols-rounded text-amber-500 text-2xl">vaccines</span>
+        <h3 class="text-base font-black text-slate-900">Registrar fecha de apertura</h3>
+      </div>
+      <p id="aperturaFrascoContext" class="text-[12px] text-slate-500 font-semibold leading-relaxed mb-4">
+        Detectamos una cantidad decimal. Según el manual de vacunación, este frasco debe usarse dentro de los <b>28 días</b> posteriores a su apertura.
+      </p>
+      <label for="aperturaFrascoFechaInput" class="text-[11px] font-bold text-slate-700 mb-1">¿Cuándo se abrió este frasco?</label>
+      <input type="date" id="aperturaFrascoFechaInput" class="w-full mb-1 border-2 border-slate-300 rounded-xl px-3 py-2.5 text-sm font-black text-slate-900">
+      <span class="text-[10px] font-medium text-slate-400 mb-4">No puede ser anterior a la recepción del lote ni posterior a hoy.</span>
+      <div class="flex gap-3">
+        <button type="button" id="btnAperturaFrascoCancel" class="flex-1 h-11 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs uppercase">Después</button>
+        <button type="button" id="btnAperturaFrascoAccept" class="flex-1 h-11 bg-amber-500 text-white font-bold rounded-xl text-xs uppercase">Guardar fecha</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 💉 MODAL FRASCOS ABIERTOS PENDIENTES (revisión en lote, un solo modal al guardar) -->
+  <div class="dropdown-overlay hidden" id="aperturaBatchOverlay">
+    <div class="dropdown-card max-w-md flex flex-col relative w-[calc(100%-32px)] p-6 bg-white rounded-3xl shadow-2xl border border-slate-100" style="max-height: 85vh;">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="material-symbols-rounded text-amber-500 text-2xl">vaccines</span>
+        <h3 class="text-base font-black text-slate-900">Frascos abiertos por registrar</h3>
+      </div>
+      <p class="text-[12px] text-slate-500 font-semibold leading-relaxed mb-4">
+        Detectamos cantidades decimales en vacunas multidosis. Cada frasco abierto debe usarse dentro de los <b>28 días</b> posteriores a su apertura — indica cuándo se abrió cada uno.
+      </p>
+      <div id="aperturaBatchList" class="flex flex-col gap-3 mb-4" style="overflow-y: auto; max-height: 40vh;"></div>
+      <div class="flex gap-3">
+        <button type="button" id="btnAperturaBatchCancel" class="flex-1 h-11 bg-slate-100 text-slate-600 font-bold rounded-xl text-xs uppercase">Cancelar</button>
+        <button type="button" id="btnAperturaBatchAccept" class="flex-1 h-11 bg-amber-500 text-white font-bold rounded-xl text-xs uppercase">Guardar y continuar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Supabase CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- DayJS para fechas -->

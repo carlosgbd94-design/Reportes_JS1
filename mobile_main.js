@@ -206,6 +206,26 @@
         return "shelf-life-ok";
     };
 
+    // 💉 Vacunas multidosis que exigen fecha de apertura (28 días de vigencia).
+    // Excluye BCG y SR por el manual, y COVID-19 porque su lineamiento cambia según la marca de cada temporada.
+    const VACCINES_REQUIRE_APERTURA = ["TD", "DPT", "INFLUENZA", "HEPATITIS B"];
+    const APERTURA_FRASCO_LIMITE_DIAS = 28;
+
+    const getAperturaStatus = (fechaApertura) => {
+        if (!fechaApertura) return null;
+        const dOpen = new Date(fechaApertura + "T00:00:00");
+        const now = new Date();
+        dOpen.setHours(0, 0, 0, 0); now.setHours(0, 0, 0, 0);
+        const diffDays = Math.floor((now - dOpen) / (1000 * 60 * 60 * 24));
+        const daysLeft = APERTURA_FRASCO_LIMITE_DIAS - diffDays;
+
+        let cls = "shelf-life-ok", icon = "check_circle", text = `${daysLeft} día${daysLeft === 1 ? "" : "s"} restantes`;
+        if (daysLeft <= 0) { cls = "shelf-life-danger"; icon = "error"; text = "Vencido, descartar"; }
+        else if (daysLeft <= 5) { cls = "shelf-life-warn"; icon = "warning"; text = `${daysLeft} día${daysLeft === 1 ? "" : "s"} restantes`; }
+
+        return { daysLeft, cls, icon, text };
+    };
+
     const formatToMmmAa = (cad) => {
         if (!cad) return "—";
         const parts = cad.split('-');
@@ -727,12 +747,15 @@
                     </select>
                 </div>
                 <div class="cascade-field">
-                    <label>Cantidad</label>
+                    <label>Cantidad
+                        <span class="material-symbols-rounded" style="font-size:13px; color:#d97706; cursor:help; vertical-align:middle;" title="Si capturas un decimal en TD, DPT, Influenza o Hepatitis B, te pediremos la fecha de apertura del frasco (vigencia de 28 días una vez abierto). BCG y SR quedan excluidas por el manual.">info</span>
+                    </label>
                     <div class="touch-stepper-wrap flex items-center gap-2">
                         <button type="button" class="stepper-btn" onclick="const inp=this.nextElementSibling; inp.value=Math.max(0, (parseInt(inp.value)||0)-1);">-</button>
                         <input type="number" data-field="cantidad" value="${data?.cantidad || 0}" min="0" class="w-full text-center font-black sr-qty-input">
                         <button type="button" class="stepper-btn" onclick="const inp=this.previousElementSibling; inp.value=(parseInt(inp.value)||0)+1;">+</button>
                     </div>
+                    <div class="sr-apertura-badge" style="display:none; justify-content:center; margin-top:6px; cursor:pointer;"></div>
                 </div>
             </div>
         `;
@@ -741,6 +764,10 @@
         const loteSelect = card.querySelector('.sr-lote-select');
         const cadBadge = card.querySelector('.sr-cad-badge');
         const qtyInput = card.querySelector('.sr-qty-input');
+        const aperturaBadge = card.querySelector('.sr-apertura-badge');
+
+        // 💉 Fecha de apertura del frasco (si viene de una captura previa)
+        card.dataset.fechaApertura = data?.fecha_apertura || "";
 
         qtyInput.addEventListener('input', (e) => {
             let val = e.target.value;
@@ -748,6 +775,14 @@
                 e.target.value = val.replace(/^0+/, '');
             }
         });
+
+        // 💉 Listeners para detectar frasco multidosis abierto (decimal en TD/DPT/INFLUENZA/HEPATITIS B)
+        // Detección en vivo: solo pinta el badge, no interrumpe con un modal (eso ocurre
+        // en un solo paso al guardar, ver openAperturaBatchModal en saveReport).
+        qtyInput.addEventListener('blur', () => updateAperturaState(card));
+        bioSelect.addEventListener('change', () => updateAperturaState(card));
+        // Clic directo en el badge = revisar/capturar esa tarjeta puntual, sin esperar al guardado.
+        if (aperturaBadge) aperturaBadge.addEventListener('click', () => handleAperturaCheck(card, { prompt: true, force: true }));
 
         const updateLoteDropdown = (selectedBio, preselectedLote = null) => {
             if (!selectedBio) {
@@ -819,6 +854,8 @@
         });
 
         container.appendChild(card);
+
+        renderAperturaBadge(card);
 
         if (data) {
             updateLoteDropdown(data.biologico, data.lote);
@@ -901,7 +938,8 @@
                             biologico: item.biologico,
                             lote: item.lote,
                             fecha_recepcion: item.fecha_recepcion,
-                            cantidad: item.cantidad
+                            cantidad: item.cantidad,
+                            fecha_apertura: item.fecha_apertura || null
                         });
                     });
                     srPrefillSnapshot = JSON.stringify(details.map(item => ({
@@ -2336,6 +2374,199 @@
         });
     };
 
+    // 💉 Modal de fecha de apertura de frasco multidosis (28 días de vigencia).
+    // Resuelve con la fecha ISO capturada, o null si el usuario pospone ("Después").
+    const openAperturaFrascoModal = ({ biologico, lote, fechaRecepcion, initialDate } = {}) => {
+        return new Promise((resolve) => {
+            const overlay = document.getElementById('aperturaFrascoOverlay');
+            const contextEl = document.getElementById('aperturaFrascoContext');
+            const dateInput = document.getElementById('aperturaFrascoFechaInput');
+            const btnAccept = document.getElementById('btnAperturaFrascoAccept');
+            const btnCancel = document.getElementById('btnAperturaFrascoCancel');
+            if (!overlay || !dateInput) { resolve(null); return; }
+
+            const hoy = new Date().toISOString().split('T')[0];
+            if (contextEl) {
+                contextEl.innerHTML = `Detectamos una cantidad decimal en <b>${biologico || ""}</b>, lote <b>${lote || "—"}</b>. Según el manual de vacunación, este frasco debe usarse dentro de los <b>28 días</b> posteriores a su apertura.`;
+            }
+            dateInput.value = initialDate || hoy;
+            dateInput.min = fechaRecepcion || "";
+            dateInput.max = hoy;
+
+            const cleanup = (val) => {
+                overlay.classList.add('hidden');
+                if (btnAccept) btnAccept.onclick = null;
+                if (btnCancel) btnCancel.onclick = null;
+                overlay.onclick = null;
+                resolve(val);
+            };
+
+            if (btnCancel) btnCancel.onclick = () => cleanup(null);
+            overlay.onclick = (e) => { if (e.target === overlay) cleanup(null); };
+            if (btnAccept) {
+                btnAccept.onclick = () => {
+                    const val = dateInput.value;
+                    if (!val) { showToast("Selecciona la fecha de apertura del frasco", "error"); return; }
+                    if (fechaRecepcion && val < fechaRecepcion) { showToast("La fecha de apertura no puede ser anterior a la recepción del lote", "error"); return; }
+                    if (val > hoy) { showToast("La fecha de apertura no puede ser posterior a hoy", "error"); return; }
+                    cleanup(val);
+                };
+            }
+
+            overlay.classList.remove('hidden');
+        });
+    };
+
+    // 💉 Pinta el badge de estado del frasco abierto (o "falta capturar") en la tarjeta SR.
+    const renderAperturaBadge = (card) => {
+        const badge = card.querySelector('.sr-apertura-badge');
+        if (!badge) return;
+        const bioSelect = card.querySelector('[data-field="biologico"]');
+        const qtyInput = card.querySelector('[data-field="cantidad"]');
+        const bio = bioSelect ? bioSelect.value : "";
+        const cant = qtyInput ? qtyInput.value : "";
+        const hasDecimal = cant !== "" && !isNaN(Number(cant)) && Number(cant) % 1 !== 0;
+        const requiresApertura = hasDecimal && VACCINES_REQUIRE_APERTURA.includes(bio);
+
+        if (!requiresApertura) {
+            badge.style.display = "none";
+            badge.innerHTML = "";
+            return;
+        }
+
+        const fecha = card.dataset.fechaApertura || "";
+        if (!fecha) {
+            badge.style.display = "flex";
+            badge.innerHTML = `<span class="apertura-pill shelf-life-danger"><span class="material-symbols-rounded" style="font-size:12px;">error</span> Falta fecha apertura</span>`;
+            return;
+        }
+
+        const status = getAperturaStatus(fecha);
+        badge.style.display = "flex";
+        badge.innerHTML = status
+            ? `<span class="apertura-pill ${status.cls}"><span class="material-symbols-rounded" style="font-size:12px;">${status.icon}</span> ${status.text}</span>`
+            : "";
+    };
+
+    // 💉 Actualiza en vivo el estado/badge de apertura de la tarjeta SIN abrir el modal
+    // (se llama en cada blur del input o cambio de biológico). La captura real de la
+    // fecha se resuelve en un solo paso al guardar (ver openAperturaBatchModal),
+    // o puntualmente si el usuario da clic directo en el badge.
+    const updateAperturaState = (card) => {
+        if (!card) return;
+        const bioSelect = card.querySelector('[data-field="biologico"]');
+        const qtyInput = card.querySelector('[data-field="cantidad"]');
+        const bio = bioSelect ? bioSelect.value : "";
+        const cant = qtyInput ? qtyInput.value : "";
+        const hasDecimal = cant !== "" && !isNaN(Number(cant)) && Number(cant) % 1 !== 0;
+        const requiresApertura = hasDecimal && VACCINES_REQUIRE_APERTURA.includes(bio);
+        if (!requiresApertura) card.dataset.fechaApertura = "";
+        renderAperturaBadge(card);
+    };
+
+    // 💉 Modal de revisión en lote: lista todas las tarjetas con decimal en TD/DPT/INFLUENZA/
+    // HEPATITIS B sin fecha de apertura, para no interrumpir con un modal por cada tarjeta.
+    // Resuelve true si se completaron todas las fechas, o false si el usuario cancela.
+    const openAperturaBatchModal = (pendingCards) => {
+        return new Promise((resolve) => {
+            const overlay = document.getElementById('aperturaBatchOverlay');
+            const listEl = document.getElementById('aperturaBatchList');
+            const btnAccept = document.getElementById('btnAperturaBatchAccept');
+            const btnCancel = document.getElementById('btnAperturaBatchCancel');
+            if (!overlay || !listEl) { resolve(false); return; }
+
+            const hoy = new Date().toISOString().split('T')[0];
+
+            listEl.innerHTML = pendingCards.map((p, i) => `
+                <div class="apertura-batch-item">
+                    <div class="apertura-batch-item-label">
+                        ${p.biologico}
+                        <small>Lote ${p.lote || "—"}</small>
+                    </div>
+                    <input type="date" class="apertura-batch-date-input" data-idx="${i}" value="${hoy}" min="${p.fechaRecepcion || ""}" max="${hoy}">
+                </div>
+            `).join("");
+
+            const cleanup = (val) => {
+                overlay.classList.add('hidden');
+                if (btnAccept) btnAccept.onclick = null;
+                if (btnCancel) btnCancel.onclick = null;
+                overlay.onclick = null;
+                resolve(val);
+            };
+
+            if (btnCancel) btnCancel.onclick = () => cleanup(false);
+            overlay.onclick = (e) => { if (e.target === overlay) cleanup(false); };
+            if (btnAccept) {
+                btnAccept.onclick = () => {
+                    const inputs = Array.from(listEl.querySelectorAll('.apertura-batch-date-input'));
+                    let allValid = true;
+
+                    inputs.forEach((inp) => {
+                        const idx = Number(inp.dataset.idx);
+                        const p = pendingCards[idx];
+                        const val = inp.value;
+                        const invalid = !val || (p.fechaRecepcion && val < p.fechaRecepcion) || val > hoy;
+                        inp.style.borderColor = invalid ? "#ef4444" : "";
+                        if (invalid) allValid = false;
+                    });
+
+                    if (!allValid) {
+                        showToast("Revisa las fechas marcadas en rojo", "error");
+                        return;
+                    }
+
+                    inputs.forEach((inp) => {
+                        const idx = Number(inp.dataset.idx);
+                        const p = pendingCards[idx];
+                        p.card.dataset.fechaApertura = inp.value;
+                        renderAperturaBadge(p.card);
+                    });
+
+                    cleanup(true);
+                };
+            }
+
+            overlay.classList.remove('hidden');
+        });
+    };
+
+    // 💉 Evalúa si la tarjeta requiere fecha de apertura y, si aplica, dispara el modal de captura.
+    const handleAperturaCheck = async (card, opts = {}) => {
+        if (!card || card.dataset.aperturaModalOpen === "1") return;
+        const bioSelect = card.querySelector('[data-field="biologico"]');
+        const loteSelect = card.querySelector('[data-field="lote"]');
+        const qtyInput = card.querySelector('[data-field="cantidad"]');
+        const recInput = card.querySelector('[data-field="recepcion"]');
+
+        if (opts.prompt && qtyInput && qtyInput.disabled) return; // Tarjeta bloqueada (captura ya guardada, sin editar)
+
+        const bio = bioSelect ? bioSelect.value : "";
+        const lote = loteSelect ? loteSelect.value : "";
+        const cant = qtyInput ? qtyInput.value : "";
+        const recep = recInput ? recInput.value : "";
+
+        const hasDecimal = cant !== "" && !isNaN(Number(cant)) && Number(cant) % 1 !== 0;
+        const requiresApertura = hasDecimal && VACCINES_REQUIRE_APERTURA.includes(bio);
+
+        if (!requiresApertura) {
+            card.dataset.fechaApertura = "";
+            renderAperturaBadge(card);
+            return;
+        }
+
+        if (opts.prompt && (opts.force || !card.dataset.fechaApertura)) {
+            card.dataset.aperturaModalOpen = "1";
+            try {
+                const fecha = await openAperturaFrascoModal({ biologico: bio, lote, fechaRecepcion: recep, initialDate: card.dataset.fechaApertura || "" });
+                if (fecha) card.dataset.fechaApertura = fecha;
+            } finally {
+                card.dataset.aperturaModalOpen = "0";
+            }
+        }
+        renderAperturaBadge(card);
+    };
+
     // --- Guardar Reportes ---
     const saveReport = async () => {
         if (!currentUser || !currentProfile) {
@@ -2413,6 +2644,8 @@
                         if (hasDecimal && !allowedDecimals.includes(bio)) {
                             rowErrors.push(`la vacuna ${bio} no admite decimales`);
                         }
+                        // 💉 Frasco multidosis abierto sin fecha de apertura: no bloquea aquí como error
+                        // de tarjeta, se resuelve en un solo paso (modal de revisión en lote) al guardar.
                     }
 
                     let cad = "";
@@ -2435,15 +2668,18 @@
                             normalizeString(b.biologico) === normalizeString(bio)
                         );
                         if (matchedBio) {
-                            items.push({
+                            const itemObj = {
                                 id: matchedBio.id,
                                 biologico: bio,
                                 cantidad: Number(cant),
                                 lote,
                                 recepcion: recep,
                                 caducidad: cad,
-                                tipo: tipo
-                            });
+                                tipo: tipo,
+                                fecha_apertura: card.dataset.fechaApertura || null
+                            };
+                            items.push(itemObj);
+                            card._pendingSaveItem = itemObj;
                         }
                     }
                 });
@@ -2456,6 +2692,34 @@
                 if (!items.length && !sinMovimiento) {
                     showToast("Captura al menos un biológico", "error");
                     throw new Error("Sin items");
+                }
+
+                // 💉 Revisión en lote de frascos multidosis abiertos sin fecha de apertura (un solo modal)
+                const pendingAperturaCards = [];
+                cards.forEach((card) => {
+                    if (!card._pendingSaveItem || card.dataset.fechaApertura) return;
+                    const bioSelect = card.querySelector('[data-field="biologico"]');
+                    const loteSelect = card.querySelector('[data-field="lote"]');
+                    const qtyInput = card.querySelector('[data-field="cantidad"]');
+                    const recInput = card.querySelector('[data-field="recepcion"]');
+                    const bio = bioSelect ? bioSelect.value : "";
+                    const lote = loteSelect ? loteSelect.value : "";
+                    const cant = qtyInput ? qtyInput.value : "";
+                    const recep = recInput ? recInput.value : "";
+                    const hasDecimal = cant !== "" && !isNaN(Number(cant)) && Number(cant) % 1 !== 0;
+                    if (hasDecimal && VACCINES_REQUIRE_APERTURA.includes(bio)) {
+                        pendingAperturaCards.push({ card, biologico: bio, lote, fechaRecepcion: recep });
+                    }
+                });
+
+                if (pendingAperturaCards.length > 0) {
+                    const completed = await openAperturaBatchModal(pendingAperturaCards);
+                    if (!completed) {
+                        throw new Error("Captura de fecha de apertura cancelada");
+                    }
+                    pendingAperturaCards.forEach(p => {
+                        if (p.card._pendingSaveItem) p.card._pendingSaveItem.fecha_apertura = p.card.dataset.fechaApertura || null;
+                    });
                 }
 
                 // Confirmación de guardado sin cambios tras salto de semanas (paridad con desktop)
@@ -2541,7 +2805,8 @@
                         fecha_recepcion: it.recepcion,
                         cantidad: qty,
                         capturado_por: nombreSR.toUpperCase(),
-                        tipo: it.tipo || "REQUISICION"
+                        tipo: it.tipo || "REQUISICION",
+                        fecha_apertura: it.fecha_apertura || null
                     });
                 });
 
@@ -2904,8 +3169,8 @@
 
         } catch (err) {
             console.error(err);
-            if (err.message === "Confirmación cancelada") {
-                // Cancelación intencional del usuario (modal de salto de semanas) — sin toast.
+            if (err.message === "Confirmación cancelada" || err.message === "Captura de fecha de apertura cancelada") {
+                // Cancelación intencional del usuario (modal de salto de semanas / fecha de apertura) — sin toast.
             } else if (err.message && err.message !== "Nombre requerido" && err.message !== "Validaciones fallidas" && err.message !== "Sin items" && err.message !== "Campos incompletos" && err.message !== "Valores negativos" && err.message !== "Validación de pedido fallida") {
                 showToast("Error: " + err.message, "error");
             } else if (err.message) {

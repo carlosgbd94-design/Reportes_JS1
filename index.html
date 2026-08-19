@@ -1348,7 +1348,9 @@
                     <th class="p-4 py-3 text-center">Recepción</th>
                     <th class="p-4 py-3 text-center">Origen</th>
                     <th class="p-4 py-3 text-center">Cantidad<br><span
-                        class="text-[10px] lowercase font-normal opacity-85">(frascos)</span></th>
+                        class="text-[10px] lowercase font-normal opacity-85">(frascos)</span>
+                      <span class="material-symbols-rounded" style="font-size:14px; color:#d97706; cursor:help; vertical-align:middle; margin-left:2px;" title="Si capturas un decimal en TD, DPT, Influenza o Hepatitis B, te pediremos la fecha de apertura del frasco (vigencia de 28 días una vez abierto). BCG y SR quedan excluidas por el manual.">info</span>
+                    </th>
                     <th class="p-4 py-3 text-center">Acción</th>
                   </tr>
                 </thead>
@@ -1374,6 +1376,7 @@
 
             <button
               class="bg-primary/30 text-primary border-2 border-primary/20 rounded-xl h-[46px] font-bold text-[14px] flex items-center justify-center gap-2.5 transition-all hover:bg-primary/40 hover:border-primary/40 hover:-translate-y-0.5 cursor-pointer w-full mt-4"
+              style="height: 46px;"
               id="btnAddSRRow">
               <span class="material-symbols-rounded text-[20px]">add_circle</span> Agregar otro lote/biológico
             </button>
@@ -2639,7 +2642,9 @@
               <button type="button"
                 class="group flex items-center gap-2 transition-all duration-300 px-4 py-2.5 rounded-full text-xs font-black shadow-sm text-violet-800 bg-violet-50/80 hover:bg-violet-100/80 cursor-pointer h-[38px]"
                 id="btnExportInfluenzaDropdownTrigger"
-                style="border: 1px solid rgba(203, 213, 225, 0.8) !important; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), inset 0 -1.5px 0 rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.02) !important;">
+                style="border: 1px solid rgba(203, 213, 225, 0.8) !important; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), inset 0 -1.5px 0 rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.02) !important; height: 38px; color: #5b21b6; background-color: rgba(245, 243, 255, 0.8);"
+                onmouseenter="this.style.setProperty('background-color', 'rgba(237, 233, 254, 0.8)')"
+                onmouseleave="this.style.setProperty('background-color', 'rgba(245, 243, 255, 0.8)')">
                 <span
                   class="material-symbols-rounded text-[18px] transition-transform duration-300 group-hover:scale-110">download</span>
                 <span>Exportar Concentrado</span>
@@ -2996,7 +3001,7 @@
                       class="material-symbols-rounded absolute left-3 top-1/2 transform -translate-y-1/2 text-[18px] text-slate-400 select-none pointer-events-none z-10">search</span>
                     <input type="text" id="conciliacionSearch" placeholder="Buscar rubro, edad o clave SIS..."
                       class="w-full bg-surface border border-slate-200 rounded-xl pr-4 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-primary transition-colors h-[38px]"
-                      style="padding-left: 45px !important;" />
+                      style="padding-left: 45px !important; height: 38px;" />
                   </div>
                 </div>
                 <div class="flex gap-2 items-center">
@@ -5712,8 +5717,11 @@
     class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
     aria-hidden="true">
     <div
-      class="w-full max-w-[620px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100 flex flex-col">
+      class="modal w-full max-w-[620px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100 flex flex-col">
       <div class="modalHead" style="padding: 24px 28px 16px; border-b: 1px solid rgba(226, 232, 240, 0.6);">
+        <button type="button" class="js1-modal-close-x" id="btnCancelarEntregaPinol" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
         <div class="modalEyebrow" style="
               background: #dcfce7;
               color: #166534;
@@ -5815,11 +5823,6 @@
         </div>
 
         <div class="modalFooter" style="margin-top:24px; display:flex; justify-content:flex-end; gap:12px; flex-wrap:wrap;">
-          <button class="ghostBtn" id="btnCancelarEntregaPinol" type="button"
-            style="font-weight:700; cursor:pointer; color:#64748b;">
-            Cancelar
-          </button>
-
           <button class="btn" id="btnConfirmarEntregaPinol" type="button" style="
                 background: #f1f5f9;
                 color: #334155 !important;
@@ -5864,8 +5867,11 @@
 
   <!-- ✅ MODAL SURTIDO MASIVO DE PINOL -->
   <div id="pinolBatchModal" class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible">
-    <div class="w-full max-w-[620px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100 flex flex-col">
+    <div class="modal w-full max-w-[620px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100 flex flex-col">
       <div class="modalHead p-6 border-b border-slate-200">
+        <button type="button" class="js1-modal-close-x" onclick="closePinolBatchModal()" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
         <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-xl font-extrabold text-xs uppercase tracking-wider mb-2">
           <span class="material-symbols-rounded text-[18px]">local_shipping</span> Despacho Colectivo de Insumos
         </div>
@@ -5912,7 +5918,6 @@
       </div>
 
       <div class="modalFooter p-6 border-t border-slate-200 flex justify-end gap-3">
-        <button type="button" onclick="closePinolBatchModal()" class="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-700">Cancelar</button>
         <button type="button" id="btnConfirmarBatchPinol" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-2">
           <span class="material-symbols-rounded text-[18px]">check_circle</span> Confirmar Surtido Masivo
         </button>
@@ -6032,6 +6037,7 @@
       <div class="p-6 overflow-y-auto flex-1 min-h-0">
         <div id="csvDropZone"
           class="w-full h-[200px] rounded-2xl border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-3 bg-surface-variant/20 transition-all cursor-pointer hover:border-primary hover:bg-primary/5"
+          style="height: 200px;"
           onclick="document.getElementById('rdaCsvInput').click()"
           ondragover="event.preventDefault(); this.classList.add('dragover')"
           ondragleave="this.classList.remove('dragover')"
@@ -6332,8 +6338,12 @@
     class="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
     aria-hidden="true">
     <div
-      class="w-full max-w-[500px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100 flex flex-col">
+      class="modal w-full max-w-[500px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100 flex flex-col">
       <div class="modalHead">
+        <button type="button" class="js1-modal-close-x"
+          onclick="document.getElementById('createUserModal').classList.remove('show')" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
         <div class="modalEyebrow"
           style="background: #e0e7ff; color: #3730a3; padding: 6px 14px; border-radius: 12px; display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 11px; text-transform: uppercase; margin-bottom: 12px;">
           <span class="material-symbols-rounded" style="font-size:18px;">person_add</span>
@@ -6400,11 +6410,6 @@
 
       <div class="modalFooter"
         style="margin-top:24px; padding:20px; display:flex; justify-content:flex-end; gap:12px; border-top: 1px solid rgba(0,0,0,0.05);">
-        <button class="ghostBtn" type="button"
-          onclick="document.getElementById('createUserModal').classList.remove('show')"
-          style="font-weight:700;">
-          <span class="material-symbols-rounded">close</span> Cancelar
-        </button>
         <button class="btn" id="btnSubmitCreateUser" type="button"
           style="background: var(--md-sys-color-primary); color: var(--md-sys-color-surface); padding: 12px 28px; border: none; border-radius: 14px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
           <span class="material-symbols-rounded" style="font-weight: normal;">check_circle</span> Registrar
@@ -6428,6 +6433,12 @@
     <div class="modal"
       style="max-width:480px; border-radius:28px; background: var(--md-sys-color-surface); box-shadow: var(--md-shadow-5); overflow: hidden;">
       <div class="modalHead">
+        <!-- display:none por defecto: mismo id que antes, así que la lógica que lo
+             oculta durante un cambio de contraseña forzado (main.js:4854) sigue
+             funcionando igual, sin tocar JS. -->
+        <button type="button" class="js1-modal-close-x" id="btnPwdClose" aria-label="Cerrar" style="display:none;">
+          <span class="material-symbols-rounded">close</span>
+        </button>
         <div class="modalEyebrow" style="
               background: var(--md-sys-color-primary-container);
               color: var(--md-sys-color-on-primary-container);
@@ -6493,11 +6504,6 @@
       </div>
 
       <div class="modalFooter" style="display:flex; justify-content:flex-end; gap:12px; padding-top: 10px;">
-        <button class="ghostBtn" id="btnPwdClose" type="button"
-          style="display:none; font-weight:700;">
-          <span class="material-symbols-rounded">close</span> Cerrar
-        </button>
-
         <button class="btn btn-premium-action" id="btnSaveMyPassword" type="button"
           style="width: 100%; height: 56px; border-radius: 100px;">
           Guardar y Continuar
@@ -6511,6 +6517,9 @@
     <div class="modal"
       style="max-width:440px; border-radius:28px; background: var(--md-sys-color-surface); box-shadow: var(--md-shadow-5); overflow: hidden;">
       <div class="modalHead">
+        <button type="button" class="js1-modal-close-x" id="btnForgotClose" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
         <div class="modalEyebrow" style="
               background: var(--md-sys-color-primary-container);
               color: var(--md-sys-color-on-primary-container);
@@ -6551,11 +6560,6 @@
         </div>
 
         <div class="modalFooter" style="margin-top:24px; display:flex; justify-content:flex-end; gap:12px;">
-          <button class="ghostBtn" id="btnForgotClose" type="button"
-            style="font-weight:700;">
-            <span class="material-symbols-rounded">close</span> Cerrar
-          </button>
-
           <button class="btn" id="btnForgotSend" type="button" style="
                 background: linear-gradient(135deg, #001B3D 0%, var(--md-sys-color-primary) 100%);
                 color: var(--md-sys-color-surface);
@@ -6578,6 +6582,9 @@
     <div class="modal"
       style="max-width:540px; background: var(--md-sys-color-surface); border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
       <div class="modalHead">
+        <button type="button" class="js1-modal-close-x" id="btnCloseUpload" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
         <div class="modalEyebrow">
           <span class="material-symbols-rounded" style="font-size:16px;">cloud_upload</span>
           Gestor de Evidencias - Servidor Central
@@ -6599,20 +6606,43 @@
             </select>
           </div>
 
-          <!-- ✅ CAPACITACION SELECTOR (Solo para Evidencia de capacitaciones) -->
+          <!-- ✅ CAPACITACION SELECTOR (Solo para Evidencia de capacitaciones)
+               El <select> nativo queda oculto solo como modelo de datos (lo sigue leyendo
+               handleFileUploadFlow vía .value / data-date) — la UI real es el combo de abajo,
+               que sí permite resaltar la fecha como insignia (un <option> no lo permite). -->
           <div id="uploadCapacitacionWrap" class="fieldCard" style="display:none">
-            <label for="uploadCapacitacionSelect">Seleccionar Capacitación</label>
-            <select id="uploadCapacitacionSelect">
+            <label for="uploadCapacitacionTrigger">Seleccionar capacitación</label>
+            <select id="uploadCapacitacionSelect" style="display:none" aria-hidden="true" tabindex="-1">
               <option value="" disabled selected>Selecciona una capacitación...</option>
             </select>
+            <div class="js1-combo" id="uploadCapacitacionCombo">
+              <button type="button" class="js1-combo-trigger" id="uploadCapacitacionTrigger" aria-haspopup="listbox" aria-expanded="false">
+                <span class="js1-combo-trigger-content">
+                  <span class="js1-combo-trigger-text placeholder" id="uploadCapacitacionTriggerText">Selecciona una capacitación…</span>
+                  <span class="js1-combo-date-badge" id="uploadCapacitacionTriggerBadge" style="display:none"></span>
+                </span>
+                <span class="material-symbols-rounded js1-combo-chevron">expand_more</span>
+              </button>
+              <div class="js1-combo-panel" id="uploadCapacitacionPanel" role="listbox" hidden></div>
+            </div>
           </div>
 
-          <!-- ✅ CAMPANA SELECTOR (Solo para Evidencias de campaña) -->
+          <!-- ✅ CAMPANA SELECTOR (Solo para Evidencias de campaña) — mismo patrón de combo -->
           <div id="uploadCampanaWrap" class="fieldCard" style="display:none">
-            <label for="uploadCampanaSelect">Seleccionar Campaña</label>
-            <select id="uploadCampanaSelect">
+            <label for="uploadCampanaTrigger">Seleccionar campaña</label>
+            <select id="uploadCampanaSelect" style="display:none" aria-hidden="true" tabindex="-1">
               <option value="" disabled selected>Selecciona una campaña...</option>
             </select>
+            <div class="js1-combo" id="uploadCampanaCombo">
+              <button type="button" class="js1-combo-trigger" id="uploadCampanaTrigger" aria-haspopup="listbox" aria-expanded="false">
+                <span class="js1-combo-trigger-content">
+                  <span class="js1-combo-trigger-text placeholder" id="uploadCampanaTriggerText">Selecciona una campaña…</span>
+                  <span class="js1-combo-date-badge" id="uploadCampanaTriggerBadge" style="display:none"></span>
+                </span>
+                <span class="material-symbols-rounded js1-combo-chevron">expand_more</span>
+              </button>
+              <div class="js1-combo-panel" id="uploadCampanaPanel" role="listbox" hidden></div>
+            </div>
           </div>
 
           <!-- ✅ MUNICIPAL FIELDS -->
@@ -6631,7 +6661,7 @@
           </div>
 
 
-          <div class="fieldCard">
+          <div class="fieldCard" id="uploadGenericFileWrap">
             <label for="uploadFileInput">Seleccionar archivo (Máx. 10MB)</label>
             <div class="fileInputWrap">
               <input type="file" id="uploadFileInput" style="display:none">
@@ -6641,17 +6671,46 @@
               </button>
             </div>
           </div>
+
+          <!-- ✅ EVIDENCIA DE CAPACITACIÓN: 2 documentos obligatorios, nomenclatura y
+               nombre de archivo automáticos (unidad/CLUES del perfil, fecha de la
+               capacitación) — cada documento sube al elegirlo, sin botón global. -->
+          <div class="fieldCard" id="uploadCapEvidenceWrap" style="display:none">
+            <label>Documentos requeridos</label>
+            <div class="js1-doc-slot" id="uploadCapSlot_CARTA_DESCRIPTIVA" data-doc-type="CARTA_DESCRIPTIVA" data-doc-label="Carta descriptiva">
+              <div class="js1-doc-slot-info">
+                <span class="material-symbols-rounded js1-doc-slot-icon">description</span>
+                <div class="js1-doc-slot-text">
+                  <span class="js1-doc-slot-title">Carta descriptiva</span>
+                  <span class="js1-doc-slot-status">Pendiente</span>
+                </div>
+              </div>
+              <input type="file" class="js1-doc-slot-input" accept=".pdf,image/*" style="display:none">
+              <button type="button" class="js1-doc-slot-btn">
+                <span class="material-symbols-rounded">upload</span> Subir
+              </button>
+            </div>
+            <div class="js1-doc-slot" id="uploadCapSlot_LISTA_DE_ASISTENCIA" data-doc-type="LISTA_DE_ASISTENCIA" data-doc-label="Lista de asistencia">
+              <div class="js1-doc-slot-info">
+                <span class="material-symbols-rounded js1-doc-slot-icon">description</span>
+                <div class="js1-doc-slot-text">
+                  <span class="js1-doc-slot-title">Lista de asistencia</span>
+                  <span class="js1-doc-slot-status">Pendiente</span>
+                </div>
+              </div>
+              <input type="file" class="js1-doc-slot-input" accept=".pdf,image/*" style="display:none">
+              <button type="button" class="js1-doc-slot-btn">
+                <span class="material-symbols-rounded">upload</span> Subir
+              </button>
+            </div>
+          </div>
         </div>
 
         <div class="modalNote" id="uploadStatusNote">
           Los archivos se organizarán por CLUES y Nombre de Unidad en el servidor central.
         </div>
 
-        <div class="modalFooter">
-          <button class="ghostBtn" id="btnCloseUpload" type="button">
-            <span class="material-symbols-rounded">close</span> Cancelar
-          </button>
-
+        <div class="modalFooter uploadModalFooter" id="uploadModalFooter" style="justify-content:flex-end;">
           <button class="btn-premium-action btn-save-animate" id="btnDoUpload" type="button" style="margin-top:0;"
             disabled>
             <span class="material-symbols-rounded">cloud_upload</span> Subir Evidencia
@@ -6668,6 +6727,9 @@
       style="max-width:440px; background: var(--md-sys-color-surface); border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden; display: flex; flex-direction: column; padding: 0;">
       <div class="modalHead"
         style="background: linear-gradient(135deg, #002244 0%, #004488 100%); padding: 28px 28px 20px;">
+        <button type="button" class="js1-modal-close-x js1-modal-close-x-light" id="btnCancelNewCap" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
         <div class="modalEyebrow" style="color: rgba(255,255,255,0.8);">
           <span class="material-symbols-rounded" style="font-size:16px;">school</span>
           Gestión Jurisdiccional
@@ -6691,8 +6753,6 @@
         </div>
         <div class="modalFooter"
           style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 16px; border-t: 1px solid #e2e8f0;">
-          <button class="ghostBtn" id="btnCancelNewCap" type="button"
-            style="height: 40px; padding: 0 16px; border-radius: 10px; font-weight: 700; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 8px;">Cancelar</button>
           <button class="btn-premium-action btn-save-animate" id="btnSaveNewCap" type="button"
             style="height: 40px; padding: 0 20px; border-radius: 10px; font-weight: 800; cursor: pointer; border: none; background: var(--md-sys-color-primary); color: #fff; display: flex; align-items: center; gap: 8px; margin-top: 0;">Crear</button>
         </div>
@@ -6707,6 +6767,9 @@
       style="max-width:440px; background: var(--md-sys-color-surface); border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden; display: flex; flex-direction: column; padding: 0;">
       <div class="modalHead"
         style="background: linear-gradient(135deg, #002244 0%, #004488 100%); padding: 28px 28px 20px;">
+        <button type="button" class="js1-modal-close-x js1-modal-close-x-light" id="btnCancelEditCap" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
         <div class="modalEyebrow" style="color: rgba(255,255,255,0.8);">
           <span class="material-symbols-rounded" style="font-size:16px;">edit</span>
           Gestión Jurisdiccional
@@ -6730,8 +6793,6 @@
         </div>
         <div class="modalFooter"
           style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 16px; border-t: 1px solid #e2e8f0;">
-          <button class="ghostBtn" id="btnCancelEditCap" type="button"
-            style="height: 40px; padding: 0 16px; border-radius: 10px; font-weight: 700; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 8px;">Cancelar</button>
           <button class="btn-premium-action btn-save-animate" id="btnSaveEditCap" type="button"
             style="height: 40px; padding: 0 20px; border-radius: 10px; font-weight: 800; cursor: pointer; border: none; background: var(--md-sys-color-primary); color: #fff; display: flex; align-items: center; gap: 8px; margin-top: 0;">Guardar Cambios</button>
         </div>
@@ -6746,6 +6807,9 @@
       style="max-width:440px; background: var(--md-sys-color-surface); border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden; display: flex; flex-direction: column; padding: 0;">
       <div class="modalHead"
         style="background: linear-gradient(135deg, #0f766e 0%, #115e59 100%); padding: 28px 28px 20px;">
+        <button type="button" class="js1-modal-close-x js1-modal-close-x-light" id="btnCancelNewCamp" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
         <div class="modalEyebrow" style="color: rgba(255,255,255,0.8);">
           <span class="material-symbols-rounded" style="font-size:16px;">campaign</span>
           Gestión de Campañas
@@ -6769,8 +6833,6 @@
         </div>
         <div class="modalFooter"
           style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 16px; border-t: 1px solid #e2e8f0;">
-          <button class="ghostBtn" id="btnCancelNewCamp" type="button"
-            style="height: 40px; padding: 0 16px; border-radius: 10px; font-weight: 700; cursor: pointer; color: #475569; display: flex; align-items: center; gap: 8px;">Cancelar</button>
           <button class="btn-premium-action btn-save-animate" id="btnSaveNewCamp" type="button"
             style="height: 40px; padding: 0 20px; border-radius: 10px; font-weight: 800; cursor: pointer; border: none; background: var(--md-sys-color-primary); color: #fff; display: flex; align-items: center; gap: 8px; margin-top: 0;">Crear</button>
         </div>
@@ -6784,6 +6846,9 @@
     <div class="modal"
       style="max-width:460px; background:var(--md-sys-color-surface); border-radius:28px; box-shadow:var(--md-shadow-5); overflow:hidden; padding:0;">
       <div class="modalHead" style="background:linear-gradient(135deg,#7c2d12,#b45309); padding:28px 28px 20px;">
+        <button type="button" class="js1-modal-close-x js1-modal-close-x-light" id="btnCancelPdfCompress" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
         <div class="modalEyebrow" style="color:rgba(255,255,255,0.8);">
           <span class="material-symbols-rounded" style="font-size:16px;">warning</span>
           Archivo grande detectado
@@ -6811,10 +6876,6 @@
       </div>
       <div
         style="display:flex; align-items:center; justify-content:flex-end; gap:12px; padding:20px 28px 28px; border-top:1px solid var(--md-sys-color-outline-variant);">
-        <button class="ghostBtn" id="btnCancelPdfCompress" type="button"
-          style="min-width:110px; height:44px; display:flex; align-items:center; gap:8px; justify-content:center;">
-          <span class="material-symbols-rounded" style="font-size:18px;">close</span> Cancelar
-        </button>
         <button class="btn-premium-action" id="btnConfirmPdfCompress" type="button"
           style="margin-top:0; min-width:180px; height:44px; background:linear-gradient(135deg,#7c2d12,#b45309); display:flex; align-items:center; gap:8px; justify-content:center;">
           <span class="material-symbols-rounded" style="font-size:18px;">compress</span> Comprimir y subir
@@ -6910,6 +6971,9 @@
 
       <!-- Premium Header -->
       <div style="padding: 28px 28px 16px 28px; background: var(--md-sys-color-surface);">
+        <button type="button" class="js1-modal-close-x" id="btnCancelExport" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
         <div
           style="color: #0ea5e9; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
           <span class="material-symbols-rounded" style="font-size: 16px;">download</span>
@@ -7088,10 +7152,6 @@
       <!-- Bottom Action Bar -->
       <div
         style="padding: 16px 28px; background: var(--md-sys-color-surface); border-top: 1px solid var(--md-sys-color-surface-container); display: flex; justify-content: flex-end; align-items: center; gap: 10px;">
-        <button id="btnCancelExport" type="button"
-          style="display: flex; align-items: center; gap: 4px; padding: 10px 16px; background: var(--md-sys-color-surface); border: 1px solid var(--md-sys-color-outline-variant); border-radius: 10px; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer; transition: all 0.2s;">
-          <span class="material-symbols-rounded" style="font-size: 18px;">close</span> Cancelar
-        </button>
         <button id="btnDoExport" type="button"
           style="display: flex; align-items: center; gap: 6px; padding: 10px 20px; background: #0ea5e9; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; color: var(--md-sys-color-surface); cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(14, 165, 233, 0.15);">
           <span class="material-symbols-rounded" style="font-size: 18px;">download</span> Generar Reporte
@@ -7772,7 +7832,10 @@
   <!-- PREMIUM DELETE MODAL (LOTES) -->
   <div id="premiumDeleteModal"
     style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 999999; align-items: center; justify-content: center; padding: 20px;">
-    <div class="premium-delete-card">
+    <div class="modal premium-delete-card">
+      <button type="button" class="js1-modal-close-x" onclick="closeDeleteModal()" aria-label="Cerrar">
+        <span class="material-symbols-rounded">close</span>
+      </button>
       <div class="modal-icon-warning">
         <span class="material-symbols-rounded">warning</span>
       </div>
@@ -7799,6 +7862,9 @@
       style="max-width:380px; width:90%; background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border-radius: 24px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(255, 255, 255, 0.5) inset; overflow: hidden; display: flex; flex-direction: column; padding: 0; border: 1px solid rgba(255, 255, 255, 0.65);">
       <div class="modalHead"
         style="background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 20px 24px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+        <button type="button" class="js1-modal-close-x js1-modal-close-x-light" id="btnGenericConfirmCancel" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
         <div class="modalTitle" id="genericConfirmTitle"
           style="color: #ffffff; font-size: 15px; font-weight: 800; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px;">
           <span class="material-symbols-rounded" style="font-size: 18px; color: #f43f5e;">warning</span>
@@ -7811,8 +7877,6 @@
         </p>
         <div
           style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; padding-top: 14px; border-top: 1px solid rgba(226, 232, 240, 0.6);">
-          <button class="ghostBtn" id="btnGenericConfirmCancel" type="button"
-            style="height: 38px; padding: 0 18px; border-radius: 12px; font-weight: 700; cursor: pointer; border: 1px solid rgba(203, 213, 225, 0.5); background: rgba(255, 255, 255, 0.6); color: #64748b; font-size: 12.5px; transition: all 0.2s ease;">Cancelar</button>
           <button class="btn-premium-action" id="btnGenericConfirmAccept" type="button"
             style="height: 38px; padding: 0 22px; border-radius: 12px; font-weight: 700; cursor: pointer; border: none; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff; margin-top:0; font-size: 12.5px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25); transition: all 0.2s ease;">Aceptar</button>
         </div>
@@ -8445,8 +8509,11 @@
     class="fixed inset-0 flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
     style="z-index: 999999 !important;" aria-hidden="true">
     <div
-      class="w-full max-w-[460px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
+      class="modal w-full max-w-[460px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
       <div class="p-8 pb-6 bg-gradient-to-br from-amber-500/10 to-transparent border-b border-outline-variant/20">
+        <button type="button" class="js1-modal-close-x" id="btnCsvUploadConfirmCancel" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
         <div class="flex items-center gap-2 text-amber-600 text-xs font-bold uppercase tracking-[0.1em] mb-3" id="csvUploadConfirmLabel">
           <span class="material-symbols-rounded text-base">warning</span>
           Filas con error sin resolver
@@ -8459,12 +8526,8 @@
 
       <div class="flex items-center justify-end gap-3 p-6 bg-surface border-t border-outline-variant/30">
         <button
-          class="bg-surface-variant/60 text-primary hover:bg-surface-variant px-5 h-[44px] rounded-xl font-bold flex items-center justify-center gap-2 transition-all border-none cursor-pointer"
-          id="btnCsvUploadConfirmCancel" type="button">
-          <span class="material-symbols-rounded text-[18px]">edit</span> Regresar a revisar
-        </button>
-        <button
-          class="bg-primary text-primary-on hover:-translate-y-0.5 active:scale-[0.98] px-5 h-[44px] rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md3-1 border-none cursor-pointer"
+          class="bg-primary text-primary-on hover:-translate-y-0.5 active:scale-95 px-5 h-[44px] rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md3-1 border-none cursor-pointer"
+          style="height: 44px;"
           id="btnCsvUploadConfirmAccept" type="button">
           <span class="material-symbols-rounded text-[18px]">cloud_upload</span> Sí, subir e ignorar el resto
         </button>
@@ -8477,7 +8540,7 @@
     class="fixed inset-0 flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
     style="z-index: 999999 !important;" aria-hidden="true">
     <div
-      class="w-full max-w-[500px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
+      class="modal w-full max-w-[500px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
       <div class="p-8 pb-6 bg-gradient-to-br from-status-error/10 to-transparent border-b border-outline-variant/20">
         <div class="flex items-center gap-2 text-status-error text-xs font-bold uppercase tracking-[0.1em] mb-3">
           <span class="material-symbols-rounded text-base">block</span>
@@ -8501,7 +8564,8 @@
 
       <div class="flex items-center justify-end gap-3 p-6 bg-surface border-t border-outline-variant/30">
         <button
-          class="bg-[#d97706] text-primary-on hover:bg-[#b45309] hover:-translate-y-0.5 active:scale-[0.98] px-6 h-[46px] rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md3-1 border-none cursor-pointer w-full focus:outline-none focus:ring-2 focus:ring-[#d97706]/30"
+          class="bg-[#d97706] text-primary-on hover:bg-[#b45309] hover:-translate-y-0.5 active:scale-95 px-6 h-[46px] rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-md3-1 border-none cursor-pointer w-full focus:outline-none focus:ring-2 focus:ring-[#d97706]/30"
+          style="height: 46px;"
           id="btnBioConfirmCancel" type="button">
           <span class="material-symbols-rounded text-[20px]">edit</span> Regresar a modificar y corregir el pedido
         </button>
@@ -8516,9 +8580,12 @@
     class="fixed inset-0 flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
     style="z-index: 999999 !important;" aria-hidden="true">
     <div
-      class="w-full max-w-[440px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
+      class="modal w-full max-w-[440px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
       <div class="p-8 pb-6 border-b border-outline-variant/20"
         style="background: linear-gradient(to bottom right, rgba(234,179,8,0.08), transparent);">
+        <button type="button" class="js1-modal-close-x" id="btnSinPedidoConfirmCancel" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
         <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] mb-3" style="color: #ca8a04;">
           <span class="material-symbols-rounded text-base">info</span>
           Modo Solo Existencias
@@ -8541,14 +8608,77 @@
       </div>
       <div class="flex items-center justify-end gap-3 p-5 bg-surface border-t border-outline-variant/30">
         <button
-          class="bg-transparent text-primary hover:bg-primary/5 px-5 h-[44px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer"
-          id="btnSinPedidoConfirmCancel" type="button">
-          <span class="material-symbols-rounded text-[18px]">close</span> Cancelar
-        </button>
-        <button
-          class="px-5 h-[44px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer hover:-translate-y-0.5"
+          class="js1-modal-btn"
           style="background: #ca8a04; color: #fff;" id="btnSinPedidoConfirmAccept" type="button">
           <span class="material-symbols-rounded text-[18px]">done</span> Entendido, continuar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 💉 MODAL FECHA DE APERTURA DE FRASCO (multidosis) -->
+  <div id="aperturaFrascoOverlay"
+    class="fixed inset-0 flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
+    style="z-index: 999999 !important;" aria-hidden="true">
+    <div
+      class="modal w-full max-w-[440px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100">
+      <div class="p-8 pb-6 border-b border-outline-variant/20"
+        style="background: linear-gradient(to bottom right, rgba(217,119,6,0.08), transparent);">
+        <button type="button" class="js1-modal-close-x" id="btnAperturaFrascoCancel" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+        <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] mb-3" style="color: #d97706;">
+          <span class="material-symbols-rounded text-base">vaccines</span>
+          Frasco multidosis abierto
+        </div>
+        <div class="text-[20px] font-extrabold text-primary tracking-tight mb-2">Registrar fecha de apertura</div>
+        <div class="text-[13px] font-medium text-surface-onVariant/80 leading-relaxed" id="aperturaFrascoContext">
+          Detectamos una cantidad decimal. Según el manual de vacunación, este frasco debe usarse dentro de los <b>28 días</b> posteriores a su apertura.
+        </div>
+      </div>
+      <div class="p-6 bg-slate-50 border-b border-outline-variant/20 flex flex-col gap-2">
+        <label for="aperturaFrascoFechaInput" class="text-[12px] font-bold text-slate-700">¿Cuándo se abrió este frasco?</label>
+        <input type="date" id="aperturaFrascoFechaInput"
+          class="w-full bg-white border-2 border-slate-400 rounded-xl px-3 py-2.5 text-[14px] font-black text-slate-900 focus:border-primary outline-none transition-all">
+        <span class="text-[11px] font-medium text-slate-500">No puede ser anterior a la recepción del lote ni posterior a hoy.</span>
+      </div>
+      <div class="flex items-center justify-end gap-3 p-5 bg-surface border-t border-outline-variant/30">
+        <button
+          class="js1-modal-btn js1-modal-btn-solid"
+          id="btnAperturaFrascoAccept" type="button">
+          <span class="material-symbols-rounded text-[18px]">done</span> Guardar fecha
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 💉 MODAL FRASCOS ABIERTOS PENDIENTES (revisión en lote, un solo modal al guardar) -->
+  <div id="aperturaBatchOverlay"
+    class="fixed inset-0 flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
+    style="z-index: 999999 !important;" aria-hidden="true">
+    <div
+      class="modal w-full max-w-[480px] bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100"
+      style="max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="p-8 pb-6 border-b border-outline-variant/20" style="background: linear-gradient(to bottom right, rgba(217,119,6,0.08), transparent); flex-shrink: 0;">
+        <button type="button" class="js1-modal-close-x" id="btnAperturaBatchCancel" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+        <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] mb-3" style="color: #d97706;">
+          <span class="material-symbols-rounded text-base">vaccines</span>
+          Antes de guardar
+        </div>
+        <div class="text-[20px] font-extrabold text-primary tracking-tight mb-2">Frascos abiertos por registrar</div>
+        <div class="text-[13px] font-medium text-surface-onVariant/80 leading-relaxed">
+          Detectamos cantidades decimales en vacunas multidosis. Según el manual de vacunación, cada frasco abierto debe usarse dentro de los <b>28 días</b> posteriores a su apertura — indica cuándo se abrió cada uno.
+        </div>
+      </div>
+      <div id="aperturaBatchList" class="p-6 bg-slate-50 border-b border-outline-variant/20 flex flex-col gap-3" style="overflow-y: auto; flex: 1;">
+      </div>
+      <div class="flex items-center justify-end gap-3 p-5 bg-surface border-t border-outline-variant/30" style="flex-shrink: 0;">
+        <button
+          class="js1-modal-btn js1-modal-btn-solid"
+          id="btnAperturaBatchAccept" type="button">
+          <span class="material-symbols-rounded text-[18px]">done</span> Guardar fechas y continuar
         </button>
       </div>
     </div>
@@ -8559,10 +8689,13 @@
     class="fixed inset-0 flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
     style="z-index: 999999 !important;" aria-hidden="true">
     <div
-      class="w-full bg-surface border border-outline-variant/30 rounded-[24px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100"
+      class="modal w-full bg-surface border border-outline-variant/30 rounded-[24px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100"
       style="max-width: 500px !important; width: 100%;">
       <div class="p-6 pb-4 border-b border-outline-variant/20"
         style="background: linear-gradient(to bottom right, rgba(14,165,233,0.06), transparent);">
+        <button type="button" class="js1-modal-close-x" id="btnSinMovimientoSRCancel" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
         <div class="flex items-center gap-3 mb-3">
           <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
             style="background:#e0f2fe; color:#0284c7;">
@@ -8587,13 +8720,8 @@
       </div>
       <div class="flex items-center justify-end gap-3 p-4 bg-surface border-t border-outline-variant/20">
         <button
-          class="bg-transparent text-primary hover:bg-primary/5 px-4 h-[38px] rounded-lg font-bold text-[13px] flex items-center gap-1.5 transition-all border-none cursor-pointer"
-          id="btnSinMovimientoSRCancel" type="button">
-          Cancelar
-        </button>
-        <button
           class="px-4 h-[38px] rounded-lg font-bold text-[13px] flex items-center gap-1.5 transition-all border-none cursor-pointer hover:-translate-y-0.5"
-          style="background:#0284c7; color:#fff;" id="btnSinMovimientoSRConfirm" type="button">
+          style="background:#0284c7; color:#fff; height: 38px;" id="btnSinMovimientoSRConfirm" type="button">
           <span class="material-symbols-rounded text-[16px]">task_alt</span> Confirmar
         </button>
       </div>
@@ -8605,10 +8733,13 @@
     class="fixed inset-0 flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
     style="z-index: 999999 !important;" aria-hidden="true">
     <div
-      class="w-full bg-surface border border-outline-variant/30 rounded-[24px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100"
+      class="modal w-full bg-surface border border-outline-variant/30 rounded-[24px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100"
       style="max-width: 500px !important; width: 100%;">
       <div class="p-6 pb-4 border-b border-outline-variant/20"
         style="background: linear-gradient(to bottom right, rgba(14,165,233,0.06), transparent);">
+        <button type="button" class="js1-modal-close-x" id="btnSinMovimientoConsCancel" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
         <div class="flex items-center gap-3 mb-3">
           <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
             style="background:#e0f2fe; color:#0284c7;">
@@ -8632,13 +8763,8 @@
       </div>
       <div class="flex items-center justify-end gap-3 p-4 bg-surface border-t border-outline-variant/20">
         <button
-          class="bg-transparent text-primary hover:bg-primary/5 px-4 h-[38px] rounded-lg font-bold text-[13px] flex items-center gap-1.5 transition-all border-none cursor-pointer"
-          id="btnSinMovimientoConsCancel" type="button">
-          Cancelar
-        </button>
-        <button
           class="px-4 h-[38px] rounded-lg font-bold text-[13px] flex items-center gap-1.5 transition-all border-none cursor-pointer hover:-translate-y-0.5"
-          style="background:#0284c7; color:#fff;" id="btnSinMovimientoConsConfirm" type="button">
+          style="background:#0284c7; color:#fff; height: 38px;" id="btnSinMovimientoConsConfirm" type="button">
           <span class="material-symbols-rounded text-[16px]">task_alt</span> Confirmar
         </button>
       </div>
@@ -8666,7 +8792,7 @@
       <div class="flex items-center justify-center p-5 bg-surface">
         <button
           class="px-8 h-[46px] rounded-xl font-bold flex items-center justify-center transition-all shadow-md w-full border-none cursor-pointer"
-          id="btnPrefillNoticeAccept" type="button" style="background-color: #0ea5e9; color: white;">
+          id="btnPrefillNoticeAccept" type="button" style="background-color: #0ea5e9; color: white; height: 46px;">
           Entendido
         </button>
       </div>
@@ -8678,10 +8804,13 @@
     class="fixed inset-0 flex items-center justify-center p-4 bg-surface-on/50 opacity-0 invisible transition-all duration-300 [&.show]:opacity-100 [&.show]:visible"
     style="z-index: 999999 !important;" aria-hidden="true">
     <div
-      class="bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100"
+      class="modal bg-surface border border-outline-variant/30 rounded-[28px] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.25)] transform scale-95 transition-transform duration-300 [[class~='show']_&]:scale-100"
       style="width: 100%; max-width: 450px; min-width: 300px;">
       <div class="p-8 pb-6 border-b border-outline-variant/20"
         style="background: linear-gradient(to bottom right, rgba(217, 119, 6, 0.08), transparent);">
+        <button type="button" class="js1-modal-close-x" id="btnPrefillConfirmCancel" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
         <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] mb-3" style="color: #d97706;">
           <span class="material-symbols-rounded text-base">warning</span>
           Validación preventiva
@@ -8695,13 +8824,8 @@
       </div>
       <div class="flex items-center justify-end gap-3 p-6 bg-surface-variant/20 border-t border-outline-variant/30">
         <button
-          class="bg-transparent text-primary px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all border-none cursor-pointer hover:bg-primary/5"
-          id="btnPrefillConfirmCancel" type="button">
-          <span class="material-symbols-rounded text-[20px]">close</span> Cancelar
-        </button>
-        <button
-          class="px-5 h-[46px] rounded-xl font-bold flex items-center gap-2 transition-all shadow-md3-1 border-none cursor-pointer"
-          id="btnPrefillConfirmAccept" type="button" style="background-color: #d97706; color: white;">
+          class="js1-modal-btn js1-modal-btn-solid"
+          id="btnPrefillConfirmAccept" type="button">
           <span class="material-symbols-rounded text-[20px]">done_all</span> Sí, continuar
         </button>
       </div>
@@ -8715,6 +8839,9 @@
       style="width: 100%; max-width:440px; background: var(--md-sys-color-surface); border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden; display: flex; flex-direction: column; padding: 0;">
       <div class="modalHead"
         style="background: linear-gradient(135deg, #0f172a 0%, #334155 100%); padding: 24px 24px 20px; color: white;">
+        <button type="button" class="js1-modal-close-x js1-modal-close-x-light" id="btnCancelBCGApertura" aria-label="Cerrar">
+          <span class="material-symbols-rounded">close</span>
+        </button>
         <div class="modalEyebrow"
           style="color: #0ea5e9; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
           <span class="material-symbols-rounded" style="font-size: 16px;">vaccines</span>
@@ -8738,8 +8865,6 @@
       </div>
       <div class="modalFooter"
         style="padding: 16px 24px; display:flex; justify-content:flex-end; gap:12px; background: var(--md-sys-color-surface); border-top: 1px solid var(--md-sys-color-surface-container);">
-        <button id="btnCancelBCGApertura" type="button" class="ghostBtn"
-          style="font-weight:700; cursor: pointer; color: var(--md-sys-color-on-surface-variant);">Cancelar</button>
         <button id="btnSaveBCGApertura" type="button"
           style="background: #0ea5e9; color: white; border: none; font-weight: 800; padding: 10px 20px; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);">Guardar
           Cambios</button>

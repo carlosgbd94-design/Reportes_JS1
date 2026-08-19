@@ -643,6 +643,56 @@ html.dark .premium-switch-track {
   border-radius: 6px;
 }
 
+/* 💉 Badge de frasco multidosis abierto (vigencia de 28 días) */
+.apertura-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.apertura-pill .material-symbols-rounded {
+  font-size: 12px;
+}
+
+/* 💉 Ítem individual dentro del modal de revisión en lote (#aperturaBatchOverlay) */
+.apertura-batch-item {
+  background: var(--card-bg, #f8fafc);
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.apertura-batch-item-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.3;
+}
+.apertura-batch-item-label small {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748b;
+}
+.apertura-batch-date-input {
+  border: 2px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #0f172a;
+  background: #ffffff;
+  outline: none;
+  flex-shrink: 0;
+}
+.apertura-batch-date-input:focus {
+  border-color: #d97706;
+}
+
 /* KPI Chips */
 .kpi-chip {
   background: var(--card-bg);
