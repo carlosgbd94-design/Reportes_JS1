@@ -1,28 +1,31 @@
 /**
  * sw.js — Service Worker SIREVAQ
  * Cache-first para activos estáticos. Garantiza disponibilidad offline.
- * Versión: 2026.3
+ * Versión: 2026.4
  */
 
-const CACHE_NAME = 'js1-reportes-v2026-71';
+const CACHE_NAME = 'js1-reportes-v2026-72';
 
+// IMPORTANTE: index.html YA NO carga main.js/rda_ui.js/etc. sueltos -- desde que existe
+// build-bundle.js carga dist/bundle-head.js y dist/bundle-body.js (empaquetados). Antes
+// esta lista precacheaba los archivos sueltos (que ya nadie pide) y dejaba SIN respaldo
+// offline a los bundles reales -- si la red fallaba justo al pedirlos, esos <script defer>
+// simplemente no cargaban y decenas de funciones (RDA, Jeringas, Concentrado, etc.)
+// quedaban indefinidas en silencio (ver Sentry SIREVAQ-X, "resetCsvUploadModal is not a
+// function"). Se precachea la ruta SIN "?v=" a propósito: en producción siempre se pide
+// con query string (cache-busting), así que Network-First primero intenta red y solo cae
+// a este respaldo -- vía el fallback "ignoreSearch" del fetch handler de abajo -- cuando
+// la red realmente falla.
 const STATIC_ASSETS = [
   './',
   './index.html',
   './style.css',
   './tailwind_compiled.css',
-  './main.js',
-  './influenza_module.js',
-  './offline_db.js',
-  './stock_predictor.js',
-  './export_manager.js',
+  './dist/bundle-head.js',
+  './dist/bundle-body.js',
   './mobile.html',
   './mobile_style.css',
   './mobile_main.js',
-  './rda_calculator.js',
-  './rda_parser.js',
-  './param_calculator.js',
-  './rda_ui.js',
   './site.webmanifest',
   './favicon.svg',
   './favicon.ico',

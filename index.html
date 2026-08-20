@@ -294,6 +294,29 @@
   <script defer src="https://unpkg.com/just-validate@4.3.0/dist/just-validate.production.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
+  <!-- 🛡️ Guardián de carga de bundles: si dist/bundle-head.js o dist/bundle-body.js
+       fallan al descargar (red inestable, típico en unidades rurales), esos <script defer>
+       simplemente no ejecutan -- decenas de funciones (RDA, Jeringas, Parámetros,
+       Concentrado, etc.) quedan indefinidas EN SILENCIO y solo se nota cuando el usuario
+       hace clic en algo y revienta un TypeError críptico (ver Sentry SIREVAQ-X). Con esto,
+       en vez de eso se ve un aviso claro con botón de recarga. -->
+  <script>
+    function sirevaqShowBundleLoadError(parte) {
+      if (document.getElementById('sirevaqBundleErrorBanner')) return;
+      var b = document.createElement('div');
+      b.id = 'sirevaqBundleErrorBanner';
+      b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;background:#b91c1c;color:#fff;' +
+        'padding:12px 16px;font:600 13px/1.4 system-ui,sans-serif;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,.25);';
+      b.innerHTML = 'No se pudo cargar toda la aplicación (conexión inestable). Algunas funciones no van a responder hasta recargar.' +
+        ' <button onclick="location.reload()" style="margin-left:10px;background:#fff;color:#b91c1c;border:none;' +
+        'border-radius:6px;padding:4px 14px;font-weight:800;cursor:pointer;">Recargar</button>';
+      var attach = function () { document.body.prepend(b); };
+      if (document.body) attach();
+      else document.addEventListener('DOMContentLoaded', attach);
+      console.error('[SIREVAQ] Falló la carga de ' + parte + ' -- ver banner en pantalla.');
+    }
+  </script>
+
   <!-- Módulos Avanzados SIREVAQ -->
   <!-- Empaquetado: bundle-head.js = offline_db + stock_predictor + export_manager
        + pinol_assets + main + influenza_module, en ese mismo orden.
@@ -301,7 +324,7 @@
        (ensurePdfAssetsLoaded) solo al exportar el PDF de Resguardo.
        Generado por build-bundle.js. Los archivos originales siguen en el repo
        (sin borrar) por si hace falta revertir este cambio. -->
-  <script src="dist/bundle-head.js?v=2026.18" defer></script>
+  <script src="dist/bundle-head.js?v=2026.18" defer onerror="sirevaqShowBundleLoadError('bundle-head.js')"></script>
 
   <!-- 🔧 Service Worker Registration (PWA) -->
   <script>
@@ -6113,7 +6136,7 @@
         </div>
         <button type="button"
           class="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-outline-variant/30 shadow-sm text-primary hover:bg-status-error hover:text-white hover:-translate-y-0.5 hover:shadow-md active:scale-95 transition-all cursor-pointer"
-          onclick="document.getElementById('modalUploadCSV').classList.remove('show'); window.resetCsvUploadModal();">
+          onclick="document.getElementById('modalUploadCSV').classList.remove('show'); if (typeof window.resetCsvUploadModal === 'function') { window.resetCsvUploadModal(); } else { sirevaqShowBundleLoadError('bundle-body.js'); }">
           <span class="material-symbols-rounded text-[18px]">close</span>
         </button>
       </div>
@@ -6206,7 +6229,7 @@
             </div>
             <button
               class="flex-shrink-0 text-[11px] font-bold text-error bg-error/10 px-3 py-1 rounded-full border-none cursor-pointer hover:bg-error/20"
-              onclick="window.resetCsvUploadModal();">Quitar</button>
+              onclick="if (typeof window.resetCsvUploadModal === 'function') { window.resetCsvUploadModal(); } else { sirevaqShowBundleLoadError('bundle-body.js'); }">Quitar</button>
           </div>
 
           <div id="csvFileListBadges" class="flex flex-wrap gap-1.5" style="display:none;"></div>
@@ -6320,7 +6343,7 @@
       <div class="p-6 bg-surface-variant/20 border-t border-outline-variant/20 flex justify-end gap-3">
         <button type="button"
           class="h-10 px-5 rounded-full bg-surface border border-outline-variant/50 text-[12px] font-bold text-primary hover:bg-surface-variant transition-colors cursor-pointer"
-          onclick="document.getElementById('modalUploadCSV').classList.remove('show'); window.resetCsvUploadModal();">Cancelar</button>
+          onclick="document.getElementById('modalUploadCSV').classList.remove('show'); if (typeof window.resetCsvUploadModal === 'function') { window.resetCsvUploadModal(); } else { sirevaqShowBundleLoadError('bundle-body.js'); }">Cancelar</button>
         <button type="button" id="btnConfirmUploadCSV"
           class="h-10 px-6 rounded-full bg-primary text-primary-on text-[12px] font-bold shadow-sm transition-all hover:translate-y-[-1px] hover:shadow-md cursor-pointer border-none flex items-center gap-2 opacity-50 pointer-events-none">
           <span class="material-symbols-rounded text-[18px]">check_circle</span>
@@ -7959,7 +7982,7 @@
 
   <!-- Empaquetado: bundle-body.js = rda_calculator + rda_parser + param_calculator
        + rda_ui, en ese mismo orden. Generado por build-bundle.js. -->
-  <script src="dist/bundle-body.js?v=2026.22" defer></script>
+  <script src="dist/bundle-body.js?v=2026.22" defer onerror="sirevaqShowBundleLoadError('bundle-body.js')"></script>
 
   <!-- FEEDBACK FAB & MODAL -->
   <style>
