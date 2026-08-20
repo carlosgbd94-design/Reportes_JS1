@@ -9789,6 +9789,11 @@ window.addSRRow = function (data = null) {
 
   // 💉 Fecha de apertura del frasco (si viene de una captura previa/edición)
   tr.dataset.fechaApertura = data?.fecha_apertura || "";
+  // Última cantidad guardada para esta fila (mismo lote+entrada) — permite detectar si
+  // un nuevo decimal corresponde a un frasco físico distinto al ya rastreado
+  // (ver looksLikeNewVialOpening: p.ej. 1.6 -> 0.8 significa que se abrió un frasco
+  // sellado nuevo, no que el mismo frasco abierto se siguió vaciando).
+  tr.dataset.prevCantidad = (data && data.cantidad != null) ? String(data.cantidad) : "";
 
   tbody.appendChild(tr);
 
@@ -9809,6 +9814,31 @@ window.addSRRow = function (data = null) {
   window.renderAperturaBadge(tr);
 }
 
+// 💉 Detecta si el decimal capturado corresponde a un frasco FÍSICO DISTINTO al que ya
+// se venía rastreando para esta fila (mismo lote+entrada), comparando contra la última
+// cantidad guardada. El sistema no serializa frascos individuales (solo cuenta dosis
+// agregadas por lote+entrada), así que es una inferencia, no una certeza — pero es la
+// única señal matemáticamente confiable sin rediseñar el modelo de datos: si la FRACCIÓN
+// abierta (parte decimal) subió respecto a la última captura, es imposible que sea el
+// mismo frasco vaciándose (las dosis solo bajan) -> tiene que ser un frasco distinto.
+// (Ojo: NO basta con que bajen los frascos sellados — eso también pasa cuando se
+// consume un sellado completo en la semana sin tocar el que ya estaba abierto, p.ej.
+// 2.6 -> 1.6 sigue siendo el mismo frasco abierto con 0.6 sin cambios.)
+// Si la fracción se mantiene o baja, es consistente con que el mismo frasco abierto
+// se sigue consumiendo (ej. 0.6 -> 0.3), y la fecha de apertura ya capturada sigue válida.
+function looksLikeNewVialOpening(prevCantidadStr, currCantidad) {
+  if (prevCantidadStr === "" || prevCantidadStr == null || isNaN(currCantidad)) return false;
+  const prevCantidad = Number(prevCantidadStr);
+  if (isNaN(prevCantidad)) return false;
+
+  const prevFrac = +(prevCantidad - Math.floor(prevCantidad)).toFixed(4);
+  const currFrac = +(currCantidad - Math.floor(currCantidad)).toFixed(4);
+
+  const EPS = 0.001;
+  return currFrac > prevFrac + EPS;
+}
+window.looksLikeNewVialOpening = looksLikeNewVialOpening;
+
 // 💉 Actualiza en vivo el estado/badge de apertura de la fila SIN abrir el modal
 // (se llama en cada blur del input o cambio de biológico). La captura real de la
 // fecha se resuelve en un solo paso al guardar (ver openAperturaBatchModal),
@@ -9821,7 +9851,14 @@ window.updateAperturaState = function (tr) {
   const cant = cantEl ? cantEl.value : "";
   const hasDecimal = cant !== "" && !isNaN(Number(cant)) && Number(cant) % 1 !== 0;
   const requiresApertura = hasDecimal && window.VACCINES_REQUIRE_APERTURA.includes(bio);
-  if (!requiresApertura) tr.dataset.fechaApertura = "";
+
+  if (!requiresApertura) {
+    tr.dataset.fechaApertura = "";
+  } else if (tr.dataset.fechaApertura && looksLikeNewVialOpening(tr.dataset.prevCantidad, Number(cant))) {
+    // La fecha que ya teníamos no corresponde al frasco que hay ahora — se limpia para
+    // que el flujo normal (badge "falta fecha" + modal al guardar/clic) pida una nueva.
+    tr.dataset.fechaApertura = "";
+  }
   window.renderAperturaBadge(tr);
 };
 
@@ -14033,6 +14070,7 @@ window.addEventListener('resize', () => {
   syncTabGroupIndicator('#panelUnidadOpsTabs .nav-container');
   syncTabGroupIndicator('#panelAdminSecurityTabs .nav-container');
   syncTabGroupIndicator('#desktopCaptureTabs');
+  syncTabGroupIndicator('#concVistaTabs');
 });
 
 /**
@@ -14213,6 +14251,7 @@ window.activateOpsTab = function (tab) {
       "CAPTURE": "tabOPS_CAPTURE",
       "HISTORY": "tabOPS_HISTORY",
       "RDA": "tabOPS_RDA",
+      "CONCENTRADO": "tabOPS_CONCENTRADO",
       "PINOL": "tabOPS_PINOL",
       "INFLUENZA": "tabOPS_INFLUENZA",
       "LOTES": "tabLOTES",
@@ -14237,6 +14276,7 @@ window.activateOpsTab = function (tab) {
     "CAPTURE": "panelCaptureSummary",
     "HISTORY": "panelHISTORY",
     "RDA": "rdaDashboardOverlay",
+    "CONCENTRADO": "panelCONCENTRADO",
     "PINOL": "panelPINOLADMIN",
     "INFLUENZA": "panelINFLUENZAADMIN",
     "LOTES": "panelLOTES",
@@ -14330,6 +14370,9 @@ window.activateOpsTab = function (tab) {
   if (tab === "RDA") {
     if (typeof resetRDAEsquemaToBasico === 'function') resetRDAEsquemaToBasico();
     if (typeof loadAndRender === 'function') loadAndRender();
+  }
+  if (tab === "CONCENTRADO") {
+    if (typeof initConcentradoPanel === 'function') initConcentradoPanel();
   }
   if (tab === "LOTES") {
     if (typeof activateLotesAdmin === 'function') activateLotesAdmin();
@@ -14768,7 +14811,11 @@ async function performSaveSR() {
   // 💉 Revisión en lote de frascos multidosis abiertos sin fecha de apertura (un solo modal)
   const pendingAperturaRows = [];
   document.querySelectorAll("#srCaptureTbody tr").forEach((tr) => {
-    if (!tr._pendingSaveItem || tr.dataset.fechaApertura) return;
+    if (!tr._pendingSaveItem) return;
+    // Refresca por si el blur no alcanzó a disparar (defensivo): también detecta aquí
+    // si el decimal actual corresponde a un frasco distinto al ya rastreado.
+    window.updateAperturaState(tr);
+    if (tr.dataset.fechaApertura) return;
     const row = tr._cache || {};
     const bio = (row.bioSelect || tr.querySelector(".sr-bio-select"))?.value || "";
     const lote = (row.loteSelect || tr.querySelector(".sr-lote-select"))?.value || "";
@@ -16089,7 +16136,7 @@ async function loadCapacitacionesAdmin() {
     
     const [capRes, evRes] = await Promise.all([
       supabase.from("capacitaciones").select("*").order("created_at", { ascending: false }),
-      supabase.from("archivos_drive").select("capacitacion, clues_id").not("capacitacion", "is", null)
+      supabase.rpc("get_capacitaciones_evidencia_stats")
     ]);
 
     if (capRes.error) throw capRes.error;
@@ -16100,16 +16147,15 @@ async function loadCapacitacionesAdmin() {
       return;
     }
 
-    // Calcular unidades únicas que han subido evidencia por cada capacitación
+    if (evRes.error) console.warn("No se pudo cargar el conteo de evidencias por capacitación:", evRes.error);
+
+    // Unidades únicas que han subido evidencia por cada capacitación (agregado en SQL,
+    // vía get_capacitaciones_evidencia_stats -- reemplaza a la tabla "archivos_drive"
+    // que nunca se migró de Google Drive a Supabase; ahora las evidencias viven en R2).
     const capUnitsMap = {};
-    if (evRes.data) {
-      evRes.data.forEach(item => {
-        if (!item.capacitacion) return;
-        const cName = item.capacitacion;
-        if (!capUnitsMap[cName]) capUnitsMap[cName] = new Set();
-        if (item.clues_id) capUnitsMap[cName].add(item.clues_id);
-      });
-    }
+    (evRes.data || []).forEach(row => {
+      capUnitsMap[row.capacitacion] = Number(row.unidades_count) || 0;
+    });
 
     const now = new Date();
 
@@ -16118,7 +16164,7 @@ async function loadCapacitacionesAdmin() {
       const limitDate = new Date(evDate.getTime() + 30 * 24 * 60 * 60 * 1000);
       const isExpired = now > limitDate;
 
-      const unitsCount = capUnitsMap[c.nombre] ? capUnitsMap[c.nombre].size : 0;
+      const unitsCount = capUnitsMap[c.nombre] || 0;
 
       const statusBadge = c.activo 
         ? '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100/80 text-emerald-700">Activo</span>'
@@ -16178,12 +16224,16 @@ window.downloadCapacitacionZip = async function (capacitacionNombre) {
   const cleanName = capacitacionNombre.replace(/_/g, ' ');
   try {
     showOverlay(`Buscando archivos de "${cleanName}"...`, "Preparando descarga");
-    const { data: files, error } = await supabase
-      .from("archivos_drive")
-      .select("*")
-      .eq("capacitacion", capacitacionNombre);
+    // Evidencias reales viven en R2 (r2_objects) + Supabase Storage, no en la tabla
+    // "archivos_drive" (nunca migrada de Google Drive). p_max_rows alto para no truncar
+    // capacitaciones con muchas unidades reportando evidencia.
+    const { data: allFiles, error } = await supabase
+      .rpc("get_evidences_list_by_category", { category_name: "Evidencia_de_capacitaciones", p_max_rows: 5000 });
 
     if (error) throw error;
+
+    const prefix = `Evidencia_de_capacitaciones/${capacitacionNombre}/`;
+    const files = (allFiles || []).filter(f => String(f.name || "").startsWith(prefix));
 
     if (!files || files.length === 0) {
       hideOverlay();

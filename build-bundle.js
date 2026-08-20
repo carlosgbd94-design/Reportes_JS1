@@ -36,6 +36,7 @@ const GROUP_BODY = [
   'jeringas_calculator.js',
   'auditoria_console.js',
   'rda_ui.js',
+  'concentrado_ui.js',
 ];
 
 function concatGroup(files) {

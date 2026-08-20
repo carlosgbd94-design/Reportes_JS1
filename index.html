@@ -301,7 +301,7 @@
        (ensurePdfAssetsLoaded) solo al exportar el PDF de Resguardo.
        Generado por build-bundle.js. Los archivos originales siguen en el repo
        (sin borrar) por si hace falta revertir este cambio. -->
-  <script src="dist/bundle-head.js?v=2026.17" defer></script>
+  <script src="dist/bundle-head.js?v=2026.18" defer></script>
 
   <!-- 🔧 Service Worker Registration (PWA) -->
   <script>
@@ -1957,6 +1957,13 @@
             <span>Indicadores RDA</span>
           </button>
 
+          <button class="nav-tab" id="tabOPS_CONCENTRADO"
+            data-role-gate="ADMIN,JURISDICCIONAL,VISUALIZADOR_JURISDICCIONAL"
+            onclick="activateOpsTab('CONCENTRADO')">
+            <span class="material-symbols-rounded">table_chart</span>
+            <span>Concentrado</span>
+          </button>
+
           <button class="nav-tab" id="tabOPS_INFLUENZA" data-role-gate="ADMIN,MUNICIPAL,JURISDICCIONAL"
             onclick="activateOpsTab('INFLUENZA')">
             <span class="material-symbols-rounded">clinical_notes</span>
@@ -2540,6 +2547,144 @@
           </table>
         </div>
 
+      </div>
+
+      <!-- CONCENTRADO DE APLICACIONES (ADMIN/JURISDICCIONAL/VISUALIZADOR_JURISDICCIONAL) -->
+      <div id="panelCONCENTRADO" data-role-gate="ADMIN,JURISDICCIONAL,VISUALIZADOR_JURISDICCIONAL" style="display:none"
+        class="bg-surface rounded-[32px] p-8 border border-outline-variant/30 shadow-[0_12px_24px_rgba(0,51,102,0.05)] mb-8 overflow-hidden">
+
+        <div class="flex items-center justify-between pb-4 border-b border-outline-variant/30 mb-6">
+          <h3 class="text-lg font-extrabold text-primary m-0 tracking-tight flex items-center gap-2">
+            <span class="material-symbols-rounded">table_chart</span>
+            Concentrado de Aplicaciones
+          </h3>
+          <div class="flex items-center gap-2">
+            <button class="premium-refresh-btn has-text" id="btnRefreshConcentrado" title="Actualizar datos">
+              <span class="material-symbols-rounded">refresh</span> Actualizar
+            </button>
+            <button class="premium-refresh-btn has-text" id="btnExportConcentrado" title="Exportar a Excel">
+              <span class="material-symbols-rounded">download</span> Exportar Excel
+            </button>
+          </div>
+        </div>
+
+        <div class="hint">
+          Suma de todas las aplicaciones de biológicos capturadas en el SIS por unidad, con total municipal y
+          jurisdiccional. Alterna entre ver los totales agrupados por biológico o desglosados por clave SIS.
+        </div>
+
+        <!-- Toggle de vista + búsqueda rápida, en una sola fila -- la búsqueda es compacta,
+             no ocupa el ancho completo. -->
+        <div class="w-full mt-4 mb-2 flex flex-wrap items-center justify-between gap-3">
+          <div class="nav-container relative" id="concVistaTabs">
+            <div id="concVistaTabIndicator" class="nav-indicator nav-indicator-premium"></div>
+            <button id="concTabBiologico" class="nav-tab active">
+              <span class="material-symbols-rounded">category</span>
+              <span>Por biológico</span>
+            </button>
+            <button id="concTabClave" class="nav-tab">
+              <span class="material-symbols-rounded">key</span>
+              <span>Por clave SIS</span>
+            </button>
+          </div>
+
+          <div style="max-width: 320px;"
+            class="relative flex items-center h-[40px] w-full bg-surface border border-slate-200/80 rounded-xl px-3 hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 transition-all">
+            <span class="material-symbols-rounded text-slate-400 text-[18px] mr-1.5 pointer-events-none">search</span>
+            <input type="search" id="concSearchUnidad" placeholder="Buscar unidad o CLUES…"
+              class="flex-1 min-w-0 font-bold text-slate-700 text-[13px] bg-transparent"
+              style="border: 0 !important; outline: none !important; box-shadow: none !important; padding: 0 !important; background: transparent !important;">
+            <span id="concSearchCount" class="text-[10px] font-black uppercase tracking-widest text-slate-400 whitespace-nowrap ml-1.5"></span>
+          </div>
+        </div>
+
+        <!-- Barra de filtros de alcance -->
+        <div
+          class="flex flex-row flex-wrap items-center gap-3 mt-2 mb-6 p-2 bg-surface-container/50 backdrop-blur-md border border-slate-200/60 rounded-2xl w-fit"
+          style="position: relative; z-index: 20 !important;">
+          <div class="flex items-center gap-2 px-2">
+            <span class="text-[11px] font-black uppercase tracking-widest text-slate-500">Año:</span>
+            <div
+              class="relative flex items-center h-[36px] bg-surface border border-slate-200/80 rounded-xl px-3 hover:border-primary/40 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 transition-all">
+              <span class="material-symbols-rounded text-slate-400 text-[16px] mr-1.5 pointer-events-none">calendar_month</span>
+              <select id="concFilterAnio"
+                class="font-bold text-slate-700 text-[12px] uppercase cursor-pointer bg-transparent"
+                style="border: 0 !important; outline: none !important; box-shadow: none !important; padding: 0 20px 0 0 !important; background: transparent !important; -webkit-appearance: none; appearance: none; line-height: 1;"></select>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 px-2">
+            <span class="text-[11px] font-black uppercase tracking-widest text-slate-500">Del mes:</span>
+            <div
+              class="relative flex items-center h-[36px] bg-surface border border-slate-200/80 rounded-xl px-3 hover:border-primary/40 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 transition-all">
+              <select id="concFilterMesIni"
+                class="font-bold text-slate-700 text-[12px] uppercase cursor-pointer bg-transparent"
+                style="border: 0 !important; outline: none !important; box-shadow: none !important; padding: 0 20px 0 0 !important; background: transparent !important; -webkit-appearance: none; appearance: none; line-height: 1;"></select>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 px-2">
+            <span class="text-[11px] font-black uppercase tracking-widest text-slate-500">Al mes:</span>
+            <div
+              class="relative flex items-center h-[36px] bg-surface border border-slate-200/80 rounded-xl px-3 hover:border-primary/40 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 transition-all">
+              <select id="concFilterMesFin"
+                class="font-bold text-slate-700 text-[12px] uppercase cursor-pointer bg-transparent"
+                style="border: 0 !important; outline: none !important; box-shadow: none !important; padding: 0 20px 0 0 !important; background: transparent !important; -webkit-appearance: none; appearance: none; line-height: 1;"></select>
+            </div>
+          </div>
+          <div class="h-5 w-[1px] bg-slate-200"></div>
+          <div class="flex items-center gap-2 px-2">
+            <span class="text-[11px] font-black uppercase tracking-widest text-slate-500">Municipio:</span>
+            <div
+              class="relative flex items-center h-[36px] bg-surface border border-slate-200/80 rounded-xl px-3 hover:border-primary/40 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 transition-all">
+              <span class="material-symbols-rounded text-slate-400 text-[16px] mr-1.5 pointer-events-none">location_on</span>
+              <select id="concFilterMunicipio"
+                class="font-bold text-slate-700 text-[12px] uppercase cursor-pointer bg-transparent"
+                style="min-width:160px; border: 0 !important; outline: none !important; box-shadow: none !important; padding: 0 20px 0 0 !important; background: transparent !important; -webkit-appearance: none; appearance: none; line-height: 1;"></select>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPIs resumen -->
+        <div class="dashboardKpis mt-4">
+          <div class="kpiCard info">
+            <div class="kpiHeader">
+              <div class="kpiCardLabel">Total de Aplicaciones</div>
+              <div class="kpiIcon"><span class="material-symbols-rounded">vaccines</span></div>
+            </div>
+            <div class="kpiCardValue" id="concKpiTotal">0</div>
+          </div>
+          <div class="kpiCard ok">
+            <div class="kpiHeader">
+              <div class="kpiCardLabel">Unidades con Registro</div>
+              <div class="kpiIcon"><span class="material-symbols-rounded">domain</span></div>
+            </div>
+            <div class="kpiCardValue" id="concKpiUnidades">0 / 0</div>
+          </div>
+          <div class="kpiCard warn">
+            <div class="kpiHeader">
+              <div class="kpiCardLabel">Biológico Principal</div>
+              <div class="kpiIcon"><span class="material-symbols-rounded">star</span></div>
+            </div>
+            <div class="kpiCardValue" id="concKpiPrincipal" style="font-size:16px;">—</div>
+          </div>
+        </div>
+
+        <!-- Tabla de concentrado: encabezado fijo + primeras 3 columnas fijas al hacer
+             scroll horizontal, para no perder de vista qué unidad se está viendo entre
+             las ~17 columnas de biológico. -->
+        <div class="tableWrap mt-8 w-full rounded-2xl border border-outline-variant/30 shadow-sm overflow-auto" style="max-height: 68vh;">
+          <table class="w-full text-left border-collapse min-w-[900px] leaderboard-table">
+            <thead id="concThead">
+              <tr>
+                <th class="p-4 text-center" colspan="4">Cargando…</th>
+              </tr>
+            </thead>
+            <tbody id="concTbody" class="bg-surface text-[13px] font-medium">
+              <tr>
+                <td colspan="4" class="p-6 text-center text-surface-onVariant/60">Selecciona la pestaña "Concentrado" para cargar los datos.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- META LOGRO INFLUENZA ADMIN/MUNICIPAL -->
@@ -7162,83 +7307,6 @@
   </div>
   </div>
 
-  <!-- ? MODAL CONFIRMACION DESABASTO -->
-  <div class="modalOverlay" id="desabastoConfirmModal">
-    <div class="modal"
-      style="width: 100%; max-width: 480px; transform: translateY(20px); opacity: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
-      <div class="modalHead">
-        <div class="modalEyebrow"
-          style="background: #fef2f2; color: #dc2626; padding: 6px 14px; border-radius: 12px; display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 11px; text-transform: uppercase; margin-bottom: 12px;">
-          <span class="material-symbols-rounded" style="font-size:16px;">error</span> Alerta de Desabasto
-        </div>
-        <div class="modalTitle" style="font-weight:900; margin-bottom:8px;">Faltan biológicos esenciales</div>
-        <div class="modalSub" style="color:var(--md-sys-color-on-surface-variant); line-height:1.5;">
-          No reportas existencia de los siguientes biológicos:
-        </div>
-      </div>
-      <div class="modalBody" style="padding-top:16px;">
-        <div id="desabastoList" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;">
-          <!-- Chips renderizados dinámicamente -->
-        </div>
-        <div class="modalNote" style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a;">
-          <span class="material-symbols-rounded" style="font-size:18px;">info</span>
-          <div>¿Deseas continuar? Esto enviará una alerta a tu supervisor municipal para notificar el desabasto.</div>
-        </div>
-      </div>
-      <div class="modalFooter" style="margin-top:32px; display:flex; justify-content:flex-end; gap:12px;">
-        <button class="ghostBtn" type="button" onclick="closeDesabastoModal()"
-          style="font-weight:700;">
-          Regresar a Corregir
-        </button>
-        <button class="btn" id="btnConfirmDesabasto" type="button"
-          style="background: var(--md-sys-color-error); color: var(--md-sys-color-on-error); font-weight:800;">
-          Sí, Continuar
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ⚙️ PANTALLA DE CARGA DE COMPRESIÓN DE PDF -->
-  <div class="overlay" id="pdfCompressionOverlay"
-    style="display: none; background: rgba(3, 8, 18, 0.4) !important; z-index: 12000; align-items: center; justify-content: center; position: fixed; inset: 0;">
-    <div class="modal"
-      style="max-width: 420px; background: var(--md-sys-color-surface); border-radius: 28px; box-shadow: var(--md-shadow-5); overflow: hidden; padding: 32px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 24px;">
-      <div class="modalEyebrow"
-        style="color: #d97706; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 8px;">
-        <span class="material-symbols-rounded" style="font-size: 18px; color: #d97706;">settings_suggest</span>
-        Optimizador de PDF
-      </div>
-
-      <div class="elastic-bounce-container" style="margin-bottom: 8px;">
-        <img src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png"
-          alt="Procesando..." class="bounce-logo" style="filter: drop-shadow(0 0 10px rgba(217, 119, 6, 0.4));">
-      </div>
-
-      <div style="width: 100%;">
-        <div id="pdfCompressTitle"
-          style="font-weight: 900; font-size: 20px; color: var(--md-sys-color-on-surface); margin-bottom: 8px;">
-          Comprimiendo PDF...</div>
-        <div id="pdfCompressSub"
-          style="color: var(--md-sys-color-on-surface-variant); font-size: 13px; line-height: 1.5; margin-bottom: 20px;">
-          Renderizando páginas en alta resolución y optimizando imágenes.</div>
-
-        <!-- Bar/Progress -->
-        <div
-          style="width: 100%; height: 8px; background: var(--md-sys-color-outline-variant); border-radius: 100px; overflow: hidden; position: relative; margin-bottom: 12px;">
-          <div id="pdfCompressProgressBar"
-            style="width: 0%; height: 100%; background: linear-gradient(90deg, #d97706 0%, #f59e0b 100%); border-radius: 100px; transition: width 0.2s ease-out;">
-          </div>
-        </div>
-
-        <div
-          style="display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 13px; font-weight: 700;">
-          <span id="pdfCompressStatusText" style="color: var(--md-sys-color-on-surface-variant);">Preparando...</span>
-          <span id="pdfCompressPercent" style="color: #d97706; font-size: 15px; font-weight: 900;">0%</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="appFooter">
     &copy; <span id="footerYear">2026</span> SIREVAQ | Desarrollado por <a href="mailto:carlosgbd94@gmail.com"
       style="color:inherit;text-decoration:underline;">carlosgbd94@gmail.com</a>
@@ -7889,7 +7957,7 @@
 
   <!-- Empaquetado: bundle-body.js = rda_calculator + rda_parser + param_calculator
        + rda_ui, en ese mismo orden. Generado por build-bundle.js. -->
-  <script src="dist/bundle-body.js?v=2026.13" defer></script>
+  <script src="dist/bundle-body.js?v=2026.21" defer></script>
 
   <!-- FEEDBACK FAB & MODAL -->
   <style>
