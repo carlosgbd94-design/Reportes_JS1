@@ -768,6 +768,10 @@
 
         // 💉 Fecha de apertura del frasco (si viene de una captura previa)
         card.dataset.fechaApertura = data?.fecha_apertura || "";
+        // Última cantidad guardada para esta tarjeta (mismo lote+entrada) — permite
+        // detectar si un nuevo decimal corresponde a un frasco físico distinto
+        // (ver looksLikeNewVialOpening en el bloque de apertura de frascos).
+        card.dataset.prevCantidad = (data && data.cantidad != null) ? String(data.cantidad) : "";
 
         qtyInput.addEventListener('input', (e) => {
             let val = e.target.value;
@@ -2448,6 +2452,28 @@
             : "";
     };
 
+    // 💉 Detecta si el decimal capturado corresponde a un frasco FÍSICO DISTINTO al que ya
+    // se venía rastreando para esta tarjeta (mismo lote+entrada), comparando contra la
+    // última cantidad guardada. No hay serie/folio por frasco (solo dosis agregadas por
+    // lote+entrada), así que es una inferencia — pero la única matemáticamente confiable:
+    // si la FRACCIÓN abierta subió respecto a la última captura, es imposible que sea el
+    // mismo frasco vaciándose (las dosis solo bajan) -> tiene que ser un frasco distinto.
+    // (Ojo: NO basta con que bajen los frascos sellados — eso también pasa al consumir un
+    // sellado completo en la semana sin tocar el que ya estaba abierto, p.ej. 2.6 -> 1.6
+    // sigue siendo el mismo frasco abierto con 0.6 sin cambios.)
+    // Si la fracción se mantiene o baja, es el mismo frasco siguiéndose consumiendo (0.6 -> 0.3).
+    const looksLikeNewVialOpening = (prevCantidadStr, currCantidad) => {
+        if (prevCantidadStr === "" || prevCantidadStr == null || isNaN(currCantidad)) return false;
+        const prevCantidad = Number(prevCantidadStr);
+        if (isNaN(prevCantidad)) return false;
+
+        const prevFrac = +(prevCantidad - Math.floor(prevCantidad)).toFixed(4);
+        const currFrac = +(currCantidad - Math.floor(currCantidad)).toFixed(4);
+
+        const EPS = 0.001;
+        return currFrac > prevFrac + EPS;
+    };
+
     // 💉 Actualiza en vivo el estado/badge de apertura de la tarjeta SIN abrir el modal
     // (se llama en cada blur del input o cambio de biológico). La captura real de la
     // fecha se resuelve en un solo paso al guardar (ver openAperturaBatchModal),
@@ -2460,7 +2486,12 @@
         const cant = qtyInput ? qtyInput.value : "";
         const hasDecimal = cant !== "" && !isNaN(Number(cant)) && Number(cant) % 1 !== 0;
         const requiresApertura = hasDecimal && VACCINES_REQUIRE_APERTURA.includes(bio);
-        if (!requiresApertura) card.dataset.fechaApertura = "";
+
+        if (!requiresApertura) {
+            card.dataset.fechaApertura = "";
+        } else if (card.dataset.fechaApertura && looksLikeNewVialOpening(card.dataset.prevCantidad, Number(cant))) {
+            card.dataset.fechaApertura = "";
+        }
         renderAperturaBadge(card);
     };
 
@@ -2697,7 +2728,11 @@
                 // 💉 Revisión en lote de frascos multidosis abiertos sin fecha de apertura (un solo modal)
                 const pendingAperturaCards = [];
                 cards.forEach((card) => {
-                    if (!card._pendingSaveItem || card.dataset.fechaApertura) return;
+                    if (!card._pendingSaveItem) return;
+                    // Refresca por si el blur no alcanzó a disparar (defensivo): también
+                    // detecta aquí si el decimal actual corresponde a un frasco distinto.
+                    updateAperturaState(card);
+                    if (card.dataset.fechaApertura) return;
                     const bioSelect = card.querySelector('[data-field="biologico"]');
                     const loteSelect = card.querySelector('[data-field="lote"]');
                     const qtyInput = card.querySelector('[data-field="cantidad"]');
