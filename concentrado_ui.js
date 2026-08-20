@@ -489,7 +489,12 @@
     }
 
     const munisVisibles = _state.municipio ? [_state.municipio] : municipiosVisibles_();
-    const mostrarTotalJurisdiccional = !_state.municipio && munisVisibles.length > 1;
+    // Con una búsqueda activa, la tabla ya no representa "todas las unidades del
+    // municipio/jurisdicción" sino solo las que coinciden con el texto -- una fila de
+    // TOTAL MUNICIPAL/JURISDICCIONAL en ese contexto es engañosa (parece un total real
+    // cuando es apenas la suma de los resultados filtrados), así que se ocultan.
+    const mostrarTotalMunicipal = !_state.busqueda;
+    const mostrarTotalJurisdiccional = !_state.busqueda && !_state.municipio && munisVisibles.length > 1;
 
     // Devuelve el atributo class+style COMPLETO de una celda pegada (sticky) -- se usa tal
     // cual en el <td>, no se concatena a medias con otro class="" (evita comillas rotas).
@@ -523,11 +528,13 @@
         subtotalGeneral += agg.totalGeneral;
       });
 
-      filasHtml += `<tr class="bg-primary/5 font-extrabold">
-        <td class="p-4 sticky left-0 z-10 bg-primary/5" colspan="3" style="width:${stickyLeftAll}px; min-width:${stickyLeftAll}px;">TOTAL MUNICIPAL — ${muni.charAt(0) + muni.slice(1).toLowerCase()}</td>
-        ${cols.map(c => `<td class="p-4 text-center">${(subtotalesPorCol[c.key] || 0).toLocaleString('es-MX')}</td>`).join('')}
-        <td class="p-4 text-center">${subtotalGeneral.toLocaleString('es-MX')}</td>
-      </tr>`;
+      if (mostrarTotalMunicipal) {
+        filasHtml += `<tr class="bg-primary/5 font-extrabold">
+          <td class="p-4 sticky left-0 z-10 bg-primary/5" colspan="3" style="width:${stickyLeftAll}px; min-width:${stickyLeftAll}px;">TOTAL MUNICIPAL — ${muni.charAt(0) + muni.slice(1).toLowerCase()}</td>
+          ${cols.map(c => `<td class="p-4 text-center">${(subtotalesPorCol[c.key] || 0).toLocaleString('es-MX')}</td>`).join('')}
+          <td class="p-4 text-center">${subtotalGeneral.toLocaleString('es-MX')}</td>
+        </tr>`;
+      }
     });
 
     if (mostrarTotalJurisdiccional) {
@@ -587,7 +594,12 @@
     const scopeAgg = computeScopeAggregate_(unidadesFiltradas);
     const cols = columnasActivas_(scopeAgg);
     const munisVisibles = _state.municipio ? [_state.municipio] : municipiosVisibles_();
-    const mostrarTotalJurisdiccional = !_state.municipio && munisVisibles.length > 1;
+    // Con una búsqueda activa, la tabla ya no representa "todas las unidades del
+    // municipio/jurisdicción" sino solo las que coinciden con el texto -- una fila de
+    // TOTAL MUNICIPAL/JURISDICCIONAL en ese contexto es engañosa (parece un total real
+    // cuando es apenas la suma de los resultados filtrados), así que se ocultan.
+    const mostrarTotalMunicipal = !_state.busqueda;
+    const mostrarTotalJurisdiccional = !_state.busqueda && !_state.municipio && munisVisibles.length > 1;
 
     if (cols.length === 0) {
       if (window.showToast) window.showToast('No hay aplicaciones registradas en este filtro para exportar.', false, 'bad');
@@ -672,27 +684,29 @@
         rowCursor++;
       });
 
-      const muniEndRow = rowCursor - 1;
-      const subtotalRow = ws.getRow(rowCursor);
-      ws.mergeCells(rowCursor, 1, rowCursor, 3);
-      subtotalRow.getCell(1).value = `TOTAL MUNICIPAL — ${muni.charAt(0) + muni.slice(1).toLowerCase()}`;
-      cols.forEach((c, i) => {
-        const colLetter = ws.getColumn(4 + i).letter;
-        subtotalRow.getCell(4 + i).value = { formula: `SUM(${colLetter}${muniStartRow}:${colLetter}${muniEndRow})` };
-      });
-      const totalColIdx = 4 + cols.length;
-      const totalColLetter = ws.getColumn(totalColIdx).letter;
-      subtotalRow.getCell(totalColIdx).value = { formula: `SUM(${totalColLetter}${muniStartRow}:${totalColLetter}${muniEndRow})` };
+      if (mostrarTotalMunicipal) {
+        const muniEndRow = rowCursor - 1;
+        const subtotalRow = ws.getRow(rowCursor);
+        ws.mergeCells(rowCursor, 1, rowCursor, 3);
+        subtotalRow.getCell(1).value = `TOTAL MUNICIPAL — ${muni.charAt(0) + muni.slice(1).toLowerCase()}`;
+        cols.forEach((c, i) => {
+          const colLetter = ws.getColumn(4 + i).letter;
+          subtotalRow.getCell(4 + i).value = { formula: `SUM(${colLetter}${muniStartRow}:${colLetter}${muniEndRow})` };
+        });
+        const totalColIdx = 4 + cols.length;
+        const totalColLetter = ws.getColumn(totalColIdx).letter;
+        subtotalRow.getCell(totalColIdx).value = { formula: `SUM(${totalColLetter}${muniStartRow}:${totalColLetter}${muniEndRow})` };
 
-      subtotalRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-        cell.font = { name: 'Arial Nova', size: 9, bold: true };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F3FF' } };
-        cell.border = borderThin;
-        if (colNumber >= 4) { cell.alignment = { horizontal: 'center', vertical: 'middle' }; cell.numFmt = '#,##0'; }
-      });
+        subtotalRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+          cell.font = { name: 'Arial Nova', size: 9, bold: true };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F3FF' } };
+          cell.border = borderThin;
+          if (colNumber >= 4) { cell.alignment = { horizontal: 'center', vertical: 'middle' }; cell.numFmt = '#,##0'; }
+        });
 
-      jurisRowIdxs.push(rowCursor);
-      rowCursor++;
+        jurisRowIdxs.push(rowCursor);
+        rowCursor++;
+      }
     });
 
     if (mostrarTotalJurisdiccional && jurisRowIdxs.length > 0) {

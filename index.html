@@ -2573,9 +2573,8 @@
           jurisdiccional. Alterna entre ver los totales agrupados por biológico o desglosados por clave SIS.
         </div>
 
-        <!-- Toggle de vista + búsqueda rápida, en una sola fila -- la búsqueda es compacta,
-             no ocupa el ancho completo. -->
-        <div class="w-full mt-4 mb-2 flex flex-wrap items-center justify-between gap-3">
+        <!-- Toggle de vista: Por biológico / Por clave SIS -->
+        <div class="w-full mt-4 mb-2 flex flex-wrap items-center justify-start gap-3">
           <div class="nav-container relative" id="concVistaTabs">
             <div id="concVistaTabIndicator" class="nav-indicator nav-indicator-premium"></div>
             <button id="concTabBiologico" class="nav-tab active">
@@ -2587,18 +2586,9 @@
               <span>Por clave SIS</span>
             </button>
           </div>
-
-          <div style="max-width: 320px;"
-            class="relative flex items-center h-[40px] w-full bg-surface border border-slate-200/80 rounded-xl px-3 hover:border-primary/50 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 transition-all">
-            <span class="material-symbols-rounded text-slate-400 text-[18px] mr-1.5 pointer-events-none">search</span>
-            <input type="search" id="concSearchUnidad" placeholder="Buscar unidad o CLUES…"
-              class="flex-1 min-w-0 font-bold text-slate-700 text-[13px] bg-transparent"
-              style="border: 0 !important; outline: none !important; box-shadow: none !important; padding: 0 !important; background: transparent !important;">
-            <span id="concSearchCount" class="text-[10px] font-black uppercase tracking-widest text-slate-400 whitespace-nowrap ml-1.5"></span>
-          </div>
         </div>
 
-        <!-- Barra de filtros de alcance -->
+        <!-- Barra de filtros de alcance + búsqueda, todo en la misma fila -->
         <div
           class="flex flex-row flex-wrap items-center gap-3 mt-2 mb-6 p-2 bg-surface-container/50 backdrop-blur-md border border-slate-200/60 rounded-2xl w-fit"
           style="position: relative; z-index: 20 !important;">
@@ -2640,6 +2630,18 @@
                 class="font-bold text-slate-700 text-[12px] uppercase cursor-pointer bg-transparent"
                 style="min-width:160px; border: 0 !important; outline: none !important; box-shadow: none !important; padding: 0 20px 0 0 !important; background: transparent !important; -webkit-appearance: none; appearance: none; line-height: 1;"></select>
             </div>
+          </div>
+          <div class="h-5 w-[1px] bg-slate-200"></div>
+          <div class="flex items-center gap-2 px-2">
+            <span class="text-[11px] font-black uppercase tracking-widest text-slate-500">Buscar:</span>
+            <div style="min-width: 220px;"
+              class="relative flex items-center h-[36px] bg-surface border border-slate-200/80 rounded-xl px-3 hover:border-primary/40 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15 transition-all">
+              <span class="material-symbols-rounded text-slate-400 text-[16px] mr-1.5 pointer-events-none">search</span>
+              <input type="search" id="concSearchUnidad" placeholder="Unidad o CLUES…"
+                class="flex-1 min-w-0 font-bold text-slate-700 text-[12px] bg-transparent"
+                style="border: 0 !important; outline: none !important; box-shadow: none !important; padding: 0 !important; background: transparent !important;">
+            </div>
+            <span id="concSearchCount" class="text-[10px] font-black uppercase tracking-widest text-slate-400 whitespace-nowrap"></span>
           </div>
         </div>
 
@@ -7957,7 +7959,7 @@
 
   <!-- Empaquetado: bundle-body.js = rda_calculator + rda_parser + param_calculator
        + rda_ui, en ese mismo orden. Generado por build-bundle.js. -->
-  <script src="dist/bundle-body.js?v=2026.21" defer></script>
+  <script src="dist/bundle-body.js?v=2026.22" defer></script>
 
   <!-- FEEDBACK FAB & MODAL -->
   <style>

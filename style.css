@@ -7854,6 +7854,7 @@ input, textarea, select, [contenteditable] {
 .nav-tab.active[onclick*="'SECURITY'"] .material-symbols-rounded { color: #6366f1; }      /* Indigo */
 .nav-tab.active[onclick*="'PARAMS'"] .material-symbols-rounded { color: #14b8a6; }        /* Teal */
 .nav-tab.active[onclick*="'JERINGAS'"] .material-symbols-rounded { color: #16a34a; }      /* Green */
+.nav-tab.active[onclick*="'CONCENTRADO'"] .material-symbols-rounded { color: #9333ea; }   /* Purple (Concentrado de Aplicaciones) */
 
 /* Colores para Subpaneles de Administración */
 .nav-tab.active[onclick*="'aperturas'"] .material-symbols-rounded { color: #10b981; }      /* Emerald */
@@ -8066,6 +8067,7 @@ input, textarea, select, [contenteditable] {
 .nav-tab.active[onclick*="'SECURITY'"] .material-symbols-rounded { color: #6366f1; }      /* Indigo */
 .nav-tab.active[onclick*="'PARAMS'"] .material-symbols-rounded { color: #14b8a6; }        /* Teal */
 .nav-tab.active[onclick*="'JERINGAS'"] .material-symbols-rounded { color: #16a34a; }      /* Green */
+.nav-tab.active[onclick*="'CONCENTRADO'"] .material-symbols-rounded { color: #9333ea; }   /* Purple (Concentrado de Aplicaciones) */
 
 /* Colores para Perfil Unidad (Captura) */
 .nav-tab.active[onclick*="'SR'"] .material-symbols-rounded { color: #0284c7; }   /* Blue (Biológicos) */
