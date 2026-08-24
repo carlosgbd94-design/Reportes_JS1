@@ -10404,75 +10404,6 @@ html body .modern-input-group input[type="date"]:focus,
 .nav-tab.active[onclick*="'jeringas'"] .material-symbols-rounded { color: #16a34a; }      /* Green */
 .nav-tab.active[onclick*="'auditoria'"] .material-symbols-rounded { color: #334155; }     /* Slate */
 
-/* Botón de actualizar Premium (Estandarizado Global) */
-.premium-refresh-btn {
-  position: relative;
-  height: 42px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.4) !important;
-  backdrop-filter: blur(10px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(10px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.6) !important;
-  color: #334155 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 13.5px;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-  overflow: hidden;
-  box-sizing: border-box;
-}
-
-/* Ajustes según si lleva texto o no */
-.premium-refresh-btn:not(.has-text) {
-  width: 42px;
-  padding: 0 !important;
-}
-
-.premium-refresh-btn.has-text {
-  padding: 0 18px !important;
-}
-
-.premium-refresh-btn::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: 0;
-}
-
-.premium-refresh-btn .material-symbols-rounded {
-  position: relative;
-  z-index: 1;
-  font-size: 22px;
-  color: #475569 !important;
-  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-}
-
-.premium-refresh-btn:hover {
-  transform: translateY(-2px) scale(1.05);
-  background: rgba(255, 255, 255, 0.7) !important;
-  border-color: rgba(99, 102, 241, 0.4) !important;
-  color: #6366f1 !important;
-  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
-}
-
-.premium-refresh-btn:hover::before {
-  opacity: 1;
-}
-
-.premium-refresh-btn:hover .material-symbols-rounded {
-  transform: rotate(180deg);
-  
-  
-}
-
 /* Input box global: blindaje anti-autofill de Chrome */
 .modern-input-group {
   border: 2px solid var(--md-sys-color-outline-variant) !important;
@@ -10606,10 +10537,10 @@ html body .modern-input-group input[type="date"]:focus,
   position: relative;
   height: 42px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.4) !important;
+  background: rgba(241, 245, 249, 0.9) !important;
   backdrop-filter: blur(10px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(10px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  border: 1px solid rgba(203, 213, 225, 0.8) !important;
   color: #334155 !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
   cursor: pointer;
@@ -10622,12 +10553,6 @@ html body .modern-input-group input[type="date"]:focus,
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
   overflow: hidden;
   box-sizing: border-box;
-}
-
-/* Ajustes según si lleva texto o no */
-.premium-refresh-btn:not(.has-text) {
-  width: 42px;
-  padding: 0 !important;
 }
 
 .premium-refresh-btn.has-text {
@@ -10652,40 +10577,70 @@ html body .modern-input-group input[type="date"]:focus,
   transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
-.premium-refresh-btn:hover {
-  transform: translateY(-2px) scale(1.05);
-  background: rgba(255, 255, 255, 0.7) !important;
-  border-color: rgba(99, 102, 241, 0.4) !important;
-  color: #6366f1 !important;
-  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+/* Solo dispositivos con hover real (mouse). En touch, :hover se queda "pegado"
+   tras el tap (no hay mouseout que lo limpie), así que el botón se ve encendido
+   en rojo/azul de forma permanente si no se restringe aquí. */
+@media (hover: hover) and (pointer: fine) {
+  .premium-refresh-btn.has-text:hover {
+    transform: translateY(-2px) scale(1.05);
+    background: rgba(255, 255, 255, 0.7) !important;
+    border-color: rgba(99, 102, 241, 0.4) !important;
+    color: #6366f1 !important;
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  }
+
+  .premium-refresh-btn.has-text:hover::before {
+    opacity: 1;
+  }
+
+  .premium-refresh-btn.has-text:hover .material-symbols-rounded {
+    transform: rotate(180deg);
+    color: #6366f1 !important;
+  }
 }
 
-.premium-refresh-btn:hover::before {
-  opacity: 1;
-}
-
-.premium-refresh-btn:hover .material-symbols-rounded {
-  transform: rotate(180deg);
-  color: #6366f1 !important;
-}
-
-.premium-refresh-btn:active {
+.premium-refresh-btn.has-text:active {
   transform: translateY(1px) scale(0.98);
   box-shadow: 0 2px 6px rgba(99, 102, 241, 0.1) !important;
 }
 
-/* Premium Close Button (Matches Refresh Design) */
+/* Variante solo-ícono (sin texto): nada de contenedor/pill, el símbolo puro
+   con efecto al acercar el mouse — pedido explícito del usuario tras varias
+   rondas donde el "cuadrito" del botón se veía roto/inconsistente. */
+.premium-refresh-btn:not(.has-text) {
+  width: 42px;
+  padding: 0 !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.premium-refresh-btn:not(.has-text)::before {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .premium-refresh-btn:not(.has-text):hover .material-symbols-rounded {
+    transform: translateY(-3px) scale(1.2) rotate(180deg);
+    color: #6366f1 !important;
+    filter: drop-shadow(0 6px 6px rgba(99, 102, 241, 0.3));
+  }
+}
+
+.premium-refresh-btn:not(.has-text):active .material-symbols-rounded {
+  transform: scale(0.9);
+}
+
+/* Premium Close Button (solo símbolo, sin contenedor cuadrado) */
 .premium-close-btn {
   position: relative;
   height: 42px;
   width: 42px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.4) !important;
-  backdrop-filter: blur(10px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(10px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.6) !important;
-  color: #334155 !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  background: transparent;
+  border: none;
+  color: #475569;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -10693,17 +10648,6 @@ html body .modern-input-group input[type="date"]:focus,
   font-weight: 700;
   padding: 0 !important;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.premium-close-btn::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(244, 63, 94, 0.15) 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: 0;
-  border-radius: inherit;
 }
 
 .premium-close-btn .material-symbols-rounded {
@@ -10714,26 +10658,16 @@ html body .modern-input-group input[type="date"]:focus,
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease !important;
 }
 
-.premium-close-btn:hover {
-  transform: translateY(-2px) scale(1.05);
-  background: rgba(255, 255, 255, 0.8) !important;
-  border-color: rgba(244, 63, 94, 0.4) !important;
-  color: #f43f5e !important;
-  box-shadow: 0 8px 20px rgba(244, 63, 94, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+@media (hover: hover) and (pointer: fine) {
+  .premium-close-btn:hover .material-symbols-rounded {
+    transform: translateY(-3px) scale(1.2) rotate(90deg);
+    color: #f43f5e !important;
+    filter: drop-shadow(0 6px 6px rgba(244, 63, 94, 0.3));
+  }
 }
 
-.premium-close-btn:hover::before {
-  opacity: 1;
-}
-
-.premium-close-btn:hover .material-symbols-rounded {
-  transform: rotate(90deg);
-  color: #f43f5e !important;
-}
-
-.premium-close-btn:active {
-  transform: translateY(1px) scale(0.98);
-  box-shadow: 0 2px 6px rgba(244, 63, 94, 0.1) !important;
+.premium-close-btn:active .material-symbols-rounded {
+  transform: scale(0.9);
 }
 
 
