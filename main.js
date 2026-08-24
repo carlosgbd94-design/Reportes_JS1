@@ -8200,6 +8200,14 @@ function invalidatePinolCache() {
 
 function getPinolFlowStatus() {
   if (!USER || USER.rol !== "UNIDAD") return "NONE";
+  // Antes de la primera respuesta de listPinol(), _pinolCache es [] (ver
+  // resetApplicationState) igual que "confirmado sin solicitudes", lo que dejaba
+  // el botón de guardar habilitado en la ventana entre pintar el tab PINOL y que
+  // listPinol() resolviera -- un clic ahí mismo (ej. formulario prellenado con el
+  // nombre recordado) pasaba sin candado aunque ya hubiera una solicitud activa.
+  // window._pinolCacheLoaded (listPinol) distingue "aún no se sabe" de "ya se sabe
+  // que no hay nada", y aquí se trata como bloqueado por seguridad.
+  if (!window._pinolCacheLoaded) return "LOADING";
   const items = window._pinolCache || [];
   const myActive = items.filter(x =>
     String(x?.clues || "") === String(USER.clues) &&
@@ -8234,6 +8242,15 @@ function updatePinolFormBanner(status) {
       <span class="material-symbols-rounded" style="font-size: 20px;">local_shipping</span>
       <div>
         El insumo fue enviado. Revisa tus notificaciones y marca como recibido para habilitar una nueva solicitud.
+      </div>
+    `;
+  } else if (status === "LOADING") {
+    banner.style.display = "flex";
+    banner.className = "pinol-flow-banner pending";
+    banner.innerHTML = `
+      <span class="material-symbols-rounded" style="font-size: 20px;">hourglass_top</span>
+      <div>
+        Verificando si ya tienes una solicitud activa antes de habilitar el formulario…
       </div>
     `;
   }
@@ -13705,6 +13722,7 @@ function resetApplicationState() {
   HAS_TODAY_CONS = false;
   HAS_SAVED_BIO = false;
   window._pinolCache = [];
+  window._pinolCacheLoaded = false;
 
   Object.assign(AppState, {
     user: null,
@@ -17279,6 +17297,7 @@ async function listPinol(force = false) {
 
   const result = Array.isArray(data) ? data : [];
   window._pinolCache = result; // Expose for syncCommandHub PINOL state machine
+  window._pinolCacheLoaded = true;
   return result;
 }
 
@@ -23596,6 +23615,9 @@ function syncCommandHub() {
           } else if (flowStatus === "DELIVERED") {
             hubStatus.className = "status-chip-v5 pinol-delivered";
             hubStatusText.textContent = "Insumo enviado";
+          } else if (flowStatus === "LOADING") {
+            hubStatus.className = "status-chip-v5";
+            hubStatusText.textContent = "Verificando…";
           } else {
             hubStatus.className = "status-chip-v5";
             hubStatusText.textContent = "Sin solicitud";

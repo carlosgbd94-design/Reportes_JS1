@@ -163,6 +163,65 @@ CREATE TRIGGER trg_notify_pinol_entregado
 ALTER FUNCTION public.notify_admin_on_pinol() SET search_path = public;
 ALTER FUNCTION public.fn_notify_pinol_entregado() SET search_path = public;
 
+-- 7. Guard "no más de una solicitud activa por CLUES" (NUEVO) -------------------------------
+-- Motivo: el candado de "guardar" (getPinolFlowStatus / hasActivePinol) SIEMPRE fue solo del
+-- lado del cliente -- una lectura cacheada que decide si mostrar el botón habilitado. Nunca
+-- hubo nada en la base de datos que impidiera una segunda fila PENDIENTE para la misma clues.
+-- Verificado el 2026-08-21 contra producción: 8 unidades con 2 a 4 solicitudes activas
+-- simultáneas para la misma clues (ej. QTSSA001332 AMAZCALA con 3), confirmando que el
+-- candado de UI se puede saltar (multi-dispositivo, cola offline sin verificación de
+-- duplicados -- ver offline_db.js syncQueue -- carrera de caché, etc.) sin que nada lo impida
+-- del lado del servidor. Este trigger lo hace estructuralmente imposible de ahí en adelante,
+-- sin importar cuál haya sido la causa exacta del lado del cliente. No toca las filas
+-- duplicadas ya existentes (no es un índice único, así que no requiere limpiar datos antes
+-- de aplicarse) -- esas se resuelven manualmente desde el panel municipal (ícono de basura).
+CREATE OR REPLACE FUNCTION public.fn_pinol_reject_duplicate_active()
+RETURNS TRIGGER AS $function$
+BEGIN
+  IF NEW.estatus = 'PENDIENTE' THEN
+    IF EXISTS (
+      SELECT 1 FROM pinol_solicitudes
+      WHERE clues = NEW.clues
+        AND estatus IN ('PENDIENTE','ENTREGADO')
+        AND id <> NEW.id
+    ) THEN
+      RAISE EXCEPTION 'Ya existe una solicitud de Pinol activa para esta unidad (CLUES %). Debe completarse y confirmarse como recibida antes de crear una nueva.', NEW.clues
+        USING ERRCODE = '23505';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$function$ LANGUAGE plpgsql SET search_path = public;
+
+DROP TRIGGER IF EXISTS trg_pinol_reject_duplicate_active ON public.pinol_solicitudes;
+CREATE TRIGGER trg_pinol_reject_duplicate_active
+  BEFORE INSERT ON public.pinol_solicitudes
+  FOR EACH ROW EXECUTE FUNCTION public.fn_pinol_reject_duplicate_active();
+
+-- 8. Autoclean: al abrir un ciclo nuevo, borra el ciclo anterior ya cerrado (NUEVO) --------
+-- Pedido explícito: si una unidad ya recibió y confirmó su Pinol, esa fila RECIBIDO se sigue
+-- mostrando en el panel (es la referencia de "última entrega") hasta que la misma unidad
+-- vuelva a solicitar -- en ese momento se borra el ciclo anterior para no acumular historial
+-- muerto. Solo puede quedar RECIBIDO para limpiar: trg_pinol_reject_duplicate_active (sección
+-- 7) ya impide que este INSERT llegue a ejecutarse si hay algo PENDIENTE/ENTREGADO sin cerrar.
+CREATE OR REPLACE FUNCTION public.fn_pinol_autoclean_recibido()
+RETURNS TRIGGER AS $function$
+BEGIN
+  IF NEW.estatus = 'PENDIENTE' THEN
+    DELETE FROM pinol_solicitudes
+    WHERE clues = NEW.clues
+      AND estatus = 'RECIBIDO'
+      AND id <> NEW.id;
+  END IF;
+  RETURN NEW;
+END;
+$function$ LANGUAGE plpgsql SET search_path = public;
+
+DROP TRIGGER IF EXISTS trg_pinol_autoclean_recibido ON public.pinol_solicitudes;
+CREATE TRIGGER trg_pinol_autoclean_recibido
+  AFTER INSERT ON public.pinol_solicitudes
+  FOR EACH ROW EXECUTE FUNCTION public.fn_pinol_autoclean_recibido();
+
 -- ======================================================================================
 -- NOTA (get_advisors, verificado tras aplicar esta migración el 2026-08-20):
 -- pinol_solicitudes ya tenía, ANTES de esta migración, políticas RLS permisivas

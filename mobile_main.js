@@ -16,6 +16,7 @@
     let hasTodayBIO = false;
     let hasActivePinol = false;
     let pinolFlowStatus = "NONE"; // NONE | PENDING | DELIVERED
+    let pinolCacheLoaded = false; // true tras la primera respuesta real de checkCapturesState
     let PINOL_SOLICITUDES_CHANNEL_MOBILE = null;
 
     let isEditingSR = false;
@@ -1024,7 +1025,10 @@
         const isSRLocked = (hasTodaySR && !isEditingSR) || !canCaptureSRGlobal;
         const isCONSLocked = (hasTodayCONS && !isEditingCONS) || !canCaptureConsGlobal;
         const isBIOLocked = (hasTodayBIO && !isEditingBIO) || !canCaptureBioGlobal;
-        const isPinolLocked = hasActivePinol;
+        // Antes de la primera respuesta real de checkCapturesState, no se sabe si ya
+        // hay una solicitud activa -- por seguridad se trata como bloqueado (ver mismo
+        // fix del lado de escritorio, _pinolCacheLoaded).
+        const isPinolLocked = hasActivePinol || !pinolCacheLoaded;
 
         // Lock/Unlock SR inputs
         document.querySelectorAll('#srCardsContainer select, #srCardsContainer input, #srCardsContainer button').forEach(el => {
@@ -1181,6 +1185,7 @@
             pinolFlowStatus = pinolRows.length === 0
                 ? "NONE"
                 : (pinolRows.some(r => String(r.estatus || "").toUpperCase() === "ENTREGADO") ? "DELIVERED" : "PENDING");
+            pinolCacheLoaded = true;
             updatePinolFlowBanner(pinolFlowStatus);
 
             syncCommandHub();

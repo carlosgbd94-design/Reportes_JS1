@@ -156,6 +156,14 @@
           }
         } catch (itemErr) {
           console.error(`[OfflineDB] Error sincronizando ítem ${record.id}:`, itemErr);
+          // Rechazo de negocio permanente (ej. trg_pinol_reject_duplicate_active: ya existe
+          // una solicitud activa para esa CLUES) -- reintentar para siempre no lo arregla,
+          // solo deja el registro atorado en la cola sin que el usuario se entere (la llamada
+          // usa {silent:true} arriba). Se descarta y se avisa una sola vez.
+          if (itemErr && itemErr.code === '23505') {
+            await deleteRecord(record.id);
+            showSyncToast(`🔴 No se pudo sincronizar una captura pendiente: ${itemErr.message || 'ya existe un registro activo equivalente.'}`, 'error');
+          }
         }
       }
 
