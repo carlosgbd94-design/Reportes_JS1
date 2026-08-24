@@ -6992,7 +6992,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
         const { data: notif } = await supabase.from('notificaciones').select('*').eq('id', payload.notification_id).single();
         if (!notif) throw new Error("Notificación no encontrada");
 
-        const meta = JSON.parse(notif.meta_json || "{}");
+        const meta = typeof notif.meta_json === 'string' ? JSON.parse(notif.meta_json || "{}") : (notif.meta_json || {});
         const pinolId = meta.pinol_id;
 
         // 1. Marcar notificación maestro como confirmada (meta_json global)
@@ -7586,7 +7586,8 @@ async function supabaseRequest(action = "", payload, options = {}) {
           estatus: 'ENTREGADO',
           entregado_por: payload.entregado_por || USER?.usuario || 'L.E. LIZBETH URIBE PANTOJA',
           timestamp_entrega: new Date().toISOString(),
-          fecha_entrega: payload.fecha_entrega || todayYmdLocal()
+          fecha_entrega: payload.fecha_entrega || todayYmdLocal(),
+          comentario_entrega: payload.comentario_notificacion ? payload.comentario_notificacion.trim() : null
         };
         if (payload.solicitud_botellas) {
           updateObj.solicitud_botellas = Number(payload.solicitud_botellas);
@@ -7609,46 +7610,24 @@ async function supabaseRequest(action = "", payload, options = {}) {
           console.warn("[Notif] Error auto-marking request read:", e);
         }
 
-        // Crear notificación para la unidad + fan-out
-        const { data: sol } = await supabase.from('pinol_solicitudes').select('*').eq('id', payload.id).single();
-        if (sol) {
-          const formattedMessage = [
-            payload.comentario_notificacion ? payload.comentario_notificacion.trim() : 'Tu solicitud de pinol ha sido marcada como entregada.',
-            `Unidad de salud: ${sol.unidad} (CLUES: ${sol.clues})`,
-            `Fecha de solicitud: ${sol.fecha_solicitud || ''}`
-          ].filter(Boolean).join('\n');
-
-          const pinolNotifRecord = {
-            id: 'NOTIF:' + btoa(sol.clues + ":" + Date.now()),
-            created_ts: new Date().toISOString(),
-            created_date: todayYmdLocal(),
-            from_usuario: USER.usuario,
-            from_rol: USER.rol,
-            target_scope: 'CLUES',
-            target_clues: sol.clues,
-            target_municipio: sol.municipio || null,
-            type: 'SUCCESS',
-            title: 'Pinol entregado',
-            message: formattedMessage,
-            status: 'UNREAD',
-            meta_json: JSON.stringify({ source: 'PINOL', event: 'PINOL_ENTREGADO', pinol_id: sol.id })
-          };
-
-          try {
-            const { error: notifInsertErr } = await supabase.from('notificaciones').insert(pinolNotifRecord);
-            if (notifInsertErr) {
-              // RLS puede bloquear INSERT para roles sin permiso (ej: MUNICIPAL)
-              // La notificación se generará mediante Trigger en Supabase
-              console.warn('[Notif Pinol] INSERT bloqueado por RLS — la notificación se generará vía Trigger:', notifInsertErr.message);
-            } else {
-              // Fan-out: crear copias individuales para cada destinatario
-              const pinolRecipients = await resolveNotificationRecipients(pinolNotifRecord);
-              await fanOutNotification(pinolNotifRecord.id, pinolRecipients);
-              console.log(`[Notif] Pinol entregado → ${pinolRecipients.length} destinatarios`);
-            }
-          } catch (notifErr) {
-            console.warn('[Notif Pinol] Error al crear notificación de entrega (no bloquea el flujo):', notifErr);
+        // Fan-out de la notificación para la unidad. La fila maestra ya no se
+        // inserta desde el cliente (eso era una carrera contra RLS con un
+        // fallback a un trigger que no estaba versionado, ver
+        // supabase/pinol_solicitudes_schema.sql sección 5): el trigger
+        // trg_notify_pinol_entregado la crea de forma determinista en la misma
+        // transacción del UPDATE de arriba, con id fijo 'NOTIF:PINOL_ENTREGA:' + id.
+        try {
+          const entregaNotifId = 'NOTIF:PINOL_ENTREGA:' + payload.id;
+          const { data: notif } = await supabase.from('notificaciones').select('*').eq('id', entregaNotifId).maybeSingle();
+          if (notif) {
+            const pinolRecipients = await resolveNotificationRecipients(notif);
+            await fanOutNotification(notif.id, pinolRecipients);
+            console.log(`[Notif] Pinol entregado → ${pinolRecipients.length} destinatarios`);
+          } else {
+            console.warn(`[Notif] No se encontró la notificación autogenerada ${entregaNotifId}. ¿Se aplicó supabase/pinol_solicitudes_schema.sql?`);
           }
+        } catch (notifErr) {
+          console.warn('[Notif Pinol] Error al distribuir la notificación de entrega (no bloquea el flujo):', notifErr);
         }
         return { ok: true };
       }
@@ -9787,8 +9766,12 @@ window.addSRRow = function (data = null) {
     aperturaBadge: tr.querySelector(".sr-apertura-badge")
   };
 
-  // 💉 Fecha de apertura del frasco (si viene de una captura previa/edición)
+  // 💉 Fecha de apertura del frasco (si viene de una captura previa/edición). Se marca
+  // como NO "fresca" porque es un valor arrastrado de una carga previa (prefill/edición),
+  // así que sí debe re-validarse contra looksLikeNewVialOpening si el usuario cambia la
+  // cantidad (a diferencia de una fecha que el propio usuario acaba de confirmar ahora).
   tr.dataset.fechaApertura = data?.fecha_apertura || "";
+  tr.dataset.fechaAperturaFresh = "0";
   // Última cantidad guardada para esta fila (mismo lote+entrada) — permite detectar si
   // un nuevo decimal corresponde a un frasco físico distinto al ya rastreado
   // (ver looksLikeNewVialOpening: p.ej. 1.6 -> 0.8 significa que se abrió un frasco
@@ -9854,9 +9837,18 @@ window.updateAperturaState = function (tr) {
 
   if (!requiresApertura) {
     tr.dataset.fechaApertura = "";
-  } else if (tr.dataset.fechaApertura && looksLikeNewVialOpening(tr.dataset.prevCantidad, Number(cant))) {
+    tr.dataset.fechaAperturaFresh = "0";
+  } else if (
+    tr.dataset.fechaApertura &&
+    tr.dataset.fechaAperturaFresh !== "1" &&
+    looksLikeNewVialOpening(tr.dataset.prevCantidad, Number(cant))
+  ) {
     // La fecha que ya teníamos no corresponde al frasco que hay ahora — se limpia para
     // que el flujo normal (badge "falta fecha" + modal al guardar/clic) pida una nueva.
+    // Ojo: solo se re-valida una fecha "arrastrada" (de un prefill/edición previa) — una
+    // fecha que el usuario acaba de confirmar en esta sesión (fechaAperturaFresh="1") NO
+    // se vuelve a cuestionar, o el guardado la borraría y saltaría el modal de nuevo aunque
+    // ya se hubiera capturado correctamente.
     tr.dataset.fechaApertura = "";
   }
   window.renderAperturaBadge(tr);
@@ -9881,6 +9873,7 @@ window.handleAperturaCheck = async function (tr, opts = {}) {
 
   if (!requiresApertura) {
     tr.dataset.fechaApertura = "";
+    tr.dataset.fechaAperturaFresh = "0";
     window.renderAperturaBadge(tr);
     return;
   }
@@ -9889,7 +9882,12 @@ window.handleAperturaCheck = async function (tr, opts = {}) {
     tr.dataset.aperturaModalOpen = "1";
     try {
       const fecha = await window.openAperturaFrascoModal({ biologico: bio, lote, fechaRecepcion: recep, initialDate: tr.dataset.fechaApertura || "" });
-      if (fecha) tr.dataset.fechaApertura = fecha;
+      if (fecha) {
+        tr.dataset.fechaApertura = fecha;
+        // El usuario acaba de confirmar esta fecha para la cantidad actual — no se debe
+        // volver a cuestionar contra looksLikeNewVialOpening (ver updateAperturaState).
+        tr.dataset.fechaAperturaFresh = "1";
+      }
     } finally {
       tr.dataset.aperturaModalOpen = "0";
     }
@@ -11645,6 +11643,10 @@ function openAperturaBatchModal(pendingRows) {
           const idx = Number(inp.dataset.idx);
           const p = pendingRows[idx];
           p.tr.dataset.fechaApertura = inp.value;
+          // Confirmada por el usuario ahora mismo: no se debe volver a cuestionar contra
+          // looksLikeNewVialOpening (ver updateAperturaState) en el refresco defensivo
+          // que corre justo después, o se borraría y saltaría este mismo modal de nuevo.
+          p.tr.dataset.fechaAperturaFresh = "1";
           window.renderAperturaBadge(p.tr);
         });
 

@@ -15,6 +15,8 @@
     let hasTodayCONS = false;
     let hasTodayBIO = false;
     let hasActivePinol = false;
+    let pinolFlowStatus = "NONE"; // NONE | PENDING | DELIVERED
+    let PINOL_SOLICITUDES_CHANNEL_MOBILE = null;
 
     let isEditingSR = false;
     let isEditingCONS = false;
@@ -319,6 +321,7 @@
         await loadFiles();
         loadWeather();
         initNotificationsRealtime();
+        initPinolRealtimeMobile();
         
         // Initialize the physics-based glass shaders and copy the clone-world content
         initDockGlass();
@@ -766,8 +769,12 @@
         const qtyInput = card.querySelector('.sr-qty-input');
         const aperturaBadge = card.querySelector('.sr-apertura-badge');
 
-        // 💉 Fecha de apertura del frasco (si viene de una captura previa)
+        // 💉 Fecha de apertura del frasco (si viene de una captura previa). Se marca como
+        // NO "fresca" porque es un valor arrastrado (prefill/edición) — si el usuario
+        // cambia la cantidad, sí debe re-validarse contra looksLikeNewVialOpening (a
+        // diferencia de una fecha que el propio usuario acaba de confirmar ahora).
         card.dataset.fechaApertura = data?.fecha_apertura || "";
+        card.dataset.fechaAperturaFresh = "0";
         // Última cantidad guardada para esta tarjeta (mismo lote+entrada) — permite
         // detectar si un nuevo decimal corresponde a un frasco físico distinto
         // (ver looksLikeNewVialOpening en el bloque de apertura de frascos).
@@ -968,6 +975,50 @@
         }
     };
 
+    // --- Pinol Flow Banner (paridad con el banner de escritorio) ---
+    const updatePinolFlowBanner = (status) => {
+        const banner = document.getElementById('pinolFlowBanner');
+        if (!banner) return;
+
+        if (status === "PENDING") {
+            banner.style.display = "flex";
+            banner.className = "flex gap-3 items-center p-4 rounded-2xl mb-6 border text-xs font-bold leading-relaxed bg-amber-50 border-amber-200 text-amber-800";
+            banner.innerHTML = `
+                <span class="material-symbols-rounded text-xl">hourglass_empty</span>
+                <span>Tu solicitud está en curso. El área municipal aún no ha surtido el insumo.</span>
+            `;
+        } else if (status === "DELIVERED") {
+            banner.style.display = "flex";
+            banner.className = "flex gap-3 items-center p-4 rounded-2xl mb-6 border text-xs font-bold leading-relaxed bg-blue-50 border-blue-200 text-blue-800";
+            banner.innerHTML = `
+                <span class="material-symbols-rounded text-xl">local_shipping</span>
+                <span>El insumo fue enviado. Revisa tus notificaciones y marca como recibido para habilitar una nueva solicitud.</span>
+            `;
+        } else {
+            banner.style.display = "none";
+            banner.className = "";
+            banner.innerHTML = "";
+        }
+    };
+
+    // --- Realtime de pinol_solicitudes (paridad con escritorio) ---
+    // Mantiene el candado del formulario y el banner sincronizados en vivo cuando
+    // el municipal marca "entregado", sin depender de que la unidad cambie de pestaña.
+    const initPinolRealtimeMobile = () => {
+        if (!currentUser || !currentProfile || currentProfile.rol !== 'UNIDAD') return;
+        if (PINOL_SOLICITUDES_CHANNEL_MOBILE) return;
+
+        PINOL_SOLICITUDES_CHANNEL_MOBILE = supabaseClient
+            .channel('mobile-pinol-solicitudes-changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'pinol_solicitudes', filter: `clues=eq.${currentProfile.clues}` }, () => {
+                checkCapturesState().then(() => {
+                    applyFormLocks();
+                    syncCommandHub();
+                }).catch(err => console.error("Error refrescando pinol en realtime:", err));
+            })
+            .subscribe();
+    };
+
     // --- Command Hub Lock/Edit State Sync ---
     const applyFormLocks = () => {
         const isSRLocked = (hasTodaySR && !isEditingSR) || !canCaptureSRGlobal;
@@ -1118,14 +1169,20 @@
                 supabaseClient.from('biologicos_existencia').select('id').eq('clues', cluesFilter).in('fecha', srDateFilter).limit(1),
                 supabaseClient.from('consumibles').select('id').eq('clues', cluesFilter).eq('fecha', today).maybeSingle(),
                 supabaseClient.from('biologicos_pedido').select('id').eq('clues', cluesFilter).eq('fecha_pedido_programada', targetPedidoDate).limit(1),
-                supabaseClient.from('pinol_solicitudes').select('id').eq('clues', cluesFilter).in('estatus', ['PENDIENTE', 'ENTREGADO']).limit(1)
+                supabaseClient.from('pinol_solicitudes').select('id, estatus').eq('clues', cluesFilter).in('estatus', ['PENDIENTE', 'ENTREGADO'])
             ]);
 
             hasTodaySR = resSR.data && resSR.data.length > 0;
             hasTodayCONS = !!resCONS.data;
             hasTodayBIO = resBIO.data && resBIO.data.length > 0;
-            hasActivePinol = resPinol.data && resPinol.data.length > 0;
-            
+
+            const pinolRows = resPinol.data || [];
+            hasActivePinol = pinolRows.length > 0;
+            pinolFlowStatus = pinolRows.length === 0
+                ? "NONE"
+                : (pinolRows.some(r => String(r.estatus || "").toUpperCase() === "ENTREGADO") ? "DELIVERED" : "PENDING");
+            updatePinolFlowBanner(pinolFlowStatus);
+
             syncCommandHub();
         } catch (e) {
             console.error("Error checking captures state:", e);
@@ -1485,7 +1542,9 @@
             
             showToast("Recepción confirmada correctamente", "success");
             hasActivePinol = false;
-            
+            pinolFlowStatus = "NONE";
+            updatePinolFlowBanner(pinolFlowStatus);
+
             await loadNotifications();
             applyFormLocks();
             syncCommandHub();
@@ -2489,7 +2548,15 @@
 
         if (!requiresApertura) {
             card.dataset.fechaApertura = "";
-        } else if (card.dataset.fechaApertura && looksLikeNewVialOpening(card.dataset.prevCantidad, Number(cant))) {
+            card.dataset.fechaAperturaFresh = "0";
+        } else if (
+            card.dataset.fechaApertura &&
+            card.dataset.fechaAperturaFresh !== "1" &&
+            looksLikeNewVialOpening(card.dataset.prevCantidad, Number(cant))
+        ) {
+            // Solo se re-valida una fecha "arrastrada" — una que el usuario acaba de
+            // confirmar en esta sesión (fechaAperturaFresh="1") no se vuelve a cuestionar,
+            // o el guardado la borraría y saltaría el modal de nuevo aunque ya estaba bien.
             card.dataset.fechaApertura = "";
         }
         renderAperturaBadge(card);
@@ -2551,6 +2618,9 @@
                         const idx = Number(inp.dataset.idx);
                         const p = pendingCards[idx];
                         p.card.dataset.fechaApertura = inp.value;
+                        // Confirmada por el usuario ahora: no se debe re-cuestionar contra
+                        // looksLikeNewVialOpening en el refresco defensivo antes de guardar.
+                        p.card.dataset.fechaAperturaFresh = "1";
                         renderAperturaBadge(p.card);
                     });
 
@@ -2582,6 +2652,7 @@
 
         if (!requiresApertura) {
             card.dataset.fechaApertura = "";
+            card.dataset.fechaAperturaFresh = "0";
             renderAperturaBadge(card);
             return;
         }
@@ -2590,7 +2661,12 @@
             card.dataset.aperturaModalOpen = "1";
             try {
                 const fecha = await openAperturaFrascoModal({ biologico: bio, lote, fechaRecepcion: recep, initialDate: card.dataset.fechaApertura || "" });
-                if (fecha) card.dataset.fechaApertura = fecha;
+                if (fecha) {
+                    card.dataset.fechaApertura = fecha;
+                    // Confirmada por el usuario ahora: no se debe re-cuestionar contra
+                    // looksLikeNewVialOpening en el refresco defensivo antes de guardar.
+                    card.dataset.fechaAperturaFresh = "1";
+                }
             } finally {
                 card.dataset.aperturaModalOpen = "0";
             }
@@ -3173,6 +3249,9 @@
 
                 showToast("Reporte guardado con éxito");
                 hasActivePinol = true;
+                pinolFlowStatus = "PENDING";
+                updatePinolFlowBanner(pinolFlowStatus);
+                applyFormLocks();
                 syncCommandHub();
                 return;
             }
