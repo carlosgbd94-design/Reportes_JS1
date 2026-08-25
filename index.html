@@ -528,8 +528,9 @@
             <div class="GlassContent liquidGL header-liquid-glass">
               <button class="header-action-btn" id="btnExportSRUnidad" data-tooltip="Exportar existencia"
                 title="Exportar existencia">
-                <span class="material-symbols-rounded"
-                  style="font-variation-settings: 'FILL' 0 !important; font-size: 24px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;">picture_as_pdf</span>
+                <span aria-hidden="true" style="display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 24px; height: 24px; background: #dc2626 !important; border-radius: 6px;">
+                  <span style="font-family: Arial, Helvetica, sans-serif; font-weight: 800 !important; font-size: 7px; line-height: 1; letter-spacing: -0.3px; color: #ffffff !important;">PDF</span>
+                </span>
               </button>
             </div>
           </div>
@@ -1762,7 +1763,12 @@
                     <span>Excel</span>
                   </button>
                   <button type="button" onclick="ExportManager.exportToPDF('secUnitHistorico', 'Historial_Influenza', 'portrait')" class="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm transition flex items-center gap-1.5 cursor-pointer">
-                    <span class="material-symbols-rounded text-sm">picture_as_pdf</span>
+                    <svg class="material-symbols-rounded" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"
+                      style="display: inline-block; vertical-align: middle;">
+                      <path d="M7,3 H14 L18,7 V19.5 Q18,20.5 17,20.5 H8 Q7,20.5 7,19.5 Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                  <path d="M14,3 L14,7 L18,7" fill="none" stroke="currentColor" stroke-width="1" stroke-linejoin="round" />
+                  <text x="12.5" y="16.9" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="6.6" letter-spacing="-0.4" fill="currentColor">PDF</text>
+                    </svg>
                     <span>PDF</span>
                   </button>
                 </div>
@@ -5433,8 +5439,12 @@
                 style="width: 100%; padding: 12px 14px; border: none; background: transparent; text-align: left; font-size: 13px; font-weight: 700; color: var(--md-sys-color-on-surface); cursor: pointer; display: flex; align-items: center; border-radius: 8px; box-sizing: border-box;">
                 <div
                   style="width: 28px; min-width: 28px; height: 24px; display: flex; align-items: center; justify-content: flex-start; flex-shrink: 0;">
-                  <span class="material-symbols-rounded"
-                    style="color: #dc2626; font-size: 20px; font-variation-settings: 'FILL' 0 !important; -webkit-font-smoothing: antialiased;">picture_as_pdf</span>
+                  <svg class="material-symbols-rounded" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"
+                    style="color: #dc2626; display: inline-block; vertical-align: middle;">
+                    <path d="M7,3 H14 L18,7 V19.5 Q18,20.5 17,20.5 H8 Q7,20.5 7,19.5 Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+                  <path d="M14,3 L14,7 L18,7" fill="none" stroke="currentColor" stroke-width="1" stroke-linejoin="round" />
+                  <text x="12.5" y="16.9" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="6.6" letter-spacing="-0.4" fill="currentColor">PDF</text>
+                  </svg>
                 </div>
                 <span style="white-space: nowrap; flex: 1;">Reporte PDF Individual</span>
               </button>
@@ -7431,7 +7441,10 @@
             <span class="material-symbols-rounded">refresh</span>
           </button>
           <button class="premium-icon-btn" id="btnLiveViewExportPDF" title="Exportar reporte a PDF">
-            <span class="material-symbols-rounded">picture_as_pdf</span>
+            <svg class="material-symbols-rounded" width="26" height="26" viewBox="0 0 24 24" fill="currentColor"
+              style="display: inline-block; vertical-align: middle;">
+              <path d="M7,3 H14 L18,7 V19.5 Q18,20.5 17,20.5 H8 Q7,20.5 7,19.5 Z" />
+            </svg>
           </button>
           <button class="premium-icon-btn" id="btnLiveViewExportPNG" title="Exportar reporte a Imagen (PNG)">
             <span class="material-symbols-rounded">image</span>
