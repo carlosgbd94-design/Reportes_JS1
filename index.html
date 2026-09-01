@@ -74,7 +74,7 @@
 
   <!-- Estilos -->
   <link rel="stylesheet" href="tailwind_compiled.css">
-  <link rel="stylesheet" href="style.css?v=2026.75" type="text/css">
+  <link rel="stylesheet" href="style.css?v=2026.79" type="text/css">
 
   <style>
     /* Botones de acción de la tabla Pinol: estilo definido en style.css
@@ -324,7 +324,7 @@
        (ensurePdfAssetsLoaded) solo al exportar el PDF de Resguardo.
        Generado por build-bundle.js. Los archivos originales siguen en el repo
        (sin borrar) por si hace falta revertir este cambio. -->
-  <script src="dist/bundle-head.js?v=2026.20" defer onerror="sirevaqShowBundleLoadError('bundle-head.js')"></script>
+  <script src="dist/bundle-head.js?v=2026.27" defer onerror="sirevaqShowBundleLoadError('bundle-head.js')"></script>
 
   <!-- 🔧 Service Worker Registration (PWA) -->
   <script>
@@ -528,9 +528,8 @@
             <div class="GlassContent liquidGL header-liquid-glass">
               <button class="header-action-btn" id="btnExportSRUnidad" data-tooltip="Exportar existencia"
                 title="Exportar existencia">
-                <span aria-hidden="true" style="display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 24px; height: 24px; background: #dc2626 !important; border-radius: 6px;">
-                  <span style="font-family: Arial, Helvetica, sans-serif; font-weight: 800 !important; font-size: 7px; line-height: 1; letter-spacing: -0.3px; color: #ffffff !important;">PDF</span>
-                </span>
+                <span class="material-symbols-rounded" aria-hidden="true"
+                  style="font-variation-settings: 'FILL' 0 !important; font-size: 24px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility;">description</span>
               </button>
             </div>
           </div>
@@ -1007,64 +1006,80 @@
         </div>
       </div>
 
-      <div id="archivosDropdown" class="topNotifDropdown" style="display:none; z-index:9000;">
-        <div class="topNotifCard">
-          <div class="topNotifCardHead !px-5 !py-4">
-            <div class="topNotifHeaderTop !items-start">
-              <div style="flex: 1; min-width: 0;">
-                <div class="topNotifTitle !text-base">Explorador de Evidencias</div>
-                <div id="archivosSubtitle" class="topNotifSub !mt-1 !text-[11px]">Consulta de supervisiones y reportes
-                </div>
+      <div id="archivosDropdown" class="evd-overlay" style="display:none;">
+        <div class="evd-card">
+          <div class="evd-header">
+            <div class="evd-header-left">
+              <div class="evd-header-icon">
+                <span class="material-symbols-rounded">folder_open</span>
               </div>
-              <div class="flex items-center gap-1.5 flex-none ml-4">
-                <button type="button" class="premium-refresh-btn" id="btnRefreshArchivos" title="Actualizar lista">
-                  <span class="material-symbols-rounded">refresh</span>
-                </button>
-                <button type="button" class="premium-close-btn" id="btnArchivosClose" title="Cerrar panel">
-                  <span class="material-symbols-rounded">close</span>
-                </button>
+              <div>
+                <div class="evd-title">Explorador de Evidencias</div>
+                <div id="archivosSubtitle" class="evd-subtitle">Consulta de supervisiones y reportes</div>
               </div>
             </div>
+            <div class="evd-header-actions">
+              <button type="button" class="premium-refresh-btn" id="btnRefreshArchivos" title="Actualizar lista">
+                <span class="material-symbols-rounded">refresh</span>
+              </button>
+              <button type="button" class="premium-close-btn" id="btnArchivosClose" title="Cerrar panel">
+                <span class="material-symbols-rounded">close</span>
+              </button>
+            </div>
           </div>
-          <div class="p-5 border-b border-outline-variant/30 bg-surface-variant/10" style="padding: 20px !important;">
-            <div class="flex flex-col gap-5">
-              <!-- Tabs Premium Independientes -->
-              <div id="archivosTabsContainer" class="flex gap-3 items-center justify-between w-full"
-                style="display: flex;">
-                <button type="button"
-                  class="evidence-tab flex-1 h-12 flex items-center justify-center rounded-2xl transition-all bg-surface text-slate-500 hover:text-primary hover:bg-primary/5 shadow-sm border border-slate-200"
-                  data-category="Evidencia_de_capacitaciones" title="Capacitación" data-tooltip="Capacitación">
-                  <span class="material-symbols-rounded text-[22px]">school</span>
-                </button>
-                <button type="button"
-                  class="evidence-tab flex-1 h-12 flex items-center justify-center rounded-2xl transition-all bg-surface text-slate-500 hover:text-primary hover:bg-primary/5 shadow-sm border border-slate-200"
-                  data-category="Evidencias_de_campana" title="Campaña" data-tooltip="Campaña">
-                  <span class="material-symbols-rounded text-[22px]">campaign</span>
-                </button>
-                <button type="button"
-                  class="evidence-tab flex-1 h-12 flex items-center justify-center rounded-2xl transition-all bg-surface text-slate-500 hover:text-primary hover:bg-primary/5 shadow-sm border border-slate-200"
-                  data-category="Supervision" title="Supervisión" data-tooltip="Supervisión">
-                  <span class="material-symbols-rounded text-[22px]">policy</span>
-                </button>
-                <button type="button"
-                  class="evidence-tab flex-1 h-12 flex items-center justify-center rounded-2xl transition-all bg-surface text-slate-500 hover:text-primary hover:bg-primary/5 shadow-sm border border-slate-200"
-                  data-category="Otros_reportes" title="Otro" data-tooltip="Otro">
-                  <span class="material-symbols-rounded text-[22px]">folder_special</span>
-                </button>
-              </div>
 
-              <!-- Buscador -->
-              <div class="relative w-full" style="height: 48px; display: flex; align-items: center;">
-                <span
-                  class="material-symbols-rounded absolute text-slate-400 text-[20px] pointer-events-none select-none"
-                  style="left: 16px !important; top: 50% !important; transform: translateY(-50%) !important; margin: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; height: 20px !important; width: 20px !important;">search</span>
-                <input type="text" id="archivosSearch" placeholder="Buscar por CLUES o Unidad..."
-                  class="w-full bg-surface rounded-xl border border-slate-200 text-[13px] font-bold text-primary outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all shadow-sm" />
+          <div class="evd-toolbar">
+            <!-- Tabs Premium Independientes -->
+            <div id="archivosTabsContainer" class="evd-tabs">
+              <button type="button" class="evd-tab" data-category="Evidencia_de_capacitaciones" title="Capacitación">
+                <span class="material-symbols-rounded">school</span>
+              </button>
+              <button type="button" class="evd-tab" data-category="Evidencias_de_campana" title="Campaña">
+                <span class="material-symbols-rounded">campaign</span>
+              </button>
+              <button type="button" class="evd-tab" data-category="Supervision" title="Supervisión">
+                <span class="material-symbols-rounded">policy</span>
+              </button>
+              <button type="button" class="evd-tab" data-category="Otros_reportes" title="Otro">
+                <span class="material-symbols-rounded">folder_special</span>
+              </button>
+            </div>
+
+            <!-- Filtros -->
+            <div class="evd-filters">
+              <div class="evd-search">
+                <span class="material-symbols-rounded">search</span>
+                <input type="text" id="archivosSearch" class="evd-search-input" placeholder="Buscar por CLUES, unidad o archivo...">
               </div>
+              <div id="archivosFiltrosUnidadMuni" class="evd-filter-group">
+                <select id="archivosFiltroMunicipio" class="evd-select" title="Filtrar por municipio">
+                  <option value="">Todos los municipios</option>
+                </select>
+                <select id="archivosFiltroUnidad" class="evd-select" title="Filtrar por unidad">
+                  <option value="">Todas las unidades</option>
+                </select>
+              </div>
+              <div class="evd-filter-group">
+                <input type="date" id="archivosFiltroDesde" class="evd-date" title="Desde">
+                <span class="evd-date-sep">—</span>
+                <input type="date" id="archivosFiltroHasta" class="evd-date" title="Hasta">
+              </div>
+              <button type="button" id="btnArchivosLimpiarFiltros" class="evd-clear-btn" title="Limpiar filtros">
+                <span class="material-symbols-rounded">filter_alt_off</span>
+              </button>
             </div>
           </div>
-          <div class="topNotifBody p-5" style="max-height:60vh; overflow-y:auto; padding: 20px !important;">
-            <div id="archivosContainer" class="grid grid-cols-1 gap-4"></div>
+
+          <div class="evd-table-wrap" id="archivosTableWrap">
+            <div class="evd-empty">
+              <span class="material-symbols-rounded">folder_open</span>
+              <p>Selecciona una categoría para consultar evidencias.</p>
+            </div>
+          </div>
+
+          <div class="evd-footer">
+            <span id="archivosResultCount" class="evd-count">0 archivos</span>
+            <div class="evd-pagination" id="archivosPagination"></div>
           </div>
         </div>
       </div>

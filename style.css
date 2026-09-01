@@ -464,8 +464,8 @@ body::after {
   margin: 0 0 10px 4px;
   opacity: 0.5;
 }/* */
-input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not(.notifSearchInput):not(.spm-input-num-clean),
-select,
+input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not(.notifSearchInput):not(.spm-input-num-clean):not(.evd-search-input):not(.evd-date),
+select:not(.evd-select),
 textarea {
   width: 100% !important;
   height: 52px !important;
@@ -810,7 +810,7 @@ button {
 }
 
 /* --- GLOBAL PREMIUM DATE INPUTS --- */
-input[type="date"] {
+input[type="date"]:not(.evd-date) {
   position: relative;
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   font-size: 15px !important;
@@ -827,29 +827,36 @@ input[type="date"] {
   -webkit-appearance: none;
 }
 
-/* Entire field as a trigger, hiding the native icon on the right */
-input[type="date"]::-webkit-calendar-picker-indicator {
+/* Entire field as a trigger, hiding the native icon on the right.
+   .evd-date queda FUERA de este truco a propósito: un indicador invisible
+   cubriendo el 100% del campo confunde al navegador sobre si el picker
+   está abierto o cerrado (un clic no lo cierra, y un clic "fuera" que
+   en realidad cae sobre este overlay invisible lo vuelve a abrir). Los
+   inputs .evd-date se quedan con el ícono nativo de calendario a la
+   derecha, que abre/cierra de forma confiable porque es el comportamiento
+   propio del navegador, no una simulación. */
+input[type="date"]:not(.evd-date)::-webkit-calendar-picker-indicator {
   position: absolute;
   left: 0; top: 0; width: 100%; height: 100%;
   margin: 0; padding: 0;
   cursor: pointer;
-  opacity: 0; 
+  opacity: 0;
   z-index: 4;
 }
 
-input[type="date"]:hover {
+input[type="date"]:not(.evd-date):hover {
   border-color: var(--md-sys-color-outline-variant) !important;
   background-color: var(--md-sys-color-surface) !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
 }
 
-input[type="date"]:focus {
+input[type="date"]:not(.evd-date):focus {
   border-color: var(--primary) !important;
   background-color: var(--md-sys-color-surface) !important;
   box-shadow: 0 4px 12px rgba(0, 51, 102, 0.08) !important;
 }
 
-input[type="date"]::-webkit-datetime-edit {
+input[type="date"]:not(.evd-date)::-webkit-datetime-edit {
   color: var(--md-sys-color-on-surface);
   padding-top: 1px;
 }
@@ -1016,8 +1023,8 @@ body:has(#loginWrapper:not(.hidden)) {
 
 /* */
 
-input:not([type="checkbox"]):not([type="radio"]):focus,
-select:focus,
+input:not([type="checkbox"]):not([type="radio"]):not(.evd-search-input):not(.evd-date):focus,
+select:not(.evd-select):focus,
 textarea:focus {
   border-color: var(--md-sys-color-primary);
   background: var(--md-sys-color-surface);
@@ -1515,16 +1522,6 @@ label,
   overflow: hidden;
 }
 
-
-
-#archivosSearch {
-  height: 48px !important;
-  line-height: 24px !important;
-  padding: 12px 16px 12px 44px !important;
-  box-sizing: border-box !important;
-  display: block !important;
-  font-family: inherit !important;
-}
 
 
 .topNotifHeaderTop {
@@ -6321,7 +6318,11 @@ input[disabled] {
   .ghostBtn,
   .btn,
   .topNotifCard,
-  .notifStat {
+  .notifStat,
+  .evd-overlay,
+  .evd-overlay.open,
+  .evd-card,
+  .evd-overlay.open .evd-card {
     animation: none !important;
     transition: none !important;
   }
@@ -6334,7 +6335,8 @@ input[disabled] {
   .sideCard,
   .top,
   .fact,
-  .topNotifCard {
+  .topNotifCard,
+  .evd-overlay {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
@@ -11156,7 +11158,6 @@ html body .modern-input-group input[type="date"]:focus,
 /* Dropdown Animations (Profile, Notifications, Explorer) */
 #profileDropdown:not(.hidden),
 #topNotifDropdown:not([style*="display: none"]),
-#archivosDropdown:not([style*="display: none"]),
 .topNotifDropdown:not([style*="display: none"]) {
   animation: premiumDropdownIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
   transform-origin: top right;
@@ -13868,6 +13869,724 @@ button.pn-pure-delete:hover span.material-symbols-rounded { color: #b91c1c !impo
 /* 5. VER OBSERVACIÓN (Azul Cielo) */
 button.pn-pure-obs span.material-symbols-rounded { color: #0284c7 !important; }
 button.pn-pure-obs:hover span.material-symbols-rounded { color: #0369a1 !important; }
+
+
+/* ==========================================================
+   EXPLORADOR DE EVIDENCIAS — VISTA COMPLETA (Municipal/Jur/Admin)
+   Reemplaza el dropdown angosto por una vista de pantalla completa
+   con filtros + tabla. Escrito en CSS propio (no combos nuevos de
+   Tailwind) porque el proyecto usa un Tailwind compilado
+   estáticamente que solo incluye las clases ya usadas en el sitio.
+   ========================================================== */
+
+.evd-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.55);
+  /* Sin blur a pantalla completa: es lo que causa el lag perceptible al
+     abrir (el navegador tiene que recalcular el desenfoque cada frame).
+     Misma filosofía que .notif-modal-overlay: solo oscurecer, no desenfocar. */
+  backdrop-filter: brightness(0.55) saturate(1.1);
+  -webkit-backdrop-filter: brightness(0.55) saturate(1.1);
+  will-change: opacity;
+}
+
+.evd-overlay.open {
+  animation: evdFadeIn 0.2s ease-out;
+}
+
+@keyframes evdFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.evd-card {
+  width: min(1400px, 100%);
+  height: min(920px, 92vh);
+  background: var(--md-sys-color-surface);
+  border-radius: 28px;
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.evd-overlay.open .evd-card {
+  animation: evdCardIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes evdCardIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ---- Header ---- */
+.evd-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.evd-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.evd-header-icon {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--md-sys-color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.evd-header-icon .material-symbols-rounded {
+  font-size: 24px;
+}
+
+.evd-title {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--md-sys-color-on-surface);
+  line-height: 1.2;
+}
+
+.evd-subtitle {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface-variant);
+  margin-top: 2px;
+}
+
+.evd-header-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ---- Toolbar: tabs + filtros ---- */
+.evd-toolbar {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 28px;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  background: rgba(148, 163, 184, 0.05);
+}
+
+/* Segmented control estilo iOS: pista gris clara, segmento activo = pastilla
+   sólida centrada. Minimalista (sin borde/sombra por pestaña) y sin blur. */
+.evd-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 4px;
+  border-radius: 16px;
+  background: rgba(148, 163, 184, 0.14);
+}
+
+.evd-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 38px;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.evd-tab .material-symbols-rounded {
+  font-size: 20px;
+}
+
+.evd-tab.active {
+  background: var(--md-sys-color-surface);
+  color: #0284c7;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.evd-tab.active .material-symbols-rounded {
+  font-variation-settings: 'FILL' 1;
+}
+
+.evd-tab:focus-visible {
+  outline: 2px solid #0284c7;
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .evd-tab:not(.active):hover {
+    color: var(--md-sys-color-on-surface);
+  }
+}
+
+.evd-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.evd-search {
+  flex: 1 1 220px;
+  min-width: 180px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1.5px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.evd-search:focus-within {
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.1);
+}
+
+.evd-search .material-symbols-rounded {
+  font-size: 18px;
+  color: var(--md-sys-color-on-surface-variant);
+  flex: none;
+}
+
+.evd-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface);
+  font-family: inherit;
+}
+
+.evd-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.evd-select {
+  height: 44px;
+  max-width: 220px;
+  padding: 0 12px;
+  border-radius: 14px;
+  border: 1.5px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface);
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.evd-select:focus {
+  border-color: var(--md-sys-color-primary);
+}
+
+.evd-date {
+  height: 44px;
+  padding: 0 10px;
+  border-radius: 14px;
+  border: 1.5px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface);
+  outline: none;
+  font-family: inherit;
+}
+
+.evd-date:focus {
+  border-color: var(--md-sys-color-primary);
+}
+
+.evd-date-sep {
+  color: var(--md-sys-color-on-surface-variant);
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.evd-clear-btn {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.evd-clear-btn .material-symbols-rounded {
+  font-size: 20px;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .evd-clear-btn:hover .material-symbols-rounded {
+    transform: translateY(-2px) scale(1.15);
+    color: #f43f5e;
+    filter: drop-shadow(0 4px 6px rgba(244, 63, 94, 0.3));
+  }
+}
+
+.evd-clear-btn:active .material-symbols-rounded {
+  transform: scale(0.9);
+}
+
+/* ---- Tabla (CSS Grid, no <table>) ----
+   Un <table> real con colspan+sticky+display:flex resultó frágil entre
+   navegadores (la fila separadora por municipio no respetaba el colspan
+   y desalineaba todo). Grid es más robusto para esto: una sola definición
+   de columnas para TODA la grilla (imposible que header y filas se
+   desalineen), y la fila separadora simplemente usa grid-column:1/-1 en
+   vez de colspan. Cada "fila" es un <div class="evd-gt-row"> con
+   display:contents (no genera caja propia, sus hijos pasan a ser celdas
+   directas de la grilla) — así :hover en la fila puede iluminar todas
+   sus celdas sin envolver nada en una tabla real. */
+.evd-table-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 28px;
+}
+
+.evd-gtable {
+  display: grid;
+  width: 100%;
+  font-size: 12.5px;
+  align-content: start;
+}
+
+.evd-gt-row {
+  display: contents;
+}
+
+.evd-gt-cell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  color: var(--md-sys-color-on-surface);
+}
+
+.evd-gt-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--md-sys-color-surface-variant);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--md-sys-color-primary);
+  white-space: nowrap;
+}
+
+.evd-gt-actions {
+  justify-content: flex-end;
+}
+
+.evd-gt-row.evd-gt-data:hover > .evd-gt-cell {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.evd-gt-file {
+  gap: 10px;
+  font-weight: 800;
+}
+
+.evd-file-icon {
+  flex: none;
+  font-size: 18px !important;
+  color: var(--md-sys-color-primary);
+  opacity: 0.7;
+}
+
+/* Truncado genérico (archivo, unidad, municipio, grupo): cada columna de
+   la grilla ya tiene un ancho fijo, así que un ellipsis simple basta. */
+.evd-ellipsis {
+  display: block;
+  min-width: 0;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.evd-gt-date {
+  white-space: nowrap;
+  color: var(--md-sys-color-on-surface-variant);
+  font-weight: 700;
+}
+
+/* Separador de bloque por municipio: una sola celda que abarca TODA la
+   grilla (grid-column:1/-1), no una fila de datos. */
+.evd-gt-group {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 20px 14px 6px;
+}
+
+.evd-gtable > .evd-gt-row:nth-child(2) .evd-gt-group {
+  padding-top: 10px;
+}
+
+.evd-gt-group .material-symbols-rounded {
+  font-size: 15px;
+  color: #f59e0b;
+  align-self: center;
+}
+
+.evd-gt-group .evd-ellipsis {
+  flex: none;
+  max-width: 60%;
+  font-size: 11.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--md-sys-color-on-surface);
+}
+
+.evd-group-count {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.evd-view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--md-sys-color-primary);
+  text-decoration: none;
+  background: transparent;
+  border: none;
+}
+
+.evd-view-btn .material-symbols-rounded {
+  font-size: 18px;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .evd-view-btn:hover .material-symbols-rounded {
+    transform: translateY(-2px) scale(1.2);
+    color: #0284c7;
+    filter: drop-shadow(0 4px 6px rgba(2, 132, 199, 0.35));
+  }
+}
+
+.evd-view-btn:active .material-symbols-rounded {
+  transform: scale(0.9);
+}
+
+.evd-empty {
+  height: 100%;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--md-sys-color-on-surface-variant);
+  text-align: center;
+}
+
+.evd-empty .material-symbols-rounded {
+  font-size: 48px;
+  opacity: 0.35;
+}
+
+.evd-empty p {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0;
+  max-width: 320px;
+}
+
+/* ---- Footer / paginación ---- */
+.evd-footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 28px;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+  background: rgba(148, 163, 184, 0.04);
+}
+
+.evd-count {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--md-sys-color-on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.evd-pagination {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.evd-page-btn {
+  width: 34px;
+  height: 34px;
+  background: transparent;
+  border: none;
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.evd-page-btn .material-symbols-rounded {
+  font-size: 20px;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease;
+}
+
+.evd-page-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .evd-page-btn:not(:disabled):hover .material-symbols-rounded {
+    transform: scale(1.2);
+    color: var(--md-sys-color-primary);
+  }
+}
+
+.evd-page-indicator {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--md-sys-color-on-surface);
+  min-width: 110px;
+  text-align: center;
+}
+
+/* ---- Selector de Capacitación/Campaña (nivel 1) ----
+   En vez de listar todos los archivos de todas las capacitaciones juntos,
+   primero se elige el evento como una tarjeta; recién ahí se ve su tabla. */
+.evd-grupo-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  padding: 20px 0 8px;
+}
+
+.evd-grupo-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 18px;
+  background: var(--md-sys-color-surface);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.evd-grupo-card-icon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--md-sys-color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px !important;
+}
+
+.evd-grupo-card-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--md-sys-color-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.evd-grupo-card-count {
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--md-sys-color-on-surface-variant);
+  white-space: nowrap;
+}
+
+.evd-grupo-card-chevron {
+  flex: none;
+  font-size: 18px !important;
+  color: var(--md-sys-color-outline-variant);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .evd-grupo-card:hover {
+    border-color: #0284c7;
+    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.12);
+  }
+
+  .evd-grupo-card:hover .evd-grupo-card-chevron {
+    transform: translateX(3px);
+    color: #0284c7;
+  }
+}
+
+.evd-grupo-card:active {
+  transform: scale(0.98);
+}
+
+/* ---- Breadcrumb: volver del detalle de un evento al selector ---- */
+.evd-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 4px 12px;
+}
+
+.evd-breadcrumb-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 12px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 6px 10px 6px 6px;
+  border-radius: 10px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.evd-breadcrumb-back .material-symbols-rounded {
+  font-size: 18px;
+  transition: transform 0.25s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .evd-breadcrumb-back:hover {
+    color: var(--md-sys-color-primary);
+    background: rgba(148, 163, 184, 0.12);
+  }
+
+  .evd-breadcrumb-back:hover .material-symbols-rounded {
+    transform: translateX(-3px);
+  }
+}
+
+.evd-breadcrumb-sep {
+  font-size: 16px !important;
+  color: var(--md-sys-color-outline-variant);
+}
+
+.evd-breadcrumb-current {
+  font-size: 12.5px;
+  font-weight: 900;
+  color: var(--md-sys-color-on-surface);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ---- Responsive: pantallas angostas ---- */
+@media (max-width: 760px) {
+  .evd-overlay {
+    padding: 0;
+  }
+
+  .evd-card {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+
+  .evd-header {
+    padding: 16px 18px;
+  }
+
+  .evd-toolbar {
+    padding: 14px 18px;
+  }
+
+  .evd-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .evd-search,
+  .evd-filter-group {
+    width: 100%;
+  }
+
+  .evd-select {
+    max-width: none;
+    flex: 1;
+  }
+
+  .evd-table-wrap {
+    padding: 0 12px;
+  }
+
+  .evd-footer {
+    padding: 12px 18px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
 
 
 

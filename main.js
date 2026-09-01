@@ -22649,51 +22649,21 @@ document.addEventListener("input", e => {
 });
 
 // ==========================================
-// PANEL DE ARCHIVOS (VISUALIZADOR DROPDOWN)
+// PANEL DE ARCHIVOS — EXPLORADOR DE EVIDENCIAS (VISTA COMPLETA)
 // ==========================================
 let ARCHIVOS_DATA = [];
 let CURRENT_EVIDENCE_CATEGORY = "Evidencia_de_capacitaciones";
-
-function getArchivosDropdownRefs() {
-  return {
-    box: $("archivosDropdown"),
-    btn: $("btnViewArchivos"),
-    host: $("cardSide")
-  };
-}
-
-function positionArchivosDropdown() {
-  const refs = getArchivosDropdownRefs();
-  const box = refs.box;
-  const btn = refs.btn;
-  if (!box || !btn) return;
-
-  const btnRect = btn.getBoundingClientRect();
-  const boxWidth = box.offsetWidth;
-  const padding = 12;
-
-  let top = btnRect.bottom + 12;
-  let left = btnRect.right - boxWidth;
-
-  if (left < padding) left = padding;
-  if (left + boxWidth > window.innerWidth - padding) {
-    left = window.innerWidth - boxWidth - padding;
-  }
-
-  const availableHeight = window.innerHeight - top - padding;
-
-  box.style.position = "fixed";
-  box.style.top = top + "px";
-  box.style.left = left + "px";
-  box.style.maxHeight = availableHeight + "px";
-  box.style.zIndex = "10000";
-}
+// Para Capacitación/Campaña: null = mostrando el selector de eventos;
+// con valor = ya se eligió un evento y se ve su tabla de archivos.
+let CURRENT_EVIDENCE_GRUPO = null;
+const ARCHIVOS_PAGE_SIZE = 40;
+let ARCHIVOS_PAGE = 1;
 
 function toggleArchivosDropdown() {
   const box = $("archivosDropdown");
   if (!box) return;
 
-  const isOpen = box.style.display === "block";
+  const isOpen = box.style.display === "flex";
   if (isOpen) {
     box.classList.remove("open");
     box.style.display = "none";
@@ -22701,14 +22671,10 @@ function toggleArchivosDropdown() {
     // Ocultar notif si está abierto
     if (typeof closeTopNotifDropdown === "function") closeTopNotifDropdown();
 
-    box.style.visibility = "hidden";
-    box.style.display = "block";
-    positionArchivosDropdown();
+    box.style.display = "flex";
+    ARCHIVOS_PAGE = 1;
+    CURRENT_EVIDENCE_GRUPO = null;
     renderArchivosView();
-
-    // Force reflow for animation
-    void box.offsetWidth;
-    box.style.visibility = "visible";
     box.classList.add("open");
   }
 }
@@ -22724,47 +22690,127 @@ $("btnArchivosClose")?.addEventListener("click", ev => {
   toggleArchivosDropdown();
 });
 
-document.addEventListener("click", ev => {
-  const box = $("archivosDropdown");
-  if (box && box.style.display === "block") {
-    const isBtn = ev.target.closest("#btnViewArchivos");
-    if (!box.contains(ev.target) && !isBtn) {
-      box.classList.remove("open");
-      box.style.display = "none";
-    }
+// Clic en el fondo oscuro (fuera de la tarjeta) cierra el explorador
+$("archivosDropdown")?.addEventListener("click", ev => {
+  if (ev.target === ev.currentTarget) {
+    toggleArchivosDropdown();
   }
 });
 
 document.addEventListener("keydown", ev => {
   if (ev.key === "Escape") {
     const box = $("archivosDropdown");
-    if (box && box.style.display === "block") {
+    if (box && box.style.display === "flex") {
       box.classList.remove("open");
       box.style.display = "none";
     }
   }
 });
 
-$("btnRefreshArchivos")?.addEventListener("click", renderArchivosView);
-$("archivosSearch")?.addEventListener("input", filterArchivosGrid);
+$("btnRefreshArchivos")?.addEventListener("click", () => {
+  ARCHIVOS_PAGE = 1;
+  renderArchivosView();
+});
+
+// Con debounce: sin esto, cada tecla reconstruye toda la grilla (hasta
+// ~40 filas) de inmediato, y tecleando rápido eso se siente "trabado".
+$("archivosSearch")?.addEventListener("input", debounce(() => {
+  ARCHIVOS_PAGE = 1;
+  filterArchivosGrid();
+}, 250));
+
+$("archivosFiltroMunicipio")?.addEventListener("change", () => {
+  ARCHIVOS_PAGE = 1;
+  populateArchivosFilterOptions();
+  filterArchivosGrid();
+});
+
+$("archivosFiltroUnidad")?.addEventListener("change", () => {
+  ARCHIVOS_PAGE = 1;
+  filterArchivosGrid();
+});
+
+$("archivosFiltroDesde")?.addEventListener("change", () => {
+  ARCHIVOS_PAGE = 1;
+  filterArchivosGrid();
+});
+
+$("archivosFiltroHasta")?.addEventListener("change", () => {
+  ARCHIVOS_PAGE = 1;
+  filterArchivosGrid();
+});
+
+$("btnArchivosLimpiarFiltros")?.addEventListener("click", () => {
+  if ($("archivosSearch")) $("archivosSearch").value = "";
+  if ($("archivosFiltroMunicipio")) $("archivosFiltroMunicipio").value = "";
+  if ($("archivosFiltroUnidad")) $("archivosFiltroUnidad").value = "";
+  if ($("archivosFiltroDesde")) $("archivosFiltroDesde").value = "";
+  if ($("archivosFiltroHasta")) $("archivosFiltroHasta").value = "";
+  populateArchivosFilterOptions();
+  ARCHIVOS_PAGE = 1;
+  filterArchivosGrid();
+});
+
+// 🛡️ Unidades visibles para los selects de Municipio/Unidad, según el rol
+// (misma lógica de alcance que ya aplica filterArchivosGrid() más abajo).
+function getArchivosRoleScopedUnits() {
+  const role = String((typeof USER !== "undefined" && USER && USER.rol) ? USER.rol : "").toUpperCase();
+  const catalog = Array.isArray(UNIT_CATALOG) ? UNIT_CATALOG : [];
+
+  if (role === "MUNICIPAL") {
+    return catalog.filter(u => canSeeMunicipio_(USER, u.municipio));
+  }
+  if (role === "CARAVANAS") {
+    return catalog.filter(u => {
+      const uName = (u.unidad || u.UNIDAD || u.nombre || "").toUpperCase().trim();
+      return uName.startsWith("FAM") || uName.startsWith("UMME");
+    });
+  }
+  if (role === "ADMIN" || role === "JURISDICCIONAL" || role === "VISUALIZADOR_JURISDICCIONAL") {
+    return catalog;
+  }
+  return []; // UNIDAD: no usa estos selects (siempre son sus propios archivos)
+}
+
+function populateArchivosFilterOptions() {
+  const muniSel = $("archivosFiltroMunicipio");
+  const unidadSel = $("archivosFiltroUnidad");
+  if (!muniSel || !unidadSel) return;
+
+  const units = getArchivosRoleScopedUnits();
+
+  const prevMuniVal = muniSel.value;
+  const municipios = Array.from(new Set(units.map(u => u.municipio).filter(Boolean))).sort();
+  muniSel.innerHTML = `<option value="">Todos los municipios</option>` +
+    municipios.map(m => `<option value="${escapeHtml(m)}">${escapeHtml(m)}</option>`).join("");
+  if (municipios.includes(prevMuniVal)) muniSel.value = prevMuniVal;
+
+  const muniFilterVal = muniSel.value;
+  const unitsForUnidad = muniFilterVal ? units.filter(u => u.municipio === muniFilterVal) : units;
+  const prevUnidadVal = unidadSel.value;
+  const sortedUnits = [...unitsForUnidad].sort((a, b) => String(a.clues || "").localeCompare(String(b.clues || "")));
+  unidadSel.innerHTML = `<option value="">Todas las unidades</option>` +
+    sortedUnits.map(u => {
+      const label = `${u.clues} - ${(u.unidad || u.UNIDAD || u.nombre || "").trim()}`;
+      return `<option value="${escapeHtml(u.clues)}">${escapeHtml(label)}</option>`;
+    }).join("");
+  if (sortedUnits.some(u => u.clues === prevUnidadVal)) unidadSel.value = prevUnidadVal;
+}
 
 function syncEvidenceExplorerTabs() {
-  const tabs = document.querySelectorAll(".evidence-tab");
+  const tabs = document.querySelectorAll(".evd-tab");
   tabs.forEach(tab => {
     const cat = tab.getAttribute("data-category");
-    if (cat === CURRENT_EVIDENCE_CATEGORY) {
-      tab.className = "evidence-tab flex-1 h-12 flex items-center justify-center rounded-2xl transition-all bg-primary text-white shadow-md border-transparent scale-105 z-10";
-    } else {
-      tab.className = "evidence-tab flex-1 h-12 flex items-center justify-center rounded-2xl transition-all bg-white text-slate-500 hover:text-primary hover:bg-primary/5 shadow-sm border border-slate-200";
-    }
+    tab.classList.toggle("active", cat === CURRENT_EVIDENCE_CATEGORY);
   });
 }
 
 function initEvidenceTabs() {
-  const tabs = document.querySelectorAll(".evidence-tab");
+  const tabs = document.querySelectorAll(".evd-tab");
   tabs.forEach(tab => {
     tab.addEventListener("click", () => {
       CURRENT_EVIDENCE_CATEGORY = tab.getAttribute("data-category");
+      CURRENT_EVIDENCE_GRUPO = null;
       syncEvidenceExplorerTabs();
       renderArchivosView();
     });
@@ -22783,6 +22829,8 @@ async function renderArchivosView() {
       await loadUnitCatalog();
     }
 
+    populateArchivosFilterOptions();
+
     const res = await apiCall({ action: "listfiles", category: CURRENT_EVIDENCE_CATEGORY });
     if (res && res.ok) {
       ARCHIVOS_DATA = res.data;
@@ -22799,17 +22847,17 @@ async function renderArchivosView() {
 }
 
 function filterArchivosGrid() {
-  const container = $("archivosContainer");
-  if (!container) return;
+  const wrap = $("archivosTableWrap");
+  if (!wrap) return;
 
   const catFilt = (CURRENT_EVIDENCE_CATEGORY || "").toLowerCase();
   const txtFilt = ($("archivosSearch")?.value || "").toLowerCase();
   const role = String((typeof USER !== "undefined" && USER && USER.rol) ? USER.rol : "").toUpperCase();
   const myClues = (typeof USER !== "undefined" && USER && USER.clues) ? USER.clues : "";
-  const myMunicipio = (typeof USER !== "undefined" && USER && USER.municipio) ? USER.municipio : "";
   const isUnidad = role === "UNIDAD";
   const isMunicipal = role === "MUNICIPAL";
-  const isAdmin = role === "ADMIN" || role === "JURISDICCIONAL" || role === "VISUALIZADOR_JURISDICCIONAL";
+  const isCapacitaciones = catFilt === "evidencia_de_capacitaciones";
+  const isCampanas = catFilt === "evidencias_de_campana";
 
   // 🛡️ Para MUNICIPAL: construir set de CLUES permitidas basándose en sus municipios autorizados
   let allowedCluesSet = null;
@@ -22875,11 +22923,6 @@ function filterArchivosGrid() {
     });
   }
 
-  if (filtered.length === 0) {
-    container.innerHTML = `<div class="col-span-full text-center text-outline p-8 bg-surface-variant rounded-2xl">No se encontraron archivos.</div>`;
-    return;
-  }
-
   // Helper para extraer datos enriquecidos del path
   const enrichFile = (f) => {
     const url = f.public_url || `${SUPABASE_URL}/storage/v1/object/public/evidencias/${encodeURIComponent(f.name)}`;
@@ -22916,232 +22959,279 @@ function filterArchivosGrid() {
       if (uInfo && uInfo.municipio) municipio = uInfo.municipio;
     }
 
-    return { ...f, url, fileName, cluesId, cluesUnidadStr, dateStr, dObj, municipio, capacitacion, campana };
+    let grupo = "";
+    if (isCapacitaciones) grupo = (capacitacion || "Sin_Capacitacion").replace(/_/g, " ");
+    else if (isCampanas) grupo = (campana || "Sin_Campana").replace(/_/g, " ");
+
+    return { ...f, url, fileName, cluesId, cluesUnidadStr, dateStr, dObj, municipio, capacitacion, campana, grupo };
   };
 
-  const enrichedFiles = filtered.map(enrichFile);
+  let enrichedFiles = filtered.map(enrichFile);
 
-  // Generador de tarjeta de archivo
-  const fileCardHTML = (file) => `
-    <div class="bg-white border border-outline-variant/30 rounded-lg p-3 flex items-center gap-3 transition-all hover:bg-slate-50 hover:border-primary/20 hover:shadow-sm group mt-2">
-      <div class="w-10 h-10 rounded bg-primary/5 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/10">
-        <span class="material-symbols-rounded text-primary text-[20px]">description</span>
+  // Filtros avanzados (municipio, unidad, rango de fechas): solo acotan
+  // dentro de lo que el rol ya tiene permitido ver por las reglas de arriba.
+  const muniFilterVal = $("archivosFiltroMunicipio")?.value || "";
+  const unidadFilterVal = $("archivosFiltroUnidad")?.value || "";
+  const desdeVal = $("archivosFiltroDesde")?.value || "";
+  const hastaVal = $("archivosFiltroHasta")?.value || "";
+
+  if (muniFilterVal) {
+    enrichedFiles = enrichedFiles.filter(f => f.municipio === muniFilterVal);
+  }
+  if (unidadFilterVal) {
+    enrichedFiles = enrichedFiles.filter(f => f.cluesId === unidadFilterVal);
+  }
+  if (desdeVal) {
+    const desdeDate = new Date(desdeVal + "T00:00:00");
+    enrichedFiles = enrichedFiles.filter(f => f.dObj >= desdeDate);
+  }
+  if (hastaVal) {
+    const hastaDate = new Date(hastaVal + "T23:59:59");
+    enrichedFiles = enrichedFiles.filter(f => f.dObj <= hastaDate);
+  }
+
+  // showUnitCols = true para todo rol que pueda ver varias unidades
+  // (Municipal/Admin/Jurisdiccional/Caravanas). UNIDAD solo ve lo suyo:
+  // no hay nada que agrupar, se queda con la fecha más reciente primero.
+  const showUnitCols = !isUnidad;
+  const isGroupCategory = isCapacitaciones || isCampanas;
+
+  // Capacitación/Campaña: primero se elige EL EVENTO (selector de tarjetas)
+  // y solo después se ve su tabla de archivos — evita mezclar varias
+  // capacitaciones distintas en una sola vista saturada. Mientras no haya
+  // un evento elegido, se pinta el selector y no la tabla.
+  if (showUnitCols && isGroupCategory && !CURRENT_EVIDENCE_GRUPO) {
+    renderArchivosGrupoPicker(enrichedFiles, isCapacitaciones ? "capacitaciones" : "campañas");
+    return;
+  }
+
+  let scoped = enrichedFiles;
+  if (showUnitCols && isGroupCategory && CURRENT_EVIDENCE_GRUPO) {
+    scoped = enrichedFiles.filter(f => f.grupo === CURRENT_EVIDENCE_GRUPO);
+  }
+
+  if (showUnitCols) {
+    scoped.sort((a, b) => {
+      const m = a.municipio.localeCompare(b.municipio);
+      if (m !== 0) return m;
+      const c = a.cluesId.localeCompare(b.cluesId);
+      if (c !== 0) return c;
+      return b.dObj - a.dObj;
+    });
+  } else {
+    scoped.sort((a, b) => b.dObj - a.dObj);
+  }
+
+  renderArchivosTable(scoped, {
+    showUnitCols,
+    grupoContext: (showUnitCols && isGroupCategory) ? CURRENT_EVIDENCE_GRUPO : null
+  });
+}
+
+// Nivel 1 de Capacitación/Campaña: una tarjeta por evento (no por archivo),
+// para no saturar la vista con todos los archivos de todas las
+// capacitaciones a la vez. Al elegir una, filterArchivosGrid() vuelve a
+// correr ya con CURRENT_EVIDENCE_GRUPO fijo y pinta la tabla de esa sola.
+function renderArchivosGrupoPicker(items, labelPlural) {
+  const wrap = $("archivosTableWrap");
+  const countEl = $("archivosResultCount");
+  const pagEl = $("archivosPagination");
+  if (!wrap) return;
+
+  const counts = {};
+  items.forEach(f => {
+    counts[f.grupo] = (counts[f.grupo] || 0) + 1;
+  });
+  const grupos = Object.keys(counts).sort();
+
+  if (countEl) countEl.textContent = `${grupos.length} ${labelPlural}`;
+  if (pagEl) pagEl.innerHTML = "";
+
+  if (grupos.length === 0) {
+    wrap.innerHTML = `
+      <div class="evd-empty">
+        <span class="material-symbols-rounded">folder_off</span>
+        <p>No se encontraron ${labelPlural} con estos filtros.</p>
+      </div>`;
+    return;
+  }
+
+  wrap.innerHTML = `
+    <div class="evd-grupo-picker">
+      ${grupos.map(g => `
+        <button type="button" class="evd-grupo-card" data-grupo="${escapeAttr(g)}">
+          <span class="material-symbols-rounded evd-grupo-card-icon">folder</span>
+          <span class="evd-grupo-card-name">${escapeHtml(g)}</span>
+          <span class="evd-grupo-card-count">${counts[g]} archivo${counts[g] === 1 ? "" : "s"}</span>
+          <span class="material-symbols-rounded evd-grupo-card-chevron">chevron_right</span>
+        </button>
+      `).join("")}
+    </div>`;
+
+  wrap.querySelectorAll(".evd-grupo-card").forEach(card => {
+    card.addEventListener("click", () => {
+      CURRENT_EVIDENCE_GRUPO = card.getAttribute("data-grupo");
+      ARCHIVOS_PAGE = 1;
+      filterArchivosGrid();
+    });
+  });
+}
+
+// Pinta la tabla paginada del explorador de evidencias a partir de la lista
+// ya filtrada y ordenada. Cuando el rol ve varias unidades, la lista viene
+// agrupada por Municipio (ver filterArchivosGrid) y aquí se insertan
+// renglones separadores por bloque para que se note la separación —
+// en vez de un choclo continuo de filas repitiendo el mismo municipio.
+// opts.grupoContext: si viene de Capacitación/Campaña (ver
+// renderArchivosGrupoPicker), es el nombre del evento ya elegido — se
+// pinta un breadcrumb arriba para volver al selector de eventos.
+function renderArchivosTable(items, opts) {
+  const wrap = $("archivosTableWrap");
+  const countEl = $("archivosResultCount");
+  const pagEl = $("archivosPagination");
+  if (!wrap) return;
+
+  const showUnitCols = !!opts.showUnitCols;
+  const grupoContext = opts.grupoContext || null;
+  const breadcrumbHtml = grupoContext ? `
+    <div class="evd-breadcrumb">
+      <button type="button" id="btnArchivosBackToGrupos" class="evd-breadcrumb-back">
+        <span class="material-symbols-rounded">arrow_back</span>
+        <span>Todas</span>
+      </button>
+      <span class="material-symbols-rounded evd-breadcrumb-sep">chevron_right</span>
+      <span class="evd-breadcrumb-current">${escapeHtml(grupoContext)}</span>
+    </div>` : "";
+
+  const total = items.length;
+  if (countEl) countEl.textContent = total === 0 ? "Sin resultados" : `${total} archivo${total === 1 ? "" : "s"}`;
+
+  if (total === 0) {
+    wrap.innerHTML = `
+      ${breadcrumbHtml}
+      <div class="evd-empty">
+        <span class="material-symbols-rounded">folder_off</span>
+        <p>No se encontraron archivos con estos filtros.</p>
+      </div>`;
+    if (pagEl) pagEl.innerHTML = "";
+    bindArchivosBackButton();
+    return;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(total / ARCHIVOS_PAGE_SIZE));
+  if (ARCHIVOS_PAGE > totalPages) ARCHIVOS_PAGE = totalPages;
+  if (ARCHIVOS_PAGE < 1) ARCHIVOS_PAGE = 1;
+  const start = (ARCHIVOS_PAGE - 1) * ARCHIVOS_PAGE_SIZE;
+  const pageItems = items.slice(start, start + ARCHIVOS_PAGE_SIZE);
+
+  // Dentro de la tabla siempre se agrupa por Municipio (cuando aplica) —
+  // agrupar por evento ya se resolvió un nivel arriba, en el selector.
+  const groupKey = showUnitCols ? "municipio" : null;
+
+  // Conteo por bloque sobre TODO el resultado filtrado (no solo la página
+  // actual), para que el encabezado del bloque diga el total real.
+  const groupCounts = {};
+  if (groupKey) {
+    items.forEach(f => {
+      groupCounts[f[groupKey]] = (groupCounts[f[groupKey]] || 0) + 1;
+    });
+  }
+
+  // Una sola definición de columnas para TODA la grilla (header + filas +
+  // separador de bloque comparten exactamente el mismo grid-template),
+  // así es imposible que se desalineen entre sí.
+  const gridCols = ["minmax(0, 1fr)"];
+  if (showUnitCols) gridCols.push("20%", "14%");
+  gridCols.push("92px", "64px");
+
+  let headCells = `<div class="evd-gt-cell evd-gt-head">Archivo</div>`;
+  if (showUnitCols) headCells += `<div class="evd-gt-cell evd-gt-head">Unidad / CLUES</div><div class="evd-gt-cell evd-gt-head">Municipio</div>`;
+  headCells += `<div class="evd-gt-cell evd-gt-head">Fecha</div><div class="evd-gt-cell evd-gt-head evd-gt-actions">Acciones</div>`;
+
+  const groupRowHtml = (label, count) => `
+    <div class="evd-gt-row">
+      <div class="evd-gt-group">
+        <span class="material-symbols-rounded">location_on</span>
+        <span class="evd-ellipsis">${escapeHtml(label)}</span>
+        <span class="evd-group-count">${count} archivo${count === 1 ? "" : "s"}</span>
       </div>
-      <div class="flex-1 min-w-0">
-        <p class="font-bold text-[12px] text-primary truncate leading-tight" title="${file.fileName}">${file.fileName}</p>
-        <div class="flex items-center gap-2 mt-0.5">
-          <span class="text-[9px] font-bold text-outline-variant uppercase tracking-wider truncate max-w-[150px]">${file.cluesUnidadStr.replace(/_/g, ' ')}</span>
-          <span class="text-[9px] text-outline opacity-60">•</span>
-          <span class="text-[9px] text-outline font-medium">${file.dateStr}</span>
-        </div>
-      </div>
-      <a href="${file.url}" target="_blank" class="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center transition-all hover:bg-primary hover:text-white" title="Ver archivo">
-        <span class="material-symbols-rounded text-[18px]">visibility</span>
+    </div>`;
+
+  let lastGroupVal = null;
+  const rowsHtml = pageItems.map(f => {
+    let rowPrefix = "";
+    if (groupKey && f[groupKey] !== lastGroupVal) {
+      lastGroupVal = f[groupKey];
+      rowPrefix = groupRowHtml(f[groupKey], groupCounts[f[groupKey]] || 0);
+    }
+
+    let cells = `
+      <div class="evd-gt-cell evd-gt-file">
+        <span class="material-symbols-rounded evd-file-icon">description</span>
+        <span class="evd-ellipsis" title="${escapeHtml(f.fileName)}">${escapeHtml(f.fileName)}</span>
+      </div>`;
+    if (showUnitCols) {
+      cells += `<div class="evd-gt-cell"><span class="evd-ellipsis" title="${escapeHtml(f.cluesUnidadStr.replace(/_/g, " "))}">${escapeHtml(f.cluesUnidadStr.replace(/_/g, " "))}</span></div>`;
+      cells += `<div class="evd-gt-cell"><span class="evd-ellipsis">${escapeHtml(f.municipio)}</span></div>`;
+    }
+    cells += `<div class="evd-gt-cell evd-gt-date">${f.dateStr}</div>`;
+    cells += `<div class="evd-gt-cell evd-gt-actions">
+      <a href="${f.url}" target="_blank" rel="noopener" class="evd-view-btn" title="Ver archivo">
+        <span class="material-symbols-rounded">visibility</span>
       </a>
-    </div>
-  `;
+    </div>`;
 
-  // Generador de acordeón de fecha
-  const dateAccordionHTML = (dateStr, filesArray) => `
-    <details class="group bg-slate-50/50 rounded-xl border border-slate-200 mt-3 overflow-hidden" open>
-      <summary class="flex items-center justify-between p-3 cursor-pointer hover:bg-slate-100 transition-colors list-none select-none">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600">
-             <span class="material-symbols-rounded text-[18px]">calendar_today</span>
-          </div>
-          <div>
-            <h5 class="text-[12px] font-bold text-primary leading-none">${dateStr}</h5>
-            <span class="text-[9px] text-slate-500 font-medium">${filesArray.length} archivos</span>
-          </div>
-        </div>
-        <span class="material-symbols-rounded text-slate-400 group-open:rotate-180 transition-transform text-[18px]">expand_more</span>
-      </summary>
-      <div class="px-3 pb-3 pt-0 border-t border-slate-100 flex flex-col">
-        ${filesArray.map(f => fileCardHTML(f)).join("")}
-      </div>
-    </details>
-  `;
+    return `${rowPrefix}<div class="evd-gt-row evd-gt-data">${cells}</div>`;
+  }).join("");
 
-  // Generador de acordeón de unidad (CLUES)
-  const cluesAccordionHTML = (cluesId, cluesUnidadStr, filesByDate) => {
-    let dateHTMLs = "";
-    // Ordenar fechas descendente
-    const sortedDates = Object.keys(filesByDate).sort((a, b) => {
-      const d1 = filesByDate[a][0].dObj;
-      const d2 = filesByDate[b][0].dObj;
-      return d2 - d1;
-    });
-    sortedDates.forEach(dateStr => {
-      dateHTMLs += dateAccordionHTML(dateStr, filesByDate[dateStr]);
-    });
+  wrap.innerHTML = `
+    ${breadcrumbHtml}
+    <div class="evd-gtable" style="grid-template-columns: ${gridCols.join(" ")};">
+      <div class="evd-gt-row">${headCells}</div>
+      ${rowsHtml}
+    </div>`;
+  bindArchivosBackButton();
 
-    return `
-      <details class="group bg-white rounded-2xl border border-slate-200 mb-4 overflow-hidden shadow-sm">
-        <summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 transition-colors list-none select-none">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-               <span class="material-symbols-rounded">folder_open</span>
-            </div>
-            <div>
-              <h4 class="text-[13px] font-bold text-primary leading-tight">${cluesId}</h4>
-              <span class="text-[10px] text-slate-500 font-medium">${cluesUnidadStr.replace(/_/g, ' ')}</span>
-            </div>
-          </div>
-          <span class="material-symbols-rounded text-slate-400 group-open:rotate-180 transition-transform">expand_more</span>
-        </summary>
-        <div class="px-4 pb-4 pt-1 bg-slate-50/30 flex flex-col gap-1 border-t border-slate-100">
-          ${dateHTMLs}
-        </div>
-      </details>
-    `;
-  };
+  if (pagEl) {
+    pagEl.innerHTML = `
+      <button type="button" id="btnArchivosPrevPage" class="evd-page-btn" ${ARCHIVOS_PAGE <= 1 ? "disabled" : ""} title="Página anterior">
+        <span class="material-symbols-rounded">chevron_left</span>
+      </button>
+      <span class="evd-page-indicator">Página ${ARCHIVOS_PAGE} de ${totalPages}</span>
+      <button type="button" id="btnArchivosNextPage" class="evd-page-btn" ${ARCHIVOS_PAGE >= totalPages ? "disabled" : ""} title="Página siguiente">
+        <span class="material-symbols-rounded">chevron_right</span>
+      </button>`;
 
-  // Generador de acordeón de capacitación
-  const capacitacionAccordionHTML = (capName, innerHTML) => `
-    <details class="group bg-slate-100/60 rounded-[24px] border border-slate-300/70 mb-5 overflow-hidden shadow-sm">
-      <summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-200/50 transition-colors list-none select-none">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-             <span class="material-symbols-rounded">folder</span>
-          </div>
-          <div>
-            <h3 class="text-[14px] font-black text-primary leading-tight">${capName.replace(/_/g, ' ')}</h3>
-          </div>
-        </div>
-        <span class="material-symbols-rounded text-slate-500 group-open:rotate-180 transition-transform">expand_more</span>
-      </summary>
-      <div class="p-4 flex flex-col gap-2 border-t border-slate-200 bg-white">
-        ${innerHTML}
-      </div>
-    </details>
-  `;
-
-  let finalHTML = "";
-  const isCapacitaciones = (CURRENT_EVIDENCE_CATEGORY || "").toLowerCase() === "evidencia_de_capacitaciones";
-  const isCampanas = (CURRENT_EVIDENCE_CATEGORY || "").toLowerCase() === "evidencias_de_campana";
-
-  if (isCapacitaciones || isCampanas) {
-    const byGroup = {};
-    enrichedFiles.forEach(f => {
-      const groupKey = isCapacitaciones ? (f.capacitacion || "Sin_Capacitacion") : (f.campana || "Sin_Campana");
-      if (!byGroup[groupKey]) byGroup[groupKey] = [];
-      byGroup[groupKey].push(f);
-    });
-
-    const groupKeys = Object.keys(byGroup).sort();
-    let groupHTML = "";
-    groupKeys.forEach(groupKey => {
-      const groupFiles = byGroup[groupKey];
-      let innerHTML = "";
-      
-      if (isUnidad) {
-        const byDate = {};
-        groupFiles.forEach(f => {
-          if (!byDate[f.dateStr]) byDate[f.dateStr] = [];
-          byDate[f.dateStr].push(f);
-        });
-        const sortedDates = Object.keys(byDate).sort((a, b) => byDate[b][0].dObj - byDate[a][0].dObj);
-        innerHTML = sortedDates.map(dateStr => dateAccordionHTML(dateStr, byDate[dateStr])).join("");
-      } else if (isMunicipal) {
-        const byClues = {};
-        groupFiles.forEach(f => {
-          if (!byClues[f.cluesId]) byClues[f.cluesId] = { cluesUnidadStr: f.cluesUnidadStr, dates: {} };
-          if (!byClues[f.cluesId].dates[f.dateStr]) byClues[f.cluesId].dates[f.dateStr] = [];
-          byClues[f.cluesId].dates[f.dateStr].push(f);
-        });
-        const sortedClues = Object.keys(byClues).sort();
-        sortedClues.forEach(cluesId => {
-          innerHTML += cluesAccordionHTML(cluesId, byClues[cluesId].cluesUnidadStr, byClues[cluesId].dates);
-        });
-      } else {
-        const byMun = {};
-        groupFiles.forEach(f => {
-          const m = f.municipio;
-          if (!byMun[m]) byMun[m] = {};
-          if (!byMun[m][f.cluesId]) byMun[m][f.cluesId] = { cluesUnidadStr: f.cluesUnidadStr, dates: {} };
-          if (!byMun[m][f.cluesId].dates[f.dateStr]) byMun[m][f.cluesId].dates[f.dateStr] = [];
-          byMun[m][f.cluesId].dates[f.dateStr].push(f);
-        });
-        const sortedMuns = Object.keys(byMun).sort();
-        sortedMuns.forEach(mun => {
-          innerHTML += `
-            <div class="mb-4">
-              <div class="flex items-center gap-2 mb-2 px-1">
-                <span class="material-symbols-rounded text-orange-400 text-[16px]">location_on</span>
-                <h4 class="text-[12px] font-black text-slate-700 uppercase tracking-wider">${mun}</h4>
-              </div>
-          `;
-          const cluesObj = byMun[mun];
-          const sortedClues = Object.keys(cluesObj).sort();
-          sortedClues.forEach(cluesId => {
-            innerHTML += cluesAccordionHTML(cluesId, cluesObj[cluesId].cluesUnidadStr, cluesObj[cluesId].dates);
-          });
-          innerHTML += `</div>`;
-        });
+    // ⚠️ $(id) cachea por id para siempre (ver DOM.get) — como estos
+    // botones se recrean en cada render, $() devolvería el nodo viejo (ya
+    // desprendido del DOM) a partir del segundo render. Se busca con
+    // querySelector directo sobre pagEl para agarrar siempre el nodo vivo.
+    pagEl.querySelector("#btnArchivosPrevPage")?.addEventListener("click", () => {
+      if (ARCHIVOS_PAGE > 1) {
+        ARCHIVOS_PAGE--;
+        filterArchivosGrid();
       }
-
-      if (!innerHTML) innerHTML = `<div class="text-center text-slate-400 py-4">No hay archivos</div>`;
-      groupHTML += capacitacionAccordionHTML(groupKey, innerHTML);
     });
-
-    finalHTML = groupHTML;
-  }
-  else if (isUnidad) {
-    // UNIDAD: No hay carpetas de CLUES. Solo subcarpetas de fechas.
-    const byDate = {};
-    enrichedFiles.forEach(f => {
-      if (!byDate[f.dateStr]) byDate[f.dateStr] = [];
-      byDate[f.dateStr].push(f);
-    });
-
-    const sortedDates = Object.keys(byDate).sort((a, b) => byDate[b][0].dObj - byDate[a][0].dObj);
-    finalHTML = sortedDates.map(dateStr => dateAccordionHTML(dateStr, byDate[dateStr])).join("");
-  }
-  else if (isMunicipal) {
-    // MUNICIPAL: Carpetas por CLUES, sin dividir por Municipio
-    const byClues = {};
-    enrichedFiles.forEach(f => {
-      if (!byClues[f.cluesId]) byClues[f.cluesId] = { cluesUnidadStr: f.cluesUnidadStr, dates: {} };
-      if (!byClues[f.cluesId].dates[f.dateStr]) byClues[f.cluesId].dates[f.dateStr] = [];
-      byClues[f.cluesId].dates[f.dateStr].push(f);
-    });
-
-    // Ordenar CLUES alfabéticamente
-    const sortedClues = Object.keys(byClues).sort();
-    sortedClues.forEach(cluesId => {
-      finalHTML += cluesAccordionHTML(cluesId, byClues[cluesId].cluesUnidadStr, byClues[cluesId].dates);
+    pagEl.querySelector("#btnArchivosNextPage")?.addEventListener("click", () => {
+      if (ARCHIVOS_PAGE < totalPages) {
+        ARCHIVOS_PAGE++;
+        filterArchivosGrid();
+      }
     });
   }
-  else {
-    // ADMIN/JURISDICCIONAL: Separación por Municipio -> Carpetas de CLUES -> Carpetas de Fecha
-    const byMun = {};
-    enrichedFiles.forEach(f => {
-      const m = f.municipio;
-      if (!byMun[m]) byMun[m] = {};
-      if (!byMun[m][f.cluesId]) byMun[m][f.cluesId] = { cluesUnidadStr: f.cluesUnidadStr, dates: {} };
-      if (!byMun[m][f.cluesId].dates[f.dateStr]) byMun[m][f.cluesId].dates[f.dateStr] = [];
-      byMun[m][f.cluesId].dates[f.dateStr].push(f);
-    });
+}
 
-    const sortedMuns = Object.keys(byMun).sort();
-    sortedMuns.forEach(mun => {
-      finalHTML += `
-        <div class="mb-6">
-          <div class="flex items-center gap-2 mb-3 px-1">
-            <span class="material-symbols-rounded text-orange-400 text-[18px]">location_on</span>
-            <h3 class="text-[13px] font-black text-slate-700 uppercase tracking-widest">${mun}</h3>
-          </div>
-      `;
-      const cluesObj = byMun[mun];
-      const sortedClues = Object.keys(cluesObj).sort();
-      sortedClues.forEach(cluesId => {
-        finalHTML += cluesAccordionHTML(cluesId, cluesObj[cluesId].cluesUnidadStr, cluesObj[cluesId].dates);
-      });
-      finalHTML += `</div>`;
-    });
-  }
-
-  container.innerHTML = finalHTML;
+function bindArchivosBackButton() {
+  // ⚠️ $(id) cachea por id para siempre (ver DOM.get): este botón se
+  // recrea en cada render, así que a partir del segundo render $() seguía
+  // devolviendo el nodo viejo (ya fuera del DOM) — el clic caía en un
+  // botón fantasma y no pasaba nada. querySelector sobre el wrap siempre
+  // agarra el nodo que está realmente visible.
+  $("archivosTableWrap")?.querySelector("#btnArchivosBackToGrupos")?.addEventListener("click", () => {
+    CURRENT_EVIDENCE_GRUPO = null;
+    ARCHIVOS_PAGE = 1;
+    filterArchivosGrid();
+  });
 }
 
 /**
@@ -23493,6 +23583,12 @@ function applyRolePermissions(role) {
     } else {
       tabContainer.style.display = "flex";
     }
+  }
+  // UNIDAD siempre ve solo sus propios archivos: los selects de
+  // Municipio/Unidad del explorador de evidencias no aportan nada.
+  const archivosFiltrosUnidadMuni = $("archivosFiltrosUnidadMuni");
+  if (archivosFiltrosUnidadMuni) {
+    archivosFiltrosUnidadMuni.style.display = isUnidad ? "none" : "flex";
   }
   const btnOpenUpload = $("btnOpenUpload");
   if (btnOpenUpload) {
