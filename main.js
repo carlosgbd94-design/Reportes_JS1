@@ -6380,7 +6380,9 @@ async function supabaseRequest(action = "", payload, options = {}) {
         return { ok: true, data: { rows, role } };
       }
       case "unitstatus": {
-        const today = todayYmdLocal();
+        // Fecha real del servidor (no del dispositivo): evita que un reloj mal
+        // configurado en la unidad cierre incorrectamente la ventana de captura.
+        const today = await getServerToday();
         const clues = USER.clues;
         const role = (USER.rol || "UNIDAD").trim().toUpperCase();
         const userMuniStr = USER.municipio || "";
@@ -6416,10 +6418,12 @@ async function supabaseRequest(action = "", payload, options = {}) {
 
         // 3. Lógica Inteligente (Días festivos / Fines de semana)
         const consIntelligent = await getConsumiblesStatus(today, clues);
-        const dow = new Date().getDay();
 
         let canCaptureExistenciaBioStandard = false;
-        const hoyDate = new Date();
+        // hoyDate se construye a partir de "today" (fecha del servidor), no de
+        // new Date(), para que el día de la semana calculado sea consistente
+        // aunque el reloj del dispositivo esté mal configurado.
+        const hoyDate = new Date(today + "T12:00:00");
         const d_dow = hoyDate.getDay();
         if (d_dow === 4 || d_dow === 5) {
           canCaptureExistenciaBioStandard = true;
@@ -6431,7 +6435,7 @@ async function supabaseRequest(action = "", payload, options = {}) {
           }
         }
 
-        const bioWindow = calculateBioIntelligentWindow(new Date().getFullYear(), new Date().getMonth());
+        const bioWindow = calculateBioIntelligentWindow(hoyDate.getFullYear(), hoyDate.getMonth());
         const isBioWindowOpen = today >= dateToLocalYmd(bioWindow.start) && today <= dateToLocalYmd(bioWindow.end);
 
         // 4. Consolidar Respuestas de Apertura
@@ -6466,9 +6470,9 @@ async function supabaseRequest(action = "", payload, options = {}) {
         let unitDetails = null;
 
         try {
-          const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+          const startOfMonth = new Date(hoyDate.getFullYear(), hoyDate.getMonth(), 1);
           const dateIter = new Date(startOfMonth);
-          const endIter = new Date();
+          const endIter = new Date(hoyDate);
           const monthStartStr = dateToLocalYmd(startOfMonth);
 
           let expectedSR = 0;
@@ -10328,6 +10332,21 @@ function getComplianceBadgeTone(pct = 0) {
 function todayYmdLocal() {
   if (typeof STATUS !== "undefined" && STATUS && STATUS.today) {
     return STATUS.today;
+  }
+  return dateToLocalYmd(new Date());
+}
+
+// Fecha real de la base de datos (Postgres), para no depender del reloj del
+// dispositivo del usuario al calcular ventanas de captura. Si la función RPC
+// no está disponible por cualquier motivo, cae de vuelta a la fecha local
+// (mismo comportamiento que existía antes de esta función).
+async function getServerToday() {
+  try {
+    const { data, error } = await supabase.rpc('get_server_today');
+    if (!error && data) return data;
+    if (error) console.warn("[getServerToday] RPC devolvió error, usando fecha local:", error);
+  } catch (e) {
+    console.warn("[getServerToday] Fallback a fecha local del dispositivo:", e);
   }
   return dateToLocalYmd(new Date());
 }
