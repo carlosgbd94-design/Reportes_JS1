@@ -33,6 +33,7 @@ WHERE jobname IN (
 
 -- Tarea A: Recordatorio de Captura Jueves (14:30 MX -> 20:30 UTC)
 -- Verifica Consumibles de hoy y Biológicos de hoy
+-- timeout_milliseconds ampliado (default de pg_net es 5000ms, insuficiente para varios envíos SMTP)
 SELECT cron.schedule(
   'enviar-recordatorio-jueves',
   '30 20 * * 4',
@@ -43,13 +44,15 @@ SELECT cron.schedule(
       'Content-Type', 'application/json',
       'Authorization', 'Bearer YOUR_SERVICE_ROLE_KEY'
     ),
-    body := '{"action": "send-reminders"}'
+    body := '{"action": "send-reminders"}',
+    timeout_milliseconds := 20000
   );
   $$
 );
 
 -- Tarea B: Resumen de Capturas Jueves (18:00 MX -> Viernes 00:00 UTC)
 -- Envía reporte de Consumibles a municipales y general a admins
+-- timeout_milliseconds ampliado a 30s: este job envía a varios destinatarios (municipal/caravanas/admin)
 SELECT cron.schedule(
   'enviar-resumen-jueves',
   '0 0 * * 5',
@@ -60,7 +63,8 @@ SELECT cron.schedule(
       'Content-Type', 'application/json',
       'Authorization', 'Bearer YOUR_SERVICE_ROLE_KEY'
     ),
-    body := '{"action": "send-summaries"}'
+    body := '{"action": "send-summaries"}',
+    timeout_milliseconds := 30000
   );
   $$
 );
@@ -81,7 +85,8 @@ SELECT cron.schedule(
       'Content-Type', 'application/json',
       'Authorization', 'Bearer YOUR_SERVICE_ROLE_KEY'
     ),
-    body := '{"action": "send-reminders"}'
+    body := '{"action": "send-reminders"}',
+    timeout_milliseconds := 20000
   );
   $$
 );
@@ -98,7 +103,8 @@ SELECT cron.schedule(
       'Content-Type', 'application/json',
       'Authorization', 'Bearer YOUR_SERVICE_ROLE_KEY'
     ),
-    body := '{"action": "send-summaries"}'
+    body := '{"action": "send-summaries"}',
+    timeout_milliseconds := 30000
   );
   $$
 );

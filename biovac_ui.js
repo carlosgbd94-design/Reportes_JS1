@@ -366,6 +366,7 @@ async function cargarMovimiento() {
     estado.movimiento = null;
     document.getElementById('panelMovimiento').style.display = 'none';
     document.getElementById('filaCabeceraMovimiento').style.display = 'none';
+    document.getElementById('filaBotonesCabecera').style.display = 'none';
     document.getElementById('panelSinMovimiento').style.display = 'block';
     return;
   }
@@ -403,6 +404,7 @@ function render() {
   const m = estado.movimiento;
   document.getElementById('panelMovimiento').style.display = 'block';
   document.getElementById('filaCabeceraMovimiento').style.display = 'contents';
+  document.getElementById('filaBotonesCabecera').style.display = 'flex';
 
   const badge = document.getElementById('badgeEstado');
   badge.textContent = m.estado.replace('_', ' ');
@@ -450,10 +452,19 @@ function renderBloques(editable) {
 function numColumnas(split) { return split ? 11 : 9; }
 
 function colgroupRenglones(split) {
+  // El ancho total de cada columna "de rol" (recibido, aplicadas,
+  // desechadas) se mantiene fijo entre tablas normales y de dosis
+  // fraccionada (Hepatitis B) -- en vez de agregar columnas extra que
+  // empujan el ancho total por encima de 100% (lo que el navegador
+  // compensa encogiendo TODAS las columnas y desalinea la tabla con las
+  // de los demás biológicos), aplicadas/desechadas simplemente se
+  // reparten en dos mitades cuando hay dosis fraccionada.
+  const parDato = split ? '<col class="col-dato-mitad"><col class="col-dato-mitad">' : '<col class="col-dato">';
   return `<colgroup>
     <col class="col-lote"><col class="col-caducidad"><col class="col-ant">
-    <col class="col-dato"><col class="col-dato">${split ? '<col class="col-dato">' : ''}
-    <col class="col-dato">${split ? '<col class="col-dato">' : ''}
+    <col class="col-dato">
+    ${parDato}
+    ${parDato}
     <col class="col-final"><col class="col-obs"><col class="col-accion">
   </colgroup>`;
 }
@@ -1118,14 +1129,17 @@ function verPdf() {
 // ---------------------------------------------------------------------------
 
 let archivoImportadoParseado = null;
+let nombresRemapPendientes = []; // nombres no reconocidos únicos mostrados en la sección de remapeo
 
 function abrirPanelImportador() {
   document.getElementById('panelImportador').style.display = 'block';
   const nombreUnidad = document.getElementById('selUnidad').selectedOptions[0]?.textContent;
   document.getElementById('importadorMunicipio').textContent = nombreUnidad || 'tu municipio';
   document.getElementById('resultadoImportador').innerHTML = '';
+  document.getElementById('revisionImportador').innerHTML = '';
   document.getElementById('btnConfirmarImportacion').style.display = 'none';
   archivoImportadoParseado = null;
+  nombresRemapPendientes = [];
 }
 
 async function analizarArchivoImportacion() {
@@ -1145,6 +1159,7 @@ async function analizarArchivoImportacion() {
     const parsed = await BiovacImporter.parseWorkbook(buffer);
     archivoImportadoParseado = parsed;
     renderResumenAnalisis(parsed);
+    renderRevisionImportacion(parsed);
     if (parsed.meses.length) document.getElementById('btnConfirmarImportacion').style.display = 'inline-flex';
   } catch (e) {
     cont.innerHTML = `<div class="resumen-importador"><p class="err">Error al leer el archivo: ${e.message}</p></div>`;
@@ -1166,13 +1181,123 @@ function renderResumenAnalisis(parsed) {
   let html = `<div class="resumen-importador">
     <p><b>${parsed.meses.length}</b> mes(es) con datos: ${parsed.meses.map((m) => `${m.mesClave} ${m.anio}`).join(', ')}.</p>`;
   if (noReconocidos.size) {
-    html += `<p class="aviso">⚠ ${noReconocidos.size} nombre(s) de biológico no reconocido(s) en el archivo (se omitirán al importar): ${[...noReconocidos].join(', ')}</p>`;
+    html += `<p class="aviso">⚠ ${noReconocidos.size} nombre(s) de biológico no reconocido(s) en el archivo (asígnalos abajo, en "Biológicos no reconocidos" -- si se dejan sin asignar, se omiten): ${[...noReconocidos].join(', ')}</p>`;
   }
   if (advertenciasTotal) {
     html += `<p class="aviso">⚠ ${advertenciasTotal} fila(s) con datos pero sin número de lote identificable (se omiten).</p>`;
   }
-  html += `<p>Al confirmar, cada mes se guarda y se cierra automáticamente en orden -- si un mes ya estaba cerrado en el sistema, se conserva tal cual y no se toca.</p></div>`;
+  html += `<p>Revisa la tabla de abajo y corrige lo que haga falta -- lote, caducidad, cantidades, categoría (Normal/A.R.F./Canje) -- antes de confirmar. Al confirmar, cada mes se guarda y se cierra automáticamente en orden; si un mes ya estaba cerrado en el sistema, se conserva tal cual y no se toca.</p></div>`;
   cont.innerHTML = html;
+}
+
+// ---------------------------------------------------------------------------
+// Revisión editable antes de confirmar -- deja corregir cualquier error de
+// lectura del escaneo estructural (nombre de biológico no reconocido, lote
+// mal leído, caducidad, cantidades, categoría) sin tener que corregir el
+// Excel y volver a subirlo. Los cambios mutan archivoImportadoParseado
+// directamente, así que confirmarImportacion() los usa tal cual, sin pasos
+// intermedios.
+// ---------------------------------------------------------------------------
+
+function renderRevisionImportacion(parsed) {
+  const cont = document.getElementById('revisionImportador');
+  if (!parsed.meses.length) { cont.innerHTML = ''; return; }
+
+  const vistos = new Set();
+  nombresRemapPendientes = [];
+  parsed.meses.forEach((m) => m.bloques.forEach((b) => {
+    if (!b.clave && !vistos.has(b.nombreExcel)) { vistos.add(b.nombreExcel); nombresRemapPendientes.push(b.nombreExcel); }
+  }));
+
+  const opcionesBiologicos = [...new Map(estado.biologicos.map((b) => [b.clave, b])).values()]
+    .sort((a, b) => a.nombre_excel.localeCompare(b.nombre_excel))
+    .map((b) => `<option value="${b.clave}">${b.nombre_excel.replace(/\n/g, ' ')}</option>`).join('');
+
+  let html = '<div class="revision-importador">';
+
+  if (nombresRemapPendientes.length) {
+    html += `<div class="revision-remap">
+      <h3><span class="material-symbols-rounded" style="font-size:15px">warning</span> Biológicos no reconocidos</h3>
+      <p>Estos nombres del archivo no coinciden con el catálogo. Asígnalos al biológico correcto para que se importen; si se dejan en "Omitir" no se importarán.</p>
+      ${nombresRemapPendientes.map((nombre, idx) => `
+        <div class="revision-remap-fila">
+          <span class="nombre-orig">${nombre.replace(/\n/g, ' ')}</span>
+          <select data-remap-idx="${idx}" style="max-width:300px">
+            <option value="">Omitir (no importar)</option>
+            ${opcionesBiologicos}
+          </select>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  parsed.meses.forEach((mes, mi) => {
+    const numRenglones = mes.bloques.reduce((n, b) => n + b.renglones.length, 0);
+    html += `<details class="revision-mes" open>
+      <summary>${mes.mesClave} ${mes.anio || '¿año no leído?'} <span style="font-weight:600; color:var(--muted)">${numRenglones} renglón(es)</span></summary>
+      <div class="tabla-wrap"><table class="tabla-revision"><thead><tr>
+        <th style="width:16%; text-align:left">Biológico</th><th>Categ.</th><th>Lote</th><th>Caducidad</th>
+        <th>Ant.</th><th>Recibido</th><th>Aplic. A</th><th>Aplic. B</th><th>Desech. A</th><th>Desech. B</th>
+        <th style="width:14%">Observaciones</th><th></th>
+      </tr></thead><tbody>`;
+    mes.bloques.forEach((bloque, bi) => {
+      html += `<tr class="fila-bloque-titulo${bloque.clave ? '' : ' no-reconocido'}"><td colspan="12">${bloque.nombreExcel.replace(/\n/g, ' ')}${bloque.clave ? '' : ' — sin asignar, ver arriba'}</td></tr>`;
+      bloque.renglones.forEach((r, ri) => { html += filaRevisionHtml(mi, bi, ri, r); });
+    });
+    html += '</tbody></table></div></details>';
+  });
+
+  html += '</div>';
+  cont.innerHTML = html;
+}
+
+function filaRevisionHtml(mi, bi, ri, r) {
+  const d = (campo) => `data-mes="${mi}" data-bloque="${bi}" data-renglon="${ri}" data-campo="${campo}"`;
+  return `<tr>
+    <td></td>
+    <td><select ${d('categoria')}>
+      <option value="NORMAL" ${r.categoria === 'NORMAL' ? 'selected' : ''}>Normal</option>
+      <option value="ARF" ${r.categoria === 'ARF' ? 'selected' : ''}>A.R.F.</option>
+      <option value="CANJE" ${r.categoria === 'CANJE' ? 'selected' : ''}>Canje</option>
+    </select></td>
+    <td><input type="text" ${d('numeroLote')} value="${(r.numeroLote || '').replace(/"/g, '&quot;')}"></td>
+    <td><input type="date" ${d('caducidad')} value="${r.caducidad || ''}"></td>
+    <td><input type="number" step="any" ${d('existenciaAnterior')} value="${r.existenciaAnterior || 0}"></td>
+    <td><input type="number" step="any" ${d('recibido')} value="${r.recibido || 0}"></td>
+    <td><input type="number" step="any" ${d('aplicadasA')} value="${r.aplicadasA || 0}"></td>
+    <td><input type="number" step="any" ${d('aplicadasB')} value="${r.aplicadasB || 0}"></td>
+    <td><input type="number" step="any" ${d('desechadasA')} value="${r.desechadasA || 0}"></td>
+    <td><input type="number" step="any" ${d('desechadasB')} value="${r.desechadasB || 0}"></td>
+    <td><input type="text" ${d('observaciones')} value="${(r.observaciones || '').replace(/"/g, '&quot;')}"></td>
+    <td><button type="button" class="btn-fantasma" data-action="eliminar-renglon-import" data-mes="${mi}" data-bloque="${bi}" data-renglon="${ri}" title="Quitar este renglón de la importación"><span class="material-symbols-rounded">delete</span></button></td>
+  </tr>`;
+}
+
+function onCambioRevisionImportacion(ev) {
+  const remapSel = ev.target.closest('[data-remap-idx]');
+  if (remapSel) {
+    const nombre = nombresRemapPendientes[Number(remapSel.dataset.remapIdx)];
+    const nuevaClave = remapSel.value || null;
+    archivoImportadoParseado.meses.forEach((m) => m.bloques.forEach((b) => {
+      if (b.nombreExcel === nombre) b.clave = nuevaClave;
+    }));
+    renderRevisionImportacion(archivoImportadoParseado);
+    return;
+  }
+  const campoEl = ev.target.closest('[data-campo][data-mes][data-bloque][data-renglon]');
+  if (!campoEl) return;
+  const renglon = archivoImportadoParseado.meses[Number(campoEl.dataset.mes)].bloques[Number(campoEl.dataset.bloque)].renglones[Number(campoEl.dataset.renglon)];
+  const campo = campoEl.dataset.campo;
+  if (campo === 'numeroLote' || campo === 'observaciones') renglon[campo] = campoEl.value.trim() || null;
+  else if (campo === 'caducidad') renglon.caducidad = campoEl.value || null;
+  else if (campo === 'categoria') renglon.categoria = campoEl.value;
+  else renglon[campo] = Number(campoEl.value) || 0;
+}
+
+function onClickRevisionImportacion(ev) {
+  const btn = ev.target.closest('[data-action="eliminar-renglon-import"]');
+  if (!btn) return;
+  archivoImportadoParseado.meses[Number(btn.dataset.mes)].bloques[Number(btn.dataset.bloque)].renglones.splice(Number(btn.dataset.renglon), 1);
+  renderRevisionImportacion(archivoImportadoParseado);
 }
 
 async function confirmarImportacion() {
@@ -1192,6 +1317,7 @@ async function confirmarImportacion() {
   const cont = document.getElementById('resultadoImportador');
   btn.disabled = true;
   cont.innerHTML = '<p>Importando… esto puede tardar varios segundos por mes.</p>';
+  document.getElementById('revisionImportador').innerHTML = '';
   try {
     const resumen = await BiovacImporter.importParsedData(estado.db, unidadId, archivoImportadoParseado, usuario);
     renderResumenFinal(resumen);
@@ -1201,6 +1327,7 @@ async function confirmarImportacion() {
   } catch (e) {
     cont.innerHTML = `<div class="resumen-importador"><p class="err">Error durante la importación: ${e.message}</p></div>`;
     toast('Error al importar: ' + e.message, 'error');
+    if (archivoImportadoParseado) renderRevisionImportacion(archivoImportadoParseado);
   } finally {
     btn.disabled = false;
   }
@@ -1250,6 +1377,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btnCerrarImportador').addEventListener('click', () => { document.getElementById('panelImportador').style.display = 'none'; });
   document.getElementById('btnAnalizarImportacion').addEventListener('click', analizarArchivoImportacion);
   document.getElementById('btnConfirmarImportacion').addEventListener('click', confirmarImportacion);
+  document.getElementById('revisionImportador').addEventListener('change', onCambioRevisionImportacion);
+  document.getElementById('revisionImportador').addEventListener('click', onClickRevisionImportacion);
 
   const cont = document.getElementById('contenedorBloques');
   cont.addEventListener('input', (ev) => {

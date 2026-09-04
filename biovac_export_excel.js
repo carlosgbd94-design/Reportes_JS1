@@ -54,6 +54,7 @@
 
   function capturarBloqueFilas(ws, filaInicio, numFilas) {
     const filas = [];
+    const alturas = [];
     for (let r = 0; r < numFilas; r++) {
       const fila = ws.getRow(filaInicio + r);
       const celdas = [];
@@ -62,6 +63,7 @@
         celdas.push({ col: c, value: cell.value, style: clonarEstiloCelda(cell) });
       }
       filas.push(celdas);
+      alturas.push(fila.height);
     }
     const merges = ws.model.merges
       .map((rango) => {
@@ -70,9 +72,16 @@
         return { c1: m[1], r1: Number(m[2]), c2: m[3], r2: Number(m[4]) };
       })
       .filter((m) => m && m.r1 >= filaInicio && m.r2 < filaInicio + numFilas);
-    return { filas, merges, filaInicio };
+    return { filas, merges, filaInicio, alturas };
   }
 
+  // El alto de fila es una propiedad de la fila FÍSICA (por número de
+  // renglón de la hoja), no del contenido -- si no se reasigna
+  // explícitamente al reconstruir el bloque en una posición distinta a la
+  // de la plantilla, la fila conserva el alto que tenía originalmente ahí
+  // (pensado para otro tipo de contenido), y un texto de 2 líneas como
+  // "A.R.F.\nEn dictamen o canje" queda comprimido si aterriza en una fila
+  // que en la plantilla era de una sola línea.
   function escribirBloqueCapturado(ws, filaDestino, capturado, overrides) {
     capturado.filas.forEach((celdas, i) => {
       const filaDestinoAbs = filaDestino + i;
@@ -82,6 +91,7 @@
         cell.value = value;
         cell.style = JSON.parse(JSON.stringify(style));
       });
+      if (capturado.alturas[i] != null) row.height = capturado.alturas[i];
       row.commit && row.commit();
     });
     capturado.merges.forEach((m) => {
@@ -129,20 +139,29 @@
     return { numeroLote: '', caducidad: null, existenciaAnterior: '', recibido: '', aplicadasA: '', aplicadasB: '', desechadasA: '', desechadasB: '', observaciones: null, dosisPorFrasco: null };
   }
 
+  // La celda de caducidad usa formato "mmm-yy" (capturado del estilo de la
+  // plantilla) -- eso solo se aplica a un valor de tipo fecha real. Si se
+  // escribe el ISO tal cual (string), Excel lo muestra como texto plano
+  // ("2027-03-01") en vez de "mar-27", y un archivo así re-importado
+  // tampoco se reconocería como fecha (BiovacImporter.leerFecha exige
+  // instanceof Date, igual que trae el Excel real llenado a mano).
+  function fechaExcel(iso) { return iso ? new Date(iso + 'T00:00:00Z') : null; }
+
   function escribirDatosRenglon(ws, fila, r, split) {
     const row = ws.getRow(fila);
+    const caducidad = fechaExcel(r.caducidad);
     row.getCell(2).value = r.existenciaAnterior === '' ? null : r.existenciaAnterior;
     row.getCell(3).value = r.numeroLote || null;
-    row.getCell(4).value = r.caducidad || null;
+    row.getCell(4).value = caducidad;
     row.getCell(5).value = r.recibido === '' ? null : r.recibido;
     row.getCell(6).value = r.numeroLote || null;
-    row.getCell(7).value = r.caducidad || null;
+    row.getCell(7).value = caducidad;
     row.getCell(8).value = r.aplicadasA === '' ? null : r.aplicadasA;
     if (split) row.getCell(9).value = r.aplicadasB === '' ? null : r.aplicadasB;
     row.getCell(11).value = r.desechadasA === '' ? null : r.desechadasA;
     if (split) row.getCell(12).value = r.desechadasB === '' ? null : r.desechadasB;
     row.getCell(15).value = r.numeroLote || null;
-    row.getCell(16).value = r.caducidad || null;
+    row.getCell(16).value = caducidad;
   }
 
   // Escribe un bloque completo, que puede combinar VARIOS biológicos bajo
@@ -159,7 +178,7 @@
       const listaNormal = normales.length > 0 ? normales : [renglonVacio()];
       const inicioNormalBio = fila;
       for (let i = 0; i < listaNormal.length; i++) {
-        aplicarEstiloFila(ws, fila, estilos.normal, split);
+        aplicarEstiloFila(ws, fila, estilos.normal, split, estilos.alturaNormal);
         if (i === 0) ws.getCell(`A${fila}`).value = { richText: [{ text: bio.nombre_excel }] };
         escribirDatosRenglon(ws, fila, listaNormal[i], split);
         const dosis = listaNormal[i].dosisPorFrasco || bio.dosis_por_frasco || 1;
@@ -175,7 +194,7 @@
     for (let i = 0; i < listaArf.length; i++) {
       const { bio, renglon } = listaArf[i];
       const split = bio.regla_especial === 'SPLIT_DOSE';
-      aplicarEstiloFila(ws, fila, estilos.arf, split);
+      aplicarEstiloFila(ws, fila, estilos.arf, split, estilos.alturaArf);
       if (i === 0) ws.getCell(`A${fila}`).value = { richText: [{ text: 'A.R.F.\nEn dictamen o canje', font: { bold: true, color: { argb: 'FFFF0000' } } }] };
       escribirDatosRenglon(ws, fila, renglon, split);
       const dosis = renglon.dosisPorFrasco || bio.dosis_por_frasco || 1;
@@ -191,7 +210,7 @@
     if (observaciones) ws.getCell(`Q${inicioBloque}`).value = observaciones;
 
     const filaTotal = fila;
-    aplicarEstiloFilaTotal(ws, filaTotal, estilos.total);
+    aplicarEstiloFilaTotal(ws, filaTotal, estilos.total, estilos.alturaTotal);
     ws.getCell(`A${filaTotal}`).value = 'Total';
     ws.getCell(`B${filaTotal}`).value = { formula: formulaTotal('B', 'B', inicioBloque, finArf, filaTotal) };
     ws.getCell(`E${filaTotal}`).value = { formula: formulaTotal('E', 'E', inicioBloque, finArf, filaTotal) };
@@ -217,31 +236,39 @@
     ws.getCell(`P${fila}`).value = { formula: `IF(G${fila}=0," ",G${fila})` };
   }
 
-  function aplicarEstiloFila(ws, fila, plantillaFila, split) {
+  // El alto de fila se fija explícitamente al alto de la plantilla para
+  // ese ROL (normal/A.R.F./total) -- no al que la fila física ya traía
+  // por su posición en la plantilla -- para que un bloque con un solo
+  // renglón A.R.F. (celda combinada de una sola fila) no quede con el
+  // alto pensado para una fila normal de una sola línea, comprimiendo el
+  // texto de 2 líneas "A.R.F.\nEn dictamen o canje".
+  function aplicarEstiloFila(ws, fila, plantillaFila, split, altura) {
     const row = ws.getRow(fila);
     plantillaFila.forEach(({ col, style }) => { row.getCell(col).style = JSON.parse(JSON.stringify(style)); });
+    if (altura != null) row.height = altura;
     if (!split) {
       ws.mergeCells(`H${fila}:J${fila}`);
       ws.mergeCells(`K${fila}:M${fila}`);
     }
   }
 
-  function aplicarEstiloFilaTotal(ws, fila, plantillaFila) {
+  function aplicarEstiloFilaTotal(ws, fila, plantillaFila, altura) {
     const row = ws.getRow(fila);
     plantillaFila.forEach(({ col, style }) => { row.getCell(col).style = JSON.parse(JSON.stringify(style)); });
+    if (altura != null) row.height = altura;
   }
 
   // ---------------------------------------------------------------------
   // Orquestación principal
   // ---------------------------------------------------------------------
 
-  async function construirWorkbook({ db, unidad, movimiento, plantillaBuffer }) {
-    const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(plantillaBuffer);
-    const hojaOrigen = MESES_ABREV[movimiento.mes];
-    const ws = wb.getWorksheet(hojaOrigen);
-    if (!ws) throw new Error('La plantilla no tiene la hoja ' + hojaOrigen);
-
+  // Construye el contenido de la hoja mensual (encabezado + bloques +
+  // limpieza final) a partir de datos YA RESUELTOS a la forma común de
+  // renglón (ver mapRenglon). Compartida por la exportación municipal
+  // (un solo movimiento) y la jurisdiccional (concentrado de los 4
+  // municipios vía RPC) -- ambas alimentan exactamente la misma forma de
+  // datos, solo cambia de dónde se leen.
+  async function construirWorkbookDesdeDatos({ ws, bloques, biologicos, renglonesDb, anio, mes, datosHeader }) {
     // Los logos están anclados a filas fijas de la plantilla (2 para
     // Anverso, 2 para Reverso). El encabezado de Anverso nunca se mueve,
     // pero el bloque de Reverso se reconstruye en una fila distinta según
@@ -265,30 +292,19 @@
     ws._media = ws._media.filter((m) => !(m.type === 'image' && m.range.tl.nativeRow >= HEADER_FILAS));
 
     const headerCapturado = capturarBloqueFilas(ws, 1, HEADER_FILAS);
-    const estiloNormal = capturarBloqueFilas(ws, FILA_ESTILO_NORMAL, 1).filas[0];
-    const estiloArf = capturarBloqueFilas(ws, FILA_ESTILO_ARF, 1).filas[0];
-    const estiloTotal = capturarBloqueFilas(ws, FILA_ESTILO_TOTAL, 1).filas[0];
-    const estilos = { normal: estiloNormal, arf: estiloArf, total: estiloTotal };
+    const capturaNormal = capturarBloqueFilas(ws, FILA_ESTILO_NORMAL, 1);
+    const capturaArf = capturarBloqueFilas(ws, FILA_ESTILO_ARF, 1);
+    const capturaTotal = capturarBloqueFilas(ws, FILA_ESTILO_TOTAL, 1);
+    const estilos = {
+      normal: capturaNormal.filas[0], arf: capturaArf.filas[0], total: capturaTotal.filas[0],
+      alturaNormal: capturaNormal.alturas[0], alturaArf: capturaArf.alturas[0], alturaTotal: capturaTotal.alturas[0]
+    };
 
-    const [{ data: bloques }, { data: biologicos }] = await Promise.all([
-      db.from('biovac_bloques_catalogo').select('*').order('pagina').order('orden'),
-      db.from('biovac_catalogo_biologicos').select('*').order('orden_en_bloque')
-    ]);
-    const { data: renglonesDb } = await db.from('biovac_renglones')
-      .select(`categoria, existencia_anterior_frascos, recibido_frascos, aplicadas_a, aplicadas_b, desechadas_a, desechadas_b, observaciones,
-        biovac_lotes ( numero_lote, caducidad, dosis_por_frasco_override, biologico_id )`)
-      .eq('movimiento_id', movimiento.id);
-
-    const fechaRef = new Date(Date.UTC(movimiento.anio, movimiento.mes - 1, 1));
+    const fechaRef = new Date(Date.UTC(anio, mes - 1, 1));
     const bioVigente = (b) => {
       const desde = new Date(b.vigente_desde + 'T00:00:00Z');
       const hasta = b.vigente_hasta ? new Date(b.vigente_hasta + 'T00:00:00Z') : null;
       return fechaRef >= desde && (!hasta || fechaRef <= hasta);
-    };
-
-    const datosHeader = {
-      mesNombre: MESES_NOMBRE[movimiento.mes], dia: movimiento.fecha_corte ? Number(movimiento.fecha_corte.slice(8, 10)) : '',
-      anio: movimiento.anio, municipio: unidad.municipio, responsable: movimiento.responsable_elaboracion || ''
     };
 
     // limpiar todo debajo del encabezado -- primero desfusionar explícitamente
@@ -332,6 +348,10 @@
         paginaActual = 'REVERSO';
       }
 
+      // Los biológicos vigentes se imprimen siempre, incluso sin
+      // movimiento este mes (escribirBloqueCompuesto ya deja un renglón
+      // vacío en ese caso) -- igual que el formulario oficial en blanco,
+      // para no dar la impresión de que falta información.
       const biosConRenglones = biosDelBloque.map((bio) => {
         const renglonesBio = renglonesDb.filter((r) => r.biovac_lotes.biologico_id === bio.id);
         return {
@@ -342,8 +362,7 @@
           normales: renglonesBio.filter((r) => r.categoria === 'NORMAL').map((r) => mapRenglon(r)),
           arf: renglonesBio.filter((r) => r.categoria !== 'NORMAL').map((r) => mapRenglon(r))
         };
-      }).filter((b) => b.normales.length > 0 || b.arf.length > 0);
-      if (biosConRenglones.length === 0) continue;
+      });
 
       fila = escribirBloqueCompuesto(ws, fila, biosConRenglones, estilos);
     }
@@ -369,10 +388,6 @@
       }
     }
 
-    wb.eachSheet((hoja) => { if (hoja.name !== hojaOrigen) wb.removeWorksheet(hoja.id); });
-    ws.name = `${MESES_ABREV[movimiento.mes]} ${unidad.nombre}`.slice(0, 31);
-
-    return wb;
   }
 
   function mapRenglon(r) {
@@ -386,10 +401,96 @@
     };
   }
 
+  // ---------------------------------------------------------------------
+  // Orquestación -- municipal (un movimiento) y jurisdiccional (concentrado
+  // en vivo de los 4 municipios vía RPC). Ambas cargan la misma plantilla,
+  // obtienen sus datos por su propio camino, y delegan la construcción de
+  // la hoja a construirWorkbookDesdeDatos.
+  // ---------------------------------------------------------------------
+
+  async function construirWorkbook({ db, unidad, movimiento, plantillaBuffer }) {
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(plantillaBuffer);
+    const hojaOrigen = MESES_ABREV[movimiento.mes];
+    const ws = wb.getWorksheet(hojaOrigen);
+    if (!ws) throw new Error('La plantilla no tiene la hoja ' + hojaOrigen);
+
+    const [{ data: bloques }, { data: biologicos }] = await Promise.all([
+      db.from('biovac_bloques_catalogo').select('*').order('pagina').order('orden'),
+      db.from('biovac_catalogo_biologicos').select('*').order('orden_en_bloque')
+    ]);
+    const { data: renglonesDb } = await db.from('biovac_renglones')
+      .select(`categoria, existencia_anterior_frascos, recibido_frascos, aplicadas_a, aplicadas_b, desechadas_a, desechadas_b, observaciones,
+        biovac_lotes ( numero_lote, caducidad, dosis_por_frasco_override, biologico_id )`)
+      .eq('movimiento_id', movimiento.id);
+
+    const datosHeader = {
+      mesNombre: MESES_NOMBRE[movimiento.mes], dia: movimiento.fecha_corte ? Number(movimiento.fecha_corte.slice(8, 10)) : '',
+      anio: movimiento.anio, municipio: unidad.municipio, responsable: movimiento.responsable_elaboracion || ''
+    };
+
+    await construirWorkbookDesdeDatos({ ws, bloques, biologicos, renglonesDb, anio: movimiento.anio, mes: movimiento.mes, datosHeader });
+
+    wb.eachSheet((hoja) => { if (hoja.name !== hojaOrigen) wb.removeWorksheet(hoja.id); });
+    ws.name = `${MESES_ABREV[movimiento.mes]} ${unidad.nombre}`.slice(0, 31);
+
+    return wb;
+  }
+
+  // Concentrado jurisdiccional: los renglones vienen ya sumados por lote+
+  // categoria (RPC biovac_concentrado_jurisdiccion), en forma plana --
+  // se envuelven en la misma forma { biovac_lotes: {...} } que espera
+  // mapRenglon, para reusar exactamente la misma lógica de escritura.
+  async function construirWorkbookJurisdiccional({ db, jurisdiccion, anio, mes, responsable, plantillaBuffer }) {
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(plantillaBuffer);
+    const hojaOrigen = MESES_ABREV[mes];
+    const ws = wb.getWorksheet(hojaOrigen);
+    if (!ws) throw new Error('La plantilla no tiene la hoja ' + hojaOrigen);
+
+    const [{ data: bloques }, { data: biologicos }] = await Promise.all([
+      db.from('biovac_bloques_catalogo').select('*').order('pagina').order('orden'),
+      db.from('biovac_catalogo_biologicos').select('*').order('orden_en_bloque')
+    ]);
+    const { data: concentrado } = await db.rpc('biovac_concentrado_jurisdiccion', {
+      p_jurisdiccion_id: jurisdiccion.id, p_anio: anio, p_mes: mes
+    });
+    const renglonesDb = (concentrado || []).map((f) => ({
+      categoria: f.categoria,
+      existencia_anterior_frascos: f.existencia_anterior_frascos,
+      recibido_frascos: f.recibido_frascos,
+      aplicadas_a: f.aplicadas_a, aplicadas_b: f.aplicadas_b,
+      desechadas_a: f.desechadas_a, desechadas_b: f.desechadas_b,
+      observaciones: null,
+      biovac_lotes: {
+        numero_lote: f.numero_lote, caducidad: f.caducidad,
+        dosis_por_frasco_override: null, biologico_id: f.biologico_id
+      }
+    }));
+
+    const ultimoDia = new Date(Date.UTC(anio, mes, 0)).getUTCDate();
+    const datosHeader = {
+      mesNombre: MESES_NOMBRE[mes], dia: ultimoDia,
+      anio, municipio: jurisdiccion.nombre || 'JURISDICCIÓN SANITARIA', responsable: responsable || ''
+    };
+
+    await construirWorkbookDesdeDatos({ ws, bloques, biologicos, renglonesDb, anio, mes, datosHeader });
+
+    wb.eachSheet((hoja) => { if (hoja.name !== hojaOrigen) wb.removeWorksheet(hoja.id); });
+    ws.name = `${MESES_ABREV[mes]} Jurisdiccional`.slice(0, 31);
+
+    return wb;
+  }
+
   async function exportarExcel({ db, unidad, movimiento, plantillaBuffer }) {
     const wb = await construirWorkbook({ db, unidad, movimiento, plantillaBuffer });
     return wb.xlsx.writeBuffer();
   }
 
-  return { exportarExcel, construirWorkbook };
+  async function exportarExcelJurisdiccional({ db, jurisdiccion, anio, mes, responsable, plantillaBuffer }) {
+    const wb = await construirWorkbookJurisdiccional({ db, jurisdiccion, anio, mes, responsable, plantillaBuffer });
+    return wb.xlsx.writeBuffer();
+  }
+
+  return { exportarExcel, construirWorkbook, exportarExcelJurisdiccional, construirWorkbookJurisdiccional };
 });

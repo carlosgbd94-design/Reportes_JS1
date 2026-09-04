@@ -90,7 +90,7 @@ serve(async (req) => {
     const capturedConsToday = new Set((resConsToday.data || []).map(r => String(r.clues).trim().toUpperCase()))
     const capturedBioYesterday = new Set((resBioYesterday.data || []).map(r => String(r.clues).trim().toUpperCase()))
 
-    // Configurar cliente SMTP con nodemailer
+    // Configurar cliente SMTP con nodemailer (pool para permitir envíos concurrentes)
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 465,
@@ -99,6 +99,9 @@ serve(async (req) => {
         user: gmailUser,
         pass: gmailPassword,
       },
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 100,
     })
 
     if (action === 'send-reminders') {
@@ -112,6 +115,8 @@ serve(async (req) => {
         .eq('rol', 'UNIDAD')
 
       if (profErr) throw new Error(`Error obteniendo perfiles de unidades: ${profErr.message}`)
+
+      const reminderSends: Promise<void>[] = []
 
       for (const unit of activeUnits) {
         const unitClues = String(unit.clues).trim().toUpperCase()
@@ -172,18 +177,20 @@ serve(async (req) => {
 </div>
 `
 
-          await transporter.sendMail({
-            from: gmailUser,
-            to: userForUnit.email,
-            subject: `Aviso Pendiente: Captura en ${unit.unidad}`,
-            text: `Recordatorio de captura pendiente para ${unit.unidad}: ${missingItems.join(', ')}`,
-            html: htmlBody,
-            replyTo: 'no-reply@js1reportes.com'
-          })
-          sentCount++
+          reminderSends.push(
+            transporter.sendMail({
+              from: gmailUser,
+              to: userForUnit.email,
+              subject: `Aviso Pendiente: Captura en ${unit.unidad}`,
+              text: `Recordatorio de captura pendiente para ${unit.unidad}: ${missingItems.join(', ')}`,
+              html: htmlBody,
+              replyTo: 'no-reply@js1reportes.com'
+            }).then(() => { sentCount++ }).catch(err => console.error(`Error enviando recordatorio a ${userForUnit.email}:`, err))
+          )
         }
       }
 
+      await Promise.allSettled(reminderSends)
       transporter.close()
 
       return new Response(JSON.stringify({ ok: true, message: `Recordatorios individuales enviados: ${sentCount} correos.` }), {
@@ -216,6 +223,7 @@ serve(async (req) => {
       }
 
       // Enviar a perfiles MUNICIPALES (solo sus unidades correspondientes)
+      const summarySends: Promise<void>[] = []
       const municipalProfiles = (profiles || []).filter(p => p.rol === 'MUNICIPAL' && p.email)
       for (const supervisor of municipalProfiles) {
         let allowedMunis: string[] = []
@@ -301,15 +309,16 @@ serve(async (req) => {
 </div>
 `
 
-        await transporter.sendMail({
-          from: gmailUser,
-          to: supervisor.email,
-          subject: `Reporte ${reportType}: Región ${muniLabel} (${pct}% Capturado) - ${todayYmd}`,
-          text: `Resumen de captura para ${muniLabel}.`,
-          html: htmlBody,
-          replyTo: 'no-reply@js1reportes.com'
-        })
-        sentCount++
+        summarySends.push(
+          transporter.sendMail({
+            from: gmailUser,
+            to: supervisor.email,
+            subject: `Reporte ${reportType}: Región ${muniLabel} (${pct}% Capturado) - ${todayYmd}`,
+            text: `Resumen de captura para ${muniLabel}.`,
+            html: htmlBody,
+            replyTo: 'no-reply@js1reportes.com'
+          }).then(() => { sentCount++ }).catch(err => console.error(`Error enviando resumen municipal a ${supervisor.email}:`, err))
+        )
       }
 
       // Enviar a perfiles CARAVANAS (solo unidades UMME y FAM)
@@ -390,15 +399,16 @@ serve(async (req) => {
 </div>
 `
 
-        await transporter.sendMail({
-          from: gmailUser,
-          to: supervisor.email,
-          subject: `Reporte ${reportType}: CARAVANAS (${pct}% Capturado) - ${todayYmd}`,
-          text: `Resumen de captura para Caravanas Móviles.`,
-          html: htmlBody,
-          replyTo: 'no-reply@js1reportes.com'
-        })
-        sentCount++
+        summarySends.push(
+          transporter.sendMail({
+            from: gmailUser,
+            to: supervisor.email,
+            subject: `Reporte ${reportType}: CARAVANAS (${pct}% Capturado) - ${todayYmd}`,
+            text: `Resumen de captura para Caravanas Móviles.`,
+            html: htmlBody,
+            replyTo: 'no-reply@js1reportes.com'
+          }).then(() => { sentCount++ }).catch(err => console.error(`Error enviando resumen de caravanas a ${supervisor.email}:`, err))
+        )
       }
 
       // Enviar a perfiles JURISDICCIONALES Y ADMIN (Resumen general de todas las unidades, separado por municipio)
@@ -496,18 +506,20 @@ serve(async (req) => {
 `
 
         for (const admin of adminProfiles) {
-          await transporter.sendMail({
-            from: gmailUser,
-            to: admin.email,
-            subject: `[GENERAL] Reporte JS1 ${reportType} (${totalPct}% Global) - ${todayYmd}`,
-            text: `Estatus general de captura: ${totalCompleted}/${activeUnits.length} completadas.`,
-            html: htmlBodyAdmin,
-            replyTo: 'no-reply@js1reportes.com'
-          })
-          sentCount++
+          summarySends.push(
+            transporter.sendMail({
+              from: gmailUser,
+              to: admin.email,
+              subject: `[GENERAL] Reporte JS1 ${reportType} (${totalPct}% Global) - ${todayYmd}`,
+              text: `Estatus general de captura: ${totalCompleted}/${activeUnits.length} completadas.`,
+              html: htmlBodyAdmin,
+              replyTo: 'no-reply@js1reportes.com'
+            }).then(() => { sentCount++ }).catch(err => console.error(`Error enviando resumen general a ${admin.email}:`, err))
+          )
         }
       }
 
+      await Promise.allSettled(summarySends)
       transporter.close()
 
       return new Response(JSON.stringify({ ok: true, message: `Reportes generales y municipales enviados: ${sentCount} correos.` }), {

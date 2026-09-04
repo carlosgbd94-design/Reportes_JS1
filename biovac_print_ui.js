@@ -19,8 +19,16 @@ const MESES = [
   { v: 9, l: 'Septiembre' }, { v: 10, l: 'Octubre' }, { v: 11, l: 'Noviembre' }, { v: 12, l: 'Diciembre' }
 ];
 const MESES_NOMBRE = { 1: 'ENERO', 2: 'FEBRERO', 3: 'MARZO', 4: 'ABRIL', 5: 'MAYO', 6: 'JUNIO', 7: 'JULIO', 8: 'AGOSTO', 9: 'SEPTIEMBRE', 10: 'OCTUBRE', 11: 'NOVIEMBRE', 12: 'DICIEMBRE' };
+const MESES_ABREV3 = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+function formatMmmAa(fechaIso) {
+  if (!fechaIso) return '';
+  const d = new Date(fechaIso + 'T00:00:00');
+  if (isNaN(d.getTime())) return fechaIso;
+  return `${MESES_ABREV3[d.getMonth()]}-${String(d.getFullYear()).slice(2)}`;
+}
 
 let db = null;
+let jurisdiccionActual = null; // id, cuando la vista se abrió con ?jurisdiccion=...
 
 function fechaVigenteRef(anio, mes) { return new Date(Date.UTC(anio, mes - 1, 1)); }
 function bioVigente(b, anio, mes) {
@@ -105,13 +113,14 @@ function filaRenglonHtml(bio, r, mostrarNombre) {
   const lote = r.biovac_lotes;
   const split = bio.regla_especial === 'SPLIT_DOSE';
   const final = calcExistenciaFinal(bio, lote, r);
+  const caducidad = formatMmmAa(lote.caducidad);
   return `<tr class="${r.categoria !== 'NORMAL' ? 'fila-arf' : ''}">
     <td class="nombre-bio">${mostrarNombre ? bio.nombre_excel.replace(/\n/g, ' ') : ''}</td>
-    <td>${r.existencia_anterior_frascos || ''}</td><td>${lote.numero_lote}</td><td>${lote.caducidad || ''}</td>
-    <td>${r.recibido_frascos || ''}</td><td>${lote.numero_lote}</td><td>${lote.caducidad || ''}</td>
+    <td>${r.existencia_anterior_frascos || ''}</td><td>${lote.numero_lote}</td><td>${caducidad}</td>
+    <td>${r.recibido_frascos || ''}</td><td>${lote.numero_lote}</td><td>${caducidad}</td>
     <td>${r.aplicadas_a || ''}</td><td>${split ? (r.aplicadas_b || '') : ''}</td>
     <td>${r.desechadas_a || ''}</td><td>${split ? (r.desechadas_b || '') : ''}</td>
-    <td>${final}</td><td>${lote.numero_lote}</td><td>${lote.caducidad || ''}</td>
+    <td>${final}</td><td>${lote.numero_lote}</td><td>${caducidad}</td>
     <td class="obs">${r.observaciones || ''}</td>
   </tr>`;
 }
@@ -151,7 +160,34 @@ function bloqueHtml(biosConRenglones) {
   return html;
 }
 
-async function cargarYRenderizar() {
+// Arma el HTML de ambas páginas (Anverso/Reverso) a partir de datos YA
+// RESUELTOS a la forma común de renglón -- compartido por la vista
+// municipal (un solo movimiento) y la jurisdiccional (concentrado en vivo
+// de los 4 municipios), igual que construirWorkbookDesdeDatos en el
+// exportador de Excel.
+function renderizarHojas({ bloques, biologicos, renglonesDb, anio, mes, datosHeader }) {
+  const porPagina = { ANVERSO: '', REVERSO: '' };
+  for (const bloque of bloques) {
+    const biosDelBloque = biologicos.filter((b) => b.bloque_id === bloque.id && bioVigente(b, anio, mes)).sort((a, b) => a.orden_en_bloque - b.orden_en_bloque);
+    if (biosDelBloque.length === 0) continue;
+    // Los biológicos vigentes se imprimen siempre, incluso sin movimiento
+    // este mes -- bloqueHtml ya deja una fila de etiqueta sin datos en ese
+    // caso, igual que el formulario oficial en blanco.
+    const biosConRenglones = biosDelBloque.map((bio) => {
+      const renglonesBio = renglonesDb.filter((r) => r.biovac_lotes.biologico_id === bio.id);
+      return { bio, normales: renglonesBio.filter((r) => r.categoria === 'NORMAL'), arf: renglonesBio.filter((r) => r.categoria !== 'NORMAL') };
+    });
+    porPagina[bloque.pagina] += bloqueHtml(biosConRenglones);
+  }
+
+  document.getElementById('contenedorHojas').innerHTML = ['ANVERSO', 'REVERSO'].map((pagina) => `
+    <div class="hoja">
+      ${encabezadoHtml(pagina, datosHeader)}
+      <table class="datos">${encabezadoColumnas()}<tbody>${porPagina[pagina]}</tbody></table>
+    </div>`).join('');
+}
+
+async function cargarYRenderizarUnidad() {
   const unidadId = document.getElementById('selUnidad').value;
   const anio = Number(document.getElementById('selAnio').value);
   const mes = Number(document.getElementById('selMes').value);
@@ -176,37 +212,67 @@ async function cargarYRenderizar() {
     mesNombre: MESES_NOMBRE[mes], anio, municipio: unidad.municipio, responsable: movimiento.responsable_elaboracion
   };
 
-  const porPagina = { ANVERSO: '', REVERSO: '' };
-  for (const bloque of bloques) {
-    const biosDelBloque = biologicos.filter((b) => b.bloque_id === bloque.id && bioVigente(b, anio, mes)).sort((a, b) => a.orden_en_bloque - b.orden_en_bloque);
-    const biosConRenglones = biosDelBloque.map((bio) => {
-      const renglonesBio = renglonesDb.filter((r) => r.biovac_lotes.biologico_id === bio.id);
-      return { bio, normales: renglonesBio.filter((r) => r.categoria === 'NORMAL'), arf: renglonesBio.filter((r) => r.categoria !== 'NORMAL') };
-    }).filter((b) => b.normales.length > 0 || b.arf.length > 0);
-    if (biosConRenglones.length === 0) continue;
-    porPagina[bloque.pagina] += bloqueHtml(biosConRenglones);
-  }
+  renderizarHojas({ bloques, biologicos, renglonesDb, anio, mes, datosHeader });
+}
 
-  document.getElementById('contenedorHojas').innerHTML = ['ANVERSO', 'REVERSO'].map((pagina) => `
-    <div class="hoja">
-      ${encabezadoHtml(pagina, datosHeader)}
-      <table class="datos">${encabezadoColumnas()}<tbody>${porPagina[pagina]}</tbody></table>
-    </div>`).join('');
+async function cargarYRenderizarJurisdiccion() {
+  const anio = Number(document.getElementById('selAnio').value);
+  const mes = Number(document.getElementById('selMes').value);
+
+  const { data: jurisdiccion } = await db.from('biovac_jurisdicciones').select('*').eq('id', jurisdiccionActual).maybeSingle();
+  if (!jurisdiccion) { document.getElementById('contenedorHojas').innerHTML = '<p style="padding:20px">Jurisdicción no encontrada.</p>'; return; }
+
+  const [{ data: bloques }, { data: biologicos }, { data: concentrado }] = await Promise.all([
+    db.from('biovac_bloques_catalogo').select('*').order('pagina').order('orden'),
+    db.from('biovac_catalogo_biologicos').select('*').order('orden_en_bloque'),
+    db.rpc('biovac_concentrado_jurisdiccion', { p_jurisdiccion_id: jurisdiccionActual, p_anio: anio, p_mes: mes })
+  ]);
+  if (!concentrado || concentrado.length === 0) {
+    document.getElementById('contenedorHojas').innerHTML = '<p style="padding:20px">No hay movimientos CERRADOS de esta jurisdicción para el periodo seleccionado.</p>';
+    return;
+  }
+  const renglonesDb = concentrado.map((f) => ({
+    categoria: f.categoria,
+    existencia_anterior_frascos: f.existencia_anterior_frascos,
+    recibido_frascos: f.recibido_frascos,
+    aplicadas_a: f.aplicadas_a, aplicadas_b: f.aplicadas_b,
+    desechadas_a: f.desechadas_a, desechadas_b: f.desechadas_b,
+    observaciones: null,
+    biovac_lotes: { numero_lote: f.numero_lote, caducidad: f.caducidad, dosis_por_frasco_override: null, biologico_id: f.biologico_id }
+  }));
+
+  const datosHeader = {
+    dia: new Date(Date.UTC(anio, mes, 0)).getUTCDate(),
+    mesNombre: MESES_NOMBRE[mes], anio, municipio: jurisdiccion.nombre, responsable: ''
+  };
+
+  renderizarHojas({ bloques, biologicos, renglonesDb, anio, mes, datosHeader });
+}
+
+async function cargarYRenderizar() {
+  if (jurisdiccionActual) return cargarYRenderizarJurisdiccion();
+  return cargarYRenderizarUnidad();
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
   db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  await cargarSelects();
 
-  // Enlace directo desde biovac.html: ?unidad=...&anio=...&mes=...
+  // Enlace directo: ?unidad=...&anio=...&mes=... (desde biovac.html) o
+  // ?jurisdiccion=...&anio=...&mes=... (desde biovac_jurisdiccion.html).
   const params = new URLSearchParams(window.location.search);
+  const jurisdiccionParam = params.get('jurisdiccion');
   const unidadParam = params.get('unidad');
-  if (unidadParam && document.querySelector(`#selUnidad option[value="${unidadParam}"]`)) {
+
+  await cargarSelects();
+  if (jurisdiccionParam) {
+    jurisdiccionActual = jurisdiccionParam;
+    document.getElementById('selUnidad').style.display = 'none';
+  } else if (unidadParam && document.querySelector(`#selUnidad option[value="${unidadParam}"]`)) {
     document.getElementById('selUnidad').value = unidadParam;
   }
   if (params.get('anio')) document.getElementById('selAnio').value = params.get('anio');
   if (params.get('mes')) document.getElementById('selMes').value = params.get('mes');
-  if (unidadParam) await cargarYRenderizar();
+  if (jurisdiccionParam || unidadParam) await cargarYRenderizar();
 
   document.getElementById('btnCargar').addEventListener('click', cargarYRenderizar);
   document.getElementById('btnImprimir').addEventListener('click', () => window.print());

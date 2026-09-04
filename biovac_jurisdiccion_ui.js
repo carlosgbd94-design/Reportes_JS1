@@ -389,16 +389,21 @@ async function refrescarDrilldown() {
 
   cont.innerHTML = `<table><thead><tr>
       <th>Unidad</th><th>Estado</th><th>Ant.</th><th>Recibido</th><th>Aplic. A</th><th>Aplic. B</th><th>Desech. A</th><th>Desech. B</th><th>Final</th><th>Observaciones</th><th></th>
-    </tr></thead><tbody>${data.map((d) => renderFilaDrilldown(d)).join('')}</tbody></table>`;
+    </tr></thead><tbody>${data.map((d) => renderFilaDrilldown(d, anio, mes)).join('')}</tbody></table>`;
 }
 
-function renderFilaDrilldown(d) {
+function botonVerPdfUnidad(d, anio, mes) {
+  return `<button class="btn-icono" data-action="ver-pdf-unidad" data-unidad="${d.unidad_id}" data-anio="${anio}" data-mes="${mes}" title="Ver PDF de ${d.unidad_nombre}">
+    <span class="material-symbols-rounded">picture_as_pdf</span></button>`;
+}
+
+function renderFilaDrilldown(d, anio, mes) {
   if (!d.movimiento_id) {
     return `<tr><td><b>${d.unidad_nombre}</b></td><td colspan="9" style="color:var(--muted)">Sin movimiento este mes</td></tr>`;
   }
   if (!d.renglon_id) {
     return `<tr><td><b>${d.unidad_nombre}</b></td><td><span class="estado-badge estado-${d.movimiento_estado}">${d.movimiento_estado}</span></td>
-      <td colspan="8" style="color:var(--muted)">No reportó este lote</td></tr>`;
+      <td colspan="7" style="color:var(--muted)">No reportó este lote</td><td>${botonVerPdfUnidad(d, anio, mes)}</td></tr>`;
   }
   const enCorreccion = d.movimiento_estado === 'EN_CORRECCION';
   const cerrado = d.movimiento_estado === 'CERRADO';
@@ -417,6 +422,7 @@ function renderFilaDrilldown(d) {
     <td class="existencia-final" data-drill-final="${d.renglon_id}">${d.existencia_final_frascos}</td>
     <td>${enCorreccion ? `<input type="text" data-corr-renglon="${d.renglon_id}" data-corr-campo="observaciones" value="${(d.observaciones || '').replace(/"/g, '&quot;')}">` : (d.observaciones || '')}</td>
     <td>
+      ${botonVerPdfUnidad(d, anio, mes)}
       ${cerrado ? `<button class="btn-mini btn-secundario" data-action="abrir-correccion-mov" data-movimiento="${d.movimiento_id}"><span class="material-symbols-rounded">edit</span> Corregir aquí</button>` : ''}
       ${enCorreccion ? `<button class="btn-mini btn-primario" data-action="aplicar-correccion-mov" data-movimiento="${d.movimiento_id}"><span class="material-symbols-rounded">check_circle</span> Guardar</button>` : ''}
     </td>
@@ -484,6 +490,50 @@ async function guardarCampoDrilldown(input) {
 }
 
 // ---------------------------------------------------------------------------
+// Exportación jurisdiccional (Excel/PDF) -- mismo motor de plantilla que la
+// exportación municipal (biovac_export_excel.js), alimentado por el
+// concentrado en vivo de los 4 municipios en vez de un solo movimiento.
+// ---------------------------------------------------------------------------
+
+async function exportarExcelJurisdiccional() {
+  const btn = document.getElementById('btnExportarExcelJurisdiccional');
+  const { jurisdiccionId, anio, mes } = seleccion();
+  if (!jurisdiccionId) { toast('Selecciona jurisdicción, año y mes.', 'error'); return; }
+  const jurisdiccion = estado.jurisdicciones.find((j) => j.id === jurisdiccionId);
+  const usuario = usuarioActual();
+  if (!usuario) return;
+  const htmlOriginal = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = '<span class="material-symbols-rounded">hourglass_top</span>';
+  try {
+    const resp = await fetch('biovac_plantilla.xlsx');
+    const plantillaBuffer = await resp.arrayBuffer();
+    const buffer = await BiovacExportExcel.exportarExcelJurisdiccional({
+      db: estado.db, jurisdiccion, anio, mes, responsable: usuario, plantillaBuffer
+    });
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Movimiento_Biologico_Jurisdiccional_${anio}-${String(mes).padStart(2, '0')}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast('Excel jurisdiccional generado.', 'ok');
+  } catch (e) {
+    toast('No se pudo exportar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.innerHTML = htmlOriginal;
+  }
+}
+
+function verPdfJurisdiccional() {
+  const { jurisdiccionId, anio, mes } = seleccion();
+  if (!jurisdiccionId) { toast('Selecciona jurisdicción, año y mes.', 'error'); return; }
+  window.open(`biovac_print.html?jurisdiccion=${jurisdiccionId}&anio=${anio}&mes=${mes}`, '_blank');
+}
+
+// ---------------------------------------------------------------------------
 // Arranque y delegación de eventos
 // ---------------------------------------------------------------------------
 
@@ -494,6 +544,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('btnCargar').addEventListener('click', cargarConcentrado);
   document.getElementById('btnGenerarInforme').addEventListener('click', generarInforme);
+  document.getElementById('btnExportarExcelJurisdiccional').addEventListener('click', exportarExcelJurisdiccional);
+  document.getElementById('btnVerPdfJurisdiccional').addEventListener('click', verPdfJurisdiccional);
 
   const cont = document.getElementById('contenedorConcentrado');
   cont.addEventListener('click', (ev) => {
@@ -502,6 +554,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (btn.dataset.action === 'drilldown') toggleDrilldown(btn.dataset.lote, btn.dataset.categoria);
     if (btn.dataset.action === 'abrir-correccion-mov') abrirCorreccionMovimiento(btn.dataset.movimiento);
     if (btn.dataset.action === 'aplicar-correccion-mov') aplicarCorreccionMovimiento(btn.dataset.movimiento);
+    if (btn.dataset.action === 'ver-pdf-unidad') window.open(`biovac_print.html?unidad=${btn.dataset.unidad}&anio=${btn.dataset.anio}&mes=${btn.dataset.mes}`, '_blank');
   });
   cont.addEventListener('change', (ev) => {
     if (ev.target.matches('[data-corr-renglon][data-corr-campo]')) guardarCampoDrilldown(ev.target);

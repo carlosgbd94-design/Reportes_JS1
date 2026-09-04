@@ -48,7 +48,9 @@
   .volver:hover { border-color: var(--secondary); color: var(--secondary); box-shadow: var(--shadow-2); transform: translateY(-1px); }
   .volver .material-symbols-rounded { font-size: 18px; }
 
-  .fila-logo { display: flex; align-items: center; gap: 14px; }
+  .fila-logo { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+  .fila-logo-izq { display: flex; align-items: center; gap: 14px; }
+  .fila-botones-cabecera { display: flex; align-items: center; gap: 10px; }
   .fila-logo img { height: 34px; width: auto; flex: none; }
   .fila-logo .divisor { width: 1px; height: 30px; background: var(--outline-variant); flex: none; }
 
@@ -154,6 +156,7 @@
   table.renglones col.col-caducidad { width: 12%; }
   table.renglones col.col-ant { width: 6%; }
   table.renglones col.col-dato { width: 9%; }
+  table.renglones col.col-dato-mitad { width: 4.5%; }
   table.renglones col.col-final { width: 9%; }
   table.renglones col.col-obs { width: 24%; }
   table.renglones col.col-accion { width: 4%; }
@@ -270,6 +273,46 @@
   .resumen-importador .aviso { color: var(--warning); }
   .resumen-importador .err { color: var(--error); }
 
+  .revision-importador { margin-top: 16px; }
+  .revision-remap {
+    background: var(--warning-bg); border: 1px solid var(--warning-border); border-radius: 14px;
+    padding: 12px 14px; margin-bottom: 14px; font-size: 12.5px;
+  }
+  .revision-remap h3 { margin: 0 0 6px; font-size: 13px; color: var(--warning); font-family: 'Poppins', sans-serif; }
+  .revision-remap p { margin: 0 0 10px; color: var(--text); }
+  .revision-remap-fila { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .revision-remap-fila .nombre-orig { font-weight: 700; min-width: 220px; }
+  .revision-mes {
+    border: 1px solid var(--outline-variant); border-radius: 14px; margin-bottom: 12px; overflow: hidden;
+  }
+  .revision-mes > summary {
+    cursor: pointer; padding: 10px 14px; background: var(--surface-container); font-weight: 800;
+    font-size: 12.5px; font-family: 'Poppins', sans-serif; color: var(--primary); list-style: none;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .revision-mes > summary::-webkit-details-marker { display: none; }
+  .revision-mes .tabla-wrap { padding: 0; }
+  table.tabla-revision { width: 100%; border-collapse: collapse; font-size: 11.5px; min-width: 920px; }
+  table.tabla-revision th {
+    background: #f8fafc; font-size: 9.5px; text-transform: uppercase; letter-spacing: .04em;
+    color: var(--muted); padding: 6px 5px; border-bottom: 1px solid var(--outline-variant); text-align: center;
+  }
+  table.tabla-revision td { padding: 3px 4px; border-bottom: 1px solid #f1f5f9; text-align: center; }
+  table.tabla-revision tr.fila-bloque-titulo td {
+    text-align: left; font-weight: 800; padding: 8px 6px 3px; color: var(--primary); background: #fafbfc;
+  }
+  table.tabla-revision tr.fila-bloque-titulo.no-reconocido td { color: var(--warning); }
+  table.tabla-revision input, table.tabla-revision select {
+    width: 100%; min-width: 58px; padding: 4px 5px; font-size: 11.5px; border-radius: 6px;
+    border: 1px solid var(--outline-variant); text-align: center;
+  }
+  table.tabla-revision input[data-campo=numeroLote] { text-align: left; min-width: 90px; }
+  table.tabla-revision input[data-campo=observaciones] { text-align: left; min-width: 110px; }
+  table.tabla-revision input[data-campo=caducidad] { min-width: 120px; }
+  table.tabla-revision select[data-campo=categoria] { min-width: 70px; font-size: 10.5px; }
+  table.tabla-revision .btn-fantasma { padding: 4px; border-radius: 6px; }
+  table.tabla-revision .btn-fantasma .material-symbols-rounded { font-size: 16px; }
+
   #avisoUsuario {
     display: inline-flex; align-items: center; gap: 6px; width: fit-content;
     background: var(--warning-bg); border: 1px solid var(--warning-border); border-radius: 20px;
@@ -309,11 +352,24 @@
 
 <div class="tarjeta panel-encabezado">
   <div class="fila-logo">
-    <img id="imgLogoApp" alt="SIREVAQ" src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png">
-    <div class="divisor"></div>
-    <div>
-      <h1>Movimiento de Biológico <span id="badgeEstado" class="estado-badge"></span><span id="avisoUsuario"></span></h1>
-      <p class="subtitulo">Registra las entradas y salidas de cada lote; la existencia pasa sola al mes siguiente.</p>
+    <div class="fila-logo-izq">
+      <img id="imgLogoApp" alt="SIREVAQ" src="https://raw.githubusercontent.com/carlosgbd94-design/Logos/refs/heads/main/logo_nuevo.png">
+      <div class="divisor"></div>
+      <div>
+        <h1>Movimiento de Biológico <span id="badgeEstado" class="estado-badge"></span><span id="avisoUsuario"></span></h1>
+        <p class="subtitulo">Registra las entradas y salidas de cada lote; la existencia pasa sola al mes siguiente.</p>
+      </div>
+    </div>
+    <div id="filaBotonesCabecera" class="fila-botones-cabecera" style="display:none">
+      <span id="infoCorregido" style="color:var(--warning); font-size:12px; font-weight:700;"></span>
+      <button class="btn-peligro btn-mini" id="btnAbrirCorreccion" style="display:none" title="Reabre el mes para editar. El cambio se propagará a los meses siguientes ya cerrados."><span class="material-symbols-rounded">edit</span> Reabrir</button>
+      <button class="btn-primario btn-mini" id="btnAplicarCorreccion" style="display:none"><span class="material-symbols-rounded">check_circle</span> Guardar corrección</button>
+      <div class="grupo-acciones">
+        <button class="btn-icono" id="btnGuardarCabecera" title="Guardar"><span class="material-symbols-rounded">save</span></button>
+        <button class="btn-icono" id="btnExportarExcel" title="Exportar a Excel"><span class="material-symbols-rounded">download</span></button>
+        <button class="btn-icono" id="btnVerPdf" title="Ver / exportar PDF"><span class="material-symbols-rounded">picture_as_pdf</span></button>
+        <button class="btn-icono azul" id="btnCerrarMes" title="Cerrar mes: bloquea la edición directa y arrastra la existencia al mes siguiente. Si necesitas corregir algo después, puedes reabrirlo — el cambio se propaga automáticamente a los meses ya cerrados que siguen."><span class="material-symbols-rounded">lock</span></button>
+      </div>
     </div>
   </div>
 
@@ -342,7 +398,6 @@
     </div>
 
     <div id="filaCabeceraMovimiento" style="display:none">
-      <span id="infoCorregido" style="color:var(--warning); font-size:12px; font-weight:700;"></span>
       <div class="campo">
         <label>Responsable</label>
         <input type="text" id="inpResponsable" style="width:170px">
@@ -350,20 +405,6 @@
       <div class="campo">
         <label>Corte</label>
         <div class="valor-info" id="infoFechaCorte">—</div>
-      </div>
-      <div class="campo">
-        <div class="grupo-acciones">
-          <button class="btn-icono" id="btnGuardarCabecera" title="Guardar"><span class="material-symbols-rounded">save</span></button>
-          <button class="btn-icono" id="btnExportarExcel" title="Exportar a Excel"><span class="material-symbols-rounded">download</span></button>
-          <button class="btn-icono" id="btnVerPdf" title="Ver / exportar PDF"><span class="material-symbols-rounded">picture_as_pdf</span></button>
-          <button class="btn-icono azul" id="btnCerrarMes" title="Cerrar mes: bloquea la edición directa y arrastra la existencia al mes siguiente. Si necesitas corregir algo después, puedes reabrirlo — el cambio se propaga automáticamente a los meses ya cerrados que siguen."><span class="material-symbols-rounded">lock</span></button>
-        </div>
-      </div>
-      <div class="campo">
-        <button class="btn-peligro btn-mini" id="btnAbrirCorreccion" style="display:none" title="Reabre el mes para editar. El cambio se propagará a los meses siguientes ya cerrados."><span class="material-symbols-rounded">edit</span> Reabrir</button>
-      </div>
-      <div class="campo">
-        <button class="btn-primario btn-mini" id="btnAplicarCorreccion" style="display:none"><span class="material-symbols-rounded">check_circle</span> Guardar corrección</button>
       </div>
     </div>
   </div>
@@ -388,6 +429,7 @@
     </div>
   </div>
   <div id="resultadoImportador"></div>
+  <div id="revisionImportador"></div>
 </div>
 
 <div id="modalOverlay" class="modal-overlay">

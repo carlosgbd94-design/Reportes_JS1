@@ -11,6 +11,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL@0..1">
 <script defer src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script defer src="biovac_engine.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script defer src="biovac_export_excel.js"></script>
 <script defer src="biovac_jurisdiccion_ui.js"></script>
 <style>
   :root {
@@ -90,6 +92,12 @@
   .btn-fantasma:hover { background: #f1f5f9; color: var(--text); }
   .btn-mini { padding: 6px 12px; font-size: 12px; border-radius: 10px; }
   .btn-mini .material-symbols-rounded { font-size: 16px; }
+  .btn-icono {
+    background: transparent; color: var(--muted); border: none; padding: 6px; border-radius: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .btn-icono:hover { background: #fff; color: var(--secondary); box-shadow: var(--shadow-1); }
+  .btn-icono .material-symbols-rounded { font-size: 18px; }
   button:disabled { opacity: .45; cursor: not-allowed; }
   button:active { transform: scale(.98); }
 
@@ -306,7 +314,11 @@
   <div class="tarjeta">
     <div class="seccion-titulo">
       <h2>Informes generados</h2>
-      <button class="btn-secundario btn-mini" id="btnGenerarInforme"><span class="material-symbols-rounded">summarize</span> Generar informe de este mes</button>
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <button class="btn-secundario btn-mini" id="btnExportarExcelJurisdiccional"><span class="material-symbols-rounded">download</span> Excel</button>
+        <button class="btn-secundario btn-mini" id="btnVerPdfJurisdiccional"><span class="material-symbols-rounded">picture_as_pdf</span> PDF</button>
+        <button class="btn-secundario btn-mini" id="btnGenerarInforme"><span class="material-symbols-rounded">summarize</span> Generar informe de este mes</button>
+      </div>
     </div>
     <div id="listaInformes"></div>
   </div>
