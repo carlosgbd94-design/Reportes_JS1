@@ -60,40 +60,48 @@ serve(async (req) => {
     }
 
     // Buscar el usuario real en 'perfiles' para obtener su Auth ID
-    const { data: targetProfile, error: targetError } = await supabaseAdmin
+    const { data: targetProfiles, error: targetError } = await supabaseAdmin
       .from('perfiles')
       .select('id, email')
-      .eq('usuario', internalID)
-      .single();
+      .ilike('usuario', String(internalID).trim())
+      .limit(1);
 
-    if (targetError || !targetProfile) {
-      throw new Error('No se encontró el perfil del usuario en la base de datos');
+    if (targetError) {
+      console.error("Error al buscar perfil:", targetError);
     }
 
-    // 5. Eliminar usuario en Auth
-    const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(
-      targetProfile.id
-    );
+    const targetProfile = targetProfiles && targetProfiles.length > 0 ? targetProfiles[0] : null;
 
-    if (deleteAuthError) {
-      throw new Error(`Error al eliminar la cuenta en Auth: ${deleteAuthError.message}`);
+    if (targetProfile) {
+      // 5. Eliminar usuario en Auth
+      const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(
+        targetProfile.id
+      );
+
+      if (deleteAuthError) {
+        throw new Error(`Error al eliminar la cuenta en Auth: ${deleteAuthError.message}`);
+      }
+
+      const { error: delPerfilError } = await supabaseAdmin
+        .from('perfiles')
+        .delete()
+        .eq('id', targetProfile.id);
+        
+      if (delPerfilError) console.error("Error al borrar perfil:", delPerfilError);
+    } else {
+      console.warn(`No se encontró perfil para ${internalID}, procediendo a borrar de legacy si existe.`);
     }
-
-    // Las tablas `perfiles` y `usuarios_legacy` deberían eliminarse automáticamente
-    // debido a ON DELETE CASCADE (si está configurado) o se borran aquí:
-    const { error: delPerfilError } = await supabaseAdmin
-      .from('perfiles')
-      .delete()
-      .eq('id', targetProfile.id);
-      
-    if (delPerfilError) console.error("Error al borrar perfil:", delPerfilError);
 
     const { error: delLegacyError } = await supabaseAdmin
       .from('usuarios_legacy')
       .delete()
-      .eq('usuario', internalID);
+      .ilike('usuario', String(internalID).trim());
       
     if (delLegacyError) console.error("Error al borrar legacy:", delLegacyError);
+
+    if (!targetProfile && delLegacyError) {
+      throw new Error(`No se encontró el perfil del usuario '${internalID}' y hubo error al borrar en legacy.`);
+    }
 
     return new Response(
       JSON.stringify({ ok: true, message: 'Usuario eliminado exitosamente' }),
